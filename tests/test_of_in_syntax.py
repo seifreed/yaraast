@@ -299,6 +299,56 @@ class TestOfInSyntax:
     @pytest.mark.parametrize(
         "condition",
         [
+            "$a at true",
+            "$a at false",
+            '$a at "x"',
+            "$a at /x/",
+            "$a at 0.5",
+            "$a at $a",
+            "$a at 0 + true",
+        ],
+    )
+    def test_at_rejects_non_integer_offset_expressions(self, condition: str) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+        with pytest.raises(ParserError, match="AT offset must be an integer expression"):
+            Parser().parse(yara_code)
+
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "$a in (true..1)",
+            "$a in (0..true)",
+            '$a in ("x"..1)',
+            '$a in (0.."x")',
+            "$a in (/x/..1)",
+            "$a in (0.5..1)",
+            "$a in (0..0.5)",
+            "$a in ($a..filesize)",
+            "$a in (0 + true..filesize)",
+        ],
+    )
+    def test_in_rejects_non_integer_range_bound_expressions(self, condition: str) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+        with pytest.raises(ParserError, match="IN range bounds must be integer expressions"):
+            Parser().parse(yara_code)
+
+    @pytest.mark.parametrize(
+        "condition",
+        [
             "$a in (-1..0)",
             "#a in (-1..0)",
             "all of them in (-1..0)",

@@ -5,6 +5,8 @@ from __future__ import annotations
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
+    BinaryExpression,
+    BooleanLiteral,
     DoubleLiteral,
     Expression,
     FunctionCall,
@@ -12,12 +14,14 @@ from yaraast.ast.expressions import (
     MemberAccess,
     ParenthesesExpression,
     RangeExpression,
+    RegexLiteral,
     StringCount,
     StringIdentifier,
     StringLength,
     StringLiteral,
     StringOffset,
     StringWildcard,
+    UnaryExpression,
 )
 from yaraast.ast.extern import ExternRuleReference
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
@@ -205,6 +209,10 @@ class ExpressionPostfixMixin:
             if isinstance(expr, OfExpression):
                 self._reject_percentage_of_postfix(expr, start_token)
             offset = self._parse_additive_expression()
+            self._validate_integer_context_expression(
+                offset,
+                "AT offset must be an integer expression",
+            )
             subject: str | Expression = expr.name if isinstance(expr, StringIdentifier) else expr
             node = AtExpression(string_id=subject, offset=offset)
             if getattr(expr, "location", None) is not None:
@@ -275,6 +283,14 @@ class ExpressionPostfixMixin:
         range_expr = self._set_node_location_from_tokens(
             RangeExpression(low=low, high=high), start_token, self._previous()
         )
+        self._validate_integer_context_expression(
+            range_expr.low,
+            "IN range bounds must be integer expressions",
+        )
+        self._validate_integer_context_expression(
+            range_expr.high,
+            "IN range bounds must be integer expressions",
+        )
         self._validate_static_range_bounds(range_expr, self._previous())
         return range_expr
 
@@ -282,3 +298,26 @@ class ExpressionPostfixMixin:
         return isinstance(expr, ParenthesesExpression) and isinstance(
             expr.expression, RangeExpression
         )
+
+    def _validate_integer_context_expression(self, expr: Expression, message: str) -> None:
+        if isinstance(expr, ParenthesesExpression):
+            self._validate_integer_context_expression(expr.expression, message)
+            return
+        if isinstance(
+            expr,
+            (
+                BooleanLiteral,
+                DoubleLiteral,
+                RegexLiteral,
+                StringIdentifier,
+                StringLiteral,
+                StringWildcard,
+            ),
+        ):
+            raise ParserError(message, self._previous())
+        if isinstance(expr, UnaryExpression):
+            self._validate_integer_context_expression(expr.operand, message)
+            return
+        if isinstance(expr, BinaryExpression):
+            self._validate_integer_context_expression(expr.left, message)
+            self._validate_integer_context_expression(expr.right, message)
