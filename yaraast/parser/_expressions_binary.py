@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     Expression,
@@ -231,12 +232,35 @@ class ExpressionBinaryMixin:
             expr = expr.expression
         return isinstance(expr, StringIdentifier)
 
+    def _reject_invalid_numeric_unary_operand(
+        self,
+        operator: str,
+        operand: Expression,
+        token,
+    ) -> None:
+        if operator not in {"-", "~"}:
+            return
+        while isinstance(operand, ParenthesesExpression):
+            operand = operand.expression
+        if isinstance(operand, StringIdentifier | OfExpression | AtExpression):
+            msg = "Invalid operand for numeric unary operator"
+            raise ParserError(msg, token)
+        if isinstance(operand, InExpression) and not self._is_string_count_in_expression(operand):
+            msg = "Invalid operand for numeric unary operator"
+            raise ParserError(msg, token)
+
+    def _is_string_count_in_expression(self, operand: InExpression) -> bool:
+        from yaraast.ast.expressions import StringCount
+
+        return isinstance(operand.subject, StringCount)
+
     def _parse_unary_expression(self) -> Expression:
         """Parse unary expression."""
         if self._match(TokenType.MINUS, TokenType.BITWISE_NOT):
             start_token = self._previous()
             operator = self._previous().value
             operand = self._parse_unary_expression()
+            self._reject_invalid_numeric_unary_operand(operator, operand, start_token)
             return self._set_node_location_from_tokens(
                 UnaryExpression(operator=operator, operand=operand), start_token, self._previous()
             )

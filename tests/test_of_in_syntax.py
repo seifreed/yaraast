@@ -42,6 +42,51 @@ class TestOfInSyntax:
         assert isinstance(ast.rules[0].condition, InExpression)
         assert isinstance(ast.rules[0].condition.subject, StringCount)
 
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "-1 of them",
+            "~1 of them",
+            "-(1 of them)",
+            "~(1 of them)",
+            "-any of them",
+            "-1 of them at 0",
+            "-1 of them in (0..100)",
+            "-$a",
+            "-$a in (0..100)",
+            "~$a",
+            "-($a at 0)",
+            "~($a at 0)",
+        ],
+    )
+    def test_numeric_unary_operators_reject_string_condition_operands(
+        self,
+        condition: str,
+    ) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+        with pytest.raises(ParserError, match="Invalid operand for numeric unary operator"):
+            Parser().parse(yara_code)
+
+    @pytest.mark.parametrize("condition", ["-#a in (-1..0)", "~#a < 0", "not 1 of them"])
+    def test_valid_unary_quantifier_neighbors_still_parse(self, condition: str) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+        ast = Parser().parse(yara_code)
+        assert len(ast.rules) == 1
+
     @pytest.mark.parametrize("condition", ["@a in (0..100)", "!a in (0..100)"])
     def test_string_offset_and_length_do_not_support_in_range(self, condition: str) -> None:
         yara_code = f"""
