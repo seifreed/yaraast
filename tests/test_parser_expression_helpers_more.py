@@ -284,6 +284,20 @@ def test_classic_parsers_reject_nested_parenthesized_ranges() -> None:
             parser_factory().parse(source)
 
 
+def test_classic_parsers_reject_ranges_inside_for_iterable_sets() -> None:
+    invalid_sources = [
+        "rule r { condition: for any i in (1..2, 3) : (i > 0) }",
+        "rule r { condition: for any i in (1, 2..3) : (i > 0) }",
+        "rule r { condition: for any i in ((1..2), 3) : (i > 0) }",
+        "rule r { condition: for any i in (1 + (2..3), 4) : (i > 0) }",
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="Range expressions cannot be set elements"):
+                parser_factory().parse(source)
+
+
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:
     p = _parser_with_tokens([_t(TokenType.INTEGER, 7)])
     assert isinstance(p._parse_primary_expression(), IntegerLiteral)

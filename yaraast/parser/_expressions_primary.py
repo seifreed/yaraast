@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import fields, is_dataclass
+
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
@@ -10,6 +12,7 @@ from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
+    RangeExpression,
     RegexLiteral,
     SetExpression,
     StringCount,
@@ -202,6 +205,10 @@ class ExpressionPrimaryMixin:
                 msg = "Expected ')' after set elements"
                 raise ParserError(msg, self._peek())
 
+            if any(self._contains_range_expression(expr) for expr in exprs):
+                msg = "Range expressions cannot be set elements"
+                raise ParserError(msg, start_token)
+
             return self._set_node_location_from_tokens(
                 SetExpression(elements=exprs), start_token, self._previous()
             )
@@ -277,3 +284,21 @@ class ExpressionPrimaryMixin:
                 StringWildcard(pattern=string_id), start_token
             )
         return self._set_node_location_from_token(StringIdentifier(name=string_id), start_token)
+
+    def _contains_range_expression(self, expr: Expression) -> bool:
+        if isinstance(expr, RangeExpression):
+            return True
+        if not is_dataclass(expr):
+            return False
+
+        for field in fields(expr):
+            value = getattr(expr, field.name)
+            if isinstance(value, Expression) and self._contains_range_expression(value):
+                return True
+            if isinstance(value, list) and any(
+                isinstance(item, Expression) and self._contains_range_expression(item)
+                for item in value
+            ):
+                return True
+
+        return False
