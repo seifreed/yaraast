@@ -504,6 +504,29 @@ def test_pe_invalid_files_leave_pe_fields_undefined(data: bytes) -> None:
     assert YaraEvaluator(data=data).evaluate_file(ast) == {"invalid_pe_fields": False}
 
 
+@pytest.mark.parametrize("data", [b"", b"MZ"])
+def test_pe_invalid_files_leave_rich_signature_fields_undefined(data: bytes) -> None:
+    ast = Parser().parse("""
+        import "pe"
+        rule invalid_pe_rich_signature_fields {
+            condition:
+                defined pe.rich_signature.offset or
+                defined pe.rich_signature.length or
+                defined pe.rich_signature.raw_data or
+                not pe.rich_signature.offset or
+                not pe.rich_signature.length or
+                not pe.rich_signature.raw_data or
+                pe.rich_signature.offset == 0 or
+                pe.rich_signature.length == 0 or
+                pe.rich_signature.raw_data == ""
+        }
+        """)
+
+    assert YaraEvaluator(data=data).evaluate_file(ast) == {
+        "invalid_pe_rich_signature_fields": False
+    }
+
+
 def test_module_boolean_values_compare_as_numbers_like_libyara() -> None:
     ast = Parser().parse("""
         import "console"

@@ -50,8 +50,11 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "rich_signature": (
                 "struct",
                 {
+                    "offset": "i",
+                    "length": "i",
                     "clear_data": "s",
                     "key": "i",
+                    "raw_data": "s",
                 },
             ),
             "version_info": ("dict", "s", "s"),

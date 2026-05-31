@@ -715,8 +715,11 @@ class TestSemanticValidator:
                 condition:
                     pe.overlay.offset >= 0 or
                     pe.overlay.size >= 0 or
+                    pe.rich_signature.offset >= 0 or
+                    pe.rich_signature.length >= 0 or
                     pe.rich_signature.clear_data == "" or
                     pe.rich_signature.key == 0 or
+                    pe.rich_signature.raw_data == "" or
                     pe.rich_signature.version(1) == 0 or
                     pe.rich_signature.version(1, 2) == 0 or
                     pe.rich_signature.toolid(1) == 0 or

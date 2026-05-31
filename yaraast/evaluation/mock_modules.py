@@ -196,9 +196,15 @@ class PERichSignature:
         self,
         clear_data: str | YaraUndefinedValue,
         key: int | YaraUndefinedValue,
+        offset: int | YaraUndefinedValue,
+        length: int | YaraUndefinedValue,
+        raw_data: str | YaraUndefinedValue,
     ) -> None:
         self.clear_data = clear_data
         self.key = key
+        self.offset = offset
+        self.length = length
+        self.raw_data = raw_data
 
     def version(
         self,
@@ -261,7 +267,13 @@ class MockPE:
         self.overlay_size = YARA_UNDEFINED
         self.overlay = PEOverlay(YARA_UNDEFINED, YARA_UNDEFINED)
         self.rich_signature_offset = YARA_UNDEFINED
-        self.rich_signature = PERichSignature(YARA_UNDEFINED, YARA_UNDEFINED)
+        self.rich_signature = PERichSignature(
+            YARA_UNDEFINED,
+            YARA_UNDEFINED,
+            YARA_UNDEFINED,
+            YARA_UNDEFINED,
+            YARA_UNDEFINED,
+        )
         self.number_of_signatures = YARA_UNDEFINED
         self.signatures: list[PESignature] | YaraUndefinedValue = YARA_UNDEFINED
 
@@ -280,7 +292,7 @@ class MockPE:
                 self.overlay_size = 0
                 self.overlay = PEOverlay(0, 0)
                 self.rich_signature_offset = 0
-                self.rich_signature = PERichSignature("", 0)
+                self.rich_signature = PERichSignature("", 0, 0, 0, "")
                 self.number_of_signatures = 0
                 self.signatures = []
                 coff_offset = pe_offset + 4
