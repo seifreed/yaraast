@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yaraast.lexer.lexer_errors import LexerError
+from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lexer.tokens import Token, TokenType
 
@@ -253,6 +254,9 @@ def read_identifier(lexer) -> Token:
     ):
         value += lexer._current_char()
         lexer._advance()
+    if len(value) > YARA_IDENTIFIER_MAX_LENGTH:
+        msg = f"Identifier exceeds maximum length of {YARA_IDENTIFIER_MAX_LENGTH} characters"
+        raise LexerError(msg, start_line, start_column)
     return Token(
         lexer.KEYWORDS.get(value.lower(), TokenType.IDENTIFIER), value, start_line, start_column
     )

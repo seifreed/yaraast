@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType
 
+YARA_IDENTIFIER_MAX_LENGTH = 128
+
 KEYWORDS = {
     "rule": TokenType.RULE,
     "private": TokenType.PRIVATE,

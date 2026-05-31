@@ -27,7 +27,7 @@ from yaraast.builder.file_builder_validation import validate_version_value
 from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
 from yaraast.builder.string_identifier_validation import validate_new_string_definitions
 from yaraast.errors import ValidationError, YaraASTError
-from yaraast.lexer.lexer_tables import KEYWORDS
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 if TYPE_CHECKING:
@@ -59,7 +59,11 @@ def _validate_yara_identifier(name: str, kind: str) -> None:
     if not isinstance(name, str):
         msg = f"Invalid {kind} identifier: {name}"
         raise TypeError(msg)
-    if _YARA_IDENTIFIER_RE.fullmatch(name) is not None and name not in _YARA_KEYWORDS:
+    if (
+        len(name) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _YARA_IDENTIFIER_RE.fullmatch(name) is not None
+        and name not in _YARA_KEYWORDS
+    ):
         return
     msg = f"Invalid {kind} identifier: {name}"
     raise ValidationError(msg)

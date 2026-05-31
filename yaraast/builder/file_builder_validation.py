@@ -7,7 +7,7 @@ import re
 
 from yaraast.ast.rules import Rule
 from yaraast.errors import ValidationError
-from yaraast.lexer.lexer_tables import KEYWORDS
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
@@ -32,7 +32,11 @@ def validate_identifier(value: object, kind: str) -> None:
     if not isinstance(value, str):
         msg = f"Invalid {kind} identifier: {value}"
         raise TypeError(msg)
-    if _YARA_IDENTIFIER_RE.fullmatch(value) is not None and value not in _YARA_KEYWORDS:
+    if (
+        len(value) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _YARA_IDENTIFIER_RE.fullmatch(value) is not None
+        and value not in _YARA_KEYWORDS
+    ):
         return
     msg = f"Invalid {kind} identifier: {value}"
     raise ValidationError(msg)

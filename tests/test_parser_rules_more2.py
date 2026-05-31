@@ -17,6 +17,8 @@ from yaraast.ast.pragmas import (
 from yaraast.ast.rules import Import, Rule
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.lexer import Lexer
+from yaraast.lexer.lexer_errors import LexerError
+from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
@@ -223,6 +225,22 @@ def test_parse_import_include_and_rule_via_full_parse() -> None:
 def test_parse_rejects_standard_import_alias() -> None:
     with pytest.raises(ParserError, match="Import aliases are not supported"):
         Parser('import "pe" as pe_mod rule r { condition: true }').parse()
+
+
+@pytest.mark.parametrize(
+    "source_template",
+    [
+        "rule {identifier} {{ condition: true }}",
+        "rule r : {identifier} {{ condition: true }}",
+        "rule r {{ meta: {identifier} = 1 condition: true }}",
+        'import "pe" rule r {{ condition: pe.{identifier} == 1 }}',
+    ],
+)
+def test_parse_rejects_identifiers_longer_than_libyara_limit(source_template: str) -> None:
+    long_identifier = "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)
+
+    with pytest.raises(LexerError, match="Identifier exceeds maximum length"):
+        Parser(source_template.format(identifier=long_identifier)).parse()
 
 
 def test_parse_generated_extended_top_level_constructs() -> None:

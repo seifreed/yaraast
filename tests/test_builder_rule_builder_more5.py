@@ -22,6 +22,7 @@ from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.errors import ValidationError
+from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 
 
 def test_rule_builder_aliases_and_modifier_paths() -> None:
@@ -41,7 +42,10 @@ def test_rule_builder_aliases_and_modifier_paths() -> None:
     assert rule.condition.value is False
 
 
-@pytest.mark.parametrize("rule_name", ["bad name", "bad-name", "for", "1bad", ""])
+@pytest.mark.parametrize(
+    "rule_name",
+    ["bad name", "bad-name", "for", "1bad", "", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)],
+)
 def test_rule_builder_rejects_invalid_rule_names(rule_name: str) -> None:
     with pytest.raises(ValidationError, match="Invalid rule identifier"):
         RuleBuilder(rule_name)
@@ -50,7 +54,10 @@ def test_rule_builder_rejects_invalid_rule_names(rule_name: str) -> None:
         RuleBuilder().with_name(rule_name)
 
 
-@pytest.mark.parametrize("tag_name", ["bad tag", "bad-tag", "for", "1bad", ""])
+@pytest.mark.parametrize(
+    "tag_name",
+    ["bad tag", "bad-tag", "for", "1bad", "", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)],
+)
 def test_rule_builder_rejects_invalid_rule_tags(tag_name: str) -> None:
     with pytest.raises(ValidationError, match="Invalid tag identifier"):
         RuleBuilder("tags").with_tag(tag_name)
@@ -80,7 +87,10 @@ def test_rule_builder_public_removes_private_modifier() -> None:
     assert "global" in modifier_names
 
 
-@pytest.mark.parametrize("meta_key", ["bad key", "bad-key", "for", "1bad", ""])
+@pytest.mark.parametrize(
+    "meta_key",
+    ["bad key", "bad-key", "for", "1bad", "", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)],
+)
 def test_rule_builder_rejects_invalid_meta_keys(meta_key: str) -> None:
     with pytest.raises(ValidationError, match="Invalid meta identifier"):
         RuleBuilder("metadata_rule").with_meta(meta_key, "x")

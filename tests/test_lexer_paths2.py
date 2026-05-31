@@ -4,6 +4,7 @@ import pytest
 
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.lexer_errors import LexerError
+from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.lexer.tokens import Token, TokenType
 
 
@@ -38,6 +39,17 @@ def test_lexer_tokenize_reuse_resets_previous_tokens() -> None:
 
     assert [token.type for token in second] == first_types
     assert len([token for token in second if token.type == TokenType.EOF]) == 1
+
+
+def test_lexer_rejects_identifiers_longer_than_libyara_limit() -> None:
+    valid_name = "a" * YARA_IDENTIFIER_MAX_LENGTH
+    long_name = "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)
+
+    tokens = Lexer(f"rule {valid_name} {{ condition: true }}").tokenize()
+    assert tokens[1].value == valid_name
+
+    with pytest.raises(LexerError, match="Identifier exceeds maximum length"):
+        Lexer(f"rule {long_name} {{ condition: true }}").tokenize()
 
 
 def test_lexer_number_suffix_and_regex_context_and_hex_context_helpers() -> None:

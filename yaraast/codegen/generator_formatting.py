@@ -10,7 +10,7 @@ from yaraast.codegen.generator_helpers import (
     format_hex_jump_bounds,
     validate_string_identifier_text,
 )
-from yaraast.lexer.lexer_tables import KEYWORDS
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.regex_literals import validate_regex_modifiers
 
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -138,7 +138,11 @@ def _rule_tag_name(tag) -> str:
 
 
 def _validate_yara_identifier(name: str, kind: str) -> None:
-    if _YARA_IDENTIFIER_RE.fullmatch(name) is not None and name not in _YARA_KEYWORDS:
+    if (
+        len(name) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _YARA_IDENTIFIER_RE.fullmatch(name) is not None
+        and name not in _YARA_KEYWORDS
+    ):
         return
 
     msg = f"Invalid {kind} identifier '{name}' for libyara output"

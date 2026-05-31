@@ -67,6 +67,7 @@ from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.codegen.formatting import FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter
+from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.yarax.ast_nodes import (
@@ -920,7 +921,7 @@ def test_codegen_generators_reject_invalid_rule_tags(tag_name: str) -> None:
         PrettyPrinter().pretty_print(ast)
 
 
-@pytest.mark.parametrize("tag_name", ["bad-tag", "for"])
+@pytest.mark.parametrize("tag_name", ["bad-tag", "for", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)])
 def test_codegen_tag_visitors_reject_invalid_rule_tags(tag_name: str) -> None:
     tag = Tag(tag_name)
 
@@ -992,7 +993,9 @@ def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:
         PrettyPrinter().pretty_print(ast)
 
 
-@pytest.mark.parametrize("rule_name", ["bad name", "for", "1bad"])
+@pytest.mark.parametrize(
+    "rule_name", ["bad name", "for", "1bad", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)]
+)
 def test_codegen_generators_reject_invalid_rule_identifiers(rule_name: str) -> None:
     ast = YaraFile(rules=[Rule(name=rule_name, condition=BooleanLiteral(True))])
 
@@ -1006,7 +1009,9 @@ def test_codegen_generators_reject_invalid_rule_identifiers(rule_name: str) -> N
         PrettyPrinter().pretty_print(ast)
 
 
-@pytest.mark.parametrize("rule_name", ["bad-name", "for", "1bad"])
+@pytest.mark.parametrize(
+    "rule_name", ["bad-name", "for", "1bad", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)]
+)
 def test_codegen_rule_visitors_reject_invalid_rule_identifiers(rule_name: str) -> None:
     rule = Rule(name=rule_name, condition=BooleanLiteral(True))
 
@@ -1044,7 +1049,9 @@ def test_codegen_generators_reject_invalid_rule_modifiers() -> None:
             PrettyPrinter().pretty_print(ast)
 
 
-@pytest.mark.parametrize("meta_key", ["bad-key", "for", "1bad"])
+@pytest.mark.parametrize(
+    "meta_key", ["bad-key", "for", "1bad", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)]
+)
 def test_codegen_generators_reject_invalid_meta_keys(meta_key: str) -> None:
     ast = YaraFile(
         rules=[
