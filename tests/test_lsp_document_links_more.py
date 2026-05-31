@@ -8,6 +8,7 @@ from textwrap import dedent
 from yaraast.lsp.document_links import DocumentLinksProvider
 from yaraast.lsp.document_types import path_to_uri
 from yaraast.lsp.runtime import DocumentContext
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
 def test_document_links_import_and_include(tmp_path: Path) -> None:
@@ -47,6 +48,22 @@ def test_document_links_fallback(tmp_path: Path) -> None:
     links = provider._fallback_links(text, path_to_uri(doc_path))
 
     assert any(link.target and "pe.html" in link.target for link in links)
+
+
+def test_document_links_fallback_include_range_uses_utf16_columns(tmp_path: Path) -> None:
+    include_path = tmp_path / "😀.yar"
+    include_path.write_text("rule inc { condition: true }", encoding="utf-8")
+    text = 'include "😀.yar"\nrule main { condition: true }\n'
+    doc_path = tmp_path / "doc.yar"
+    doc_path.write_text(text, encoding="utf-8")
+
+    links = DocumentLinksProvider()._fallback_links(text, path_to_uri(doc_path))
+
+    assert len(links) == 1
+    value_start = text.index("😀.yar")
+    value_end = value_start + len("😀.yar")
+    assert links[0].range.start.character == utf8_col_to_utf16(text.splitlines()[0], value_start)
+    assert links[0].range.end.character == utf8_col_to_utf16(text.splitlines()[0], value_end)
 
 
 def test_document_links_helper_edges(tmp_path: Path) -> None:

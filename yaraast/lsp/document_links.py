@@ -9,6 +9,7 @@ from typing import Any
 from lsprotocol.types import DocumentLink, Position, Range
 
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, SymbolRecord
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 logger = logging.getLogger(__name__)
 
@@ -131,9 +132,13 @@ class DocumentLinksProvider:
                         DocumentLink(
                             range=Range(
                                 start=Position(
-                                    line=line_num, character=import_match.start("value")
+                                    line=line_num,
+                                    character=utf8_col_to_utf16(line, import_match.start("value")),
                                 ),
-                                end=Position(line=line_num, character=import_match.end("value")),
+                                end=Position(
+                                    line=line_num,
+                                    character=utf8_col_to_utf16(line, import_match.end("value")),
+                                ),
                             ),
                             target=url,
                             tooltip=f"Open documentation for {module_name} module",
@@ -150,9 +155,13 @@ class DocumentLinksProvider:
                         DocumentLink(
                             range=Range(
                                 start=Position(
-                                    line=line_num, character=include_match.start("value")
+                                    line=line_num,
+                                    character=utf8_col_to_utf16(line, include_match.start("value")),
                                 ),
-                                end=Position(line=line_num, character=include_match.end("value")),
+                                end=Position(
+                                    line=line_num,
+                                    character=utf8_col_to_utf16(line, include_match.end("value")),
+                                ),
                             ),
                             target=target_uri,
                             tooltip=f"Open {include_path}",
