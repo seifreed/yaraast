@@ -190,14 +190,6 @@ output = "coverage.xml"
 # Bandit security configuration
 [tool.bandit]
 exclude_dirs = ["tests", "venv", "build", "dist"]
-severity = "medium"
-confidence = "medium"
-skips = [
-    "B101",  # assert_used - legitimate in tests
-    "B110",  # try_except_pass - legitimate error handling patterns
-    "B324",  # hashlib_insecure_function - MD5 used for non-security purposes (checksums)
-    "B601",  # shell=True warnings
-]
 
 # Mypy configuration - Gradual typing for parser library
 [tool.mypy]
