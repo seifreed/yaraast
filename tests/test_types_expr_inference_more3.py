@@ -759,11 +759,37 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
     )
     assert any("Offset in 'at' expression must be integer" in e for e in inf.errors)
 
+    at_of = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        at_of.infer(
+            AtExpression(
+                string_id=OfExpression("all", Identifier("them")),
+                offset=IntegerLiteral(value=0),
+            )
+        ),
+        BooleanType,
+    )
+    assert at_of.errors == []
+
     assert isinstance(
         inf.infer(InExpression(subject="$a", range=IntegerLiteral(value=1))),
         BooleanType,
     )
     assert any("'in' expression requires range" in e for e in inf.errors)
+
+    in_count_env = TypeEnvironment()
+    in_count_env.add_string("$a")
+    in_count = ExpressionTypeInference(in_count_env)
+    assert isinstance(
+        in_count.infer(
+            InExpression(
+                subject=StringCount("a"),
+                range=RangeExpression(IntegerLiteral(value=0), IntegerLiteral(value=1)),
+            )
+        ),
+        BooleanType,
+    )
+    assert in_count.errors == []
 
     assert isinstance(
         inf.infer(

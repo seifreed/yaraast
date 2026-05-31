@@ -13,6 +13,7 @@ from yaraast.ast.expressions import (
     MemberAccess,
     ParenthesesExpression,
     SetExpression,
+    StringCount,
     StringIdentifier,
     StringLiteral,
     StringWildcard,
@@ -877,7 +878,15 @@ def infer_module_or_condition(ctx, node):
         return UnknownType()
 
     if isinstance(node, AtExpression):
-        _validate_raw_string_ref(ctx, node.string_id)
+        if isinstance(node.string_id, str):
+            _validate_raw_string_ref(ctx, node.string_id)
+        else:
+            subject_type = ctx.visit(node.string_id)
+            if not isinstance(subject_type, BooleanType):
+                ctx.errors.append(
+                    f"'at' expression subject must be string identifier or of-expression, "
+                    f"got {subject_type}"
+                )
         offset_type = ctx.visit(node.offset)
         if not isinstance(offset_type, IntegerType):
             ctx.errors.append(f"Offset in 'at' expression must be integer, got {offset_type}")
@@ -886,11 +895,18 @@ def infer_module_or_condition(ctx, node):
     if isinstance(node, InExpression):
         if isinstance(node.subject, str):
             _validate_raw_string_ref(ctx, node.subject)
+        elif isinstance(node.subject, StringCount):
+            subject_type = ctx.visit(node.subject)
+            if not isinstance(subject_type, IntegerType):
+                ctx.errors.append(
+                    f"'in' expression string count subject must be integer, got {subject_type}"
+                )
         else:
             subject_type = ctx.visit(node.subject)
             if not isinstance(subject_type, BooleanType):
                 ctx.errors.append(
-                    f"'in' expression subject must be string identifier or of-expression, "
+                    f"'in' expression subject must be string identifier, string count, "
+                    f"or of-expression, "
                     f"got {subject_type}"
                 )
         range_type = ctx.visit(node.range)

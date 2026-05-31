@@ -1519,6 +1519,37 @@ class TestTypeChecker:
         assert len(errors) == 1
         assert "must be boolean, integer, double, regex, string, or string identifier" in errors[0]
 
+    def test_check_rule_with_of_expression_at_offset(self) -> None:
+        """Test checking libyara-compatible of-expression at offset conditions."""
+        checker = TypeChecker()
+        rule = Rule(name="test_rule")
+        rule.strings = [
+            PlainString(identifier="$a", value="test"),
+            PlainString(identifier="$b", value="data"),
+        ]
+        rule.condition = AtExpression(
+            string_id=OfExpression("all", Identifier("them")),
+            offset=IntegerLiteral(value=0),
+        )
+
+        errors = checker.check(YaraFile(rules=[rule]))
+
+        assert errors == []
+
+    def test_check_rule_with_string_count_in_range(self) -> None:
+        """Test checking string count range conditions."""
+        checker = TypeChecker()
+        rule = Rule(name="test_rule")
+        rule.strings = [PlainString(identifier="$a", value="test")]
+        rule.condition = InExpression(
+            subject=StringCount("a"),
+            range=RangeExpression(IntegerLiteral(value=0), IntegerLiteral(value=1)),
+        )
+
+        errors = checker.check(YaraFile(rules=[rule]))
+
+        assert errors == []
+
     def test_check_returns_error_snapshot(self) -> None:
         """Test returned errors cannot mutate checker state."""
         checker = TypeChecker()
