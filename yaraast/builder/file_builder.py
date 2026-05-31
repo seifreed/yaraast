@@ -1,5 +1,6 @@
 """Fluent builder for YARA files."""
 
+from collections.abc import Callable
 from copy import deepcopy
 from typing import Self
 
@@ -54,7 +55,7 @@ class YaraFileBuilder:
         self._rules.append(built_rule)
         return self
 
-    def with_rule_builder(self, builder_func) -> Self:
+    def with_rule_builder(self, builder_func: Callable[[RuleBuilder], object]) -> Self:
         """Add a rule using a builder function."""
         if not callable(builder_func):
             msg = "Rule builder callback must be callable"

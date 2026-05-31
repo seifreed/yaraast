@@ -65,7 +65,7 @@ class FluentConditionBuilder(ConditionBuilder):
         """Exactly three of the specified strings."""
         return self.between_n_and_m_of(3, 3, *strings)
 
-    def most_of(self, *strings: str) -> FluentConditionBuilder:
+    def most_of(self, *strings: str) -> ConditionBuilder:
         """Most of the strings (more than half)."""
         threshold = (len(strings) // 2) + 1
         return self.n_of(threshold, *strings)
@@ -323,7 +323,7 @@ class FluentConditionBuilder(ConditionBuilder):
         return FluentConditionBuilder(build_entropy_compare("<", offset, size, 3.0))
 
     # Composite helpers
-    def executable_file(self) -> FluentConditionBuilder:
+    def executable_file(self) -> ConditionBuilder:
         """Common executable file patterns."""
         mz_at_0 = FluentConditionBuilder(
             AtExpression(string_id="mz_header", offset=IntegerLiteral(value=0)),
@@ -339,7 +339,7 @@ class FluentConditionBuilder(ConditionBuilder):
             ),
         )
 
-    def suspicious_entropy(self) -> FluentConditionBuilder:
+    def suspicious_entropy(self) -> ConditionBuilder:
         """Suspicious entropy patterns."""
         return self.high_entropy().or_(
             FluentConditionBuilder(
@@ -347,7 +347,7 @@ class FluentConditionBuilder(ConditionBuilder):
             ),
         )
 
-    def packed_executable(self) -> FluentConditionBuilder:
+    def packed_executable(self) -> ConditionBuilder:
         """Common packed executable indicators."""
         return self.suspicious_entropy().and_(
             FluentConditionBuilder(
@@ -428,12 +428,12 @@ def one_of(*strings: str) -> FluentConditionBuilder:
     return FluentConditionBuilder().one_of(*strings)
 
 
-def any_of(*strings: str) -> FluentConditionBuilder:
+def any_of(*strings: str) -> ConditionBuilder:
     """Any of specified strings."""
     return FluentConditionBuilder().any_of(*strings)
 
 
-def all_of(*strings: str) -> FluentConditionBuilder:
+def all_of(*strings: str) -> ConditionBuilder:
     """All of specified strings."""
     return FluentConditionBuilder().all_of(*strings)
 

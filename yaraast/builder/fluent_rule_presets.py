@@ -4,19 +4,16 @@ from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
+from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
 
 
-def rule(name: str):
+def rule(name: str) -> FluentRuleBuilder:
     """Create a new fluent rule builder."""
-    from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
-
     return FluentRuleBuilder(name)
 
 
-def malware_rule(name: str):
+def malware_rule(name: str) -> FluentRuleBuilder:
     """Create a malware detection rule template."""
-    from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
-
     return (
         FluentRuleBuilder(name)
         .tagged("malware")
@@ -26,10 +23,8 @@ def malware_rule(name: str):
     )
 
 
-def trojan_rule(name: str):
+def trojan_rule(name: str) -> FluentRuleBuilder:
     """Create a trojan detection rule template."""
-    from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
-
     return (
         FluentRuleBuilder(name)
         .tagged("trojan", "malware")
@@ -39,10 +34,8 @@ def trojan_rule(name: str):
     )
 
 
-def packed_rule(name: str):
+def packed_rule(name: str) -> FluentRuleBuilder:
     """Create a packed executable rule template."""
-    from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
-
     return (
         FluentRuleBuilder(name)
         .tagged("packed")
@@ -54,17 +47,13 @@ def packed_rule(name: str):
     )
 
 
-def document_rule(name: str):
+def document_rule(name: str) -> FluentRuleBuilder:
     """Create a document-based rule template."""
-    from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
-
     return FluentRuleBuilder(name).tagged("document").authored_by(FluentRuleBuilder.YARA_AST_STR)
 
 
-def network_rule(name: str):
+def network_rule(name: str) -> FluentRuleBuilder:
     """Create a network-based detection rule."""
-    from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
-
     return (
         FluentRuleBuilder(name)
         .tagged("network")

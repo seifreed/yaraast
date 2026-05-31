@@ -109,7 +109,7 @@ class FluentRuleBuilder:
             )
         return self
 
-    def string(self, identifier: str) -> FluentStringContext:
+    def string(self, identifier: str) -> FluentStringContext[Self]:
         """Start defining a string (returns context for chaining)."""
         return FluentStringContext(self, identifier)
 
@@ -196,21 +196,21 @@ class FluentRuleBuilder:
         return self
 
     # Condition methods
-    def condition(self, condition: str | Expression | FluentConditionBuilder) -> Self:
+    def condition(self, condition: str | Expression | ConditionBuilder) -> Self:
         """Set the rule condition."""
-        if isinstance(condition, FluentConditionBuilder):
+        if isinstance(condition, ConditionBuilder):
             self._rule_builder.with_condition(condition.build())
         else:
             self._rule_builder.with_condition(condition)
         return self
 
-    def when(self, condition: str | Expression | FluentConditionBuilder) -> Self:
+    def when(self, condition: str | Expression | ConditionBuilder) -> Self:
         """Alias for condition."""
         return self.condition(condition)
 
     def with_condition(
         self,
-        condition: str | Expression | FluentConditionBuilder,
+        condition: str | Expression | ConditionBuilder,
     ) -> Self:
         """Alias for condition."""
         return self.condition(condition)
@@ -240,7 +240,7 @@ class FluentRuleBuilder:
 
     def with_condition_builder(
         self,
-        builder_func: Callable[[FluentConditionBuilder], FluentConditionBuilder],
+        builder_func: Callable[[FluentConditionBuilder], ConditionBuilder],
     ) -> Self:
         """Set condition using a builder function."""
         if not callable(builder_func):
@@ -292,93 +292,93 @@ class FluentRuleBuilder:
             self._rule_builder._strings = original_strings
 
 
-class FluentStringContext:
+class FluentStringContext[RuleBuilderT: FluentRuleBuilder]:
     """Context for fluent string building within a rule."""
 
-    def __init__(self, rule_builder: FluentRuleBuilder, identifier: str) -> None:
+    def __init__(self, rule_builder: RuleBuilderT, identifier: str) -> None:
         self.rule_builder = rule_builder
         self.string_builder = FluentStringBuilder(identifier)
 
     # String content methods
-    def literal(self, content: str) -> FluentStringContext:
+    def literal(self, content: str) -> FluentStringContext[RuleBuilderT]:
         """Set string content as literal."""
         self.string_builder.literal(content)
         return self
 
-    def text(self, content: str) -> FluentStringContext:
+    def text(self, content: str) -> FluentStringContext[RuleBuilderT]:
         """Set string content as text."""
         self.string_builder.text(content)
         return self
 
-    def hex(self, pattern: str) -> FluentStringContext:
+    def hex(self, pattern: str) -> FluentStringContext[RuleBuilderT]:
         """Set string content as hex pattern."""
         self.string_builder.hex(pattern)
         return self
 
-    def regex(self, pattern: str) -> FluentStringContext:
+    def regex(self, pattern: str) -> FluentStringContext[RuleBuilderT]:
         """Set string content as regex."""
         self.string_builder.regex(pattern)
         return self
 
     # String modifiers
-    def ascii(self) -> FluentStringContext:
+    def ascii(self) -> FluentStringContext[RuleBuilderT]:
         """Add ASCII modifier."""
         self.string_builder.ascii()
         return self
 
-    def wide(self) -> FluentStringContext:
+    def wide(self) -> FluentStringContext[RuleBuilderT]:
         """Add wide modifier."""
         self.string_builder.wide()
         return self
 
-    def nocase(self) -> FluentStringContext:
+    def nocase(self) -> FluentStringContext[RuleBuilderT]:
         """Add nocase modifier."""
         self.string_builder.nocase()
         return self
 
-    def fullword(self) -> FluentStringContext:
+    def fullword(self) -> FluentStringContext[RuleBuilderT]:
         """Add fullword modifier."""
         self.string_builder.fullword()
         return self
 
-    def private(self) -> FluentStringContext:
+    def private(self) -> FluentStringContext[RuleBuilderT]:
         """Add private modifier."""
         self.string_builder.private()
         return self
 
-    def xor(self, key: int | str | None = None) -> FluentStringContext:
+    def xor(self, key: int | str | None = None) -> FluentStringContext[RuleBuilderT]:
         """Add XOR modifier."""
         self.string_builder.xor(key)
         return self
 
-    def base64(self) -> FluentStringContext:
+    def base64(self) -> FluentStringContext[RuleBuilderT]:
         """Add base64 modifier."""
         self.string_builder.base64()
         return self
 
     # Pattern helpers
-    def with_mz_header_string(self) -> FluentStringContext:
+    def with_mz_header_string(self) -> FluentStringContext[RuleBuilderT]:
         """Set as MZ header pattern."""
         self.string_builder.mz_header()
         return self
 
-    def pe_header(self) -> FluentStringContext:
+    def pe_header(self) -> FluentStringContext[RuleBuilderT]:
         """Set as PE header pattern."""
         self.string_builder.pe_header()
         return self
 
-    def email_pattern(self) -> FluentStringContext:
+    def email_pattern(self) -> FluentStringContext[RuleBuilderT]:
         """Set as email regex pattern."""
         self.string_builder.email_pattern()
         return self
 
     # Return to rule builder
-    def then(self) -> FluentRuleBuilder:
+    def then(self) -> RuleBuilderT:
         """Return to rule builder after defining string."""
         self.rule_builder._string_builders.append(self.string_builder)
         return self.rule_builder
 
-    def and_string(self, identifier: str) -> FluentStringContext:
+    def and_string(self, identifier: str) -> FluentStringContext[RuleBuilderT]:
         """Add this string and start another."""
         self.rule_builder._string_builders.append(self.string_builder)
         return FluentStringContext(self.rule_builder, identifier)

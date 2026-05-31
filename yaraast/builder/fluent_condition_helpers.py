@@ -75,7 +75,7 @@ def build_string_set(*strings: str) -> Expression:
         return Identifier(name="them")
     for string in strings:
         validate_string_reference(string)
-    elements = [StringIdentifier(name=s) for s in strings]
+    elements: list[Expression] = [StringIdentifier(name=s) for s in strings]
     return SetExpression(elements=elements)
 
 
@@ -96,6 +96,7 @@ def _normalize_string_reference(identifier: str, marker: str) -> str:
 
 
 def build_of_expression(quantifier: int | str, string_set: Expression) -> OfExpression:
+    quant_expr: Expression
     if isinstance(quantifier, int):
         quant_expr = make_integer_literal(quantifier)
     else:

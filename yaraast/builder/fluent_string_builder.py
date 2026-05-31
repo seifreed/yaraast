@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from copy import deepcopy
+from typing import cast
 
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.strings import (
@@ -54,7 +56,7 @@ class FluentStringBuilder:
 
     def hex_bytes(self, *bytes_values: int | str) -> FluentStringBuilder:
         """Set as hex string from byte values."""
-        tokens = []
+        tokens: list[HexToken] = []
         for byte_val in bytes_values:
             if isinstance(byte_val, bool):
                 msg = f"Invalid type for hex value: {type(byte_val)}"
@@ -84,7 +86,10 @@ class FluentStringBuilder:
         self._string_type = "hex"
         return self
 
-    def hex_builder(self, builder_func) -> FluentStringBuilder:
+    def hex_builder(
+        self,
+        builder_func: Callable[[HexStringBuilder], HexStringBuilder | None],
+    ) -> FluentStringBuilder:
         """Set hex content using a HexStringBuilder lambda."""
         if not callable(builder_func):
             msg = "Hex builder callback must be callable"
@@ -272,7 +277,7 @@ class FluentStringBuilder:
             msg = f"Wildcard count must be positive, got {count}"
             raise ValidationError(msg)
 
-        tokens = [HexWildcard() for _ in range(count)]
+        tokens: list[HexToken] = [HexWildcard() for _ in range(count)]
         self._content = tokens
         self._string_type = "hex"
         return self
@@ -293,7 +298,7 @@ class FluentStringBuilder:
             max_bytes = min_bytes
         self._validate_jump_bounds(min_bytes, max_bytes)
 
-        tokens = [HexJump(min_jump=min_bytes, max_jump=max_bytes)]
+        tokens: list[HexToken] = [HexJump(min_jump=min_bytes, max_jump=max_bytes)]
         self._content = tokens
         self._string_type = "hex"
         return self
@@ -372,11 +377,11 @@ class FluentStringBuilder:
 
     def _plain_content_for_build(self) -> str:
         self._validate_plain_content(self._content)
-        return self._content
+        return cast(str, self._content)
 
     def _regex_pattern_for_build(self) -> str:
         self._validate_regex_pattern(self._content)
-        return self._content
+        return cast(str, self._content)
 
     def _hex_tokens_for_build(self) -> list[HexToken]:
         if isinstance(self._content, list):

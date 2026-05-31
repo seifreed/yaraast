@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
@@ -298,7 +298,7 @@ class RuleTransformer:
 
         if isinstance(expr, StringOffset | StringLength):
             expr.string_id = self._rename_string_reference(expr.string_id, mapping)
-            expr.index = self._rename_expression_value(expr.index, mapping)
+            expr.index = cast(Expression | None, self._rename_expression_value(expr.index, mapping))
             return expr
 
         if isinstance(expr, StringWildcard):
@@ -309,23 +309,43 @@ class RuleTransformer:
             if isinstance(expr.string_id, str):
                 expr.string_id = self._rename_string_reference(expr.string_id, mapping)
             else:
-                expr.string_id = self._rename_expression_value(expr.string_id, mapping)
-            expr.offset = self._rename_expression_value(expr.offset, mapping)
+                expr.string_id = cast(
+                    str | Expression,
+                    self._rename_expression_value(expr.string_id, mapping),
+                )
+            expr.offset = cast(Expression, self._rename_expression_value(expr.offset, mapping))
             return expr
 
         if isinstance(expr, InExpression):
             if isinstance(expr.subject, str):
                 expr.subject = self._rename_string_reference(expr.subject, mapping)
             else:
-                expr.subject = self._rename_expression_value(expr.subject, mapping)
-            expr.range = self._rename_expression_value(expr.range, mapping)
+                expr.subject = cast(
+                    str | Expression,
+                    self._rename_expression_value(expr.subject, mapping),
+                )
+            expr.range = cast(Expression, self._rename_expression_value(expr.range, mapping))
             return expr
 
         if isinstance(expr, OfExpression | ForOfExpression):
-            expr.quantifier = self._rename_expression_value(expr.quantifier, mapping)
-            expr.string_set = self._rename_string_set_value(expr.string_set, mapping)
+            expr.quantifier = cast(
+                Expression | str | int | float,
+                self._rename_expression_value(expr.quantifier, mapping),
+            )
+            expr.string_set = cast(
+                Expression
+                | str
+                | list[str | Expression]
+                | tuple[str | Expression, ...]
+                | set[str | Expression]
+                | frozenset[str | Expression],
+                self._rename_string_set_value(expr.string_set, mapping),
+            )
             if isinstance(expr, ForOfExpression) and expr.condition is not None:
-                expr.condition = self._rename_expression_value(expr.condition, mapping)
+                expr.condition = cast(
+                    Expression | None,
+                    self._rename_expression_value(expr.condition, mapping),
+                )
             return expr
 
         if isinstance(expr, BinaryExpression):
@@ -657,7 +677,7 @@ def _require_collection_name(value: object) -> str:
 
 
 # Factory functions for common transformations
-def create_variant_rule(rule: Rule, variant_name: str, **changes) -> Rule:
+def create_variant_rule(rule: Rule, variant_name: str, **changes: object) -> Rule:
     """Create a variant of a rule with changes."""
     transformer = RuleTransformer(rule).rename(variant_name)
 

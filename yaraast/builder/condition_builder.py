@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from copy import deepcopy
 import re
-from typing import Self
 
 from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
@@ -45,18 +44,18 @@ class ConditionBuilder:
         return IntegerLiteral(value=value)
 
     # String references
-    def string(self, identifier: str) -> Self:
+    def string(self, identifier: str) -> ConditionBuilder:
         """Reference a string identifier."""
         self._validate_string_reference(identifier)
         return ConditionBuilder(StringIdentifier(name=identifier))
 
-    def string_count(self, identifier: str) -> Self:
+    def string_count(self, identifier: str) -> ConditionBuilder:
         """Reference string count (#string)."""
         return ConditionBuilder(
             StringCount(string_id=self._normalize_string_reference(identifier, "#"))
         )
 
-    def string_offset(self, identifier: str, index: int | None = None) -> Self:
+    def string_offset(self, identifier: str, index: int | None = None) -> ConditionBuilder:
         """Reference string offset (@string or @string[i])."""
         index_expr = self._integer_literal(index) if index is not None else None
         return ConditionBuilder(
@@ -66,7 +65,7 @@ class ConditionBuilder:
             ),
         )
 
-    def string_length(self, identifier: str, index: int | None = None) -> Self:
+    def string_length(self, identifier: str, index: int | None = None) -> ConditionBuilder:
         """Reference string length (!string or !string[i])."""
         index_expr = self._integer_literal(index) if index is not None else None
         return ConditionBuilder(
@@ -77,37 +76,37 @@ class ConditionBuilder:
         )
 
     # Literals
-    def true(self) -> Self:
+    def true(self) -> ConditionBuilder:
         """Boolean true."""
         return ConditionBuilder(BooleanLiteral(value=True))
 
-    def false(self) -> Self:
+    def false(self) -> ConditionBuilder:
         """Boolean false."""
         return ConditionBuilder(BooleanLiteral(value=False))
 
-    def integer(self, value: int) -> Self:
+    def integer(self, value: int) -> ConditionBuilder:
         """Integer literal."""
         return ConditionBuilder(self._integer_literal(value))
 
-    def filesize(self) -> Self:
+    def filesize(self) -> ConditionBuilder:
         """Filesize keyword."""
         return ConditionBuilder(Identifier(name="filesize"))
 
-    def entrypoint(self) -> Self:
+    def entrypoint(self) -> ConditionBuilder:
         """Entrypoint keyword."""
         return ConditionBuilder(Identifier(name="entrypoint"))
 
-    def identifier(self, name: str) -> Self:
+    def identifier(self, name: str) -> ConditionBuilder:
         """Generic identifier."""
         return ConditionBuilder(Identifier(name=name))
 
-    def range(self, start: int | ConditionBuilder, end: int | ConditionBuilder) -> Self:
+    def range(self, start: int | ConditionBuilder, end: int | ConditionBuilder) -> ConditionBuilder:
         """Create a range expression."""
         start_expr = self._to_integer_expression(start)
         end_expr = self._to_integer_expression(end)
         return ConditionBuilder(RangeExpression(low=start_expr, high=end_expr))
 
-    def member_access(self, obj: ConditionBuilder | Expression, member: str) -> Self:
+    def member_access(self, obj: ConditionBuilder | Expression, member: str) -> ConditionBuilder:
         """Member access (obj.member)."""
         validate_identifier(member, "member")
         obj_expr = self._to_expression(obj)
@@ -117,14 +116,14 @@ class ConditionBuilder:
         self,
         array: ConditionBuilder | Expression,
         index: int | ConditionBuilder | Expression,
-    ) -> Self:
+    ) -> ConditionBuilder:
         """Array access (array[index])."""
         array_expr = self._to_expression(array)
         index_expr = self._to_integer_expression(index)
         return ConditionBuilder(ArrayAccess(array=array_expr, index=index_expr))
 
     # Logical operators
-    def and_(self, other: ConditionBuilder | Expression) -> Self:
+    def and_(self, other: ConditionBuilder | Expression) -> ConditionBuilder:
         """Logical AND."""
         if not self._expression:
             msg = "Cannot apply AND to empty expression"
@@ -135,7 +134,7 @@ class ConditionBuilder:
             BinaryExpression(left=self._expression, operator="and", right=right),
         )
 
-    def or_(self, other: ConditionBuilder | Expression) -> Self:
+    def or_(self, other: ConditionBuilder | Expression) -> ConditionBuilder:
         """Logical OR."""
         if not self._expression:
             msg = "Cannot apply OR to empty expression"
@@ -146,7 +145,7 @@ class ConditionBuilder:
             BinaryExpression(left=self._expression, operator="or", right=right),
         )
 
-    def not_(self) -> Self:
+    def not_(self) -> ConditionBuilder:
         """Logical NOT."""
         if not self._expression:
             msg = "Cannot apply NOT to empty expression"
@@ -157,57 +156,57 @@ class ConditionBuilder:
         )
 
     # Comparison operators
-    def eq(self, other: ConditionBuilder | Expression | int | str) -> Self:
+    def eq(self, other: ConditionBuilder | Expression | int | str) -> ConditionBuilder:
         """Equal comparison."""
         return self._binary_op("==", other)
 
-    def ne(self, other: ConditionBuilder | Expression | int | str) -> Self:
+    def ne(self, other: ConditionBuilder | Expression | int | str) -> ConditionBuilder:
         """Not equal comparison."""
         return self._binary_op("!=", other)
 
-    def lt(self, other: ConditionBuilder | Expression | int) -> Self:
+    def lt(self, other: ConditionBuilder | Expression | int) -> ConditionBuilder:
         """Less than comparison."""
         return self._integer_binary_op("<", other)
 
-    def le(self, other: ConditionBuilder | Expression | int) -> Self:
+    def le(self, other: ConditionBuilder | Expression | int) -> ConditionBuilder:
         """Less than or equal comparison."""
         return self._integer_binary_op("<=", other)
 
-    def gt(self, other: ConditionBuilder | Expression | int) -> Self:
+    def gt(self, other: ConditionBuilder | Expression | int) -> ConditionBuilder:
         """Greater than comparison."""
         return self._integer_binary_op(">", other)
 
-    def ge(self, other: ConditionBuilder | Expression | int) -> Self:
+    def ge(self, other: ConditionBuilder | Expression | int) -> ConditionBuilder:
         """Greater than or equal comparison."""
         return self._integer_binary_op(">=", other)
 
     # String operations
-    def contains(self, pattern: str | ConditionBuilder | Expression) -> Self:
+    def contains(self, pattern: str | ConditionBuilder | Expression) -> ConditionBuilder:
         """String contains."""
         return self._string_binary_op("contains", pattern)
 
-    def matches(self, pattern: str | ConditionBuilder | Expression) -> Self:
+    def matches(self, pattern: str | ConditionBuilder | Expression) -> ConditionBuilder:
         """String matches regex."""
         return self._string_binary_op("matches", pattern)
 
-    def startswith(self, pattern: str | ConditionBuilder | Expression) -> Self:
+    def startswith(self, pattern: str | ConditionBuilder | Expression) -> ConditionBuilder:
         """String starts with."""
         return self._string_binary_op("startswith", pattern)
 
-    def endswith(self, pattern: str | ConditionBuilder | Expression) -> Self:
+    def endswith(self, pattern: str | ConditionBuilder | Expression) -> ConditionBuilder:
         """String ends with."""
         return self._string_binary_op("endswith", pattern)
 
-    def icontains(self, pattern: str | ConditionBuilder | Expression) -> Self:
+    def icontains(self, pattern: str | ConditionBuilder | Expression) -> ConditionBuilder:
         """Case-insensitive contains."""
         return self._string_binary_op("icontains", pattern)
 
-    def iequals(self, pattern: str | ConditionBuilder | Expression) -> Self:
+    def iequals(self, pattern: str | ConditionBuilder | Expression) -> ConditionBuilder:
         """Case-insensitive equals."""
         return self._string_binary_op("iequals", pattern)
 
     # Special conditions
-    def at(self, offset: int | ConditionBuilder) -> Self:
+    def at(self, offset: int | ConditionBuilder) -> ConditionBuilder:
         """String at offset."""
         if not self._expression or not isinstance(self._expression, StringIdentifier):
             msg = "'at' can only be used with string identifiers"
@@ -222,7 +221,7 @@ class ConditionBuilder:
         self,
         start: int | ConditionBuilder,
         end: int | ConditionBuilder,
-    ) -> Self:
+    ) -> ConditionBuilder:
         """String in range."""
         if not self._expression or not isinstance(self._expression, StringIdentifier):
             msg = "'in' can only be used with string identifiers"
@@ -237,39 +236,42 @@ class ConditionBuilder:
         )
 
     # Quantifiers
-    def any_of(self, *strings: str) -> Self:
+    def any_of(self, *strings: str) -> ConditionBuilder:
         """Any of strings."""
         self._validate_string_set_args(strings)
+        string_set: Expression
         if all(s == "them" for s in strings):
             string_set = Identifier(name="them")
         else:
-            elements = [StringIdentifier(name=s) for s in strings]
+            elements: list[Expression] = [StringIdentifier(name=s) for s in strings]
             string_set = SetExpression(elements=elements)
 
         return ConditionBuilder(
             OfExpression(quantifier=StringLiteral(value="any"), string_set=string_set),
         )
 
-    def all_of(self, *strings: str) -> Self:
+    def all_of(self, *strings: str) -> ConditionBuilder:
         """All of strings."""
         self._validate_string_set_args(strings)
+        string_set: Expression
         if all(s == "them" for s in strings):
             string_set = Identifier(name="them")
         else:
-            elements = [StringIdentifier(name=s) for s in strings]
+            elements: list[Expression] = [StringIdentifier(name=s) for s in strings]
             string_set = SetExpression(elements=elements)
 
         return ConditionBuilder(
             OfExpression(quantifier=StringLiteral(value="all"), string_set=string_set),
         )
 
-    def n_of(self, n: int, *strings: str) -> Self:
+    def n_of(self, n: int, *strings: str) -> ConditionBuilder:
         """N of strings."""
         self._validate_string_set_args(strings)
+        string_set: Expression
         if all(s == "them" for s in strings):
             string_set = Identifier(name="them")
         else:
-            elements = [StringIdentifier(name=s) for s in strings]
+            elements: list[Expression] = [StringIdentifier(name=s) for s in strings]
             string_set = SetExpression(elements=elements)
 
         return ConditionBuilder(
@@ -282,7 +284,7 @@ class ConditionBuilder:
         var: str,
         iterable: ConditionBuilder | Expression,
         condition: ConditionBuilder | Expression,
-    ) -> Self:
+    ) -> ConditionBuilder:
         """For any loop."""
         validate_identifier(var, "loop variable")
         iter_expr = self._to_expression(iterable)
@@ -302,7 +304,7 @@ class ConditionBuilder:
         var: str,
         iterable: ConditionBuilder | Expression,
         condition: ConditionBuilder | Expression,
-    ) -> Self:
+    ) -> ConditionBuilder:
         """For all loop."""
         validate_identifier(var, "loop variable")
         iter_expr = self._to_expression(iterable)
@@ -318,40 +320,40 @@ class ConditionBuilder:
         )
 
     # Arithmetic operations
-    def add(self, other: ConditionBuilder | int) -> Self:
+    def add(self, other: ConditionBuilder | int) -> ConditionBuilder:
         """Addition."""
         return self._integer_binary_op("+", other)
 
-    def sub(self, other: ConditionBuilder | int) -> Self:
+    def sub(self, other: ConditionBuilder | int) -> ConditionBuilder:
         """Subtraction."""
         return self._integer_binary_op("-", other)
 
-    def mul(self, other: ConditionBuilder | int) -> Self:
+    def mul(self, other: ConditionBuilder | int) -> ConditionBuilder:
         """Multiplication."""
         return self._integer_binary_op("*", other)
 
-    def div(self, other: ConditionBuilder | int) -> Self:
+    def div(self, other: ConditionBuilder | int) -> ConditionBuilder:
         """Division."""
         return self._integer_binary_op("\\", other)
 
-    def mod(self, other: ConditionBuilder | int) -> Self:
+    def mod(self, other: ConditionBuilder | int) -> ConditionBuilder:
         """Modulo."""
         return self._integer_binary_op("%", other)
 
     # Bitwise operations
-    def bitwise_and(self, other: ConditionBuilder | int) -> Self:
+    def bitwise_and(self, other: ConditionBuilder | int) -> ConditionBuilder:
         """Bitwise AND."""
         return self._integer_binary_op("&", other)
 
-    def bitwise_or(self, other: ConditionBuilder | int) -> Self:
+    def bitwise_or(self, other: ConditionBuilder | int) -> ConditionBuilder:
         """Bitwise OR."""
         return self._integer_binary_op("|", other)
 
-    def bitwise_xor(self, other: ConditionBuilder | int) -> Self:
+    def bitwise_xor(self, other: ConditionBuilder | int) -> ConditionBuilder:
         """Bitwise XOR."""
         return self._integer_binary_op("^", other)
 
-    def bitwise_not(self) -> Self:
+    def bitwise_not(self) -> ConditionBuilder:
         """Bitwise NOT."""
         if not self._expression:
             msg = "Cannot apply bitwise NOT to empty expression"
@@ -359,16 +361,16 @@ class ConditionBuilder:
 
         return ConditionBuilder(UnaryExpression(operator="~", operand=self._expression))
 
-    def shift_left(self, other: ConditionBuilder | int) -> Self:
+    def shift_left(self, other: ConditionBuilder | int) -> ConditionBuilder:
         """Shift left."""
         return self._integer_binary_op("<<", other)
 
-    def shift_right(self, other: ConditionBuilder | int) -> Self:
+    def shift_right(self, other: ConditionBuilder | int) -> ConditionBuilder:
         """Shift right."""
         return self._integer_binary_op(">>", other)
 
     # Grouping
-    def group(self) -> Self:
+    def group(self) -> ConditionBuilder:
         """Group expression in parentheses."""
         if not self._expression:
             msg = "Cannot group empty expression"
@@ -381,7 +383,7 @@ class ConditionBuilder:
         self,
         op: str,
         other: ConditionBuilder | Expression | int | str,
-    ) -> Self:
+    ) -> ConditionBuilder:
         """Create binary expression."""
         if not self._expression:
             msg = f"Cannot apply {op} to empty expression"
@@ -396,7 +398,7 @@ class ConditionBuilder:
         self,
         op: str,
         other: ConditionBuilder | Expression | int,
-    ) -> Self:
+    ) -> ConditionBuilder:
         if not self._expression:
             msg = f"Cannot apply {op} to empty expression"
             raise ValidationError(msg)
@@ -410,7 +412,7 @@ class ConditionBuilder:
         self,
         op: str,
         pattern: ConditionBuilder | Expression | str,
-    ) -> Self:
+    ) -> ConditionBuilder:
         if not self._expression:
             msg = f"Cannot apply {op} to empty expression"
             raise ValidationError(msg)

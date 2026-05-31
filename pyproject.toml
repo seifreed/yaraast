@@ -229,7 +229,6 @@ module = [
     "yaraast.metrics.*",
     "yaraast.evaluation.*",
     "yaraast.cli.*",
-    "yaraast.builder.*",
 ]
 ignore_errors = true
 

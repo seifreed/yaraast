@@ -143,7 +143,7 @@ class ExpressionBuilder:
     def string_set(*identifiers: str) -> SetExpression:
         """Create set of string identifiers."""
         ExpressionBuilder._validate_string_set_args(identifiers)
-        elements = [StringIdentifier(name=s) for s in identifiers]
+        elements: list[Expression] = [StringIdentifier(name=s) for s in identifiers]
         return SetExpression(elements=elements)
 
     @staticmethod

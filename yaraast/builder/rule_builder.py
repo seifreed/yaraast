@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from copy import deepcopy
 import re
-from typing import TYPE_CHECKING, Any, Self, cast
+from typing import TYPE_CHECKING, Any, Self
 
-from yaraast.ast.conditions import Condition, OfExpression
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
     Expression,
@@ -18,6 +19,7 @@ from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import (
     HexString,
+    HexToken,
     PlainString,
     RegexString,
     StringDefinition,
@@ -39,7 +41,7 @@ _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
 
 
-def _parse_condition_text(condition: str) -> Condition:
+def _parse_condition_text(condition: str) -> Expression:
     from yaraast.parser.parser import Parser
 
     try:
@@ -157,7 +159,7 @@ class RuleBuilder:
         self._tags: list[str] = []
         self._meta: dict[str, Any] = {}
         self._strings: list[StringDefinition] = []
-        self._condition: Condition | None = None
+        self._condition: Expression | None = None
         self._require_condition: bool = False
         if name is not None:
             self.with_name(name)
@@ -194,7 +196,7 @@ class RuleBuilder:
         self._tags.append(tag)
         return self
 
-    def with_regex_string(self, identifier: str, pattern: str, **modifiers) -> Self:
+    def with_regex_string(self, identifier: str, pattern: str, **modifiers: bool) -> Self:
         """Add a regex string with modifiers."""
         pattern = _validate_regex_pattern(pattern)
         mod_list = [
@@ -301,7 +303,7 @@ class RuleBuilder:
             fullword=fullword,
         )
 
-    def with_hex_string(self, identifier: str, builder: HexStringBuilder | list) -> Self:
+    def with_hex_string(self, identifier: str, builder: HexStringBuilder | list[HexToken]) -> Self:
         """Add a hex string using a builder or token list."""
         from yaraast.builder.hex_string_builder import HexStringBuilder
 
@@ -318,7 +320,11 @@ class RuleBuilder:
         )
         return self
 
-    def with_hex_string_builder(self, identifier: str, builder_func) -> Self:
+    def with_hex_string_builder(
+        self,
+        identifier: str,
+        builder_func: Callable[[HexStringBuilder], object],
+    ) -> Self:
         """Add a hex string using a builder callback."""
         from yaraast.builder.hex_string_builder import HexStringBuilder
 
@@ -379,9 +385,9 @@ class RuleBuilder:
         if isinstance(condition, str):
             # Simple conditions
             if condition == "true":
-                self._condition = cast(Condition, BooleanLiteral(value=True))
+                self._condition = BooleanLiteral(value=True)
             elif condition == "false":
-                self._condition = cast(Condition, BooleanLiteral(value=False))
+                self._condition = BooleanLiteral(value=False)
             elif condition == "any of them":
                 self._condition = OfExpression(
                     quantifier=StringLiteral(value="any"),
@@ -393,13 +399,13 @@ class RuleBuilder:
                     string_set=Identifier(name="them"),
                 )
             elif _SIMPLE_STRING_IDENTIFIER_RE.fullmatch(condition):
-                self._condition = cast(Condition, StringIdentifier(name=condition))
+                self._condition = StringIdentifier(name=condition)
             else:
                 self._condition = _parse_condition_text(condition)
         elif isinstance(condition, ConditionBuilder):
-            self._condition = cast(Condition, condition.build())
+            self._condition = condition.build()
         elif isinstance(condition, Expression):
-            self._condition = cast(Condition, deepcopy(condition))
+            self._condition = deepcopy(condition)
         else:
             msg = f"Rule condition must be an Expression, got {type(condition).__name__}"
             raise TypeError(msg)
@@ -410,7 +416,7 @@ class RuleBuilder:
         """Set the rule condition (alias for with_condition)."""
         return self.with_condition(condition)
 
-    def get_condition(self) -> Condition | None:
+    def get_condition(self) -> Expression | None:
         """Return the currently configured condition."""
         return self._condition
 
@@ -426,7 +432,7 @@ class RuleBuilder:
         """Set condition to all of them."""
         return self.with_condition("all of them")
 
-    def with_condition_lambda(self, builder_func) -> Self:
+    def with_condition_lambda(self, builder_func: Callable[[ConditionBuilder], object]) -> Self:
         """Set condition using a lambda that receives a ConditionBuilder."""
         if not callable(builder_func):
             msg = "Condition lambda must be callable"
@@ -436,7 +442,7 @@ class RuleBuilder:
         if not isinstance(result, ConditionBuilder):
             msg = "Condition lambda must return a ConditionBuilder"
             raise ValidationError(msg)
-        self._condition = cast(Condition, result.build())
+        self._condition = result.build()
         return self
 
     def require_condition(self, require: bool = True) -> Self:
@@ -465,7 +471,7 @@ class RuleBuilder:
             if self._require_condition:
                 msg = "Rule condition is required"
                 raise ValidationError(msg)
-            self._condition = cast(Condition, BooleanLiteral(value=True))
+            self._condition = BooleanLiteral(value=True)
 
         return Rule(
             name=self._name,
