@@ -109,14 +109,19 @@ def output_string_identifier(string_def: Any) -> str:
     """Return the YARA source identifier for a string definition."""
     if getattr(string_def, "is_anonymous", False):
         return "$"
-    identifier = str(getattr(string_def, "identifier", ""))
-    normalized = identifier if identifier.startswith("$") else f"${identifier}"
-    return validate_string_identifier_text(normalized)
+    return validate_string_identifier_text(getattr(string_def, "identifier", ""))
+
+
+def _require_string_text(value: Any, context: str) -> str:
+    if isinstance(value, str):
+        return value
+    msg = f"{context} must be a string for libyara output"
+    raise TypeError(msg)
 
 
 def validate_string_identifier_text(identifier: Any) -> str:
     """Return a normalized string identifier or reject invalid libyara output."""
-    text = str(identifier)
+    text = _require_string_text(identifier, "String identifier")
     normalized = text if text.startswith("$") else f"${text}"
     body = normalized.removeprefix("$")
     if not body or _STRING_IDENTIFIER_BODY_RE.fullmatch(body) is None:
@@ -127,7 +132,7 @@ def validate_string_identifier_text(identifier: Any) -> str:
 
 def format_string_reference_identifier(identifier: Any, *, allow_placeholder: bool) -> str:
     """Return a string identifier, allowing the for-of placeholder when requested."""
-    text = str(identifier)
+    text = _require_string_text(identifier, "String identifier")
     if allow_placeholder and text in _STRING_PLACEHOLDER_REFERENCES:
         return "$"
     return validate_string_identifier_text(identifier)
@@ -135,7 +140,7 @@ def format_string_reference_identifier(identifier: Any, *, allow_placeholder: bo
 
 def format_string_reference_suffix(identifier: Any, *, allow_placeholder: bool) -> str:
     """Return the suffix for #/@/! string references."""
-    raw_text = str(identifier)
+    raw_text = _require_string_text(identifier, "String identifier")
     if raw_text.startswith(("#", "@", "!")):
         msg = f"Invalid string reference '{raw_text}' for libyara output"
         raise ValueError(msg)
@@ -147,7 +152,7 @@ def format_string_reference_suffix(identifier: Any, *, allow_placeholder: bool) 
 
 def validate_string_wildcard_text(pattern: Any) -> str:
     """Return a normalized string wildcard or reject invalid libyara output."""
-    text = str(pattern)
+    text = _require_string_text(pattern, "String wildcard")
     normalized = text if text.startswith("$") else f"${text}"
     body = normalized.removeprefix("$")
     if body == "*":
@@ -162,7 +167,7 @@ def validate_string_wildcard_text(pattern: Any) -> str:
 
 def validate_string_set_item_text(item: Any) -> str:
     """Return a normalized string-set item or reject invalid libyara output."""
-    text = str(item)
+    text = _require_string_text(item, "String set item")
     if "*" in text:
         return validate_string_wildcard_text(text)
     return validate_string_identifier_text(text)

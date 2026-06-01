@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -1318,6 +1318,27 @@ def test_codegen_string_visitors_reject_invalid_string_identifiers(
     with pytest.raises(ValueError, match="Invalid string identifier"):
         CommentAwareCodeGenerator().generate(string_def)
     with pytest.raises(ValueError, match="Invalid string identifier"):
+        PrettyPrinter().generate(string_def)
+
+
+@pytest.mark.parametrize(
+    "string_def",
+    [
+        PlainString(identifier=cast(Any, True), value="x"),
+        HexString(identifier=cast(Any, True), tokens=[HexByte(0x41)]),
+        RegexString(identifier=cast(Any, True), regex="x"),
+    ],
+)
+def test_codegen_string_visitors_reject_non_string_string_identifiers(
+    string_def: Any,
+) -> None:
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        CodeGenerator().generate(string_def)
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        AdvancedCodeGenerator().generate(string_def)
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        CommentAwareCodeGenerator().generate(string_def)
+    with pytest.raises(TypeError, match="String identifier must be a string"):
         PrettyPrinter().generate(string_def)
 
 
