@@ -19,6 +19,7 @@ from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
+    RangeExpression,
     SetExpression,
     StringCount,
     StringIdentifier,
@@ -374,6 +375,31 @@ def test_string_usage_analyzer_rejects_non_string_identifier_string_set() -> Non
                 "invalid_identifier_string_set",
                 strings=[PlainString("$a", value="x")],
                 condition=OfExpression("any", Identifier(cast(Any, False))),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String reference must be a string"):
+        StringUsageAnalyzer().analyze(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        AtExpression(cast(Any, False), IntegerLiteral(0)),
+        InExpression(
+            cast(Any, False),
+            RangeExpression(IntegerLiteral(0), IntegerLiteral(1)),
+        ),
+    ],
+)
+def test_string_usage_analyzer_rejects_non_string_at_in_subjects(condition: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_at_in_subject",
+                strings=[PlainString("$a", value="x")],
+                condition=condition,
             )
         ]
     )

@@ -210,15 +210,19 @@ class StringUsageAnalyzer(BaseVisitor[None]):
     def visit_at_expression(self, node: AtExpression) -> None:
         if isinstance(node.string_id, str):
             self._mark_condition_string_ref(node.string_id)
-        else:
+        elif hasattr(node.string_id, "accept"):
             self.visit(node.string_id)
+        else:
+            self._require_string_reference(node.string_id)
         self.visit(node.offset)
 
     def visit_in_expression(self, node: InExpression) -> None:
         if isinstance(node.subject, str):
             self._mark_condition_string_ref(node.subject)
-        else:
+        elif hasattr(node.subject, "accept"):
             self.visit(node.subject)
+        else:
+            self._require_string_reference(node.subject)
         self.visit(node.range)
 
     def visit_for_of_expression(self, node: ForOfExpression) -> None:
