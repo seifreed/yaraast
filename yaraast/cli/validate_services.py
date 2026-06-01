@@ -32,14 +32,24 @@ def roundtrip_test(rule_file: str, data: bytes | None):
 
 
 def yarax_check(ast, strict: bool):
+    if not isinstance(strict, bool):
+        msg = "strict must be a boolean"
+        raise TypeError(msg)
     features = YaraXFeatures.yarax_strict() if strict else YaraXFeatures.yarax_compatible()
     checker = YaraXCompatibilityChecker(features)
     return checker.check(ast)
 
 
-def parse_externals(external: tuple[str, ...]) -> dict[str, str]:
+def parse_externals(external: object) -> dict[str, str]:
+    if isinstance(external, str) or not isinstance(external, tuple | list):
+        msg = "external variables must be a tuple or list of strings"
+        raise TypeError(msg)
+
     externals: dict[str, str] = {}
     for ext in external:
+        if not isinstance(ext, str):
+            msg = "external variables must be a tuple or list of strings"
+            raise TypeError(msg)
         if "=" not in ext:
             msg = f"Invalid external format: {ext}"
             raise ValidationError(msg)

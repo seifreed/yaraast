@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
+
+import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.cli import validate_services as vs
@@ -34,6 +37,25 @@ def test_yarax_check_varies_with_strict_flag() -> None:
 
     assert any(issue.issue_type == "unescaped_brace" for issue in strict_issues)
     assert not any(issue.issue_type == "unescaped_brace" for issue in compatible_issues)
+
+
+@pytest.mark.parametrize("strict", [None, 1, "yes", object()])
+def test_yarax_check_rejects_invalid_strict_types(strict: Any) -> None:
+    ast = _ast_with_regex_issue()
+
+    with pytest.raises(TypeError, match="strict must be a boolean"):
+        vs.yarax_check(ast, strict=cast(bool, strict))
+
+
+@pytest.mark.parametrize("external", [None, "name=value", (123,), object()])
+def test_parse_externals_rejects_invalid_input_types(external: Any) -> None:
+    with pytest.raises(TypeError, match="external variables must be a tuple or list of strings"):
+        vs.parse_externals(external)
+
+
+def test_parse_externals_accepts_tuple_and_list_inputs() -> None:
+    assert vs.parse_externals(("name=value",)) == {"name": "value"}
+    assert vs.parse_externals(["name=value"]) == {"name": "value"}
 
 
 def test_validate_rule_file_parses_yarax(tmp_path: Path) -> None:
