@@ -307,14 +307,43 @@ def test_optimizer_preserves_boolean_identity_semantics_for_truthy_values() -> N
     assert count == 0
 
 
+def test_optimizer_preserves_double_negation_boolean_coercion_for_truthy_values() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="truthy_double_negation",
+                condition=BinaryExpression(
+                    UnaryExpression("not", UnaryExpression("not", Identifier("external"))),
+                    "==",
+                    BooleanLiteral(True),
+                ),
+            )
+        ]
+    )
+
+    original_evaluator = YaraEvaluator()
+    original_evaluator.context.variables["external"] = "text"
+    assert original_evaluator.evaluate_file(ast) == {"truthy_double_negation": True}
+
+    optimized, count = ExpressionOptimizer().optimize(ast)
+
+    optimized_evaluator = YaraEvaluator()
+    optimized_evaluator.context.variables["external"] = "text"
+    assert optimized_evaluator.evaluate_file(optimized) == {"truthy_double_negation": True}
+    assert count == 0
+
+
 def test_unary_parentheses_and_convenience_function() -> None:
     opt = ExpressionOptimizer()
 
     assert opt.visit(UnaryExpression("-", IntegerLiteral(7))) == IntegerLiteral(-7)
     assert opt.visit(UnaryExpression("~", IntegerLiteral(0))) == IntegerLiteral(-1)
-    assert opt.visit(UnaryExpression("not", UnaryExpression("not", Identifier("y")))) == Identifier(
-        "y"
-    )
+    assert opt.visit(
+        UnaryExpression("not", UnaryExpression("not", Identifier("y")))
+    ) == UnaryExpression("not", UnaryExpression("not", Identifier("y")))
+    assert opt.visit(
+        UnaryExpression("not", UnaryExpression("not", StringIdentifier("$a")))
+    ) == StringIdentifier("$a")
 
     not_simplified = ParenthesesExpression(
         expression=BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2))

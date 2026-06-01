@@ -278,6 +278,7 @@ class ExpressionOptimizer(ASTTransformer):
             node.operator == "not"
             and isinstance(node.operand, UnaryExpression)
             and node.operand.operator == "not"
+            and _is_static_boolean_identity_operand(node.operand.operand)
         ):
             self.optimization_count += 1
             return node.operand.operand
