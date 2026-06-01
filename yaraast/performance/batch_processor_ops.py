@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
     from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
 
+_EXPECTED_BATCH_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
+
 
 def parse_item(item: object) -> YaraFile | None:
     if not isinstance(item, (str, Path)):
@@ -30,7 +32,7 @@ def parse_item(item: object) -> YaraFile | None:
         else:
             content = item
         return parse_yara_source(content)
-    except (OSError, UnicodeDecodeError, ValueError, YaraASTError):
+    except _EXPECTED_BATCH_ERRORS:
         return None
 
 
@@ -231,7 +233,7 @@ def process_files_single(
                     result.errors.append(f"Validation failed for {file_path}")
                     continue
             result.successful_count += 1
-        except Exception as exc:
+        except _EXPECTED_BATCH_ERRORS as exc:
             result.failed_count += 1
             result.errors.append(f"Error processing {file_path}: {exc!s}")
         finally:
@@ -283,7 +285,7 @@ def process_large_file(
                     index,
                     len(operations),
                 )
-    except Exception as exc:
+    except _EXPECTED_BATCH_ERRORS as exc:
         for operation in operations:
             result = BatchResult(operation=operation, input_count=1)
             result.failed_count += 1

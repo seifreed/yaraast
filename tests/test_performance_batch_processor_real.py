@@ -323,6 +323,26 @@ def test_process_files_parse_failures_and_recursive_directory(tmp_path: Path) ->
     assert rec.successful_count >= 2
 
 
+def test_process_files_propagates_internal_operation_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rule_file = tmp_path / "valid.yar"
+    rule_file.write_text("rule ok { condition: true }", encoding="utf-8")
+
+    def broken_serialize(_item: object) -> str:
+        raise AttributeError("serializer state missing")
+
+    monkeypatch.setattr(batch_processor_ops, "serialize_item", broken_serialize)
+
+    with pytest.raises(AttributeError, match="serializer state missing"):
+        BatchProcessor().process_files(
+            [rule_file],
+            BatchOperation.SERIALIZE,
+            output_dir=tmp_path / "out",
+        )
+
+
 def test_process_files_validate_records_summary(tmp_path: Path) -> None:
     rule_file = tmp_path / "valid.yar"
     rule_file.write_text("rule ok { condition: true }", encoding="utf-8")
@@ -378,6 +398,26 @@ def test_process_large_file_non_split_and_invalid_content(tmp_path: Path) -> Non
     )
     assert invalid_res[BatchOperation.PARSE].failed_count == 1
     assert invalid_res[BatchOperation.COMPLEXITY].failed_count == 1
+
+
+def test_process_large_file_propagates_internal_operation_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rule_file = tmp_path / "valid.yar"
+    rule_file.write_text("rule ok { condition: true }", encoding="utf-8")
+
+    def broken_serialize(_item: object) -> str:
+        raise AttributeError("serializer state missing")
+
+    monkeypatch.setattr(batch_processor_ops, "serialize_item", broken_serialize)
+
+    with pytest.raises(AttributeError, match="serializer state missing"):
+        BatchProcessor().process_large_file(
+            rule_file,
+            operations=[BatchOperation.SERIALIZE],
+            output_dir=tmp_path / "out",
+        )
 
 
 def test_process_rules_analyze_rules_optimize_rules_and_progress_callback() -> None:
