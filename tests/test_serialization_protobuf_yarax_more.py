@@ -10,6 +10,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, Identifier, IntegerLiteral
 from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
+from yaraast.serialization import yara_ast_pb2
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -144,7 +145,7 @@ def test_protobuf_serializer_rejects_invalid_lambda_parameters(parameters: Any) 
             "DictComprehension key_variable must be a string",
         ),
         (
-            DictComprehension(value_variable=cast(Any, 123)),
+            DictComprehension(key_variable="k", value_variable=cast(Any, 123)),
             "DictComprehension value_variable must be a string",
         ),
         (
@@ -231,3 +232,101 @@ def test_protobuf_serializer_rejects_invalid_yarax_container_fields(
 
     with pytest.raises(SerializationError, match=message):
         serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            WithStatement([WithDeclaration("", IntegerLiteral(1))], BooleanLiteral(True)),
+            "WithDeclaration identifier must not be empty",
+        ),
+        (
+            ArrayComprehension(
+                expression=Identifier("x"),
+                variable="",
+                iterable=Identifier("xs"),
+            ),
+            "ArrayComprehension variable must not be empty",
+        ),
+        (
+            DictComprehension(
+                key_expression=Identifier("k"),
+                value_expression=Identifier("v"),
+                key_variable="",
+                iterable=Identifier("xs"),
+            ),
+            "DictComprehension key_variable must not be empty",
+        ),
+        (
+            DictComprehension(
+                key_expression=Identifier("k"),
+                value_expression=Identifier("v"),
+                key_variable="k",
+                value_variable="",
+                iterable=Identifier("xs"),
+            ),
+            "DictComprehension value_variable must not be empty",
+        ),
+        (
+            LambdaExpression(parameters=[""], body=BooleanLiteral(True)),
+            "LambdaExpression parameters item must not be empty",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_empty_yarax_identifier_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="empty_yarax_identifier", condition=condition)])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("payload_kind", "message"),
+    [
+        ("with_declaration", "WithDeclaration identifier must not be empty"),
+        ("array_comprehension", "ArrayComprehension variable must not be empty"),
+        ("dict_key_variable", "DictComprehension key_variable must not be empty"),
+        ("dict_value_variable", "DictComprehension value_variable must not be empty"),
+        ("lambda_parameter", "LambdaExpression parameters item must not be empty"),
+    ],
+)
+def test_protobuf_deserializer_rejects_empty_yarax_identifier_fields(
+    payload_kind: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_yarax_identifier"
+    condition = pb_rule.condition
+    if payload_kind == "with_declaration":
+        declaration = condition.with_statement.declarations.add()
+        declaration.identifier = ""
+        declaration.value.integer_literal.value = 1
+        condition.with_statement.body.boolean_literal.value = True
+    elif payload_kind == "array_comprehension":
+        condition.array_comprehension.expression.identifier.name = "x"
+        condition.array_comprehension.variable = ""
+        condition.array_comprehension.iterable.identifier.name = "xs"
+    elif payload_kind == "dict_key_variable":
+        condition.dict_comprehension.key_expression.identifier.name = "k"
+        condition.dict_comprehension.value_expression.identifier.name = "v"
+        condition.dict_comprehension.key_variable = ""
+        condition.dict_comprehension.iterable.identifier.name = "xs"
+    elif payload_kind == "dict_value_variable":
+        condition.dict_comprehension.key_expression.identifier.name = "k"
+        condition.dict_comprehension.value_expression.identifier.name = "v"
+        condition.dict_comprehension.key_variable = "k"
+        condition.dict_comprehension.value_variable = ""
+        condition.dict_comprehension.iterable.identifier.name = "xs"
+    elif payload_kind == "lambda_parameter":
+        condition.lambda_expression.parameters.append("")
+        condition.lambda_expression.body.boolean_literal.value = True
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())

@@ -1395,7 +1395,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 expr.expression,
                 pb_expr.array_comprehension.expression,
             )
-        pb_expr.array_comprehension.variable = _protobuf_required_string(
+        pb_expr.array_comprehension.variable = _protobuf_required_nonempty_string(
             expr.variable,
             "ArrayComprehension variable",
         )
@@ -1417,12 +1417,12 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 expr.value_expression,
                 pb_expr.dict_comprehension.value_expression,
             )
-        pb_expr.dict_comprehension.key_variable = _protobuf_required_string(
+        pb_expr.dict_comprehension.key_variable = _protobuf_required_nonempty_string(
             expr.key_variable,
             "DictComprehension key_variable",
         )
         if expr.value_variable is not None:
-            pb_expr.dict_comprehension.value_variable = _protobuf_required_string(
+            pb_expr.dict_comprehension.value_variable = _protobuf_required_nonempty_string(
                 expr.value_variable,
                 "DictComprehension value_variable",
             )
@@ -1458,7 +1458,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             convert_expression_to_protobuf(expr.step, pb_expr.slice_expression.step)
     elif isinstance(expr, LambdaExpression):
         pb_expr.lambda_expression.parameters.extend(
-            _protobuf_string_list(expr.parameters, "LambdaExpression parameters")
+            _protobuf_nonempty_string_list(expr.parameters, "LambdaExpression parameters")
         )
         convert_expression_to_protobuf(expr.body, pb_expr.lambda_expression.body)
     elif isinstance(expr, PatternMatch):
@@ -1479,7 +1479,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
 
 
 def convert_with_declaration_to_protobuf(declaration, pb_declaration) -> None:
-    pb_declaration.identifier = _protobuf_required_string(
+    pb_declaration.identifier = _protobuf_required_nonempty_string(
         declaration.identifier,
         "WithDeclaration identifier",
     )
@@ -2267,7 +2267,10 @@ def protobuf_to_expression(pb_expr):
                     if pb_expr.array_comprehension.HasField("expression")
                     else None
                 ),
-                variable=pb_expr.array_comprehension.variable,
+                variable=_protobuf_required_nonempty_string(
+                    pb_expr.array_comprehension.variable,
+                    "ArrayComprehension variable",
+                ),
                 iterable=(
                     protobuf_to_expression(pb_expr.array_comprehension.iterable)
                     if pb_expr.array_comprehension.HasField("iterable")
@@ -2293,9 +2296,15 @@ def protobuf_to_expression(pb_expr):
                     if pb_expr.dict_comprehension.HasField("value_expression")
                     else None
                 ),
-                key_variable=pb_expr.dict_comprehension.key_variable,
+                key_variable=_protobuf_required_nonempty_string(
+                    pb_expr.dict_comprehension.key_variable,
+                    "DictComprehension key_variable",
+                ),
                 value_variable=(
-                    pb_expr.dict_comprehension.value_variable
+                    _protobuf_required_nonempty_string(
+                        pb_expr.dict_comprehension.value_variable,
+                        "DictComprehension value_variable",
+                    )
                     if pb_expr.dict_comprehension.HasField("value_variable")
                     else None
                 ),
@@ -2364,7 +2373,10 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("lambda_expression"):
         return with_metadata(
             LambdaExpression(
-                parameters=list(pb_expr.lambda_expression.parameters),
+                parameters=_protobuf_nonempty_string_list(
+                    list(pb_expr.lambda_expression.parameters),
+                    "LambdaExpression parameters",
+                ),
                 body=protobuf_to_expression(pb_expr.lambda_expression.body),
             ),
         )
@@ -2397,7 +2409,10 @@ def protobuf_to_with_declaration(pb_declaration):
     return _apply_node_metadata_from_protobuf(
         pb_declaration,
         WithDeclaration(
-            identifier=pb_declaration.identifier,
+            identifier=_protobuf_required_nonempty_string(
+                pb_declaration.identifier,
+                "WithDeclaration identifier",
+            ),
             value=protobuf_to_expression(pb_declaration.value),
         ),
     )
