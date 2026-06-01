@@ -28,8 +28,10 @@ _PRETTY_STYLE_PRESETS = {
 
 
 def _parse_pipeline_info(pipeline_info: str | None) -> dict[str, Any] | None:
-    if not pipeline_info:
+    if pipeline_info is None or pipeline_info == "":
         return None
+    if not isinstance(pipeline_info, str):
+        raise TypeError("pipeline_info must be a string")
     try:
         parsed = json.loads(pipeline_info)
     except json.JSONDecodeError as exc:

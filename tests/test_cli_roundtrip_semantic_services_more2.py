@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 import yaml
@@ -107,6 +108,18 @@ def test_pipeline_serialize_file_rejects_invalid_pipeline_info_json(tmp_path: Pa
 
     with pytest.raises(ValidationError, match="pipeline_info must be valid JSON"):
         pipeline_serialize_file(yara_path, "{bad json")
+
+
+@pytest.mark.parametrize("pipeline_info", [False, 0, [], object()])
+def test_pipeline_serialize_file_rejects_non_string_pipeline_info(
+    tmp_path: Path,
+    pipeline_info: Any,
+) -> None:
+    yara_path = tmp_path / "sample.yar"
+    _write_rule(yara_path)
+
+    with pytest.raises(TypeError, match="pipeline_info must be a string"):
+        pipeline_serialize_file(yara_path, cast(str | None, pipeline_info))
 
 
 def test_roundtrip_pretty_print_compact_and_verbose_styles(tmp_path: Path) -> None:
