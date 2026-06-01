@@ -43,7 +43,7 @@ def _validate_output_path(output: str | None) -> str | None:
 
 
 @yarax.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--output", "-o", type=click.Path(), help="Output AST to file")
 @click.option("--show-features", is_flag=True, help="Show YARA-X features used")
 def parse(file: str, output: str | None, show_features: bool):
@@ -69,7 +69,7 @@ def parse(file: str, output: str | None, show_features: bool):
 
 
 @yarax.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--strict", is_flag=True, help="Use strict YARA-X compatibility")
 @click.option("--fix", is_flag=True, help="Suggest fixes for compatibility issues")
 def check(file: str, strict: bool, fix: bool):
@@ -92,7 +92,7 @@ def check(file: str, strict: bool, fix: bool):
 
 
 @yarax.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--output", "-o", type=click.Path(), help="Output converted file")
 @click.option(
     "--target",
@@ -136,7 +136,12 @@ def features():
 
 @yarax.command()
 @click.argument("code", required=False)
-@click.option("--file", "-f", type=click.Path(exists=True), help="Read code from file")
+@click.option(
+    "--file",
+    "-f",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Read code from file",
+)
 def playground(code: str | None, file: str | None):
     """Interactive playground for testing YARA-X features."""
     used_default = False

@@ -20,8 +20,8 @@ console = Console()
 
 
 @click.command()
-@click.argument("file1", type=click.Path(exists=True))
-@click.argument("file2", type=click.Path(exists=True))
+@click.argument("file1", type=click.Path(exists=True, dir_okay=False))
+@click.argument("file2", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "--logical-only",
     is_flag=True,

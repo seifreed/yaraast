@@ -69,11 +69,12 @@ def test_libyara_scan_aborts_on_compile_failure(tmp_path: Path) -> None:
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
-def test_libyara_scan_aborts_on_scan_failure(tmp_path: Path) -> None:
+def test_libyara_scan_rejects_directory_target(tmp_path: Path) -> None:
     rule_path = _write_rule(tmp_path)
     runner = CliRunner()
 
     result = runner.invoke(cli, ["libyara", "scan", str(rule_path), str(tmp_path)])
 
-    assert result.exit_code != 0
-    assert "Scan failed:" in result.output
+    assert result.exit_code == 2
+    assert "is a directory" in result.output
+    assert "Scan failed:" not in result.output

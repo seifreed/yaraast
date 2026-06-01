@@ -46,6 +46,7 @@ def test_validate_cross_handles_rule_parse_and_test_file_read_errors(tmp_path: P
     runner = CliRunner()
     invalid_rule = tmp_path / "invalid_rule.yar"
     valid_rule = tmp_path / "valid_rule.yar"
+    sample_file = tmp_path / "sample.bin"
     data_dir = tmp_path / "data_dir"
 
     _write(invalid_rule, "rule broken { condition: }")
@@ -58,15 +59,17 @@ rule ok {
 }
 """,
     )
+    sample_file.write_bytes(b"sample")
     data_dir.mkdir()
 
-    parse_error = runner.invoke(validate, ["cross", str(invalid_rule), str(data_dir)])
+    parse_error = runner.invoke(validate, ["cross", str(invalid_rule), str(sample_file)])
     assert parse_error.exit_code != 0
     assert "Error parsing rules" in parse_error.output
 
     read_error = runner.invoke(validate, ["cross", str(valid_rule), str(data_dir)])
-    assert read_error.exit_code != 0
-    assert "Error reading test file" in read_error.output
+    assert read_error.exit_code == 2
+    assert "is a directory" in read_error.output
+    assert "Error reading test file" not in read_error.output
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python is not installed")
@@ -87,5 +90,6 @@ rule ok {
     data_dir.mkdir()
 
     result = runner.invoke(validate, ["roundtrip", str(rule), "-d", str(data_dir)])
-    assert result.exit_code != 0
-    assert "Error reading test data" in result.output
+    assert result.exit_code == 2
+    assert "is a directory" in result.output
+    assert "Error reading test data" not in result.output

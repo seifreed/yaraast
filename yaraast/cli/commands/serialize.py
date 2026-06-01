@@ -47,7 +47,7 @@ def serialize() -> None:
 
 
 @serialize.command()
-@click.argument("input_file", type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("-o", "--output", type=click.Path(), help="Output file path")
 @click.option(
     "-f",
@@ -82,7 +82,7 @@ def export(input_file: str, output: str | None, format: str, minimal: bool, pret
 
 
 @serialize.command(name="import")
-@click.argument("input_file", type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "-f",
     "--format",
@@ -114,8 +114,8 @@ def import_ast(input_file: str, format: str, output: str | None) -> None:
 
 
 @serialize.command()
-@click.argument("old_file", type=click.Path(exists=True))
-@click.argument("new_file", type=click.Path(exists=True))
+@click.argument("old_file", type=click.Path(exists=True, dir_okay=False))
+@click.argument("new_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("-o", "--output", type=click.Path(), help="Output diff file")
 @click.option(
     "-f",
@@ -176,7 +176,7 @@ def diff(
 
 
 @serialize.command()
-@click.argument("input_file", type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "-f",
     "--format",
@@ -210,7 +210,7 @@ def validate(input_file: str, format: str) -> None:
 
 
 @serialize.command()
-@click.argument("input_file", type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 def info(input_file: str) -> None:
     """Show information about a YARA file's AST structure.
 

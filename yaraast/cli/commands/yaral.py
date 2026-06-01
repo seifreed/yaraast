@@ -63,7 +63,7 @@ def _validate_output_path(output: str | None) -> str | None:
 
 
 @yaral.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--enhanced", is_flag=True, help="Use enhanced parser with full YARA-L 2.0 support")
 @click.option("--output", "-o", type=click.Path(), help="Output AST to file")
 @click.option(
@@ -109,7 +109,7 @@ def parse(file: str, enhanced: bool, output: str | None, format: str):
 
 
 @yaral.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--strict", is_flag=True, help="Treat warnings as errors")
 @click.option("--json", "output_json", is_flag=True, help="Output results as JSON")
 def validate(file: str, strict: bool, output_json: bool):
@@ -126,7 +126,7 @@ def validate(file: str, strict: bool, output_json: bool):
 
 
 @yaral.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--output", "-o", type=click.Path(), help="Output optimized YARA-L to file")
 @click.option("--stats", is_flag=True, help="Show optimization statistics")
 @click.option(
@@ -157,7 +157,7 @@ def optimize(file: str, output: str | None, stats: bool, dry_run: bool):
 
 
 @yaral.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--output", "-o", type=click.Path(), help="Output generated YARA-L to file")
 @click.option("--format", is_flag=True, help="Format the output code")
 def generate(file: str, output: str | None, format: bool):
@@ -178,8 +178,8 @@ def generate(file: str, output: str | None, format: bool):
 
 
 @yaral.command()
-@click.argument("file1", type=click.Path(exists=True))
-@click.argument("file2", type=click.Path(exists=True))
+@click.argument("file1", type=click.Path(exists=True, dir_okay=False))
+@click.argument("file2", type=click.Path(exists=True, dir_okay=False))
 @click.option("--semantic", is_flag=True, help="Compare semantic meaning, not just syntax")
 def compare(file1: str, file2: str, semantic: bool):
     """Compare two YARA-L files for differences."""

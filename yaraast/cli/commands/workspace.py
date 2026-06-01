@@ -72,7 +72,7 @@ def analyze(directory, pattern, recursive, output, format, parallel) -> None:
 
 
 @workspace.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "--search-path",
     "-I",

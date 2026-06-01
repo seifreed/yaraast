@@ -59,7 +59,7 @@ def _validate_rule_file(rule_file: str) -> int:
 
 
 @validate.command(name="_file", hidden=True)
-@click.argument("rule_file", type=click.Path(exists=True))
+@click.argument("rule_file", type=click.Path(exists=True, dir_okay=False))
 def _validate_file(rule_file: str) -> None:
     """Validate a YARA file."""
     code = _validate_rule_file(rule_file)
@@ -77,8 +77,8 @@ def _parse_externals(external: tuple[str, ...]) -> dict[str, str]:
 
 
 @validate.command()
-@click.argument("rule_file", type=click.Path(exists=True))
-@click.argument("test_file", type=click.Path(exists=True))
+@click.argument("rule_file", type=click.Path(exists=True, dir_okay=False))
+@click.argument("test_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("-e", "--external", multiple=True, help="External variables (key=value)")
 @click.option("-v", "--verbose", is_flag=True, help="Show detailed results")
 def cross(rule_file: str, test_file: str, external: tuple, verbose: bool) -> None:
@@ -122,11 +122,11 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool) -> Non
 
 
 @validate.command()
-@click.argument("rule_file", type=click.Path(exists=True))
+@click.argument("rule_file", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "-d",
     "--test-data",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, dir_okay=False),
     help="Test data for scanning comparison",
 )
 @click.option("-v", "--verbose", is_flag=True, help="Show detailed results")

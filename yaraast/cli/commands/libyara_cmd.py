@@ -34,7 +34,7 @@ def _validate_output_path(output: str | None) -> str | None:
 
 
 @libyara.command()
-@click.argument("input_file", type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("-o", "--output", type=click.Path(), help="Output compiled rules file")
 @click.option("--optimize", is_flag=True, help="Enable AST optimizations")
 @click.option("--debug", is_flag=True, help="Enable debug mode with source generation")
@@ -57,8 +57,8 @@ def compile(
 
 
 @libyara.command()
-@click.argument("rules_file", type=click.Path(exists=True))
-@click.argument("target", type=click.Path(exists=True))
+@click.argument("rules_file", type=click.Path(exists=True, dir_okay=False))
+@click.argument("target", type=click.Path(exists=True, dir_okay=False))
 @click.option("--optimize", is_flag=True, help="Use optimized AST compilation")
 @click.option("--timeout", type=click.IntRange(min=1), help="Scan timeout in seconds")
 @click.option("--fast", is_flag=True, help="Fast mode (stop on first match)")
@@ -81,7 +81,7 @@ def scan(
 
 
 @libyara.command()
-@click.argument("input_file", type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--show-optimizations", is_flag=True, help="Show applied optimizations")
 def optimize(input_file: str, show_optimizations: bool) -> None:
     """Optimize YARA rules using AST analysis."""
