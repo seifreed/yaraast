@@ -139,6 +139,7 @@ def test_metrics_services_path_helpers_and_error_detection() -> None:
         ms.is_graphviz_error(ModuleNotFoundError("No module named 'graphviz'", name="graphviz"))
         is True
     )
+    assert ms.is_graphviz_error(FileNotFoundError("No such file or directory: rules.yar")) is False
     assert ms.is_graphviz_error(Exception("dot product calculation failed")) is False
     assert ms.is_graphviz_error(Exception("another error")) is False
 

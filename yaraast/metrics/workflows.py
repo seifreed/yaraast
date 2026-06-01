@@ -39,14 +39,21 @@ def is_graphviz_error(error: Exception) -> bool:
     if error_type in ("ExecutableNotFound", "CalledProcessError"):
         return True
     error_str = str(error)
+    error_text = error_str.lower()
     graphviz_indicators = [
-        "ExecutableNotFound",
+        "executablenotfound",
         "failed to execute",
-        "No such file or directory",
-        "requires the 'graphviz' Python package",
+        "requires the 'graphviz' python package",
         "graphviz executables",
     ]
-    return any(indicator.lower() in error_str.lower() for indicator in graphviz_indicators)
+    if any(indicator in error_text for indicator in graphviz_indicators):
+        return True
+    return "no such file or directory" in error_text and (
+        "posixpath('dot')" in error_text
+        or '"dot"' in error_text
+        or "'dot'" in error_text
+        or "graphviz" in error_text
+    )
 
 
 def build_complexity_payload(metrics: ComplexityMetrics) -> dict[str, Any]:
