@@ -1866,7 +1866,10 @@ def _protobuf_modifiers_to_ast(pb_modifiers):
 
     modifiers = []
     for pb_modifier in pb_modifiers:
-        name = pb_modifier.name
+        name = _protobuf_required_nonempty_string(
+            pb_modifier.name,
+            "String modifier name",
+        )
         value = _protobuf_modifier_value(pb_modifier)
         try:
             modifier = StringModifier.from_name_value(name, value)

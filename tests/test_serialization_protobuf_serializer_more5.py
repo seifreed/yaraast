@@ -982,6 +982,57 @@ def test_protobuf_serializer_rejects_malformed_modifier_names() -> None:
 
 
 @pytest.mark.parametrize(
+    "string_def",
+    [
+        PlainString(identifier="$a", value="abc", modifiers=cast(Any, [""])),
+        HexString(identifier="$h", tokens=[HexByte(0x41)], modifiers=cast(Any, [""])),
+        RegexString(identifier="$r", regex="abc", modifiers=cast(Any, [""])),
+    ],
+)
+def test_protobuf_serializer_rejects_empty_string_modifier_names(
+    string_def: Any,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_string_modifier",
+                strings=[string_def],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    with pytest.raises(SerializationError, match="String modifier name must not be empty"):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize("string_kind", ["plain", "hex", "regex"])
+def test_protobuf_deserializer_rejects_empty_string_modifier_names(
+    string_kind: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "bad_string_modifier"
+    pb_rule.condition.boolean_literal.value = True
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$a"
+    if string_kind == "plain":
+        pb_string.plain.value = "abc"
+        pb_string.plain.modifiers.add().name = ""
+    elif string_kind == "hex":
+        pb_string.hex.tokens.add().byte.value = "65"
+        pb_string.hex.modifiers.add().name = ""
+    elif string_kind == "regex":
+        pb_string.regex.regex = "abc"
+        pb_string.regex.modifiers.add().name = ""
+
+    with pytest.raises(SerializationError, match="String modifier name must not be empty"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
     ("ast", "message"),
     [
         (
