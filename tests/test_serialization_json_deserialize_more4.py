@@ -296,6 +296,15 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
             {"pragma_type": "custom", "name": "vendor", "parameters": ["level", "strict"]}
         )
 
+    with pytest.raises(SerializationError, match="Pragma parameters value must be scalar"):
+        s._deserialize_pragma(
+            {
+                "pragma_type": "custom",
+                "name": "vendor",
+                "parameters": {"config": {"nested": "value"}},
+            }
+        )
+
     with pytest.raises(SerializationError, match="Pragma macro_name must be a string"):
         s._deserialize_pragma({"pragma_type": "define", "macro_name": True})
 

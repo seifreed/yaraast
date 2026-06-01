@@ -64,7 +64,18 @@ def _serialize_string_key_dict(value, context: str) -> dict[str, Any]:
     if not all(isinstance(key, str) for key in value):
         msg = f"{context} keys must be strings"
         raise SerializationError(msg)
-    return dict(value)
+    return {key: _serialize_pragma_parameter_value(item) for key, item in value.items()}
+
+
+def _serialize_pragma_parameter_value(value) -> str | int | bool | float:
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    msg = "Pragma parameter value must be a string, integer, boolean, or finite float"
+    raise SerializationError(msg)
 
 
 def _serialize_meta_value(value) -> str | int | bool:

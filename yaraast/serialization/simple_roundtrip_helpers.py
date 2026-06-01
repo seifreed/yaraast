@@ -572,7 +572,18 @@ def _serialize_string_key_dict(value: Any, context: str) -> dict[str, Any]:
     if not all(isinstance(key, str) for key in value):
         msg = f"{context} keys must be strings"
         raise SerializationError(msg)
-    return dict(value)
+    return {key: _serialize_pragma_parameter_value(item) for key, item in value.items()}
+
+
+def _serialize_pragma_parameter_value(value: Any) -> str | int | bool | float:
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    msg = "Pragma parameter value must be a string, integer, boolean, or finite float"
+    raise SerializationError(msg)
 
 
 def _serialize_enum_value(value: Any, context: str) -> str:
@@ -636,10 +647,24 @@ def _deserialize_dict_field(data: dict[str, Any], field: str, context: str) -> d
     value = data.get(field, {})
     if isinstance(value, dict):
         if all(isinstance(key, str) for key in value):
-            return value
+            return {
+                key: _deserialize_pragma_parameter_value(item, f"{context} {field}")
+                for key, item in value.items()
+            }
         msg = f"{context} {field} keys must be strings"
         raise SerializationError(msg)
     msg = f"{context} {field} must be a dictionary"
+    raise SerializationError(msg)
+
+
+def _deserialize_pragma_parameter_value(value: Any, context: str) -> str | int | bool | float:
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    msg = f"{context} value must be scalar"
     raise SerializationError(msg)
 
 

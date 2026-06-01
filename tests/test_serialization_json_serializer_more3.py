@@ -957,6 +957,8 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
     invalid_arguments: Any = ["a", 123]
     invalid_parameters: Any = [("key", "value")]
     invalid_parameter_key: Any = {1: "value"}
+    invalid_parameter_value: Any = {"nested": "value"}
+    nonfinite_parameter_value = float("nan")
 
     pragma_with_bad_type = Pragma(PragmaType.CUSTOM, "custom")
     cast(Any, pragma_with_bad_type).pragma_type = invalid_text
@@ -1003,6 +1005,18 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
         (
             YaraFile(pragmas=[CustomPragma("custom", parameters=invalid_parameter_key)]),
             "Pragma parameters keys must be strings",
+        ),
+        (
+            YaraFile(
+                pragmas=[CustomPragma("custom", parameters={"config": invalid_parameter_value})]
+            ),
+            "Pragma parameter value must be a string, integer, boolean, or finite float",
+        ),
+        (
+            YaraFile(
+                pragmas=[CustomPragma("custom", parameters={"score": nonfinite_parameter_value})]
+            ),
+            "Pragma parameter value must be a string, integer, boolean, or finite float",
         ),
         (
             YaraFile(pragmas=[define_with_bad_macro_name]),

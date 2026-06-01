@@ -365,10 +365,24 @@ def _deserialize_dict_field(data: dict[str, Any], field: str, context: str) -> d
     value = data.get(field, {})
     if isinstance(value, dict):
         if all(isinstance(key, str) for key in value):
-            return value
+            return {
+                key: _deserialize_pragma_parameter_value(item, f"{context} {field}")
+                for key, item in value.items()
+            }
         msg = f"{context} {field} keys must be strings"
         raise SerializationError(msg)
     msg = f"{context} {field} must be a dictionary"
+    raise SerializationError(msg)
+
+
+def _deserialize_pragma_parameter_value(value: Any, context: str) -> str | int | bool | float:
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    msg = f"{context} value must be scalar"
     raise SerializationError(msg)
 
 

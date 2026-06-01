@@ -425,6 +425,8 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     invalid_argument_item: Any = ["on", 1]
     invalid_parameters: Any = [("key", "value")]
     invalid_parameter_key: Any = {1: "value"}
+    invalid_parameter_value: Any = {"nested": "value"}
+    nonfinite_parameter_value = float("nan")
 
     pragma_with_bad_type = Pragma(PragmaType.CUSTOM, "vendor")
     cast(Any, pragma_with_bad_type).pragma_type = invalid_text
@@ -459,6 +461,22 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma parameters keys must be strings"):
         serialize_pragma(custom_with_bad_parameter_key)
 
+    custom_with_bad_parameter_value = CustomPragma("vendor")
+    custom_with_bad_parameter_value.parameters = {"config": invalid_parameter_value}
+    with pytest.raises(
+        SerializationError,
+        match="Pragma parameter value must be a string, integer, boolean, or finite float",
+    ):
+        serialize_pragma(custom_with_bad_parameter_value)
+
+    custom_with_nonfinite_parameter_value = CustomPragma("vendor")
+    custom_with_nonfinite_parameter_value.parameters = {"score": nonfinite_parameter_value}
+    with pytest.raises(
+        SerializationError,
+        match="Pragma parameter value must be a string, integer, boolean, or finite float",
+    ):
+        serialize_pragma(custom_with_nonfinite_parameter_value)
+
     pragma_with_unknown_scope = Pragma(PragmaType.CUSTOM, "vendor")
     cast(Any, pragma_with_unknown_scope).scope = "secret"
     with pytest.raises(SerializationError, match="Pragma scope must be a valid pragma scope"):
@@ -487,6 +505,16 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
                 "pragma_type": "custom",
                 "name": "vendor",
                 "parameters": ["level", "strict"],
+            }
+        )
+
+    with pytest.raises(SerializationError, match="Pragma parameters value must be scalar"):
+        deserialize_node(
+            {
+                "type": "Pragma",
+                "pragma_type": "custom",
+                "name": "vendor",
+                "parameters": {"config": {"nested": "value"}},
             }
         )
 
