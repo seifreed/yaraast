@@ -80,6 +80,39 @@ def test_string_matcher_rejects_non_string_string_identifiers() -> None:
         matcher.match_string(plain, b"abc")
 
 
+def test_string_matcher_rejects_invalid_string_modifier_collections() -> None:
+    invalid_modifiers: Any = False
+    plain = PlainString("$a", value="abc", modifiers=[])
+    plain.modifiers = invalid_modifiers
+
+    with pytest.raises(TypeError, match="String modifiers must be a list or tuple"):
+        StringMatcher().match_all([plain], b"abc")
+
+
+@pytest.mark.parametrize("modifier", [False, object()])
+def test_string_matcher_rejects_invalid_string_modifier_items(modifier: Any) -> None:
+    plain = PlainString("$a", value="abc", modifiers=[modifier])
+
+    with pytest.raises(
+        TypeError,
+        match="String modifiers must contain strings or StringModifier nodes",
+    ):
+        StringMatcher().match_all([plain], b"abc")
+
+
+def test_string_matcher_rejects_string_modifier_nodes_with_non_string_names() -> None:
+    class BadModifier:
+        name = False
+
+    plain = PlainString("$a", value="abc", modifiers=[BadModifier()])
+
+    with pytest.raises(
+        TypeError,
+        match="String modifiers must contain strings or StringModifier nodes",
+    ):
+        StringMatcher().match_all([plain], b"abc")
+
+
 def test_string_matcher_match_string_replaces_previous_match_state() -> None:
     matcher = StringMatcher()
 

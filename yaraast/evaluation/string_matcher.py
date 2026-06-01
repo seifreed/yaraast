@@ -51,6 +51,13 @@ class StringMatcher:
             raise TypeError(msg)
         return identifier if identifier.startswith("$") else f"${identifier}"
 
+    def _string_modifiers(self, string_def: object) -> list[Any]:
+        modifiers = getattr(string_def, "modifiers", [])
+        if not isinstance(modifiers, list | tuple):
+            msg = "String modifiers must be a list or tuple"
+            raise TypeError(msg)
+        return list(modifiers)
+
     @overload
     def match_all(
         self,
@@ -133,9 +140,10 @@ class StringMatcher:
             if isinstance(string_def.value, bytes)
             else string_def.value.encode("utf-8")
         )
+        modifiers = self._string_modifiers(string_def)
 
         # Apply modifiers
-        modifier_names = {self._modifier_name(modifier) for modifier in string_def.modifiers}
+        modifier_names = {self._modifier_name(modifier) for modifier in modifiers}
         nocase = "nocase" in modifier_names
         wide = "wide" in modifier_names
         ascii_mod = "ascii" in modifier_names
@@ -164,7 +172,7 @@ class StringMatcher:
                         (base64_pattern, False)
                         for base64_pattern in self._base64_patterns(
                             raw_pattern,
-                            string_def.modifiers,
+                            modifiers,
                             "base64",
                         )
                     )
@@ -173,7 +181,7 @@ class StringMatcher:
                         (base64_pattern, True)
                         for base64_pattern in self._base64_patterns(
                             raw_pattern,
-                            string_def.modifiers,
+                            modifiers,
                             "base64wide",
                             wide_output=True,
                         )
@@ -181,7 +189,7 @@ class StringMatcher:
         else:
             patterns_to_check = raw_patterns
 
-        xor_keys = self._xor_keys(string_def.modifiers)
+        xor_keys = self._xor_keys(modifiers)
         if xor_keys is not None:
             patterns_to_check = [
                 (bytes(byte ^ key for byte in search_pattern), is_wide)
@@ -238,7 +246,14 @@ class StringMatcher:
         return [by_offset[offset] for offset in sorted(by_offset)]
 
     def _modifier_name(self, modifier: Any) -> str:
-        return str(getattr(modifier, "name", modifier))
+        if isinstance(modifier, str):
+            return modifier
+        if hasattr(modifier, "name"):
+            name = modifier.name
+            if isinstance(name, str):
+                return name
+        msg = "String modifiers must contain strings or StringModifier nodes"
+        raise TypeError(msg)
 
     def _modifier_value(self, modifier: Any) -> Any:
         return getattr(modifier, "value", None)
@@ -504,9 +519,10 @@ class StringMatcher:
         # Prepare regex pattern
         pattern = string_def.regex
         flags = 0
+        modifiers = self._string_modifiers(string_def)
 
         # Check modifiers
-        for modifier in string_def.modifiers:
+        for modifier in modifiers:
             modifier_name = self._modifier_name(modifier)
             if modifier_name in {"nocase", "i"}:
                 flags |= re.IGNORECASE
@@ -515,7 +531,7 @@ class StringMatcher:
             elif modifier_name in {"multiline", "m"}:
                 flags |= re.MULTILINE
 
-        modifier_names = {self._modifier_name(modifier) for modifier in string_def.modifiers}
+        modifier_names = {self._modifier_name(modifier) for modifier in modifiers}
         wide = "wide" in modifier_names
         ascii_mod = "ascii" in modifier_names
         fullword = "fullword" in modifier_names

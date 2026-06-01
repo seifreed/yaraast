@@ -1317,6 +1317,25 @@ def test_evaluate_file_rejects_non_string_string_reference_identifiers() -> None
         YaraEvaluator(data=b"a").evaluate_file(ast)
 
 
+def test_evaluate_file_rejects_invalid_string_modifier_items() -> None:
+    invalid_modifier: Any = False
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_string_modifier",
+                strings=[PlainString("$a", value="a", modifiers=[invalid_modifier])],
+                condition=StringIdentifier("$a"),
+            )
+        ]
+    )
+
+    with pytest.raises(
+        TypeError,
+        match="String modifiers must contain strings or StringModifier nodes",
+    ):
+        YaraEvaluator(data=b"a").evaluate_file(ast)
+
+
 def test_string_count_offset_length_and_wildcard() -> None:
     ev = YaraEvaluator(data=b"xxabxxab")
     rule = Rule(
