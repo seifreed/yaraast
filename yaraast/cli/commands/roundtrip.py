@@ -24,7 +24,7 @@ from yaraast.cli.roundtrip_services import (
     serialize_roundtrip_file,
     test_roundtrip_file,
 )
-from yaraast.cli.utils import format_json, write_text
+from yaraast.cli.utils import _require_file_path, format_json, write_text
 
 
 @click.group()
@@ -39,6 +39,18 @@ def roundtrip() -> None:
     """
 
 
+def _validate_output_path(output: str | None) -> Path | None:
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output_path
+
+
 @roundtrip.command()
 @click.argument("input_file", type=click.Path(exists=True, path_type=Path))
 @click.option(
@@ -51,7 +63,7 @@ def roundtrip() -> None:
 @click.option(
     "--output",
     "-o",
-    type=click.Path(path_type=Path),
+    type=click.Path(),
     help="Output file for serialized data",
 )
 @click.option(
@@ -67,7 +79,7 @@ def roundtrip() -> None:
 def serialize(
     input_file: Path,
     format: str,
-    output: Path | None,
+    output: str | None,
     preserve_comments: bool,
     preserve_formatting: bool,
 ) -> None:
@@ -88,6 +100,7 @@ def serialize(
         yaraast roundtrip serialize rules.yar --no-comments
 
     """
+    output_path = _validate_output_path(output)
     try:
         # Read input file
         ast, serialized = serialize_roundtrip_file(
@@ -97,10 +110,10 @@ def serialize(
             preserve_formatting,
         )
 
-        if output:
-            write_text(output, serialized)
+        if output_path is not None:
+            write_text(output_path, serialized)
         display_serialize_result(
-            output,
+            output_path,
             format,
             ast,
             preserve_comments,
@@ -125,7 +138,7 @@ def serialize(
 @click.option(
     "--output",
     "-o",
-    type=click.Path(path_type=Path),
+    type=click.Path(),
     help="Output file for generated YARA code",
 )
 @click.option(
@@ -136,7 +149,7 @@ def serialize(
 def deserialize(
     input_file: Path,
     format: str,
-    output: Path | None,
+    output: str | None,
     preserve_formatting: bool,
 ) -> None:
     """Deserialize JSON/YAML back to YARA code.
@@ -152,6 +165,7 @@ def deserialize(
         yaraast roundtrip deserialize rules.yaml --default-formatting
 
     """
+    output_path = _validate_output_path(output)
     try:
         ast, yara_code = deserialize_roundtrip_file(
             input_file,
@@ -159,10 +173,10 @@ def deserialize(
             preserve_formatting,
         )
 
-        if output:
-            write_text(output, yara_code)
+        if output_path is not None:
+            write_text(output_path, yara_code)
         display_deserialize_result(
-            output,
+            output_path,
             format,
             ast,
             preserve_formatting,
@@ -186,11 +200,11 @@ def deserialize(
 @click.option(
     "--output",
     "-o",
-    type=click.Path(path_type=Path),
+    type=click.Path(),
     help="Output file for test results",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed comparison results")
-def test(input_file: Path, format: str, output: Path | None, verbose: bool) -> None:
+def test(input_file: Path, format: str, output: str | None, verbose: bool) -> None:
     """Test round-trip conversion fidelity.
 
     This command performs a complete round-trip test:
@@ -207,6 +221,7 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool) -> N
         yaraast roundtrip test rules.yar --format yaml --verbose -o test_results.json
 
     """
+    output_path = _validate_output_path(output)
     try:
         result = test_roundtrip_file(input_file, format)
 
@@ -220,9 +235,9 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool) -> N
             _display_verbose_source(result)
 
         # Save detailed results if requested
-        if output:
-            write_text(output, format_json(result, ensure_ascii=False))
-            click.echo(f"\nDetailed results saved to {output}")
+        if output_path is not None:
+            write_text(output_path, format_json(result, ensure_ascii=False))
+            click.echo(f"\nDetailed results saved to {output_path}")
 
         # Exit with error if test failed
         if not result["round_trip_successful"]:
@@ -238,7 +253,7 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool) -> N
 @click.option(
     "--output",
     "-o",
-    type=click.Path(path_type=Path),
+    type=click.Path(),
     help="Output file for formatted YARA code",
 )
 @click.option(
@@ -268,7 +283,7 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool) -> N
 @click.option("--sort-tags/--preserve-tag-order", default=True, help="Sort rule tags")
 def pretty(
     input_file: Path,
-    output: Path | None,
+    output: str | None,
     style: str,
     indent_size: int,
     max_line_length: int,
@@ -293,6 +308,7 @@ def pretty(
         yaraast roundtrip pretty rules.yar --indent-size 2 --max-line-length 100
 
     """
+    output_path = _validate_output_path(output)
     try:
         ast, formatted_code = pretty_print_file(
             input_file,
@@ -305,10 +321,10 @@ def pretty(
             sort_tags,
         )
 
-        if output:
-            write_text(output, formatted_code)
+        if output_path is not None:
+            write_text(output_path, formatted_code)
         display_pretty_result(
-            output,
+            output_path,
             style,
             ast,
             indent_size,
@@ -326,7 +342,7 @@ def pretty(
 @click.option(
     "--output",
     "-o",
-    type=click.Path(path_type=Path),
+    type=click.Path(),
     help="Output file for pipeline YAML",
 )
 @click.option("--pipeline-info", type=str, help="JSON string with pipeline information")
@@ -337,7 +353,7 @@ def pretty(
 )
 def pipeline(
     input_file: Path,
-    output: Path | None,
+    output: str | None,
     pipeline_info: str | None,
     include_manifest: bool,
 ) -> None:
@@ -357,24 +373,27 @@ def pipeline(
         yaraast roundtrip pipeline rules.yar --include-manifest
 
     """
+    output_path = _validate_output_path(output)
     try:
         ast, yaml_content, _pipeline_data = pipeline_serialize_file(
             input_file,
             pipeline_info,
         )
 
-        if output:
-            write_text(output, yaml_content)
+        if output_path is not None:
+            write_text(output_path, yaml_content)
 
         manifest_content = None
         if include_manifest:
             manifest_content = build_rules_manifest(ast)
-            manifest_path = output.with_suffix(".manifest.yaml") if output else None
+            manifest_path = (
+                output_path.with_suffix(".manifest.yaml") if output_path is not None else None
+            )
 
-            if manifest_path:
+            if manifest_path is not None:
                 write_text(manifest_path, manifest_content)
         display_pipeline_result(
-            output,
+            output_path,
             yaml_content,
             include_manifest,
             manifest_content,

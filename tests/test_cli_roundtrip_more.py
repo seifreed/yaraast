@@ -89,6 +89,29 @@ def test_roundtrip_pretty_rejects_invalid_numeric_options(tmp_path: Path) -> Non
     assert "Invalid value for '--max-line-length'" in line_length.output
 
 
+def test_roundtrip_commands_reject_empty_output_paths(tmp_path: Path) -> None:
+    runner = CliRunner()
+    yara_path = tmp_path / "sample.yar"
+    yara_path.write_text(_simple_rule().strip(), encoding="utf-8")
+
+    json_path = tmp_path / "sample.json"
+    serialize_result = runner.invoke(roundtrip, ["serialize", str(yara_path), "-o", str(json_path)])
+    assert serialize_result.exit_code == 0
+
+    commands = (
+        ["serialize", str(yara_path)],
+        ["test", str(yara_path)],
+        ["pretty", str(yara_path)],
+        ["pipeline", str(yara_path)],
+        ["deserialize", str(json_path)],
+    )
+    for command in commands:
+        result = runner.invoke(roundtrip, [*command, "--output", ""])
+
+        assert result.exit_code == 2
+        assert "path must not be empty" in result.output
+
+
 def test_roundtrip_pipeline_with_manifest(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
