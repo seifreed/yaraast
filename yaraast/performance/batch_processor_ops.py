@@ -71,7 +71,7 @@ def serialize_item(item: Any) -> str:
 
 
 def validate_item(item: Rule) -> bool:
-    return bool(item.name and item.condition)
+    return bool(item.name) and item.condition is not None
 
 
 def _safe_output_stem(base_name: str, index: int, rule_name: str) -> str:

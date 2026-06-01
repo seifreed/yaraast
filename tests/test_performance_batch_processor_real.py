@@ -287,15 +287,21 @@ def test_process_large_file_missing_file_fails_all_operations(tmp_path: Path) ->
 
 
 def test_process_batch_operation_none_and_validation_branches() -> None:
+    class FalsyBooleanLiteral(BooleanLiteral):
+        def __bool__(self) -> bool:
+            return False
+
     processor = BatchProcessor(batch_size=2)
     parsed = Parser().parse("rule valid { condition: true }")
     rule = parsed.rules[0]
+    falsy_condition_rule = Rule(name="falsy_condition", condition=FalsyBooleanLiteral(value=False))
 
     passthrough = processor.process_batch([1, 2], None)
     assert passthrough == [1, 2]
 
     validated = processor.process_batch([rule], BatchOperation.VALIDATE)
     assert validated == [True]
+    assert processor.process_batch([falsy_condition_rule], BatchOperation.VALIDATE) == [True]
 
     analyzed = processor.process_batch([rule], BatchOperation.COMPLEXITY)
     assert isinstance(analyzed[0], dict)
