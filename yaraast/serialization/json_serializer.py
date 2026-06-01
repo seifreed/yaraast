@@ -205,10 +205,10 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         input_path: str | Path | None = None,
     ) -> YaraFile:
         """Deserialize JSON to AST."""
-        if input_path:
+        if input_path is not None:
             json_str = read_text(input_path)
 
-        if not json_str:
+        if json_str is None or json_str == "":
             msg = "No JSON input provided"
             raise SerializationError(msg)
         if not isinstance(json_str, str):

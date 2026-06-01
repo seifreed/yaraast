@@ -50,14 +50,14 @@ def test_json_serializer_missing_input() -> None:
         serializer.deserialize(None)
 
 
-@pytest.mark.parametrize("json_str", [123, object()])
+@pytest.mark.parametrize("json_str", [False, 0, [], 123, object()])
 def test_json_serializer_rejects_non_string_input(json_str: Any) -> None:
     serializer = JsonSerializer()
     with pytest.raises(TypeError, match="JSON input must be a string"):
         serializer.deserialize(cast(str, json_str))
 
 
-@pytest.mark.parametrize("yaml_str", [123, object()])
+@pytest.mark.parametrize("yaml_str", [False, 0, [], 123, object()])
 def test_yaml_serializer_rejects_non_string_input(yaml_str: Any) -> None:
     serializer = YamlSerializer()
     with pytest.raises(TypeError, match="YAML input must be a string"):

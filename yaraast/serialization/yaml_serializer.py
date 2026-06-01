@@ -40,10 +40,10 @@ class YamlSerializer(JsonSerializer):
         input_path: str | Path | None = None,
     ) -> YaraFile:
         """Deserialize YAML to AST."""
-        if input_path:
+        if input_path is not None:
             yaml_str = read_text(input_path)
 
-        if not yaml_str:
+        if yaml_str is None or yaml_str == "":
             msg = "No YAML input provided"
             raise SerializationError(msg)
         if not isinstance(yaml_str, str):
