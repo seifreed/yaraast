@@ -62,6 +62,8 @@ class SimpleRoundTrip:
     def test(self, yara_code: str) -> tuple[bool, Any, Any]:
         """Test roundtrip for a single YARA rule."""
         self.test_count += 1
+        if not isinstance(yara_code, str):
+            return False, None, None
         try:
             original_ast = parse_yara_source(yara_code)
             regenerated = self.generator.generate(original_ast)
@@ -72,7 +74,7 @@ class SimpleRoundTrip:
                 self.success_count += 1
 
             return success, original_ast, regenerated_ast
-        except (ValueError, TypeError, YaraASTError):
+        except (ValueError, YaraASTError):
             return False, None, None
 
     def test_batch(self, yara_codes: list[str]) -> list[tuple[bool, Any, Any]]:

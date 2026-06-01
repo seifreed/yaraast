@@ -129,6 +129,18 @@ def test_simple_roundtrip_test_propagates_internal_parser_errors(
         SimpleRoundTrip().test("rule r { condition: true }")
 
 
+def test_simple_roundtrip_test_propagates_internal_parser_type_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_parse_yara_source(content: str) -> YaraFile:
+        raise TypeError("broken parser state")
+
+    monkeypatch.setattr(simple_roundtrip_module, "parse_yara_source", fail_parse_yara_source)
+
+    with pytest.raises(TypeError, match="broken parser state"):
+        SimpleRoundTrip().test("rule r { condition: true }")
+
+
 def test_roundtrip_deserialize_without_roundtrip_metadata_uses_plain_json() -> None:
     ast = _sample_ast()
     serializer = JsonSerializer(include_metadata=True)
