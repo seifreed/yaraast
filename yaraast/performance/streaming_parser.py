@@ -129,13 +129,21 @@ class StreamingParser:
 
         """
         _validate_optional_callable(callback, "callback")
+        stream_read = getattr(stream, "read", None)
+        if not callable(stream_read):
+            msg = "stream must provide a callable read method"
+            raise TypeError(msg)
+
         chunks: list[str] = []
         decoder = codecs.getincrementaldecoder("utf-8")("replace")
         read_bytes = False
         while True:
-            chunk = stream.read(self.buffer_size)
-            if not chunk:
+            chunk = stream_read(self.buffer_size)
+            if chunk in ("", b""):
                 break
+            if not isinstance(chunk, str | bytes):
+                msg = "stream.read() must return str or bytes"
+                raise TypeError(msg)
 
             if isinstance(chunk, bytes):
                 read_bytes = True

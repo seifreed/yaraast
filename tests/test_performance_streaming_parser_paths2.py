@@ -65,6 +65,21 @@ def test_streaming_parser_parse_stream_rejects_non_callable_callback() -> None:
         list(StreamingParser().parse_stream(io.StringIO(""), callback=cast(Any, "bad")))
 
 
+@pytest.mark.parametrize("stream", [None, object()])
+def test_streaming_parser_parse_stream_rejects_streams_without_read(stream: Any) -> None:
+    with pytest.raises(TypeError, match="stream must provide a callable read method"):
+        list(StreamingParser().parse_stream(cast(Any, stream)))
+
+
+def test_streaming_parser_parse_stream_rejects_non_text_chunks() -> None:
+    class BadStream:
+        def read(self, _size: int) -> int:
+            return 123
+
+    with pytest.raises(TypeError, match=r"stream\.read\(\) must return str or bytes"):
+        list(StreamingParser().parse_stream(cast(Any, BadStream())))
+
+
 def test_streaming_parser_parse_with_progress_rejects_non_callable_callback(
     tmp_path: Path,
 ) -> None:
