@@ -189,6 +189,10 @@ class Rule(ASTNode):
             validate_structure = getattr(string, "validate_structure", None)
             if callable(validate_structure):
                 validate_structure()
+        if self.condition is not None:
+            validate_structure = getattr(self.condition, "validate_structure", None)
+            if callable(validate_structure):
+                validate_structure()
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_rule(self)

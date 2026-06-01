@@ -14,6 +14,12 @@ from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexAlternative, HexByte, HexString, HexWildcard, PlainString
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
 from yaraast.parser import Parser
+from yaraast.yarax.ast_nodes import (
+    DictExpression,
+    LambdaExpression,
+    PatternMatch,
+    WithStatement,
+)
 
 
 def test_ast_node_children_and_location() -> None:
@@ -108,6 +114,41 @@ def test_direct_yarafile_optimizers_validate_scalar_fields(
 ) -> None:
     malformed_file = YaraFile()
     setattr(malformed_file, field_name, value)
+
+    with pytest.raises(TypeError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            WithStatement(cast(Any, object()), BooleanLiteral(True)),
+            "WithStatement declarations must be a list or tuple",
+        ),
+        (
+            WithStatement([cast(Any, object())], BooleanLiteral(True)),
+            "WithStatement declarations must contain WithDeclaration nodes",
+        ),
+        (
+            DictExpression([cast(Any, object())]),
+            "DictExpression items must contain DictItem nodes",
+        ),
+        (
+            PatternMatch(BooleanLiteral(True), [cast(Any, object())]),
+            "PatternMatch cases must contain MatchCase nodes",
+        ),
+        (
+            LambdaExpression([cast(Any, object())], BooleanLiteral(True)),
+            "Local variable name must be a string",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_validates_yarax_condition_structure(
+    condition: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_yarax", condition=condition)])
 
     with pytest.raises(TypeError, match=message):
         ExpressionOptimizer().optimize(malformed_file)

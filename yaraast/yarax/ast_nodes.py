@@ -5,9 +5,38 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from yaraast.ast.base import ASTNode, _VisitorType
+from yaraast.ast.base import (
+    ASTNode,
+    _require_ast_node,
+    _require_ast_node_sequence_type,
+    _VisitorType,
+)
 from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import Expression
+
+
+def _require_string(value: Any, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
+def _require_optional_string(value: Any, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_string(value, field_name)
+
+
+def _validate_child_structure(value: Any) -> None:
+    validate_structure = getattr(value, "validate_structure", None)
+    if callable(validate_structure):
+        validate_structure()
+
+
+def _validate_child_sequence(values: list[ASTNode]) -> None:
+    for value in values:
+        _validate_child_structure(value)
 
 
 @dataclass
@@ -22,6 +51,16 @@ class WithStatement(Condition):
     declarations: list[WithDeclaration]
     body: Expression
 
+    def validate_structure(self) -> None:
+        declarations = _require_ast_node_sequence_type(
+            self.declarations,
+            "WithStatement.declarations",
+            WithDeclaration,
+            "WithDeclaration",
+        )
+        _validate_child_sequence(declarations)
+        _validate_child_structure(_require_ast_node(self.body, "WithStatement.body"))
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_with_statement(self)
 
@@ -32,6 +71,10 @@ class WithDeclaration(ASTNode):
 
     identifier: str  # Variable name (e.g., $a)
     value: Expression  # Initial value
+
+    def validate_structure(self) -> None:
+        _require_string(self.identifier, "Local variable name")
+        _validate_child_structure(_require_ast_node(self.value, "WithDeclaration.value"))
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_with_declaration(self)
@@ -50,6 +93,21 @@ class ArrayComprehension(Expression):
     variable: str = ""  # Loop variable name
     iterable: Expression | None = None  # Iterable to loop over
     condition: Expression | None = None  # Optional filter condition
+
+    def validate_structure(self) -> None:
+        if self.expression is not None:
+            _validate_child_structure(
+                _require_ast_node(self.expression, "ArrayComprehension.expression")
+            )
+        _require_string(self.variable, "Local variable name")
+        if self.iterable is not None:
+            _validate_child_structure(
+                _require_ast_node(self.iterable, "ArrayComprehension.iterable")
+            )
+        if self.condition is not None:
+            _validate_child_structure(
+                _require_ast_node(self.condition, "ArrayComprehension.condition")
+            )
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_array_comprehension(self)
@@ -71,6 +129,26 @@ class DictComprehension(Expression):
     iterable: Expression | None = None  # Iterable to loop over
     condition: Expression | None = None  # Optional filter condition
 
+    def validate_structure(self) -> None:
+        if self.key_expression is not None:
+            _validate_child_structure(
+                _require_ast_node(self.key_expression, "DictComprehension.key_expression")
+            )
+        if self.value_expression is not None:
+            _validate_child_structure(
+                _require_ast_node(self.value_expression, "DictComprehension.value_expression")
+            )
+        _require_string(self.key_variable, "Local variable name")
+        _require_optional_string(self.value_variable, "Local variable name")
+        if self.iterable is not None:
+            _validate_child_structure(
+                _require_ast_node(self.iterable, "DictComprehension.iterable")
+            )
+        if self.condition is not None:
+            _validate_child_structure(
+                _require_ast_node(self.condition, "DictComprehension.condition")
+            )
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_dict_comprehension(self)
 
@@ -85,6 +163,15 @@ class TupleExpression(Expression):
     """
 
     elements: list[Expression]
+
+    def validate_structure(self) -> None:
+        elements = _require_ast_node_sequence_type(
+            self.elements,
+            "TupleExpression.elements",
+            Expression,
+            "Expression",
+        )
+        _validate_child_sequence(elements)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_tuple_expression(self)
@@ -103,6 +190,10 @@ class TupleIndexing(Expression):
     tuple_expr: Expression  # The tuple to index
     index: Expression  # Index (can be negative)
 
+    def validate_structure(self) -> None:
+        _validate_child_structure(_require_ast_node(self.tuple_expr, "TupleIndexing.tuple_expr"))
+        _validate_child_structure(_require_ast_node(self.index, "TupleIndexing.index"))
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_tuple_indexing(self)
 
@@ -117,6 +208,15 @@ class ListExpression(Expression):
     """
 
     elements: list[Expression]
+
+    def validate_structure(self) -> None:
+        elements = _require_ast_node_sequence_type(
+            self.elements,
+            "ListExpression.elements",
+            Expression,
+            "Expression",
+        )
+        _validate_child_sequence(elements)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_list_expression(self)
@@ -133,6 +233,15 @@ class DictExpression(Expression):
 
     items: list[DictItem]
 
+    def validate_structure(self) -> None:
+        items = _require_ast_node_sequence_type(
+            self.items,
+            "DictExpression.items",
+            DictItem,
+            "DictItem",
+        )
+        _validate_child_sequence(items)
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_dict_expression(self)
 
@@ -143,6 +252,10 @@ class DictItem(ASTNode):
 
     key: Expression
     value: Expression
+
+    def validate_structure(self) -> None:
+        _validate_child_structure(_require_ast_node(self.key, "DictItem.key"))
+        _validate_child_structure(_require_ast_node(self.value, "DictItem.value"))
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_dict_item(self)
@@ -163,6 +276,15 @@ class SliceExpression(Expression):
     stop: Expression | None = None
     step: Expression | None = None
 
+    def validate_structure(self) -> None:
+        _validate_child_structure(_require_ast_node(self.target, "SliceExpression.target"))
+        if self.start is not None:
+            _validate_child_structure(_require_ast_node(self.start, "SliceExpression.start"))
+        if self.stop is not None:
+            _validate_child_structure(_require_ast_node(self.stop, "SliceExpression.stop"))
+        if self.step is not None:
+            _validate_child_structure(_require_ast_node(self.step, "SliceExpression.step"))
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_slice_expression(self)
 
@@ -178,6 +300,14 @@ class LambdaExpression(Expression):
 
     parameters: list[str]
     body: Expression
+
+    def validate_structure(self) -> None:
+        if not isinstance(self.parameters, list | tuple):
+            msg = "LambdaExpression parameters must be a list or tuple"
+            raise TypeError(msg)
+        for parameter in self.parameters:
+            _require_string(parameter, "Local variable name")
+        _validate_child_structure(_require_ast_node(self.body, "LambdaExpression.body"))
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_lambda_expression(self)
@@ -199,6 +329,18 @@ class PatternMatch(Expression):
     cases: list[MatchCase]
     default: Expression | None = None
 
+    def validate_structure(self) -> None:
+        _validate_child_structure(_require_ast_node(self.value, "PatternMatch.value"))
+        cases = _require_ast_node_sequence_type(
+            self.cases,
+            "PatternMatch.cases",
+            MatchCase,
+            "MatchCase",
+        )
+        _validate_child_sequence(cases)
+        if self.default is not None:
+            _validate_child_structure(_require_ast_node(self.default, "PatternMatch.default"))
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_pattern_match(self)
 
@@ -209,6 +351,10 @@ class MatchCase(ASTNode):
 
     pattern: Expression  # Pattern to match
     result: Expression  # Result if pattern matches
+
+    def validate_structure(self) -> None:
+        _validate_child_structure(_require_ast_node(self.pattern, "MatchCase.pattern"))
+        _validate_child_structure(_require_ast_node(self.result, "MatchCase.result"))
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_match_case(self)
@@ -225,6 +371,12 @@ class SpreadOperator(Expression):
 
     expression: Expression
     is_dict: bool = False  # True for dict spread (**), False for array spread (...)
+
+    def validate_structure(self) -> None:
+        _validate_child_structure(_require_ast_node(self.expression, "SpreadOperator.expression"))
+        if not isinstance(self.is_dict, bool):
+            msg = "SpreadOperator is_dict must be a boolean"
+            raise TypeError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_spread_operator(self)
