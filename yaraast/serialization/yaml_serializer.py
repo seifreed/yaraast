@@ -3,18 +3,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import yaml
 
+from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.serializer_helpers import read_text, require_bool_option
 from yaraast.serialization.yaml_serializer_helpers import enrich_yaml_metadata, serialize_yaml
-
-if TYPE_CHECKING:
-    from yaraast.ast.base import YaraFile
 
 
 class YamlSerializer(JsonSerializer):
@@ -23,6 +21,13 @@ class YamlSerializer(JsonSerializer):
     def __init__(self, include_metadata: bool = True, flow_style: bool = False) -> None:
         super().__init__(include_metadata)
         self.flow_style = require_bool_option(flow_style, "flow_style")
+
+    @staticmethod
+    def _require_yara_file(ast: object) -> YaraFile:
+        if not isinstance(ast, YaraFile):
+            msg = "ast must be a YaraFile"
+            raise TypeError(msg)
+        return ast
 
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize AST to YAML format."""
@@ -74,6 +79,7 @@ class YamlSerializer(JsonSerializer):
         output_path: str | Path | None = None,
     ) -> str:
         """Serialize only the rules section to YAML (useful for rule analysis)."""
+        ast = self._require_yara_file(ast)
         if not isinstance(ast.rules, list | tuple):
             msg = "YaraFile rules must be a list of Rule nodes"
             raise SerializationError(msg)

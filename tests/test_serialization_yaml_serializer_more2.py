@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -59,6 +61,14 @@ def test_yaml_minimal_and_rules_only() -> None:
 
     rules_only = serializer.serialize_rules_only(ast)
     assert "rule_count" in rules_only
+
+
+@pytest.mark.parametrize("ast", [None, 123, object()])
+def test_yaml_rules_only_rejects_invalid_ast_types(ast: object) -> None:
+    serializer = YamlSerializer()
+
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        serializer.serialize_rules_only(cast(Any, ast))
 
 
 def test_yaml_roundtrip_preserves_xor_range_modifier() -> None:
