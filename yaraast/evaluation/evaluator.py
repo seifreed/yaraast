@@ -1232,7 +1232,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         """Return regex pattern string."""
         # For regex literals, we'll return the pattern
         # The actual matching is handled by the binary expression "matches" operator
-        return str(node.pattern)
+        pattern = node.pattern
+        if not isinstance(pattern, str):
+            msg = "Regex pattern must be a string"
+            raise TypeError(msg)
+        return pattern
 
     def visit_defined_expression(self, node: Any) -> bool:
         """Evaluate 'defined' expression."""

@@ -2191,6 +2191,8 @@ def test_condition_paths_for_at_in_of_for_and_defined() -> None:
     )
 
     assert ev.visit_regex_literal(SimpleNamespace(pattern="ab.*")) == "ab.*"
+    with pytest.raises(TypeError, match="Regex pattern must be a string"):
+        ev.visit_regex_literal(SimpleNamespace(pattern=False))
     assert ev.visit_module_reference(SimpleNamespace()) is None
 
 
