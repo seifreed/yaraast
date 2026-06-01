@@ -11,6 +11,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.cli.performance_services import extract_successful_asts
+from yaraast.metrics import dependency_graph_utils
 from yaraast.parser import Parser, source as parser_source
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 
@@ -326,6 +327,26 @@ def test_parallel_parse_file_chunks_propagates_internal_parser_errors(
 
     with pytest.raises(AttributeError, match="parser state missing"):
         analyzer.parse_files_parallel([str(file_path)], chunk_size=1)
+
+
+def test_parallel_graph_export_propagates_internal_export_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+    ast = _parsed_ast("graph_rule")
+
+    def broken_export_dependency_graph(*_args: object, **_kwargs: object) -> None:
+        raise AttributeError("graph exporter state missing")
+
+    monkeypatch.setattr(
+        dependency_graph_utils,
+        "export_dependency_graph",
+        broken_export_dependency_graph,
+    )
+
+    with pytest.raises(AttributeError, match="graph exporter state missing"):
+        analyzer.generate_graphs_parallel([ast], tmp_path / "graphs", ["full"])
 
 
 def test_parallel_analyzer_error_paths_without_mocks(tmp_path: Path) -> None:

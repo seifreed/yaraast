@@ -5,18 +5,16 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from pathlib import Path
 import time
-from typing import TYPE_CHECKING, Any
+from typing import Any
 import uuid
 
+from yaraast.ast.base import YaraFile
 from yaraast.errors import YaraASTError
 from yaraast.performance.parallel_models import Job, JobStatus, ParseErrorMarker
 from yaraast.performance.validation import (
     validate_file_path_sequence,
     validate_positive_int_setting,
 )
-
-if TYPE_CHECKING:
-    from yaraast.ast.base import YaraFile
 
 _EXPECTED_PARSE_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
 
@@ -89,6 +87,9 @@ def export_graph_files(
     for index, ast in enumerate(asts):
         job = start_job("dependency_graph")
         jobs.append(job)
+        if not isinstance(ast, YaraFile):
+            fail_job(job, "dependency graph input must be a YaraFile")
+            continue
         try:
             graph = build_dependency_graph(ast)
             rule_name = ast.rules[0].name if getattr(ast, "rules", None) else f"ast_{index}"
@@ -98,7 +99,7 @@ def export_graph_files(
                 export_dependency_graph(graph, output_path, format="json")
                 output_files.append(str(output_path))
             complete_job(job, output_files)
-        except Exception as e:
+        except (OSError, ValueError, YaraASTError) as e:
             fail_job(job, e)
     return jobs
 
