@@ -6,13 +6,14 @@ import pytest
 
 from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForExpression, OfExpression
+from yaraast.ast.conditions import ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     Expression,
     Identifier,
     IntegerLiteral,
+    RangeExpression,
     SetExpression,
     StringCount,
     StringIdentifier,
@@ -263,6 +264,37 @@ def test_best_practices_rejects_non_string_string_set_values(string_set: Any) ->
     )
 
     with pytest.raises(TypeError, match="String reference must be a string"):
+        BestPracticesAnalyzer().analyze(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            InExpression(
+                cast(Any, False),
+                RangeExpression(IntegerLiteral(0), IntegerLiteral(1)),
+            ),
+            "String reference must be a string",
+        ),
+        (InExpression("$a", cast(Any, False)), "'in' range must be an AST node"),
+    ],
+)
+def test_best_practices_rejects_invalid_in_expression_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_in_expression",
+                strings=[PlainString("$a", value="x")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match=message):
         BestPracticesAnalyzer().analyze(ast)
 
 

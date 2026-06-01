@@ -18,7 +18,7 @@ from yaraast.analysis.best_practices_helpers import (
     get_hex_prefix,
     levenshtein_distance,
 )
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.expressions import (
     Identifier,
     ParenthesesExpression,
@@ -479,8 +479,13 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def visit_in_expression(self, node: InExpression) -> None:
         if isinstance(node.subject, str):
             self._mark_condition_string_usage(node.subject)
-        else:
+        elif isinstance(node.subject, ASTNode):
             self.visit(node.subject)
+        else:
+            self._mark_condition_string_usage(node.subject)
+        if not isinstance(node.range, ASTNode):
+            msg = "'in' range must be an AST node"
+            raise TypeError(msg)
         self.visit(node.range)
 
     def visit_for_of_expression(self, node: ForOfExpression) -> None:
