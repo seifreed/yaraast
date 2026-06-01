@@ -572,7 +572,7 @@ def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
 def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
     scope = getattr(pragma, "scope", None)
     pb_pragma.pragma_type = _protobuf_pragma_type(pragma)
-    pb_pragma.name = _protobuf_required_string(pragma.name, "Pragma name")
+    pb_pragma.name = _protobuf_required_nonempty_string(pragma.name, "Pragma name")
     pb_pragma.scope = serialize_pragma_scope(scope) if scope is not None else ""
 
     macro_name = _protobuf_optional_string(
@@ -1704,7 +1704,7 @@ def protobuf_to_pragma(pb_pragma):
         )
     elif pragma_type == PragmaType.CUSTOM:
         pragma = CustomPragma(
-            name=pb_pragma.name,
+            name=_protobuf_required_nonempty_string(pb_pragma.name, "Pragma name"),
             arguments=list(pb_pragma.arguments),
             parameters=parameters,
             scope=scope,
@@ -1712,7 +1712,7 @@ def protobuf_to_pragma(pb_pragma):
     else:
         pragma = Pragma(
             pragma_type=pragma_type,
-            name=pb_pragma.name,
+            name=_protobuf_required_nonempty_string(pb_pragma.name, "Pragma name"),
             arguments=list(pb_pragma.arguments),
             scope=scope,
         )

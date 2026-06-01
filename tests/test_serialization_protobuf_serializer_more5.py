@@ -1398,6 +1398,25 @@ def test_protobuf_deserializer_rejects_empty_meta_keys(legacy_map: bool) -> None
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
+def test_protobuf_serializer_rejects_empty_pragma_names() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(pragmas=[CustomPragma("")])
+
+    with pytest.raises(SerializationError, match="Pragma name must not be empty"):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize("pragma_type", ["custom", "pragma"])
+def test_protobuf_deserializer_rejects_empty_pragma_names(pragma_type: str) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_pragma = pb_file.pragmas.add()
+    pb_pragma.pragma_type = pragma_type
+
+    with pytest.raises(SerializationError, match="Pragma name must not be empty"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 @pytest.mark.parametrize(
     ("condition", "message"),
     [
