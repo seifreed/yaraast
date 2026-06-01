@@ -58,7 +58,7 @@ def generate_graphs_parallel(
     analyzer: ParallelAnalyzer,
     asts: list[YaraFile],
     output_dir: str | Path,
-    graph_types: list[str] | None = None,
+    graph_types: Sequence[str] | None = None,
 ) -> list[Job]:
     """Generate dependency graph export jobs and update analyzer stats."""
     jobs = export_graph_files(asts, output_dir, graph_types)

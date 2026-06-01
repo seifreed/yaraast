@@ -286,6 +286,38 @@ def test_parallel_analyzer_files_custom_and_graphs(tmp_path: Path) -> None:
         assert Path(output).exists()
 
 
+@pytest.mark.parametrize("graph_types", ["full", b"full"])
+def test_parallel_graph_export_rejects_scalar_graph_types(
+    tmp_path: Path,
+    graph_types: object,
+) -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+    ast = _parsed_ast("graph_rule")
+
+    with pytest.raises(TypeError, match="graph_types must be a sequence of strings"):
+        analyzer.generate_graphs_parallel(
+            [ast],
+            tmp_path / "graphs",
+            cast(Any, graph_types),
+        )
+
+
+@pytest.mark.parametrize("graph_types", [[123], [None], [""]])
+def test_parallel_graph_export_rejects_invalid_graph_type_entries(
+    tmp_path: Path,
+    graph_types: object,
+) -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+    ast = _parsed_ast("graph_rule")
+
+    with pytest.raises(TypeError, match="graph_types must contain non-empty strings"):
+        analyzer.generate_graphs_parallel(
+            [ast],
+            tmp_path / "graphs",
+            cast(Any, graph_types),
+        )
+
+
 def test_parallel_parse_mixed_chunk_preserves_successful_files(tmp_path: Path) -> None:
     good_a = tmp_path / "a.yar"
     bad = tmp_path / "broken.yar"

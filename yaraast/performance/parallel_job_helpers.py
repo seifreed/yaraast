@@ -17,6 +17,8 @@ from yaraast.performance.validation import (
 )
 
 _EXPECTED_PARSE_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
+GRAPH_TYPES_TYPE_ERROR = "graph_types must be a sequence of strings"
+GRAPH_TYPE_ENTRY_ERROR = "graph_types must contain non-empty strings"
 
 
 def default_parallel_stats() -> dict[str, float | int]:
@@ -57,6 +59,20 @@ def fail_job(job: Job, error: Exception | str) -> Job:
     return job
 
 
+def validate_graph_types(graph_types: object) -> list[str]:
+    """Normalize graph export type names."""
+    if graph_types is None:
+        return ["full"]
+    if isinstance(graph_types, (str, bytes)) or not isinstance(graph_types, Sequence):
+        raise TypeError(GRAPH_TYPES_TYPE_ERROR)
+    normalized: list[str] = []
+    for graph_type in graph_types:
+        if not isinstance(graph_type, str) or not graph_type:
+            raise TypeError(GRAPH_TYPE_ENTRY_ERROR)
+        normalized.append(graph_type)
+    return normalized
+
+
 def analyze_file_path(path: str, analyzer: Any) -> dict[str, Any]:
     """Parse and analyze a file path using a provided analyzer instance."""
     from yaraast.parser.source import parse_yara_source
@@ -71,7 +87,7 @@ def analyze_file_path(path: str, analyzer: Any) -> dict[str, Any]:
 
 
 def export_graph_files(
-    asts: Sequence[YaraFile], output_dir: str | Path, graph_types: list[str] | None = None
+    asts: Sequence[YaraFile], output_dir: str | Path, graph_types: Sequence[str] | None = None
 ) -> list[Job]:
     """Generate dependency graph export jobs for ASTs."""
     from yaraast.metrics.dependency_graph_utils import (
@@ -79,7 +95,7 @@ def export_graph_files(
         export_dependency_graph,
     )
 
-    graph_types = graph_types or ["full"]
+    graph_types = validate_graph_types(graph_types)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     jobs: list[Job] = []

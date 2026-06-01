@@ -221,7 +221,7 @@ class ParallelAnalyzer:
         self,
         asts: list[YaraFile],
         output_dir: str | Path,
-        graph_types: list[str] | None = None,
+        graph_types: Sequence[str] | None = None,
     ) -> list[Job]:
         """Generate dependency graph exports for ASTs."""
         return job_generate_graphs_parallel(self, asts, output_dir, graph_types)
