@@ -7,6 +7,7 @@ from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.expressions import (
+    Expression,
     Identifier,
     ParenthesesExpression,
     SetExpression,
@@ -214,7 +215,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             self.visit(node.string_id)
         else:
             self._require_string_reference(node.string_id)
-        self.visit(node.offset)
+        self.visit(self._required_expression(node.offset, "'at' offset"))
 
     def visit_in_expression(self, node: InExpression) -> None:
         if isinstance(node.subject, str):
@@ -223,7 +224,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             self.visit(node.subject)
         else:
             self._require_string_reference(node.subject)
-        self.visit(node.range)
+        self.visit(self._required_expression(node.range, "'in' range"))
 
     def visit_for_of_expression(self, node: ForOfExpression) -> None:
         self._visit_ast_value(node.quantifier)
@@ -407,6 +408,13 @@ class StringUsageAnalyzer(BaseVisitor[None]):
     def _require_string_reference(value: Any) -> str:
         if not isinstance(value, str):
             msg = "String reference must be a string"
+            raise TypeError(msg)
+        return value
+
+    @staticmethod
+    def _required_expression(value: Any, field_name: str) -> Expression:
+        if not isinstance(value, Expression):
+            msg = f"{field_name} must be an Expression"
             raise TypeError(msg)
         return value
 

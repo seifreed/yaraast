@@ -409,6 +409,31 @@ def test_string_usage_analyzer_rejects_non_string_at_in_subjects(condition: Any)
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (AtExpression("$a", cast(Any, False)), "'at' offset must be an Expression"),
+        (InExpression("$a", cast(Any, False)), "'in' range must be an Expression"),
+    ],
+)
+def test_string_usage_analyzer_rejects_invalid_at_in_expression_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_at_in_expression",
+                strings=[PlainString("$a", value="x")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match=message):
+        StringUsageAnalyzer().analyze(ast)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         ForExpression(
