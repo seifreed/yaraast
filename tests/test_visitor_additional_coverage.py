@@ -7,16 +7,28 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
+from yaraast.ast.conditions import AtExpression, InExpression
 from yaraast.parser.parser import Parser
 from yaraast.visitor.base import BaseVisitor
 
 
 class TestAdditionalParserBasedCoverage:
     """Additional tests using real parsed YARA code to maximize coverage."""
+
+    @pytest.mark.parametrize(
+        "node",
+        [
+            AtExpression("$a", cast(Any, False)),
+            InExpression("$a", cast(Any, False)),
+        ],
+    )
+    def test_base_visitor_rejects_invalid_child_nodes(self, node: Any) -> None:
+        with pytest.raises(TypeError, match="Visitor child must be an ASTNode"):
+            BaseVisitor().visit(node)
 
     def test_visit_complete_yara_file_structure(self) -> None:
         """Test visiting all components of a comprehensive YARA file."""

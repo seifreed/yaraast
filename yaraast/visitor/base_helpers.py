@@ -37,9 +37,13 @@ class BaseVisitorHelpersMixin[T]:
                 visitor.visit(item)
 
     def _visit_if(self, node: ASTNode | None) -> None:
-        if node is not None:
-            visitor = cast(ASTVisitor[T], self)
-            visitor.visit(node)
+        if node is None:
+            return
+        if not isinstance(node, ASTNode):
+            msg = "Visitor child must be an ASTNode"
+            raise TypeError(msg)
+        visitor = cast(ASTVisitor[T], self)
+        visitor.visit(node)
 
     def _visit_value(self, value: object) -> None:
         visitor = cast(ASTVisitor[T], self)
