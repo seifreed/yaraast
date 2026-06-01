@@ -53,6 +53,24 @@ def test_analyze_json_commands_reject_empty_output_path(tmp_path: Path) -> None:
         assert "path must not be empty" in result.output
 
 
+def test_analyze_commands_reject_directory_rule_file(tmp_path: Path) -> None:
+    input_dir = tmp_path / "rules"
+    input_dir.mkdir()
+    runner = CliRunner()
+
+    commands = (
+        ["analyze", "full", str(input_dir)],
+        ["analyze", "best-practices", str(input_dir)],
+        ["analyze", "optimize", str(input_dir)],
+    )
+    for command in commands:
+        result = runner.invoke(cli, command)
+
+        assert result.exit_code == 2
+        assert "is a directory" in result.output
+        assert "Errno" not in result.output
+
+
 def test_analyze_best_practices(tmp_path: Path) -> None:
     rule_path = _write_rule(tmp_path)
     runner = CliRunner()

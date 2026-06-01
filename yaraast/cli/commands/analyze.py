@@ -39,7 +39,7 @@ def _validate_output_path(output: str | None) -> str | None:
 
 
 @analyze.command()
-@click.argument("rule_file", type=click.Path(exists=True))
+@click.argument("rule_file", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "-f",
     "--format",
@@ -79,7 +79,7 @@ def full(rule_file: str, output_format: str, output: str | None) -> None:
 
 
 @analyze.command()
-@click.argument("rule_file", type=click.Path(exists=True))
+@click.argument("rule_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("-v", "--verbose", is_flag=True, help="Show all suggestions")
 @click.option(
     "-c",
@@ -109,7 +109,7 @@ def best_practices(rule_file: str, verbose: bool, category: str) -> None:
 
 
 @analyze.command(name="optimize")
-@click.argument("rule_file", type=click.Path(exists=True))
+@click.argument("rule_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("-v", "--verbose", is_flag=True, help="Show all optimization suggestions")
 @click.option(
     "-f",
