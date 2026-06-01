@@ -182,6 +182,33 @@ def test_protobuf_serializer_rejects_boolean_modifier_values() -> None:
         protobuf_to_string(pb_string)
 
 
+def test_protobuf_serializer_rejects_unknown_modifier_value_types() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    invalid_modifier = StringModifier.from_name_value("xor", 1)
+    cast(Any, invalid_modifier).value = object()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_modifier",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="abc",
+                        modifiers=[invalid_modifier],
+                    )
+                ],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    with pytest.raises(
+        SerializationError,
+        match="String modifier value must be a string, number, tuple, or null",
+    ):
+        serializer.serialize(ast)
+
+
 def test_protobuf_serializer_does_not_coerce_invalid_xor_range_values_to_ints() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

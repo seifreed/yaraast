@@ -637,6 +637,8 @@ def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
         and _is_protobuf_int(value[1])
     ):
         pb_mod.tuple_value.extend([int(value[0]), int(value[1])])
+    elif isinstance(value, tuple) and len(value) == 2:
+        return
     elif isinstance(value, bool):
         _raise_invalid_modifier_value()
     elif isinstance(value, int):
@@ -645,6 +647,8 @@ def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
         pb_mod.typed_value.double_value = _finite_double_value(value, "String modifier")
     elif isinstance(value, str):
         pb_mod.typed_value.string_value = value
+    else:
+        _raise_invalid_modifier_value()
 
 
 def convert_string_to_protobuf(string_def, pb_string) -> None:
