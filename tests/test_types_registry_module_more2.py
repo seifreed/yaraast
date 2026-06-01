@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
+import builtins
+from collections.abc import Callable
+from types import ModuleType as PythonModuleType
+from typing import Any
+
+import pytest
+
 from yaraast.types._registry_collections import ArrayType, DictionaryType, StructType
 from yaraast.types._registry_module import FunctionType, ModuleType, TypeSystem
 from yaraast.types._registry_primitives import BooleanType, IntegerType, StringType
 from yaraast.types.type_environment import TypeEnvironment
+
+ImportFunction = Callable[[str, Any, Any, Any, int], PythonModuleType]
 
 
 def test_type_system_builtin_module_fallback_initializes_pe_and_math() -> None:
@@ -44,6 +53,28 @@ def test_type_system_builtin_module_fallback_initializes_pe_and_math() -> None:
     assert isinstance(math.functions["to_string"].return_type, StringType)
     assert "log" not in math.functions
     assert "sqrt" not in math.functions
+
+
+def test_type_system_propagates_module_loader_import_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_import: ImportFunction = builtins.__import__
+
+    def fail_module_loader_import(
+        name: str,
+        globals_: Any = None,
+        locals_: Any = None,
+        fromlist: Any = (),
+        level: int = 0,
+    ) -> PythonModuleType:
+        if name == "yaraast.types.module_loader":
+            raise ImportError("broken module loader", name="yaraast.types.module_loader")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_module_loader_import)
+
+    with pytest.raises(ImportError, match="broken module loader"):
+        TypeSystem()
 
 
 def test_module_and_function_types_and_environment_aliases() -> None:

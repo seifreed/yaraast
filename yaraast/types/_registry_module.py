@@ -51,13 +51,10 @@ class TypeSystem:
 
     def _init_modules(self) -> None:
         """Initialize modules using ModuleLoader."""
-        try:
-            from yaraast.types.module_loader import ModuleLoader
+        from yaraast.types.module_loader import ModuleLoader
 
-            loader = ModuleLoader()
-            self.modules = loader.modules
-        except ImportError:
-            self._init_builtin_modules()
+        loader = ModuleLoader()
+        self.modules = loader.modules
 
     def _init_builtin_modules(self) -> None:
         """Initialize builtin modules (fallback)."""
