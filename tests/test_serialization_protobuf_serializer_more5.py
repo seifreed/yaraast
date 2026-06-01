@@ -424,6 +424,29 @@ def test_protobuf_serializer_rejects_non_finite_meta_values() -> None:
         serializer.deserialize(binary_data=legacy_pb_file.SerializeToString())
 
 
+def test_protobuf_deserializer_rejects_empty_meta_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_meta"
+    pb_rule.condition.boolean_literal.value = True
+    pb_meta = pb_rule.meta_entries.add()
+    pb_meta.key = "score"
+    pb_meta.value.SetInParent()
+
+    with pytest.raises(SerializationError, match="Meta value is missing a value"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+    legacy_pb_file = yara_ast_pb2.YaraFile()
+    legacy_pb_rule = legacy_pb_file.rules.add()
+    legacy_pb_rule.name = "empty_legacy_meta"
+    legacy_pb_rule.condition.boolean_literal.value = True
+    legacy_pb_rule.meta["score"].SetInParent()
+
+    with pytest.raises(SerializationError, match="Meta value is missing a value"):
+        serializer.deserialize(binary_data=legacy_pb_file.SerializeToString())
+
+
 def test_protobuf_serializer_rejects_unsupported_meta_and_pragma_parameter_values() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     bad_meta_value = cast(Any, ["not", "a", "scalar"])
