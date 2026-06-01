@@ -12,6 +12,7 @@ from yaraast.errors import ValidationError
 from yaraast.metrics.capabilities import get_capability
 from yaraast.metrics.complexity_model import ComplexityMetrics
 from yaraast.metrics.facade import METRICS, DependencyGraphGenerator
+from yaraast.metrics.graphviz_errors import is_graphviz_error
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 
@@ -27,33 +28,6 @@ class MetricsReportData:
 def analyze_complexity(ast: YaraFile) -> ComplexityMetrics:
     analyzer = METRICS.new_complexity_analyzer()
     return analyzer.analyze(ast)
-
-
-def is_graphviz_error(error: Exception) -> bool:
-    """Check if error is caused by missing graphviz installation."""
-    if isinstance(error, ModuleNotFoundError) and error.name == "graphviz":
-        return True
-
-    # Check exception type first (more reliable than string matching)
-    error_type = type(error).__name__
-    if error_type in ("ExecutableNotFound", "CalledProcessError"):
-        return True
-    error_str = str(error)
-    error_text = error_str.lower()
-    graphviz_indicators = [
-        "executablenotfound",
-        "failed to execute",
-        "requires the 'graphviz' python package",
-        "graphviz executables",
-    ]
-    if any(indicator in error_text for indicator in graphviz_indicators):
-        return True
-    return "no such file or directory" in error_text and (
-        "posixpath('dot')" in error_text
-        or '"dot"' in error_text
-        or "'dot'" in error_text
-        or "graphviz" in error_text
-    )
 
 
 def build_complexity_payload(metrics: ComplexityMetrics) -> dict[str, Any]:

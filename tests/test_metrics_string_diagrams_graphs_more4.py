@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import graphviz
+import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
@@ -18,7 +19,14 @@ class _DotFail:
         self.source = source
 
     def render(self, *_args: object, **_kwargs: object) -> None:
-        raise RuntimeError("render failed")
+        raise RuntimeError("failed to execute PosixPath('dot')")
+
+
+class _DotBroken:
+    source = "digraph { a }"
+
+    def render(self, *_args: object, **_kwargs: object) -> None:
+        raise AttributeError("render state missing")
 
 
 def test_graph_helpers_fallbacks_and_empty_hex_source(tmp_path: Path) -> None:
@@ -49,6 +57,15 @@ def test_graph_helpers_fallbacks_and_empty_hex_source(tmp_path: Path) -> None:
     gen = StringDiagramGenerator()
     source = gen.generate_hex_pattern_diagram(ast)
     assert "No Hex Patterns Found" in source
+
+
+def test_graph_helpers_propagate_non_graphviz_render_errors(tmp_path: Path) -> None:
+    with pytest.raises(AttributeError, match="render state missing"):
+        StringDiagramGraphsMixin._render_or_write_dot(
+            _DotBroken(),
+            str(tmp_path / "broken.svg"),
+            "svg",
+        )
 
 
 def test_graph_stats_and_labels_high_complexity_paths(tmp_path: Path) -> None:

@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -37,7 +39,14 @@ class _RaisingDot:
     source = "digraph G { a -> b }"
 
     def render(self, _output_file: str, format: str, cleanup: bool = True) -> str:
-        raise RuntimeError("graphviz missing")
+        raise RuntimeError("failed to execute PosixPath('dot')")
+
+
+class _BrokenDot:
+    source = "digraph G { a -> b }"
+
+    def render(self, _output_file: str, format: str, cleanup: bool = True) -> str:
+        raise AttributeError("render state missing")
 
 
 def test_dependency_graph_helpers_render_and_rule_info(tmp_path: Path) -> None:
@@ -63,6 +72,11 @@ def test_dependency_graph_helpers_render_and_rule_info(tmp_path: Path) -> None:
     assert info["string_count"] == 1
     assert info["has_meta"] is True
     assert info["has_condition"] is True
+
+
+def test_dependency_graph_render_propagates_non_graphviz_errors(tmp_path: Path) -> None:
+    with pytest.raises(AttributeError, match="render state missing"):
+        render_graph(_BrokenDot(), str(tmp_path / "deps.svg"), "svg")
 
 
 def test_dependency_graph_generator_remaining_visitors_and_stats() -> None:

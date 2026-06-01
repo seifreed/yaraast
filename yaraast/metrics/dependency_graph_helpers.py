@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from yaraast.metrics.graphviz_errors import is_graphviz_error
+
 
 def reset_graph_state(generator) -> None:
     generator.dependencies.clear()
@@ -31,7 +33,9 @@ def render_graph(dot, output_path: str | None, format: str) -> str:
         output_file = str(output_path_obj.with_suffix(""))
         try:
             dot.render(output_file, format=format, cleanup=True)
-        except Exception:
+        except Exception as exc:
+            if not is_graphviz_error(exc):
+                raise
             # Fallback for environments without Graphviz executables.
             fallback_path = f"{output_file}.{format}"
             Path(fallback_path).write_text(dot.source, encoding="utf-8")
