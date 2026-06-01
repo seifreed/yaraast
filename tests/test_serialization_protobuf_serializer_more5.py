@@ -1236,19 +1236,33 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
             "UnaryExpression operator must be a string",
         ),
         (FunctionCall(cast(Any, 123), []), "FunctionCall function must be a string"),
+        (FunctionCall("", []), "FunctionCall function must not be empty"),
         (
             MemberAccess(Identifier("pe"), cast(Any, 123)),
             "MemberAccess member must be a string",
+        ),
+        (
+            MemberAccess(Identifier("pe"), ""),
+            "MemberAccess member must not be empty",
         ),
         (
             ForExpression("any", cast(Any, 123), StringIdentifier("$a"), BooleanLiteral(True)),
             "ForExpression variable must be a string",
         ),
         (
+            ForExpression("any", "", StringIdentifier("$a"), BooleanLiteral(True)),
+            "ForExpression variable must not be empty",
+        ),
+        (
             AtExpression(cast(Any, 123), IntegerLiteral(0)),
             "AtExpression string_id must be a string",
         ),
+        (
+            AtExpression("", IntegerLiteral(0)),
+            "AtExpression string_id must not be empty",
+        ),
         (ModuleReference(cast(Any, ["pe"])), "ModuleReference module must be a string"),
+        (ModuleReference(""), "ModuleReference module must not be empty"),
         (
             DictionaryAccess(Identifier("items"), cast(Any, 123)),
             "DictionaryAccess key must be a string or expression",
@@ -1262,6 +1276,10 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
             "ExternRuleReference rule_name must be a string",
         ),
         (
+            ExternRuleReference(""),
+            "ExternRuleReference rule_name must not be empty",
+        ),
+        (
             ExternRuleReference("ExternalRule", namespace=cast(Any, False)),
             "ExternRuleReference namespace must be a string",
         ),
@@ -1272,6 +1290,10 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
         (
             StringOperatorExpression(StringLiteral("a"), cast(Any, 123), StringLiteral("b")),
             "StringOperatorExpression operator must be a string",
+        ),
+        (
+            StringOperatorExpression(StringLiteral("a"), "", StringLiteral("b")),
+            "StringOperatorExpression operator must not be empty",
         ),
     ],
 )
@@ -1290,11 +1312,17 @@ def test_protobuf_serializer_rejects_invalid_expression_scalar_fields(
     ("condition", "message"),
     [
         (Identifier(cast(Any, ["id"])), "Identifier name must be a string"),
+        (Identifier(""), "Identifier name must not be empty"),
         (StringIdentifier(cast(Any, 123)), "StringIdentifier name must be a string"),
+        (StringIdentifier(""), "StringIdentifier name must not be empty"),
         (StringWildcard(cast(Any, 123)), "StringWildcard pattern must be a string"),
+        (StringWildcard(""), "StringWildcard pattern must not be empty"),
         (StringCount(cast(Any, 123)), "StringCount string_id must be a string"),
+        (StringCount(""), "StringCount string_id must not be empty"),
         (StringOffset(cast(Any, 123)), "StringOffset string_id must be a string"),
+        (StringOffset(""), "StringOffset string_id must not be empty"),
         (StringLength(cast(Any, 123)), "StringLength string_id must be a string"),
+        (StringLength(""), "StringLength string_id must not be empty"),
         (IntegerLiteral(cast(Any, True)), "IntegerLiteral value must be an integer"),
         (IntegerLiteral(cast(Any, "1")), "IntegerLiteral value must be an integer"),
         (StringLiteral(cast(Any, True)), "StringLiteral value must be a string"),
@@ -1312,6 +1340,64 @@ def test_protobuf_serializer_rejects_invalid_expression_leaf_fields(
 
     with pytest.raises(SerializationError, match=message):
         serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("expression_kind", "message"),
+    [
+        ("identifier", "Identifier name must not be empty"),
+        ("string_identifier", "StringIdentifier name must not be empty"),
+        ("string_wildcard", "StringWildcard pattern must not be empty"),
+        ("string_count", "StringCount string_id must not be empty"),
+        ("string_offset", "StringOffset string_id must not be empty"),
+        ("string_length", "StringLength string_id must not be empty"),
+        ("function_call", "FunctionCall function must not be empty"),
+        ("member_access", "MemberAccess member must not be empty"),
+        ("for_expression", "ForExpression variable must not be empty"),
+        ("at_expression", "AtExpression string_id must not be empty"),
+        ("module_reference", "ModuleReference module must not be empty"),
+        ("extern_rule_reference", "ExternRuleReference rule_name must not be empty"),
+        ("string_operator_expression", "StringOperatorExpression operator must not be empty"),
+    ],
+)
+def test_protobuf_deserializer_rejects_empty_expression_identifier_fields(
+    expression_kind: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_expression_identifier"
+    condition = pb_rule.condition
+
+    if expression_kind in {
+        "identifier",
+        "string_identifier",
+        "string_wildcard",
+        "string_count",
+        "module_reference",
+        "extern_rule_reference",
+    }:
+        getattr(condition, expression_kind).SetInParent()
+    elif expression_kind in {"string_offset", "string_length"}:
+        getattr(condition, expression_kind).index.integer_literal.value = 0
+    elif expression_kind == "function_call":
+        condition.function_call.SetInParent()
+    elif expression_kind == "member_access":
+        condition.member_access.object.identifier.name = "pe"
+    elif expression_kind == "for_expression":
+        condition.for_expression.quantifier = "any"
+        condition.for_expression.iterable.range_expression.low.integer_literal.value = 0
+        condition.for_expression.iterable.range_expression.high.integer_literal.value = 3
+        condition.for_expression.body.boolean_literal.value = True
+    elif expression_kind == "at_expression":
+        condition.at_expression.offset.integer_literal.value = 0
+    elif expression_kind == "string_operator_expression":
+        condition.string_operator_expression.left.string_literal.value = "a"
+        condition.string_operator_expression.right.string_literal.value = "b"
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
 def _invalid_expression_container_cases() -> list[tuple[Any, str]]:

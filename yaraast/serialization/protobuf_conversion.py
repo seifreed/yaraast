@@ -352,6 +352,14 @@ def _protobuf_required_string(value, context: str) -> str:
     raise SerializationError(msg)
 
 
+def _protobuf_required_nonempty_string(value, context: str) -> str:
+    text = _protobuf_required_string(value, context)
+    if not text:
+        msg = f"{context} must not be empty"
+        raise SerializationError(msg)
+    return text
+
+
 def _protobuf_optional_string(value, context: str) -> str | None:
     if value is None:
         return None
@@ -1168,31 +1176,31 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
 
     _copy_node_metadata_to_protobuf(expr, pb_expr)
     if isinstance(expr, Identifier):
-        pb_expr.identifier.name = _protobuf_required_string(expr.name, "Identifier name")
+        pb_expr.identifier.name = _protobuf_required_nonempty_string(expr.name, "Identifier name")
     elif isinstance(expr, StringIdentifier):
-        pb_expr.string_identifier.name = _protobuf_required_string(
+        pb_expr.string_identifier.name = _protobuf_required_nonempty_string(
             expr.name,
             "StringIdentifier name",
         )
     elif isinstance(expr, StringWildcard):
-        pb_expr.string_wildcard.pattern = _protobuf_required_string(
+        pb_expr.string_wildcard.pattern = _protobuf_required_nonempty_string(
             expr.pattern,
             "StringWildcard pattern",
         )
     elif isinstance(expr, StringCount):
-        pb_expr.string_count.string_id = _protobuf_required_string(
+        pb_expr.string_count.string_id = _protobuf_required_nonempty_string(
             expr.string_id,
             "StringCount string_id",
         )
     elif isinstance(expr, StringOffset):
-        pb_expr.string_offset.string_id = _protobuf_required_string(
+        pb_expr.string_offset.string_id = _protobuf_required_nonempty_string(
             expr.string_id,
             "StringOffset string_id",
         )
         if expr.index is not None:
             convert_expression_to_protobuf(expr.index, pb_expr.string_offset.index)
     elif isinstance(expr, StringLength):
-        pb_expr.string_length.string_id = _protobuf_required_string(
+        pb_expr.string_length.string_id = _protobuf_required_nonempty_string(
             expr.string_id,
             "StringLength string_id",
         )
@@ -1247,7 +1255,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.low, pb_expr.range_expression.low)
         convert_expression_to_protobuf(expr.high, pb_expr.range_expression.high)
     elif isinstance(expr, FunctionCall):
-        pb_expr.function_call.function = _protobuf_required_string(
+        pb_expr.function_call.function = _protobuf_required_nonempty_string(
             expr.function,
             "FunctionCall function",
         )
@@ -1258,12 +1266,12 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.index, pb_expr.array_access.index)
     elif isinstance(expr, MemberAccess):
         convert_expression_to_protobuf(expr.object, pb_expr.member_access.object)
-        pb_expr.member_access.member = _protobuf_required_string(
+        pb_expr.member_access.member = _protobuf_required_nonempty_string(
             expr.member,
             "MemberAccess member",
         )
     elif isinstance(expr, ModuleReference):
-        pb_expr.module_reference.module = _protobuf_required_string(
+        pb_expr.module_reference.module = _protobuf_required_nonempty_string(
             expr.module,
             "ModuleReference module",
         )
@@ -1277,7 +1285,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             msg = "DictionaryAccess key must be a string or expression"
             raise SerializationError(msg)
     elif isinstance(expr, ExternRuleReference):
-        pb_expr.extern_rule_reference.rule_name = _protobuf_required_string(
+        pb_expr.extern_rule_reference.rule_name = _protobuf_required_nonempty_string(
             expr.rule_name,
             "ExternRuleReference rule_name",
         )
@@ -1291,7 +1299,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         quantifier = _coerce_quantifier_expression(expr.quantifier)
         if quantifier is not None:
             convert_expression_to_protobuf(quantifier, pb_expr.for_expression.quantifier_expr)
-        pb_expr.for_expression.variable = _protobuf_required_string(
+        pb_expr.for_expression.variable = _protobuf_required_nonempty_string(
             expr.variable,
             "ForExpression variable",
         )
@@ -1316,7 +1324,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         if not isinstance(expr.string_id, str):
             msg = "AtExpression string_id must be a string for protobuf serialization"
             raise SerializationError(msg)
-        pb_expr.at_expression.string_id = _protobuf_required_string(
+        pb_expr.at_expression.string_id = _protobuf_required_nonempty_string(
             expr.string_id,
             "AtExpression string_id",
         )
@@ -1342,7 +1350,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.expression, pb_expr.defined_expression.expression)
     elif isinstance(expr, StringOperatorExpression):
         convert_expression_to_protobuf(expr.left, pb_expr.string_operator_expression.left)
-        pb_expr.string_operator_expression.operator = _protobuf_required_string(
+        pb_expr.string_operator_expression.operator = _protobuf_required_nonempty_string(
             expr.operator,
             "StringOperatorExpression operator",
         )
@@ -1901,17 +1909,48 @@ def protobuf_to_expression(pb_expr):
         return _apply_node_metadata_from_protobuf(pb_expr, node)
 
     if pb_expr.HasField("identifier"):
-        return with_metadata(Identifier(name=pb_expr.identifier.name))
+        return with_metadata(
+            Identifier(
+                name=_protobuf_required_nonempty_string(
+                    pb_expr.identifier.name,
+                    "Identifier name",
+                )
+            )
+        )
     if pb_expr.HasField("string_identifier"):
-        return with_metadata(StringIdentifier(name=pb_expr.string_identifier.name))
+        return with_metadata(
+            StringIdentifier(
+                name=_protobuf_required_nonempty_string(
+                    pb_expr.string_identifier.name,
+                    "StringIdentifier name",
+                )
+            )
+        )
     if pb_expr.HasField("string_wildcard"):
-        return with_metadata(StringWildcard(pattern=pb_expr.string_wildcard.pattern))
+        return with_metadata(
+            StringWildcard(
+                pattern=_protobuf_required_nonempty_string(
+                    pb_expr.string_wildcard.pattern,
+                    "StringWildcard pattern",
+                )
+            )
+        )
     if pb_expr.HasField("string_count"):
-        return with_metadata(StringCount(string_id=pb_expr.string_count.string_id))
+        return with_metadata(
+            StringCount(
+                string_id=_protobuf_required_nonempty_string(
+                    pb_expr.string_count.string_id,
+                    "StringCount string_id",
+                )
+            )
+        )
     if pb_expr.HasField("string_offset"):
         return with_metadata(
             StringOffset(
-                string_id=pb_expr.string_offset.string_id,
+                string_id=_protobuf_required_nonempty_string(
+                    pb_expr.string_offset.string_id,
+                    "StringOffset string_id",
+                ),
                 index=(
                     protobuf_to_expression(pb_expr.string_offset.index)
                     if pb_expr.string_offset.HasField("index")
@@ -1922,7 +1961,10 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("string_length"):
         return with_metadata(
             StringLength(
-                string_id=pb_expr.string_length.string_id,
+                string_id=_protobuf_required_nonempty_string(
+                    pb_expr.string_length.string_id,
+                    "StringLength string_id",
+                ),
                 index=(
                     protobuf_to_expression(pb_expr.string_length.index)
                     if pb_expr.string_length.HasField("index")
@@ -1986,7 +2028,10 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("function_call"):
         return with_metadata(
             FunctionCall(
-                function=pb_expr.function_call.function,
+                function=_protobuf_required_nonempty_string(
+                    pb_expr.function_call.function,
+                    "FunctionCall function",
+                ),
                 arguments=[
                     protobuf_to_expression(argument) for argument in pb_expr.function_call.arguments
                 ],
@@ -2003,11 +2048,21 @@ def protobuf_to_expression(pb_expr):
         return with_metadata(
             MemberAccess(
                 object=protobuf_to_expression(pb_expr.member_access.object),
-                member=pb_expr.member_access.member,
+                member=_protobuf_required_nonempty_string(
+                    pb_expr.member_access.member,
+                    "MemberAccess member",
+                ),
             ),
         )
     if pb_expr.HasField("module_reference"):
-        return with_metadata(ModuleReference(module=pb_expr.module_reference.module))
+        return with_metadata(
+            ModuleReference(
+                module=_protobuf_required_nonempty_string(
+                    pb_expr.module_reference.module,
+                    "ModuleReference module",
+                )
+            )
+        )
     if pb_expr.HasField("dictionary_access"):
         return with_metadata(
             DictionaryAccess(
@@ -2022,7 +2077,10 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("extern_rule_reference"):
         return with_metadata(
             ExternRuleReference(
-                rule_name=pb_expr.extern_rule_reference.rule_name,
+                rule_name=_protobuf_required_nonempty_string(
+                    pb_expr.extern_rule_reference.rule_name,
+                    "ExternRuleReference rule_name",
+                ),
                 namespace=pb_expr.extern_rule_reference.namespace or None,
             ),
         )
@@ -2034,7 +2092,10 @@ def protobuf_to_expression(pb_expr):
                     if pb_expr.for_expression.HasField("quantifier_expr")
                     else _restore_quantifier_text(pb_expr.for_expression.quantifier)
                 ),
-                variable=pb_expr.for_expression.variable,
+                variable=_protobuf_required_nonempty_string(
+                    pb_expr.for_expression.variable,
+                    "ForExpression variable",
+                ),
                 iterable=protobuf_to_expression(pb_expr.for_expression.iterable),
                 body=protobuf_to_expression(pb_expr.for_expression.body),
             ),
@@ -2058,7 +2119,10 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("at_expression"):
         return with_metadata(
             AtExpression(
-                string_id=pb_expr.at_expression.string_id,
+                string_id=_protobuf_required_nonempty_string(
+                    pb_expr.at_expression.string_id,
+                    "AtExpression string_id",
+                ),
                 offset=protobuf_to_expression(pb_expr.at_expression.offset),
             ),
         )
@@ -2095,7 +2159,10 @@ def protobuf_to_expression(pb_expr):
         return with_metadata(
             StringOperatorExpression(
                 left=protobuf_to_expression(pb_expr.string_operator_expression.left),
-                operator=pb_expr.string_operator_expression.operator,
+                operator=_protobuf_required_nonempty_string(
+                    pb_expr.string_operator_expression.operator,
+                    "StringOperatorExpression operator",
+                ),
                 right=protobuf_to_expression(pb_expr.string_operator_expression.right),
             ),
         )
