@@ -31,6 +31,12 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Rule
 from yaraast.visitor.base import ASTTransformer
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    LambdaExpression,
+    WithStatement,
+)
 
 
 class DeadCodeEliminator(ASTTransformer):
@@ -155,6 +161,18 @@ class DeadCodeEliminator(ASTTransformer):
         elif isinstance(expr, ForExpression):
             self._collect_for_expression_usage(expr)
             return
+        elif isinstance(expr, WithStatement):
+            self._collect_with_statement_usage(expr)
+            return
+        elif isinstance(expr, ArrayComprehension):
+            self._collect_array_comprehension_usage(expr)
+            return
+        elif isinstance(expr, DictComprehension):
+            self._collect_dict_comprehension_usage(expr)
+            return
+        elif isinstance(expr, LambdaExpression):
+            self._collect_lambda_expression_usage(expr)
+            return
         elif isinstance(expr, MemberAccess):
             if not isinstance(expr.object, Identifier):
                 self._collect_from_expression(expr.object)
@@ -180,6 +198,53 @@ class DeadCodeEliminator(ASTTransformer):
             self._collect_from_expression(expr.body)
         finally:
             self.local_variables.pop()
+
+    def _collect_with_statement_usage(self, expr: WithStatement) -> None:
+        local_count = len(self.local_variables)
+        try:
+            for declaration in expr.declarations:
+                self._collect_from_expression(declaration.value)
+                self.local_variables.append(declaration.identifier)
+            self._collect_from_expression(expr.body)
+        finally:
+            del self.local_variables[local_count:]
+
+    def _collect_array_comprehension_usage(self, expr: ArrayComprehension) -> None:
+        if expr.iterable is not None:
+            self._collect_from_expression(expr.iterable)
+        self.local_variables.append(expr.variable)
+        try:
+            if expr.condition is not None:
+                self._collect_from_expression(expr.condition)
+            if expr.expression is not None:
+                self._collect_from_expression(expr.expression)
+        finally:
+            self.local_variables.pop()
+
+    def _collect_dict_comprehension_usage(self, expr: DictComprehension) -> None:
+        if expr.iterable is not None:
+            self._collect_from_expression(expr.iterable)
+        local_count = len(self.local_variables)
+        try:
+            self.local_variables.append(expr.key_variable)
+            if expr.value_variable is not None:
+                self.local_variables.append(expr.value_variable)
+            if expr.condition is not None:
+                self._collect_from_expression(expr.condition)
+            if expr.key_expression is not None:
+                self._collect_from_expression(expr.key_expression)
+            if expr.value_expression is not None:
+                self._collect_from_expression(expr.value_expression)
+        finally:
+            del self.local_variables[local_count:]
+
+    def _collect_lambda_expression_usage(self, expr: LambdaExpression) -> None:
+        local_count = len(self.local_variables)
+        self.local_variables.extend(expr.parameters)
+        try:
+            self._collect_from_expression(expr.body)
+        finally:
+            del self.local_variables[local_count:]
 
     def visit_yara_file(self, node: YaraFile) -> YaraFile:
         """Visit YaraFile and remove unused rules."""
@@ -252,6 +317,65 @@ class DeadCodeEliminator(ASTTransformer):
                 )
                 or self._contains_rule_reference_with_locals(expr.iterable, local_variables)
                 or self._contains_rule_reference_with_locals(expr.body, nested_locals)
+            )
+
+        if isinstance(expr, WithStatement):
+            active_locals = set(local_variables)
+            for declaration in expr.declarations:
+                if self._contains_rule_reference_with_locals(declaration.value, active_locals):
+                    return True
+                active_locals.add(declaration.identifier)
+            return self._contains_rule_reference_with_locals(expr.body, active_locals)
+
+        if isinstance(expr, ArrayComprehension):
+            nested_locals = {*local_variables, expr.variable}
+            return (
+                (
+                    expr.iterable is not None
+                    and self._contains_rule_reference_with_locals(expr.iterable, local_variables)
+                )
+                or (
+                    expr.condition is not None
+                    and self._contains_rule_reference_with_locals(expr.condition, nested_locals)
+                )
+                or (
+                    expr.expression is not None
+                    and self._contains_rule_reference_with_locals(expr.expression, nested_locals)
+                )
+            )
+
+        if isinstance(expr, DictComprehension):
+            nested_locals = {*local_variables, expr.key_variable}
+            if expr.value_variable is not None:
+                nested_locals.add(expr.value_variable)
+            return (
+                (
+                    expr.iterable is not None
+                    and self._contains_rule_reference_with_locals(expr.iterable, local_variables)
+                )
+                or (
+                    expr.condition is not None
+                    and self._contains_rule_reference_with_locals(expr.condition, nested_locals)
+                )
+                or (
+                    expr.key_expression is not None
+                    and self._contains_rule_reference_with_locals(
+                        expr.key_expression, nested_locals
+                    )
+                )
+                or (
+                    expr.value_expression is not None
+                    and self._contains_rule_reference_with_locals(
+                        expr.value_expression,
+                        nested_locals,
+                    )
+                )
+            )
+
+        if isinstance(expr, LambdaExpression):
+            return self._contains_rule_reference_with_locals(
+                expr.body,
+                {*local_variables, *expr.parameters},
             )
 
         if isinstance(expr, MemberAccess):
@@ -410,8 +534,74 @@ class DeadCodeEliminator(ASTTransformer):
 
     def visit_identifier(self, node: Identifier) -> Identifier:
         """Visit Identifier - track potential rule usage."""
-        if self.in_condition and node.name not in _RESERVED_IDENTIFIERS:
+        if (
+            self.in_condition
+            and node.name not in _RESERVED_IDENTIFIERS
+            and node.name not in self.local_variables
+        ):
             self.used_rules.add(node.name)
+        return node
+
+    def visit_for_expression(self, node: ForExpression) -> ForExpression:
+        if isinstance(node.quantifier, ASTNode):
+            node.quantifier = cast(Expression, self.visit(node.quantifier))
+        node.iterable = cast(Expression, self.visit(node.iterable))
+        self.local_variables.append(node.variable)
+        try:
+            node.body = cast(Expression, self.visit(node.body))
+        finally:
+            self.local_variables.pop()
+        return node
+
+    def visit_with_statement(self, node: WithStatement) -> WithStatement:
+        local_count = len(self.local_variables)
+        try:
+            for declaration in node.declarations:
+                declaration.value = cast(Expression, self.visit(declaration.value))
+                self.local_variables.append(declaration.identifier)
+            node.body = cast(Expression, self.visit(node.body))
+        finally:
+            del self.local_variables[local_count:]
+        return node
+
+    def visit_array_comprehension(self, node: ArrayComprehension) -> ArrayComprehension:
+        if node.iterable is not None:
+            node.iterable = cast(Expression, self.visit(node.iterable))
+        self.local_variables.append(node.variable)
+        try:
+            if node.condition is not None:
+                node.condition = cast(Expression, self.visit(node.condition))
+            if node.expression is not None:
+                node.expression = cast(Expression, self.visit(node.expression))
+        finally:
+            self.local_variables.pop()
+        return node
+
+    def visit_dict_comprehension(self, node: DictComprehension) -> DictComprehension:
+        if node.iterable is not None:
+            node.iterable = cast(Expression, self.visit(node.iterable))
+        local_count = len(self.local_variables)
+        try:
+            self.local_variables.append(node.key_variable)
+            if node.value_variable is not None:
+                self.local_variables.append(node.value_variable)
+            if node.condition is not None:
+                node.condition = cast(Expression, self.visit(node.condition))
+            if node.key_expression is not None:
+                node.key_expression = cast(Expression, self.visit(node.key_expression))
+            if node.value_expression is not None:
+                node.value_expression = cast(Expression, self.visit(node.value_expression))
+        finally:
+            del self.local_variables[local_count:]
+        return node
+
+    def visit_lambda_expression(self, node: LambdaExpression) -> LambdaExpression:
+        local_count = len(self.local_variables)
+        self.local_variables.extend(node.parameters)
+        try:
+            node.body = cast(Expression, self.visit(node.body))
+        finally:
+            del self.local_variables[local_count:]
         return node
 
     def visit_member_access(self, node: MemberAccess) -> MemberAccess:

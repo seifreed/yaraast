@@ -30,6 +30,14 @@ from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator, eliminate_dead_code
 from yaraast.optimization.rule_optimizer import RuleOptimizer
 from yaraast.parser import Parser
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    LambdaExpression,
+    ListExpression,
+    WithDeclaration,
+    WithStatement,
+)
 
 
 def test_contains_rule_reference_and_external_references() -> None:
@@ -272,11 +280,6 @@ def test_dead_code_eliminator_ignores_for_loop_variables_as_rule_references() ->
     ast = YaraFile(
         rules=[
             Rule(
-                name="i",
-                modifiers=["private"],
-                condition=BooleanLiteral(True),
-            ),
-            Rule(
                 name="main",
                 condition=ForExpression(
                     quantifier="any",
@@ -285,6 +288,11 @@ def test_dead_code_eliminator_ignores_for_loop_variables_as_rule_references() ->
                     body=BinaryExpression(Identifier("i"), "==", IntegerLiteral(1)),
                 ),
             ),
+            Rule(
+                name="i",
+                modifiers=["private"],
+                condition=BooleanLiteral(True),
+            ),
         ]
     )
 
@@ -292,6 +300,60 @@ def test_dead_code_eliminator_ignores_for_loop_variables_as_rule_references() ->
 
     assert count == 1
     assert [rule.name for rule in optimized.rules] == ["main"]
+
+
+def test_dead_code_eliminator_ignores_yarax_locals_as_rule_references() -> None:
+    cases = [
+        (
+            WithStatement(
+                declarations=[WithDeclaration("x", IntegerLiteral(1))],
+                body=Identifier("x"),
+            ),
+            ["x"],
+        ),
+        (
+            ArrayComprehension(
+                expression=Identifier("x"),
+                variable="x",
+                iterable=ListExpression([IntegerLiteral(1)]),
+            ),
+            ["x"],
+        ),
+        (
+            DictComprehension(
+                key_expression=Identifier("k"),
+                value_expression=Identifier("v"),
+                key_variable="k",
+                value_variable="v",
+                iterable=ListExpression([IntegerLiteral(1)]),
+            ),
+            ["k", "v"],
+        ),
+        (
+            LambdaExpression(parameters=["x"], body=Identifier("x")),
+            ["x"],
+        ),
+    ]
+
+    for condition, private_names in cases:
+        ast = YaraFile(
+            rules=[
+                Rule(name="main", condition=condition),
+                *[
+                    Rule(
+                        name=name,
+                        modifiers=["private"],
+                        condition=BooleanLiteral(True),
+                    )
+                    for name in private_names
+                ],
+            ]
+        )
+
+        optimized, count = DeadCodeEliminator().eliminate(ast)
+
+        assert count == len(private_names)
+        assert [rule.name for rule in optimized.rules] == ["main"]
 
 
 def test_string_wildcard_keeps_matching_strings() -> None:
