@@ -9,6 +9,15 @@ from click.testing import CliRunner
 
 from yaraast.cli.main import cli
 
+_EMPTY_OUTPUT_COMMANDS = (
+    ("complexity", "--output"),
+    ("graph", "--output"),
+    ("tree", "--output"),
+    ("patterns", "--output"),
+    ("strings", "--output"),
+    ("report", "--output-dir"),
+)
+
 
 def _write_rule(tmp_path: Path) -> Path:
     rule_text = """
@@ -49,6 +58,17 @@ def test_metrics_tree_output(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert output.exists()
+
+
+def test_metrics_commands_reject_empty_output_paths(tmp_path: Path) -> None:
+    rule_path = _write_rule(tmp_path)
+    runner = CliRunner()
+
+    for command, option in _EMPTY_OUTPUT_COMMANDS:
+        result = runner.invoke(cli, ["metrics", command, str(rule_path), option, ""])
+
+        assert result.exit_code == 2
+        assert "path must not be empty" in result.output
 
 
 def test_metrics_tree_collapsible_starts_children_collapsed(tmp_path: Path) -> None:

@@ -34,12 +34,37 @@ from yaraast.cli.metrics_services import (
     parse_yara_file,
 )
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
+from yaraast.cli.utils import _require_file_path
 from yaraast.metrics import METRICS, DependencyGraphGenerator
 
 
 @click.group()
 def metrics() -> None:
     """Analyze and visualize YARA AST metrics."""
+
+
+def _validate_output_path(output: str | None) -> str | None:
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output
+
+
+def _validate_output_dir_path(output_dir: str | None) -> str | None:
+    if output_dir is None:
+        return None
+    try:
+        output_path = _require_file_path(output_dir)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output-dir") from exc
+    if output_path.exists() and not output_path.is_dir():
+        raise click.BadParameter("output path must be a directory", param_hint="--output-dir")
+    return output_dir
 
 
 @metrics.command()
@@ -65,6 +90,7 @@ def metrics() -> None:
 )
 def complexity(yara_file: str, output: str | None, format: str, quality_gate: int) -> None:
     """Analyze YARA rule complexity metrics."""
+    output = _validate_output_path(output)
     ast = parse_yara_file(yara_file)
 
     metrics = analyze_complexity(ast)
@@ -106,6 +132,7 @@ def complexity(yara_file: str, output: str | None, format: str, quality_gate: in
 )
 def graph(yara_file: str, output: str | None, format: str, type: str, engine: str) -> None:
     """Generate dependency graphs with GraphViz."""
+    output = _validate_output_path(output)
     if DependencyGraphGenerator is None:
         raise click.ClickException(
             "Graph visualization requires the 'graphviz' Python package. "
@@ -160,8 +187,9 @@ def tree(
     collapsible: bool,
 ) -> None:
     """Generate HTML collapsible tree visualization."""
+    output = _validate_output_path(output)
     ast = parse_yara_file(yara_file)
-    if not output:
+    if output is None:
         base_name = Path(yara_file).stem
         suffix = "interactive" if interactive else "tree"
         output = f"{base_name}_{suffix}.html"
@@ -203,6 +231,7 @@ def tree(
 @click.option("--stats", is_flag=True, help="Show pattern statistics")
 def patterns(yara_file: str, output: str | None, type: str, format: str, stats: bool) -> None:
     """Generate string pattern analysis diagrams."""
+    output = _validate_output_path(output)
     ast = parse_yara_file(yara_file)
     generator = METRICS.new_string_diagram_generator()
     output_path = determine_pattern_output_path(yara_file, output, type, format)
@@ -243,10 +272,11 @@ def patterns(yara_file: str, output: str | None, type: str, format: str, stats: 
 )
 def report(yara_file: str, output_dir: str | None, format: str) -> None:
     """Generate comprehensive metrics report with all visualizations."""
+    output_dir = _validate_output_dir_path(output_dir)
     ast = parse_yara_file(yara_file)
 
     # Setup output directory
-    if not output_dir:
+    if output_dir is None:
         output_dir = Path(yara_file).stem + "_metrics_report"
 
     output_path = Path(output_dir)
@@ -287,6 +317,7 @@ def report(yara_file: str, output_dir: str | None, format: str) -> None:
 )
 def strings(yara_file: str, output: str | None, format: str) -> None:
     """Analyze string patterns in YARA rules."""
+    output = _validate_output_path(output)
     ast = parse_yara_file(yara_file)
     analysis = _analyze_string_patterns(ast)
 
