@@ -54,6 +54,7 @@ from yaraast.ast.strings import (
 )
 from yaraast.errors import SerializationError
 from yaraast.serialization import yara_ast_pb2
+from yaraast.serialization.protobuf_conversion import _protobuf_has_field
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 from yaraast.yarax.ast_nodes import DictExpression, ListExpression, TupleExpression
 
@@ -99,6 +100,17 @@ def _sample_ast() -> YaraFile:
         includes=[Include(path="inc.yar")],
         rules=[rule],
     )
+
+
+def test_protobuf_has_field_propagates_missing_message_api() -> None:
+    class NotAProtobufMessage:
+        pass
+
+    location = yara_ast_pb2.SourceLocation(line=1)
+    assert _protobuf_has_field(location, "line") is False
+
+    with pytest.raises(AttributeError):
+        _protobuf_has_field(NotAProtobufMessage(), "line")
 
 
 def test_protobuf_serializer_roundtrip_and_metadata() -> None:

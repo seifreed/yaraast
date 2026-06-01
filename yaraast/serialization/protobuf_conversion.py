@@ -38,7 +38,7 @@ def _validate_finite_quantifier(value) -> None:
 def _protobuf_has_field(message, field_name: str) -> bool:
     try:
         return message.HasField(field_name)
-    except (AttributeError, ValueError):
+    except ValueError:
         return False
 
 
