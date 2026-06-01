@@ -609,6 +609,15 @@ def _raise_invalid_modifier_value() -> None:
     raise SerializationError(msg)
 
 
+def _validate_plain_string_value_for_protobuf(value) -> None:
+    if not isinstance(value, str | bytes):
+        msg = "PlainString value must be a string or bytes"
+        raise SerializationError(msg)
+    if not value:
+        msg = "PlainString must contain at least one byte"
+        raise SerializationError(msg)
+
+
 def _is_protobuf_int(value) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
@@ -671,13 +680,11 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
         f"{string_context} is_anonymous",
     )
     if isinstance(string_def, PlainString):
+        _validate_plain_string_value_for_protobuf(string_def.value)
         if isinstance(string_def.value, bytes):
             pb_string.plain.raw_value = string_def.value
-        elif isinstance(string_def.value, str):
-            pb_string.plain.value = string_def.value
         else:
-            msg = "PlainString value must be a string or bytes"
-            raise SerializationError(msg)
+            pb_string.plain.value = string_def.value
         for mod in _protobuf_string_modifier_list(
             string_def.modifiers,
             "PlainString modifiers",
@@ -1796,6 +1803,7 @@ def protobuf_to_string(pb_string) -> Any:
             if _protobuf_has_field(pb_string.plain, "raw_value")
             else pb_string.plain.value
         )
+        _validate_plain_string_value_for_protobuf(value)
         s = PlainString(
             identifier=pb_string.identifier,
             value=value,

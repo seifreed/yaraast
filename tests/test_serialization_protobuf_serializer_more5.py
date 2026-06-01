@@ -660,6 +660,41 @@ def test_protobuf_deserializer_rejects_empty_hex_string() -> None:
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
+@pytest.mark.parametrize("value", ["", b""])
+def test_protobuf_serializer_rejects_empty_plain_string(value: str | bytes) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="empty_plain_string",
+                strings=[PlainString(identifier="$a", value=value)],
+                condition=BooleanLiteral(True),
+            )
+        ],
+    )
+
+    with pytest.raises(SerializationError, match="PlainString must contain at least one byte"):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize("use_raw_value", [False, True])
+def test_protobuf_deserializer_rejects_empty_plain_string(use_raw_value: bool) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_plain_string"
+    pb_rule.condition.boolean_literal.value = True
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$a"
+    if use_raw_value:
+        pb_string.plain.raw_value = b""
+    else:
+        pb_string.plain.value = ""
+
+    with pytest.raises(SerializationError, match="PlainString must contain at least one byte"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 @pytest.mark.parametrize(
     ("tokens", "message"),
     [
