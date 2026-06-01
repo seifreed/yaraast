@@ -4,16 +4,20 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from types import SimpleNamespace
-from typing import cast
+from typing import Any, cast
+
+import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForOfExpression, InExpression
+from yaraast.ast.conditions import ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     Identifier,
     IntegerLiteral,
+    StringIdentifier,
     StringLiteral,
+    StringWildcard,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import RuleModifier
@@ -351,6 +355,19 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
 
     # Keep one simple literal visitor exercised explicitly.
     assert hasher.visit_string_literal(StringLiteral(value="ok")) == "Str(ok)"
+
+
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        StringLiteral(cast(Any, False)),
+        StringIdentifier(cast(Any, False)),
+        StringWildcard(cast(Any, False)),
+    ],
+)
+def test_ast_hasher_rejects_non_string_string_set_values(string_set: Any) -> None:
+    with pytest.raises(TypeError, match="String reference must be a string"):
+        AstHasher().visit(OfExpression("any", [string_set]))
 
 
 def test_ast_hasher_yarax_expression_nodes() -> None:

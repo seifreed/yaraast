@@ -357,11 +357,21 @@ class AstHasher(ASTVisitor[str]):
         if isinstance(value, str):
             return value
         if isinstance(value, StringIdentifier):
+            if not isinstance(value.name, str):
+                msg = "String reference must be a string"
+                raise TypeError(msg)
             return value.name
         if isinstance(value, StringWildcard):
+            if not isinstance(value.pattern, str):
+                msg = "String reference must be a string"
+                raise TypeError(msg)
             return value.pattern
-        if isinstance(value, StringLiteral) and value.value.startswith("$"):
-            return value.value
+        if isinstance(value, StringLiteral):
+            if not isinstance(value.value, str):
+                msg = "String reference must be a string"
+                raise TypeError(msg)
+            if value.value.startswith("$"):
+                return value.value
         return None
 
     def _hash_in_rule_pragmas(self, pragmas) -> str:
