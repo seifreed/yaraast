@@ -33,7 +33,7 @@ def _validate_output_file(output_file: str) -> Path:
 
 
 @click.command()
-@click.argument("input_file", type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 @click.argument("output_file", type=click.Path())
 def format_yara(input_file: str, output_file: str) -> None:
     """Format a YARA file with consistent style."""
@@ -54,7 +54,7 @@ def format_yara(input_file: str, output_file: str) -> None:
 
 
 @click.command("validate-syntax")
-@click.argument("input_file", type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 def validate_syntax(input_file: str) -> None:
     """Validate a YARA file for syntax errors."""
     try:

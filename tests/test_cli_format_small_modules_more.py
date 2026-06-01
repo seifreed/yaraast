@@ -133,6 +133,24 @@ def test_format_command_rejects_empty_output_file(tmp_path: Path) -> None:
     assert "Formatted YARA file written" not in result.output
 
 
+def test_format_commands_reject_directory_input(tmp_path: Path) -> None:
+    runner = CliRunner()
+    input_dir = tmp_path / "rules"
+    input_dir.mkdir()
+    output_file = tmp_path / "output.yar"
+
+    format_result = runner.invoke(format_yara, [str(input_dir), str(output_file)])
+    assert format_result.exit_code == 2
+    assert "is a directory" in format_result.output
+    assert "Errno" not in format_result.output
+    assert not output_file.exists()
+
+    validate_result = runner.invoke(validate_syntax, [str(input_dir)])
+    assert validate_result.exit_code == 2
+    assert "is a directory" in validate_result.output
+    assert "Invalid YARA file" not in validate_result.output
+
+
 def test_format_command_reports_parse_error(tmp_path: Path) -> None:
     runner = CliRunner()
     input_file = tmp_path / "broken.yar"
