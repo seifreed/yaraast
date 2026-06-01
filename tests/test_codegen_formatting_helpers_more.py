@@ -54,6 +54,8 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
     for invalid_modifiers in invalid_modifier_containers:
         with pytest.raises(TypeError, match="Rule modifiers must be a list or tuple"):
             format_rule_modifiers(invalid_modifiers)
+    with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
+        format_rule_modifiers([SimpleNamespace(__str__=lambda: "private")])
 
     assert format_rule_tags([]) == ""
     assert format_rule_tags(["t1", Tag(name="t2")]) == "t1 t2"

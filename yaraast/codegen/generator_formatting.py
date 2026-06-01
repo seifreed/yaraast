@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from yaraast.ast.modifiers import RuleModifier
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
@@ -44,16 +45,25 @@ def format_rule_modifiers(modifiers: list[Any] | tuple[Any, ...] | None) -> str:
     if not modifiers:
         return ""
     validate_rule_modifiers(modifiers)
-    return " ".join(str(m) for m in modifiers)
+    return " ".join(_rule_modifier_name(modifier) for modifier in modifiers)
 
 
 def validate_rule_modifiers(modifiers: list[Any] | tuple[Any, ...]) -> None:
     for modifier in modifiers:
-        name = str(modifier)
+        name = _rule_modifier_name(modifier)
         if name in _YARA_RULE_MODIFIERS:
             continue
         msg = f"Invalid rule modifier '{name}' for libyara output"
         raise ValueError(msg)
+
+
+def _rule_modifier_name(modifier: Any) -> str:
+    if isinstance(modifier, str):
+        return modifier
+    if isinstance(modifier, RuleModifier):
+        return str(modifier)
+    msg = "Rule modifiers must contain strings or RuleModifier nodes for libyara output"
+    raise TypeError(msg)
 
 
 def validate_rule_identifiers(rules: list[Any] | tuple[Any, ...]) -> None:

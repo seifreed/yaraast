@@ -1110,27 +1110,67 @@ def test_codegen_rule_visitors_reject_invalid_rule_identifiers(rule_name: str) -
 
 
 def test_codegen_generators_reject_invalid_rule_modifiers() -> None:
-    false_modifier: Any = False
-    cases = [
-        Rule(name="invalid_modifier", modifiers=["foo"], condition=BooleanLiteral(True)),
-        Rule(name="false_modifier", modifiers=false_modifier, condition=BooleanLiteral(True)),
+    ast = YaraFile(
+        rules=[Rule(name="invalid_modifier", modifiers=["foo"], condition=BooleanLiteral(True))]
+    )
+
+    with pytest.raises(ValueError, match="Invalid rule modifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid rule modifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid rule modifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid rule modifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
+@pytest.mark.parametrize(
+    "rule",
+    [
+        Rule(name="false_modifier", modifiers=cast(Any, False), condition=BooleanLiteral(True)),
         Rule.from_raw(
             name="false_raw_modifier",
-            modifiers=false_modifier,
+            modifiers=cast(Any, False),
             condition=BooleanLiteral(True),
         ),
-    ]
+    ],
+)
+def test_codegen_generators_reject_non_string_boolean_rule_modifiers(rule: Rule) -> None:
+    ast = YaraFile(rules=[rule])
 
-    for rule in cases:
-        ast = YaraFile(rules=[rule])
-        with pytest.raises(ValueError, match="Invalid rule modifier"):
-            CodeGenerator().generate(ast)
-        with pytest.raises(ValueError, match="Invalid rule modifier"):
-            AdvancedCodeGenerator().generate(ast)
-        with pytest.raises(ValueError, match="Invalid rule modifier"):
-            CommentAwareCodeGenerator().generate(ast)
-        with pytest.raises(ValueError, match="Invalid rule modifier"):
-            PrettyPrinter().pretty_print(ast)
+    with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_generators_reject_non_string_rule_modifiers() -> None:
+    class AsPrivate:
+        def __str__(self) -> str:
+            return "private"
+
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_modifier",
+                modifiers=[AsPrivate()],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
+        PrettyPrinter().pretty_print(ast)
 
 
 @pytest.mark.parametrize(
