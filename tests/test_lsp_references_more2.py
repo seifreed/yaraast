@@ -132,6 +132,25 @@ rule shadowed {
     assert [text_edit.range.start.line for text_edit in edit.changes[uri]] == [2]
 
 
+def test_lsp_rule_navigation_ignores_yarax_comprehension_local_declaration() -> None:
+    text = """
+rule helper { condition: true }
+rule local_ref {
+  condition:
+    [helper for helper in (1, 2) if helper > 0]
+}
+""".lstrip()
+    uri = "file://test.yar"
+
+    assert DefinitionProvider().get_definition(text, _pos(3, 17), uri) is None
+    assert RenameProvider().prepare_rename(text, _pos(3, 17), uri) is None
+
+    edit = RenameProvider().rename(text, _pos(0, 7), "renamed", uri)
+    assert edit is not None
+    assert edit.changes is not None
+    assert [text_edit.range.start.line for text_edit in edit.changes[uri]] == [0]
+
+
 def test_reference_section_lookup_ignores_inline_markers_inside_literals() -> None:
     line = 'rule r { condition: "strings:" and $a }'
     col = line.index("$a")

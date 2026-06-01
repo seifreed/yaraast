@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING, Any
 
 from lsprotocol.types import Position, Range
 
-from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
+from yaraast.ast.base import ASTNode
+from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
@@ -27,7 +28,7 @@ from yaraast.lsp.document_query_resolution_ranges import narrow_range_to_name, r
 from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 from yaraast.lsp.utils import find_node_at_position, get_word_at_position, location_to_range
-from yaraast.yarax.ast_nodes import WithStatement
+from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension, WithStatement
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
@@ -37,7 +38,7 @@ def resolve_symbol_from_ast(ctx: DocumentContext, position: Position) -> Resolve
     ast = ctx.ast()
     if ast is None:
         return None
-    local_declaration = _resolve_with_declaration_identifier(ctx, ast, position)
+    local_declaration = _resolve_local_declaration_identifier(ctx, ast, position)
     if local_declaration is not None:
         return local_declaration
     node = find_node_at_position(ast, position, ctx.text)
@@ -54,7 +55,7 @@ def resolve_symbol_from_ast(ctx: DocumentContext, position: Position) -> Resolve
     return _resolve_expression_context(ctx, position, node)
 
 
-def _resolve_with_declaration_identifier(
+def _resolve_local_declaration_identifier(
     ctx: DocumentContext,
     root: Any,
     position: Position,
@@ -64,27 +65,101 @@ def _resolve_with_declaration_identifier(
         return None
     for node in iter_ast_nodes(root):
         if not isinstance(node, WithStatement):
-            continue
-        for declaration in node.declarations:
-            if word != declaration.identifier:
-                continue
-            declaration_range = _with_declaration_identifier_range(
-                ctx, declaration.identifier, declaration.value
-            )
-            if declaration_range is None:
-                continue
-            resolved = resolved_if_contains(
-                position,
-                ResolvedSymbol(
-                    ctx.uri,
-                    declaration.identifier,
-                    declaration.identifier,
-                    "identifier",
-                    declaration_range,
-                ),
-            )
+            resolved = _resolve_loop_declaration_identifier(ctx, node, word, position)
             if resolved is not None:
                 return resolved
+            continue
+        resolved = _resolve_with_declaration_identifier(ctx, node, word, position)
+        if resolved is not None:
+            return resolved
+    return None
+
+
+def _resolve_with_declaration_identifier(
+    ctx: DocumentContext,
+    node: WithStatement,
+    word: str,
+    position: Position,
+) -> ResolvedSymbol | None:
+    for declaration in node.declarations:
+        if word != declaration.identifier:
+            continue
+        declaration_range = _with_declaration_identifier_range(
+            ctx, declaration.identifier, declaration.value
+        )
+        if declaration_range is None:
+            continue
+        resolved = _resolved_local_identifier(
+            ctx, declaration.identifier, declaration_range, position
+        )
+        if resolved is not None:
+            return resolved
+    return None
+
+
+def _resolve_loop_declaration_identifier(
+    ctx: DocumentContext,
+    node: ASTNode,
+    word: str,
+    position: Position,
+) -> ResolvedSymbol | None:
+    if isinstance(node, ForExpression | ArrayComprehension):
+        return _resolve_names_before_iterable(ctx, [node.variable], node.iterable, word, position)
+    if isinstance(node, DictComprehension):
+        names = [node.key_variable]
+        if node.value_variable:
+            names.append(node.value_variable)
+        return _resolve_names_before_iterable(ctx, names, node.iterable, word, position)
+    return None
+
+
+def _resolve_names_before_iterable(
+    ctx: DocumentContext,
+    identifiers: list[str],
+    iterable: Any,
+    word: str,
+    position: Position,
+) -> ResolvedSymbol | None:
+    if word not in identifiers:
+        return None
+    iterable_range = _first_value_range(iterable, ctx.text)
+    if iterable_range is None:
+        return None
+    line_index = iterable_range.start.line
+    if line_index < 0 or line_index >= len(ctx.lines):
+        return None
+    line = ctx.lines[line_index]
+    iterable_start = utf16_col_to_utf8(line, iterable_range.start.character)
+    declaration_start = line.rfind("for", 0, iterable_start)
+    separator_start = line.rfind("in", declaration_start, iterable_start)
+    if declaration_start < 0 or separator_start < 0:
+        return None
+    identifier_start = line.find(word, declaration_start + len("for"), separator_start)
+    while identifier_start >= 0:
+        declaration_range = _same_line_identifier_range(line, line_index, identifier_start, word)
+        if declaration_range is not None:
+            resolved = _resolved_local_identifier(ctx, word, declaration_range, position)
+            if resolved is not None:
+                return resolved
+        identifier_start = line.find(word, identifier_start + len(word), separator_start)
+    return None
+
+
+def _first_value_range(value: Any, source_text: str) -> Range | None:
+    value_location = getattr(value, "location", None)
+    if value_location is not None:
+        return location_to_range(value_location, source_text)
+    if isinstance(value, ASTNode):
+        child_ranges = [
+            child_range
+            for child in value.children()
+            if (child_range := _first_value_range(child, source_text)) is not None
+        ]
+        return min(
+            child_ranges,
+            key=lambda range_: (range_.start.line, range_.start.character),
+            default=None,
+        )
     return None
 
 
@@ -93,10 +168,9 @@ def _with_declaration_identifier_range(
     identifier: str,
     value: Any,
 ) -> Range | None:
-    value_location = getattr(value, "location", None)
-    if value_location is None:
+    value_range = _first_value_range(value, ctx.text)
+    if value_range is None:
         return None
-    value_range = location_to_range(value_location, ctx.text)
     line_index = value_range.start.line
     if line_index < 0 or line_index >= len(ctx.lines):
         return None
@@ -108,6 +182,22 @@ def _with_declaration_identifier_range(
     between_identifier_and_value = line[identifier_start + len(identifier) : value_start]
     if "=" not in between_identifier_and_value:
         return None
+    return _same_line_identifier_range(line, line_index, identifier_start, identifier)
+
+
+def _same_line_identifier_range(
+    line: str,
+    line_index: int,
+    identifier_start: int,
+    identifier: str,
+) -> Range | None:
+    if identifier_start < 0:
+        return None
+    identifier_end = identifier_start + len(identifier)
+    if identifier_start > 0 and _is_identifier_char(line[identifier_start - 1]):
+        return None
+    if identifier_end < len(line) and _is_identifier_char(line[identifier_end]):
+        return None
     return Range(
         start=Position(
             line=line_index,
@@ -117,6 +207,22 @@ def _with_declaration_identifier_range(
             line=line_index,
             character=utf8_col_to_utf16(line, identifier_start + len(identifier)),
         ),
+    )
+
+
+def _is_identifier_char(char: str) -> bool:
+    return char.isalnum() or char in "_$"
+
+
+def _resolved_local_identifier(
+    ctx: DocumentContext,
+    name: str,
+    range_: Range,
+    position: Position,
+) -> ResolvedSymbol | None:
+    return resolved_if_contains(
+        position,
+        ResolvedSymbol(ctx.uri, name, name, "identifier", range_),
     )
 
 
