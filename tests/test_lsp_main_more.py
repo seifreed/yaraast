@@ -5,6 +5,7 @@ from __future__ import annotations
 import builtins
 from collections.abc import Callable
 import importlib
+import sys
 from types import ModuleType
 from typing import Any
 
@@ -74,6 +75,34 @@ def test_lsp_package_propagates_internal_import_errors(
     finally:
         monkeypatch.setattr(builtins, "__import__", real_import)
         importlib.reload(lsp_pkg)
+
+
+def test_lsp_server_import_propagates_pygls_internal_import_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import yaraast.lsp.server as lsp_server
+
+    real_import: ImportFunction = builtins.__import__
+
+    def fail_pygls_internal_import(
+        name: str,
+        globals_: Any = None,
+        locals_: Any = None,
+        fromlist: Any = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "pygls.lsp.server":
+            raise ImportError("broken pygls protocol", name="pygls.protocol")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_pygls_internal_import)
+    try:
+        with pytest.raises(ImportError, match="broken pygls protocol"):
+            importlib.reload(lsp_server)
+    finally:
+        monkeypatch.setattr(builtins, "__import__", real_import)
+        sys.modules["yaraast.lsp.server"] = lsp_server
+        importlib.reload(lsp_server)
 
 
 def test_lsp_main_raises_when_stdio_cannot_start_under_pytest_capture() -> None:

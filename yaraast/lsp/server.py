@@ -4,12 +4,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+_PYGLS_V2_SERVER_IMPORT_NAMES = {"pygls", "pygls.lsp", "pygls.lsp.server"}
+
+
+def _is_missing_pygls_v2_server(exc: ImportError) -> bool:
+    return (exc.name or "") in _PYGLS_V2_SERVER_IMPORT_NAMES
+
+
 if TYPE_CHECKING:
     from pygls.lsp.server import LanguageServer  # pygls >= 2.0
 else:
     try:
         from pygls.lsp.server import LanguageServer  # pygls >= 2.0
-    except ImportError:
+    except ImportError as exc:
+        if not _is_missing_pygls_v2_server(exc):
+            raise
         from pygls.server import LanguageServer  # pygls < 2.0
 
 from yaraast.lsp.server_factory import configure_providers, create_runtime
