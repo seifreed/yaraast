@@ -264,12 +264,12 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
     def visit_function_call(self, node) -> None:
         """Track module function calls."""
-        function_name = node.function
+        function_name = self._required_string(node.function, "Function name")
         module_name = function_name.split(".", 1)[0] if "." in function_name else None
         if module_name in self.imports and not self._is_local(module_name):
             self._add_module_reference(module_name)
 
-        for arg in node.arguments:
+        for arg in self._required_ast_sequence(node.arguments, "Function arguments"):
             self.visit(arg)
 
     def visit_binary_expression(self, node) -> None:
@@ -310,11 +310,11 @@ class DependencyGraphGenerator(MetricsVisitorBase):
             self.visit(node.condition)
 
     def visit_at_expression(self, node) -> None:
-        self.visit(node.offset)
+        self.visit(self._required_ast_node(node.offset, "'at' offset"))
 
     def visit_in_expression(self, node) -> None:
         self._visit_ast_value(node.subject)
-        self.visit(node.range)
+        self.visit(self._required_ast_node(node.range, "'in' range"))
 
     def visit_of_expression(self, node) -> None:
         self._visit_ast_value(node.quantifier)

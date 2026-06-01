@@ -47,7 +47,8 @@ class DependencyFinder(MetricsVisitorBase):
         self.visit(node.high)
 
     def visit_function_call(self, node) -> None:
-        for arg in node.arguments:
+        self._required_string(node.function, "Function name")
+        for arg in self._required_ast_sequence(node.arguments, "Function arguments"):
             self.visit(arg)
 
     def visit_array_access(self, node) -> None:
@@ -78,12 +79,12 @@ class DependencyFinder(MetricsVisitorBase):
             self.visit(node.condition)
 
     def visit_at_expression(self, node) -> None:
-        self.visit(node.offset)
+        self.visit(self._required_ast_node(node.offset, "'at' offset"))
 
     def visit_in_expression(self, node) -> None:
         if hasattr(node.subject, "accept"):
             self.visit(node.subject)
-        self.visit(node.range)
+        self.visit(self._required_ast_node(node.range, "'in' range"))
 
     def visit_of_expression(self, node) -> None:
         if hasattr(node.quantifier, "accept"):

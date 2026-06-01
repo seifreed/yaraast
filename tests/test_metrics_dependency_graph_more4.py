@@ -19,6 +19,7 @@ from yaraast.ast.conditions import (
 from yaraast.ast.expressions import (
     ArrayAccess,
     BooleanLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
     MemberAccess,
@@ -323,6 +324,37 @@ def test_dependency_graph_rejects_invalid_local_variable_names(
     ast = YaraFile(rules=[Rule("caller", condition=condition)])
 
     with pytest.raises(TypeError, match="Local variable name must be a string"):
+        analyze(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (AtExpression("$a", cast(Any, False)), "'at' offset must be an AST node"),
+        (InExpression("$a", cast(Any, False)), "'in' range must be an AST node"),
+        (FunctionCall(cast(Any, False), []), "Function name must be a string"),
+        (FunctionCall("uint8", cast(Any, False)), "Function arguments must be a list or tuple"),
+        (
+            FunctionCall("uint8", [cast(Any, object())]),
+            "Function arguments must contain AST nodes",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "analyze",
+    [
+        lambda ast: DependencyGraphGenerator().visit(ast),
+        build_dependency_graph,
+    ],
+)
+def test_dependency_graph_rejects_invalid_traversal_fields(
+    analyze: Any,
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule("caller", condition=condition)])
+
+    with pytest.raises(TypeError, match=message):
         analyze(ast)
 
 

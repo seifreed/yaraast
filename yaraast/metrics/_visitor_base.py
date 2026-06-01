@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.ast.base import ASTNode
 from yaraast.visitor.defaults import DefaultASTVisitor
 
 
@@ -19,6 +20,31 @@ class MetricsVisitorBase(DefaultASTVisitor[Any]):
         elif isinstance(value, list | tuple | set | frozenset):
             for item in value:
                 self._visit_ast_value(item)
+
+    @staticmethod
+    def _required_string(value: Any, field_name: str) -> str:
+        if not isinstance(value, str):
+            msg = f"{field_name} must be a string"
+            raise TypeError(msg)
+        return value
+
+    @staticmethod
+    def _required_ast_node(value: Any, field_name: str) -> ASTNode:
+        if not isinstance(value, ASTNode):
+            msg = f"{field_name} must be an AST node"
+            raise TypeError(msg)
+        return value
+
+    @staticmethod
+    def _required_ast_sequence(value: Any, field_name: str) -> list[ASTNode]:
+        if not isinstance(value, list | tuple):
+            msg = f"{field_name} must be a list or tuple"
+            raise TypeError(msg)
+        for item in value:
+            if not isinstance(item, ASTNode):
+                msg = f"{field_name} must contain AST nodes"
+                raise TypeError(msg)
+        return list(value)
 
     def visit_with_statement(self, node) -> Any:
         self._visit_ast_value(node.declarations)
