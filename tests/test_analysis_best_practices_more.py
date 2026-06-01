@@ -6,11 +6,12 @@ import pytest
 
 from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import OfExpression
+from yaraast.ast.conditions import ForExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     Expression,
+    Identifier,
     IntegerLiteral,
     SetExpression,
     StringCount,
@@ -21,10 +22,17 @@ from yaraast.ast.expressions import (
     StringWildcard,
 )
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString
+from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
-from yaraast.yarax.ast_nodes import WithDeclaration, WithStatement
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    LambdaExpression,
+    ListExpression,
+    WithDeclaration,
+    WithStatement,
+)
 
 
 def test_best_practices_report_helpers_and_integration_paths() -> None:
@@ -255,6 +263,94 @@ def test_best_practices_rejects_non_string_string_set_values(string_set: Any) ->
     )
 
     with pytest.raises(TypeError, match="String reference must be a string"):
+        BestPracticesAnalyzer().analyze(ast)
+
+
+@pytest.mark.parametrize(
+    ("ast", "message"),
+    [
+        (
+            YaraFile(rules=[Rule(cast(Any, False), condition=BooleanLiteral(True))]),
+            "Rule name must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_string_identifier",
+                        strings=[PlainString(cast(Any, False), value="value")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "String identifier must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_plain_value",
+                        strings=[PlainString("$a", value=cast(Any, False))],
+                        condition=StringIdentifier("$a"),
+                    )
+                ]
+            ),
+            "Plain string value must be text or bytes",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_regex_value",
+                        strings=[RegexString("$a", regex=cast(Any, False))],
+                        condition=StringIdentifier("$a"),
+                    )
+                ]
+            ),
+            "Regex value must be a string",
+        ),
+    ],
+)
+def test_best_practices_rejects_invalid_rule_and_string_fields(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        BestPracticesAnalyzer().analyze(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        ForExpression(
+            quantifier="any",
+            variable=cast(Any, False),
+            iterable=SetExpression([IntegerLiteral(1)]),
+            body=BooleanLiteral(True),
+        ),
+        WithStatement(
+            declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
+            body=BooleanLiteral(True),
+        ),
+        ArrayComprehension(
+            expression=IntegerLiteral(1),
+            variable=cast(Any, False),
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        DictComprehension(
+            key_expression=Identifier("k"),
+            value_expression=Identifier("v"),
+            key_variable=cast(Any, False),
+            value_variable="v",
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        LambdaExpression(parameters=[cast(Any, False)], body=BooleanLiteral(True)),
+    ],
+)
+def test_best_practices_rejects_invalid_local_variable_names(condition: Any) -> None:
+    ast = YaraFile(rules=[Rule("invalid_local", condition=condition)])
+
+    with pytest.raises(TypeError, match="Local variable name must be a string"):
         BestPracticesAnalyzer().analyze(ast)
 
 

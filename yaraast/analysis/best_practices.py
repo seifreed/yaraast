@@ -125,7 +125,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def visit_yara_file(self, node: YaraFile) -> None:
         """Analyze file-level patterns."""
         # Check for duplicate rule names
-        rule_names = [rule.name for rule in node.rules]
+        rule_names = [self._validate_rule_name(rule.name) for rule in node.rules]
         duplicates = [name for name, count in Counter(rule_names).items() if count > 1]
         if duplicates:
             for dup in duplicates:
@@ -146,6 +146,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
     def visit_rule(self, node: Rule) -> None:
         """Analyze individual rule."""
+        rule_name = self._validate_rule_name(node.name)
         self._current_rule = node
         self._string_usage.clear()
         self._local_scopes.clear()
@@ -153,21 +154,21 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         # Check rule name conventions - must start with letter, no leading numbers
         # Also check for numbers immediately after letters (bad123name pattern)
         if (
-            not re.match(r"^[a-zA-Z][a-zA-Z_]*$", node.name)
-            or node.name.startswith("_")
-            or re.search(r"[a-zA-Z]\d", node.name)
+            not re.match(r"^[a-zA-Z][a-zA-Z_]*$", rule_name)
+            or rule_name.startswith("_")
+            or re.search(r"[a-zA-Z]\d", rule_name)
         ):
             self.report.add_suggestion(
-                node.name,
+                rule_name,
                 "style",
                 "warning",
                 "Rule name should start with letter and contain only alphanumeric/underscore",
             )
 
         # Check for very short rule names
-        if len(node.name) < 3:
+        if len(rule_name) < 3:
             self.report.add_suggestion(
-                node.name,
+                rule_name,
                 "style",
                 "info",
                 "Consider using more descriptive rule names (3+ characters)",
@@ -188,7 +189,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
                 term in condition_str for term in ["filesize", "entrypoint", "pe.", "elf.", "math."]
             ):
                 self.report.add_suggestion(
-                    node.name,
+                    rule_name,
                     "style",
                     "info",
                     "Rule has no strings defined; verify that non-string-only matching is intentional",
@@ -207,24 +208,26 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         string_names = []
 
         for string_def in rule.strings:
+            string_id = self._validate_string_identifier(string_def.identifier)
+
             # Check string naming conventions
-            if not re.match(r"^\$[a-zA-Z]\w*$", string_def.identifier):
+            if not re.match(r"^\$[a-zA-Z]\w*$", string_id):
                 self.report.add_suggestion(
                     rule.name,
                     "style",
                     "warning",
-                    f"String identifier '{string_def.identifier}' should follow $name convention",
-                    f"string {string_def.identifier}",
+                    f"String identifier '{string_id}' should follow $name convention",
+                    f"string {string_id}",
                 )
 
-            string_names.append(string_def.identifier)
+            string_names.append(string_id)
 
             # Analyze specific string types
             if isinstance(string_def, PlainString):
                 self._analyze_plain_string(rule, string_def)
             elif isinstance(string_def, HexString):
                 self._analyze_hex_string(rule, string_def)
-                self._hex_patterns.append((string_def.identifier, string_def))
+                self._hex_patterns.append((string_id, string_def))
             elif isinstance(string_def, RegexString):
                 self._analyze_regex_string(rule, string_def)
 
@@ -244,6 +247,8 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
     def _analyze_plain_string(self, rule: Rule, string: PlainString) -> None:
         """Analyze plain string patterns."""
+        if not isinstance(string.value, str | bytes):
+            raise TypeError("Plain string value must be text or bytes")
         pattern_chars = b"*?[]" if isinstance(string.value, bytes) else "*?[]"
         value_length = plain_value_length(string.value)
 
@@ -286,6 +291,9 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
     def _analyze_regex_string(self, rule: Rule, string: RegexString) -> None:
         """Analyze regex patterns."""
+        if not isinstance(string.regex, str):
+            raise TypeError("Regex value must be a string")
+
         # Check for unescaped dots (common mistake)
         if "." in string.regex and r"\." not in string.regex:
             # Might be intentional, so just info
@@ -562,8 +570,22 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
+        if not isinstance(name, str):
+            raise TypeError("Local variable name must be a string")
         names = [part.strip() for part in name.split(",")]
         return {local_name for local_name in names if local_name}
+
+    @staticmethod
+    def _validate_rule_name(rule_name: object) -> str:
+        if not isinstance(rule_name, str):
+            raise TypeError("Rule name must be a string")
+        return rule_name
+
+    @staticmethod
+    def _validate_string_identifier(string_id: object) -> str:
+        if not isinstance(string_id, str):
+            raise TypeError("String identifier must be a string")
+        return string_id
 
     def _analyze_global_patterns(self) -> None:
         """Analyze patterns across all rules."""
