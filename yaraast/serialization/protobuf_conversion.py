@@ -965,6 +965,9 @@ def _coerce_quantifier_text(value) -> str:
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, str):
+        if not value:
+            msg = "quantifier must not be empty"
+            raise SerializationError(msg)
         return value
     if isinstance(value, bool):
         msg = "quantifier must be a string, number, or expression"
@@ -1086,6 +1089,9 @@ def _string_set_item_expression(item, context: str):
 
 
 def _restore_quantifier_text(value: str):
+    if not value:
+        msg = "quantifier must not be empty"
+        raise SerializationError(msg)
     integer_text = value[1:] if value.startswith("-") else value
     if integer_text.isdigit():
         return int(value)
