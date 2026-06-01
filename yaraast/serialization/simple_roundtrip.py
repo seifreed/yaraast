@@ -94,8 +94,12 @@ class SimpleRoundTrip:
         if isinstance(file_path, bytes) or not isinstance(file_path, str | PathLike):
             msg = "file_path must be a string or path-like object"
             raise TypeError(msg)
-        file_path = Path(fspath(file_path))
-        yara_code = file_path.read_text(encoding="utf-8")
+        raw_path = fspath(file_path)
+        if not raw_path:
+            msg = "file_path must not be empty"
+            raise ValueError(msg)
+        path = Path(raw_path)
+        yara_code = path.read_text(encoding="utf-8")
         return self.test(yara_code)
 
     def test_directory(self, dir_path: str | PathLike[str]) -> list[tuple[Path, bool, Any, Any]]:
@@ -103,7 +107,11 @@ class SimpleRoundTrip:
         if isinstance(dir_path, bytes) or not isinstance(dir_path, str | PathLike):
             msg = "dir_path must be a string or path-like object"
             raise TypeError(msg)
-        dir_path = Path(fspath(dir_path))
+        raw_path = fspath(dir_path)
+        if not raw_path:
+            msg = "dir_path must not be empty"
+            raise ValueError(msg)
+        dir_path = Path(raw_path)
         results = []
         for yar_file in iter_matching_files(dir_path):
             success, orig, regen = self.test_file(yar_file)
