@@ -402,6 +402,15 @@ def _protobuf_string_list(values, context: str) -> list[str]:
     raise SerializationError(msg)
 
 
+def _protobuf_nonempty_string_list(values, context: str) -> list[str]:
+    items = _protobuf_string_list(values, context)
+    for item in items:
+        if not item:
+            msg = f"{context} item must not be empty"
+            raise SerializationError(msg)
+    return items
+
+
 def _protobuf_node_list(values, context: str, item_type) -> list:
     if not isinstance(values, list | tuple):
         msg = f"{context} must be a list"
@@ -537,7 +546,9 @@ def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
             extern_import.alias,
             "ExternImport alias",
         )
-    pb_extern_import.rules.extend(_protobuf_string_list(extern_import.rules, "ExternImport rules"))
+    pb_extern_import.rules.extend(
+        _protobuf_nonempty_string_list(extern_import.rules, "ExternImport rules")
+    )
     _copy_node_metadata_to_protobuf(extern_import, pb_extern_import)
 
 
@@ -1627,7 +1638,10 @@ def protobuf_to_extern_import(pb_extern_import):
                 "ExternImport module_path",
             ),
             alias=pb_extern_import.alias or None,
-            rules=list(pb_extern_import.rules),
+            rules=_protobuf_nonempty_string_list(
+                list(pb_extern_import.rules),
+                "ExternImport rules",
+            ),
         ),
     )
 
