@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import InExpression
 from yaraast.ast.expressions import (
@@ -19,6 +23,22 @@ from yaraast.ast.strings import PlainString
 from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.optimization import ExpressionOptimizer, RuleOptimizer
 from yaraast.parser import Parser
+
+
+@pytest.mark.parametrize("passes", [True, "3", object()])
+def test_rule_optimizer_rejects_invalid_pass_count_types(passes: Any) -> None:
+    ast = YaraFile(rules=[Rule(name="sample", condition=BooleanLiteral(True))])
+
+    with pytest.raises(TypeError, match="passes must be an integer"):
+        RuleOptimizer().optimize(ast, passes=cast(int, passes))
+
+
+@pytest.mark.parametrize("passes", [0, -1])
+def test_rule_optimizer_rejects_non_positive_pass_counts(passes: int) -> None:
+    ast = YaraFile(rules=[Rule(name="sample", condition=BooleanLiteral(True))])
+
+    with pytest.raises(ValueError, match="passes must be at least 1"):
+        RuleOptimizer().optimize(ast, passes=passes)
 
 
 def test_rule_optimizer_does_not_count_unchanged_conditions() -> None:

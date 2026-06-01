@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
+from yaraast.shared.numeric_validation import validate_positive_int_setting
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -36,6 +37,8 @@ class RuleOptimizer:
             Tuple of (optimized AST, optimization statistics)
 
         """
+        validate_positive_int_setting(passes, "passes")
+
         total_expr_opts = 0
         total_dead_elims = 0
         original_rule_count = len(yara_file.rules)
