@@ -1225,6 +1225,127 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
 
 
 @pytest.mark.parametrize(
+    ("ast", "message"),
+    [
+        (YaraFile(imports=[Import("")]), "Import module must not be empty"),
+        (YaraFile(includes=[Include("")]), "Include path must not be empty"),
+        (YaraFile(rules=[Rule("", condition=BooleanLiteral(True))]), "Rule name must not be empty"),
+        (
+            YaraFile(rules=[Rule("r", tags=[Tag("")], condition=BooleanLiteral(True))]),
+            "Tag name must not be empty",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "r",
+                        strings=[PlainString(identifier="", value="abc")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "PlainString identifier must not be empty",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "r",
+                        strings=[HexString(identifier="", tokens=[HexByte(0x41)])],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexString identifier must not be empty",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "r",
+                        strings=[RegexString(identifier="", regex="abc")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "RegexString identifier must not be empty",
+        ),
+        (YaraFile(extern_rules=[ExternRule("")]), "ExternRule name must not be empty"),
+        (
+            YaraFile(extern_rules=[ExternRule("ExternalRule", namespace="")]),
+            "ExternRule namespace must not be empty",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("")]),
+            "ExternImport module_path must not be empty",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("external", alias="")]),
+            "ExternImport alias must not be empty",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace("")]),
+            "ExternNamespace name must not be empty",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_empty_top_level_identifier_fields(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("payload_kind", "message"),
+    [
+        ("import", "Import module must not be empty"),
+        ("include", "Include path must not be empty"),
+        ("rule", "Rule name must not be empty"),
+        ("tag", "Tag name must not be empty"),
+        ("string", "PlainString identifier must not be empty"),
+        ("extern_rule", "ExternRule name must not be empty"),
+        ("extern_import", "ExternImport module_path must not be empty"),
+        ("namespace", "ExternNamespace name must not be empty"),
+    ],
+)
+def test_protobuf_deserializer_rejects_empty_top_level_identifier_fields(
+    payload_kind: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    if payload_kind == "import":
+        pb_file.imports.add()
+    elif payload_kind == "include":
+        pb_file.includes.add()
+    elif payload_kind == "rule":
+        pb_file.rules.add().condition.boolean_literal.value = True
+    elif payload_kind == "tag":
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "r"
+        pb_rule.condition.boolean_literal.value = True
+        pb_rule.tags.add()
+    elif payload_kind == "string":
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "r"
+        pb_rule.condition.boolean_literal.value = True
+        pb_rule.strings.add().plain.value = "abc"
+    elif payload_kind == "extern_rule":
+        pb_file.extern_rules.add()
+    elif payload_kind == "extern_import":
+        pb_file.extern_imports.add()
+    elif payload_kind == "namespace":
+        pb_file.namespaces.add()
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
     ("condition", "message"),
     [
         (

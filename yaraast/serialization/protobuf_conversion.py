@@ -233,14 +233,14 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
 
     for imp in imports:
         pb_import = pb_file.imports.add()
-        pb_import.module = _protobuf_required_string(imp.module, "Import module")
+        pb_import.module = _protobuf_required_nonempty_string(imp.module, "Import module")
         if hasattr(imp, "alias") and imp.alias is not None:
-            pb_import.alias = _protobuf_required_string(imp.alias, "Import alias")
+            pb_import.alias = _protobuf_required_nonempty_string(imp.alias, "Import alias")
         _copy_node_metadata_to_protobuf(imp, pb_import)
 
     for inc in includes:
         pb_include = pb_file.includes.add()
-        pb_include.path = _protobuf_required_string(inc.path, "Include path")
+        pb_include.path = _protobuf_required_nonempty_string(inc.path, "Include path")
         _copy_node_metadata_to_protobuf(inc, pb_include)
 
     for extern_rule in extern_rules:
@@ -279,7 +279,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
     from yaraast.ast.pragmas import InRulePragma
     from yaraast.ast.rules import Tag
 
-    pb_rule.name = _protobuf_required_string(rule.name, "Rule name")
+    pb_rule.name = _protobuf_required_nonempty_string(rule.name, "Rule name")
     pb_rule.modifiers.extend(
         _protobuf_modifier_name(modifier, "Rule modifier")
         for modifier in _protobuf_rule_modifier_list(rule.modifiers, "Rule modifiers")
@@ -288,7 +288,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
 
     for tag in _protobuf_node_list(rule.tags, "Rule tags", Tag):
         pb_tag = pb_rule.tags.add()
-        pb_tag.name = _protobuf_required_string(tag.name, "Tag name")
+        pb_tag.name = _protobuf_required_nonempty_string(tag.name, "Tag name")
         _copy_node_metadata_to_protobuf(tag, pb_tag)
 
     for entry in _protobuf_node_list(rule.meta, "Rule meta", (Meta, MetaEntry)):
@@ -318,7 +318,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
     for string_def in _protobuf_string_definition_list(rule.strings, "Rule strings"):
         pb_string = pb_rule.strings.add()
         string_context = type(string_def).__name__
-        pb_string.identifier = _protobuf_required_string(
+        pb_string.identifier = _protobuf_required_nonempty_string(
             string_def.identifier,
             f"{string_context} identifier",
         )
@@ -508,7 +508,10 @@ def protobuf_to_rule_meta_entry(pb_meta_entry):
 
 
 def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
-    pb_extern_rule.name = _protobuf_required_string(extern_rule.name, "ExternRule name")
+    pb_extern_rule.name = _protobuf_required_nonempty_string(
+        extern_rule.name,
+        "ExternRule name",
+    )
     pb_extern_rule.modifiers.extend(
         _protobuf_modifier_name(modifier, "ExternRule modifier")
         for modifier in _protobuf_rule_modifier_list(
@@ -517,7 +520,7 @@ def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
         )
     )
     if extern_rule.namespace is not None:
-        pb_extern_rule.namespace = _protobuf_required_string(
+        pb_extern_rule.namespace = _protobuf_required_nonempty_string(
             extern_rule.namespace,
             "ExternRule namespace",
         )
@@ -525,12 +528,12 @@ def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
 
 
 def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
-    pb_extern_import.module_path = _protobuf_required_string(
+    pb_extern_import.module_path = _protobuf_required_nonempty_string(
         extern_import.module_path,
         "ExternImport module_path",
     )
     if extern_import.alias is not None:
-        pb_extern_import.alias = _protobuf_required_string(
+        pb_extern_import.alias = _protobuf_required_nonempty_string(
             extern_import.alias,
             "ExternImport alias",
         )
@@ -541,7 +544,10 @@ def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
 def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
     from yaraast.ast.extern import ExternRule
 
-    pb_namespace.name = _protobuf_required_string(namespace.name, "ExternNamespace name")
+    pb_namespace.name = _protobuf_required_nonempty_string(
+        namespace.name,
+        "ExternNamespace name",
+    )
     _copy_node_metadata_to_protobuf(namespace, pb_namespace)
     for extern_rule in _protobuf_node_list(
         namespace.extern_rules,
@@ -1487,7 +1493,10 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
             _apply_node_metadata_from_protobuf(
                 pb_import,
                 Import(
-                    module=pb_import.module,
+                    module=_protobuf_required_nonempty_string(
+                        pb_import.module,
+                        "Import module",
+                    ),
                     alias=pb_import.alias if pb_import.alias else None,
                 ),
             ),
@@ -1498,7 +1507,12 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
         includes.append(
             _apply_node_metadata_from_protobuf(
                 pb_include,
-                Include(path=pb_include.path),
+                Include(
+                    path=_protobuf_required_nonempty_string(
+                        pb_include.path,
+                        "Include path",
+                    ),
+                ),
             ),
         )
 
@@ -1516,7 +1530,12 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
             tags.append(
                 _apply_node_metadata_from_protobuf(
                     pb_tag,
-                    Tag(name=pb_tag.name),
+                    Tag(
+                        name=_protobuf_required_nonempty_string(
+                            pb_tag.name,
+                            "Tag name",
+                        ),
+                    ),
                 )
             )
 
@@ -1550,7 +1569,7 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
         pragmas_for_rule = [protobuf_to_in_rule_pragma(pb_pragma) for pb_pragma in pb_rule.pragmas]
 
         rule = Rule(
-            name=pb_rule.name,
+            name=_protobuf_required_nonempty_string(pb_rule.name, "Rule name"),
             modifiers=list(pb_rule.modifiers),
             tags=tags,
             meta=meta,
@@ -1587,7 +1606,10 @@ def protobuf_to_extern_rule(pb_extern_rule):
     return _apply_node_metadata_from_protobuf(
         pb_extern_rule,
         ExternRule(
-            name=pb_extern_rule.name,
+            name=_protobuf_required_nonempty_string(
+                pb_extern_rule.name,
+                "ExternRule name",
+            ),
             modifiers=modifiers,
             namespace=pb_extern_rule.namespace or None,
         ),
@@ -1600,7 +1622,10 @@ def protobuf_to_extern_import(pb_extern_import):
     return _apply_node_metadata_from_protobuf(
         pb_extern_import,
         ExternImport(
-            module_path=pb_extern_import.module_path,
+            module_path=_protobuf_required_nonempty_string(
+                pb_extern_import.module_path,
+                "ExternImport module_path",
+            ),
             alias=pb_extern_import.alias or None,
             rules=list(pb_extern_import.rules),
         ),
@@ -1613,7 +1638,10 @@ def protobuf_to_extern_namespace(pb_namespace):
     return _apply_node_metadata_from_protobuf(
         pb_namespace,
         ExternNamespace(
-            name=pb_namespace.name,
+            name=_protobuf_required_nonempty_string(
+                pb_namespace.name,
+                "ExternNamespace name",
+            ),
             extern_rules=[
                 protobuf_to_extern_rule(pb_rule) for pb_rule in pb_namespace.extern_rules
             ],
@@ -1819,7 +1847,10 @@ def protobuf_to_string(pb_string) -> Any:
         )
         _validate_plain_string_value_for_protobuf(value)
         s = PlainString(
-            identifier=pb_string.identifier,
+            identifier=_protobuf_required_nonempty_string(
+                pb_string.identifier,
+                "PlainString identifier",
+            ),
             value=value,
             is_anonymous=pb_string.is_anonymous,
         )
@@ -1839,7 +1870,10 @@ def protobuf_to_string(pb_string) -> Any:
         )
         modifiers = _protobuf_modifiers_to_ast(pb_string.hex.modifiers)
         s = HexString(
-            identifier=pb_string.identifier,
+            identifier=_protobuf_required_nonempty_string(
+                pb_string.identifier,
+                "HexString identifier",
+            ),
             tokens=tokens,
             is_anonymous=pb_string.is_anonymous,
         )
@@ -1848,7 +1882,10 @@ def protobuf_to_string(pb_string) -> Any:
     if pb_string.HasField("regex"):
         modifiers = _protobuf_modifiers_to_ast(pb_string.regex.modifiers)
         s = RegexString(
-            identifier=pb_string.identifier,
+            identifier=_protobuf_required_nonempty_string(
+                pb_string.identifier,
+                "RegexString identifier",
+            ),
             regex=pb_string.regex.regex,
             is_anonymous=pb_string.is_anonymous,
         )
