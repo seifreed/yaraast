@@ -57,11 +57,37 @@ def test_json_serializer_rejects_non_string_input(json_str: Any) -> None:
         serializer.deserialize(cast(str, json_str))
 
 
+@pytest.mark.parametrize("input_path", [False, 0, object()])
+def test_json_serializer_rejects_invalid_input_path_types(input_path: Any) -> None:
+    serializer = JsonSerializer()
+    with pytest.raises(TypeError, match="input_path must be a file path"):
+        serializer.deserialize(input_path=cast(Any, input_path))
+
+
+def test_json_serializer_rejects_empty_input_path() -> None:
+    serializer = JsonSerializer()
+    with pytest.raises(ValueError, match="input_path must not be empty"):
+        serializer.deserialize(input_path="")
+
+
 @pytest.mark.parametrize("yaml_str", [False, 0, [], 123, object()])
 def test_yaml_serializer_rejects_non_string_input(yaml_str: Any) -> None:
     serializer = YamlSerializer()
     with pytest.raises(TypeError, match="YAML input must be a string"):
         serializer.deserialize(cast(str, yaml_str))
+
+
+@pytest.mark.parametrize("input_path", [False, 0, object()])
+def test_yaml_serializer_rejects_invalid_input_path_types(input_path: Any) -> None:
+    serializer = YamlSerializer()
+    with pytest.raises(TypeError, match="input_path must be a file path"):
+        serializer.deserialize(input_path=cast(Any, input_path))
+
+
+def test_yaml_serializer_rejects_empty_input_path() -> None:
+    serializer = YamlSerializer()
+    with pytest.raises(ValueError, match="input_path must not be empty"):
+        serializer.deserialize(input_path="")
 
 
 def test_json_serializer_rejects_malformed_json() -> None:

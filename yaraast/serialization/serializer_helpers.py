@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,17 @@ def require_positive_int_option(value: object, name: str) -> int:
         msg = f"{name} must be at least 1"
         raise ValueError(msg)
     return value
+
+
+def require_input_path(value: object, name: str) -> Path:
+    """Validate a serializer input path before touching the filesystem."""
+    if isinstance(value, bool) or not isinstance(value, str | PathLike):
+        msg = f"{name} must be a file path"
+        raise TypeError(msg)
+    if isinstance(value, str) and not value:
+        msg = f"{name} must not be empty"
+        raise ValueError(msg)
+    return Path(value)
 
 
 def read_text(path: str | Path) -> str:

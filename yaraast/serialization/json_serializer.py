@@ -83,6 +83,7 @@ from yaraast.serialization.serializer_helpers import (
     build_base_metadata,
     read_text,
     require_bool_option,
+    require_input_path,
     write_text,
 )
 from yaraast.visitor.visitor import ASTVisitor
@@ -206,7 +207,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     ) -> YaraFile:
         """Deserialize JSON to AST."""
         if input_path is not None:
-            json_str = read_text(input_path)
+            json_str = read_text(require_input_path(input_path, "input_path"))
 
         if json_str is None or json_str == "":
             msg = "No JSON input provided"

@@ -11,7 +11,11 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
-from yaraast.serialization.serializer_helpers import read_text, require_bool_option
+from yaraast.serialization.serializer_helpers import (
+    read_text,
+    require_bool_option,
+    require_input_path,
+)
 from yaraast.serialization.yaml_serializer_helpers import enrich_yaml_metadata, serialize_yaml
 
 
@@ -41,7 +45,7 @@ class YamlSerializer(JsonSerializer):
     ) -> YaraFile:
         """Deserialize YAML to AST."""
         if input_path is not None:
-            yaml_str = read_text(input_path)
+            yaml_str = read_text(require_input_path(input_path, "input_path"))
 
         if yaml_str is None or yaml_str == "":
             msg = "No YAML input provided"
