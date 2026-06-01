@@ -356,6 +356,37 @@ def test_dead_code_eliminator_ignores_yarax_locals_as_rule_references() -> None:
         assert [rule.name for rule in optimized.rules] == ["main"]
 
 
+def test_dead_code_eliminator_ignores_yarax_string_locals_as_string_references() -> None:
+    cases = [
+        StringIdentifier("$a"),
+        StringCount("a"),
+        StringOffset("a"),
+        StringLength("a"),
+        OfExpression("any", "$a"),
+        OfExpression("any", SetExpression([StringIdentifier("$a")])),
+        OfExpression("any", SetExpression([StringLiteral("$a")])),
+    ]
+
+    for condition in cases:
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="shadowed_string",
+                    strings=[PlainString(identifier="$a", value="value")],
+                    condition=WithStatement(
+                        declarations=[WithDeclaration("$a", IntegerLiteral(1))],
+                        body=condition,
+                    ),
+                )
+            ]
+        )
+
+        optimized, count = DeadCodeEliminator().eliminate(ast)
+
+        assert count == 1
+        assert optimized.rules[0].strings == []
+
+
 def test_string_wildcard_keeps_matching_strings() -> None:
     dce = DeadCodeEliminator()
     rule = Rule(
