@@ -775,16 +775,19 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def visit_at_expression(self, node: AtExpression) -> bool:
         """Evaluate 'at' expression."""
-        offset = self.visit(node.offset)
+        offset = self.visit(self._required_expression(node.offset, "'at' offset"))
         if not _is_evaluation_int(offset):
             return False
         if isinstance(node.string_id, OfExpression):
             return self._evaluate_of_expression(node.string_id, match_offset=offset)
+        if not isinstance(node.string_id, str | Expression):
+            msg = "'at' subject must be a string or Expression"
+            raise TypeError(msg)
         return self.string_matcher.string_at(self._normalize_string_id(node.string_id), offset)
 
     def visit_in_expression(self, node: InExpression) -> Any:
         """Evaluate 'in' expression."""
-        range_val = self.visit(node.range)
+        range_val = self.visit(self._required_expression(node.range, "'in' range"))
         if not isinstance(range_val, range):
             return False
         if isinstance(node.subject, StringCount):
@@ -801,10 +804,20 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             )
         if isinstance(node.subject, OfExpression):
             return self._evaluate_of_expression(node.subject, match_range=range_val)
+        if not isinstance(node.subject, Expression):
+            msg = "'in' subject must be a string or Expression"
+            raise TypeError(msg)
         subject = self.visit(node.subject)
         if _is_evaluation_int(subject):
             return subject in range_val
         return False
+
+    @staticmethod
+    def _required_expression(value: Any, field_name: str) -> Expression:
+        if not isinstance(value, Expression):
+            msg = f"{field_name} must be an Expression"
+            raise TypeError(msg)
+        return value
 
     def visit_of_expression(self, node: OfExpression) -> bool:
         """Evaluate 'of' expression."""

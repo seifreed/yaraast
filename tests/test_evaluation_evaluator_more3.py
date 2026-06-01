@@ -2109,6 +2109,23 @@ def test_condition_paths_for_at_in_of_for_and_defined() -> None:
         is False
     )
 
+    invalid_at_offset: Any = False
+    with pytest.raises(TypeError, match="'at' offset must be an Expression"):
+        ev.visit_at_expression(AtExpression(string_id="$a", offset=invalid_at_offset))
+
+    invalid_in_subject: Any = False
+    with pytest.raises(TypeError, match="'in' subject must be a string or Expression"):
+        ev.visit_in_expression(
+            InExpression(
+                subject=invalid_in_subject,
+                range=RangeExpression(IntegerLiteral(0), IntegerLiteral(1)),
+            )
+        )
+
+    invalid_in_range: Any = False
+    with pytest.raises(TypeError, match="'in' range must be an Expression"):
+        ev.visit_in_expression(InExpression(subject="$a", range=invalid_in_range))
+
     ev.context.string_matches = {"$a": [1], "$b": []}
     ev.string_matcher.matches = ev.context.string_matches
     assert (
