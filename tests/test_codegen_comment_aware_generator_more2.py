@@ -14,6 +14,11 @@ from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.yarax.ast_nodes import MatchCase, PatternMatch
 
 
+class _FalsyBooleanLiteral(BooleanLiteral):
+    def __bool__(self) -> bool:
+        return False
+
+
 def test_comment_aware_generator_write_comments_and_generate_non_file_node() -> None:
     gen = CommentAwareCodeGenerator()
     gen._write_comments([Comment("// one"), CommentGroup(comments=[Comment("// two")])])
@@ -54,6 +59,22 @@ def test_comment_aware_generator_meta_dict_and_missing_sections() -> None:
     assert 'quoted = "\\"x\\""' in out
     assert "rule only_condition {" in out
     assert "condition:" in out
+
+
+def test_comment_aware_generator_writes_falsy_present_condition() -> None:
+    file_ast = YaraFile(
+        rules=[
+            Rule(
+                name="falsy_condition",
+                condition=_FalsyBooleanLiteral(False),
+            )
+        ]
+    )
+
+    out = CommentAwareCodeGenerator().generate(file_ast)
+
+    assert "condition:" in out
+    assert "false" in out
 
 
 def test_comment_aware_generator_hex_and_regex_modifier_paths() -> None:

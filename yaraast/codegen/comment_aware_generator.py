@@ -268,7 +268,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
     def _write_condition_section(self, node: Any) -> None:
         """Write the condition section with comments."""
         condition = node.condition
-        if not condition:
+        if condition is None:
             return
 
         self._writeline("condition:")
