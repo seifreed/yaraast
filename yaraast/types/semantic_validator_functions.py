@@ -64,14 +64,7 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
 
     def _visit_function_arguments(self, arguments: list[Any], node: FunctionCall) -> None:
         for arg in arguments:
-            if not hasattr(arg, "accept"):
-                self.result.add_error(
-                    "Function arguments item must be Expression",
-                    node.location,
-                    "Use expression nodes as function arguments.",
-                )
-                continue
-            self.visit(arg)
+            self._visit_required_expression(arg, node, "Function arguments item")
 
     def _validate_module_function_call(
         self,
@@ -168,32 +161,31 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
             return
 
     def visit_binary_expression(self, node: Any) -> None:
-        self.visit(node.left)
-        self.visit(node.right)
+        self._visit_required_expression(node.left, node, "Binary expression left operand")
+        self._visit_required_expression(node.right, node, "Binary expression right operand")
 
     def visit_unary_expression(self, node: Any) -> None:
-        self.visit(node.operand)
+        self._visit_required_expression(node.operand, node, "Unary expression operand")
 
     def visit_member_access(self, node: Any) -> None:
-        self.visit(node.object)
+        self._visit_required_expression(node.object, node, "Member access object")
 
     def visit_parentheses_expression(self, node: Any) -> None:
-        self.visit(node.expression)
+        self._visit_required_expression(node.expression, node, "Parenthesized expression")
 
     def visit_set_expression(self, node: Any) -> None:
-        for elem in node.elements:
-            self.visit(elem)
+        self._visit_expression_sequence(node.elements, node, "Set expression elements")
 
     def visit_range_expression(self, node: Any) -> None:
-        self.visit(node.low)
-        self.visit(node.high)
+        self._visit_required_expression(node.low, node, "Range low bound")
+        self._visit_required_expression(node.high, node, "Range high bound")
 
     def visit_array_access(self, node: Any) -> None:
-        self.visit(node.array)
-        self.visit(node.index)
+        self._visit_required_expression(node.array, node, "Array access target")
+        self._visit_required_expression(node.index, node, "Array access index")
 
     def visit_dictionary_access(self, node: Any) -> None:
-        self.visit(node.object)
+        self._visit_required_expression(node.object, node, "Dictionary access object")
         self._visit_ast_value(node.key)
 
     def visit_string_offset(self, node: Any) -> None:
@@ -203,42 +195,41 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         self._visit_ast_value(node.index)
 
     def visit_defined_expression(self, node: Any) -> None:
-        self.visit(node.expression)
+        self._visit_required_expression(node.expression, node, "Defined expression operand")
 
     def visit_string_operator_expression(self, node: Any) -> None:
-        self.visit(node.left)
-        self.visit(node.right)
+        self._visit_required_expression(node.left, node, "String operator left operand")
+        self._visit_required_expression(node.right, node, "String operator right operand")
 
     def visit_for_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
-        self.visit(node.iterable)
-        self.visit(node.body)
+        self._visit_required_expression(node.iterable, node, "For-expression iterable")
+        self._visit_required_expression(node.body, node, "For-expression body")
 
     def visit_for_of_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.string_set)
         if node.condition is not None:
-            self.visit(node.condition)
+            self._visit_required_expression(node.condition, node, "For-of condition")
 
     def visit_at_expression(self, node: Any) -> None:
-        self.visit(node.offset)
+        self._visit_required_expression(node.offset, node, "At-expression offset")
 
     def visit_in_expression(self, node: Any) -> None:
         if not isinstance(node.subject, str):
             self._visit_ast_value(node.subject)
-        self.visit(node.range)
+        self._visit_required_expression(node.range, node, "In-expression range")
 
     def visit_of_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.string_set)
 
     def visit_with_statement(self, node: Any) -> None:
-        for declaration in node.declarations:
-            self.visit(declaration)
-        self.visit(node.body)
+        self._visit_expression_sequence(node.declarations, node, "With-statement declarations")
+        self._visit_required_expression(node.body, node, "With-statement body")
 
     def visit_with_declaration(self, node: Any) -> None:
-        self.visit(node.value)
+        self._visit_required_expression(node.value, node, "With declaration value")
 
     def visit_array_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.expression)
@@ -252,46 +243,42 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         self._visit_ast_value(node.condition)
 
     def visit_tuple_expression(self, node: Any) -> None:
-        for element in node.elements:
-            self.visit(element)
+        self._visit_expression_sequence(node.elements, node, "Tuple expression elements")
 
     def visit_tuple_indexing(self, node: Any) -> None:
-        self.visit(node.tuple_expr)
-        self.visit(node.index)
+        self._visit_required_expression(node.tuple_expr, node, "Tuple indexing target")
+        self._visit_required_expression(node.index, node, "Tuple indexing index")
 
     def visit_list_expression(self, node: Any) -> None:
-        for element in node.elements:
-            self.visit(element)
+        self._visit_expression_sequence(node.elements, node, "List expression elements")
 
     def visit_dict_expression(self, node: Any) -> None:
-        for item in node.items:
-            self.visit(item)
+        self._visit_expression_sequence(node.items, node, "Dict expression items")
 
     def visit_dict_item(self, node: Any) -> None:
-        self.visit(node.key)
-        self.visit(node.value)
+        self._visit_required_expression(node.key, node, "Dict item key")
+        self._visit_required_expression(node.value, node, "Dict item value")
 
     def visit_slice_expression(self, node: Any) -> None:
-        self.visit(node.target)
+        self._visit_required_expression(node.target, node, "Slice expression target")
         self._visit_ast_value(node.start)
         self._visit_ast_value(node.stop)
         self._visit_ast_value(node.step)
 
     def visit_lambda_expression(self, node: Any) -> None:
-        self.visit(node.body)
+        self._visit_required_expression(node.body, node, "Lambda expression body")
 
     def visit_pattern_match(self, node: Any) -> None:
-        self.visit(node.value)
-        for case in node.cases:
-            self.visit(case)
+        self._visit_required_expression(node.value, node, "Pattern match value")
+        self._visit_expression_sequence(node.cases, node, "Pattern match cases")
         self._visit_ast_value(node.default)
 
     def visit_match_case(self, node: Any) -> None:
-        self.visit(node.pattern)
-        self.visit(node.result)
+        self._visit_required_expression(node.pattern, node, "Match case pattern")
+        self._visit_required_expression(node.result, node, "Match case result")
 
     def visit_spread_operator(self, node: Any) -> None:
-        self.visit(node.expression)
+        self._visit_required_expression(node.expression, node, "Spread operator expression")
 
     def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):
@@ -302,3 +289,24 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         elif isinstance(value, list | tuple | set | frozenset):
             for item in value:
                 self._visit_ast_value(item)
+
+    def _visit_required_expression(self, value: Any, node: Any, field_name: str) -> None:
+        if hasattr(value, "accept"):
+            self.visit(value)
+            return
+        self.result.add_error(
+            f"{field_name} must be Expression",
+            getattr(node, "location", None),
+            "Use expression nodes for expression fields.",
+        )
+
+    def _visit_expression_sequence(self, value: Any, node: Any, field_name: str) -> None:
+        if not isinstance(value, list | tuple | set | frozenset):
+            self.result.add_error(
+                f"{field_name} must be a sequence",
+                getattr(node, "location", None),
+                "Use a list, tuple, set, or frozenset of expression nodes.",
+            )
+            return
+        for item in value:
+            self._visit_required_expression(item, node, f"{field_name} item")

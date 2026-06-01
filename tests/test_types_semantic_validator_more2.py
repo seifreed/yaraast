@@ -7,20 +7,30 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForOfExpression, OfExpression
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
+    ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
+    MemberAccess,
     ParenthesesExpression,
+    RangeExpression,
     RegexLiteral,
     SetExpression,
     StringIdentifier,
     StringLiteral,
     StringWildcard,
+    UnaryExpression,
 )
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import PlainString
@@ -84,6 +94,97 @@ def test_semantic_validator_rejects_invalid_literal_scalars(
     message: str,
 ) -> None:
     ast = YaraFile(rules=[Rule("invalid_literal", condition=condition)])
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any(error.message == message for error in result.errors)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            BinaryExpression(cast(Any, object()), "and", BooleanLiteral(True)),
+            "Binary expression left operand must be Expression",
+        ),
+        (
+            BinaryExpression(BooleanLiteral(True), "and", cast(Any, object())),
+            "Binary expression right operand must be Expression",
+        ),
+        (
+            UnaryExpression("-", cast(Any, object())),
+            "Unary expression operand must be Expression",
+        ),
+        (
+            ParenthesesExpression(cast(Any, object())),
+            "Parenthesized expression must be Expression",
+        ),
+        (
+            SetExpression(cast(Any, object())),
+            "Set expression elements must be a sequence",
+        ),
+        (
+            SetExpression([cast(Any, object())]),
+            "Set expression elements item must be Expression",
+        ),
+        (
+            RangeExpression(cast(Any, object()), IntegerLiteral(1)),
+            "Range low bound must be Expression",
+        ),
+        (
+            RangeExpression(IntegerLiteral(1), cast(Any, object())),
+            "Range high bound must be Expression",
+        ),
+        (
+            ArrayAccess(cast(Any, object()), IntegerLiteral(0)),
+            "Array access target must be Expression",
+        ),
+        (
+            ArrayAccess(Identifier("items"), cast(Any, object())),
+            "Array access index must be Expression",
+        ),
+        (
+            MemberAccess(cast(Any, object()), "field"),
+            "Member access object must be Expression",
+        ),
+        (
+            ForExpression(
+                "any",
+                "i",
+                cast(Any, object()),
+                BooleanLiteral(True),
+            ),
+            "For-expression iterable must be Expression",
+        ),
+        (
+            ForExpression(
+                "any",
+                "i",
+                RangeExpression(IntegerLiteral(0), IntegerLiteral(1)),
+                cast(Any, object()),
+            ),
+            "For-expression body must be Expression",
+        ),
+        (
+            ForOfExpression("any", "$a", cast(Any, object())),
+            "For-of condition must be Expression",
+        ),
+        (
+            AtExpression("$a", cast(Any, object())),
+            "At-expression offset must be Expression",
+        ),
+        (
+            InExpression("$a", cast(Any, object())),
+            "In-expression range must be Expression",
+        ),
+    ],
+)
+def test_semantic_validator_reports_invalid_expression_children(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule("invalid_child", condition=condition)])
 
     result = SemanticValidator().validate(ast)
 
