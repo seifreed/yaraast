@@ -25,6 +25,32 @@ def test_unified_parser_parse_file_rejects_invalid_path_types(file_path: Any) ->
         UnifiedParser.parse_file(cast(Any, file_path))
 
 
+def test_unified_parser_parse_file_rejects_empty_path() -> None:
+    with pytest.raises(ValueError, match="YARA file path must not be empty"):
+        UnifiedParser.parse_file("")
+
+
+def test_unified_parser_parse_file_rejects_directory_path(tmp_path: Path) -> None:
+    with pytest.raises(IsADirectoryError, match="YARA file path must not be a directory"):
+        UnifiedParser.parse_file(tmp_path)
+
+
+@pytest.mark.parametrize("file_path", [None, 123, object()])
+def test_unified_parser_detect_file_dialect_rejects_invalid_path_types(file_path: Any) -> None:
+    with pytest.raises(TypeError, match="YARA file path must be a string or Path"):
+        UnifiedParser.detect_file_dialect(cast(Any, file_path))
+
+
+def test_unified_parser_detect_file_dialect_rejects_empty_path() -> None:
+    with pytest.raises(ValueError, match="YARA file path must not be empty"):
+        UnifiedParser.detect_file_dialect("")
+
+
+def test_unified_parser_detect_file_dialect_rejects_directory_path(tmp_path: Path) -> None:
+    with pytest.raises(IsADirectoryError, match="YARA file path must not be a directory"):
+        UnifiedParser.detect_file_dialect(tmp_path)
+
+
 @pytest.mark.parametrize("force_streaming", [None, 1, "true", object()])
 def test_unified_parser_parse_file_rejects_invalid_force_streaming_types(
     tmp_path: Path, force_streaming: Any

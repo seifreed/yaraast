@@ -7,6 +7,7 @@ https://www.gnu.org/licenses/gpl-3.0.html
 
 from pathlib import Path
 import re
+import stat as stat_module
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include
@@ -15,6 +16,16 @@ from yaraast.dialects import DialectRegistry, YaraDialect, detect_dialect
 from yaraast.parser.parser import Parser as YaraParser
 from yaraast.performance.streaming_parser import StreamingParser
 from yaraast.yaral.ast_nodes import YaraLFile
+
+
+def _require_text_file_path(file_path: object) -> Path:
+    if not isinstance(file_path, str | Path):
+        msg = "YARA file path must be a string or Path"
+        raise TypeError(msg)
+    if isinstance(file_path, str) and not file_path:
+        msg = "YARA file path must not be empty"
+        raise ValueError(msg)
+    return Path(file_path) if isinstance(file_path, str) else file_path
 
 
 class UnifiedParser:
@@ -217,19 +228,19 @@ class UnifiedParser:
             OSError: If there is an error accessing the file
 
         """
-        # Normalize to Path early for consistent handling
-        if not isinstance(file_path, str | Path):
-            msg = "YARA file path must be a string or Path"
-            raise TypeError(msg)
+        file_path_obj = _require_text_file_path(file_path)
         try:
-            file_path_obj = Path(file_path) if isinstance(file_path, str) else file_path
-            file_size = file_path_obj.stat().st_size
+            file_stat = file_path_obj.stat()
+            file_size = file_stat.st_size
         except FileNotFoundError as e:
             raise FileNotFoundError(f"YARA file not found: {file_path}") from e
         except PermissionError as e:
             raise PermissionError(f"Permission denied reading file: {file_path}") from e
         except OSError as e:
             raise OSError(f"Error accessing file {file_path}: {e}") from e
+        if stat_module.S_ISDIR(file_stat.st_mode):
+            msg = "YARA file path must not be a directory"
+            raise IsADirectoryError(msg)
 
         # Use provided threshold or fall back to class default (100 MB)
         if streaming_threshold_mb is None:
@@ -295,7 +306,7 @@ class UnifiedParser:
         return preamble_ast
 
     @classmethod
-    def detect_file_dialect(cls, file_path: str) -> YaraDialect:
+    def detect_file_dialect(cls, file_path: str | Path) -> YaraDialect:
         """Detect the dialect of a file.
 
         Args:
@@ -305,7 +316,11 @@ class UnifiedParser:
             Detected dialect
 
         """
-        with open(file_path, encoding="utf-8") as f:
+        file_path_obj = _require_text_file_path(file_path)
+        if stat_module.S_ISDIR(file_path_obj.stat().st_mode):
+            msg = "YARA file path must not be a directory"
+            raise IsADirectoryError(msg)
+        with open(file_path_obj, encoding="utf-8") as f:
             content = f.read()
 
         return detect_dialect(content)
