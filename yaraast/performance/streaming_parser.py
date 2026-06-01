@@ -285,11 +285,14 @@ class StreamingParser:
             import os
 
             import psutil
+        except ImportError:
+            return False
 
+        try:
             process = psutil.Process(os.getpid())
             rss_mb = process.memory_info().rss / 1024 / 1024
             return bool(rss_mb > self.max_memory_mb)
-        except Exception:
+        except (OSError, psutil.Error):
             return False
 
     def _parse_mmap(

@@ -3,6 +3,8 @@ from __future__ import annotations
 import io
 import mmap
 from pathlib import Path
+import sys
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
@@ -77,6 +79,25 @@ def test_streaming_parser_progress_cancel_and_memory_paths(tmp_path: Path) -> No
     parser3 = StreamingParser(max_memory_mb=1)
     assert parser3._memory_limit_exceeded() is True
     parser3._maybe_collect_garbage()
+
+
+def test_streaming_parser_memory_limit_propagates_internal_psutil_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parser = StreamingParser(max_memory_mb=1)
+
+    class BrokenProcess:
+        def memory_info(self) -> object:
+            raise AttributeError("memory info unavailable")
+
+    fake_psutil = SimpleNamespace(
+        Error=RuntimeError,
+        Process=lambda _pid: BrokenProcess(),
+    )
+    monkeypatch.setitem(sys.modules, "psutil", fake_psutil)
+
+    with pytest.raises(AttributeError, match="memory info unavailable"):
+        parser._memory_limit_exceeded()
 
 
 def test_streaming_parser_parse_files_supports_yarax(tmp_path: Path) -> None:
