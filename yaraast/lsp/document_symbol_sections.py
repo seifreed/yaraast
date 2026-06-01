@@ -56,12 +56,21 @@ def append_meta_symbols(
         items = ((entry.key, entry.value) for entry in getattr(meta, "entries", []))
     else:
         items = iter([])
+    seen_keys: dict[str, int] = {}
+    fallback_search_lines: dict[str, int] = {}
     for key, _value in items:
         key_text = str(key)
-        key_range = meta_item_range(meta, key_text, ctx.text)
+        occurrence = seen_keys.get(key_text, 0)
+        seen_keys[key_text] = occurrence + 1
+        key_range = meta_item_range(meta, key_text, ctx.text, occurrence)
         if key_range is None:
-            line_num = find_line_containing(lines, f"{key} =", rule_block_range.start.line)
+            line_num = find_line_containing(
+                lines,
+                f"{key} =",
+                fallback_search_lines.get(key_text, rule_block_range.start.line),
+            )
             if line_num >= 0:
+                fallback_search_lines[key_text] = line_num + 1
                 key_start = lines[line_num].find(key_text)
                 key_range = (
                     make_range(line_num, key_start, key_start + len(key_text))
@@ -209,13 +218,20 @@ def meta_item_ranges(rule: Rule, source_text: str) -> list[Range | None]:
     return []
 
 
-def meta_item_range(meta: Any, key: str, source_text: str) -> Range | None:
+def meta_item_range(meta: Any, key: str, source_text: str, occurrence: int = 0) -> Range | None:
+    seen = 0
     if isinstance(meta, list):
         for item in meta:
             if isinstance(item, ASTNode) and getattr(item, "key", None) == key:
+                if seen != occurrence:
+                    seen += 1
+                    continue
                 return node_value_range(item, source_text, key)
     if hasattr(meta, "entries"):
         for entry in getattr(meta, "entries", []):
             if isinstance(entry, ASTNode) and getattr(entry, "key", None) == key:
+                if seen != occurrence:
+                    seen += 1
+                    continue
                 return node_value_range(entry, source_text, key)
     return None

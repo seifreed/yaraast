@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 from lsprotocol.types import DocumentSymbol, Position, Range, SymbolKind
 
 from yaraast.ast.rules import Rule
+from yaraast.lsp.document_types import SymbolRecord
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
@@ -210,16 +211,25 @@ def _build_meta_children(
     meta_items = doc.get_rule_meta_items(rule_name)
     if not meta_items and hasattr(rule.meta, "entries"):
         meta_items = [(entry.key, entry.value) for entry in getattr(rule.meta, "entries", [])]
+    meta_records_by_name: dict[str, list[SymbolRecord]] = {}
+    for meta_symbol_record in doc.symbols():
+        if meta_symbol_record.kind == "meta" and meta_symbol_record.container_name == rule_name:
+            meta_records_by_name.setdefault(meta_symbol_record.name, []).append(meta_symbol_record)
     for key, value in cast(Any, meta_items):
-        meta_record = doc.find_symbol_record("meta", key, rule_name)
+        selected_meta_record: SymbolRecord | None = None
+        matching_records = meta_records_by_name.get(str(key))
+        if matching_records:
+            selected_meta_record = matching_records.pop(0)
+        if selected_meta_record is None:
+            selected_meta_record = doc.find_symbol_record("meta", key, rule_name)
         key_line = (
-            meta_record.range.start.line
-            if meta_record is not None
+            selected_meta_record.range.start.line
+            if selected_meta_record is not None
             else find_line_containing(lines, f"{key} =", meta_line)
         )
         key_range = (
-            meta_record.range
-            if meta_record is not None
+            selected_meta_record.range
+            if selected_meta_record is not None
             else (
                 make_range(key_line, 0, key_line, len(lines[key_line])) if key_line >= 0 else None
             )

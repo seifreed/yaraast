@@ -242,6 +242,26 @@ rule sample { condition: true }
     assert [symbol.range.start.line for symbol in includes] == [2, 3]
 
 
+def test_symbols_provider_preserves_duplicate_meta_key_ranges() -> None:
+    text = """
+rule sample {
+  meta:
+    author = "one"
+    author = "two"
+  condition:
+    true
+}
+""".lstrip()
+    provider = SymbolsProvider()
+
+    symbols = provider.get_symbols(text)
+    rule_symbol = next(symbol for symbol in symbols if symbol.name == "sample")
+    meta_symbol = next(child for child in _children(rule_symbol) if child.name == "meta")
+    author_symbols = [child for child in _children(meta_symbol) if child.name.startswith("author")]
+
+    assert [symbol.range.start.line for symbol in author_symbols] == [2, 3]
+
+
 def test_symbols_provider_caches_results_per_document_revision(tmp_path: Path) -> None:
     doc = tmp_path / "doc.yar"
     text_v1 = "rule sample { condition: true }\n"
