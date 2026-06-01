@@ -209,6 +209,16 @@ def test_memory_optimizer_transformer_does_not_count_rejected_nodes() -> None:
     assert transformer.nodes_processed == 0
 
 
+def test_memory_optimizer_transformer_rejects_invalid_hex_tokens() -> None:
+    transformer = MemoryOptimizerTransformer({}, aggressive=False)
+    hex_string = HexString(identifier="$h", tokens=[cast(Any, object())])
+
+    with pytest.raises(TypeError, match="Hex string tokens must contain AST nodes"):
+        transformer.visit(hex_string)
+
+    assert transformer.nodes_processed == 0
+
+
 def test_memory_optimizer_transformer_leaf_visitors_are_passthrough_or_pool() -> None:
     pool: dict[str, str] = {}
     transformer = MemoryOptimizerTransformer(pool, aggressive=False)

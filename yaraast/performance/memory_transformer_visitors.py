@@ -93,6 +93,16 @@ def _visit_items(transformer: Any, values: list[Any]) -> list[Any]:
     return [transformer.visit(value) if hasattr(value, "accept") else value for value in values]
 
 
+def _visit_ast_items(transformer: Any, values: list[Any], field_name: str) -> list[Any]:
+    visited = []
+    for value in values:
+        if not isinstance(value, ASTNode):
+            msg = f"{field_name} must contain AST nodes"
+            raise TypeError(msg)
+        visited.append(transformer.visit(value))
+    return visited
+
+
 def visit_string_literal(transformer: Any, node: StringLiteral) -> StringLiteral:
     node = _shallow(node)
     if hasattr(node, "value") and isinstance(node.value, str):
@@ -380,7 +390,7 @@ def visit_string_operator_expression(
 def visit_hex_string(transformer: Any, node: HexString) -> HexString:
     node = _shallow(node)
     node.modifiers = _visit_items(transformer, node.modifiers)
-    node.tokens = _visit_items(transformer, node.tokens)
+    node.tokens = _visit_ast_items(transformer, node.tokens, "Hex string tokens")
     if hasattr(node, "identifier") and isinstance(node.identifier, str):
         node.identifier = pooled_value(transformer.string_pool, node.identifier)
     return node
