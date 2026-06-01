@@ -7,11 +7,14 @@ from threading import Lock
 from typing import TYPE_CHECKING
 
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
+from yaraast.errors import YaraASTError
 from yaraast.resolution.workspace_models import FileAnalysisResult, WorkspaceReport
 from yaraast.shared.numeric_validation import validate_positive_int_setting
 
 if TYPE_CHECKING:
     from yaraast.resolution.workspace import Workspace
+
+_EXPECTED_ANALYSIS_ERRORS = (YaraASTError, ValueError, TypeError)
 
 
 class WorkspaceAnalyzer:
@@ -75,7 +78,7 @@ class WorkspaceAnalyzer:
                 file_path, result = future_to_file[future]
                 try:
                     future.result()
-                except Exception as e:
+                except _EXPECTED_ANALYSIS_ERRORS as e:
                     result.errors.append(f"Analysis error: {e}")
                 completed_results[file_path] = result
 
@@ -137,7 +140,7 @@ class WorkspaceAnalyzer:
                             f"Rule '{rule_name}': Undefined string '{string}'",
                         )
 
-        except Exception as e:
+        except _EXPECTED_ANALYSIS_ERRORS as e:
             result.errors.append(f"Analysis error: {e}")
 
     def _calculate_statistics(self, report: WorkspaceReport) -> None:

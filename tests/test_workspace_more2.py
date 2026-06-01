@@ -413,6 +413,27 @@ def test_workspace_analysis_handles_unresolved_results_analysis_errors_and_cycle
     assert any("Dependency cycle detected:" in err for err in report.global_errors)
 
 
+def test_workspace_analysis_propagates_internal_rule_analyzer_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rule_file = _write(tmp_path / "ok.yar", "rule ok { condition: true }")
+    workspace = Workspace(str(tmp_path))
+    workspace.add_file(str(rule_file))
+
+    class BrokenRuleAnalyzer:
+        def analyze(self, ast: YaraFile) -> dict[str, object]:
+            raise AttributeError("rule analyzer state missing")
+
+    monkeypatch.setattr(
+        "yaraast.resolution.workspace_analysis.RuleAnalyzer",
+        BrokenRuleAnalyzer,
+    )
+
+    with pytest.raises(AttributeError, match="rule analyzer state missing"):
+        workspace.analyze(parallel=False)
+
+
 def test_workspace_parallel_analysis_records_future_failures(tmp_path: Path) -> None:
     workspace = Workspace(str(tmp_path))
 
@@ -429,7 +450,20 @@ def test_workspace_parallel_analysis_records_future_failures(tmp_path: Path) -> 
     )
     workspace.files[str(bad_path)] = FileAnalysisResult(
         path=bad_path,
-        resolved=cast(ResolvedFile, object()),
+        resolved=ResolvedFile(
+            path=bad_path,
+            content="rule bad { condition: true }",
+            ast=YaraFile(
+                rules=[
+                    Rule(
+                        name="bad",
+                        strings=cast(list[StringDefinition], None),
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            checksum="bad",
+        ),
     )
 
     analyzer = WorkspaceAnalyzer(workspace)
@@ -445,6 +479,40 @@ def test_workspace_parallel_analysis_records_future_failures(tmp_path: Path) -> 
 
     assert set(report.file_results) == {str(good_path), str(bad_path)}
     assert any("Analysis error:" in err for err in report.file_results[str(bad_path)].errors)
+
+
+def test_workspace_parallel_analysis_propagates_internal_future_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workspace = Workspace(str(tmp_path))
+    for name in ("good", "bad"):
+        path = tmp_path / f"{name}.yar"
+        workspace.files[str(path)] = FileAnalysisResult(
+            path=path,
+            resolved=ResolvedFile(
+                path=path,
+                content=f"rule {name} {{ condition: true }}",
+                ast=YaraFile(rules=[Rule(name=name, condition=BooleanLiteral(True))]),
+                checksum=name,
+            ),
+        )
+
+    original_analyze_file = WorkspaceAnalyzer._analyze_file
+
+    def broken_analyze_file(
+        self: WorkspaceAnalyzer,
+        result: FileAnalysisResult,
+        report: WorkspaceReport,
+    ) -> None:
+        if result.path.name == "bad.yar":
+            raise AttributeError("parallel analyzer state missing")
+        original_analyze_file(self, result, report)
+
+    monkeypatch.setattr(WorkspaceAnalyzer, "_analyze_file", broken_analyze_file)
+
+    with pytest.raises(AttributeError, match="parallel analyzer state missing"):
+        workspace.analyze(parallel=True, max_workers=2)
 
 
 def test_workspace_parallel_analysis_preserves_file_order(
