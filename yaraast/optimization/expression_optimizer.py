@@ -45,10 +45,14 @@ def _fold_boolean(
     operator: str,
 ) -> BooleanLiteral | _Sentinel:
     """Fold constant boolean expressions. Returns result or _SENTINEL."""
+    left_value = _boolean_literal_value(left)
+    right_value = _boolean_literal_value(right)
+    if left_value is None or right_value is None:
+        return _SENTINEL
     if operator == "and":
-        return BooleanLiteral(value=left.value and right.value)
+        return BooleanLiteral(value=left_value and right_value)
     if operator == "or":
-        return BooleanLiteral(value=left.value or right.value)
+        return BooleanLiteral(value=left_value or right_value)
     return _SENTINEL
 
 
@@ -104,49 +108,60 @@ def _fold_comparison(left_val: int, right_val: int, operator: str) -> BooleanLit
 
 
 def _is_static_numeric_identity_operand(node: Expression) -> bool:
-    return isinstance(node, IntegerLiteral) or (
-        isinstance(node, Identifier) and node.name in {"filesize", "entrypoint"}
-    )
+    if isinstance(node, IntegerLiteral):
+        return _integer_literal_value(node) is not None
+    return isinstance(node, Identifier) and node.name in {"filesize", "entrypoint"}
 
 
 def _simplify_identity(node: BinaryExpression) -> tuple[Expression | None, int]:
     """Simplify arithmetic identities only for statically numeric operands."""
     left, right, op = node.left, node.right, node.operator
 
-    if op == "+" and isinstance(right, IntegerLiteral) and right.value == 0:
+    right_value = _integer_literal_value(right) if isinstance(right, IntegerLiteral) else None
+    left_value = _integer_literal_value(left) if isinstance(left, IntegerLiteral) else None
+
+    if op == "+" and right_value == 0:
         return (left, 1) if _is_static_numeric_identity_operand(left) else (None, 0)
-    if op == "+" and isinstance(left, IntegerLiteral) and left.value == 0:
+    if op == "+" and left_value == 0:
         return (right, 1) if _is_static_numeric_identity_operand(right) else (None, 0)
-    if op == "*" and isinstance(right, IntegerLiteral) and right.value == 1:
+    if op == "*" and right_value == 1:
         return (left, 1) if _is_static_numeric_identity_operand(left) else (None, 0)
-    if op == "*" and isinstance(left, IntegerLiteral) and left.value == 1:
+    if op == "*" and left_value == 1:
         return (right, 1) if _is_static_numeric_identity_operand(right) else (None, 0)
 
     return None, 0
 
 
 def _is_static_boolean_identity_operand(node: Expression) -> bool:
-    return isinstance(node, BooleanLiteral | StringIdentifier | StringWildcard | DefinedExpression)
+    if isinstance(node, BooleanLiteral):
+        return _boolean_literal_value(node) is not None
+    return isinstance(node, StringIdentifier | StringWildcard | DefinedExpression)
 
 
 def _simplify_boolean_short_circuit(node: BinaryExpression) -> tuple[Expression | None, int]:
     """Simplify boolean short-circuit patterns. Returns (result, opt_count)."""
     if isinstance(node.left, BooleanLiteral):
+        left_value = _boolean_literal_value(node.left)
+        if left_value is None:
+            return None, 0
         if node.operator == "and":
-            if not node.left.value:
+            if not left_value:
                 return BooleanLiteral(value=False), 1
             if _is_static_boolean_identity_operand(node.right):
                 return node.right, 1
         if node.operator == "or":
-            if node.left.value:
+            if left_value:
                 return BooleanLiteral(value=True), 1
             if _is_static_boolean_identity_operand(node.right):
                 return node.right, 1
 
     if isinstance(node.right, BooleanLiteral):
-        if node.operator == "and" and not node.right.value:
+        right_value = _boolean_literal_value(node.right)
+        if right_value is None:
+            return None, 0
+        if node.operator == "and" and not right_value:
             return BooleanLiteral(value=False), 1
-        if node.operator == "or" and node.right.value:
+        if node.operator == "or" and right_value:
             return BooleanLiteral(value=True), 1
         if node.operator == "and" and _is_static_boolean_identity_operand(node.left):
             return node.left, 1
@@ -159,12 +174,29 @@ def _simplify_boolean_short_circuit(node: BinaryExpression) -> tuple[Expression 
 def _is_empty_integer_range(node: Any) -> bool:
     if isinstance(node, ParenthesesExpression):
         node = node.expression
-    return (
+    if not (
         isinstance(node, RangeExpression)
         and isinstance(node.low, IntegerLiteral)
         and isinstance(node.high, IntegerLiteral)
-        and node.high.value < node.low.value
-    )
+    ):
+        return False
+    low_value = _integer_literal_value(node.low)
+    high_value = _integer_literal_value(node.high)
+    if low_value is None or high_value is None:
+        return False
+    return high_value < low_value
+
+
+def _integer_literal_value(node: IntegerLiteral) -> int | None:
+    if isinstance(node.value, bool) or not isinstance(node.value, int):
+        return None
+    return node.value
+
+
+def _boolean_literal_value(node: BooleanLiteral) -> bool | None:
+    if not isinstance(node.value, bool):
+        return None
+    return node.value
 
 
 class ExpressionOptimizer(ASTTransformer):
@@ -228,8 +260,10 @@ class ExpressionOptimizer(ASTTransformer):
 
         # Constant folding for integer arithmetic and comparisons
         if isinstance(node.left, IntegerLiteral) and isinstance(node.right, IntegerLiteral):
-            left_val = node.left.value
-            right_val = node.right.value
+            left_val = _integer_literal_value(node.left)
+            right_val = _integer_literal_value(node.right)
+            if left_val is None or right_val is None:
+                return node
 
             arithmetic_result = _fold_arithmetic(left_val, right_val, node.operator)
             if isinstance(arithmetic_result, IntegerLiteral):
@@ -262,16 +296,25 @@ class ExpressionOptimizer(ASTTransformer):
 
         # Constant folding
         if node.operator == "not" and isinstance(node.operand, BooleanLiteral):
+            boolean_value = _boolean_literal_value(node.operand)
+            if boolean_value is None:
+                return node
             self.optimization_count += 1
-            return BooleanLiteral(value=not node.operand.value)
+            return BooleanLiteral(value=not boolean_value)
 
         if node.operator == "-" and isinstance(node.operand, IntegerLiteral):
+            integer_value = _integer_literal_value(node.operand)
+            if integer_value is None:
+                return node
             self.optimization_count += 1
-            return IntegerLiteral(value=normalize_int64(-node.operand.value))
+            return IntegerLiteral(value=normalize_int64(-integer_value))
 
         if node.operator == "~" and isinstance(node.operand, IntegerLiteral):
+            integer_value = _integer_literal_value(node.operand)
+            if integer_value is None:
+                return node
             self.optimization_count += 1
-            return IntegerLiteral(value=normalize_int64(~node.operand.value))
+            return IntegerLiteral(value=normalize_int64(~integer_value))
 
         # Double negation elimination
         if (

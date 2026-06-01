@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
@@ -113,6 +114,25 @@ def test_integer_division_and_modulo_by_zero_do_not_fold() -> None:
 
     assert opt.visit(div) is div
     assert opt.visit(mod) is mod
+
+
+def test_expression_optimizer_does_not_fold_malformed_literals() -> None:
+    cases: list[BinaryExpression | UnaryExpression] = [
+        BinaryExpression(BooleanLiteral(cast(Any, "false")), "and", BooleanLiteral(True)),
+        BinaryExpression(BooleanLiteral(False), "or", BooleanLiteral(cast(Any, "true"))),
+        BinaryExpression(IntegerLiteral(cast(Any, True)), "+", IntegerLiteral(1)),
+        BinaryExpression(IntegerLiteral(cast(Any, "1")), "==", IntegerLiteral(1)),
+        UnaryExpression("not", BooleanLiteral(cast(Any, "false"))),
+        UnaryExpression("-", IntegerLiteral(cast(Any, True))),
+        UnaryExpression("~", IntegerLiteral(cast(Any, "1"))),
+    ]
+
+    for expression in cases:
+        opt = ExpressionOptimizer()
+        optimized = opt.optimize(expression)
+
+        assert optimized == expression
+        assert opt.optimization_count == 0
 
 
 def test_parentheses_elimination_counts_as_optimization() -> None:
