@@ -907,6 +907,21 @@ def test_protobuf_deserializes_legacy_boolean_quantifier_text_as_text() -> None:
     assert condition.quantifier == "true"
 
 
+def test_protobuf_deserializes_malformed_signed_legacy_quantifier_text_as_text() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "legacy_malformed_signed_text"
+    pb_rule.condition.of_expression.quantifier_text = "--1"
+    pb_rule.condition.of_expression.string_set_text = "them"
+
+    restored = serializer.deserialize(binary_data=pb_file.SerializeToString())
+    condition = restored.rules[0].condition
+
+    assert isinstance(condition, OfExpression)
+    assert condition.quantifier == "--1"
+
+
 def test_protobuf_deserialize_rejects_empty_expression_payload() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     pb_file: Any = yara_ast_pb2.YaraFile()

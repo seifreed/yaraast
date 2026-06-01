@@ -1008,7 +1008,8 @@ def _string_set_item_expression(item, context: str):
 
 
 def _restore_quantifier_text(value: str):
-    if value.lstrip("-").isdigit() and value not in {"", "-"}:
+    integer_text = value[1:] if value.startswith("-") else value
+    if integer_text.isdigit():
         return int(value)
     try:
         if any(marker in value for marker in (".", "e", "E")):
