@@ -156,3 +156,14 @@ def test_dump_pipeline_yaml_rejects_invalid_width_types(width: object) -> None:
 def test_dump_pipeline_yaml_rejects_non_positive_width(width: object) -> None:
     with pytest.raises(ValueError, match="width must be at least 1"):
         dump_pipeline_yaml({"a": 1}, output_path=None, width=width)
+
+
+@pytest.mark.parametrize("output_path", [False, 0, object()])
+def test_dump_pipeline_yaml_rejects_invalid_output_path_types(output_path: Any) -> None:
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        dump_pipeline_yaml({"a": 1}, output_path=cast(Any, output_path))
+
+
+def test_dump_pipeline_yaml_rejects_empty_output_path() -> None:
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        dump_pipeline_yaml({"a": 1}, output_path="")

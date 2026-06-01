@@ -15,6 +15,7 @@ from yaraast.serialization.ast_diff_compare import (
     compare_rules,
 )
 from yaraast.serialization.ast_diff_hasher import AstHasher
+from yaraast.serialization.serializer_helpers import require_input_path
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -146,10 +147,10 @@ class AstDiff:
             "changes": diff_result.to_dict(),
         }
 
-        if output_path:
+        if output_path is not None:
             import json
 
-            with Path(output_path).open("w", encoding="utf-8") as f:
+            with require_input_path(output_path, "output_path").open("w", encoding="utf-8") as f:
                 json.dump(patch, f, indent=2)
 
         return patch

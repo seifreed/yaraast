@@ -1046,3 +1046,24 @@ def test_ast_diff_detects_imports_rules_and_modifications(tmp_path: Path) -> Non
     assert patch_path.exists()
     assert patch["patch_format"] == "yaraast-diff-v1"
     assert patch["changes"]["has_changes"] is True
+
+
+@pytest.mark.parametrize("output_path", [False, 0, object()])
+def test_ast_diff_create_patch_rejects_invalid_output_path_types(output_path: Any) -> None:
+    old = _parse_yara("rule a { condition: true }")
+    new = _parse_yara("rule a { condition: false }")
+    differ = AstDiff()
+    result = differ.compare(old, new)
+
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        differ.create_patch(result, output_path=cast(Any, output_path))
+
+
+def test_ast_diff_create_patch_rejects_empty_output_path() -> None:
+    old = _parse_yara("rule a { condition: true }")
+    new = _parse_yara("rule a { condition: false }")
+    differ = AstDiff()
+    result = differ.compare(old, new)
+
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        differ.create_patch(result, output_path="")
