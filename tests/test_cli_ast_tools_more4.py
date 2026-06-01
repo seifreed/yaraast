@@ -6,6 +6,7 @@ from io import StringIO
 from pathlib import Path
 from typing import Any, cast
 
+import pytest
 from rich.console import Console
 from rich.tree import Tree
 
@@ -29,12 +30,10 @@ def test_ast_formatter_more_styles_and_check_paths(tmp_path: Path) -> None:
     ok_pretty, pretty = formatter.format_file(path, None, "pretty")
     ok_verbose, verbose = formatter.format_file(path, None, "verbose")
     ok_default, default = formatter.format_file(path, None, "default")
-    ok_weird, weird = formatter.format_file(path, None, "weird")
 
     assert ok_pretty is True and "rule x" in pretty
     assert ok_verbose is True and "rule x" in verbose
     assert ok_default is True and "rule x" in default
-    assert ok_weird is True and "rule x" in weird
 
     needs_format, issues = formatter.check_format(path)
     assert needs_format is True
@@ -45,6 +44,36 @@ def test_ast_formatter_more_styles_and_check_paths(tmp_path: Path) -> None:
     clean, clean_issues = formatter.check_format(formatted)
     assert clean is False
     assert clean_issues == []
+
+
+@pytest.mark.parametrize("style", [None, 123])
+def test_ast_formatter_rejects_non_string_styles(tmp_path: Path, style: object) -> None:
+    path = tmp_path / "rule.yar"
+    path.write_text("rule x { condition: true }\n", encoding="utf-8")
+    formatter = at.ASTFormatter()
+
+    with pytest.raises(TypeError, match="format style must be a string"):
+        formatter.format_ast(YaraFile(), style)
+    with pytest.raises(TypeError, match="format style must be a string"):
+        formatter.format_file(path, None, style)
+
+
+@pytest.mark.parametrize("style", ["", "weird"])
+def test_ast_formatter_rejects_unknown_styles(tmp_path: Path, style: str) -> None:
+    path = tmp_path / "rule.yar"
+    path.write_text("rule x { condition: true }\n", encoding="utf-8")
+    formatter = at.ASTFormatter()
+
+    with pytest.raises(
+        ValueError,
+        match="format style must be one of: compact, default, pretty, verbose",
+    ):
+        formatter.format_ast(YaraFile(), style)
+    with pytest.raises(
+        ValueError,
+        match="format style must be one of: compact, default, pretty, verbose",
+    ):
+        formatter.format_file(path, None, style)
 
 
 def test_print_ast_default_console_and_visualize_dict() -> None:

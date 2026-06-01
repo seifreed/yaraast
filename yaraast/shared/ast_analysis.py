@@ -327,6 +327,8 @@ class ASTDiffer:
 class ASTFormatter:
     """AST-based code formatter using CodeGenerator."""
 
+    _STYLES = frozenset({"compact", "default", "pretty", "verbose"})
+
     def __init__(self) -> None:
         self.generator = YaraXGenerator()
         self.pretty_printer = PrettyPrinter()
@@ -335,7 +337,7 @@ class ASTFormatter:
         self,
         input_path: Path,
         output_path: Path | None = None,
-        style: str = "default",
+        style: object = "default",
     ) -> tuple[bool, str]:
         try:
             with Path(input_path).open(encoding="utf-8") as f:
@@ -349,14 +351,23 @@ class ASTFormatter:
         except (YaraASTError, OSError) as exc:
             return False, f"Formatting error: {exc}"
 
-    def format_ast(self, ast: YaraFile, style: str = "default") -> str:
+    def format_ast(self, ast: YaraFile, style: object = "default") -> str:
         ast = require_yara_file(ast, "ast")
+        style = self._require_style(style)
         if style == "compact":
             return self.generator.generate(ast)
         if style in ("pretty", "verbose"):
             self.pretty_printer = PrettyPrinter()
             return self.pretty_printer.pretty_print(ast)
         return self.pretty_printer.pretty_print(ast)
+
+    def _require_style(self, style: object) -> str:
+        if not isinstance(style, str):
+            raise TypeError("format style must be a string")
+        if style not in self._STYLES:
+            valid = ", ".join(sorted(self._STYLES))
+            raise ValueError(f"format style must be one of: {valid}")
+        return style
 
     def check_format(self, file_path: Path) -> tuple[bool, list[str]]:
         try:
