@@ -149,6 +149,11 @@ def diff(
                 write_diff_output(output_path, format, diff_data)
                 display_diff_saved(console, output_path, patch=False)
 
+    except ImportError as e:
+        if format != "yaml" or e.name != "yaml":
+            raise
+        console.print(f"[red]❌ Error: {e}[/red]")
+        raise click.Abort from e
     except Exception as e:  # CLI error boundary
         console.print(f"[red]❌ Error: {e}[/red]")
         raise click.Abort from e
