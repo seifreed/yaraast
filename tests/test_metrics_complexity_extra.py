@@ -349,6 +349,26 @@ def test_complexity_string_usage_ignores_yarax_string_locals_in_reference_forms(
         assert "shadowed_string" not in metrics.string_dependencies
 
 
+def test_complexity_string_usage_resolves_yarax_string_locals_in_string_sets() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="local_string_set",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", StringLiteral("$a"))],
+                    body=OfExpression("any", SetExpression([StringIdentifier("$x")])),
+                ),
+            )
+        ]
+    )
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.unused_strings == []
+    assert metrics.string_dependencies["local_string_set"] == {"$a"}
+
+
 def test_complexity_analyzer_counts_yarax_condition_nodes() -> None:
     code = """
     rule yarax_complexity {
