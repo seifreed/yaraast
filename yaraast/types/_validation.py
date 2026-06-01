@@ -118,7 +118,7 @@ class TypeChecker(BaseVisitor[None]):
 
         try:
             # Type check condition
-            if node.condition:
+            if node.condition is not None:
                 cond_type = self.inference.infer(node.condition)
                 # In YARA, integer conditions are valid (0 = false, non-zero = true)
                 # Also string counts and offsets return integers that can be used as conditions

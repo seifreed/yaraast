@@ -66,7 +66,7 @@ class AstHasher(ASTVisitor[str]):
             )
         )
         strings = "|".join(sorted(self.visit(s) for s in node.strings))
-        condition = self.visit(node.condition) if node.condition else ""
+        condition = self.visit(node.condition) if node.condition is not None else ""
         pragmas = self._hash_in_rule_pragmas(node.pragmas)
         return f"Rule({node.name},{modifiers},{tags},{meta},{strings},{condition},{pragmas})"
 
@@ -232,7 +232,7 @@ class AstHasher(ASTVisitor[str]):
         )
 
     def visit_for_of_expression(self, node) -> str:
-        cond = self.visit(node.condition) if node.condition else ""
+        cond = self.visit(node.condition) if node.condition is not None else ""
         return (
             f"ForOf({self._hash_value(node.quantifier)},"
             f"{self._hash_string_set(node.string_set)},{cond})"

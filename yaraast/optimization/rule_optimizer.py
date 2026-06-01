@@ -46,7 +46,7 @@ class RuleOptimizer:
             # Expression optimization pass - for now just count rules with conditions
             expr_opts = 0
             for rule in current.rules:
-                if rule.condition:
+                if rule.condition is not None:
                     before_count = self.expression_optimizer.optimization_count
                     rule.condition = self.expression_optimizer.optimize(rule.condition)
                     expr_opts += self.expression_optimizer.optimization_count - before_count
@@ -107,6 +107,6 @@ class RuleOptimizer:
     def optimize_rule(self, rule: Rule) -> Rule:
         """Optimize a single rule."""
         rule = copy.deepcopy(rule)
-        if rule.condition:
+        if rule.condition is not None:
             rule.condition = self.expression_optimizer.optimize(rule.condition)
         return rule

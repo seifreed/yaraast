@@ -246,7 +246,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
         # Check condition for rule references
         try:
-            if node.condition:
+            if node.condition is not None:
                 self.visit(node.condition)
         finally:
             self.current_rule = None

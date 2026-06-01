@@ -78,7 +78,7 @@ class SemanticValidator:
 
         function_validator = FunctionCallValidator(result, env)
         for rule in ast.rules:
-            if rule.condition:
+            if rule.condition is not None:
                 function_validator.visit(rule.condition)
 
         type_env = TypeEnvironment()
@@ -117,7 +117,7 @@ class SemanticValidator:
         undefined_detector = UndefinedStringDetector(result)
         undefined_detector.check_rule(rule)
 
-        if rule.condition:
+        if rule.condition is not None:
             function_validator = FunctionCallValidator(result, env)
             function_validator.visit(rule.condition)
 

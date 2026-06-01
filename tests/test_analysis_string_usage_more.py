@@ -32,6 +32,11 @@ from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.ast_nodes import WithDeclaration, WithStatement
 
 
+class _FalsyStringIdentifier(StringIdentifier):
+    def __bool__(self) -> bool:
+        return False
+
+
 def test_string_usage_analyzer_covers_offset_length_at_in_forof_and_of() -> None:
     ast = Parser().parse("""
 rule advanced {
@@ -164,6 +169,9 @@ rule two {
     )
     analyzer.visit_for_of_expression(
         ForOfExpression("all", Identifier("them"), condition=StringIdentifier("$a")),
+    )
+    analyzer.visit_for_of_expression(
+        ForOfExpression("all", Identifier("them"), condition=_FalsyStringIdentifier("$b")),
     )
     analyzer.visit_of_expression(OfExpression(IntegerLiteral(1), Identifier("them")))
 

@@ -497,7 +497,7 @@ class UndefinedStringDetector:
             if hasattr(node.quantifier, "accept"):
                 self._collect_string_refs(node.quantifier, refs)
             self._collect_string_set_refs(node.string_set, refs)
-            if node.condition:
+            if node.condition is not None:
                 self._collect_string_refs(node.condition, refs, implicit_string_allowed=True)
             return
         elif isinstance(node, OfExpression):
@@ -647,7 +647,7 @@ class UndefinedStringDetector:
             if hasattr(node.quantifier, "accept"):
                 self._collect_used_string_defs(node.quantifier, defined, anonymous, used)
             self._mark_used_string_set(node.string_set, defined, anonymous, used)
-            if node.condition:
+            if node.condition is not None:
                 self._collect_used_string_defs(node.condition, defined, anonymous, used, True)
             return
         elif isinstance(node, OfExpression):

@@ -31,6 +31,11 @@ from yaraast.optimization.expression_optimizer import ExpressionOptimizer, optim
 from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
 
 
+class _FalsyBinaryExpression(BinaryExpression):
+    def __bool__(self) -> bool:
+        return False
+
+
 def test_integer_folding_all_remaining_operators() -> None:
     opt = ExpressionOptimizer()
 
@@ -450,6 +455,11 @@ def test_visit_for_of_at_in_and_passthrough_methods() -> None:
         string_set=["$a", "$b"],
         condition=BooleanLiteral(True),
     )
+    falsy_for_of_node = ForOfExpression(
+        quantifier="all",
+        string_set=["$a"],
+        condition=_FalsyBinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)),
+    )
     tuple_of_node = OfExpression(
         quantifier="any",
         string_set=(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)), "$a"),
@@ -466,6 +476,7 @@ def test_visit_for_of_at_in_and_passthrough_methods() -> None:
     assert opt.visit_of_expression(of_node).string_set == Identifier("s")
     assert opt.visit_of_expression(raw_of_node).string_set == ["$a", "$b"]
     assert opt.visit_for_of_expression(raw_for_of_node).string_set == ["$a", "$b"]
+    assert opt.visit_for_of_expression(falsy_for_of_node).condition == IntegerLiteral(3)
     assert opt.visit_of_expression(tuple_of_node).string_set == (IntegerLiteral(3), "$a")
     assert opt.visit_at_expression(at_node).offset == IntegerLiteral(4)
     assert opt.visit_in_expression(in_node).range == Identifier("r")

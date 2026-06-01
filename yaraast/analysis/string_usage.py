@@ -147,7 +147,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         # Visit condition section
         try:
             self.in_condition = True
-            if node.condition:
+            if node.condition is not None:
                 self.visit(node.condition)
         finally:
             self.in_condition = False
@@ -225,7 +225,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self._visit_ast_value(node.quantifier)
         self._visit_string_set_value(node.string_set)
 
-        if node.condition:
+        if node.condition is not None:
             previous = self.implicit_current_string_allowed
             self.implicit_current_string_allowed = True
             try:

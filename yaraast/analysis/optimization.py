@@ -147,7 +147,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
             self._analyze_string_definitions(rule)
 
         # Analyze condition
-        if rule.condition:
+        if rule.condition is not None:
             self._condition_depth = 0
             self._max_condition_depth = 0
             self.visit(rule.condition)

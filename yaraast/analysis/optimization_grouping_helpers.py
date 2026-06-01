@@ -42,6 +42,9 @@ def group_rules_by_pattern(
 ) -> dict[tuple[int, str | None], list[str]]:
     rule_patterns: dict[tuple[int, str | None], list[str]] = {}
     for rule in rules:
-        pattern = (len(rule.strings), pattern_func(rule.condition) if rule.condition else None)
+        pattern = (
+            len(rule.strings),
+            pattern_func(rule.condition) if rule.condition is not None else None,
+        )
         rule_patterns.setdefault(pattern, []).append(rule.name)
     return rule_patterns

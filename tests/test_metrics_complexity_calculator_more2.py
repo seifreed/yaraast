@@ -110,6 +110,9 @@ def test_complexity_calculator_core_and_branches() -> None:
         condition=None,
     )
     assert calc.calculate(for_of_list) == 7
+    assert (
+        calc.calculate(ForOfExpression("all", ["$a", "$b"], condition=_FalsyIntegerLiteral(0))) == 8
+    )
 
     for_of_tuple = ForOfExpression(
         quantifier="all",

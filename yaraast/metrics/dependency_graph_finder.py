@@ -74,7 +74,7 @@ class DependencyFinder(MetricsVisitorBase):
         if hasattr(node.quantifier, "accept"):
             self.visit(node.quantifier)
         self._visit_ast_value(node.string_set)
-        if node.condition:
+        if node.condition is not None:
             self.visit(node.condition)
 
     def visit_at_expression(self, node) -> None:

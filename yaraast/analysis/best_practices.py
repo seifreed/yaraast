@@ -196,7 +196,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
         # Visit condition to track string usage
         try:
-            if node.condition:
+            if node.condition is not None:
                 self.visit(node.condition)
                 self._check_unused_strings(node)
         finally:
@@ -478,7 +478,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def visit_for_of_expression(self, node: ForOfExpression) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_string_set_value(node.string_set)
-        if node.condition:
+        if node.condition is not None:
             self.visit(node.condition)
 
     def visit_of_expression(self, node: OfExpression) -> None:

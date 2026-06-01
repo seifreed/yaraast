@@ -206,7 +206,7 @@ class ExpressionOptimizer(ASTTransformer):
     def _optimize_rule(self, rule: Rule) -> Rule:
         """Optimize expressions in a rule."""
         rule = copy.deepcopy(rule)
-        if rule.condition:
+        if rule.condition is not None:
             # Reset count for this rule to track optimizations
             optimized_condition = cast(Expression, self.visit(rule.condition))
             # Count is incremented by visit methods for each optimization
@@ -378,7 +378,7 @@ class ExpressionOptimizer(ASTTransformer):
             node.quantifier = self._optimize_ast_value(node.quantifier)
         if hasattr(node, "string_set"):
             node.string_set = self._optimize_ast_value(node.string_set)
-        if hasattr(node, "condition") and node.condition:
+        if hasattr(node, "condition") and node.condition is not None:
             node.condition = self.visit(node.condition)
         return node
 

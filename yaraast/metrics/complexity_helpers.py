@@ -30,7 +30,7 @@ def calculate_rule_complexity(rule: Rule) -> int:
                 complexity += 1
 
     # Add condition complexity
-    if rule.condition:
+    if rule.condition is not None:
         complexity += calc.calculate(rule.condition)
 
     # Add modifier complexity

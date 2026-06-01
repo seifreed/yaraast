@@ -132,7 +132,7 @@ class DeadCodeEliminator(ASTTransformer):
             self.used_strings_by_rule.setdefault(rule_key, set())
             self.anonymous_strings_by_rule[rule_key] = set(self.current_rule_anonymous_strings)
             self.in_condition = True
-            if rule.condition:
+            if rule.condition is not None:
                 self._collect_from_expression(rule.condition)
             self.in_condition = False
             self.current_rule_key = None
@@ -310,7 +310,7 @@ class DeadCodeEliminator(ASTTransformer):
 
     def _has_external_references(self, rule: Rule) -> bool:
         """Check if rule references other rules."""
-        if rule.condition:
+        if rule.condition is not None:
             return self._contains_rule_reference(rule.condition)
         return False
 
@@ -534,7 +534,7 @@ class DeadCodeEliminator(ASTTransformer):
             node.strings = kept_strings
 
         # Optimize condition
-        if node.condition:
+        if node.condition is not None:
             self.in_condition = True
             node.condition = cast(Expression, self.visit(node.condition))
             self.in_condition = False
@@ -746,7 +746,7 @@ class DeadCodeEliminator(ASTTransformer):
         )
         self.in_condition = True
 
-        if rule.condition:
+        if rule.condition is not None:
             self._collect_from_expression(rule.condition)
 
         # Remove unused strings

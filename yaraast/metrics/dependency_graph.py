@@ -152,7 +152,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
         # Visit condition to find module usage
         try:
-            if node.condition:
+            if node.condition is not None:
                 self.visit(node.condition)
         finally:
             self._current_rule = None
@@ -304,7 +304,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
     def visit_for_of_expression(self, node) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.string_set)
-        if node.condition:
+        if node.condition is not None:
             self.visit(node.condition)
 
     def visit_at_expression(self, node) -> None:

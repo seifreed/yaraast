@@ -127,7 +127,7 @@ def build_dependency_graph(ast: YaraFile) -> DependencyGraph:
     all_rule_names = set(rule_keys_by_name)
 
     for rule in ast.rules:
-        if rule.condition:
+        if rule.condition is not None:
             finder = DependencyFinder(rule.name, all_rule_names)
             finder.visit(rule.condition)
 

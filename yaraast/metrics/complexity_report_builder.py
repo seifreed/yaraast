@@ -21,7 +21,9 @@ def generate_complexity_report(ast: YaraFile) -> dict[str, Any]:
     for rule in ast.rules:
         complexity = calculate_rule_complexity(rule)
         cyclomatic = metrics.cyclomatic_complexity.get(rule.name, 1)
-        cognitive = calculate_cognitive_complexity(rule.condition) if rule.condition else 0
+        cognitive = (
+            calculate_cognitive_complexity(rule.condition) if rule.condition is not None else 0
+        )
 
         rules_data.append(
             {

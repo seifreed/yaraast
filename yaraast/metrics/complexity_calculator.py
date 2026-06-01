@@ -124,7 +124,7 @@ class ComplexityCalculator(MetricsVisitorBase):
         complexity = 5  # High base for loops
         complexity += self._calculate_ast_value(node.quantifier)
         complexity += self._calculate_string_set_value(node.string_set)
-        if node.condition:
+        if node.condition is not None:
             complexity += self.calculate(node.condition)
         self._cognitive_depth -= 1
         return complexity

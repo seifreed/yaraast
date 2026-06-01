@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from typing import cast
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import InExpression
+from yaraast.ast.conditions import ForOfExpression, InExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -48,6 +48,11 @@ class _AcceptNode:
     def accept(self, visitor: AstHasher) -> str:
         visit = cast(Callable[[object], str], getattr(visitor, self._visit_method))
         return visit(self)
+
+
+class _FalsyIntegerLiteral(IntegerLiteral):
+    def __bool__(self) -> bool:
+        return False
 
 
 def test_ast_hasher_string_and_expression_helpers() -> None:
@@ -118,6 +123,12 @@ def test_ast_hasher_string_and_expression_helpers() -> None:
     )
     assert hasher.visit_hex_nibble(SimpleNamespace(high="A", value="F")) == "Nibble(A,F)"
     assert hasher.visit_expression(SimpleNamespace()) == "Expr()"
+    assert hasher.visit(Rule("present", condition=_FalsyIntegerLiteral(0))) != hasher.visit(
+        Rule("present", condition=None)
+    )
+    assert hasher.visit(ForOfExpression("any", Identifier("them"), _FalsyIntegerLiteral(0))) == (
+        "ForOf(any,Id(them),Int(0))"
+    )
     assert hasher.visit_string_count(SimpleNamespace(string_id="a")) == "Count(a)"
     assert hasher.visit_string_offset(SimpleNamespace(string_id="a")) == "Offset(a)"
     assert hasher.visit_string_length(SimpleNamespace(string_id="a")) == "Length(a)"

@@ -21,7 +21,7 @@ def analyze_rule(analyzer, rule) -> None:
         analyzer.metrics.rules_with_meta += 1
     if rule.tags:
         analyzer.metrics.rules_with_tags += 1
-    if rule.condition:
+    if rule.condition is not None:
         analyzer._current_depth = 0
         depth_start = len(analyzer._condition_depths)
         analyzer.visit(rule.condition)
