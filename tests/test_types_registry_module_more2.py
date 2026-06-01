@@ -132,3 +132,14 @@ def test_module_and_function_types_and_environment_aliases() -> None:
     env.add_rule("rule_a")
     assert env.has_rule("rule_a") is True
     assert env.has_rule("rule_b") is False
+
+
+def test_type_environment_rejects_embedded_string_reference_operators() -> None:
+    env = TypeEnvironment()
+
+    with pytest.raises(ValueError, match="Invalid string reference '#a'"):
+        env.add_string("#a")
+    with pytest.raises(ValueError, match="Invalid string reference '@a'"):
+        env.has_string("@a")
+    with pytest.raises(ValueError, match="Invalid string reference '!a'"):
+        env.has_string_pattern("!a")

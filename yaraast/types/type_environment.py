@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.string_references import normalize_string_reference_id
+
 from ._registry_base import YaraType
 
 
@@ -24,7 +26,7 @@ def _require_nonempty_string(value: Any, field_name: str) -> str:
 
 def _normalize_string_id(string_id: str, field_name: str = "TypeEnvironment string id") -> str:
     string_id = _require_string(string_id, field_name)
-    return string_id if string_id.startswith("$") else f"${string_id}"
+    return normalize_string_reference_id(string_id)
 
 
 class TypeEnvironment:

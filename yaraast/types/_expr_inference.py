@@ -38,6 +38,7 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, Extern
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
+from yaraast.string_references import normalize_string_reference_id
 from yaraast.visitor.defaults import DefaultASTVisitor
 from yaraast.yarax.ast_nodes import SpreadOperator
 
@@ -110,9 +111,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         self.errors: list[str] = []
 
     def _normalize_string_id(self, string_id: str) -> str:
-        if string_id.startswith("$"):
-            return string_id
-        return f"${string_id}"
+        return normalize_string_reference_id(string_id)
 
     def _resolve_module_type(self, module_name: str) -> ModuleType | None:
         if not self.env.has_module(module_name):

@@ -127,6 +127,21 @@ def test_expr_inference_reports_undefined_string_variants() -> None:
     assert "Undefined string: $missing" in inf.errors[2]
 
 
+def test_expr_inference_reports_embedded_string_reference_operators() -> None:
+    env = TypeEnvironment()
+    inf = ExpressionTypeInference(env)
+
+    assert isinstance(inf.infer(StringCount(string_id="#a")), UnknownType)
+    assert isinstance(inf.infer(StringOffset(string_id="@a")), UnknownType)
+    assert isinstance(inf.infer(StringLength(string_id="!a")), UnknownType)
+
+    assert inf.errors == [
+        "Invalid string reference '#a'",
+        "Invalid string reference '@a'",
+        "Invalid string reference '!a'",
+    ]
+
+
 def test_expr_inference_reports_undefined_raw_string_references() -> None:
     env = TypeEnvironment()
     env.add_string("$a")
