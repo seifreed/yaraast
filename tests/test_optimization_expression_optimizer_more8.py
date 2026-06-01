@@ -25,6 +25,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.rules import Rule
+from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer, optimize_expression
 from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
 
@@ -168,10 +169,18 @@ def test_identity_and_boolean_shortcuts_remaining_paths() -> None:
     opt = ExpressionOptimizer()
     x = Identifier("x")
 
-    assert opt.visit(BinaryExpression(x, "+", IntegerLiteral(0))) == x
-    assert opt.visit(BinaryExpression(IntegerLiteral(0), "+", x)) == x
-    assert opt.visit(BinaryExpression(x, "*", IntegerLiteral(1))) == x
-    assert opt.visit(BinaryExpression(IntegerLiteral(1), "*", x)) == x
+    assert opt.visit(BinaryExpression(x, "+", IntegerLiteral(0))) == BinaryExpression(
+        x, "+", IntegerLiteral(0)
+    )
+    assert opt.visit(BinaryExpression(IntegerLiteral(0), "+", x)) == BinaryExpression(
+        IntegerLiteral(0), "+", x
+    )
+    assert opt.visit(BinaryExpression(x, "*", IntegerLiteral(1))) == BinaryExpression(
+        x, "*", IntegerLiteral(1)
+    )
+    assert opt.visit(BinaryExpression(IntegerLiteral(1), "*", x)) == BinaryExpression(
+        IntegerLiteral(1), "*", x
+    )
     assert opt.visit(BinaryExpression(x, "*", IntegerLiteral(0))) == BinaryExpression(
         x, "*", IntegerLiteral(0)
     )
@@ -188,6 +197,28 @@ def test_identity_and_boolean_shortcuts_remaining_paths() -> None:
 
     no_fold = BinaryExpression(BooleanLiteral(True), "==", BooleanLiteral(True))
     assert opt.visit(no_fold) is no_fold
+
+
+def test_optimizer_preserves_arithmetic_identity_semantics_for_unknown_types() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="external_string",
+                condition=BinaryExpression(Identifier("external"), "+", IntegerLiteral(0)),
+            )
+        ]
+    )
+
+    original_evaluator = YaraEvaluator()
+    original_evaluator.context.variables["external"] = "text"
+    assert original_evaluator.evaluate_file(ast) == {"external_string": False}
+
+    optimized, count = ExpressionOptimizer().optimize(ast)
+
+    optimized_evaluator = YaraEvaluator()
+    optimized_evaluator.context.variables["external"] = "text"
+    assert optimized_evaluator.evaluate_file(optimized) == {"external_string": False}
+    assert count == 0
 
 
 def test_unary_parentheses_and_convenience_function() -> None:

@@ -101,21 +101,24 @@ def _fold_comparison(left_val: int, right_val: int, operator: str) -> BooleanLit
     return _SENTINEL
 
 
+def _is_static_numeric_identity_operand(node: Expression) -> bool:
+    return isinstance(node, IntegerLiteral) or (
+        isinstance(node, Identifier) and node.name in {"filesize", "entrypoint"}
+    )
+
+
 def _simplify_identity(node: BinaryExpression) -> tuple[Expression | None, int]:
-    """Simplify identity patterns. Returns (result, opt_count)."""
+    """Simplify arithmetic identities only for statically numeric operands."""
     left, right, op = node.left, node.right, node.operator
 
-    # x + 0 = x, 0 + x = x
     if op == "+" and isinstance(right, IntegerLiteral) and right.value == 0:
-        return left, 1
+        return (left, 1) if _is_static_numeric_identity_operand(left) else (None, 0)
     if op == "+" and isinstance(left, IntegerLiteral) and left.value == 0:
-        return right, 1
-
-    # x * 1 = x, 1 * x = x
+        return (right, 1) if _is_static_numeric_identity_operand(right) else (None, 0)
     if op == "*" and isinstance(right, IntegerLiteral) and right.value == 1:
-        return left, 1
+        return (left, 1) if _is_static_numeric_identity_operand(left) else (None, 0)
     if op == "*" and isinstance(left, IntegerLiteral) and left.value == 1:
-        return right, 1
+        return (right, 1) if _is_static_numeric_identity_operand(right) else (None, 0)
 
     return None, 0
 
@@ -236,7 +239,7 @@ class ExpressionOptimizer(ASTTransformer):
                 self.optimization_count += 1
                 return comparison_result
 
-        # Identity operations
+        # Identity operations are safe only for operands known to be numeric.
         identity, count = _simplify_identity(node)
         if identity is not None:
             self.optimization_count += count
