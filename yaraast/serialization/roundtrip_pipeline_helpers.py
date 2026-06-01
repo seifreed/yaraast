@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import math
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ from yaraast.ast.modifiers import MetaEntry, RuleModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import StringDefinition
 from yaraast.errors import SerializationError
+from yaraast.serialization.meta_scopes import serialize_meta_scope
 
 
 def _expected_type_names(expected_type: type[Any] | tuple[type[Any], ...]) -> str:
@@ -36,17 +38,74 @@ def _validated_node_collection(
     return list(values)
 
 
-def _validated_rule_modifiers(values: Any) -> list[Any]:
+def _required_string(value: Any, context: str) -> str:
+    if isinstance(value, str):
+        return value
+    msg = f"{context} must be a string"
+    raise SerializationError(msg)
+
+
+def _required_nonempty_string(value: Any, context: str) -> str:
+    text = _required_string(value, context)
+    if not text:
+        msg = f"{context} must not be empty"
+        raise SerializationError(msg)
+    return text
+
+
+def _nullable_nonempty_string(value: Any, context: str) -> str | None:
+    if value is None:
+        return None
+    return _required_nonempty_string(value, context)
+
+
+def _serialized_meta_value(value: Any) -> str | int | bool:
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    msg = "Meta value must be a string, integer, or boolean"
+    raise SerializationError(msg)
+
+
+def _serialized_meta_entry_value(value: Any) -> str | int | bool | float:
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    msg = "Meta value must be a string, integer, boolean, or finite float"
+    raise SerializationError(msg)
+
+
+def _validated_rule_modifiers(values: Any) -> list[str]:
     if not isinstance(values, list | tuple):
         msg = "Rule modifiers must be a list of rule modifiers"
         raise SerializationError(msg)
 
+    serialized = []
     for value in values:
-        if isinstance(value, (RuleModifier, str)):
+        if isinstance(value, RuleModifier):
+            serialized.append(str(value))
+            continue
+        if isinstance(value, str):
+            serialized.append(value)
             continue
         msg = "Rule modifiers item must be a string or RuleModifier"
         raise SerializationError(msg)
-    return list(values)
+    if any(not modifier for modifier in serialized):
+        msg = "Rule modifiers must contain non-empty strings"
+        raise SerializationError(msg)
+    return serialized
+
+
+def _validated_import_modules(imports: list[Any]) -> list[str]:
+    modules = []
+    for imp in imports:
+        modules.append(_required_nonempty_string(imp.module, "Import module"))
+        _nullable_nonempty_string(getattr(imp, "alias", None), "Import alias")
+    return modules
 
 
 def build_pipeline_metadata(
@@ -73,9 +132,11 @@ def build_pipeline_metadata(
 def build_pipeline_statistics(ast) -> dict[str, Any]:
     imports = _validated_node_collection(ast.imports, "YaraFile imports", Import)
     rules = _validated_node_collection(ast.rules, "YaraFile rules", Rule)
+    for rule in rules:
+        _required_nonempty_string(rule.name, "Rule name")
     return {
         "total_rules": len(rules),
-        "imports": [imp.module for imp in imports],
+        "imports": _validated_import_modules(imports),
         "rule_tags": collect_all_tags(ast),
         "string_patterns": count_string_types(ast),
     }
@@ -93,23 +154,28 @@ def build_rules_manifest(ast) -> dict[str, Any]:
     private_rules = 0
     global_rules = 0
     tagged_rules = 0
+    import_modules = _validated_import_modules(imports)
+    include_paths = [_required_nonempty_string(inc.path, "Include path") for inc in includes]
 
     for rule in rules:
+        rule_name = _required_nonempty_string(rule.name, "Rule name")
         modifiers = _validated_rule_modifiers(rule.modifiers)
         tags = _validated_node_collection(rule.tags, "Rule tags", Tag)
         meta = _validated_node_collection(rule.meta, "Rule meta", (Meta, MetaEntry))
         strings = _validated_node_collection(rule.strings, "Rule strings", StringDefinition)
-        if any(str(modifier) == "private" for modifier in modifiers):
+        tag_names = [_required_nonempty_string(tag.name, "Tag name") for tag in tags]
+        _validate_string_identifiers(strings)
+        if any(modifier == "private" for modifier in modifiers):
             private_rules += 1
-        if any(str(modifier) == "global" for modifier in modifiers):
+        if any(modifier == "global" for modifier in modifiers):
             global_rules += 1
         if tags:
             tagged_rules += 1
 
         rule_manifest = {
-            "name": rule.name,
-            "modifiers": [str(modifier) for modifier in modifiers],
-            "tags": [tag.name for tag in tags],
+            "name": rule_name,
+            "modifiers": modifiers,
+            "tags": tag_names,
             "meta": _build_rule_meta(meta),
             "string_count": len(strings),
             "has_condition": rule.condition is not None,
@@ -120,8 +186,8 @@ def build_rules_manifest(ast) -> dict[str, Any]:
         "private_rules": private_rules,
         "global_rules": global_rules,
         "tagged_rules": tagged_rules,
-        "imports": [imp.module for imp in imports],
-        "includes": [inc.path for inc in includes],
+        "imports": import_modules,
+        "includes": include_paths,
     }
     return manifest
 
@@ -133,9 +199,17 @@ def _build_rule_meta(meta) -> list[dict[str, Any]]:
     entries = []
     for entry in meta:
         scope = getattr(entry, "scope", None)
-        entry_data = {"key": entry.key, "value": entry.value}
+        value = (
+            _serialized_meta_entry_value(entry.value)
+            if isinstance(entry, MetaEntry)
+            else _serialized_meta_value(entry.value)
+        )
+        entry_data = {
+            "key": _required_nonempty_string(entry.key, "Meta key"),
+            "value": value,
+        }
         if scope is not None:
-            entry_data["scope"] = getattr(scope, "value", str(scope))
+            entry_data["scope"] = serialize_meta_scope(scope)
         entries.append(entry_data)
     return entries
 
@@ -146,15 +220,23 @@ def collect_all_tags(ast) -> list[str]:
     for rule in rules:
         rule_tags = _validated_node_collection(rule.tags, "Rule tags", Tag)
         for tag in rule_tags:
-            tags.add(tag.name)
+            tags.add(_required_nonempty_string(tag.name, "Tag name"))
     return sorted(tags)
+
+
+def _validate_string_identifiers(strings: list[Any]) -> None:
+    for string_def in strings:
+        context = f"{type(string_def).__name__} identifier"
+        _required_nonempty_string(string_def.identifier, context)
 
 
 def count_string_types(ast) -> dict[str, int]:
     rules = _validated_node_collection(ast.rules, "YaraFile rules", Rule)
     counts = {"plain": 0, "hex": 0, "regex": 0}
     for rule in rules:
+        _required_nonempty_string(rule.name, "Rule name")
         strings = _validated_node_collection(rule.strings, "Rule strings", StringDefinition)
+        _validate_string_identifiers(strings)
         for string_def in strings:
             if hasattr(string_def, "value"):
                 counts["plain"] += 1

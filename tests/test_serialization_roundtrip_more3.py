@@ -11,8 +11,10 @@ import yaml
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
-from yaraast.ast.rules import Rule
-from yaraast.ast.strings import RegexString
+from yaraast.ast.meta import Meta
+from yaraast.ast.modifiers import MetaEntry
+from yaraast.ast.rules import Import, Include, Rule, Tag
+from yaraast.ast.strings import PlainString, RegexString
 from yaraast.errors import SerializationError
 from yaraast.serialization import simple_roundtrip as simple_roundtrip_module
 from yaraast.serialization.json_serializer import JsonSerializer
@@ -103,6 +105,146 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
     ast = _sample_ast()
     setattr(ast.rules[0], field_name, "")
 
+    with pytest.raises(SerializationError, match=message):
+        _PIPELINE_HELPERS[helper_name](ast)
+
+
+@pytest.mark.parametrize(
+    ("helper_name", "ast", "message"),
+    [
+        (
+            "statistics",
+            YaraFile(imports=[Import(module="")], rules=[]),
+            "Import module must not be empty",
+        ),
+        (
+            "statistics",
+            YaraFile(imports=[Import(module="pe", alias="")], rules=[]),
+            "Import alias must not be empty",
+        ),
+        (
+            "statistics",
+            YaraFile(rules=[Rule(name="", condition=BooleanLiteral(value=True))]),
+            "Rule name must not be empty",
+        ),
+        (
+            "statistics",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        tags=[Tag(name="")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Tag name must not be empty",
+        ),
+        (
+            "statistics",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        strings=[PlainString(identifier="", value="abc")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "PlainString identifier must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(imports=[Import(module="")], rules=[]),
+            "Import module must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(imports=[Import(module="pe", alias="")], rules=[]),
+            "Import alias must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(includes=[Include(path="")], rules=[]),
+            "Include path must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(rules=[Rule(name="", condition=BooleanLiteral(value=True))]),
+            "Rule name must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        modifiers=[""],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Rule modifiers must contain non-empty strings",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        tags=[Tag(name="")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Tag name must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        meta=[Meta(key="", value="value")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Meta key must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        meta=[MetaEntry(key="score", value=cast(Any, float("inf")))],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Meta value must be a string, integer, boolean, or finite float",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        strings=[PlainString(identifier="", value="abc")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "PlainString identifier must not be empty",
+        ),
+    ],
+)
+def test_roundtrip_pipeline_helpers_reject_invalid_scalar_fields(
+    helper_name: str,
+    ast: YaraFile,
+    message: str,
+) -> None:
     with pytest.raises(SerializationError, match=message):
         _PIPELINE_HELPERS[helper_name](ast)
 
