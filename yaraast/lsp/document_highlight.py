@@ -23,6 +23,21 @@ class DocumentHighlightProvider:
         if not word:
             return []
 
+        ctx = DocumentContext("file:///document-highlight.yar", text)
+        resolved = ctx.resolve_symbol(position)
+        if resolved is not None:
+            if resolved.kind == "string":
+                return self._highlight_string_identifier(text, resolved.normalized_name)
+            if resolved.kind == "rule":
+                return self._highlight_identifier(text, resolved.normalized_name)
+            if self._is_local_shadow(resolved.kind, resolved.normalized_name, word, ctx):
+                return [
+                    DocumentHighlight(
+                        range=resolved.range,
+                        kind=DocumentHighlightKind.Text,
+                    )
+                ]
+
         # Check if it's a string identifier
         if word.startswith(("$", "#", "@", "!")):
             if not word.startswith("$"):
@@ -49,6 +64,19 @@ class DocumentHighlightProvider:
     def _simple_highlight(self, text: str, word: str) -> list[DocumentHighlight]:
         """Simple text-based highlighting fallback."""
         return simple_highlight(text, word)
+
+    def _is_local_shadow(
+        self,
+        kind: str,
+        normalized_name: str,
+        word: str,
+        ctx: DocumentContext,
+    ) -> bool:
+        if kind != "identifier":
+            return False
+        if word.startswith(("$", "#", "@", "!")):
+            return ctx.find_string_definition(normalized_name) is not None
+        return ctx.find_rule_definition(normalized_name) is not None
 
     def _get_string_reference_records(self, text: str, identifier: str) -> list[ReferenceRecord]:
         ctx = DocumentContext("file:///document-highlight.yar", text)

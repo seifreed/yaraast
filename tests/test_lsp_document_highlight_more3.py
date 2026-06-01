@@ -83,6 +83,25 @@ rule r {
     }
 
 
+def test_document_highlight_ignores_yarax_local_string_shadowing() -> None:
+    text = """
+rule shadowed {
+    strings:
+        $a = "abc"
+    condition:
+        with $a = 1:
+            $a > 0
+}
+""".lstrip()
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(5, 13))
+
+    assert [(highlight.range.start.line, highlight.range.end.line) for highlight in highlights] == [
+        (5, 5)
+    ]
+
+
 def test_document_highlight_fallback_ignores_string_identifier_in_non_code() -> None:
     text = """
 rule r {
