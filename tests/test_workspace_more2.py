@@ -578,6 +578,12 @@ def test_workspace_parallel_analysis_preserves_file_order(
 def test_workspace_analysis_rejects_invalid_worker_count(tmp_path: Path) -> None:
     workspace = Workspace(str(tmp_path))
 
+    with pytest.raises(TypeError, match="parallel must be a boolean"):
+        workspace.analyze(parallel=cast(bool, "yes"))
+
+    with pytest.raises(TypeError, match="parallel must be a boolean"):
+        WorkspaceAnalyzer(workspace).analyze(parallel=cast(bool, None))
+
     with pytest.raises(TypeError, match="max_workers must be an integer"):
         workspace.analyze(parallel=True, max_workers=cast(Any, True))
 

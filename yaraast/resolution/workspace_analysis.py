@@ -35,6 +35,9 @@ class WorkspaceAnalyzer:
         max_workers: int | None = None,
     ) -> WorkspaceReport:
         """Perform complete workspace analysis."""
+        if not isinstance(parallel, bool):
+            msg = "parallel must be a boolean"
+            raise TypeError(msg)
         self._validate_max_workers(max_workers)
         report = WorkspaceReport(
             files_analyzed=0,
