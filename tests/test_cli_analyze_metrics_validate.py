@@ -39,6 +39,20 @@ def test_analyze_full_json(tmp_path: Path) -> None:
     assert "optimization" in payload
 
 
+def test_analyze_json_commands_reject_empty_output_path(tmp_path: Path) -> None:
+    rule_path = _write_rule(tmp_path)
+    runner = CliRunner()
+
+    for command in ("full", "optimize"):
+        result = runner.invoke(
+            cli,
+            ["analyze", command, str(rule_path), "--format", "json", "--output", ""],
+        )
+
+        assert result.exit_code == 2
+        assert "path must not be empty" in result.output
+
+
 def test_analyze_best_practices(tmp_path: Path) -> None:
     rule_path = _write_rule(tmp_path)
     runner = CliRunner()

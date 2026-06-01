@@ -18,12 +18,24 @@ from yaraast.cli.analyze_services import (
     _opt_report_to_dict,
     _parse_rule_file,
 )
-from yaraast.cli.utils import format_json, write_text
+from yaraast.cli.utils import _require_file_path, format_json, write_text
 
 
 @click.group()
 def analyze() -> None:
     """AST-based analysis commands."""
+
+
+def _validate_output_path(output: str | None) -> str | None:
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output
 
 
 @analyze.command()
@@ -39,6 +51,7 @@ def analyze() -> None:
 @click.option("-o", "--output", type=click.Path(), help="Output file path")
 def full(rule_file: str, output_format: str, output: str | None) -> None:
     """Run full analysis (best practices + optimization)."""
+    output = _validate_output_path(output)
     try:
         ast = _parse_rule_file(rule_file)
         best_report = _analyze_best_practices(ast)
@@ -109,6 +122,7 @@ def best_practices(rule_file: str, verbose: bool, category: str) -> None:
 @click.option("-o", "--output", type=click.Path(), help="Output file path")
 def optimize(rule_file: str, verbose: bool, output_format: str, output: str | None) -> None:
     """Analyze optimization opportunities for YARA rules."""
+    output = _validate_output_path(output)
     try:
         ast = _parse_rule_file(rule_file)
         report = _analyze_optimizations(ast)
