@@ -118,3 +118,9 @@ def test_yaml_helpers_emit_safe_loadable_sequence_data_without_python_tags() -> 
     pipeline_yaml = dump_pipeline_yaml(data, output_path=None)
     assert "!!python/" not in pipeline_yaml
     assert yaml.safe_load(pipeline_yaml) == {"values": ["alpha", "beta"]}
+
+
+@pytest.mark.parametrize("flow_style", [None, 123, "yes"])
+def test_dump_yaml_rejects_invalid_flow_style(flow_style: object) -> None:
+    with pytest.raises(TypeError, match="flow_style must be a boolean"):
+        dump_yaml({"a": 1}, flow_style=flow_style)
