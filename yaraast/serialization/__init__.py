@@ -18,15 +18,11 @@ from yaraast.serialization.roundtrip_serializer import (
 from yaraast.serialization.yaml_serializer import YamlSerializer
 
 ProtobufSerializer: Any
-_OPTIONAL_PROTOBUF_DEPENDENCY_ROOTS = ("google.protobuf",)
+_OPTIONAL_PROTOBUF_IMPORT_NAMES = frozenset({"google.protobuf"})
 
 
 def _is_optional_protobuf_dependency_error(exc: ImportError) -> bool:
-    missing_name = exc.name or ""
-    return any(
-        missing_name == dependency or missing_name.startswith(f"{dependency}.")
-        for dependency in _OPTIONAL_PROTOBUF_DEPENDENCY_ROOTS
-    )
+    return (exc.name or "") in _OPTIONAL_PROTOBUF_IMPORT_NAMES
 
 
 try:

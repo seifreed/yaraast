@@ -71,3 +71,32 @@ else:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_serialization_import_propagates_internal_google_protobuf_errors() -> None:
+    result = _run_import_probe(
+        """
+import builtins
+
+real_import = builtins.__import__
+
+def import_with_broken_google_protobuf(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == "yaraast.serialization.protobuf_serializer":
+        raise ModuleNotFoundError(
+            "broken protobuf internals",
+            name="google.protobuf.internal.builder",
+        )
+    return real_import(name, globals, locals, fromlist, level)
+
+builtins.__import__ = import_with_broken_google_protobuf
+
+try:
+    import yaraast.serialization
+except ModuleNotFoundError as exc:
+    assert exc.name == "google.protobuf.internal.builder"
+else:
+    raise AssertionError("internal google.protobuf import errors must not be hidden")
+""",
+    )
+
+    assert result.returncode == 0, result.stderr
