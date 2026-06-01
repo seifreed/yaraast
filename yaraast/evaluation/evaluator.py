@@ -1046,6 +1046,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             if isinstance(value, StringWildcard):
                 return expand_text(value.pattern)
             if isinstance(value, StringIdentifier):
+                local_value = self._lookup_explicit_string_variable(value.name)
+                if local_value is not self._missing_loop_value:
+                    return resolve_visited_value(local_value)
                 return [self._normalize_string_id(value.name)]
             if isinstance(value, ParenthesesExpression):
                 return resolve_value(value.expression)

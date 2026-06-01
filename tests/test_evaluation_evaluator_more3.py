@@ -2983,6 +2983,28 @@ def test_evaluator_resolves_yarax_with_declarations_for_string_helpers() -> None
     assert "l" not in ev.context.variables
 
 
+def test_evaluator_resolves_yarax_string_identifier_locals_in_string_sets() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="local_string_set",
+                strings=[
+                    PlainString(identifier="$a", value="needle"),
+                    PlainString(identifier="$x", value="absent"),
+                ],
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", StringLiteral("$a"))],
+                    body=OfExpression("any", SetExpression([StringIdentifier("$x")])),
+                ),
+            )
+        ]
+    )
+
+    result = YaraEvaluator(data=b"needle").evaluate_file(ast)
+
+    assert result == {"local_string_set": True}
+
+
 def test_evaluator_member_access_prefers_mapping_keys_over_methods() -> None:
     ev = YaraEvaluator()
     ev.context.variables["obj"] = {"keys": 7}
