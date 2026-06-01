@@ -41,6 +41,12 @@ def _parse_pipeline_info(pipeline_info: str | None) -> dict[str, Any] | None:
     return cast(dict[str, Any], parsed)
 
 
+def _require_bool_option(value: object, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{name} must be a boolean")
+    return value
+
+
 def serialize_roundtrip_file(
     input_file: Path, format: str, preserve_comments: bool, preserve_formatting: bool
 ) -> tuple[Any, str]:
@@ -80,13 +86,17 @@ def pretty_print_file(
     style: object,
     indent_size: int,
     max_line_length: int,
-    align_strings: bool,
-    align_meta: bool,
-    sort_imports: bool,
-    sort_tags: bool,
+    align_strings: object,
+    align_meta: object,
+    sort_imports: object,
+    sort_tags: object,
 ) -> tuple[Any, str]:
     validate_positive_int_setting(indent_size, "indent_size")
     validate_positive_int_setting(max_line_length, "max_line_length")
+    align_strings = _require_bool_option(align_strings, "align_strings")
+    align_meta = _require_bool_option(align_meta, "align_meta")
+    sort_imports = _require_bool_option(sort_imports, "sort_imports")
+    sort_tags = _require_bool_option(sort_tags, "sort_tags")
 
     yara_source = read_text(input_file)
     ast = parse_yara_source(yara_source)

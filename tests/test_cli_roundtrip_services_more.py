@@ -98,3 +98,40 @@ def test_pretty_print_file_rejects_invalid_numeric_options(tmp_path: Path) -> No
 
     with pytest.raises(ValueError, match="max_line_length must be at least 1"):
         pretty_print_file(yara_path, "readable", 4, 0, True, True, True, True)
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"align_strings": "yes"}, "align_strings must be a boolean"),
+        ({"align_meta": "yes"}, "align_meta must be a boolean"),
+        ({"sort_imports": "yes"}, "sort_imports must be a boolean"),
+        ({"sort_tags": "yes"}, "sort_tags must be a boolean"),
+    ],
+)
+def test_pretty_print_file_rejects_invalid_boolean_options(
+    tmp_path: Path,
+    kwargs: dict[str, object],
+    message: str,
+) -> None:
+    yara_path = tmp_path / "invalid_boolean_options.yar"
+    _write_rule(yara_path)
+    options: dict[str, object] = {
+        "align_strings": True,
+        "align_meta": True,
+        "sort_imports": True,
+        "sort_tags": True,
+    }
+    options.update(kwargs)
+
+    with pytest.raises(TypeError, match=message):
+        pretty_print_file(
+            yara_path,
+            "readable",
+            4,
+            120,
+            options["align_strings"],
+            options["align_meta"],
+            options["sort_imports"],
+            options["sort_tags"],
+        )
