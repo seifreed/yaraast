@@ -102,6 +102,18 @@ def test_fmt_cmd_rejects_directory_output(tmp_path: Path) -> None:
     assert source.read_text(encoding="utf-8") == original
 
 
+def test_fmt_cmd_rejects_directory_input(tmp_path: Path) -> None:
+    runner = CliRunner()
+    input_dir = tmp_path / "rules"
+    input_dir.mkdir()
+
+    result = runner.invoke(fmt, [str(input_dir), "--check"])
+
+    assert result.exit_code == 2
+    assert "is a directory" in result.output
+    assert "already formatted" not in result.output
+
+
 def test_fmt_cmd_formats_yarax(tmp_path: Path) -> None:
     runner = CliRunner()
     source = tmp_path / "x.yar"

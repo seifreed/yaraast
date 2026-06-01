@@ -32,7 +32,7 @@ def _validate_output_path(input_path: Path, output: str | None) -> Path:
 
 
 @click.command()
-@click.argument("input_file", type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "-o",
     "--output",
