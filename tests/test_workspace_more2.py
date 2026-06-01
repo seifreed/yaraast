@@ -59,6 +59,21 @@ def test_workspace_add_file_error_paths_and_getters(tmp_path: Path) -> None:
     assert isinstance(workspace.get_file_dependents(str(ok)), set)
 
 
+def test_workspace_add_file_propagates_internal_resolver_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workspace = Workspace(str(tmp_path))
+
+    def broken_resolve_file(file_path: str) -> ResolvedFile:
+        raise AttributeError("resolver state missing")
+
+    monkeypatch.setattr(workspace.include_resolver, "resolve_file", broken_resolve_file)
+
+    with pytest.raises(AttributeError, match="resolver state missing"):
+        workspace.add_file("broken.yar")
+
+
 def test_workspace_rule_lookup_includes_resolved_include_trees(tmp_path: Path) -> None:
     root = tmp_path
     parent = _write(

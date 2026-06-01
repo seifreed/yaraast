@@ -7,6 +7,7 @@ import hashlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from yaraast.errors import YaraASTError
 from yaraast.parser.source import parse_yara_source
 from yaraast.resolution.dependency_graph import DependencyGraph
 from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
@@ -68,7 +69,7 @@ class Workspace:
                 result.resolved = self._resolve_main_file_without_includes(path)
         except RecursionError as e:
             result.errors.append(f"Circular include: {e}")
-        except Exception as e:
+        except (OSError, UnicodeDecodeError, ValueError, YaraASTError) as e:
             result.errors.append(f"Parse error: {e}")
 
         self.files[str(path)] = result
