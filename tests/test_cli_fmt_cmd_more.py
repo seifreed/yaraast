@@ -81,8 +81,24 @@ def test_fmt_cmd_rejects_empty_output_without_overwriting_input(tmp_path: Path) 
 
     result = runner.invoke(fmt, [str(source), "--output", ""])
 
-    assert result.exit_code != 0
+    assert result.exit_code == 2
     assert "path must not be empty" in result.output
+    assert source.read_text(encoding="utf-8") == original
+
+
+def test_fmt_cmd_rejects_directory_output(tmp_path: Path) -> None:
+    runner = CliRunner()
+    source = tmp_path / "source.yar"
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    original = 'rule x { strings: $a = "x" condition: $a }\n'
+    source.write_text(original, encoding="utf-8")
+
+    result = runner.invoke(fmt, [str(source), "--output", str(output_dir)])
+
+    assert result.exit_code == 2
+    assert "output path must not be a directory" in result.output
+    assert "Formatting error" not in result.output
     assert source.read_text(encoding="utf-8") == original
 
 

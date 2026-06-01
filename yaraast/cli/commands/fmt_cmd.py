@@ -19,6 +19,18 @@ from yaraast.cli.utils import _require_file_path, print_cli_error
 console = Console()
 
 
+def _validate_output_path(input_path: Path, output: str | None) -> Path:
+    if output is None:
+        return input_path
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output_path
+
+
 @click.command()
 @click.argument("input_file", type=click.Path(exists=True))
 @click.option(
@@ -47,9 +59,9 @@ def fmt(
     show_diff: bool,
 ) -> None:
     """Format YARA file using AST-based formatting (like black for Python)."""
+    input_path = Path(input_file)
+    output_path = _validate_output_path(input_path, output)
     try:
-        input_path = Path(input_file)
-        output_path = input_path if output is None else _require_file_path(output)
         formatter = get_formatter()
 
         if check:
