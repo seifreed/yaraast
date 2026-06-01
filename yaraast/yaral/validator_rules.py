@@ -68,7 +68,7 @@ class RuleValidationMixin:
         if node.match:
             self._validate_match_section(node.match)
 
-        if node.condition:
+        if node.condition is not None:
             self._validate_condition_section(node.condition)
             self.visit(node.condition)
 

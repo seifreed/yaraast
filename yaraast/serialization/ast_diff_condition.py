@@ -7,8 +7,8 @@ __all__ = ["condition_hashes", "emit_condition_diff"]
 
 def condition_hashes(old_rule, new_rule, hasher) -> tuple[str, str]:
     """Hash conditions for comparison."""
-    old_condition_hash = hasher.visit(old_rule.condition) if old_rule.condition else ""
-    new_condition_hash = hasher.visit(new_rule.condition) if new_rule.condition else ""
+    old_condition_hash = hasher.visit(old_rule.condition) if old_rule.condition is not None else ""
+    new_condition_hash = hasher.visit(new_rule.condition) if new_rule.condition is not None else ""
     return old_condition_hash, new_condition_hash
 
 

@@ -118,7 +118,7 @@ class YaraLOptimizer(
             optimized_match = self._optimize_match_section(node.match)
 
         optimized_condition = None
-        if node.condition:
+        if node.condition is not None:
             optimized_condition = self._optimize_condition_section(node.condition)
 
         optimized_outcome = None

@@ -122,7 +122,7 @@ class YaraLGenerator(YaraLVisitor[str]):
             parts.append(self.visit(node.outcome))
 
         # Add condition section
-        if node.condition:
+        if node.condition is not None:
             parts.append(self.visit(node.condition))
 
         # Add options section

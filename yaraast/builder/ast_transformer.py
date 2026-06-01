@@ -215,7 +215,7 @@ class RuleTransformer:
             string_def.identifier = self._rename_string_reference(string_def.identifier, mapping)
 
         # Update string references in condition
-        if self.rule.condition:
+        if self.rule.condition is not None:
             self.rule.condition = self._rename_strings_in_expression(
                 self.rule.condition,
                 mapping,

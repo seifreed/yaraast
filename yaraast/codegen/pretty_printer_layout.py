@@ -140,7 +140,7 @@ def visit_rule(printer: Any, node: Any) -> str:
     _write_in_rule_pragmas(printer, node, "after_strings")
     _write_in_rule_pragmas(printer, node, "before_condition")
 
-    if node.condition:
+    if node.condition is not None:
         printer._writeline("condition:")
         printer._indent()
         printer._write_condition_section(node.condition)

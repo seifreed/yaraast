@@ -122,7 +122,7 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
                 string_counts,
             )
             self._analyze_string(string_def, signature_key, string_key)
-        if rule.condition:
+        if rule.condition is not None:
             self._analyze_condition(rule.condition, signature_key)
 
     def _occurrence_key(self, name: str, occurrence: int, counts: Counter[str]) -> str:

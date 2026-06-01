@@ -78,7 +78,7 @@ class ASTOptimizer:
             )
 
         # Optimize condition
-        if rule.condition:
+        if rule.condition is not None:
             optimized_condition = self._optimize_condition(rule.condition)
             if optimized_condition != rule.condition:
                 rule.condition = optimized_condition

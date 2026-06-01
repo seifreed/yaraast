@@ -197,7 +197,7 @@ def visit_rule(transformer: Any, node: Rule) -> Rule:
         node.name = pooled_value(transformer.string_pool, node.name)
     if isinstance(node.modifiers, list):
         node.modifiers = _visit_items(transformer, node.modifiers)
-    if node.condition:
+    if node.condition is not None:
         node.condition = transformer.visit(node.condition)
     if node.strings:
         node.strings = [transformer.visit(s) for s in node.strings]
@@ -321,7 +321,7 @@ def visit_for_of_expression(transformer: Any, node: ForOfExpression) -> ForOfExp
     node = _shallow(node)
     node.quantifier = _pool_parameter_value(transformer, node.quantifier)
     node.string_set = _pool_parameter_value(transformer, node.string_set)
-    if node.condition:
+    if node.condition is not None:
         node.condition = transformer.visit(node.condition)
     return node
 

@@ -124,7 +124,7 @@ class FoldingRangesProvider:
                 )
 
         # Look for condition: section
-        if rule.condition:
+        if rule.condition is not None:
             condition_range = self._find_section_range(lines, rule_start, rule_end, "condition")
             if condition_range:
                 ranges.append(

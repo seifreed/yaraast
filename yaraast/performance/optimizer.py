@@ -167,7 +167,7 @@ class PerformanceOptimizer:
                     complexity += len(string_def.tokens) * 5  # Hex patterns
 
         # Condition complexity
-        if rule.condition:
+        if rule.condition is not None:
             # Simple heuristic based on string representation
             condition_str = str(rule.condition)
             complexity += len(condition_str)

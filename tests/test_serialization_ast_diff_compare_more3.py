@@ -9,6 +9,7 @@ from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.serialization.ast_diff import DiffNode, DiffResult, DiffType
 from yaraast.serialization.ast_diff_compare import compare_imports, compare_includes, compare_rules
+from yaraast.serialization.ast_diff_condition import condition_hashes
 from yaraast.serialization.ast_diff_hasher import AstHasher
 from yaraast.serialization.ast_diff_modifiers import emit_modifiers_diff
 from yaraast.serialization.ast_diff_tags import emit_tags_diff
@@ -19,6 +20,24 @@ class ReverseIterSet(set[str]):
 
     def __iter__(self) -> Iterator[str]:
         return iter(sorted(super().__iter__(), reverse=True))
+
+
+class _FalsyBooleanLiteral(BooleanLiteral):
+    def __bool__(self) -> bool:
+        return False
+
+
+def test_condition_hashes_preserve_falsy_present_condition() -> None:
+    hasher = AstHasher()
+
+    old_hash, new_hash = condition_hashes(
+        Rule("old", condition=None),
+        Rule("new", condition=_FalsyBooleanLiteral(False)),
+        hasher,
+    )
+
+    assert old_hash == ""
+    assert new_hash == "Bool(False)"
 
 
 def test_compare_imports_and_includes_removed_and_alias_modified() -> None:

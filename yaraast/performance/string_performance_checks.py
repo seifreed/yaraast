@@ -47,7 +47,7 @@ def estimate_rule_cost(rule: Rule) -> int:
                 cost += 2
             elif isinstance(string_def, RegexString):
                 cost += 10
-    if rule.condition:
+    if rule.condition is not None:
         condition_str = str(rule.condition)
         cost += condition_str.count(" and ") * 2
         cost += condition_str.count(" or ") * 2

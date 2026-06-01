@@ -62,6 +62,11 @@ from yaraast.yarax.ast_nodes import (
 )
 
 
+class _FalsyBooleanLiteral(BooleanLiteral):
+    def __bool__(self) -> bool:
+        return False
+
+
 def _build_minimal_pe_with_entrypoint(entrypoint: int = 0x1000) -> bytes:
     data = bytearray(b"MZ" + b"\x00" * 0x3A + b"\x80\x00\x00\x00")
     if len(data) < 0x80:
@@ -1296,6 +1301,12 @@ def test_direct_evaluate_rule_clears_matcher_state_for_rules_without_strings() -
 
     assert ev.evaluate_rule(matching_rule) is True
     assert ev.evaluate_rule(no_strings_rule) is True
+
+
+def test_evaluate_rule_visits_falsy_present_condition() -> None:
+    rule = Rule(name="falsy_condition", condition=_FalsyBooleanLiteral(False))
+
+    assert YaraEvaluator().evaluate_rule(rule) is False
 
 
 def test_evaluate_file_preserves_duplicate_rule_occurrences_and_references() -> None:

@@ -101,7 +101,7 @@ class ASTTreeBuilder:
         if node.strings:
             self._add_strings_to_tree(rule_tree, node.strings)
 
-        if node.condition:
+        if node.condition is not None:
             self._add_condition_to_tree(rule_tree, node.condition)
 
         if node.pragmas:

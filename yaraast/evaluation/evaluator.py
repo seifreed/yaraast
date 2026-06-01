@@ -210,7 +210,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             self.context.string_matches = matches
 
         # Evaluate condition
-        if rule.condition:
+        if rule.condition is not None:
             result = self.visit(rule.condition)
             return _is_evaluation_truthy(result)
 
