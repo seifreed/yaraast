@@ -64,6 +64,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.errors import SerializationError
+from yaraast.serialization import simple_roundtrip_helpers as srh
 from yaraast.serialization.simple_roundtrip_helpers import (
     _compare_normalized,
     deserialize_extern_rule,
@@ -1948,6 +1949,18 @@ def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> Non
     fallback = deserialize_string({"type": "HexString", "identifier": "$h", "tokens": "{ 41 }"})
     assert isinstance(fallback, HexString)  # preserves type instead of converting to PlainString
     assert fallback.tokens == [HexByte(value=0x41)]
+
+
+def test_simple_roundtrip_report_propagates_internal_parser_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_parse_yara_source(content: str) -> YaraFile:
+        raise AttributeError("broken parser internals")
+
+    monkeypatch.setattr(srh, "parse_yara_source", fail_parse_yara_source)
+
+    with pytest.raises(AttributeError, match="broken parser internals"):
+        srh.simple_roundtrip_report("rule r { condition: true }")
 
     negated_hex = deserialize_string(
         {

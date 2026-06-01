@@ -71,7 +71,7 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
-from yaraast.errors import SerializationError, ValidationError
+from yaraast.errors import SerializationError, ValidationError, YaraASTError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.source import parse_yara_source
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
@@ -2235,7 +2235,7 @@ def simple_roundtrip_report(yara_source: str) -> dict[str, Any]:
                 ),
             },
         }
-    except Exception as e:  # parse + codegen roundtrip errors
+    except (YaraASTError, ValueError, TypeError) as e:  # parse + codegen roundtrip errors
         return {
             "original_source": yara_source,
             "reconstructed_source": "",
