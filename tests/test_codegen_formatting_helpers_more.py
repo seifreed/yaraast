@@ -63,6 +63,11 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
             format_rule_tags(invalid_tags)
     with pytest.raises(ValueError, match="Duplicate tag identifier"):
         format_rule_tags(["t1", Tag(name="t1")])
+    with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
+        format_rule_tags([False])
+    bad_tag_name: Any = 123
+    with pytest.raises(TypeError, match="Tag name must be a string"):
+        format_rule_tags([Tag(name=bad_tag_name)])
 
     assert format_meta_value("s", "x") == 's = "x"'
     assert format_meta_value("b", True) == "b = true"

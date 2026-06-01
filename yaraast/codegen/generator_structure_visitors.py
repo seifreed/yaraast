@@ -9,6 +9,7 @@ from yaraast.codegen.generator_formatting import (
     validate_extern_rule_identifiers,
     validate_rule_collections,
     validate_rule_identifiers,
+    validate_rule_tag_name,
     validate_yara_file_collections,
     validate_yara_identifier,
 )
@@ -93,7 +94,7 @@ def visit_rule(generator: Any, node: Any) -> str:
 
 
 def visit_tag(node: Any) -> str:
-    return validate_yara_identifier(node.name, "tag")
+    return validate_yara_identifier(validate_rule_tag_name(node), "tag")
 
 
 def visit_string_definition(_node: Any) -> str:

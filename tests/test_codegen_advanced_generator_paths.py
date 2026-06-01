@@ -22,11 +22,6 @@ from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.formatting import BraceStyle, FormattingConfig, StringStyle
 
 
-class _AsText:
-    def __str__(self) -> str:
-        return "object_tag"
-
-
 def test_advanced_generator_brace_styles_and_section_layout() -> None:
     rule = Rule(name="r", condition=BooleanLiteral(True))
     yara_file = YaraFile(imports=[Import("pe")], rules=[rule])
@@ -189,7 +184,7 @@ def test_advanced_generator_meta_and_tags_branches() -> None:
 
     rule = Rule(
         name="meta_rule",
-        tags=cast(Any, [Tag("x"), "y", _AsText()]),
+        tags=cast(Any, [Tag("x"), "y", "object_tag"]),
         meta=meta_list,
         strings=[PlainString(identifier="$a", value="txt", modifiers=[mod])],
         condition=Condition(),

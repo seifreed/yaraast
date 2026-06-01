@@ -939,6 +939,40 @@ def test_codegen_generators_reject_invalid_rule_tags(tag_name: str) -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+def test_codegen_generators_reject_non_string_rule_tags() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_tags",
+                tags=[cast(Any, True)],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
+        PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_tag_visitors_reject_non_string_tag_names() -> None:
+    tag = Tag(cast(Any, True))
+
+    with pytest.raises(TypeError, match="Tag name must be a string"):
+        CodeGenerator().generate(tag)
+    with pytest.raises(TypeError, match="Tag name must be a string"):
+        AdvancedCodeGenerator().generate(tag)
+    with pytest.raises(TypeError, match="Tag name must be a string"):
+        CommentAwareCodeGenerator().generate(tag)
+    with pytest.raises(TypeError, match="Tag name must be a string"):
+        PrettyPrinter().generate(tag)
+
+
 @pytest.mark.parametrize("tag_name", ["bad-tag", "for", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)])
 def test_codegen_tag_visitors_reject_invalid_rule_tags(tag_name: str) -> None:
     tag = Tag(tag_name)

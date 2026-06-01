@@ -145,7 +145,7 @@ def format_rule_tags(tags: list[Any] | tuple[Any, ...] | None) -> str:
     if not tags:
         return ""
     validate_rule_tags(tags)
-    tag_names = [_rule_tag_name(tag) for tag in tags]
+    tag_names = [validate_rule_tag_name(tag) for tag in tags]
     return " ".join(tag_names)
 
 
@@ -155,7 +155,7 @@ def validate_rule_tags(tags: list[Any] | tuple[Any, ...]) -> None:
 
     seen: set[str] = set()
     for tag in tags:
-        name = _rule_tag_name(tag)
+        name = validate_rule_tag_name(tag)
         _validate_yara_identifier(name, "tag")
         if name in seen:
             msg = f"Duplicate tag identifier '{name}' for libyara output"
@@ -180,10 +180,17 @@ def validate_rule_meta(meta: object) -> None:
         format_meta_value(entry.key, entry.value, getattr(entry, "scope", None))
 
 
-def _rule_tag_name(tag: Any) -> str:
+def validate_rule_tag_name(tag: Any) -> str:
     if isinstance(tag, str):
         return tag
-    return str(tag.name if hasattr(tag, "name") else tag)
+    if hasattr(tag, "name"):
+        name = tag.name
+        if isinstance(name, str):
+            return name
+        msg = "Tag name must be a string for libyara output"
+        raise TypeError(msg)
+    msg = "Rule tags must contain strings or Tag nodes for libyara output"
+    raise TypeError(msg)
 
 
 def _validate_yara_identifier(name: str, kind: str) -> None:
