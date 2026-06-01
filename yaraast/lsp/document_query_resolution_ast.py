@@ -28,7 +28,12 @@ from yaraast.lsp.document_query_resolution_ranges import narrow_range_to_name, r
 from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 from yaraast.lsp.utils import find_node_at_position, get_word_at_position, location_to_range
-from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension, WithStatement
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    LambdaExpression,
+    WithStatement,
+)
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
@@ -110,6 +115,39 @@ def _resolve_loop_declaration_identifier(
         if node.value_variable:
             names.append(node.value_variable)
         return _resolve_names_before_iterable(ctx, names, node.iterable, word, position)
+    if isinstance(node, LambdaExpression):
+        return _resolve_lambda_parameter_identifier(ctx, node, word, position)
+    return None
+
+
+def _resolve_lambda_parameter_identifier(
+    ctx: DocumentContext,
+    node: LambdaExpression,
+    word: str,
+    position: Position,
+) -> ResolvedSymbol | None:
+    if word not in node.parameters:
+        return None
+    body_range = _first_value_range(node.body, ctx.text)
+    if body_range is None:
+        return None
+    line_index = body_range.start.line
+    if line_index < 0 or line_index >= len(ctx.lines):
+        return None
+    line = ctx.lines[line_index]
+    body_start = utf16_col_to_utf8(line, body_range.start.character)
+    lambda_start = line.rfind("lambda", 0, body_start)
+    separator_start = line.rfind(":", lambda_start, body_start)
+    if lambda_start < 0 or separator_start < 0:
+        return None
+    parameter_start = line.find(word, lambda_start + len("lambda"), separator_start)
+    while parameter_start >= 0:
+        declaration_range = _same_line_identifier_range(line, line_index, parameter_start, word)
+        if declaration_range is not None:
+            resolved = _resolved_local_identifier(ctx, word, declaration_range, position)
+            if resolved is not None:
+                return resolved
+        parameter_start = line.find(word, parameter_start + len(word), separator_start)
     return None
 
 
