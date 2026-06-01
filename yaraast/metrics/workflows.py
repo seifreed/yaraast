@@ -11,6 +11,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.errors import ValidationError
 from yaraast.metrics.capabilities import get_capability
 from yaraast.metrics.complexity_model import ComplexityMetrics
+from yaraast.metrics.dependency_graph_helpers import require_output_path
 from yaraast.metrics.facade import METRICS, DependencyGraphGenerator
 from yaraast.metrics.graphviz_errors import is_graphviz_error
 from yaraast.metrics.html_tree import HtmlTreeGenerator
@@ -152,11 +153,9 @@ def build_report(
     )
 
 
-def determine_graph_output_path(
-    yara_file: str, output: str | None, graph_type: str, fmt: str
-) -> str:
-    if output:
-        return output
+def determine_graph_output_path(yara_file: str, output: object, graph_type: str, fmt: str) -> str:
+    if output is not None:
+        return str(require_output_path(output))
     base_name = Path(yara_file).stem
     return f"{base_name}_graph_{graph_type}.{fmt}"
 
@@ -199,10 +198,10 @@ def generate_dependency_graph_with_generator(
 
 
 def determine_pattern_output_path(
-    yara_file: str, output: str | None, pattern_type: str, fmt: str
+    yara_file: str, output: object, pattern_type: str, fmt: str
 ) -> str:
-    if output:
-        return output
+    if output is not None:
+        return str(require_output_path(output))
     base_name = Path(yara_file).stem
     return f"{base_name}_patterns_{pattern_type}.{fmt}"
 

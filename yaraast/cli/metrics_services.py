@@ -113,9 +113,7 @@ def build_report(
     )
 
 
-def determine_graph_output_path(
-    yara_file: str, output: str | None, graph_type: str, fmt: str
-) -> str:
+def determine_graph_output_path(yara_file: str, output: object, graph_type: str, fmt: str) -> str:
     return _workflows.determine_graph_output_path(yara_file, output, graph_type, fmt)
 
 
@@ -146,7 +144,7 @@ def generate_dependency_graph_with_generator(
 
 
 def determine_pattern_output_path(
-    yara_file: str, output: str | None, pattern_type: str, fmt: str
+    yara_file: str, output: object, pattern_type: str, fmt: str
 ) -> str:
     return _workflows.determine_pattern_output_path(yara_file, output, pattern_type, fmt)
 

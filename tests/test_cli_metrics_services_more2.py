@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -142,6 +142,28 @@ def test_metrics_services_path_helpers_and_error_detection() -> None:
     assert ms.is_graphviz_error(FileNotFoundError("No such file or directory: rules.yar")) is False
     assert ms.is_graphviz_error(Exception("dot product calculation failed")) is False
     assert ms.is_graphviz_error(Exception("another error")) is False
+
+
+def test_metrics_services_path_helpers_reject_empty_output_path() -> None:
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        ms.determine_graph_output_path("/tmp/rules.yar", "", "full", "svg")
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        ms.determine_pattern_output_path("/tmp/rules.yar", "", "flow", "dot")
+
+
+def test_metrics_services_path_helpers_reject_directory_output_path(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="output_path must not be a directory"):
+        ms.determine_graph_output_path("/tmp/rules.yar", tmp_path, "full", "svg")
+    with pytest.raises(ValueError, match="output_path must not be a directory"):
+        ms.determine_pattern_output_path("/tmp/rules.yar", tmp_path, "flow", "dot")
+
+
+@pytest.mark.parametrize("output", [False, 0, object()])
+def test_metrics_services_path_helpers_reject_invalid_output_path_types(output: Any) -> None:
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        ms.determine_graph_output_path("/tmp/rules.yar", cast(Any, output), "full", "svg")
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        ms.determine_pattern_output_path("/tmp/rules.yar", cast(Any, output), "flow", "dot")
 
 
 def test_metrics_services_graph_and_pattern_generation_with_generators(tmp_path: Path) -> None:
