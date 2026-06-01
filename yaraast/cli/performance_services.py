@@ -30,6 +30,8 @@ BATCH_OPERATION_CHOICES = tuple(BATCH_OPERATION_MAP)
 
 
 def convert_operations(operations: Iterable[object]) -> list[BatchOperation]:
+    if isinstance(operations, str | bytes) or not isinstance(operations, Iterable):
+        raise TypeError("batch operations must be an iterable of strings")
     converted = []
     for operation in operations:
         converted.append(_require_batch_operation(operation))

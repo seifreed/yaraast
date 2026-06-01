@@ -93,6 +93,10 @@ def test_convert_operations_rejects_invalid_operations() -> None:
         "complexity",
     ]
 
+    for invalid_container in [None, 123, "parse", b"parse"]:
+        with pytest.raises(TypeError, match="batch operations must be an iterable of strings"):
+            ps.convert_operations(cast(Any, invalid_container))
+
     for invalid_operation in [None, 123]:
         with pytest.raises(TypeError, match="batch operation must be a string"):
             ps.convert_operations(["parse", invalid_operation])
