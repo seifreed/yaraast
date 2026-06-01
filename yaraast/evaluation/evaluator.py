@@ -9,10 +9,12 @@ from dataclasses import dataclass, field
 from fnmatch import fnmatchcase
 import math
 import struct
-from typing import TYPE_CHECKING, Any, TypeGuard
+from typing import Any, TypeGuard
 
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import *
 from yaraast.ast.expressions import *
+from yaraast.ast.rules import Import, Rule
 from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import (
     BUILTIN_READERS,
@@ -31,10 +33,6 @@ from yaraast.evaluation.mock_modules import MockModuleRegistry, MockPE
 from yaraast.evaluation.string_matcher import StringMatcher
 from yaraast.shared.integer_semantics import normalize_int64
 from yaraast.visitor.defaults import DefaultASTVisitor
-
-if TYPE_CHECKING:
-    from yaraast.ast.base import YaraFile
-    from yaraast.ast.rules import Rule
 
 
 def _is_evaluation_int(value: Any) -> TypeGuard[int]:
@@ -69,6 +67,39 @@ def _validate_import_module(module: Any) -> str:
         msg = "Import module must not be empty"
         raise EvaluationError(msg)
     return module
+
+
+def _validate_imports(imports: Any) -> list[Import]:
+    if not isinstance(imports, list | tuple):
+        msg = "YaraFile imports must be a list or tuple"
+        raise TypeError(msg)
+    for import_stmt in imports:
+        if not isinstance(import_stmt, Import):
+            msg = "YaraFile imports must contain Import nodes"
+            raise TypeError(msg)
+    return list(imports)
+
+
+def _validate_rule_name(name: Any) -> str:
+    if not isinstance(name, str):
+        msg = "Rule name must be a string"
+        raise TypeError(msg)
+    if not name:
+        msg = "Rule name must not be empty"
+        raise EvaluationError(msg)
+    return name
+
+
+def _validate_rules(rules: Any) -> list[Rule]:
+    if not isinstance(rules, list | tuple):
+        msg = "YaraFile rules must be a list or tuple"
+        raise TypeError(msg)
+    for rule in rules:
+        if not isinstance(rule, Rule):
+            msg = "YaraFile rules must contain Rule nodes"
+            raise TypeError(msg)
+        _validate_rule_name(rule.name)
+    return list(rules)
 
 
 _YR_UNDEFINED_VM_INT = normalize_int64(0xFFFABADAFABADAFF)
@@ -113,14 +144,16 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def evaluate_file(self, yara_file: YaraFile) -> dict[str, bool]:
         """Evaluate all rules in a YARA file."""
+        imports = _validate_imports(yara_file.imports)
+        rules = _validate_rules(yara_file.rules)
         results: dict[str, bool] = {}
         self._rule_results: dict[str, bool] = {}
-        self._rule_map, self._rule_keys_by_name = self._build_rule_maps(yara_file.rules)
+        self._rule_map, self._rule_keys_by_name = self._build_rule_maps(rules)
         self._evaluating_rules: set[str] = set()
         self.context.modules = {}
 
         # Process imports
-        for import_stmt in yara_file.imports:
+        for import_stmt in imports:
             module_name = _validate_import_module(import_stmt.module)
             module = self.module_registry.create_module(module_name, self.data)
             if module:
@@ -130,7 +163,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                     self.context.modules[alias] = module
 
         evaluated_rules: list[tuple[str, Rule, bool]] = []
-        for rule in yara_file.rules:
+        for rule in rules:
             rule_key = self._rule_key_for_rule(rule)
             result = self._evaluate_rule_by_name(rule_key)
             evaluated_rules.append((rule_key, rule, result))

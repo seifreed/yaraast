@@ -1233,6 +1233,59 @@ def test_defined_expression_evaluates_module_function_results() -> None:
     }
 
 
+@pytest.mark.parametrize(
+    ("field", "invalid_value", "message"),
+    [
+        ("imports", "", "YaraFile imports must be a list or tuple"),
+        ("rules", "abc", "YaraFile rules must be a list or tuple"),
+    ],
+)
+def test_evaluate_file_rejects_invalid_file_collections(
+    field: str,
+    invalid_value: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule("valid", condition=BooleanLiteral(True))])
+    setattr(ast, field, invalid_value)
+
+    with pytest.raises(TypeError, match=message):
+        YaraEvaluator().evaluate_file(ast)
+
+
+@pytest.mark.parametrize(
+    ("field", "invalid_value", "message"),
+    [
+        ("imports", [object()], "YaraFile imports must contain Import nodes"),
+        ("rules", [object()], "YaraFile rules must contain Rule nodes"),
+    ],
+)
+def test_evaluate_file_rejects_invalid_file_collection_items(
+    field: str,
+    invalid_value: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule("valid", condition=BooleanLiteral(True))])
+    setattr(ast, field, invalid_value)
+
+    with pytest.raises(TypeError, match=message):
+        YaraEvaluator().evaluate_file(ast)
+
+
+def test_evaluate_file_rejects_non_string_rule_names() -> None:
+    invalid_name: Any = False
+    ast = YaraFile(rules=[Rule(invalid_name, condition=BooleanLiteral(True))])
+
+    with pytest.raises(TypeError, match="Rule name must be a string"):
+        YaraEvaluator().evaluate_file(ast)
+
+
+def test_evaluate_file_rejects_empty_rule_names() -> None:
+    ast = YaraFile(rules=[Rule("", condition=BooleanLiteral(True))])
+
+    with pytest.raises(EvaluationError, match="Rule name must not be empty"):
+        YaraEvaluator().evaluate_file(ast)
+
+
 def test_string_count_offset_length_and_wildcard() -> None:
     ev = YaraEvaluator(data=b"xxabxxab")
     rule = Rule(
