@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.cli import yaral_services as ys
 from yaraast.yaral.ast_nodes import YaraLFile, YaraLRule
 
@@ -36,3 +40,15 @@ def test_parse_yaral_best_effort_returns_ast_for_degraded_input() -> None:
     ast = ys.parse_yaral_best_effort('rule sample meta: author = "a"')
 
     assert isinstance(ast, YaraLFile)
+
+
+@pytest.mark.parametrize("content", [None, 123, object()])
+def test_parse_yaral_rejects_invalid_content_types(content: Any) -> None:
+    with pytest.raises(TypeError, match="content must be a string"):
+        ys.parse_yaral(cast(str, content), enhanced=False)
+
+
+@pytest.mark.parametrize("enhanced", [None, 1, "yes", object()])
+def test_parse_yaral_rejects_invalid_enhanced_types(enhanced: Any) -> None:
+    with pytest.raises(TypeError, match="enhanced must be a boolean"):
+        ys.parse_yaral("rule sample { condition: true }", enhanced=cast(bool, enhanced))

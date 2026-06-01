@@ -11,6 +11,12 @@ from yaraast.yaral.validator import YaraLValidator
 
 def parse_yaral(content: str, enhanced: bool):
     """Parse YARA-L content using selected parser."""
+    if not isinstance(content, str):
+        msg = "content must be a string"
+        raise TypeError(msg)
+    if not isinstance(enhanced, bool):
+        msg = "enhanced must be a boolean"
+        raise TypeError(msg)
     if enhanced:
         return EnhancedYaraLParser(content).parse()
     return YaraLParser(content).parse()

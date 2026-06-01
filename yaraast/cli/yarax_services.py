@@ -26,6 +26,9 @@ TUPLE_INDEXING_PATTERN = r"\([^()\n]*,[^()\n]*\)\s*\["
 
 
 def parse_yarax_content(content: str):
+    if not isinstance(content, str):
+        msg = "content must be a string"
+        raise TypeError(msg)
     parser = YaraXParser(content)
     ast = parser.parse()
     generator = YaraXGenerator()
@@ -37,6 +40,9 @@ def parse_yara_file_ast(file_path: str):
 
 
 def check_yarax_compatibility(ast, strict: bool):
+    if not isinstance(strict, bool):
+        msg = "strict must be a boolean"
+        raise TypeError(msg)
     features = YaraXFeatures.yarax_strict() if strict else YaraXFeatures.yarax_compatible()
     checker = YaraXCompatibilityChecker(features)
     return checker.check(ast)

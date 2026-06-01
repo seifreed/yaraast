@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -98,6 +99,12 @@ def test_yarax_services_parse_and_convert_roundtrip(tmp_path: Path) -> None:
     assert len(ast_file.rules) == 1
 
 
+@pytest.mark.parametrize("content", [None, 123, object()])
+def test_yarax_services_parse_rejects_invalid_content_types(content: Any) -> None:
+    with pytest.raises(TypeError, match="content must be a string"):
+        ys.parse_yarax_content(cast(str, content))
+
+
 def test_yarax_to_yara_conversion_rejects_yarax_only_syntax() -> None:
     yarax_code = """
 rule native_yarax {
@@ -121,3 +128,13 @@ def test_yarax_services_compatibility_check() -> None:
     assert result_non_strict is not None
     assert result_strict is not None
     assert ast is not None
+
+
+@pytest.mark.parametrize("strict", [None, 1, "yes", object()])
+def test_yarax_services_compatibility_check_rejects_invalid_strict_types(
+    strict: Any,
+) -> None:
+    ast, _generated = ys.parse_yarax_content("rule c { condition: true }")
+
+    with pytest.raises(TypeError, match="strict must be a boolean"):
+        ys.check_yarax_compatibility(ast, strict=cast(bool, strict))
