@@ -228,7 +228,7 @@ def expression_to_string(expr: Any, options: Any = None) -> str:
                 f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
                 f"for {variables} in {self.visit(node.iterable)}"
             )
-            if node.condition:
+            if node.condition is not None:
                 result += f" if {self.visit(node.condition)}"
             return result + "}"
 

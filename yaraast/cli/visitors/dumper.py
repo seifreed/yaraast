@@ -88,7 +88,7 @@ class ASTDumper(ASTVisitor[dict]):
             "tags": tags,
             "meta": meta,
             "strings": [self.visit(s) for s in node.strings],
-            "condition": self.visit(node.condition) if node.condition else None,
+            "condition": self.visit(node.condition) if node.condition is not None else None,
         }
         if node.pragmas:
             result["pragmas"] = [self.visit(pragma) for pragma in node.pragmas]
@@ -326,7 +326,7 @@ class ASTDumper(ASTVisitor[dict]):
                 else self.visit(node.quantifier)
             ),
             "string_set": self._dump_value(node.string_set),
-            "condition": self.visit(node.condition) if node.condition else None,
+            "condition": self.visit(node.condition) if node.condition is not None else None,
         }
 
     def visit_at_expression(self, node: AtExpression) -> dict:

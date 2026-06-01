@@ -107,6 +107,10 @@ def test_dumper_branches_for_modifiers_meta_and_generic_nodes() -> None:
     assert d.visit_string_length(StringLength(string_id="$a", index=_FalsyIntegerLiteral(0)))[
         "index"
     ] == {"type": "IntegerLiteral", "value": 0}
+    assert d.visit_rule(Rule(name="r", condition=_FalsyIntegerLiteral(0)))["condition"] == {
+        "type": "IntegerLiteral",
+        "value": 0,
+    }
     assert d.visit_double_literal(DoubleLiteral(value=1.2))["value"] == 1.2
     assert d.visit_set_expression(SetExpression(elements=[Identifier(name="x")]))["elements"]
 
@@ -159,6 +163,16 @@ def test_dumper_extra_node_types_and_fallback_fields() -> None:
         )["quantifier"]
         == 1
     )
+    assert d.visit_for_of_expression(
+        cast(
+            Any,
+            SimpleNamespace(
+                quantifier=1,
+                string_set=IntegerLiteral(value=1),
+                condition=_FalsyIntegerLiteral(0),
+            ),
+        )
+    )["condition"] == {"type": "IntegerLiteral", "value": 0}
     assert (
         d.visit_at_expression(
             cast(Any, SimpleNamespace(string_id="$a", offset=IntegerLiteral(value=1)))

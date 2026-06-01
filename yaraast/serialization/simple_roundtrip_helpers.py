@@ -1175,7 +1175,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "type": "ForOfExpression",
             "quantifier": _serialize_ast_value(node.quantifier),
             "string_set": _serialize_ast_value(node.string_set),
-            "condition": serialize_node(node.condition) if node.condition else None,
+            "condition": serialize_node(node.condition) if node.condition is not None else None,
         }
     if isinstance(node, AtExpression):
         return {
@@ -1244,22 +1244,22 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, ArrayComprehension):
         return {
             "type": "ArrayComprehension",
-            "expression": serialize_node(node.expression) if node.expression else None,
+            "expression": serialize_node(node.expression) if node.expression is not None else None,
             "variable": _serialize_required_string(
                 node.variable,
                 "ArrayComprehension variable",
             ),
-            "iterable": serialize_node(node.iterable) if node.iterable else None,
-            "condition": serialize_node(node.condition) if node.condition else None,
+            "iterable": serialize_node(node.iterable) if node.iterable is not None else None,
+            "condition": serialize_node(node.condition) if node.condition is not None else None,
         }
     if isinstance(node, DictComprehension):
         return {
             "type": "DictComprehension",
             "key_expression": (
-                serialize_node(node.key_expression) if node.key_expression else None
+                serialize_node(node.key_expression) if node.key_expression is not None else None
             ),
             "value_expression": (
-                serialize_node(node.value_expression) if node.value_expression else None
+                serialize_node(node.value_expression) if node.value_expression is not None else None
             ),
             "key_variable": _serialize_required_string(
                 node.key_variable,
@@ -1269,8 +1269,8 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
                 node.value_variable,
                 "DictComprehension value_variable",
             ),
-            "iterable": serialize_node(node.iterable) if node.iterable else None,
-            "condition": serialize_node(node.condition) if node.condition else None,
+            "iterable": serialize_node(node.iterable) if node.iterable is not None else None,
+            "condition": serialize_node(node.condition) if node.condition is not None else None,
         }
     if isinstance(node, TupleExpression):
         elements = _validated_node_collection(
@@ -1310,9 +1310,9 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "SliceExpression",
             "target": serialize_node(node.target),
-            "start": serialize_node(node.start) if node.start else None,
-            "stop": serialize_node(node.stop) if node.stop else None,
-            "step": serialize_node(node.step) if node.step else None,
+            "start": serialize_node(node.start) if node.start is not None else None,
+            "stop": serialize_node(node.stop) if node.stop is not None else None,
+            "step": serialize_node(node.step) if node.step is not None else None,
         }
     if isinstance(node, LambdaExpression):
         return {
@@ -1326,7 +1326,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "type": "PatternMatch",
             "value": serialize_node(node.value),
             "cases": [serialize_node(case) for case in cases],
-            "default": serialize_node(node.default) if node.default else None,
+            "default": serialize_node(node.default) if node.default is not None else None,
         }
     if isinstance(node, MatchCase):
         return {
@@ -1388,7 +1388,7 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
         "type": "Rule",
         "name": _serialize_required_string(rule.name, "Rule name"),
         "modifiers": _serialize_rule_modifiers(rule.modifiers, "Rule"),
-        "condition": serialize_node(rule.condition) if rule.condition else None,
+        "condition": serialize_node(rule.condition) if rule.condition is not None else None,
     }
 
     tags = _serialize_rule_tags(rule.tags)

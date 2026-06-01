@@ -72,6 +72,7 @@ from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
     DictExpression,
     LambdaExpression,
     ListExpression,
@@ -1841,6 +1842,12 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         gen.visit_for_of_expression(ForOfExpression("all", Identifier("them"), Identifier("$a")))
         == "for all of them : ($a)"
     )
+    assert (
+        gen.visit_for_of_expression(
+            ForOfExpression("all", Identifier("them"), _FalsyIntegerLiteral(0))
+        )
+        == "for all of them : (0)"
+    )
     assert gen.visit_at_expression(AtExpression("$a", IntegerLiteral(0))) == "$a at 0"
     assert (
         gen.visit_in_expression(InExpression("$a", ParenthesesExpression(StringOffset("a"))))
@@ -1907,6 +1914,16 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), 'Company"\\Path'))
         == 'pe["Company\\"\\\\Path"]'
     )
+    yarax = YaraXGenerator()
+    array_comp = ArrayComprehension(
+        expression=IntegerLiteral(1),
+        variable="x",
+        iterable=Identifier("xs"),
+        condition=_FalsyIntegerLiteral(0),
+    )
+    assert yarax.visit_array_comprehension(array_comp) == "[1 for x in xs if 0]"
+    pattern_match = PatternMatch(Identifier("x"), [], default=_FalsyIntegerLiteral(0))
+    assert "_ => 0," in yarax.visit_pattern_match(pattern_match)
     assert gen.visit_condition(Condition()) == ""
     assert gen.visit_tag(Tag("x")) == "x"
     assert gen.visit_string_modifier(StringModifier.from_name_value("xor", (1, 3))) == "xor(1-3)"

@@ -254,7 +254,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
         result = (
             f"[{self.visit(node.expression)} for {node.variable} " f"in {self.visit(node.iterable)}"
         )
-        if node.condition:
+        if node.condition is not None:
             result += f" if {self.visit(node.condition)}"
         return f"{result}]"
 
@@ -266,7 +266,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
             f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
             f"for {variables} in {self.visit(node.iterable)}"
         )
-        if node.condition:
+        if node.condition is not None:
             result += f" if {self.visit(node.condition)}"
         return f"{result}}}"
 
@@ -330,7 +330,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
         lines = [f"match {self.visit(node.value)} {{"]
         nested_indent = self._nested_indent()
         lines.extend(f"{nested_indent}{self.visit(case)}," for case in node.cases)
-        if node.default:
+        if node.default is not None:
             default_str = self._indent_continuation_lines(self.visit(node.default))
             lines.append(f"{nested_indent}_ => {default_str},")
         lines.append("}")

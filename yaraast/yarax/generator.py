@@ -65,7 +65,7 @@ class YaraXGenerator(BaseGenerator):
 
         result = f"[{expr_str} for {node.variable} in {iter_str}"
 
-        if node.condition:
+        if node.condition is not None:
             cond_str = self.visit(node.condition)
             result += f" if {cond_str}"
 
@@ -89,7 +89,7 @@ class YaraXGenerator(BaseGenerator):
 
         result = f"{{{key_str}: {value_str} for {var_str} in {iter_str}"
 
-        if node.condition:
+        if node.condition is not None:
             cond_str = self.visit(node.condition)
             result += f" if {cond_str}"
 
@@ -196,7 +196,7 @@ class YaraXGenerator(BaseGenerator):
             lines.append(f"{case_indent}{case_str},")
 
         # Generate default case if present
-        if node.default:
+        if node.default is not None:
             default_str = self._indent_continuation_lines(self.visit(node.default))
             lines.append(f"{case_indent}_ => {default_str},")
 

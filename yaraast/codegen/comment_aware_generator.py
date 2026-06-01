@@ -398,7 +398,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         result = (
             f"[{self.visit(node.expression)} for {node.variable} " f"in {self.visit(node.iterable)}"
         )
-        if node.condition:
+        if node.condition is not None:
             result += f" if {self.visit(node.condition)}"
         return result + "]"
 
@@ -415,7 +415,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
             f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
             f"for {variables} in {self.visit(node.iterable)}"
         )
-        if node.condition:
+        if node.condition is not None:
             result += f" if {self.visit(node.condition)}"
         return result + "}"
 

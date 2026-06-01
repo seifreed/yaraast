@@ -1856,6 +1856,62 @@ def test_simple_roundtrip_helpers_preserve_extended_expression_nodes() -> None:
     assert deserialize_node(serialize_node(StringLength("$a", _FalsyIntegerLiteral(0)))) == (
         StringLength("$a", IntegerLiteral(0))
     )
+    assert deserialize_node(
+        serialize_node(ForOfExpression("any", Identifier("them"), _FalsyIntegerLiteral(0)))
+    ) == ForOfExpression("any", Identifier("them"), IntegerLiteral(0))
+    assert deserialize_node(
+        serialize_node(
+            ArrayComprehension(
+                expression=_FalsyIntegerLiteral(0),
+                variable="x",
+                iterable=_FalsyIntegerLiteral(0),
+                condition=_FalsyIntegerLiteral(0),
+            )
+        )
+    ) == ArrayComprehension(
+        expression=IntegerLiteral(0),
+        variable="x",
+        iterable=IntegerLiteral(0),
+        condition=IntegerLiteral(0),
+    )
+    assert deserialize_node(
+        serialize_node(
+            DictComprehension(
+                key_expression=_FalsyIntegerLiteral(0),
+                value_expression=_FalsyIntegerLiteral(0),
+                key_variable="x",
+                iterable=_FalsyIntegerLiteral(0),
+                condition=_FalsyIntegerLiteral(0),
+            )
+        )
+    ) == DictComprehension(
+        key_expression=IntegerLiteral(0),
+        value_expression=IntegerLiteral(0),
+        key_variable="x",
+        iterable=IntegerLiteral(0),
+        condition=IntegerLiteral(0),
+    )
+    assert deserialize_node(
+        serialize_node(
+            SliceExpression(
+                Identifier("xs"),
+                start=_FalsyIntegerLiteral(0),
+                stop=_FalsyIntegerLiteral(0),
+                step=_FalsyIntegerLiteral(0),
+            )
+        )
+    ) == SliceExpression(
+        Identifier("xs"),
+        start=IntegerLiteral(0),
+        stop=IntegerLiteral(0),
+        step=IntegerLiteral(0),
+    )
+    assert deserialize_node(
+        serialize_node(PatternMatch(Identifier("x"), [], default=_FalsyIntegerLiteral(0)))
+    ) == PatternMatch(Identifier("x"), [], default=IntegerLiteral(0))
+    assert serialize_rule(Rule(name="falsy_condition", condition=_FalsyIntegerLiteral(0)))[
+        "condition"
+    ] == {"type": "IntegerLiteral", "value": 0}
 
     scalar_alt = deserialize_node(serialize_node(HexAlternative([0x90, "91"])))
     assert scalar_alt == HexAlternative([[HexByte(0x90)], [HexByte("91")]])

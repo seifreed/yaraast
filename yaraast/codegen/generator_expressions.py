@@ -215,7 +215,7 @@ def render_for_of_expression(gen: Any, node: Any) -> str:
     """Render a for-of expression."""
     quantifier = _render_quantifier(gen, node.quantifier, allow_percentage=True)
     string_set = _render_string_set(gen, node.string_set)
-    if node.condition:
+    if node.condition is not None:
         previous = getattr(gen, "_allow_string_placeholder", False)
         gen._allow_string_placeholder = True
         try:
