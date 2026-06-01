@@ -191,6 +191,27 @@ rule local_ref {
     assert [text_edit.range.start.line for text_edit in edit.changes[uri]] == [0]
 
 
+def test_lsp_rule_navigation_ignores_split_yarax_comprehension_local_after_for_newline() -> None:
+    text = """
+rule helper { condition: true }
+rule local_ref {
+  condition:
+    [helper for
+      helper
+      in (1, 2) if helper > 0]
+}
+""".lstrip()
+    uri = "file://test.yar"
+
+    assert DefinitionProvider().get_definition(text, _pos(4, 8), uri) is None
+    assert RenameProvider().prepare_rename(text, _pos(4, 8), uri) is None
+
+    edit = RenameProvider().rename(text, _pos(0, 7), "renamed", uri)
+    assert edit is not None
+    assert edit.changes is not None
+    assert [text_edit.range.start.line for text_edit in edit.changes[uri]] == [0]
+
+
 def test_lsp_rule_navigation_ignores_yarax_dict_value_local_after_newline() -> None:
     text = """
 rule value { condition: true }
@@ -204,6 +225,27 @@ rule local_ref {
 
     assert DefinitionProvider().get_definition(text, _pos(4, 8), uri) is None
     assert RenameProvider().prepare_rename(text, _pos(4, 8), uri) is None
+
+    edit = RenameProvider().rename(text, _pos(0, 7), "renamed", uri)
+    assert edit is not None
+    assert edit.changes is not None
+    assert [text_edit.range.start.line for text_edit in edit.changes[uri]] == [0]
+
+
+def test_lsp_rule_navigation_ignores_split_yarax_dict_value_local_after_newline() -> None:
+    text = """
+rule value { condition: true }
+rule local_ref {
+  condition:
+    {key: value for
+      key,
+      value in dict if value > 0}
+}
+""".lstrip()
+    uri = "file://test.yar"
+
+    assert DefinitionProvider().get_definition(text, _pos(5, 8), uri) is None
+    assert RenameProvider().prepare_rename(text, _pos(5, 8), uri) is None
 
     edit = RenameProvider().rename(text, _pos(0, 7), "renamed", uri)
     assert edit is not None
@@ -305,6 +347,27 @@ rule local_ref {
 
     assert DefinitionProvider().get_definition(text, _pos(4, 8), uri) is None
     assert RenameProvider().prepare_rename(text, _pos(4, 8), uri) is None
+
+    edit = RenameProvider().rename(text, _pos(0, 7), "renamed", uri)
+    assert edit is not None
+    assert edit.changes is not None
+    assert [text_edit.range.start.line for text_edit in edit.changes[uri]] == [0]
+
+
+def test_lsp_rule_navigation_ignores_split_yarax_second_lambda_parameter_after_newline() -> None:
+    text = """
+rule value { condition: true }
+rule local_ref {
+  condition:
+    lambda
+      key,
+      value: value
+}
+""".lstrip()
+    uri = "file://test.yar"
+
+    assert DefinitionProvider().get_definition(text, _pos(5, 8), uri) is None
+    assert RenameProvider().prepare_rename(text, _pos(5, 8), uri) is None
 
     edit = RenameProvider().rename(text, _pos(0, 7), "renamed", uri)
     assert edit is not None

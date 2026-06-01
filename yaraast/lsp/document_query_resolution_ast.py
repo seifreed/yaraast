@@ -158,6 +158,10 @@ def _lambda_parameter_header_bounds(
     bounds = _same_line_lambda_parameter_bounds(line, line_index, body_start)
     if bounds is not None:
         return [bounds]
+    header_bounds: list[tuple[int, int, int]] = []
+    current_bounds = _continuation_line_lambda_parameter_bounds(line, line_index, body_start)
+    if current_bounds is not None:
+        header_bounds.append(current_bounds)
     for header_line_index in range(line_index - 1, -1, -1):
         header_line = ctx.lines[header_line_index]
         if not header_line.strip():
@@ -166,12 +170,9 @@ def _lambda_parameter_header_bounds(
             header_line,
             header_line_index,
         )
-        if previous_bounds is None:
-            return []
-        current_bounds = _continuation_line_lambda_parameter_bounds(line, line_index, body_start)
-        if current_bounds is None:
-            return [previous_bounds]
-        return [previous_bounds, current_bounds]
+        if previous_bounds is not None:
+            return [previous_bounds, *reversed(header_bounds)]
+        header_bounds.append(_line_prefix_lambda_parameter_bounds(header_line, header_line_index))
     return []
 
 
@@ -210,6 +211,15 @@ def _continuation_line_lambda_parameter_bounds(
     if separator_start < 0:
         return None
     return line_index, 0, separator_start
+
+
+def _line_prefix_lambda_parameter_bounds(
+    line: str,
+    line_index: int,
+) -> tuple[int, int, int]:
+    separator_start = line.rfind(":")
+    parameter_list_end = separator_start if separator_start >= 0 else len(line)
+    return line_index, 0, parameter_list_end
 
 
 def _resolve_names_before_iterable(
@@ -253,17 +263,18 @@ def _loop_declaration_header_bounds(
     bounds = _same_line_loop_declaration_bounds(line, line_index, iterable_start)
     if bounds is not None:
         return [bounds]
+    header_bounds: list[tuple[int, int, int]] = []
+    current_bounds = _continuation_line_loop_declaration_bounds(line, line_index)
+    if current_bounds is not None:
+        header_bounds.append(current_bounds)
     for header_line_index in range(line_index - 1, -1, -1):
         header_line = ctx.lines[header_line_index]
         if not header_line.strip():
             continue
         previous_bounds = _previous_line_loop_declaration_bounds(header_line, header_line_index)
-        if previous_bounds is None:
-            return []
-        current_bounds = _continuation_line_loop_declaration_bounds(line, line_index)
-        if current_bounds is None:
-            return [previous_bounds]
-        return [previous_bounds, current_bounds]
+        if previous_bounds is not None:
+            return [previous_bounds, *reversed(header_bounds)]
+        header_bounds.append(_line_prefix_loop_declaration_bounds(header_line, header_line_index))
     return []
 
 
@@ -301,6 +312,15 @@ def _continuation_line_loop_declaration_bounds(
     if separator_start < 0:
         return None
     return line_index, 0, separator_start
+
+
+def _line_prefix_loop_declaration_bounds(
+    line: str,
+    line_index: int,
+) -> tuple[int, int, int]:
+    separator_start = _rfind_keyword(line, "in", 0, len(line))
+    identifier_list_end = separator_start if separator_start >= 0 else len(line)
+    return line_index, 0, identifier_list_end
 
 
 def _first_value_range(value: Any, source_text: str) -> Range | None:
