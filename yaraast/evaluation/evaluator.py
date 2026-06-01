@@ -473,7 +473,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 return YARA_UNDEFINED
             return value
         if hasattr(obj, "__getitem__"):
-            with contextlib.suppress(Exception):
+            with contextlib.suppress(IndexError, KeyError, ValueError, TypeError):
                 return obj[node.member]
 
         return None
@@ -487,7 +487,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         try:
             return array[index]
-        except (IndexError, KeyError, ValueError, TypeError, AttributeError):
+        except (IndexError, KeyError, ValueError, TypeError):
             return YARA_UNDEFINED
 
     def visit_dictionary_access(self, node: Any) -> Any:
@@ -502,7 +502,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         try:
             return obj[key]
-        except (IndexError, KeyError, ValueError, TypeError, AttributeError):
+        except (IndexError, KeyError, ValueError, TypeError):
             if isinstance(key, str) and hasattr(obj, key):
                 value = getattr(obj, key)
                 if callable(value):
@@ -559,7 +559,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return None
         try:
             return tuple_value[index]
-        except (IndexError, KeyError, ValueError, TypeError, AttributeError):
+        except (IndexError, KeyError, ValueError, TypeError):
             return None
 
     def visit_slice_expression(self, node: Any) -> Any:
@@ -572,7 +572,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return None
         try:
             return target[slice(start, stop, step)]
-        except (IndexError, KeyError, ValueError, TypeError, AttributeError):
+        except (IndexError, KeyError, ValueError, TypeError):
             return None
 
     def visit_array_comprehension(self, node: Any) -> list[Any]:

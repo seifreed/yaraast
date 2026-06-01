@@ -2845,6 +2845,30 @@ def test_evaluator_evaluates_yarax_collection_literals_and_indexing() -> None:
     ) == [2, 3]
 
 
+def test_evaluator_propagates_internal_getitem_attribute_errors() -> None:
+    class BrokenItemAccess:
+        def __getitem__(self, key: object) -> object:
+            raise AttributeError("corrupt accessor state")
+
+    ev = YaraEvaluator()
+    ev.context.variables["broken"] = BrokenItemAccess()
+
+    with pytest.raises(AttributeError, match="corrupt accessor state"):
+        ev.visit(MemberAccess(Identifier("broken"), "field"))
+
+    with pytest.raises(AttributeError, match="corrupt accessor state"):
+        ev.visit(ArrayAccess(Identifier("broken"), IntegerLiteral(0)))
+
+    with pytest.raises(AttributeError, match="corrupt accessor state"):
+        ev.visit(DictionaryAccess(Identifier("broken"), "field"))
+
+    with pytest.raises(AttributeError, match="corrupt accessor state"):
+        ev.visit(TupleIndexing(Identifier("broken"), IntegerLiteral(0)))
+
+    with pytest.raises(AttributeError, match="corrupt accessor state"):
+        ev.visit(SliceExpression(Identifier("broken"), IntegerLiteral(0)))
+
+
 def test_evaluator_evaluates_yarax_comprehensions() -> None:
     ev = YaraEvaluator()
     ev.context.variables["items"] = [1, 2, 3]
