@@ -7,11 +7,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from yaraast.libyara._availability import is_missing_yara_import
+
 try:
     import yara
 
     YARA_AVAILABLE = True
-except ImportError:
+except ImportError as exc:
+    if not is_missing_yara_import(exc):
+        raise
     yara = None
     YARA_AVAILABLE = False
 

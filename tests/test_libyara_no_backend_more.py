@@ -1,15 +1,24 @@
 from __future__ import annotations
 
+import builtins
+from collections.abc import Callable
+import importlib
 import os
 from pathlib import Path
 import subprocess
 import sys
 import textwrap
+from types import ModuleType
+from typing import Any
+
+import pytest
+
+ImportFunction = Callable[[str, Any, Any, Any, int], ModuleType]
 
 
 def test_libyara_modules_report_missing_backend_in_subprocess(tmp_path: Path) -> None:
     blocker = tmp_path / "yara.py"
-    blocker.write_text('raise ImportError("blocked yara")\n', encoding="utf-8")
+    blocker.write_text('raise ImportError("blocked yara", name="yara")\n', encoding="utf-8")
 
     code = textwrap.dedent(
         """
@@ -65,3 +74,42 @@ def test_libyara_modules_report_missing_backend_in_subprocess(tmp_path: Path) ->
     assert "DirectASTCompiler=ImportError:yara-python is not installed." in stdout
     assert "LibyaraScanner=ImportError:yara-python is not installed." in stdout
     assert "OptimizedMatcher=ImportError:yara-python is not installed." in stdout
+
+
+def test_libyara_modules_propagate_internal_backend_import_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import yaraast.libyara as libyara_package
+    import yaraast.libyara.compiler as compiler_module
+    import yaraast.libyara.direct_compiler as direct_compiler_module
+    import yaraast.libyara.scanner as scanner_module
+
+    real_import: ImportFunction = builtins.__import__
+
+    def fail_yara_internal_import(
+        name: str,
+        globals_: Any = None,
+        locals_: Any = None,
+        fromlist: Any = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "yara":
+            raise ImportError("broken yara binding", name="yara._native")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_yara_internal_import)
+    try:
+        for module in (
+            libyara_package,
+            compiler_module,
+            direct_compiler_module,
+            scanner_module,
+        ):
+            with pytest.raises(ImportError, match="broken yara binding"):
+                importlib.reload(module)
+    finally:
+        monkeypatch.setattr(builtins, "__import__", real_import)
+        importlib.reload(compiler_module)
+        importlib.reload(direct_compiler_module)
+        importlib.reload(scanner_module)
+        importlib.reload(libyara_package)

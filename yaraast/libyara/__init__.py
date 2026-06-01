@@ -2,11 +2,15 @@
 
 from typing import Never
 
+from yaraast.libyara._availability import is_missing_yara_import
+
 try:
     import yara
 
     YARA_AVAILABLE = True
-except ImportError:
+except ImportError as exc:
+    if not is_missing_yara_import(exc):
+        raise
     YARA_AVAILABLE = False
 
 if YARA_AVAILABLE:

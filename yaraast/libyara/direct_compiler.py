@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.errors import EvaluationError
+from yaraast.libyara._availability import is_missing_yara_import
 from yaraast.libyara.ast_optimizer import ASTOptimizer
 from yaraast.libyara.compiler import normalize_libyara_externals
 from yaraast.libyara.direct_helpers import (
@@ -20,7 +21,9 @@ try:
     import yara
 
     YARA_AVAILABLE = True
-except ImportError:
+except ImportError as exc:
+    if not is_missing_yara_import(exc):
+        raise
     yara = None
     YARA_AVAILABLE = False
 
