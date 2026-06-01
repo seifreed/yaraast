@@ -288,9 +288,9 @@ class DiagnosticsProvider:
                 if not isinstance(validation_rule, dict):
                     continue
                 identifier = validation_rule.get("identifier")
-                if not identifier:
+                if not isinstance(identifier, str) or not identifier:
                     continue
-                required = validation_rule.get("required", False)
+                required = validation_rule.get("required") is True
                 expected_type = validation_rule.get("type")
 
                 if required and identifier not in meta_dict:

@@ -279,6 +279,45 @@ def test_metadata_validation_ignores_malformed_config_entries() -> None:
     assert any(d.source == "yaraast-metadata" for d in diags)
 
 
+def test_metadata_validation_requires_boolean_required_flag() -> None:
+    text = "rule missing_author { condition: true }\n"
+    for required in ["false", "true", 1, object()]:
+        runtime = LspRuntime()
+        runtime.update_config(
+            {
+                "YARA": {
+                    "metadataValidation": [
+                        {"identifier": "author", "required": required},
+                    ]
+                }
+            }
+        )
+        provider = DiagnosticsProvider(runtime)
+
+        diags = provider.get_diagnostics(text, "file:///x.yar")
+
+        assert not any(d.source == "yaraast-metadata" for d in diags)
+
+
+def test_metadata_validation_ignores_non_string_identifiers() -> None:
+    runtime = LspRuntime()
+    runtime.update_config(
+        {
+            "YARA": {
+                "metadataValidation": [
+                    {"identifier": 123, "required": True},
+                    {"identifier": "", "required": True},
+                ]
+            }
+        }
+    )
+    provider = DiagnosticsProvider(runtime)
+
+    diags = provider.get_diagnostics("rule sample { condition: true }\n", "file:///x.yar")
+
+    assert not any(d.source == "yaraast-metadata" for d in diags)
+
+
 def test_rule_name_validation_ignores_malformed_config_value() -> None:
     runtime = LspRuntime()
     runtime.update_config({"YARA": {"ruleNameValidation": "^GOOD_"}})
