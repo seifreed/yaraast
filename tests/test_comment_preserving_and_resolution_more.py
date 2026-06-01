@@ -8,6 +8,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import Identifier
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.errors import ValidationError
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
@@ -191,6 +192,25 @@ rule caller {
 
     assert graph.get_rule_dependencies("caller") == {"pe"}
     assert "rule:caller" in graph.nodes["pe"].dependents
+
+
+def test_dependency_graph_analyzes_falsy_present_rule_condition() -> None:
+    class FalsyIdentifier(Identifier):
+        def __bool__(self) -> bool:
+            return False
+
+    ast = YaraFile(
+        rules=[
+            Rule(name="helper", condition=Identifier("true")),
+            Rule(name="caller", condition=FalsyIdentifier("helper")),
+        ]
+    )
+    graph = DependencyGraph()
+
+    graph.add_file(Path("rules.yar"), ast)
+
+    assert graph.get_rule_dependencies("caller") == {"rule:helper"}
+    assert "rule:caller" in graph.nodes["rule:helper"].dependents
 
 
 def test_transitive_graph_queries_do_not_return_start_node_in_cycles() -> None:

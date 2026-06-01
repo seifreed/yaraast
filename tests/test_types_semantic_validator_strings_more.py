@@ -602,6 +602,22 @@ def test_undefined_string_detector_checks_children_of_implicit_position_checks()
     )
 
 
+def test_undefined_string_detector_visits_falsy_present_condition() -> None:
+    class FalsyStringIdentifier(StringIdentifier):
+        def __bool__(self) -> bool:
+            return False
+
+    result = ValidationResult()
+    detector = UndefinedStringDetector(result)
+
+    detector.check_rule(Rule(name="falsy_condition", condition=FalsyStringIdentifier("$missing")))
+
+    assert any(
+        "Undefined string '$missing' in rule 'falsy_condition'" in error.message
+        for error in result.errors
+    )
+
+
 def test_semantic_validator_rejects_invalid_them_string_sets() -> None:
     ast = Parser().parse("""
         rule no_strings {

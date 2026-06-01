@@ -328,7 +328,7 @@ class DependencyGraph:
         module_aliases: Mapping[str, str],
     ) -> None:
         """Analyze dependencies within a rule."""
-        if not rule.condition:
+        if rule.condition is None:
             return
 
         collector = _RuleDependencyCollector(

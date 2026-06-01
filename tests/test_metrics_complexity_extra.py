@@ -10,6 +10,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
+    BinaryExpression,
     Expression,
     IntegerLiteral,
     SetExpression,
@@ -271,6 +272,29 @@ def test_complexity_metrics_preserve_duplicate_rule_occurrences() -> None:
     assert set(metrics.cyclomatic_complexity) == {"dup#1", "dup#2"}
     assert metrics.string_dependencies == {"dup#1": {"$a"}, "dup#2": {"$b"}}
     assert metrics.unused_strings == ["dup#1:$unused_first", "dup#2:$unused_second"]
+
+
+def test_complexity_analyzer_calculates_falsy_present_rule_condition() -> None:
+    class FalsyBinaryExpression(BinaryExpression):
+        def __bool__(self) -> bool:
+            return False
+
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="falsy_complexity",
+                condition=FalsyBinaryExpression(
+                    left=StringIdentifier("$a"),
+                    operator="or",
+                    right=StringIdentifier("$b"),
+                ),
+            )
+        ]
+    )
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.cyclomatic_complexity["falsy_complexity"] == 2
 
 
 def test_complexity_string_usage_tracks_offset_and_length_index_expressions() -> None:

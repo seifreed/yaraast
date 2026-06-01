@@ -337,7 +337,7 @@ class UndefinedStringDetector:
 
     def check_rule(self, rule: Rule) -> None:
         """Check a rule for undefined string references in its condition."""
-        if not rule.condition:
+        if rule.condition is None:
             return
         self._local_string_scopes.clear()
 

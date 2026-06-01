@@ -48,6 +48,21 @@ def test_print_ast_and_visualize_formats() -> None:
     assert "YaraFile" in dict_out
 
 
+def test_print_ast_includes_falsy_present_rule_condition() -> None:
+    class FalsyBooleanLiteral(BooleanLiteral):
+        def __bool__(self) -> bool:
+            return False
+
+    ast = YaraFile(rules=[Rule(name="falsy", condition=FalsyBooleanLiteral(value=False))])
+    console = Console(file=StringIO(), record=True, force_terminal=False)
+
+    print_ast(ast, console=console)
+
+    rendered = console.export_text()
+    assert "condition" in rendered
+    assert "value=False" in rendered
+
+
 def test_visualize_ast_invalid_format_raises() -> None:
     ast = YaraFile(rules=[Rule(name="x", condition=BooleanLiteral(value=True))])
     try:

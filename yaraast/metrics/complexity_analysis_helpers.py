@@ -79,7 +79,7 @@ def calculate_cyclomatic_complexity(analyzer) -> int:
     from yaraast.metrics.complexity_helpers import calculate_cyclomatic_complexity as calc_from_expr
 
     rule = analyzer._current_rule
-    if rule and rule.condition:
+    if rule is not None and rule.condition is not None:
         return calc_from_expr(rule.condition)
     return 1
 

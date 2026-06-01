@@ -58,6 +58,31 @@ def test_validate_returns_stable_error_and_warning_snapshots() -> None:
     assert any("Rule must have a condition section" in err.message for err in first_errors)
 
 
+def test_validator_accepts_falsy_present_condition_section() -> None:
+    class FalsyConditionSection(ConditionSection):
+        def __bool__(self) -> bool:
+            return False
+
+    rule = YaraLRule(
+        name="valid_rule",
+        events=EventsSection(
+            statements=[
+                EventAssignment(
+                    event_var=EventVariable(name="$e"),
+                    field_path=UDMFieldPath(parts=["metadata", "event_type"]),
+                    operator="=",
+                    value="LOGIN",
+                )
+            ]
+        ),
+        condition=FalsyConditionSection(expression=EventExistsCondition(event="$e")),
+    )
+
+    errors, _warnings = YaraLValidator().validate(YaraLFile(rules=[rule]))
+
+    assert not any("Rule must have a condition section" in error.message for error in errors)
+
+
 def test_validator_accepts_bracketed_udm_fields_and_dollar_event_conditions() -> None:
     parser = EnhancedYaraLParser("""
         rule bracketed_valid {

@@ -181,7 +181,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
             self._analyze_strings(node)
 
         # Check for rules without strings (might be intentional)
-        if not node.strings and node.condition:
+        if not node.strings and node.condition is not None:
             # Only suggest if it's not using imports or file properties
             condition_str = str(node.condition)
             if not any(

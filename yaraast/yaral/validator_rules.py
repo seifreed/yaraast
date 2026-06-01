@@ -52,7 +52,7 @@ class RuleValidationMixin:
                 "Add 'events:' section to define event patterns",
             )
 
-        if not node.condition:
+        if node.condition is None:
             self._add_error(
                 "rule",
                 "Rule must have a condition section",

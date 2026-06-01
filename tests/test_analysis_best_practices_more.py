@@ -80,6 +80,20 @@ rule pe_only {
     assert result.statistics == {"total_rules": 3, "total_imports": 0}
 
 
+def test_best_practices_analyzes_falsy_present_rule_condition() -> None:
+    class FalsyStringLiteral(StringLiteral):
+        def __bool__(self) -> bool:
+            return False
+
+    ast = YaraFile(rules=[Rule(name="falsy_condition", condition=FalsyStringLiteral("flag"))])
+
+    report = BestPracticesAnalyzer().analyze(ast)
+
+    assert any(
+        "Rule has no strings defined" in suggestion.message for suggestion in report.suggestions
+    )
+
+
 def test_best_practices_analyzer_handles_byte_plain_strings() -> None:
     ast = YaraFile(
         rules=[

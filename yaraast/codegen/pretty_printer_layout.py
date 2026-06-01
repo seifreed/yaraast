@@ -122,7 +122,7 @@ def visit_rule(printer: Any, node: Any) -> str:
         printer._indent()
         printer._write_meta_section(node.meta)
         printer._dedent()
-        if node.pragmas or node.strings or node.condition:
+        if node.pragmas or node.strings or node.condition is not None:
             for _ in range(printer.options.blank_lines_between_sections):
                 printer._writeline()
 
@@ -133,7 +133,7 @@ def visit_rule(printer: Any, node: Any) -> str:
         printer._indent()
         printer._write_strings_section(node.strings)
         printer._dedent()
-        if node.pragmas or node.condition:
+        if node.pragmas or node.condition is not None:
             for _ in range(printer.options.blank_lines_between_sections):
                 printer._writeline()
 

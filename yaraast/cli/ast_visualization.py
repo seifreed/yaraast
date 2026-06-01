@@ -124,7 +124,7 @@ def _add_strings_to_rule(rule_branch: Tree, rule: Any) -> None:
 
 def _add_condition_to_rule(rule_branch: Tree, rule: Any) -> None:
     """Add condition to the rule branch."""
-    if not (hasattr(rule, "condition") and rule.condition):
+    if not hasattr(rule, "condition") or rule.condition is None:
         return
 
     condition_branch = rule_branch.add("condition")
