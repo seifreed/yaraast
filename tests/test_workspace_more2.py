@@ -287,6 +287,14 @@ def test_include_resolver_rejects_invalid_search_paths() -> None:
         IncludeResolver(cast(Any, [object()]))
 
 
+def test_include_resolver_rejects_empty_search_path_entries() -> None:
+    with pytest.raises(
+        ValueError,
+        match="IncludeResolver search_paths must not contain empty paths",
+    ):
+        IncludeResolver([""])
+
+
 def test_include_resolver_treats_directory_matches_as_unresolved(tmp_path: Path) -> None:
     directory = tmp_path / "not_a_rule.yar"
     directory.mkdir()

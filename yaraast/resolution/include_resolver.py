@@ -68,6 +68,9 @@ class IncludeResolver:
             ):
                 msg = "IncludeResolver search_paths must be a list of strings"
                 raise TypeError(msg)
+            if any(not search_path for search_path in search_paths):
+                msg = "IncludeResolver search_paths must not contain empty paths"
+                raise ValueError(msg)
             paths.extend(Path(p).resolve() for p in search_paths)
 
         # Add current directory
