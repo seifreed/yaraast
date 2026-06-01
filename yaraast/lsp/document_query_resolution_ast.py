@@ -131,24 +131,58 @@ def _resolve_lambda_parameter_identifier(
     body_range = _first_value_range(node.body, ctx.text)
     if body_range is None:
         return None
-    line_index = body_range.start.line
-    if line_index < 0 or line_index >= len(ctx.lines):
+    header_bounds = _lambda_parameter_header_bounds(ctx, body_range)
+    if header_bounds is None:
         return None
+    line_index, parameter_list_start, parameter_list_end = header_bounds
     line = ctx.lines[line_index]
-    body_start = utf16_col_to_utf8(line, body_range.start.character)
-    lambda_start = line.rfind("lambda", 0, body_start)
-    separator_start = line.rfind(":", lambda_start, body_start)
-    if lambda_start < 0 or separator_start < 0:
-        return None
-    parameter_start = line.find(word, lambda_start + len("lambda"), separator_start)
+    parameter_start = line.find(word, parameter_list_start, parameter_list_end)
     while parameter_start >= 0:
         declaration_range = _same_line_identifier_range(line, line_index, parameter_start, word)
         if declaration_range is not None:
             resolved = _resolved_local_identifier(ctx, word, declaration_range, position)
             if resolved is not None:
                 return resolved
-        parameter_start = line.find(word, parameter_start + len(word), separator_start)
+        parameter_start = line.find(word, parameter_start + len(word), parameter_list_end)
     return None
+
+
+def _lambda_parameter_header_bounds(
+    ctx: DocumentContext,
+    body_range: Range,
+) -> tuple[int, int, int] | None:
+    line_index = body_range.start.line
+    if line_index < 0 or line_index >= len(ctx.lines):
+        return None
+    line = ctx.lines[line_index]
+    body_start = utf16_col_to_utf8(line, body_range.start.character)
+    bounds = _same_line_lambda_parameter_bounds(line, line_index, body_start)
+    if bounds is not None:
+        return bounds
+    for header_line_index in range(line_index - 1, -1, -1):
+        header_line = ctx.lines[header_line_index]
+        if not header_line.strip():
+            continue
+        return _same_line_lambda_parameter_bounds(
+            header_line,
+            header_line_index,
+            len(header_line),
+        )
+    return None
+
+
+def _same_line_lambda_parameter_bounds(
+    line: str,
+    line_index: int,
+    search_end: int,
+) -> tuple[int, int, int] | None:
+    separator_start = line.rfind(":", 0, search_end)
+    if separator_start < 0:
+        return None
+    lambda_start = line.rfind("lambda", 0, separator_start)
+    if lambda_start < 0:
+        return None
+    return line_index, lambda_start + len("lambda"), separator_start
 
 
 def _resolve_names_before_iterable(

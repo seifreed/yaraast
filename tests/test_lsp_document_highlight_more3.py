@@ -145,6 +145,24 @@ rule local_ref {
     ]
 
 
+def test_document_highlight_multiline_yarax_lambda_parameter_declaration_is_local() -> None:
+    text = """
+rule helper { condition: true }
+rule local_ref {
+    condition:
+        lambda helper:
+            helper
+}
+""".lstrip()
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(3, 15))
+
+    assert [(highlight.range.start.line, highlight.range.end.line) for highlight in highlights] == [
+        (3, 3)
+    ]
+
+
 def test_document_highlight_fallback_ignores_string_identifier_in_non_code() -> None:
     text = """
 rule r {
