@@ -7,6 +7,7 @@ import math
 import re
 from typing import Any, NamedTuple
 
+from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
@@ -423,14 +424,10 @@ def _validate_hex_jump_bound(value: int | None, field: str) -> int | None:
 
 def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) -> str:
     """Format one string modifier for YARA output."""
-    if visit is not None and hasattr(modifier, "accept"):
+    if visit is not None and isinstance(modifier, StringModifier):
         return visit(modifier)
 
-    if (
-        hasattr(modifier, "modifier_type")
-        and hasattr(modifier, "name")
-        and hasattr(modifier, "value")
-    ):
+    if isinstance(modifier, StringModifier):
         name = modifier.name
         value = modifier.value
         _validate_spaced_string_modifier(name)
@@ -446,7 +443,10 @@ def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) ->
             return f"{name}({value})"
         return str(name)
 
-    text = str(modifier)
+    if not isinstance(modifier, str):
+        msg = "String modifiers must contain strings or StringModifier nodes for libyara output"
+        raise TypeError(msg)
+    text = modifier
     _validate_spaced_string_modifier(text)
     return text
 
@@ -657,8 +657,10 @@ def _canonical_regex_suffix(suffix_parts: list[str]) -> str:
 def _regex_modifier_name(modifier: object) -> str:
     if isinstance(modifier, str):
         return modifier
-    name = getattr(modifier, "name", "")
-    return str(name)
+    if isinstance(modifier, StringModifier):
+        return modifier.name
+    msg = "String modifiers must contain strings or StringModifier nodes for libyara output"
+    raise TypeError(msg)
 
 
 def format_regex_modifiers(

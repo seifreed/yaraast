@@ -650,6 +650,33 @@ def test_codegen_generator_rejects_non_sequence_string_modifiers() -> None:
             CodeGenerator().generate(YaraFile(rules=[rule]))
 
 
+def test_codegen_generators_reject_non_string_string_modifier_items() -> None:
+    class AsWide:
+        def __str__(self) -> str:
+            return "wide"
+
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_string_modifier_item",
+                strings=[
+                    PlainString(identifier="$a", value="x", modifiers=[AsWide()]),
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String modifiers must contain strings or StringModifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="String modifiers must contain strings or StringModifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="String modifiers must contain strings or StringModifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="String modifiers must contain strings or StringModifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generators_reject_unsupported_string_definitions() -> None:
     ast = YaraFile(
         rules=[

@@ -155,7 +155,9 @@ def test_generator_helpers_escape_integer_and_modifiers() -> None:
         format_integer_literal(True)
 
     mod = StringModifier.from_name_value("ascii")
-    assert format_modifiers(["wide", mod, 7], lambda node: f"<{node.name}>") == " wide <ascii> 7"
+    assert format_modifiers(["wide", mod], lambda node: f"<{node.name}>") == " wide <ascii>"
+    with pytest.raises(TypeError, match="String modifiers must contain strings or StringModifier"):
+        format_modifiers(["wide", 7], lambda node: f"<{node.name}>")
     assert format_modifiers(("nocase",), lambda node: "") == " nocase"
     assert format_modifiers(None, lambda node: "") == ""
     invalid_modifier_containers = ("private", {"x"}, 123, "", 0, False)
