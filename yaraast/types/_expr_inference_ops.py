@@ -371,8 +371,14 @@ def infer_unary_expression(ctx: Any, node: UnaryExpression) -> YaraType:
 
 
 def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
-    if "." in node.function:
-        parts = node.function.split(".", 1)
+    function_name = _function_name_or_none(ctx, node.function)
+    arguments = _function_arguments(ctx, node.arguments)
+    if function_name is None:
+        _visit_function_arguments(ctx, arguments)
+        return UnknownType()
+
+    if "." in function_name:
+        parts = function_name.split(".", 1)
         if len(parts) == 2:
             module_name, func_name = parts
             if ctx.env.has_module(module_name):
@@ -385,26 +391,26 @@ def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
                     if module_def and func_name in module_def.functions:
                         func_def = module_def.functions[func_name]
                         if actual_module == "pe" and func_name == "imports":
-                            _validate_pe_imports_arguments(ctx, node.arguments)
+                            _validate_pe_imports_arguments(ctx, arguments)
                             return func_def.return_type
                         if actual_module == "pe" and func_name == "exports":
-                            _validate_pe_exports_arguments(ctx, node.arguments)
+                            _validate_pe_exports_arguments(ctx, arguments)
                             return func_def.return_type
                         if actual_module == "pe" and func_name == "section_index":
-                            _validate_pe_section_index_arguments(ctx, node.arguments)
+                            _validate_pe_section_index_arguments(ctx, arguments)
                             return func_def.return_type
                         if actual_module == "hash" and func_name in _HASH_FUNCTIONS:
-                            _validate_hash_function_arguments(ctx, func_name, node.arguments)
+                            _validate_hash_function_arguments(ctx, func_name, arguments)
                             return func_def.return_type
                         if actual_module == "math" and (
                             func_name in _MATH_STRING_REGION_FUNCTIONS
                             or func_name == "deviation"
                             or func_name in _MATH_INTEGER_REGION_FUNCTIONS
                         ):
-                            _validate_math_function_arguments(ctx, func_name, node.arguments)
+                            _validate_math_function_arguments(ctx, func_name, arguments)
                             return func_def.return_type
                         if actual_module == "console" and func_name == "log":
-                            _validate_console_log_arguments(ctx, node.arguments)
+                            _validate_console_log_arguments(ctx, arguments)
                             return func_def.return_type
                         min_args = (
                             func_def.min_parameters
@@ -412,8 +418,8 @@ def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
                             else len(func_def.parameters)
                         )
                         max_args = len(func_def.parameters)
-                        if len(node.arguments) < min_args or (
-                            not func_def.variadic and len(node.arguments) > max_args
+                        if len(arguments) < min_args or (
+                            not func_def.variadic and len(arguments) > max_args
                         ):
                             expected = (
                                 f"at least {min_args}"
@@ -425,32 +431,46 @@ def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
                                 )
                             )
                             ctx.errors.append(
-                                f"Function '{func_name}' expects {expected} arguments, got {len(node.arguments)}",
+                                f"Function '{func_name}' expects {expected} arguments, got {len(arguments)}",
                             )
                         _validate_function_argument_types(
                             ctx,
                             func_name,
                             func_def,
-                            node.arguments,
+                            arguments,
                         )
                         return func_def.return_type
                     ctx.errors.append(f"Module '{actual_module}' has no function '{func_name}'")
-                    _visit_function_arguments(ctx, node.arguments)
+                    _visit_function_arguments(ctx, arguments)
                     return UnknownType()
 
-    if node.function in BUILTIN_INT_FUNCTIONS_1ARG:
-        if len(node.arguments) != 1:
-            ctx.errors.append(f"{node.function}() expects 1 argument")
+    if function_name in BUILTIN_INT_FUNCTIONS_1ARG:
+        if len(arguments) != 1:
+            ctx.errors.append(f"{function_name}() expects 1 argument")
         _validate_function_argument_types(
             ctx,
-            node.function,
+            function_name,
             [("offset", IntegerType())],
-            node.arguments,
+            arguments,
         )
         return IntegerType()
 
-    _visit_function_arguments(ctx, node.arguments)
+    _visit_function_arguments(ctx, arguments)
     return UnknownType()
+
+
+def _function_name_or_none(ctx: Any, value: Any) -> str | None:
+    if isinstance(value, str):
+        return value
+    ctx.errors.append("Function name must be a string")
+    return None
+
+
+def _function_arguments(ctx: Any, value: Any) -> list[Any]:
+    if isinstance(value, list | tuple):
+        return list(value)
+    ctx.errors.append("Function arguments must be a list")
+    return []
 
 
 def _validate_function_argument_types(
@@ -459,7 +479,7 @@ def _validate_function_argument_types(
     parameters: FunctionDefinition | list[tuple[str, YaraType]],
     arguments: list[Any],
 ) -> None:
-    arg_types = [ctx.visit(argument) for argument in arguments]
+    arg_types = [_infer_function_argument(ctx, argument) for argument in arguments]
     variadic = isinstance(parameters, FunctionDefinition) and parameters.variadic
     parameter_list = (
         parameters.parameters if isinstance(parameters, FunctionDefinition) else parameters
@@ -498,11 +518,18 @@ def _is_function_argument_compatible(param_type: YaraType, arg_type: YaraType) -
 
 def _visit_function_arguments(ctx: Any, arguments: list[Any]) -> None:
     for argument in arguments:
-        ctx.visit(argument)
+        _infer_function_argument(ctx, argument)
 
 
 def _argument_types(ctx: Any, arguments: list[Any]) -> list[YaraType]:
-    return [ctx.visit(argument) for argument in arguments]
+    return [_infer_function_argument(ctx, argument) for argument in arguments]
+
+
+def _infer_function_argument(ctx: Any, argument: Any) -> YaraType:
+    if not hasattr(argument, "accept"):
+        ctx.errors.append("Function arguments item must be Expression")
+        return UnknownType()
+    return cast(YaraType, ctx.visit(argument))
 
 
 def _all_known(arg_types: list[YaraType]) -> bool:

@@ -26,15 +26,51 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         self.module_loader = ModuleLoader()
 
     def visit_function_call(self, node: FunctionCall) -> None:
-        if "." in node.function:
-            parts = node.function.split(".", 1)
+        function_name = self._function_name_or_none(node.function, node)
+        arguments = self._function_arguments(node.arguments, node)
+        if function_name is None:
+            self._visit_function_arguments(arguments, node)
+            return
+
+        if "." in function_name:
+            parts = function_name.split(".", 1)
             if len(parts) == 2:
                 module_name, func_name = parts
-                self._validate_module_function_call(node, module_name, func_name)
+                self._validate_module_function_call(node, module_name, func_name, arguments)
         else:
-            self._validate_builtin_function_call(node)
+            self._validate_builtin_function_call(node, function_name, arguments)
 
-        for arg in node.arguments:
+        self._visit_function_arguments(arguments, node)
+
+    def _function_name_or_none(self, value: Any, node: FunctionCall) -> str | None:
+        if isinstance(value, str):
+            return value
+        self.result.add_error(
+            "Function name must be a string",
+            node.location,
+            "Use a function name such as 'uint16' or 'pe.imphash'.",
+        )
+        return None
+
+    def _function_arguments(self, value: Any, node: FunctionCall) -> list[Any]:
+        if isinstance(value, list | tuple):
+            return list(value)
+        self.result.add_error(
+            "Function arguments must be a list",
+            node.location,
+            "Use a list of expression arguments.",
+        )
+        return []
+
+    def _visit_function_arguments(self, arguments: list[Any], node: FunctionCall) -> None:
+        for arg in arguments:
+            if not hasattr(arg, "accept"):
+                self.result.add_error(
+                    "Function arguments item must be Expression",
+                    node.location,
+                    "Use expression nodes as function arguments.",
+                )
+                continue
             self.visit(arg)
 
     def _validate_module_function_call(
@@ -42,6 +78,7 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         node: FunctionCall,
         module_name: str,
         func_name: str,
+        arguments: list[Any],
     ) -> None:
         if not self.env.has_module(module_name):
             self.result.add_error(
@@ -77,13 +114,17 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
             return
 
         func_def = module_def.functions[func_name]
-        self._validate_function_arity(node, func_def)
+        self._validate_function_arity(node, func_def, arguments)
 
-    def _validate_builtin_function_call(self, node: FunctionCall) -> None:
-        func_name = node.function
+    def _validate_builtin_function_call(
+        self,
+        node: FunctionCall,
+        func_name: str,
+        arguments: list[Any],
+    ) -> None:
         if func_name in BUILTIN_FUNCTION_ARITY:
             min_args, max_args = BUILTIN_FUNCTION_ARITY[func_name]
-            actual_args = len(node.arguments)
+            actual_args = len(arguments)
 
             if actual_args < min_args:
                 self.result.add_error(
@@ -105,10 +146,11 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         self,
         node: FunctionCall,
         func_def: FunctionDefinition,
+        arguments: list[Any],
     ) -> None:
         max_args = len(func_def.parameters)
         min_args = func_def.min_parameters if func_def.min_parameters is not None else max_args
-        actual_args = len(node.arguments)
+        actual_args = len(arguments)
 
         if actual_args < min_args:
             self.result.add_error(

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -27,6 +30,8 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.modules import DictionaryAccess
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
+from yaraast.ast.rules import Rule
+from yaraast.types.semantic_validator import SemanticValidator
 from yaraast.types.semantic_validator_core import ValidationResult
 from yaraast.types.semantic_validator_functions import FunctionCallValidator
 from yaraast.types.type_system import AnyType, FunctionDefinition, ModuleDefinition, TypeEnvironment
@@ -63,6 +68,26 @@ def test_function_validator_missing_module_spec_and_empty_module() -> None:
 
     assert result2.is_valid is False
     assert any("No functions available" in e.suggestion for e in result2.errors if e.suggestion)
+
+
+def test_semantic_validator_reports_invalid_function_call_fields() -> None:
+    cases = [
+        (FunctionCall(cast(Any, False), []), "Function name must be a string"),
+        (FunctionCall(cast(Any, ["pe", "is_pe"]), []), "Function name must be a string"),
+        (FunctionCall("uint16", cast(Any, False)), "Function arguments must be a list"),
+        (
+            FunctionCall("uint16", [cast(Any, object())]),
+            "Function arguments item must be Expression",
+        ),
+    ]
+
+    for condition, message in cases:
+        result = SemanticValidator().validate(
+            YaraFile(rules=[Rule("invalid_call", condition=condition)])
+        )
+
+        assert result.is_valid is False
+        assert any(error.message == message for error in result.errors)
 
 
 def test_function_validator_sorts_available_functions_in_suggestions() -> None:
