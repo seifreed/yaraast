@@ -319,7 +319,7 @@ def parallel(
         if output_dir is None:
             output_dir = Path.cwd() / "parallel_analysis_output"
         output_dir = Path(output_dir)
-        output_dir.mkdir(exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         click.echo(f"🚀 Starting parallel analysis of {len(file_paths)} files...")
         click.echo(f"   Max workers: {max_workers or 'auto'}")

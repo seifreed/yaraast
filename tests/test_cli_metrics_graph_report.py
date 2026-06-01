@@ -118,3 +118,17 @@ def test_metrics_report_generates_files(tmp_path: Path) -> None:
     assert output_dir.exists()
     assert (output_dir / "graph_metrics_complexity.json").exists()
     assert (output_dir / "graph_metrics_tree.html").exists()
+
+
+def test_metrics_report_creates_nested_output_dir(tmp_path: Path) -> None:
+    rule_path = _write_rule(tmp_path)
+    output_dir = tmp_path / "nested" / "report"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        ["metrics", "report", str(rule_path), "--output-dir", str(output_dir), "--format", "svg"],
+    )
+
+    assert result.exit_code == 0
+    assert (output_dir / "summary.json").exists()

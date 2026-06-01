@@ -280,7 +280,7 @@ def report(yara_file: str, output_dir: str | None, format: str) -> None:
         output_dir = Path(yara_file).stem + "_metrics_report"
 
     output_path = Path(output_dir)
-    output_path.mkdir(exist_ok=True)
+    output_path.mkdir(parents=True, exist_ok=True)
 
     base_name = Path(yara_file).stem
 

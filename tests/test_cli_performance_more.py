@@ -481,6 +481,29 @@ def test_performance_parallel_dependency_and_default_output_dir(tmp_path: Path) 
         assert Path("parallel_analysis_output").exists()
 
 
+def test_performance_parallel_creates_nested_output_dir(tmp_path: Path) -> None:
+    runner = CliRunner()
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    output_dir = tmp_path / "nested" / "parallel"
+
+    result = runner.invoke(
+        performance,
+        [
+            "parallel",
+            file_path,
+            "--output-dir",
+            str(output_dir),
+            "--analysis-type",
+            "complexity",
+            "--chunk-size",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert (output_dir / "complexity_analysis.json").exists()
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="chmod read-only not effective on Windows")
 def test_performance_batch_and_stream_abort_on_real_write_errors(tmp_path: Path) -> None:
     runner = CliRunner()
