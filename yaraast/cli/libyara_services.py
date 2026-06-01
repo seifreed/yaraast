@@ -7,6 +7,21 @@ from pathlib import Path
 from yaraast import CodeGenerator
 from yaraast.cli.utils import parse_yara_file
 from yaraast.libyara.compatibility import ensure_libyara_compatible_ast
+from yaraast.shared.numeric_validation import validate_positive_int_setting
+
+
+def _require_bool_option(value: object, name: str) -> bool:
+    if not isinstance(value, bool):
+        msg = f"{name} must be a boolean"
+        raise TypeError(msg)
+    return value
+
+
+def _require_timeout(value: object) -> int | None:
+    if value is None:
+        return None
+    validate_positive_int_setting(value, "timeout")
+    return value
 
 
 def ensure_yara_available() -> None:
@@ -25,10 +40,13 @@ def ensure_yara_compatible_ast(ast) -> None:
 
 def compile_yara(
     input_file: str,
-    optimize: bool,
-    debug: bool,
+    optimize: object,
+    debug: object,
 ):
     """Parse and compile YARA rules."""
+    optimize = _require_bool_option(optimize, "optimize")
+    debug = _require_bool_option(debug, "debug")
+
     from yaraast.libyara import DirectASTCompiler
 
     ast = parse_yara_file(input_file)
@@ -41,11 +59,15 @@ def compile_yara(
 def scan_yara(
     rules_file: str,
     target: str,
-    optimize: bool,
-    timeout: int | None,
-    fast: bool,
+    optimize: object,
+    timeout: object,
+    fast: object,
 ):
     """Compile and scan a target file."""
+    optimize = _require_bool_option(optimize, "optimize")
+    timeout = _require_timeout(timeout)
+    fast = _require_bool_option(fast, "fast")
+
     from yaraast.libyara import DirectASTCompiler, OptimizedMatcher
 
     ast = parse_yara_file(rules_file)

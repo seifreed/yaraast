@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -21,6 +22,66 @@ def test_ensure_yara_available_branches() -> None:
             ls.ensure_yara_available()
     finally:
         lib.YARA_AVAILABLE = original
+
+
+@pytest.mark.parametrize("optimize", [None, 1, "yes", object()])
+def test_compile_yara_rejects_invalid_optimize_types(optimize: Any) -> None:
+    with pytest.raises(TypeError, match="optimize must be a boolean"):
+        ls.compile_yara("missing.yar", optimize=cast(bool, optimize), debug=False)
+
+
+@pytest.mark.parametrize("debug", [None, 1, "yes", object()])
+def test_compile_yara_rejects_invalid_debug_types(debug: Any) -> None:
+    with pytest.raises(TypeError, match="debug must be a boolean"):
+        ls.compile_yara("missing.yar", optimize=False, debug=cast(bool, debug))
+
+
+@pytest.mark.parametrize("optimize", [None, 1, "yes", object()])
+def test_scan_yara_rejects_invalid_optimize_types(optimize: Any) -> None:
+    with pytest.raises(TypeError, match="optimize must be a boolean"):
+        ls.scan_yara(
+            "missing.yar",
+            "sample.bin",
+            optimize=cast(bool, optimize),
+            timeout=1,
+            fast=False,
+        )
+
+
+@pytest.mark.parametrize("fast", [None, 1, "yes", object()])
+def test_scan_yara_rejects_invalid_fast_types(fast: Any) -> None:
+    with pytest.raises(TypeError, match="fast must be a boolean"):
+        ls.scan_yara(
+            "missing.yar",
+            "sample.bin",
+            optimize=False,
+            timeout=1,
+            fast=cast(bool, fast),
+        )
+
+
+@pytest.mark.parametrize("timeout", [True, "1", object()])
+def test_scan_yara_rejects_invalid_timeout_types(timeout: Any) -> None:
+    with pytest.raises(TypeError, match="timeout must be an integer"):
+        ls.scan_yara(
+            "missing.yar",
+            "sample.bin",
+            optimize=False,
+            timeout=cast(int, timeout),
+            fast=False,
+        )
+
+
+@pytest.mark.parametrize("timeout", [0, -1])
+def test_scan_yara_rejects_non_positive_timeouts(timeout: int) -> None:
+    with pytest.raises(ValueError, match="timeout must be at least 1"):
+        ls.scan_yara(
+            "missing.yar",
+            "sample.bin",
+            optimize=False,
+            timeout=timeout,
+            fast=False,
+        )
 
 
 def test_libyara_services_reject_yarax_only_syntax(tmp_path: Path) -> None:
