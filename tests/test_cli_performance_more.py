@@ -216,6 +216,23 @@ def test_performance_stream_file(tmp_path: Path) -> None:
     assert payload["summary"]["total_processed"] >= 1
 
 
+def test_performance_stream_rejects_empty_output_path(tmp_path: Path) -> None:
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    result = CliRunner().invoke(
+        performance,
+        [
+            "stream",
+            file_path,
+            "--output",
+            "",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "path must not be empty" in result.output
+    assert "Streaming Parse Results" not in result.output
+
+
 def test_performance_stream_rejects_zero_memory_limit(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     result = CliRunner().invoke(

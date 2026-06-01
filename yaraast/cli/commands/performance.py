@@ -27,13 +27,25 @@ from yaraast.cli.performance_services import (
     run_batch_processing,
     run_parallel_analysis,
 )
-from yaraast.cli.utils import write_json
+from yaraast.cli.utils import _require_file_path, write_json
 from yaraast.performance import BatchProcessor, StreamingParser
 
 
 @click.group()
 def performance() -> None:
     """Performance tools for large YARA rule collections."""
+
+
+def _validate_output_path(output: str | None) -> str | None:
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output
 
 
 @performance.command()
@@ -174,6 +186,7 @@ def stream(
     progress: bool,
 ) -> None:
     """Stream-parse large YARA collections with minimal memory usage."""
+    output = _validate_output_path(output)
     input_path = Path(input_path)
 
     # Progress callback
@@ -236,7 +249,7 @@ def _display_stream_results(
     parser_stats = parser.get_statistics()
     display_stream_details(successful, failed, parser_stats)
 
-    if output:
+    if output is not None:
         output_data = build_stream_output_data(
             results,
             successful,
