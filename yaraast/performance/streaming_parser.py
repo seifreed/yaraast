@@ -142,7 +142,7 @@ class StreamingParser:
         for rule_text in iter_rule_texts_from_text(content):
             emitted_rule = True
             rule = self._parse_rule_text(rule_text)
-            if rule:
+            if rule is not None:
                 self._stats["rules_parsed"] += 1
                 if callback:
                     callback(rule)
@@ -331,7 +331,7 @@ class StreamingParser:
         """Parse one mmap-extracted rule and update progress statistics."""
         self._stats["bytes_processed"] = bytes_processed
         rule = self._parse_rule_text(rule_text)
-        if rule:
+        if rule is not None:
             self._stats["rules_parsed"] += 1
             if callback:
                 callback(rule)

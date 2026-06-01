@@ -9,6 +9,8 @@ from typing import Any, cast
 
 import pytest
 
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.rules import Rule
 from yaraast.performance.streaming_parser import StreamingParser
 
 
@@ -33,6 +35,33 @@ def test_streaming_parser_bytes_stream_remaining_buffer_and_reset(tmp_path: Path
     results = list(parser.parse_rules_from_file(missing))
     assert len(results) == 1
     assert results[0].status.name == "ERROR"
+
+
+def test_streaming_parser_emits_falsy_present_rule(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FalsyRule(Rule):
+        def __bool__(self) -> bool:
+            return False
+
+    rule = FalsyRule(name="falsy", condition=BooleanLiteral(True))
+    parser = StreamingParser(buffer_size=8)
+    callbacks: list[Rule] = []
+    monkeypatch.setattr(parser, "_parse_rule_text", lambda _rule_text: rule)
+
+    rules = list(
+        parser.parse_stream(io.StringIO("rule falsy { condition: true }"), callbacks.append)
+    )
+
+    assert rules == [rule]
+    assert callbacks == [rule]
+    assert parser.get_statistics()["rules_parsed"] == 1
+
+    mmap_callbacks: list[Rule] = []
+    mmap_rules = list(
+        parser._parse_mmap_rule("rule falsy { condition: true }", 32, mmap_callbacks.append)
+    )
+
+    assert mmap_rules == [rule]
+    assert mmap_callbacks == [rule]
 
 
 def test_streaming_parser_parse_stream_ignores_braces_inside_strings() -> None:
