@@ -46,6 +46,18 @@ rule ok {
         assert "Rule: ok" not in empty_output.output
 
 
+def test_parse_cmd_rejects_directory_input(tmp_path: Path) -> None:
+    runner = CliRunner()
+    input_dir = tmp_path / "rules"
+    input_dir.mkdir()
+
+    result = runner.invoke(parse, [str(input_dir)])
+
+    assert result.exit_code == 2
+    assert "is a directory" in result.output
+    assert "Errno" not in result.output
+
+
 def test_parse_cmd_auto_yarax_outputs_extended_syntax(tmp_path: Path) -> None:
     runner = CliRunner()
     source = tmp_path / "yarax.yar"
