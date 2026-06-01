@@ -44,11 +44,13 @@ from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import (
     CustomPragma,
+    DefineDirective,
     InRulePragma,
     Pragma,
     PragmaBlock,
     PragmaScope,
     PragmaType,
+    UndefDirective,
 )
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
@@ -422,6 +424,15 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma name must be a string"):
         serialize_pragma(Pragma(PragmaType.CUSTOM, invalid_text))
 
+    with pytest.raises(SerializationError, match="Pragma name must not be empty"):
+        serialize_pragma(Pragma(PragmaType.CUSTOM, ""))
+
+    with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
+        serialize_pragma(DefineDirective(""))
+
+    with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
+        serialize_pragma(UndefDirective(""))
+
     for invalid_value in (invalid_arguments, invalid_argument_item):
         pragma_with_bad_arguments = Pragma(PragmaType.CUSTOM, "vendor")
         cast(Any, pragma_with_bad_arguments).arguments = invalid_value
@@ -451,6 +462,9 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma name must be a string"):
         deserialize_node({"type": "Pragma", "pragma_type": "custom", "name": ["vendor"]})
 
+    with pytest.raises(SerializationError, match="Pragma name must not be empty"):
+        deserialize_node({"type": "Pragma", "pragma_type": "custom", "name": ""})
+
     with pytest.raises(SerializationError, match="Pragma arguments must be a list of strings"):
         deserialize_node(
             {"type": "Pragma", "pragma_type": "custom", "name": "vendor", "arguments": "on"}
@@ -468,6 +482,12 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="Pragma macro_name must be a string"):
         deserialize_node({"type": "Pragma", "pragma_type": "define", "macro_name": True})
+
+    with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
+        deserialize_node({"type": "Pragma", "pragma_type": "define", "macro_name": ""})
+
+    with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
+        deserialize_node({"type": "Pragma", "pragma_type": "undef", "macro_name": ""})
 
     with pytest.raises(SerializationError, match="Pragma macro_value must be a string"):
         deserialize_node(
@@ -491,6 +511,15 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
                 "type": "InRulePragma",
                 "pragma": {"pragma_type": "custom", "name": "vendor"},
                 "position": True,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="InRulePragma position must not be empty"):
+        deserialize_node(
+            {
+                "type": "InRulePragma",
+                "pragma": {"pragma_type": "custom", "name": "vendor"},
+                "position": "",
             }
         )
 
@@ -1359,8 +1388,16 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
             "StringModifier name must be a string",
         ),
         (
+            StringDefinition(identifier=""),
+            "StringDefinition identifier must not be empty",
+        ),
+        (
             InRulePragma(Pragma(PragmaType.CUSTOM, "vendor"), cast(Any, 123)),
             "InRulePragma position must be a string",
+        ),
+        (
+            InRulePragma(Pragma(PragmaType.CUSTOM, "vendor"), ""),
+            "InRulePragma position must not be empty",
         ),
     )
 

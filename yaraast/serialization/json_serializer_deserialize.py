@@ -1192,7 +1192,11 @@ class JsonSerializerDeserializeMixin:
 
             return self._apply_node_metadata(
                 StringDefinition(
-                    identifier=_deserialize_string_field(data, "identifier", "StringDefinition"),
+                    identifier=_deserialize_nonempty_string_field(
+                        data,
+                        "identifier",
+                        "StringDefinition",
+                    ),
                     modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),
                 ),
@@ -1363,18 +1367,21 @@ class JsonSerializerDeserializeMixin:
         pragma_type = _deserialize_pragma_type(data)
         scope = _deserialize_pragma_scope(data.get("scope"), "Pragma")
         name = _deserialize_optional_string_field(data, "name", "Pragma", pragma_type.value)
+        if not name:
+            msg = "Pragma name must not be empty"
+            raise SerializationError(msg)
         arguments = _deserialize_string_list_field(data, "arguments", "Pragma")
 
         if pragma_type == PragmaType.INCLUDE_ONCE:
             pragma = IncludeOncePragma()
         elif pragma_type == PragmaType.DEFINE and "macro_name" in data:
             pragma = DefineDirective(
-                macro_name=_deserialize_string_field(data, "macro_name", "Pragma"),
+                macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma"),
                 macro_value=_deserialize_nullable_string_field(data, "macro_value", "Pragma"),
             )
         elif pragma_type == PragmaType.UNDEF and "macro_name" in data:
             pragma = UndefDirective(
-                macro_name=_deserialize_string_field(data, "macro_name", "Pragma")
+                macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma")
             )
         elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
             pragma = ConditionalDirective(
@@ -1406,12 +1413,22 @@ class JsonSerializerDeserializeMixin:
                 pragma=self._deserialize_pragma(
                     _deserialize_required_field(data, "pragma", "InRulePragma")
                 ),
-                position=_deserialize_optional_string_field(
-                    data, "position", "InRulePragma", "before_strings"
-                ),
+                position=self._deserialize_in_rule_pragma_position(data),
             ),
             data,
         )
+
+    def _deserialize_in_rule_pragma_position(self, data: dict[str, Any]) -> str:
+        position = _deserialize_optional_string_field(
+            data,
+            "position",
+            "InRulePragma",
+            "before_strings",
+        )
+        if not position:
+            msg = "InRulePragma position must not be empty"
+            raise SerializationError(msg)
+        return position
 
     def _deserialize_pragma_block(self, data: dict[str, Any]):
         from yaraast.ast.pragmas import PragmaBlock

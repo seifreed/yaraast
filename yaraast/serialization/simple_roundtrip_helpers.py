@@ -1045,7 +1045,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "type": "CommentGroup",
             "comments": [serialize_node(comment) for comment in comments],
         }
-    if isinstance(node, PlainString | HexString | RegexString):
+    if isinstance(node, PlainString | HexString | RegexString | StringDefinition):
         return serialize_string(node)
     if isinstance(node, HexToken):
         return _serialize_hex_token(node)
@@ -1094,7 +1094,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "InRulePragma",
             "pragma": serialize_pragma(node.pragma),
-            "position": _serialize_required_string(node.position, "InRulePragma position"),
+            "position": _serialize_required_nonempty_string(
+                node.position,
+                "InRulePragma position",
+            ),
         }
     if isinstance(node, PragmaBlock):
         pragmas = _validated_node_collection(
@@ -1547,12 +1550,15 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
     data = {
         "type": "Pragma",
         "pragma_type": _serialize_enum_value(pragma.pragma_type, "Pragma pragma_type"),
-        "name": _serialize_required_string(pragma.name, "Pragma name"),
+        "name": _serialize_required_nonempty_string(pragma.name, "Pragma name"),
         "arguments": _serialize_string_list(pragma.arguments, "Pragma arguments"),
         "scope": serialize_pragma_scope(pragma.scope),
     }
     if hasattr(pragma, "macro_name"):
-        macro_name = _serialize_required_string(pragma.macro_name, "Pragma macro_name")
+        macro_name = _serialize_required_nonempty_string(
+            pragma.macro_name,
+            "Pragma macro_name",
+        )
     else:
         macro_name = ""
     if macro_name:
@@ -1636,7 +1642,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
     if isinstance(string_def, StringDefinition):
         data = {
             "type": "StringDefinition",
-            "identifier": _serialize_required_string(
+            "identifier": _serialize_required_nonempty_string(
                 string_def.identifier,
                 "StringDefinition identifier",
             ),
@@ -1742,9 +1748,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "InRulePragma":
         return InRulePragma(
             pragma=deserialize_pragma(_deserialize_required_field(data, "pragma", "InRulePragma")),
-            position=_deserialize_optional_string_field(
-                data, "position", "InRulePragma", "before_strings"
-            ),
+            position=_deserialize_in_rule_pragma_position(data),
         )
     if node_type == "PragmaBlock":
         return PragmaBlock(
@@ -2117,22 +2121,40 @@ def _deserialize_pragma_scope(value: Any, context: str = "Pragma") -> PragmaScop
     return deserialize_pragma_scope(value, context)
 
 
+def _deserialize_in_rule_pragma_position(data: dict[str, Any]) -> str:
+    position = _deserialize_optional_string_field(
+        data,
+        "position",
+        "InRulePragma",
+        "before_strings",
+    )
+    if not position:
+        msg = "InRulePragma position must not be empty"
+        raise SerializationError(msg)
+    return position
+
+
 def deserialize_pragma(data: dict[str, Any]) -> Pragma:
     data = _deserialize_object(data, "Pragma")
     pragma_type = _deserialize_pragma_type(data)
     scope = _deserialize_pragma_scope(data.get("scope"))
     name = _deserialize_optional_string_field(data, "name", "Pragma", pragma_type.value)
+    if not name:
+        msg = "Pragma name must not be empty"
+        raise SerializationError(msg)
     arguments = _deserialize_string_list_field(data, "arguments", "Pragma")
 
     if pragma_type == PragmaType.INCLUDE_ONCE:
         pragma = IncludeOncePragma()
     elif pragma_type == PragmaType.DEFINE and "macro_name" in data:
         pragma = DefineDirective(
-            macro_name=_deserialize_string_field(data, "macro_name", "Pragma"),
+            macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma"),
             macro_value=_deserialize_nullable_string_field(data, "macro_value", "Pragma"),
         )
     elif pragma_type == PragmaType.UNDEF and "macro_name" in data:
-        pragma = UndefDirective(macro_name=_deserialize_string_field(data, "macro_name", "Pragma"))
+        pragma = UndefDirective(
+            macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma")
+        )
     elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
         pragma = ConditionalDirective(
             pragma_type,
@@ -2298,8 +2320,10 @@ def deserialize_string(data: dict[str, Any]) -> Any:
     if string_type == "StringDefinition":
         return _apply_node_metadata(
             StringDefinition(
-                identifier=_deserialize_optional_string_field(
-                    data, "identifier", "StringDefinition", "$unknown"
+                identifier=_deserialize_nonempty_string_field(
+                    data,
+                    "identifier",
+                    "StringDefinition",
                 ),
                 modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),

@@ -51,6 +51,7 @@ from yaraast.ast.pragmas import (
     PragmaBlock,
     PragmaScope,
     PragmaType,
+    UndefDirective,
 )
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
@@ -62,6 +63,7 @@ from yaraast.ast.strings import (
     HexString,
     PlainString,
     RegexString,
+    StringDefinition,
 )
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.errors import SerializationError
@@ -614,6 +616,18 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
             YaraFile(
                 rules=[
                     Rule(
+                        name="empty_string_definition_identifier",
+                        strings=[StringDefinition(identifier="")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "StringDefinition identifier must not be empty",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
                         name="invalid_plain_value",
                         strings=[PlainString(identifier="$a", value=invalid_text)],
                         condition=BooleanLiteral(True),
@@ -940,6 +954,10 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
             "Pragma name must be a string",
         ),
         (
+            YaraFile(pragmas=[Pragma(PragmaType.CUSTOM, "")]),
+            "Pragma name must not be empty",
+        ),
+        (
             YaraFile(pragmas=[pragma_with_bad_type]),
             "Pragma pragma_type must be a string",
         ),
@@ -968,6 +986,14 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
             "Pragma macro_name must be a string",
         ),
         (
+            YaraFile(pragmas=[DefineDirective("")]),
+            "Pragma macro_name must not be empty",
+        ),
+        (
+            YaraFile(pragmas=[UndefDirective("")]),
+            "Pragma macro_name must not be empty",
+        ),
+        (
             YaraFile(pragmas=[define_with_bad_macro_value]),
             "Pragma macro_value must be a string",
         ),
@@ -991,6 +1017,18 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
                 ]
             ),
             "InRulePragma position must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "empty_in_rule_pragma",
+                        pragmas=[InRulePragma(Pragma(PragmaType.CUSTOM, "custom"), "")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "InRulePragma position must not be empty",
         ),
         (
             YaraFile(

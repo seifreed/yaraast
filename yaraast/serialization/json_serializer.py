@@ -301,7 +301,10 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_string_definition(self, node) -> dict[str, Any]:
         data = self._simple_node(
             "StringDefinition",
-            identifier=_serialize_required_string(node.identifier, "StringDefinition identifier"),
+            identifier=_serialize_required_nonempty_string(
+                node.identifier,
+                "StringDefinition identifier",
+            ),
             modifiers=_serialize_string_modifiers(self, node.modifiers, "StringDefinition"),
         )
         _serialize_anonymous_flag(data, getattr(node, "is_anonymous", False), "StringDefinition")
@@ -576,7 +579,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return {
             "type": "InRulePragma",
             "pragma": self.visit(node.pragma),
-            "position": _serialize_required_string(
+            "position": _serialize_required_nonempty_string(
                 node.position,
                 "InRulePragma position",
             ),
@@ -586,12 +589,12 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         data = {
             "type": "Pragma",
             "pragma_type": _serialize_enum_value(node.pragma_type, "Pragma pragma_type"),
-            "name": _serialize_required_string(node.name, "Pragma name"),
+            "name": _serialize_required_nonempty_string(node.name, "Pragma name"),
             "arguments": _serialize_string_list(node.arguments, "Pragma arguments"),
             "scope": serialize_pragma_scope(node.scope),
         }
         if hasattr(node, "macro_name"):
-            data["macro_name"] = _serialize_required_string(
+            data["macro_name"] = _serialize_required_nonempty_string(
                 node.macro_name,
                 "Pragma macro_name",
             )

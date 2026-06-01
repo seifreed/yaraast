@@ -282,6 +282,9 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma name must be a string"):
         s._deserialize_pragma({"pragma_type": "custom", "name": ["vendor"]})
 
+    with pytest.raises(SerializationError, match="Pragma name must not be empty"):
+        s._deserialize_pragma({"pragma_type": "custom", "name": ""})
+
     with pytest.raises(SerializationError, match="Pragma arguments must be a list of strings"):
         s._deserialize_pragma({"pragma_type": "custom", "name": "vendor", "arguments": "on"})
 
@@ -292,6 +295,12 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="Pragma macro_name must be a string"):
         s._deserialize_pragma({"pragma_type": "define", "macro_name": True})
+
+    with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
+        s._deserialize_pragma({"pragma_type": "define", "macro_name": ""})
+
+    with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
+        s._deserialize_pragma({"pragma_type": "undef", "macro_name": ""})
 
     with pytest.raises(SerializationError, match="Pragma macro_value must be a string"):
         s._deserialize_pragma(
@@ -309,6 +318,14 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
             {
                 "pragma": {"pragma_type": "custom", "name": "vendor"},
                 "position": True,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="InRulePragma position must not be empty"):
+        s._deserialize_in_rule_pragma(
+            {
+                "pragma": {"pragma_type": "custom", "name": "vendor"},
+                "position": "",
             }
         )
 
@@ -580,6 +597,9 @@ def test_json_deserialize_strings_reject_wrong_scalar_types() -> None:
         s._deserialize_string(
             {"type": "RegexString", "identifier": "$r", "regex": "", "modifiers": []}
         )
+
+    with pytest.raises(SerializationError, match="StringDefinition identifier must not be empty"):
+        s._deserialize_string({"type": "StringDefinition", "identifier": "", "modifiers": []})
 
 
 def test_json_deserialize_hex_tokens_reject_invalid_scalar_fields() -> None:
