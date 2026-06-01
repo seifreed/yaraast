@@ -123,6 +123,8 @@ rule shadowed {
 
     assert DefinitionProvider().get_definition(text, _pos(5, 7), uri) is None
     assert RenameProvider().prepare_rename(text, _pos(5, 7), uri) is None
+    assert DefinitionProvider().get_definition(text, _pos(4, 10), uri) is None
+    assert RenameProvider().prepare_rename(text, _pos(4, 10), uri) is None
 
     edit = RenameProvider().rename(text, _pos(2, 5), "renamed", uri)
     assert edit is not None

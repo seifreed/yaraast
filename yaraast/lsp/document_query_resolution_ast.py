@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from lsprotocol.types import Position, Range
+
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     FunctionCall,
@@ -17,16 +19,16 @@ from yaraast.ast.expressions import (
 from yaraast.ast.modules import ModuleReference
 from yaraast.ast.rules import Rule as RuleNode
 from yaraast.lsp.document_query_reference_ast import (
+    iter_ast_nodes,
     node_has_local_binding,
     string_reference_range,
 )
 from yaraast.lsp.document_query_resolution_ranges import narrow_range_to_name, resolved_if_contains
 from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.utils import find_node_at_position, get_word_at_position, location_to_range
+from yaraast.yarax.ast_nodes import WithStatement
 
 if TYPE_CHECKING:
-    from lsprotocol.types import Position, Range
-
     from yaraast.lsp.document_context import DocumentContext
 
 
@@ -34,6 +36,9 @@ def resolve_symbol_from_ast(ctx: DocumentContext, position: Position) -> Resolve
     ast = ctx.ast()
     if ast is None:
         return None
+    local_declaration = _resolve_with_declaration_identifier(ctx, ast, position)
+    if local_declaration is not None:
+        return local_declaration
     node = find_node_at_position(ast, position, ctx.text)
     if node is None:
         return None
@@ -46,6 +51,66 @@ def resolve_symbol_from_ast(ctx: DocumentContext, position: Position) -> Resolve
     if result is not None:
         return result
     return _resolve_expression_context(ctx, position, node)
+
+
+def _resolve_with_declaration_identifier(
+    ctx: DocumentContext,
+    root: Any,
+    position: Position,
+) -> ResolvedSymbol | None:
+    word, _word_range = get_word_at_position(ctx.text, position)
+    if not word:
+        return None
+    for node in iter_ast_nodes(root):
+        if not isinstance(node, WithStatement):
+            continue
+        for declaration in node.declarations:
+            if word != declaration.identifier:
+                continue
+            declaration_range = _with_declaration_identifier_range(
+                ctx, declaration.identifier, declaration.value
+            )
+            if declaration_range is None:
+                continue
+            resolved = resolved_if_contains(
+                position,
+                ResolvedSymbol(
+                    ctx.uri,
+                    declaration.identifier,
+                    declaration.identifier,
+                    "identifier",
+                    declaration_range,
+                ),
+            )
+            if resolved is not None:
+                return resolved
+    return None
+
+
+def _with_declaration_identifier_range(
+    ctx: DocumentContext,
+    identifier: str,
+    value: Any,
+) -> Range | None:
+    value_location = getattr(value, "location", None)
+    if value_location is None:
+        return None
+    value_range = location_to_range(value_location, ctx.text)
+    line_index = value_range.start.line
+    if line_index < 0 or line_index >= len(ctx.lines):
+        return None
+    line = ctx.lines[line_index]
+    value_start = value_range.start.character
+    identifier_start = line.rfind(identifier, 0, value_start)
+    if identifier_start < 0:
+        return None
+    between_identifier_and_value = line[identifier_start + len(identifier) : value_start]
+    if "=" not in between_identifier_and_value:
+        return None
+    return Range(
+        start=Position(line=line_index, character=identifier_start),
+        end=Position(line=line_index, character=identifier_start + len(identifier)),
+    )
 
 
 def _resolve_typed_node(
