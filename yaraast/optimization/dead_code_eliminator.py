@@ -40,6 +40,12 @@ from yaraast.yarax.ast_nodes import (
 )
 
 
+def _boolean_literal_value(node: BooleanLiteral) -> bool | None:
+    if not isinstance(node.value, bool):
+        return None
+    return node.value
+
+
 class DeadCodeEliminator(ASTTransformer):
     """Eliminates dead code from YARA rules."""
 
@@ -274,13 +280,10 @@ class DeadCodeEliminator(ASTTransformer):
         return node
 
     def _is_removable_false_rule(self, rule: Rule) -> bool:
-        return (
-            rule.condition is not None
-            and isinstance(rule.condition, BooleanLiteral)
-            and not rule.condition.value
-            and not rule.is_global
-            and rule.name not in self.used_rules
-        )
+        if not isinstance(rule.condition, BooleanLiteral):
+            return False
+        condition_value = _boolean_literal_value(rule.condition)
+        return condition_value is False and not rule.is_global and rule.name not in self.used_rules
 
     def _should_remove_rule(self, rule: Rule) -> bool:
         return self._is_removable_false_rule(rule) or self._is_unreferenced_private_rule(rule)
@@ -691,22 +694,32 @@ class DeadCodeEliminator(ASTTransformer):
             node.right,
             BooleanLiteral,
         ):
+            left_value = _boolean_literal_value(node.left)
+            right_value = _boolean_literal_value(node.right)
+            if left_value is None or right_value is None:
+                return node
             if node.operator == "and":
-                return BooleanLiteral(value=node.left.value and node.right.value)
+                return BooleanLiteral(value=left_value and right_value)
             if node.operator == "or":
-                return BooleanLiteral(value=node.left.value or node.right.value)
+                return BooleanLiteral(value=left_value or right_value)
 
         # Simplifications
         if isinstance(node.left, BooleanLiteral):
-            if node.operator == "and" and not node.left.value:
+            left_value = _boolean_literal_value(node.left)
+            if left_value is None:
+                return node
+            if node.operator == "and" and not left_value:
                 return BooleanLiteral(value=False)
-            if node.operator == "or" and node.left.value:
+            if node.operator == "or" and left_value:
                 return BooleanLiteral(value=True)
 
         if isinstance(node.right, BooleanLiteral):
-            if node.operator == "and" and not node.right.value:
+            right_value = _boolean_literal_value(node.right)
+            if right_value is None:
+                return node
+            if node.operator == "and" and not right_value:
                 return BooleanLiteral(value=False)
-            if node.operator == "or" and node.right.value:
+            if node.operator == "or" and right_value:
                 return BooleanLiteral(value=True)
 
         return node
@@ -717,7 +730,10 @@ class DeadCodeEliminator(ASTTransformer):
 
         # Optimize not on boolean literal
         if node.operator == "not" and isinstance(node.operand, BooleanLiteral):
-            return BooleanLiteral(value=not node.operand.value)
+            operand_value = _boolean_literal_value(node.operand)
+            if operand_value is None:
+                return node
+            return BooleanLiteral(value=not operand_value)
 
         return node
 

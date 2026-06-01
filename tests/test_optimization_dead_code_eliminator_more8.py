@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 
@@ -695,6 +696,36 @@ def test_eliminate_dead_code_single_rule_resets_condition_context() -> None:
     assert dce.current_rule is None
     assert dce.current_rule_key is None
     assert "$outside" not in dce.used_strings
+
+
+def test_dead_code_eliminator_does_not_optimize_malformed_boolean_literals() -> None:
+    falsey_rule = Rule(
+        "falsey",
+        strings=[PlainString("$a", value="x")],
+        condition=BooleanLiteral(cast(Any, "")),
+    )
+    unary_rule = Rule(
+        "unary",
+        strings=[PlainString("$a", value="x")],
+        condition=UnaryExpression("not", BooleanLiteral(cast(Any, "false"))),
+    )
+    binary_rule = Rule(
+        "binary",
+        strings=[PlainString("$a", value="x")],
+        condition=BinaryExpression(
+            BooleanLiteral(cast(Any, "false")),
+            "and",
+            StringIdentifier("$a"),
+        ),
+    )
+    ast = YaraFile(rules=[falsey_rule, unary_rule, binary_rule])
+
+    optimized, _ = DeadCodeEliminator().eliminate(ast)
+
+    assert [rule.name for rule in optimized.rules] == ["falsey", "unary", "binary"]
+    assert optimized.rules[0].condition == falsey_rule.condition
+    assert optimized.rules[1].condition == unary_rule.condition
+    assert optimized.rules[2].condition == binary_rule.condition
 
 
 def test_visit_boolean_literal_passthrough() -> None:
