@@ -621,7 +621,7 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
 
 def convert_in_rule_pragma_to_protobuf(in_rule_pragma, pb_in_rule_pragma) -> None:
     convert_pragma_to_protobuf(in_rule_pragma.pragma, pb_in_rule_pragma.pragma)
-    pb_in_rule_pragma.position = _protobuf_required_string(
+    pb_in_rule_pragma.position = _protobuf_required_nonempty_string(
         in_rule_pragma.position,
         "InRulePragma position",
     )
@@ -1744,7 +1744,10 @@ def protobuf_to_in_rule_pragma(pb_in_rule_pragma):
         pb_in_rule_pragma,
         InRulePragma(
             pragma=protobuf_to_pragma(pb_in_rule_pragma.pragma),
-            position=pb_in_rule_pragma.position or "before_strings",
+            position=_protobuf_required_nonempty_string(
+                pb_in_rule_pragma.position,
+                "InRulePragma position",
+            ),
         ),
     )
 

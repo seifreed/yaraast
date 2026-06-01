@@ -1468,6 +1468,37 @@ def test_protobuf_deserializer_rejects_empty_required_pragma_operands(
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
+def test_protobuf_serializer_rejects_empty_in_rule_pragma_positions() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_pragma_position",
+                pragmas=[InRulePragma(CustomPragma("vendor"), position="")],
+                condition=BooleanLiteral(True),
+            ),
+        ],
+    )
+
+    with pytest.raises(SerializationError, match="InRulePragma position must not be empty"):
+        serializer.serialize(ast)
+
+
+def test_protobuf_deserializer_rejects_empty_in_rule_pragma_positions() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "bad_pragma_position"
+    pb_rule.condition.boolean_literal.value = True
+    pb_in_rule_pragma = pb_rule.pragmas.add()
+    pb_in_rule_pragma.position = ""
+    pb_in_rule_pragma.pragma.pragma_type = "custom"
+    pb_in_rule_pragma.pragma.name = "vendor"
+
+    with pytest.raises(SerializationError, match="InRulePragma position must not be empty"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 @pytest.mark.parametrize(
     ("condition", "message"),
     [
