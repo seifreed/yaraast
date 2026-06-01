@@ -22,6 +22,6 @@ def combine_condition(
     existing: Expression | None,
     new_builder: ConditionBuilder,
 ) -> ConditionBuilder:
-    if existing:
+    if existing is not None:
         return FluentConditionBuilder(existing).and_(new_builder)
     return new_builder
