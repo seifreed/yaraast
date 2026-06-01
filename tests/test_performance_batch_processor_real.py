@@ -140,6 +140,11 @@ def test_batch_processor_process_large_file_rejects_empty_output_dir(tmp_path: P
         )
 
 
+def test_batch_processor_process_directory_rejects_empty_directory() -> None:
+    with pytest.raises(ValueError, match="directory must not be empty"):
+        BatchProcessor().process_directory(cast(Any, ""), BatchOperation.COMPLEXITY)
+
+
 def test_process_batch_parse_handles_invalid_item_without_exceptions() -> None:
     processor = BatchProcessor(batch_size=1)
 

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
+from os import PathLike, fspath
 from pathlib import Path
 
 DEFAULT_CLASSIC_YARA_FILE_PATTERNS = ("*.yar", "*.yara")
 FilePatterns = str | Iterable[str] | None
 FILE_PATTERNS_TYPE_ERROR = "File patterns must be a string or iterable of strings"
+DIRECTORY_TYPE_ERROR = "directory must be a directory path"
 
 
 def normalize_file_patterns(
@@ -28,18 +30,30 @@ def normalize_file_patterns(
 
 
 def iter_matching_files(
-    directory: Path,
+    directory: str | PathLike[str],
     patterns: FilePatterns = None,
     recursive: object = False,
 ) -> Iterator[Path]:
     """Yield matching files once, preserving pattern and filesystem order."""
+    if isinstance(directory, bool | bytes) or not isinstance(directory, str | PathLike):
+        raise TypeError(DIRECTORY_TYPE_ERROR)
+    raw_path = fspath(directory)
+    if not isinstance(raw_path, str):
+        raise TypeError(DIRECTORY_TYPE_ERROR)
+    if not raw_path:
+        msg = "directory must not be empty"
+        raise ValueError(msg)
+    directory_path = Path(raw_path)
+    if directory_path.exists() and not directory_path.is_dir():
+        msg = "directory must not be a file"
+        raise ValueError(msg)
     if not isinstance(recursive, bool):
         msg = "recursive must be a boolean"
         raise TypeError(msg)
 
     seen: set[Path] = set()
     for pattern in normalize_file_patterns(patterns):
-        matches = directory.rglob(pattern) if recursive else directory.glob(pattern)
+        matches = directory_path.rglob(pattern) if recursive else directory_path.glob(pattern)
         for path in matches:
             if not path.is_file() or path in seen:
                 continue
