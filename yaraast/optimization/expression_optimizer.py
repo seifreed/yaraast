@@ -140,16 +140,10 @@ def _simplify_boolean_short_circuit(node: BinaryExpression) -> tuple[Expression 
             return node.right, count
 
     if isinstance(node.right, BooleanLiteral):
-        if node.operator == "and":
-            count += 1
-            if not node.right.value:
-                return BooleanLiteral(value=False), count
-            return node.left, count
-        if node.operator == "or":
-            count += 1
-            if node.right.value:
-                return BooleanLiteral(value=True), count
-            return node.left, count
+        if node.operator == "and" and not node.right.value:
+            return BooleanLiteral(value=False), 1
+        if node.operator == "or" and node.right.value:
+            return BooleanLiteral(value=True), 1
 
     return None, 0
 

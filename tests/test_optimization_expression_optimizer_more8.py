@@ -191,9 +191,13 @@ def test_identity_and_boolean_shortcuts_remaining_paths() -> None:
     assert opt.visit(BinaryExpression(BooleanLiteral(True), "or", x)) == BooleanLiteral(True)
     assert opt.visit(BinaryExpression(BooleanLiteral(False), "or", x)) == x
     assert opt.visit(BinaryExpression(x, "and", BooleanLiteral(False))) == BooleanLiteral(False)
-    assert opt.visit(BinaryExpression(x, "and", BooleanLiteral(True))) == x
+    assert opt.visit(BinaryExpression(x, "and", BooleanLiteral(True))) == BinaryExpression(
+        x, "and", BooleanLiteral(True)
+    )
     assert opt.visit(BinaryExpression(x, "or", BooleanLiteral(True))) == BooleanLiteral(True)
-    assert opt.visit(BinaryExpression(x, "or", BooleanLiteral(False))) == x
+    assert opt.visit(BinaryExpression(x, "or", BooleanLiteral(False))) == BinaryExpression(
+        x, "or", BooleanLiteral(False)
+    )
 
     no_fold = BinaryExpression(BooleanLiteral(True), "==", BooleanLiteral(True))
     assert opt.visit(no_fold) is no_fold
@@ -218,6 +222,46 @@ def test_optimizer_preserves_arithmetic_identity_semantics_for_unknown_types() -
     optimized_evaluator = YaraEvaluator()
     optimized_evaluator.context.variables["external"] = "text"
     assert optimized_evaluator.evaluate_file(optimized) == {"external_string": False}
+    assert count == 0
+
+
+def test_optimizer_preserves_boolean_identity_semantics_for_truthy_values() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="truthy_and_true",
+                condition=BinaryExpression(
+                    BinaryExpression(Identifier("external"), "and", BooleanLiteral(True)),
+                    "==",
+                    BooleanLiteral(True),
+                ),
+            ),
+            Rule(
+                name="truthy_or_false",
+                condition=BinaryExpression(
+                    BinaryExpression(Identifier("external"), "or", BooleanLiteral(False)),
+                    "==",
+                    BooleanLiteral(True),
+                ),
+            ),
+        ]
+    )
+
+    original_evaluator = YaraEvaluator()
+    original_evaluator.context.variables["external"] = "text"
+    assert original_evaluator.evaluate_file(ast) == {
+        "truthy_and_true": True,
+        "truthy_or_false": True,
+    }
+
+    optimized, count = ExpressionOptimizer().optimize(ast)
+
+    optimized_evaluator = YaraEvaluator()
+    optimized_evaluator.context.variables["external"] = "text"
+    assert optimized_evaluator.evaluate_file(optimized) == {
+        "truthy_and_true": True,
+        "truthy_or_false": True,
+    }
     assert count == 0
 
 
