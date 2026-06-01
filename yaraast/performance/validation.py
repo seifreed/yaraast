@@ -27,6 +27,9 @@ def validate_file_path_sequence(file_paths: object) -> list[str]:
         normalized_path = fspath(file_path)
         if not isinstance(normalized_path, str):
             raise TypeError(FILE_PATH_ENTRY_TYPE_ERROR)
+        if not normalized_path:
+            msg = "file_paths must not contain empty paths"
+            raise ValueError(msg)
         normalized_paths.append(normalized_path)
     return normalized_paths
 

@@ -12,6 +12,7 @@ import pytest
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.performance.streaming_parser import StreamingParser
+from yaraast.performance.validation import validate_file_path_sequence
 
 
 def test_streaming_parser_bytes_stream_remaining_buffer_and_reset(tmp_path: Path) -> None:
@@ -215,6 +216,16 @@ def test_streaming_parser_rejects_single_string_file_paths(tmp_path: Path) -> No
 
     with pytest.raises(TypeError, match="file_paths must be a sequence of paths"):
         list(parser.parse_files(cast(Any, str(path))))
+
+
+def test_validate_file_path_sequence_rejects_empty_entries() -> None:
+    with pytest.raises(ValueError, match="file_paths must not contain empty paths"):
+        validate_file_path_sequence([""])
+
+
+def test_streaming_parser_parse_files_rejects_empty_file_path_entries() -> None:
+    with pytest.raises(ValueError, match="file_paths must not contain empty paths"):
+        list(StreamingParser().parse_files(cast(Any, [""])))
 
 
 def test_streaming_parser_mmap_import_include_and_token_branches(tmp_path: Path) -> None:
