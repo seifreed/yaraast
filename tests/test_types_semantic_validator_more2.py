@@ -11,10 +11,12 @@ from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    DoubleLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
+    RegexLiteral,
     SetExpression,
     StringIdentifier,
     StringLiteral,
@@ -62,6 +64,31 @@ def test_validate_rule_detects_undefined_string_references() -> None:
 
     assert result.is_valid is False
     assert any("Undefined string '$missing'" in error.message for error in result.errors)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (BooleanLiteral(cast(Any, object())), "Boolean literal value must be a boolean"),
+        (IntegerLiteral(cast(Any, True)), "Integer literal value must be an integer"),
+        (IntegerLiteral(cast(Any, object())), "Integer literal value must be an integer"),
+        (DoubleLiteral(cast(Any, object())), "Double literal value must be numeric"),
+        (StringLiteral(cast(Any, object())), "String literal value must be a string"),
+        (RegexLiteral(cast(Any, object())), "Regex literal pattern must be a string"),
+        (RegexLiteral("abc", cast(Any, object())), "Regex literal modifiers must be a string"),
+        (Identifier(cast(Any, object())), "Identifier name must be a string"),
+    ],
+)
+def test_semantic_validator_rejects_invalid_literal_scalars(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule("invalid_literal", condition=condition)])
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any(error.message == message for error in result.errors)
 
 
 def test_validate_rule_detects_undefined_strings_in_raw_string_sets() -> None:

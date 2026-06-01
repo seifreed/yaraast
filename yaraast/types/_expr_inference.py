@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from yaraast.ast.comments import Comment, CommentGroup
@@ -137,22 +138,42 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         """Infer type of expression."""
         return self.visit(node)
 
+    def _invalid_literal(self, message: str) -> YaraType:
+        self.errors.append(message)
+        return UnknownType()
+
     def visit_integer_literal(self, node: IntegerLiteral) -> YaraType:
+        if isinstance(node.value, bool) or not isinstance(node.value, int):
+            return self._invalid_literal("Integer literal value must be an integer")
         return IntegerType()
 
     def visit_double_literal(self, node: DoubleLiteral) -> YaraType:
+        if isinstance(node.value, bool) or not isinstance(node.value, int | float):
+            return self._invalid_literal("Double literal value must be numeric")
+        if not math.isfinite(node.value):
+            return self._invalid_literal("Double literal value must be finite")
         return DoubleType()
 
     def visit_string_literal(self, node: StringLiteral) -> YaraType:
+        if not isinstance(node.value, str):
+            return self._invalid_literal("String literal value must be a string")
         return StringType()
 
     def visit_regex_literal(self, node: RegexLiteral) -> YaraType:
+        if not isinstance(node.pattern, str):
+            return self._invalid_literal("Regex literal pattern must be a string")
+        if not isinstance(node.modifiers, str):
+            return self._invalid_literal("Regex literal modifiers must be a string")
         return RegexType()
 
     def visit_boolean_literal(self, node: BooleanLiteral) -> YaraType:
+        if not isinstance(node.value, bool):
+            return self._invalid_literal("Boolean literal value must be a boolean")
         return BooleanType()
 
     def visit_identifier(self, node: Identifier) -> YaraType:
+        if not isinstance(node.name, str):
+            return self._invalid_literal("Identifier name must be a string")
         return ops.infer_identifier(self, node)
 
     def visit_string_identifier(self, node: StringIdentifier) -> YaraType:
