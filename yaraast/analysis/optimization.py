@@ -19,8 +19,16 @@ from yaraast.analysis.optimization_rule_analysis import (
     visit_binary_expression,
 )
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import OfExpression
-from yaraast.ast.expressions import BinaryExpression, StringIdentifier
+from yaraast.ast.conditions import ForOfExpression, OfExpression
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    Identifier,
+    ParenthesesExpression,
+    SetExpression,
+    StringIdentifier,
+    StringLiteral,
+    StringWildcard,
+)
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString
 from yaraast.visitor.base import BaseVisitor
@@ -93,13 +101,16 @@ class OptimizationReport:
 class OptimizationAnalyzer(BaseVisitor[None]):
     """Analyze AST for heuristic optimization opportunities."""
 
+    _LOCAL_WITHOUT_VALUE = object()
+    _MISSING_LOCAL = object()
+
     def __init__(self) -> None:
         self.report = OptimizationReport()
         self._current_rule: Rule | None = None
         self._string_refs: dict[str, list[Any]] = {}
         self._condition_depth = 0
         self._max_condition_depth = 0
-        self._local_scopes: list[set[str]] = []
+        self._local_scopes: list[dict[str, object]] = []
 
     def analyze(self, ast: YaraFile) -> OptimizationReport:
         """Analyze AST for optimizations."""
@@ -188,7 +199,14 @@ class OptimizationAnalyzer(BaseVisitor[None]):
                 "or being more specific",
                 "low",
             )
-        super().visit_of_expression(node)
+        self._visit_ast_value(node.quantifier)
+        self._visit_string_set_value(node.string_set)
+
+    def visit_for_of_expression(self, node: ForOfExpression) -> None:
+        """Visit for...of expressions with string-set local resolution."""
+        self._visit_ast_value(node.quantifier)
+        self._visit_string_set_value(node.string_set)
+        self._visit_ast_value(node.condition)
 
     def visit_for_expression(self, node: Any) -> None:
         """Visit YARA-X for expression with scoped loop variable."""
@@ -213,7 +231,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
     def visit_with_declaration(self, node: Any) -> None:
         """Visit YARA-X with declaration after evaluating its value."""
         self._visit_ast_value(node.value)
-        self._define_local(node.identifier)
+        self._define_local(node.identifier, value=node.value)
 
     def visit_array_comprehension(self, node: Any) -> None:
         """Visit YARA-X array comprehension with scoped loop variable."""
@@ -250,18 +268,26 @@ class OptimizationAnalyzer(BaseVisitor[None]):
     def _is_local(self, name: str) -> bool:
         return any(name in scope for scope in reversed(self._local_scopes))
 
+    def _local_value(self, name: str) -> object:
+        for scope in reversed(self._local_scopes):
+            if name in scope:
+                return scope[name]
+        return self._MISSING_LOCAL
+
     def _push_local_scope(self, *names: str) -> None:
-        scope: set[str] = set()
+        scope: dict[str, object] = {}
         for name in names:
-            scope.update(self._local_name_variants(name))
+            for local_name in self._local_name_variants(name):
+                scope[local_name] = self._LOCAL_WITHOUT_VALUE
         self._local_scopes.append(scope)
 
     def _pop_local_scope(self) -> None:
         self._local_scopes.pop()
 
-    def _define_local(self, name: str) -> None:
+    def _define_local(self, name: str, value: object = _LOCAL_WITHOUT_VALUE) -> None:
         if self._local_scopes:
-            self._local_scopes[-1].update(self._local_name_variants(name))
+            for local_name in self._local_name_variants(name):
+                self._local_scopes[-1][local_name] = value
 
     def _extract_comparison(self, expression: Any) -> dict[str, Any] | None:
         comparison = extract_comparison(expression)
@@ -287,6 +313,44 @@ class OptimizationAnalyzer(BaseVisitor[None]):
         elif isinstance(value, list | tuple | set | frozenset):
             for item in value:
                 self._visit_ast_value(item)
+
+    def _visit_string_set_value(self, string_set: Any) -> None:
+        if isinstance(string_set, str):
+            self._mark_string_set_text(string_set)
+            return
+        if isinstance(string_set, list | tuple | set | frozenset):
+            for item in string_set:
+                self._visit_string_set_value(item)
+            return
+        if isinstance(string_set, Identifier) and string_set.name == "them":
+            return
+        if isinstance(string_set, StringLiteral):
+            self._mark_string_set_text(string_set.value)
+            return
+        if isinstance(string_set, StringIdentifier):
+            self._mark_string_set_text(string_set.name)
+            return
+        if isinstance(string_set, StringWildcard):
+            self._mark_string_set_text(string_set.pattern)
+            return
+        if isinstance(string_set, ParenthesesExpression):
+            self._visit_string_set_value(string_set.expression)
+            return
+        if isinstance(string_set, SetExpression):
+            for element in string_set.elements:
+                self._visit_string_set_value(element)
+            return
+        self._visit_ast_value(string_set)
+
+    def _mark_string_set_text(self, text: str) -> None:
+        local_value = self._local_value(text)
+        if local_value is not self._MISSING_LOCAL:
+            if local_value is not self._LOCAL_WITHOUT_VALUE:
+                self._visit_string_set_value(local_value)
+            return
+        if text == "them" or "*" in text:
+            return
+        self._string_refs.setdefault(text, []).append(text)
 
     def _analyze_cross_rule_patterns(self, rules: list[Rule]) -> None:
         """Analyze patterns across multiple rules."""

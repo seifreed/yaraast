@@ -5,11 +5,19 @@ from __future__ import annotations
 from yaraast.analysis.optimization import OptimizationAnalyzer, OptimizationReport
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import OfExpression
-from yaraast.ast.expressions import BinaryExpression, Identifier, IntegerLiteral, StringIdentifier
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    Identifier,
+    IntegerLiteral,
+    SetExpression,
+    StringIdentifier,
+    StringLiteral,
+)
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
+from yaraast.yarax.ast_nodes import WithDeclaration, WithStatement
 
 
 def _parse(source: str) -> YaraFile:
@@ -138,6 +146,38 @@ def test_optimization_analyzer_tracks_string_refs_inside_of_expressions() -> Non
                 name="of_refs",
                 strings=[PlainString(identifier="$s", value="value")],
                 condition=repeated,
+            )
+        ],
+    )
+
+    report = OptimizationAnalyzer().analyze(ast)
+
+    assert any("String '$s' is referenced 4 times" in s.description for s in report.suggestions)
+
+
+def test_optimization_analyzer_resolves_yarax_string_locals_in_string_sets() -> None:
+    repeated = BinaryExpression(
+        BinaryExpression(
+            OfExpression(1, SetExpression([StringIdentifier("$x")])),
+            "and",
+            OfExpression(1, SetExpression([StringIdentifier("$x")])),
+        ),
+        "and",
+        BinaryExpression(
+            OfExpression(1, SetExpression([StringIdentifier("$x")])),
+            "and",
+            OfExpression(1, SetExpression([StringIdentifier("$x")])),
+        ),
+    )
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="local_of_refs",
+                strings=[PlainString(identifier="$s", value="value")],
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", StringLiteral("$s"))],
+                    body=repeated,
+                ),
             )
         ],
     )
