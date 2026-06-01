@@ -8,7 +8,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.conditions import OfExpression
-from yaraast.ast.expressions import Identifier
+from yaraast.ast.expressions import BooleanLiteral, Identifier
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.errors import ValidationError
@@ -54,6 +54,20 @@ def test_hex_string_builder_invalid_low_nibble_and_unknown_pattern_part() -> Non
 def test_html_tree_nodes_condition_section_none() -> None:
     gen = HtmlTreeGenerator()
     assert gen._condition_section(None) is None
+
+
+def test_html_tree_nodes_condition_section_preserves_falsy_present_condition() -> None:
+    class FalsyBooleanLiteral(BooleanLiteral):
+        def __bool__(self) -> bool:
+            return False
+
+    gen = HtmlTreeGenerator()
+
+    section = gen._condition_section(FalsyBooleanLiteral(value=False))
+
+    assert section is not None
+    assert section["label"] == "Condition"
+    assert section["children"][0]["label"] == "Boolean Literal"
 
 
 def test_html_tree_nodes_write_meta_and_string_helpers(tmp_path: Path) -> None:

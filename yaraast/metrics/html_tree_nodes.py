@@ -109,7 +109,7 @@ class HtmlTreeNodesMixin:
         return node
 
     def _condition_section(self, condition: Any) -> dict[str, Any] | None:
-        if not condition:
+        if condition is None:
             return None
         return {
             "id": self._get_node_id(),
