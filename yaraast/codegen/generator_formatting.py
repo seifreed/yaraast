@@ -279,6 +279,25 @@ def format_nonempty_quoted_value(value: str, kind: str) -> str:
     return escape_string_literal(value)
 
 
+def reject_import_alias(alias: object) -> None:
+    if alias is None:
+        return
+    if not isinstance(alias, str):
+        msg = "Import alias must be a string for libyara output"
+        raise TypeError(msg)
+    msg = "Import aliases are not supported for libyara output"
+    raise ValueError(msg)
+
+
+def format_import_alias(alias: object) -> str:
+    if alias is None:
+        return ""
+    if not isinstance(alias, str):
+        msg = "Import alias must be a string for libyara output"
+        raise TypeError(msg)
+    return f" as {validate_yara_identifier(alias, 'import alias')}"
+
+
 def format_regex_literal(pattern: str, modifiers: str) -> str:
     validate_regex_modifiers(modifiers)
     escaped_pattern = escape_regex_delimiter(pattern)

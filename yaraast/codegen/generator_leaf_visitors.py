@@ -9,6 +9,7 @@ from yaraast.codegen.generator_formatting import (
     escape_string_literal,
     format_boolean_literal,
     format_hex_jump,
+    format_import_alias,
     format_meta_value,
     format_nonempty_quoted_value,
     format_regex_literal,
@@ -190,9 +191,7 @@ def visit_extern_import(node: Any) -> str:
     if node.rules:
         rules = [validate_yara_identifier_path(rule, "extern rule") for rule in node.rules]
         value += f" ({', '.join(rules)})"
-    if node.alias:
-        alias = validate_yara_identifier(node.alias, "import alias")
-        value += f" as {alias}"
+    value += format_import_alias(getattr(node, "alias", None))
     return value
 
 

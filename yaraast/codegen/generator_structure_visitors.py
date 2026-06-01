@@ -6,6 +6,7 @@ from typing import Any
 
 from yaraast.codegen.generator_formatting import (
     format_nonempty_quoted_value,
+    reject_import_alias,
     validate_extern_rule_identifiers,
     validate_rule_collections,
     validate_rule_identifiers,
@@ -65,9 +66,7 @@ def visit_yara_file(generator: Any, node: Any) -> str:
 
 def visit_import(node: Any) -> str:
     value = f"import \"{format_nonempty_quoted_value(node.module, 'Import module')}\""
-    if node.alias:
-        msg = "Import aliases are not supported for libyara output"
-        raise ValueError(msg)
+    reject_import_alias(getattr(node, "alias", None))
     return value
 
 

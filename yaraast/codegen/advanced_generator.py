@@ -38,6 +38,7 @@ from yaraast.codegen.generator_expression_visitors import (
 )
 from yaraast.codegen.generator_formatting import (
     format_nonempty_quoted_value,
+    reject_import_alias,
     validate_rule_meta,
 )
 
@@ -242,9 +243,7 @@ class AdvancedCodeGenerator(CodeGenerator):
     # Default visit methods (delegate to parent)
     def visit_import(self, node: Import) -> str:
         import_line = f"import \"{format_nonempty_quoted_value(node.module, 'Import module')}\""
-        if node.alias:
-            msg = "Import aliases are not supported for libyara output"
-            raise ValueError(msg)
+        reject_import_alias(getattr(node, "alias", None))
         return import_line
 
     def visit_include(self, node: Include) -> str:

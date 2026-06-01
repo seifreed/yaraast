@@ -1018,6 +1018,8 @@ def test_codegen_tag_visitors_reject_invalid_rule_tags(tag_name: str) -> None:
     ("node", "message"),
     [
         (Import("pe", alias="p"), "Import aliases are not supported"),
+        (Import("pe", alias=""), "Import aliases are not supported"),
+        (ExternImport("mods.yar", alias=""), "Invalid import alias identifier"),
         (ExternImport("mods.yar", alias="bad-alias"), "Invalid import alias identifier"),
         (ExternImport("mods.yar", rules=["bad-rule"]), "Invalid extern rule identifier"),
         (ExternNamespace("bad-ns"), "Invalid namespace identifier"),
@@ -1041,6 +1043,24 @@ def test_codegen_generators_reject_invalid_top_level_reference_names(
     with pytest.raises(ValueError, match=message):
         CommentAwareCodeGenerator().generate(node)
     with pytest.raises(ValueError, match=message):
+        PrettyPrinter().generate(node)
+
+
+@pytest.mark.parametrize(
+    "node",
+    [
+        Import("pe", alias=cast(Any, False)),
+        ExternImport("mods.yar", alias=cast(Any, False)),
+    ],
+)
+def test_codegen_generators_reject_non_string_import_aliases(node: Any) -> None:
+    with pytest.raises(TypeError, match="Import alias must be a string"):
+        CodeGenerator().generate(node)
+    with pytest.raises(TypeError, match="Import alias must be a string"):
+        AdvancedCodeGenerator().generate(node)
+    with pytest.raises(TypeError, match="Import alias must be a string"):
+        CommentAwareCodeGenerator().generate(node)
+    with pytest.raises(TypeError, match="Import alias must be a string"):
         PrettyPrinter().generate(node)
 
 
