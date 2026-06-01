@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from io import StringIO
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from rich.console import Console
@@ -71,6 +72,14 @@ def test_visualize_ast_invalid_format_raises() -> None:
         assert "Unsupported output format" in str(exc)
     else:
         raise AssertionError("Expected ValidationError")
+
+
+@pytest.mark.parametrize("output_format", [None, 123, object()])
+def test_visualize_ast_rejects_non_string_formats(output_format: Any) -> None:
+    ast = YaraFile(rules=[Rule(name="x", condition=BooleanLiteral(value=True))])
+
+    with pytest.raises(TypeError, match="output format must be a string"):
+        visualize_ast(ast, output_format=cast(str, output_format))
 
 
 def test_ast_formatter_output_and_errors(tmp_path: Path) -> None:

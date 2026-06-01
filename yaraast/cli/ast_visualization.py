@@ -27,6 +27,10 @@ def print_ast(ast: YaraFile, console: Console | None = None) -> None:
 
 def visualize_ast(ast: YaraFile, output_format: str = "json") -> str:
     """Visualize AST in a simple serializable format."""
+    if not isinstance(output_format, str):
+        msg = "output format must be a string"
+        raise TypeError(msg)
+
     dumper = ASTDumper()
     data = dumper.visit(ast)
 
