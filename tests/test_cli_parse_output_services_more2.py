@@ -52,6 +52,13 @@ def test_parse_output_report_parsing_errors(capsys: pytest.CaptureFixture[str]) 
     assert "Parser Issues (2)" in out
     assert "Partial parse successful" in out
 
+    class FalsyYaraFile(YaraFile):
+        def __bool__(self) -> bool:
+            return False
+
+    po._report_parsing_errors([_Err("lex")], [], ast=FalsyYaraFile(rules=_ast().rules))
+    assert "Partial parse successful" in capsys.readouterr().out
+
     with pytest.raises(click.Abort):
         po._report_parsing_errors([_Err("x")], [], ast=None)
 

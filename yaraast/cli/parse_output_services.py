@@ -34,7 +34,7 @@ def _report_parsing_errors(lexer_errors: list, parser_errors: list, ast) -> None
         if parser_errors:
             _display_parser_errors(parser_errors)
 
-        if not ast:
+        if ast is None:
             console.print("\\n[red]Could not parse file due to critical errors[/red]")
             raise click.Abort from None
 
