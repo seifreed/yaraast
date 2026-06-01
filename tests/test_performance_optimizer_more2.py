@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from click.testing import CliRunner
+import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import Identifier
@@ -81,6 +82,33 @@ def test_performance_optimizer_handles_unexpected_string_values() -> None:
     assert isinstance(first_string, PlainString)
     assert isinstance(second_string, PlainString)
     assert first_string.value is second_string.value
+
+
+@pytest.mark.parametrize("strategy", [None, 123])
+def test_performance_optimizer_rejects_non_string_strategies(strategy: object) -> None:
+    optimizer = PerformanceOptimizer()
+    rule = Rule(name="sample")
+    ast = YaraFile(rules=[rule])
+
+    with pytest.raises(TypeError, match="optimization strategy must be a string"):
+        optimizer.optimize_rule(rule, strategy=cast(Any, strategy))
+    with pytest.raises(TypeError, match="optimization strategy must be a string"):
+        optimizer.optimize_file(ast, strategy=cast(Any, strategy))
+    with pytest.raises(TypeError, match="optimization strategy must be a string"):
+        optimizer.optimize(object(), strategy=cast(Any, strategy))
+
+
+def test_performance_optimizer_rejects_unknown_strategy() -> None:
+    optimizer = PerformanceOptimizer()
+    rule = Rule(name="sample")
+    ast = YaraFile(rules=[rule])
+
+    with pytest.raises(ValueError, match="optimization strategy must be one of"):
+        optimizer.optimize_rule(rule, strategy="fast")
+    with pytest.raises(ValueError, match="optimization strategy must be one of"):
+        optimizer.optimize_file(ast, strategy="fast")
+    with pytest.raises(ValueError, match="optimization strategy must be one of"):
+        optimizer.optimize(object(), strategy="fast")
 
 
 def test_bench_command_skips_failed_operation_results(tmp_path: Path) -> None:

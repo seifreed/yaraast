@@ -12,6 +12,18 @@ from yaraast.performance.memory_optimizer import MemoryOptimizer
 from yaraast.performance.string_analysis_helpers import string_value_length
 
 _Target = TypeVar("_Target")
+_VALID_STRATEGIES = frozenset({"speed", "memory", "balanced"})
+
+
+def _require_strategy(strategy: object) -> str:
+    if not isinstance(strategy, str):
+        msg = "optimization strategy must be a string"
+        raise TypeError(msg)
+    if strategy not in _VALID_STRATEGIES:
+        valid = ", ".join(sorted(_VALID_STRATEGIES))
+        msg = f"optimization strategy must be one of: {valid}"
+        raise ValueError(msg)
+    return strategy
 
 
 class PerformanceOptimizer:
@@ -62,6 +74,7 @@ class PerformanceOptimizer:
             Optimized rule or file
 
         """
+        strategy = _require_strategy(strategy)
         if isinstance(target, Rule):
             return self.optimize_rule(target, strategy)
         if isinstance(target, YaraFile):
@@ -70,6 +83,7 @@ class PerformanceOptimizer:
 
     def optimize_rule(self, rule: Rule, strategy: str = "balanced") -> Rule:
         """Optimize a single rule."""
+        strategy = _require_strategy(strategy)
         # Apply rule optimizations
         rule = self.rule_optimizer.optimize_rule(rule)
 
@@ -91,6 +105,7 @@ class PerformanceOptimizer:
     ) -> YaraFile:
         """Optimize an entire YARA file."""
         yara_file = require_yara_file(yara_file, "yara_file")
+        strategy = _require_strategy(strategy)
         # Apply file-level optimizations
         optimized_file, _ = self.rule_optimizer.optimize(yara_file)
         yara_file = optimized_file
