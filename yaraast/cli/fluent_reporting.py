@@ -6,11 +6,13 @@ from pathlib import Path
 
 import click
 
+from yaraast.cli.utils import write_text
 
-def write_output(output: Path | None, code: str, success_message: str) -> None:
+
+def write_output(output: str | Path | None, code: str, success_message: str) -> None:
     """Write generated code to output or stdout."""
-    if output:
-        Path(output).write_text(code, encoding="utf-8")
+    if output is not None:
+        write_text(output, code)
         click.echo(success_message)
     else:
         click.echo(code)

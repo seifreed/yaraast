@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 import click
 
-from yaraast.cli.utils import format_json
+from yaraast.cli.utils import format_json, write_text
 
 
 def display_validation_results(
@@ -61,8 +60,8 @@ def _display_text_results(ast, errors, warnings, strict):
 
 
 def write_output(output: str | None, code: str, success_message: str) -> None:
-    if output:
-        Path(output).write_text(code, encoding="utf-8")
+    if output is not None:
+        write_text(output, code)
         click.echo(success_message)
     else:
         click.echo(code)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import click
 import pytest
@@ -101,3 +102,14 @@ def test_yaral_reporting_misc_helpers(
     assert "Valid UDM Field Namespaces" in out
     assert "Available Aggregation Functions" in out
     assert "YARA-L Support Status" in out
+
+
+def test_yaral_write_output_rejects_empty_output_path() -> None:
+    with pytest.raises(ValueError, match="path must not be empty"):
+        yr.write_output("", "code", "saved")
+
+
+@pytest.mark.parametrize("output", [False, 0, object()])
+def test_yaral_write_output_rejects_invalid_output_path_types(output: Any) -> None:
+    with pytest.raises(TypeError, match="path must be a file path"):
+        yr.write_output(output, "code", "saved")
