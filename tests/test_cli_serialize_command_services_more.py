@@ -28,6 +28,14 @@ def test_build_diff_output_path_rejects_empty_output_path() -> None:
         build_diff_output_path("old.yar", "new.yar", "", "json")
 
 
+def test_build_diff_output_path_rejects_directory_output_path(tmp_path: Path) -> None:
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    with pytest.raises(ValueError, match="output path must not be a directory"):
+        build_diff_output_path("old.yar", "new.yar", output_dir, "json")
+
+
 @pytest.mark.parametrize("output", [False, 0, object()])
 def test_build_diff_output_path_rejects_invalid_output_path_types(output: Any) -> None:
     with pytest.raises(TypeError, match="output path must be a file path"):

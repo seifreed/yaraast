@@ -75,7 +75,11 @@ def build_diff_output_path(
     if isinstance(output, str) and not output:
         msg = "output path must not be empty"
         raise ValueError(msg)
-    return str(Path(output))
+    output_path = Path(output)
+    if output_path.exists() and output_path.is_dir():
+        msg = "output path must not be a directory"
+        raise ValueError(msg)
+    return str(output_path)
 
 
 def validate_serialized_input(input_file: str, format: str) -> tuple[Any, Any]:
