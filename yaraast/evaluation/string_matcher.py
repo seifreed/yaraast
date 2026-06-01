@@ -355,7 +355,8 @@ class StringMatcher:
 
     def _match_hex_string(self, data: bytes, string_def: HexString) -> None:
         """Match hex string against data."""
-        matches = self._find_hex_token_pattern(data, string_def.tokens)
+        tokens = self._hex_tokens(string_def)
+        matches = self._find_hex_token_pattern(data, tokens)
         identifier = self._string_identifier(string_def)
         self.matches[identifier] = [
             MatchResult(
@@ -366,6 +367,64 @@ class StringMatcher:
             )
             for offset, length in matches
         ]
+
+    def _hex_tokens(self, string_def: HexString) -> list[Any]:
+        tokens = string_def.tokens
+        if not isinstance(tokens, list | tuple) or not tokens:
+            msg = "Hex string tokens must be a non-empty list or tuple"
+            raise ValueError(msg)
+        self._validate_hex_token_sequence(tokens)
+        return list(tokens)
+
+    def _validate_hex_token_sequence(self, tokens: list[Any] | tuple[Any, ...]) -> None:
+        for token in tokens:
+            if isinstance(token, HexByte):
+                self._require_hex_byte_value(token.value, "HexByte")
+            elif isinstance(token, HexWildcard):
+                continue
+            elif isinstance(token, HexNibble):
+                self._require_hex_nibble_value(token.value)
+            elif isinstance(token, HexNegatedByte):
+                self._require_hex_negated_value(token.value)
+            elif isinstance(token, HexJump):
+                self._require_hex_jump_bounds(token)
+            elif isinstance(token, HexAlternative):
+                self._validate_hex_alternative(token)
+            else:
+                msg = f"Unsupported hex token '{type(token).__name__}'"
+                raise TypeError(msg)
+
+    def _validate_hex_alternative(self, token: HexAlternative) -> None:
+        alternatives = token.alternatives
+        if not isinstance(alternatives, list | tuple) or not alternatives:
+            msg = "HexAlternative must contain at least one branch"
+            raise ValueError(msg)
+        for alternative in alternatives:
+            branch = alternative if isinstance(alternative, list | tuple) else [alternative]
+            if not branch:
+                msg = "HexAlternative branches must not be empty"
+                raise ValueError(msg)
+            self._validate_hex_alternative_branch(branch)
+
+    def _validate_hex_alternative_branch(self, branch: list[Any] | tuple[Any, ...]) -> None:
+        for item in branch:
+            if isinstance(item, int | str):
+                self._require_hex_byte_value(item, "HexByte")
+            elif isinstance(item, HexByte):
+                self._require_hex_byte_value(item.value, "HexByte")
+            elif isinstance(item, HexWildcard):
+                continue
+            elif isinstance(item, HexNibble):
+                self._require_hex_nibble_value(item.value)
+            elif isinstance(item, HexNegatedByte):
+                self._require_hex_negated_value(item.value)
+            elif isinstance(item, HexJump):
+                self._require_hex_jump_bounds(item)
+            elif isinstance(item, HexAlternative):
+                self._validate_hex_alternative(item)
+            else:
+                msg = f"Unsupported hex token '{type(item).__name__}'"
+                raise TypeError(msg)
 
     def _find_hex_token_pattern(
         self,
@@ -513,6 +572,47 @@ class StringMatcher:
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             return None
         return int(value)
+
+    def _require_hex_byte_value(self, value: Any, context: str) -> int:
+        byte_value = self._hex_byte_value(value)
+        if byte_value is None:
+            msg = f"{context} value must be a byte"
+            raise TypeError(msg)
+        return byte_value
+
+    def _require_hex_nibble_value(self, value: Any) -> int:
+        nibble_value = self._hex_nibble_value(value)
+        if nibble_value is None:
+            msg = "HexNibble value must be a nibble"
+            raise TypeError(msg)
+        return nibble_value
+
+    def _require_hex_negated_value(self, value: Any) -> None:
+        if isinstance(value, str) and len(value) == 2 and "?" in value:
+            nibble_text = value[1] if value[0] == "?" else value[0]
+            if self._hex_nibble_value(nibble_text) is not None:
+                return
+        if self._hex_byte_value(value) is not None:
+            return
+        msg = "HexNegatedByte value must be a byte or negated nibble"
+        raise TypeError(msg)
+
+    def _require_hex_jump_bounds(self, token: HexJump) -> None:
+        min_jump = token.min_jump
+        max_jump = token.max_jump
+        if min_jump is not None and (
+            isinstance(min_jump, bool) or not isinstance(min_jump, int) or min_jump < 0
+        ):
+            msg = "HexJump min_jump must be a non-negative integer"
+            raise TypeError(msg)
+        if max_jump is not None and (
+            isinstance(max_jump, bool) or not isinstance(max_jump, int) or max_jump < 0
+        ):
+            msg = "HexJump max_jump must be a non-negative integer"
+            raise TypeError(msg)
+        if min_jump is not None and max_jump is not None and min_jump > max_jump:
+            msg = "HexJump min_jump cannot exceed max_jump"
+            raise ValueError(msg)
 
     def _match_regex_string(self, data: bytes, string_def: RegexString) -> None:
         """Match regex string against data."""

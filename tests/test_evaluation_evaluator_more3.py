@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import struct
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -39,7 +39,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Import, Rule
-from yaraast.ast.strings import PlainString
+from yaraast.ast.strings import HexByte, HexString, PlainString
 from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.evaluator import YaraEvaluator
@@ -1333,6 +1333,21 @@ def test_evaluate_file_rejects_invalid_string_modifier_items() -> None:
         TypeError,
         match="String modifiers must contain strings or StringModifier nodes",
     ):
+        YaraEvaluator(data=b"a").evaluate_file(ast)
+
+
+def test_evaluate_file_rejects_invalid_hex_token_values() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_hex_token",
+                strings=[HexString("$h", tokens=[HexByte(cast(Any, True))])],
+                condition=StringIdentifier("$h"),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="HexByte value must be a byte"):
         YaraEvaluator(data=b"a").evaluate_file(ast)
 
 

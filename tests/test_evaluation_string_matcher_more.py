@@ -554,30 +554,107 @@ def test_string_matcher_hex_tokens_match_yara_token_semantics() -> None:
 
 
 @pytest.mark.parametrize(
-    "hex_string",
+    ("hex_string", "exception_type", "message"),
     [
-        HexString("$byte_bool", tokens=[HexByte(cast(Any, True))]),
-        HexString("$byte_text", tokens=[HexByte("GG")]),
-        HexString("$nibble_bool", tokens=[HexNibble(high=True, value=cast(Any, True))]),
-        HexString("$nibble_text", tokens=[HexNibble(high=False, value="G")]),
-        HexString("$negated_bool", tokens=[HexNegatedByte(cast(Any, True))]),
-        HexString("$negated_text", tokens=[HexNegatedByte("G?")]),
-        HexString(
-            "$jump_bool",
-            tokens=[HexByte(0x41), HexJump(cast(Any, True), 1), HexByte(0x42)],
+        (
+            HexString("$byte_bool", tokens=[HexByte(cast(Any, True))]),
+            TypeError,
+            "HexByte value must be a byte",
         ),
-        HexString(
-            "$jump_text",
-            tokens=[HexByte(0x41), HexJump(cast(Any, "1"), 1), HexByte(0x42)],
+        (
+            HexString("$byte_text", tokens=[HexByte("GG")]),
+            TypeError,
+            "HexByte value must be a byte",
+        ),
+        (
+            HexString("$nibble_bool", tokens=[HexNibble(high=True, value=cast(Any, True))]),
+            TypeError,
+            "HexNibble value must be a nibble",
+        ),
+        (
+            HexString("$nibble_text", tokens=[HexNibble(high=False, value="G")]),
+            TypeError,
+            "HexNibble value must be a nibble",
+        ),
+        (
+            HexString("$negated_bool", tokens=[HexNegatedByte(cast(Any, True))]),
+            TypeError,
+            "HexNegatedByte value must be a byte or negated nibble",
+        ),
+        (
+            HexString("$negated_text", tokens=[HexNegatedByte("G?")]),
+            TypeError,
+            "HexNegatedByte value must be a byte or negated nibble",
+        ),
+        (
+            HexString(
+                "$jump_bool",
+                tokens=[HexByte(0x41), HexJump(cast(Any, True), 1), HexByte(0x42)],
+            ),
+            TypeError,
+            "HexJump min_jump must be a non-negative integer",
+        ),
+        (
+            HexString(
+                "$jump_text",
+                tokens=[HexByte(0x41), HexJump(cast(Any, "1"), 1), HexByte(0x42)],
+            ),
+            TypeError,
+            "HexJump min_jump must be a non-negative integer",
+        ),
+        (
+            HexString(
+                "$jump_order",
+                tokens=[HexByte(0x41), HexJump(2, 1), HexByte(0x42)],
+            ),
+            ValueError,
+            "HexJump min_jump cannot exceed max_jump",
         ),
     ],
 )
-def test_string_matcher_invalid_hex_token_values_do_not_match_or_crash(
+def test_string_matcher_rejects_invalid_hex_token_values(
     hex_string: HexString,
+    exception_type: type[Exception],
+    message: str,
 ) -> None:
     matcher = StringMatcher()
 
-    assert matcher.match_string(hex_string, b"\x01A\x00B") == []
+    with pytest.raises(exception_type, match=message):
+        matcher.match_string(hex_string, b"\x01A\x00B")
+
+
+@pytest.mark.parametrize(
+    ("hex_string", "exception_type", "message"),
+    [
+        (
+            HexString("$tokens_false", tokens=cast(Any, False)),
+            ValueError,
+            "Hex string tokens must be a non-empty list or tuple",
+        ),
+        (
+            HexString("$unsupported", tokens=[object()]),
+            TypeError,
+            "Unsupported hex token",
+        ),
+        (
+            HexString("$empty_alt", tokens=[HexAlternative([])]),
+            ValueError,
+            "HexAlternative must contain at least one branch",
+        ),
+        (
+            HexString("$bad_scalar_alt", tokens=[HexAlternative([cast(Any, True)])]),
+            TypeError,
+            "HexByte value must be a byte",
+        ),
+    ],
+)
+def test_string_matcher_rejects_invalid_hex_token_structures(
+    hex_string: HexString,
+    exception_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(exception_type, match=message):
+        StringMatcher().match_string(hex_string, b"\x01A\x00B")
 
 
 def test_string_matcher_hex_keeps_shortest_match_per_offset() -> None:
