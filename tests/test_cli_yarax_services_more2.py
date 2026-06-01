@@ -105,6 +105,21 @@ def test_yarax_services_parse_rejects_invalid_content_types(content: Any) -> Non
         ys.parse_yarax_content(cast(str, content))
 
 
+@pytest.mark.parametrize("content", [None, 123, object()])
+def test_yarax_feature_detection_rejects_invalid_content_types(content: Any) -> None:
+    with pytest.raises(TypeError, match="content must be a string"):
+        ys.detect_yarax_features(cast(str, content))
+
+    with pytest.raises(TypeError, match="content must be a string"):
+        ys.detect_playground_features(cast(str, content))
+
+
+@pytest.mark.parametrize("content", [None, 123, object()])
+def test_yara_to_yarax_conversion_rejects_invalid_content_types(content: Any) -> None:
+    with pytest.raises(TypeError, match="content must be a string"):
+        ys.convert_yara_to_yarax(cast(str, content))
+
+
 def test_yarax_to_yara_conversion_rejects_yarax_only_syntax() -> None:
     yarax_code = """
 rule native_yarax {

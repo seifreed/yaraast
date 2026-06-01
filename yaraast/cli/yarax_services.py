@@ -54,6 +54,7 @@ def check_yarax_compatibility(ast, strict: bool):
 
 
 def convert_yara_to_yarax(content: str) -> str:
+    content = _require_string(content, "content")
     ast = parse_yara_source(content)
     generator = YaraXGenerator()
     return generator.generate(ast)
@@ -99,6 +100,7 @@ def _add_feature(features: list[str], feature: str) -> None:
 
 
 def detect_yarax_features(content: str) -> list[str]:
+    content = _require_string(content, "content")
     parsed_features = _features_from_parsed_ast(content)
     if parsed_features:
         return parsed_features
@@ -152,6 +154,7 @@ rule yarax_demo {
 
 
 def detect_playground_features(content: str) -> list[str]:
+    content = _require_string(content, "content")
     parsed_features = _features_from_parsed_ast(content)
     if parsed_features:
         return parsed_features
