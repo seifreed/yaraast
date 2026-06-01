@@ -34,8 +34,16 @@ rule ok {
     error_result = runner.invoke(
         parse, [str(source), "--format", "json", "--output", str(output_dir)]
     )
-    assert error_result.exit_code != 0
-    assert "Error" in error_result.output
+    assert error_result.exit_code == 2
+    assert "output path must not be a directory" in error_result.output
+
+    for output_format in ("yara", "json", "yaml", "tree"):
+        empty_output = runner.invoke(
+            parse, [str(source), "--format", output_format, "--output", ""]
+        )
+        assert empty_output.exit_code == 2
+        assert "path must not be empty" in empty_output.output
+        assert "Rule: ok" not in empty_output.output
 
 
 def test_parse_cmd_auto_yarax_outputs_extended_syntax(tmp_path: Path) -> None:
