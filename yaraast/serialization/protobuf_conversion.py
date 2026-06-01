@@ -1010,6 +1010,9 @@ def _coerce_quantifier_text(value) -> str:
     if isinstance(value, Expression):
         raw_value = getattr(value, "value", None)
         if raw_value is not None:
+            if isinstance(raw_value, bool):
+                msg = "quantifier must be a string, number, or expression"
+                raise SerializationError(msg)
             _validate_finite_quantifier(raw_value)
             return str(raw_value)
 
@@ -1026,7 +1029,13 @@ def _coerce_quantifier_text(value) -> str:
 def _coerce_quantifier_expression(value):
     from yaraast.ast.expressions import Expression
 
-    return value if isinstance(value, Expression) else None
+    if not isinstance(value, Expression):
+        return None
+    raw_value = getattr(value, "value", None)
+    if isinstance(raw_value, bool):
+        msg = "quantifier must be a string, number, or expression"
+        raise SerializationError(msg)
+    return value
 
 
 def _copy_string_set_to_protobuf(value, pb_owner, context: str) -> None:
