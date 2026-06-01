@@ -236,6 +236,24 @@ def test_protobuf_serializer_rejects_unknown_modifier_tuple_items() -> None:
         serializer.serialize(ast)
 
 
+@pytest.mark.parametrize("tuple_values", [[1], [1, 2, 3]])
+def test_protobuf_deserializer_rejects_malformed_modifier_tuple_values(
+    tuple_values: list[int],
+) -> None:
+    pb_string = yara_ast_pb2.StringDefinition()
+    pb_string.identifier = "$a"
+    pb_string.plain.value = "abc"
+    pb_modifier = pb_string.plain.modifiers.add()
+    pb_modifier.name = "xor"
+    pb_modifier.tuple_value.extend(tuple_values)
+
+    with pytest.raises(
+        SerializationError,
+        match="String modifier tuple value must contain two integers",
+    ):
+        protobuf_to_string(pb_string)
+
+
 def test_protobuf_serializer_does_not_coerce_invalid_xor_range_values_to_ints() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

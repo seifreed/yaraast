@@ -1695,6 +1695,9 @@ def _legacy_modifier_value(name: str, value: str):
 def _protobuf_modifier_value(pb_modifier):
     if len(pb_modifier.tuple_value) == 2:
         return (pb_modifier.tuple_value[0], pb_modifier.tuple_value[1])
+    if pb_modifier.tuple_value:
+        msg = "String modifier tuple value must contain two integers"
+        raise SerializationError(msg)
 
     typed_value = _typed_modifier_value(pb_modifier)
     if typed_value is not None:
