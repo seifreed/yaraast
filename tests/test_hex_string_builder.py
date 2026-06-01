@@ -829,6 +829,15 @@ class TestHexStringBuilderStaticMethods:
         assert _byte_value(tokens[0]) == 0x48
         assert _byte_value(tokens[4]) == 0x6F
 
+    def test_from_hex_string_with_tabs_and_newlines(self) -> None:
+        """From_hex_string should handle multiline whitespace-separated input."""
+        hex_str = "48\t65\n6C\r\n6C 6F"
+
+        builder = HexStringBuilder.from_hex_string(hex_str)
+        tokens = builder.build()
+
+        assert [_byte_value(token) for token in tokens] == [0x48, 0x65, 0x6C, 0x6C, 0x6F]
+
     def test_from_hex_string_lowercase(self) -> None:
         """From_hex_string should handle lowercase hex."""
         hex_str = "deadbeef"

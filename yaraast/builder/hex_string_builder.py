@@ -248,7 +248,7 @@ class HexStringBuilder:
             msg = "Hex string must be a string"
             raise TypeError(msg)
         builder = HexStringBuilder()
-        hex_str = hex_str.replace(" ", "").upper()
+        hex_str = "".join(hex_str.split()).upper()
         if len(hex_str) % 2 != 0:
             msg = f"Invalid trailing hex byte: {hex_str[-1]}"
             raise ValidationError(msg)
