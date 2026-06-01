@@ -346,6 +346,30 @@ def test_streaming_parser_parse_rules_from_file_success_progress_recursive_and_e
     assert estimate["estimated_peak_mb"] >= estimate["estimated_ast_mb"]
 
 
+def test_streaming_parser_parse_directory_accepts_string_path(tmp_path: Path) -> None:
+    rule_file = tmp_path / "sample.yar"
+    rule_file.write_text("rule sample { condition: true }", encoding="utf-8")
+
+    results = list(StreamingParser().parse_directory(str(tmp_path)))
+
+    assert len(results) == 1
+    assert results[0].rule_name == "sample"
+
+
+@pytest.mark.parametrize("dir_path", [None, 123, object()])
+def test_streaming_parser_parse_directory_rejects_invalid_path_types(dir_path: Any) -> None:
+    with pytest.raises(TypeError, match="dir_path must be a string or path-like object"):
+        list(StreamingParser().parse_directory(cast(Any, dir_path)))
+
+
+@pytest.mark.parametrize("recursive", [None, 1, "true", object()])
+def test_streaming_parser_parse_directory_rejects_invalid_recursive_types(
+    tmp_path: Path, recursive: Any
+) -> None:
+    with pytest.raises(TypeError, match="recursive must be a boolean"):
+        list(StreamingParser().parse_directory(tmp_path, recursive=cast(bool, recursive)))
+
+
 def test_streaming_parser_mmap_nested_brace_callback_and_invalid_parse_object(
     tmp_path: Path,
 ) -> None:

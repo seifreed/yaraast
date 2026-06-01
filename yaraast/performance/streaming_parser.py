@@ -5,6 +5,7 @@ from __future__ import annotations
 import codecs
 from collections.abc import Callable, Iterator
 import mmap
+from os import PathLike, fspath
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -227,11 +228,19 @@ class StreamingParser:
 
     def parse_directory(
         self,
-        dir_path: Path,
+        dir_path: str | Path,
         pattern: FilePatterns = None,
         recursive: bool = False,
     ) -> Iterator[Any]:
         """Parse all files in a directory."""
+        if isinstance(dir_path, bytes) or not isinstance(dir_path, str | PathLike):
+            msg = "dir_path must be a string or path-like object"
+            raise TypeError(msg)
+        if not isinstance(recursive, bool):
+            msg = "recursive must be a boolean"
+            raise TypeError(msg)
+
+        dir_path = Path(fspath(dir_path))
         files = list(iter_matching_files(dir_path, pattern, recursive))
 
         yield from self.parse_files(files)
