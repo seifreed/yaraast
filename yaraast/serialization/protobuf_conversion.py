@@ -575,11 +575,13 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
     pb_pragma.name = _protobuf_required_nonempty_string(pragma.name, "Pragma name")
     pb_pragma.scope = serialize_pragma_scope(scope) if scope is not None else ""
 
-    macro_name = _protobuf_optional_string(
-        getattr(pragma, "macro_name", None),
-        "Pragma macro_name",
-    )
-    if macro_name:
+    macro_name_value = getattr(pragma, "macro_name", None)
+    macro_name = None
+    if macro_name_value is not None:
+        macro_name = _protobuf_required_nonempty_string(
+            macro_name_value,
+            "Pragma macro_name",
+        )
         pb_pragma.macro_name = macro_name
     macro_value = _protobuf_optional_string(
         getattr(pragma, "macro_value", None),
@@ -587,9 +589,11 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
     )
     if macro_value is not None:
         pb_pragma.macro_value = macro_value
-    condition = _protobuf_optional_string(
-        getattr(pragma, "condition", None),
-        "Pragma condition",
+    condition_value = getattr(pragma, "condition", None)
+    condition = (
+        _protobuf_required_nonempty_string(condition_value, "Pragma condition")
+        if condition_value is not None
+        else None
     )
     if condition is not None:
         pb_pragma.condition = condition
@@ -1690,18 +1694,31 @@ def protobuf_to_pragma(pb_pragma):
 
     if pragma_type == PragmaType.INCLUDE_ONCE:
         pragma = IncludeOncePragma()
-    elif pragma_type == PragmaType.DEFINE and pb_pragma.macro_name:
+    elif pragma_type == PragmaType.DEFINE:
         pragma = DefineDirective(
-            macro_name=pb_pragma.macro_name,
+            macro_name=_protobuf_required_nonempty_string(
+                pb_pragma.macro_name,
+                "Pragma macro_name",
+            ),
             macro_value=pb_pragma.macro_value if pb_pragma.HasField("macro_value") else None,
         )
-    elif pragma_type == PragmaType.UNDEF and pb_pragma.macro_name:
-        pragma = UndefDirective(macro_name=pb_pragma.macro_name)
-    elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
+    elif pragma_type == PragmaType.UNDEF:
+        pragma = UndefDirective(
+            macro_name=_protobuf_required_nonempty_string(
+                pb_pragma.macro_name,
+                "Pragma macro_name",
+            )
+        )
+    elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}:
         pragma = ConditionalDirective(
             pragma_type,
-            condition=pb_pragma.condition if pb_pragma.HasField("condition") else None,
+            condition=_protobuf_required_nonempty_string(
+                pb_pragma.condition if pb_pragma.HasField("condition") else "",
+                "Pragma condition",
+            ),
         )
+    elif pragma_type == PragmaType.ENDIF:
+        pragma = ConditionalDirective(pragma_type)
     elif pragma_type == PragmaType.CUSTOM:
         pragma = CustomPragma(
             name=_protobuf_required_nonempty_string(pb_pragma.name, "Pragma name"),

@@ -40,6 +40,7 @@ from yaraast.ast.pragmas import (
     InRulePragma,
     PragmaScope,
     PragmaType,
+    UndefDirective,
 )
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
@@ -1414,6 +1415,56 @@ def test_protobuf_deserializer_rejects_empty_pragma_names(pragma_type: str) -> N
     pb_pragma.pragma_type = pragma_type
 
     with pytest.raises(SerializationError, match="Pragma name must not be empty"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("pragma", "message"),
+    [
+        (DefineDirective(""), "Pragma macro_name must not be empty"),
+        (UndefDirective(""), "Pragma macro_name must not be empty"),
+        (
+            ConditionalDirective(PragmaType.IFDEF, condition=""),
+            "Pragma condition must not be empty",
+        ),
+        (
+            ConditionalDirective(PragmaType.IFNDEF, condition=""),
+            "Pragma condition must not be empty",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_empty_required_pragma_operands(
+    pragma: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(YaraFile(pragmas=[pragma]))
+
+
+@pytest.mark.parametrize(
+    ("pragma_type", "field_name", "message"),
+    [
+        ("define", "macro_name", "Pragma macro_name must not be empty"),
+        ("undef", "macro_name", "Pragma macro_name must not be empty"),
+        ("ifdef", "condition", "Pragma condition must not be empty"),
+        ("ifndef", "condition", "Pragma condition must not be empty"),
+    ],
+)
+def test_protobuf_deserializer_rejects_empty_required_pragma_operands(
+    pragma_type: str,
+    field_name: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_pragma = pb_file.pragmas.add()
+    pb_pragma.pragma_type = pragma_type
+    pb_pragma.name = pragma_type
+    setattr(pb_pragma, field_name, "")
+
+    with pytest.raises(SerializationError, match=message):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
