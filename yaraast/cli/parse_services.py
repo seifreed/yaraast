@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from yaraast.dialects import YaraDialect
+from yaraast.errors import YaraASTError
 from yaraast.unified_parser import UnifiedParser
 
 
@@ -76,6 +77,6 @@ def _parse_with_error_tolerant_parser(content: str) -> tuple:
         parser = Parser(content)
         ast = parser.parse()
         return ast, [], []
-    except Exception:
+    except (YaraASTError, ValueError):
         error_parser = ErrorTolerantParser()
         return error_parser.parse_with_errors(content)

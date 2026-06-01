@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.cli.parse_services import parse_content_by_dialect
+from yaraast.parser.parser import Parser
 from yaraast.yarax.ast_nodes import WithStatement
 
 
@@ -63,6 +66,18 @@ def test_parse_services_auto_yara_invalid_fallback() -> None:
     assert ast is not None
     assert isinstance(lex, list)
     assert isinstance(par, list)
+
+
+def test_parse_services_propagates_internal_parser_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_parser_parse(self: Parser, text: str | None = None) -> object:
+        raise AttributeError("broken parser internals")
+
+    monkeypatch.setattr(Parser, "parse", fail_parser_parse)
+
+    with pytest.raises(AttributeError, match="broken parser internals"):
+        parse_content_by_dialect("rule r { condition: true }", "yara", show_status=False)
 
 
 def test_parse_services_yaral_explicit_and_standard() -> None:
