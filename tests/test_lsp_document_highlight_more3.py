@@ -128,6 +128,44 @@ rule shadowed {
     ]
 
 
+def test_document_highlight_multiline_yarax_with_declaration_is_local() -> None:
+    text = """
+rule shadowed {
+    strings:
+        $a = "abc"
+    condition:
+        with $a =
+            1:
+            $a > 0
+}
+""".lstrip()
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(4, 15))
+
+    assert [(highlight.range.start.line, highlight.range.end.line) for highlight in highlights] == [
+        (4, 4)
+    ]
+
+
+def test_document_highlight_multiline_yarax_comprehension_declaration_is_local() -> None:
+    text = """
+rule helper { condition: true }
+rule local_ref {
+    condition:
+        [helper for helper
+            in (1, 2) if helper > 0]
+}
+""".lstrip()
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(3, 21))
+
+    assert [(highlight.range.start.line, highlight.range.end.line) for highlight in highlights] == [
+        (3, 3)
+    ]
+
+
 def test_document_highlight_yarax_lambda_parameter_declaration_is_local() -> None:
     text = """
 rule helper { condition: true }

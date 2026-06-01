@@ -197,24 +197,66 @@ def _resolve_names_before_iterable(
     iterable_range = _first_value_range(iterable, ctx.text)
     if iterable_range is None:
         return None
-    line_index = iterable_range.start.line
-    if line_index < 0 or line_index >= len(ctx.lines):
+    header_bounds = _loop_declaration_header_bounds(ctx, iterable_range)
+    if header_bounds is None:
         return None
+    line_index, identifier_list_start, identifier_list_end = header_bounds
     line = ctx.lines[line_index]
-    iterable_start = utf16_col_to_utf8(line, iterable_range.start.character)
-    declaration_start = line.rfind("for", 0, iterable_start)
-    separator_start = line.rfind("in", declaration_start, iterable_start)
-    if declaration_start < 0 or separator_start < 0:
-        return None
-    identifier_start = line.find(word, declaration_start + len("for"), separator_start)
+    identifier_start = line.find(word, identifier_list_start, identifier_list_end)
     while identifier_start >= 0:
         declaration_range = _same_line_identifier_range(line, line_index, identifier_start, word)
         if declaration_range is not None:
             resolved = _resolved_local_identifier(ctx, word, declaration_range, position)
             if resolved is not None:
                 return resolved
-        identifier_start = line.find(word, identifier_start + len(word), separator_start)
+        identifier_start = line.find(word, identifier_start + len(word), identifier_list_end)
     return None
+
+
+def _loop_declaration_header_bounds(
+    ctx: DocumentContext,
+    iterable_range: Range,
+) -> tuple[int, int, int] | None:
+    line_index = iterable_range.start.line
+    if line_index < 0 or line_index >= len(ctx.lines):
+        return None
+    line = ctx.lines[line_index]
+    iterable_start = utf16_col_to_utf8(line, iterable_range.start.character)
+    bounds = _same_line_loop_declaration_bounds(line, line_index, iterable_start)
+    if bounds is not None:
+        return bounds
+    for header_line_index in range(line_index - 1, -1, -1):
+        header_line = ctx.lines[header_line_index]
+        if not header_line.strip():
+            continue
+        return _previous_line_loop_declaration_bounds(header_line, header_line_index)
+    return None
+
+
+def _same_line_loop_declaration_bounds(
+    line: str,
+    line_index: int,
+    search_end: int,
+) -> tuple[int, int, int] | None:
+    declaration_start = _rfind_keyword(line, "for", 0, search_end)
+    if declaration_start < 0:
+        return None
+    separator_start = _rfind_keyword(line, "in", declaration_start + len("for"), search_end)
+    if separator_start < 0:
+        return None
+    return line_index, declaration_start + len("for"), separator_start
+
+
+def _previous_line_loop_declaration_bounds(
+    line: str,
+    line_index: int,
+) -> tuple[int, int, int] | None:
+    declaration_start = _rfind_keyword(line, "for", 0, len(line))
+    if declaration_start < 0:
+        return None
+    separator_start = _rfind_keyword(line, "in", declaration_start + len("for"), len(line))
+    identifier_list_end = separator_start if separator_start >= 0 else len(line)
+    return line_index, declaration_start + len("for"), identifier_list_end
 
 
 def _first_value_range(value: Any, source_text: str) -> Range | None:
@@ -250,11 +292,42 @@ def _with_declaration_identifier_range(
     value_start = utf16_col_to_utf8(line, value_range.start.character)
     identifier_start = line.rfind(identifier, 0, value_start)
     if identifier_start < 0:
-        return None
+        return _previous_line_with_declaration_identifier_range(ctx, identifier, line_index)
     between_identifier_and_value = line[identifier_start + len(identifier) : value_start]
     if "=" not in between_identifier_and_value:
-        return None
+        return _previous_line_with_declaration_identifier_range(ctx, identifier, line_index)
     return _same_line_identifier_range(line, line_index, identifier_start, identifier)
+
+
+def _previous_line_with_declaration_identifier_range(
+    ctx: DocumentContext,
+    identifier: str,
+    value_line_index: int,
+) -> Range | None:
+    for line_index in range(value_line_index - 1, -1, -1):
+        line = ctx.lines[line_index]
+        if not line.strip():
+            continue
+        assignment_start = line.rfind("=")
+        if assignment_start < 0:
+            return None
+        identifier_start = line.rfind(identifier, 0, assignment_start)
+        if identifier_start < 0:
+            return None
+        return _same_line_identifier_range(line, line_index, identifier_start, identifier)
+    return None
+
+
+def _rfind_keyword(line: str, keyword: str, start: int, end: int) -> int:
+    index = line.rfind(keyword, start, end)
+    while index >= 0:
+        keyword_end = index + len(keyword)
+        before_ok = index == 0 or not _is_identifier_char(line[index - 1])
+        after_ok = keyword_end >= len(line) or not _is_identifier_char(line[keyword_end])
+        if before_ok and after_ok:
+            return index
+        index = line.rfind(keyword, start, index)
+    return -1
 
 
 def _same_line_identifier_range(
