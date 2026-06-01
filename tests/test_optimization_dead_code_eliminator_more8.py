@@ -532,6 +532,43 @@ def test_dead_code_eliminator_rejects_embedded_string_reference_operators() -> N
             DeadCodeEliminator().eliminate(ast)
 
 
+def test_dead_code_eliminator_rejects_invalid_string_wildcard_pattern() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_wildcard",
+                strings=[PlainString(identifier="$a", value="a")],
+                condition=OfExpression("any", StringWildcard(cast(Any, False))),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String wildcard pattern must be a string"):
+        DeadCodeEliminator().eliminate(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        ForExpression(
+            quantifier="any",
+            variable=cast(Any, False),
+            iterable=SetExpression([IntegerLiteral(1)]),
+            body=BooleanLiteral(True),
+        ),
+        WithStatement(
+            declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
+            body=BooleanLiteral(True),
+        ),
+    ],
+)
+def test_dead_code_eliminator_rejects_invalid_local_variable_names(condition: Any) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_local", condition=condition)])
+
+    with pytest.raises(TypeError, match="Local variable name must be a string"):
+        DeadCodeEliminator().eliminate(ast)
+
+
 def test_dead_code_eliminator_keeps_parenthesized_string_literal_sets() -> None:
     dce = DeadCodeEliminator()
     rule = Rule(

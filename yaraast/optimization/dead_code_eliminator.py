@@ -429,6 +429,8 @@ class DeadCodeEliminator(ASTTransformer):
             self.used_strings_by_rule.setdefault(self.current_rule_key, set()).add(normalized)
 
     def _mark_used_wildcard(self, pattern: str) -> None:
+        if not isinstance(pattern, str):
+            raise TypeError("String wildcard pattern must be a string")
         if pattern.startswith("$"):
             self._mark_used_string(pattern)
             return
@@ -797,6 +799,8 @@ class DeadCodeEliminator(ASTTransformer):
 
     @staticmethod
     def _local_name_variants(name: str) -> tuple[str, ...]:
+        if not isinstance(name, str):
+            raise TypeError("Local variable name must be a string")
         return tuple(part.strip() for part in name.split(",") if part.strip())
 
 
