@@ -28,6 +28,17 @@ def require_bool_option(value: object, name: str) -> bool:
     return value
 
 
+def require_positive_int_option(value: object, name: str) -> int:
+    """Validate a positive integer serializer option."""
+    if not isinstance(value, int) or isinstance(value, bool):
+        msg = f"{name} must be an integer"
+        raise TypeError(msg)
+    if value < 1:
+        msg = f"{name} must be at least 1"
+        raise ValueError(msg)
+    return value
+
+
 def read_text(path: str | Path) -> str:
     """Read text from a file path."""
     return read_utf8(path)

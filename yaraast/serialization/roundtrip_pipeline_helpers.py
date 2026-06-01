@@ -15,6 +15,10 @@ from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import StringDefinition
 from yaraast.errors import SerializationError
 from yaraast.serialization.meta_scopes import serialize_meta_scope
+from yaraast.serialization.serializer_helpers import (
+    require_bool_option,
+    require_positive_int_option,
+)
 
 
 def _expected_type_names(expected_type: type[Any] | tuple[type[Any], ...]) -> str:
@@ -248,8 +252,14 @@ def count_string_types(ast) -> dict[str, int]:
 
 
 def dump_pipeline_yaml(
-    data: Any, output_path: str | Path | None, *, width: int = 100, explicit_markers: bool = False
+    data: Any,
+    output_path: str | Path | None,
+    *,
+    width: object = 100,
+    explicit_markers: object = False,
 ) -> str:
+    width = require_positive_int_option(width, "width")
+    explicit_markers = require_bool_option(explicit_markers, "explicit_markers")
     yaml_str = yaml.safe_dump(
         data,
         default_flow_style=False,

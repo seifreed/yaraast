@@ -124,3 +124,35 @@ def test_yaml_helpers_emit_safe_loadable_sequence_data_without_python_tags() -> 
 def test_dump_yaml_rejects_invalid_flow_style(flow_style: object) -> None:
     with pytest.raises(TypeError, match="flow_style must be a boolean"):
         dump_yaml({"a": 1}, flow_style=flow_style)
+
+
+@pytest.mark.parametrize("width", [None, True, "wide"])
+def test_dump_yaml_rejects_invalid_width_types(width: object) -> None:
+    with pytest.raises(TypeError, match="width must be an integer"):
+        dump_yaml({"a": 1}, flow_style=False, width=width)
+
+
+@pytest.mark.parametrize("width", [0, -1])
+def test_dump_yaml_rejects_non_positive_width(width: object) -> None:
+    with pytest.raises(ValueError, match="width must be at least 1"):
+        dump_yaml({"a": 1}, flow_style=False, width=width)
+
+
+@pytest.mark.parametrize("explicit_markers", [None, 1, "yes"])
+def test_dump_pipeline_yaml_rejects_invalid_explicit_markers(
+    explicit_markers: object,
+) -> None:
+    with pytest.raises(TypeError, match="explicit_markers must be a boolean"):
+        dump_pipeline_yaml({"a": 1}, output_path=None, explicit_markers=explicit_markers)
+
+
+@pytest.mark.parametrize("width", [None, True, "wide"])
+def test_dump_pipeline_yaml_rejects_invalid_width_types(width: object) -> None:
+    with pytest.raises(TypeError, match="width must be an integer"):
+        dump_pipeline_yaml({"a": 1}, output_path=None, width=width)
+
+
+@pytest.mark.parametrize("width", [0, -1])
+def test_dump_pipeline_yaml_rejects_non_positive_width(width: object) -> None:
+    with pytest.raises(ValueError, match="width must be at least 1"):
+        dump_pipeline_yaml({"a": 1}, output_path=None, width=width)
