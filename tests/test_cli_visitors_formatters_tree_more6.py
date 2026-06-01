@@ -12,6 +12,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
+    BooleanLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
@@ -109,8 +110,15 @@ def test_condition_and_expression_formatters_cover_branches() -> None:
     )
     assert "." in expr.format_expression(MemberAccess(object=Identifier("m"), member="x"))
 
+    class FalsyBooleanLiteral(BooleanLiteral):
+        def __bool__(self) -> bool:
+            return False
+
+    assert expr.format_expression(FalsyBooleanLiteral(False)) == "false"
+
     assert det.format_node(StringIdentifier("$a")).startswith("$")
     assert det.format_node(IntegerLiteral(1)) == "1"
+    assert det.format_node(FalsyBooleanLiteral(False)) == "false"
     assert det.format_node(StringLiteral("hello world"))
     assert det.format_node(ParenthesesExpression(Identifier("x"))).startswith("(")
     assert det.format_node(Identifier("id")) == "id"

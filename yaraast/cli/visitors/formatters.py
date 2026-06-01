@@ -49,6 +49,13 @@ def _string_set_item_text(item: Any, formatter: Any, depth: int) -> str:
     return _node_text(item, str(item))
 
 
+def _formatter_class_name(value: Any, formatters: dict[str, Any]) -> str:
+    for cls in type(value).__mro__:
+        if cls.__name__ in formatters:
+            return cls.__name__
+    return value.__class__.__name__
+
+
 class ConditionStringFormatter:
     """Helper class to format condition strings with reduced complexity."""
 
@@ -61,8 +68,6 @@ class ConditionStringFormatter:
 
         if not hasattr(condition, "__class__"):
             return "true"
-
-        class_name = condition.__class__.__name__
 
         formatters = {
             "BooleanLiteral": self._format_boolean_literal,
@@ -83,6 +88,7 @@ class ConditionStringFormatter:
             "ForOfExpression": self._format_for_of_expression,
         }
 
+        class_name = _formatter_class_name(condition, formatters)
         formatter = formatters.get(class_name, lambda c, d: f"<{class_name}>")
         return formatter(condition, depth)
 
@@ -291,10 +297,8 @@ class ExpressionStringFormatter:
         if depth > 5:
             return "..."
 
-        if not expr or not hasattr(expr, "__class__"):
+        if expr is None or not hasattr(expr, "__class__"):
             return "..."
-
-        class_name = expr.__class__.__name__
 
         formatters = {
             "BinaryExpression": self._format_binary_expression,
@@ -315,6 +319,7 @@ class ExpressionStringFormatter:
             "RangeExpression": self._format_range_expression,
         }
 
+        class_name = _formatter_class_name(expr, formatters)
         formatter = formatters.get(class_name, lambda e, d: f"<{class_name[:10]}>")
         return formatter(expr, depth)
 
@@ -493,10 +498,8 @@ class DetailedNodeStringFormatter:
 
     def format_node(self, node: Any, depth: int = 0) -> str:
         """Format a node to detailed string representation."""
-        if not node or depth > 2:
+        if node is None or depth > 2:
             return "..."
-
-        class_name = node.__class__.__name__
 
         formatters = {
             "StringIdentifier": self._format_string_identifier,
@@ -510,6 +513,7 @@ class DetailedNodeStringFormatter:
             "MemberAccess": lambda n, d: self._format_member_access(n, d),
         }
 
+        class_name = _formatter_class_name(node, formatters)
         formatter = formatters.get(class_name, lambda n, d: "...")
         return formatter(node, depth)
 
