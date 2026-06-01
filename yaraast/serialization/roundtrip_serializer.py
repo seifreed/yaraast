@@ -66,6 +66,34 @@ def _format_ast_difference(diff: DiffNode) -> str:
     )
 
 
+def _require_string(value: object, name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
+def _require_optional_string(value: object, name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_string(value, name)
+
+
+def _require_boolean(value: object, name: str) -> bool:
+    if not isinstance(value, bool):
+        msg = f"{name} must be a boolean"
+        raise TypeError(msg)
+    return value
+
+
+def _normalize_roundtrip_format(format_name: object) -> str:
+    normalized = _require_string(format_name, "format").lower()
+    if normalized not in {"json", "yaml"}:
+        msg = "format must be 'json' or 'yaml'"
+        raise ValueError(msg)
+    return normalized
+
+
 class RoundTripSerializer:
     """Enhanced serializer for round-trip YARA ↔ AST conversion with preservation."""
 
@@ -74,6 +102,8 @@ class RoundTripSerializer:
         preserve_comments: bool = True,
         preserve_formatting: bool = True,
     ) -> None:
+        preserve_comments = _require_boolean(preserve_comments, "preserve_comments")
+        preserve_formatting = _require_boolean(preserve_formatting, "preserve_formatting")
         self.preserve_comments = preserve_comments
         self.preserve_formatting = preserve_formatting
         self.json_serializer = JsonSerializer(include_metadata=True)
@@ -96,6 +126,10 @@ class RoundTripSerializer:
         format: str = "json",
     ) -> tuple[YaraFile, str]:
         """Parse YARA source and serialize with metadata."""
+        yara_source = _require_string(yara_source, "yara_source")
+        source_file = _require_optional_string(source_file, "source_file")
+        format_name = _normalize_roundtrip_format(format)
+
         # Detect formatting info from source
         detect_formatting(yara_source)
 
@@ -111,7 +145,7 @@ class RoundTripSerializer:
         )
 
         # Serialize with metadata
-        if format.lower() == "yaml":
+        if format_name == "yaml":
             serialized = serialize_with_roundtrip_metadata(
                 self.yaml_serializer,
                 ast,
@@ -135,8 +169,14 @@ class RoundTripSerializer:
         preserve_original_formatting: bool = True,
     ) -> tuple[YaraFile, str]:
         """Deserialize and generate YARA code with preserved formatting."""
+        serialized_data = _require_string(serialized_data, "serialized_data")
+        preserve_original_formatting = _require_boolean(
+            preserve_original_formatting,
+            "preserve_original_formatting",
+        )
+
         # Load serialized data
-        format_name = format.lower()
+        format_name = _normalize_roundtrip_format(format)
         if format_name == "yaml":
             try:
                 data = yaml.safe_load(serialized_data)
@@ -173,13 +213,16 @@ class RoundTripSerializer:
 
     def roundtrip_test(self, yara_source: str, format: str = "json") -> dict[str, Any]:
         """Test round-trip conversion and report differences."""
+        yara_source = _require_string(yara_source, "yara_source")
+        format_name = _normalize_roundtrip_format(format)
+
         # Original → AST → Serialized
-        original_ast, serialized = self.parse_and_serialize(yara_source, format=format)
+        original_ast, serialized = self.parse_and_serialize(yara_source, format=format_name)
 
         # Serialized → AST → YARA
         reconstructed_ast, reconstructed_yara = self.deserialize_and_generate(
             serialized,
-            format=format,
+            format=format_name,
         )
 
         generated_ast = self._parse_source(reconstructed_yara)
@@ -189,7 +232,7 @@ class RoundTripSerializer:
             "original_source": yara_source,
             "reconstructed_source": reconstructed_yara,
             "serialized_data": serialized,
-            "format": format,
+            "format": format_name,
             "round_trip_successful": True,
             "differences": [],
             "metadata": {},

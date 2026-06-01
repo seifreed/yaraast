@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import cast
+from typing import Any, cast
 
 import pytest
 import yaml
@@ -44,6 +44,61 @@ def test_roundtrip_parse_and_serialize_yaml() -> None:
     assert data["roundtrip_metadata"]["serializer_version"] == "1.0.0"
 
 
+@pytest.mark.parametrize("preserve_comments", [None, 1, "yes", object()])
+def test_roundtrip_serializer_rejects_invalid_preserve_comments_types(
+    preserve_comments: Any,
+) -> None:
+    with pytest.raises(TypeError, match="preserve_comments must be a boolean"):
+        RoundTripSerializer(preserve_comments=cast(bool, preserve_comments))
+
+
+@pytest.mark.parametrize("preserve_formatting", [None, 1, "yes", object()])
+def test_roundtrip_serializer_rejects_invalid_preserve_formatting_types(
+    preserve_formatting: Any,
+) -> None:
+    with pytest.raises(TypeError, match="preserve_formatting must be a boolean"):
+        RoundTripSerializer(preserve_formatting=cast(bool, preserve_formatting))
+
+
+@pytest.mark.parametrize("source", [None, 123, object()])
+def test_roundtrip_parse_and_serialize_rejects_invalid_source_types(source: Any) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(TypeError, match="yara_source must be a string"):
+        serializer.parse_and_serialize(cast(str, source))
+
+
+@pytest.mark.parametrize("source_file", [123, object()])
+def test_roundtrip_parse_and_serialize_rejects_invalid_source_file_types(
+    source_file: Any,
+) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(TypeError, match="source_file must be a string"):
+        serializer.parse_and_serialize(
+            "rule r1 { condition: true }",
+            source_file=cast(str, source_file),
+        )
+
+
+@pytest.mark.parametrize("format_name", [None, 123, object()])
+def test_roundtrip_parse_and_serialize_rejects_invalid_format_types(
+    format_name: Any,
+) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(TypeError, match="format must be a string"):
+        serializer.parse_and_serialize("rule r1 { condition: true }", format=cast(str, format_name))
+
+
+@pytest.mark.parametrize("format_name", ["", "toml", "xml"])
+def test_roundtrip_parse_and_serialize_rejects_unsupported_formats(format_name: str) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(ValueError, match="format must be 'json' or 'yaml'"):
+        serializer.parse_and_serialize("rule r1 { condition: true }", format=format_name)
+
+
 def test_roundtrip_deserialize_and_generate() -> None:
     source = "rule r1 { condition: true }"
     serializer = RoundTripSerializer()
@@ -52,6 +107,45 @@ def test_roundtrip_deserialize_and_generate() -> None:
     ast, generated = serializer.deserialize_and_generate(serialized, format="json")
     assert ast.rules[0].name == "r1"
     assert "rule r1" in generated
+
+
+@pytest.mark.parametrize("serialized_data", [None, 123, object()])
+def test_roundtrip_deserialize_rejects_invalid_serialized_data_types(
+    serialized_data: Any,
+) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(TypeError, match="serialized_data must be a string"):
+        serializer.deserialize_and_generate(cast(str, serialized_data))
+
+
+@pytest.mark.parametrize("format_name", [None, 123, object()])
+def test_roundtrip_deserialize_rejects_invalid_format_types(format_name: Any) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(TypeError, match="format must be a string"):
+        serializer.deserialize_and_generate("{}", format=cast(str, format_name))
+
+
+@pytest.mark.parametrize("format_name", ["", "toml", "xml"])
+def test_roundtrip_deserialize_rejects_unsupported_formats(format_name: str) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(ValueError, match="format must be 'json' or 'yaml'"):
+        serializer.deserialize_and_generate("{}", format=format_name)
+
+
+@pytest.mark.parametrize("preserve_original_formatting", [None, 1, "yes", object()])
+def test_roundtrip_deserialize_rejects_invalid_preserve_formatting_types(
+    preserve_original_formatting: Any,
+) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(TypeError, match="preserve_original_formatting must be a boolean"):
+        serializer.deserialize_and_generate(
+            "{}",
+            preserve_original_formatting=cast(bool, preserve_original_formatting),
+        )
 
 
 def _serialized_json_payload() -> dict[str, object]:
@@ -135,6 +229,30 @@ def test_roundtrip_test_result() -> None:
     result = serializer.roundtrip_test(source, format="json")
     assert result["format"] == "json"
     assert "original_source" in result
+
+
+@pytest.mark.parametrize("source", [None, 123, object()])
+def test_roundtrip_test_rejects_invalid_source_types(source: Any) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(TypeError, match="yara_source must be a string"):
+        serializer.roundtrip_test(cast(str, source))
+
+
+@pytest.mark.parametrize("format_name", [None, 123, object()])
+def test_roundtrip_test_rejects_invalid_format_types(format_name: Any) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(TypeError, match="format must be a string"):
+        serializer.roundtrip_test("rule r1 { condition: true }", format=cast(str, format_name))
+
+
+@pytest.mark.parametrize("format_name", ["", "toml", "xml"])
+def test_roundtrip_test_rejects_unsupported_formats(format_name: str) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(ValueError, match="format must be 'json' or 'yaml'"):
+        serializer.roundtrip_test("rule r1 { condition: true }", format=format_name)
 
 
 def test_roundtrip_test_uses_structural_success_for_reformatted_source() -> None:
