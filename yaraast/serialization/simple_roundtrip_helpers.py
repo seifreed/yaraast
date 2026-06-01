@@ -1022,7 +1022,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "Import",
             "module": _serialize_required_nonempty_string(node.module, "Import module"),
-            "alias": _serialize_nullable_string(node.alias, "Import alias"),
+            "alias": _serialize_nullable_nonempty_string(node.alias, "Import alias"),
         }
     if isinstance(node, Include):
         return {
@@ -1578,9 +1578,19 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
     )
     if macro_value is not None:
         data["macro_value"] = macro_value
-    condition = _serialize_nullable_string(getattr(pragma, "condition", None), "Pragma condition")
-    if condition is not None:
-        data["condition"] = condition
+    if hasattr(pragma, "condition"):
+        if pragma.pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}:
+            condition = _serialize_required_nonempty_string(
+                pragma.condition,
+                "Pragma condition",
+            )
+        else:
+            condition = _serialize_nullable_nonempty_string(
+                pragma.condition,
+                "Pragma condition",
+            )
+        if condition is not None:
+            data["condition"] = condition
     parameters = None
     if hasattr(pragma, "parameters"):
         parameters = _serialize_string_key_dict(pragma.parameters, "Pragma parameters")
@@ -1686,7 +1696,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "Import":
         return Import(
             _deserialize_nonempty_string_field(data, "module", "Import"),
-            alias=_deserialize_nullable_string_field(data, "alias", "Import"),
+            alias=_deserialize_nullable_nonempty_string_field(data, "alias", "Import"),
         )
     if node_type == "Include":
         return Include(_deserialize_nonempty_string_field(data, "path", "Include"))
@@ -2166,9 +2176,14 @@ def deserialize_pragma(data: dict[str, Any]) -> Pragma:
             macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma")
         )
     elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
+        condition = (
+            _deserialize_nonempty_string_field(data, "condition", "Pragma")
+            if pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}
+            else _deserialize_nullable_nonempty_string_field(data, "condition", "Pragma")
+        )
         pragma = ConditionalDirective(
             pragma_type,
-            condition=_deserialize_nullable_string_field(data, "condition", "Pragma"),
+            condition=condition,
         )
     elif pragma_type == PragmaType.CUSTOM:
         pragma = CustomPragma(

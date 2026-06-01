@@ -1030,7 +1030,7 @@ class JsonSerializerDeserializeMixin:
         return self._apply_node_metadata(
             Import(
                 module=_deserialize_nonempty_string_field(data, "module", "Import"),
-                alias=_deserialize_nullable_string_field(data, "alias", "Import"),
+                alias=_deserialize_nullable_nonempty_string_field(data, "alias", "Import"),
             ),
             data,
         )
@@ -1387,9 +1387,14 @@ class JsonSerializerDeserializeMixin:
                 macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma")
             )
         elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
+            condition = (
+                _deserialize_nonempty_string_field(data, "condition", "Pragma")
+                if pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}
+                else _deserialize_nullable_nonempty_string_field(data, "condition", "Pragma")
+            )
             pragma = ConditionalDirective(
                 pragma_type,
-                condition=_deserialize_nullable_string_field(data, "condition", "Pragma"),
+                condition=condition,
             )
         elif pragma_type == PragmaType.CUSTOM:
             pragma = CustomPragma(

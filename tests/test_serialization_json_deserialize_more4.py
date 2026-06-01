@@ -107,6 +107,9 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Import alias must be a string"):
         s._deserialize_import({"module": "pe", "alias": True})
 
+    with pytest.raises(SerializationError, match="Import alias must not be empty"):
+        s._deserialize_import({"module": "pe", "alias": ""})
+
     with pytest.raises(SerializationError, match="Include path must be a string"):
         s._deserialize_include({"path": ["x.yar"]})
 
@@ -309,6 +312,15 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="Pragma condition must be a string"):
         s._deserialize_pragma({"pragma_type": "ifdef", "condition": True})
+
+    with pytest.raises(SerializationError, match="Pragma condition must not be empty"):
+        s._deserialize_pragma({"pragma_type": "ifdef", "condition": ""})
+
+    with pytest.raises(SerializationError, match="Pragma condition must not be empty"):
+        s._deserialize_pragma({"pragma_type": "ifndef", "condition": ""})
+
+    with pytest.raises(SerializationError, match="Pragma condition is required"):
+        s._deserialize_pragma({"pragma_type": "ifdef"})
 
     with pytest.raises(SerializationError, match="InRulePragma pragma is required"):
         s._deserialize_in_rule_pragma({"position": "before_condition"})

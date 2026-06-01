@@ -552,6 +552,10 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
             "Import alias must be a string",
         ),
         (
+            YaraFile(imports=[Import(module="pe", alias="")]),
+            "Import alias must not be empty",
+        ),
+        (
             YaraFile(includes=[Include(path=invalid_text)]),
             "Include path must be a string",
         ),
@@ -1018,6 +1022,14 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
         ),
         (
             YaraFile(pragmas=[conditional_with_bad_condition]),
+            "Pragma condition must be a string",
+        ),
+        (
+            YaraFile(pragmas=[ConditionalDirective(PragmaType.IFDEF, "")]),
+            "Pragma condition must not be empty",
+        ),
+        (
+            YaraFile(pragmas=[ConditionalDirective(PragmaType.IFDEF)]),
             "Pragma condition must be a string",
         ),
         (

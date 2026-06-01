@@ -280,7 +280,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node(
             "Import",
             module=_serialize_required_nonempty_string(node.module, "Import module"),
-            alias=_serialize_nullable_string(getattr(node, "alias", None), "Import alias"),
+            alias=_serialize_nullable_nonempty_string(getattr(node, "alias", None), "Import alias"),
         )
 
     def visit_include(self, node) -> dict[str, Any]:
@@ -586,6 +586,8 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         }
 
     def visit_pragma(self, node) -> dict[str, Any]:
+        from yaraast.ast.pragmas import PragmaType
+
         data = {
             "type": "Pragma",
             "pragma_type": _serialize_enum_value(node.pragma_type, "Pragma pragma_type"),
@@ -604,10 +606,16 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
                 "Pragma macro_value",
             )
         if hasattr(node, "condition"):
-            data["condition"] = _serialize_nullable_string(
-                node.condition,
-                "Pragma condition",
-            )
+            if node.pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}:
+                data["condition"] = _serialize_required_nonempty_string(
+                    node.condition,
+                    "Pragma condition",
+                )
+            else:
+                data["condition"] = _serialize_nullable_nonempty_string(
+                    node.condition,
+                    "Pragma condition",
+                )
         if hasattr(node, "parameters"):
             data["parameters"] = _serialize_string_key_dict(
                 node.parameters,

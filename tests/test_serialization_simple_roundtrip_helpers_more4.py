@@ -43,6 +43,7 @@ from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModi
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import (
+    ConditionalDirective,
     CustomPragma,
     DefineDirective,
     InRulePragma,
@@ -210,6 +211,9 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
 
     with pytest.raises(SerializationError, match="Import alias must be a string"):
         deserialize_node({"type": "Import", "module": "pe", "alias": True})
+
+    with pytest.raises(SerializationError, match="Import alias must not be empty"):
+        deserialize_node({"type": "Import", "module": "pe", "alias": ""})
 
     with pytest.raises(SerializationError, match="Include path must be a string"):
         deserialize_node({"type": "Include", "path": ["x.yar"]})
@@ -507,6 +511,15 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="Pragma condition must be a string"):
         deserialize_node({"type": "Pragma", "pragma_type": "ifdef", "condition": True})
+
+    with pytest.raises(SerializationError, match="Pragma condition must not be empty"):
+        deserialize_node({"type": "Pragma", "pragma_type": "ifdef", "condition": ""})
+
+    with pytest.raises(SerializationError, match="Pragma condition must not be empty"):
+        deserialize_node({"type": "Pragma", "pragma_type": "ifndef", "condition": ""})
+
+    with pytest.raises(SerializationError, match="Pragma condition is required"):
+        deserialize_node({"type": "Pragma", "pragma_type": "ifdef"})
 
     with pytest.raises(SerializationError, match="InRulePragma pragma is required"):
         deserialize_node({"type": "InRulePragma", "position": "before_condition"})
@@ -1343,6 +1356,7 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
         (Import(""), "Import module must not be empty"),
         (Import(cast(Any, 123)), "Import module must be a string"),
         (Import("pe", alias=cast(Any, 123)), "Import alias must be a string"),
+        (Import("pe", alias=""), "Import alias must not be empty"),
         (Include(""), "Include path must not be empty"),
         (Include(cast(Any, 123)), "Include path must be a string"),
         (Tag(""), "Tag name must not be empty"),
@@ -1445,6 +1459,14 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
         (
             InRulePragma(Pragma(PragmaType.CUSTOM, "vendor"), ""),
             "InRulePragma position must not be empty",
+        ),
+        (
+            ConditionalDirective(PragmaType.IFDEF, ""),
+            "Pragma condition must not be empty",
+        ),
+        (
+            ConditionalDirective(PragmaType.IFDEF),
+            "Pragma condition must be a string",
         ),
     )
 
