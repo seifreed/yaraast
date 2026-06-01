@@ -34,11 +34,27 @@ def _serialize_nullable_string(value, context: str) -> str | None:
     return _serialize_required_string(value, context)
 
 
+def _serialize_nullable_nonempty_string(value, context: str) -> str | None:
+    text = _serialize_nullable_string(value, context)
+    if text == "":
+        msg = f"{context} must not be empty"
+        raise SerializationError(msg)
+    return text
+
+
 def _serialize_string_list(values, context: str) -> list[str]:
     if isinstance(values, list | tuple) and all(isinstance(item, str) for item in values):
         return list(values)
     msg = f"{context} must be a list of strings"
     raise SerializationError(msg)
+
+
+def _serialize_nonempty_string_list(values, context: str) -> list[str]:
+    items = _serialize_string_list(values, context)
+    if any(not item for item in items):
+        msg = f"{context} must contain non-empty strings"
+        raise SerializationError(msg)
+    return items
 
 
 def _serialize_string_key_dict(value, context: str) -> dict[str, Any]:
@@ -743,7 +759,7 @@ def visit_string_operator_expression(serializer, node) -> dict[str, Any]:
             node.left,
             "StringOperatorExpression left",
         ),
-        "operator": _serialize_required_string(
+        "operator": _serialize_required_nonempty_string(
             node.operator,
             "StringOperatorExpression operator",
         ),
@@ -788,7 +804,10 @@ def visit_with_statement(serializer, node) -> dict[str, Any]:
 def visit_with_declaration(serializer, node) -> dict[str, Any]:
     return {
         "type": "WithDeclaration",
-        "identifier": _serialize_required_string(node.identifier, "WithDeclaration identifier"),
+        "identifier": _serialize_required_nonempty_string(
+            node.identifier,
+            "WithDeclaration identifier",
+        ),
         "value": _serialize_required_expression(serializer, node.value, "WithDeclaration value"),
     }
 
@@ -801,7 +820,7 @@ def visit_array_comprehension(serializer, node) -> dict[str, Any]:
             node.expression,
             "ArrayComprehension expression",
         ),
-        "variable": _serialize_required_string(
+        "variable": _serialize_required_nonempty_string(
             node.variable,
             "ArrayComprehension variable",
         ),
@@ -833,11 +852,11 @@ def visit_dict_comprehension(serializer, node) -> dict[str, Any]:
                 "DictComprehension value_expression",
             )
         ),
-        "key_variable": _serialize_required_string(
+        "key_variable": _serialize_required_nonempty_string(
             node.key_variable,
             "DictComprehension key_variable",
         ),
-        "value_variable": _serialize_nullable_string(
+        "value_variable": _serialize_nullable_nonempty_string(
             node.value_variable,
             "DictComprehension value_variable",
         ),
@@ -918,7 +937,7 @@ def visit_slice_expression(serializer, node) -> dict[str, Any]:
 def visit_lambda_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "LambdaExpression",
-        "parameters": _serialize_string_list(
+        "parameters": _serialize_nonempty_string_list(
             node.parameters,
             "LambdaExpression parameters",
         ),

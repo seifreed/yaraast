@@ -311,6 +311,16 @@ def _deserialize_nullable_string_field(
     raise SerializationError(msg)
 
 
+def _deserialize_nullable_nonempty_string_field(
+    data: dict[str, Any], field: str, context: str
+) -> str | None:
+    text = _deserialize_nullable_string_field(data, field, context)
+    if text == "":
+        msg = f"{context} {field} must not be empty"
+        raise SerializationError(msg)
+    return text
+
+
 def _deserialize_string_list_field(data: dict[str, Any], field: str, context: str) -> list[str]:
     data = _deserialize_object(data, context)
     value = data.get(field, [])
@@ -318,6 +328,16 @@ def _deserialize_string_list_field(data: dict[str, Any], field: str, context: st
         return value
     msg = f"{context} {field} must be a list of strings"
     raise SerializationError(msg)
+
+
+def _deserialize_nonempty_string_list_field(
+    data: dict[str, Any], field: str, context: str
+) -> list[str]:
+    items = _deserialize_string_list_field(data, field, context)
+    if any(not item for item in items):
+        msg = f"{context} {field} must contain non-empty strings"
+        raise SerializationError(msg)
+    return items
 
 
 def _deserialize_list_field(data: dict[str, Any], field: str, context: str) -> list[Any]:
@@ -760,7 +780,7 @@ def _deser_string_operator_expression(self, data: dict[str, Any]):
         right = {"type": "Identifier", "name": "true"}
     return StringOperatorExpression(
         left=_deserialize_required_expression_value(self, left, "StringOperatorExpression left"),
-        operator=_deserialize_string_field(data, "operator", "StringOperatorExpression"),
+        operator=_deserialize_nonempty_string_field(data, "operator", "StringOperatorExpression"),
         right=_deserialize_required_expression_value(self, right, "StringOperatorExpression right"),
     )
 
@@ -775,9 +795,16 @@ def _deser_extern_rule_reference(self, data: dict[str, Any]):
     if not isinstance(rule_name, str):
         msg = "ExternRuleReference rule_name must be a string"
         raise SerializationError(msg)
+    if not rule_name:
+        msg = "ExternRuleReference rule_name must not be empty"
+        raise SerializationError(msg)
     return ExternRuleReference(
         rule_name=rule_name,
-        namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRuleReference"),
+        namespace=_deserialize_nullable_nonempty_string_field(
+            data,
+            "namespace",
+            "ExternRuleReference",
+        ),
     )
 
 
@@ -796,7 +823,7 @@ def _deser_with_declaration(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import WithDeclaration
 
     return WithDeclaration(
-        identifier=_deserialize_string_field(data, "identifier", "WithDeclaration"),
+        identifier=_deserialize_nonempty_string_field(data, "identifier", "WithDeclaration"),
         value=_deserialize_required_expression(self, data, "value", "WithDeclaration"),
     )
 
@@ -804,11 +831,15 @@ def _deser_with_declaration(self, data: dict[str, Any]):
 def _deser_array_comprehension(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import ArrayComprehension
 
+    variable = _deserialize_optional_string_field(data, "variable", "ArrayComprehension")
+    if "variable" in data and not variable:
+        msg = "ArrayComprehension variable must not be empty"
+        raise SerializationError(msg)
     return ArrayComprehension(
         expression=_deserialize_optional_expression(
             self, data.get("expression"), "ArrayComprehension expression"
         ),
-        variable=_deserialize_optional_string_field(data, "variable", "ArrayComprehension"),
+        variable=variable,
         iterable=_deserialize_optional_expression(
             self, data.get("iterable"), "ArrayComprehension iterable"
         ),
@@ -821,6 +852,13 @@ def _deser_array_comprehension(self, data: dict[str, Any]):
 def _deser_dict_comprehension(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import DictComprehension
 
+    key_variable = _deserialize_optional_string_field(data, "key_variable", "DictComprehension")
+    if "key_variable" in data and not key_variable:
+        msg = "DictComprehension key_variable must not be empty"
+        raise SerializationError(msg)
+    value_variable = _deserialize_nullable_nonempty_string_field(
+        data, "value_variable", "DictComprehension"
+    )
     return DictComprehension(
         key_expression=_deserialize_optional_expression(
             self, data.get("key_expression"), "DictComprehension key_expression"
@@ -828,10 +866,8 @@ def _deser_dict_comprehension(self, data: dict[str, Any]):
         value_expression=_deserialize_optional_expression(
             self, data.get("value_expression"), "DictComprehension value_expression"
         ),
-        key_variable=_deserialize_optional_string_field(data, "key_variable", "DictComprehension"),
-        value_variable=_deserialize_nullable_string_field(
-            data, "value_variable", "DictComprehension"
-        ),
+        key_variable=key_variable,
+        value_variable=value_variable,
         iterable=_deserialize_optional_expression(
             self, data.get("iterable"), "DictComprehension iterable"
         ),
@@ -898,7 +934,11 @@ def _deser_lambda_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import LambdaExpression
 
     return LambdaExpression(
-        parameters=_deserialize_string_list_field(data, "parameters", "LambdaExpression"),
+        parameters=_deserialize_nonempty_string_list_field(
+            data,
+            "parameters",
+            "LambdaExpression",
+        ),
         body=_deserialize_required_expression(self, data, "body", "LambdaExpression"),
     )
 
@@ -1259,11 +1299,18 @@ class JsonSerializerDeserializeMixin:
         if not isinstance(module_path, str):
             msg = "ExternImport module_path must be a string"
             raise SerializationError(msg)
+        if not module_path:
+            msg = "ExternImport module_path must not be empty"
+            raise SerializationError(msg)
         return self._apply_node_metadata(
             ExternImport(
                 module_path=module_path,
-                alias=_deserialize_nullable_string_field(data, "alias", "ExternImport"),
-                rules=_deserialize_string_list_field(data, "rules", "ExternImport"),
+                alias=_deserialize_nullable_nonempty_string_field(
+                    data,
+                    "alias",
+                    "ExternImport",
+                ),
+                rules=_deserialize_nonempty_string_list_field(data, "rules", "ExternImport"),
             ),
             data,
         )
@@ -1274,11 +1321,15 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             ExternRule(
-                name=_deserialize_string_field(data, "name", "ExternRule"),
+                name=_deserialize_nonempty_string_field(data, "name", "ExternRule"),
                 modifiers=Rule._normalize_modifiers(
                     _deserialize_string_list_field(data, "modifiers", "ExternRule")
                 ),
-                namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRule"),
+                namespace=_deserialize_nullable_nonempty_string_field(
+                    data,
+                    "namespace",
+                    "ExternRule",
+                ),
             ),
             data,
         )
@@ -1288,7 +1339,7 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             ExternNamespace(
-                name=_deserialize_string_field(data, "name", "ExternNamespace"),
+                name=_deserialize_nonempty_string_field(data, "name", "ExternNamespace"),
                 extern_rules=[
                     self._deserialize_extern_rule(rule)
                     for rule in _deserialize_list_field(data, "extern_rules", "ExternNamespace")

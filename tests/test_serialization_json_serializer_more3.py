@@ -753,6 +753,14 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
             "StringOperatorExpression operator must be a string",
         ),
         (
+            StringOperatorExpression(StringLiteral("a"), "", StringLiteral("b")),
+            "StringOperatorExpression operator must not be empty",
+        ),
+        (
+            WithStatement([WithDeclaration("", IntegerLiteral(1))], BooleanLiteral(True)),
+            "WithDeclaration identifier must not be empty",
+        ),
+        (
             WithStatement(
                 [WithDeclaration(invalid_text, IntegerLiteral(1))],
                 BooleanLiteral(True),
@@ -760,16 +768,32 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
             "WithDeclaration identifier must be a string",
         ),
         (
+            ArrayComprehension(variable=""),
+            "ArrayComprehension variable must not be empty",
+        ),
+        (
             ArrayComprehension(variable=invalid_text),
             "ArrayComprehension variable must be a string",
+        ),
+        (
+            DictComprehension(key_variable=""),
+            "DictComprehension key_variable must not be empty",
         ),
         (
             DictComprehension(key_variable=invalid_text),
             "DictComprehension key_variable must be a string",
         ),
         (
-            DictComprehension(value_variable=invalid_text),
+            DictComprehension(key_variable="k", value_variable=""),
+            "DictComprehension value_variable must not be empty",
+        ),
+        (
+            DictComprehension(key_variable="k", value_variable=invalid_text),
             "DictComprehension value_variable must be a string",
+        ),
+        (
+            LambdaExpression([""], BooleanLiteral(True)),
+            "LambdaExpression parameters must contain non-empty strings",
         ),
         (
             LambdaExpression(invalid_parameters, BooleanLiteral(True)),
@@ -802,20 +826,40 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
 
     invalid_cases: list[tuple[YaraFile, str]] = [
         (
+            YaraFile(extern_imports=[ExternImport("")]),
+            "ExternImport module_path must not be empty",
+        ),
+        (
             YaraFile(extern_imports=[ExternImport(invalid_text)]),
             "ExternImport module_path must be a string",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("external", alias="")]),
+            "ExternImport alias must not be empty",
         ),
         (
             YaraFile(extern_imports=[ExternImport("external", alias=invalid_text)]),
             "ExternImport alias must be a string",
         ),
         (
+            YaraFile(extern_imports=[ExternImport("external", rules=[""])]),
+            "ExternImport rules must contain non-empty strings",
+        ),
+        (
             YaraFile(extern_imports=[ExternImport("external", rules=invalid_rules)]),
             "ExternImport rules must be a list of strings",
         ),
         (
+            YaraFile(extern_rules=[ExternRule("")]),
+            "ExternRule name must not be empty",
+        ),
+        (
             YaraFile(extern_rules=[ExternRule(invalid_text)]),
             "ExternRule name must be a string",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("external_rule", namespace="")]),
+            "ExternRule namespace must not be empty",
         ),
         (
             YaraFile(extern_rules=[ExternRule("external_rule", namespace=invalid_text)]),
@@ -832,6 +876,10 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
         (
             YaraFile(namespaces=[ExternNamespace(invalid_text)]),
             "ExternNamespace name must be a string",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace("")]),
+            "ExternNamespace name must not be empty",
         ),
         (
             YaraFile(namespaces=[invalid_namespace_rules_list]),
@@ -851,9 +899,17 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
     with pytest.raises(SerializationError, match="ExternRuleReference rule_name must be a string"):
         serializer.visit(invalid_reference)
 
+    empty_reference = ExternRuleReference("")
+    with pytest.raises(SerializationError, match="ExternRuleReference rule_name must not be empty"):
+        serializer.visit(empty_reference)
+
     invalid_namespace = ExternRuleReference("external_rule", namespace=invalid_text)
     with pytest.raises(SerializationError, match="ExternRuleReference namespace must be a string"):
         serializer.visit(invalid_namespace)
+
+    empty_namespace = ExternRuleReference("external_rule", namespace="")
+    with pytest.raises(SerializationError, match="ExternRuleReference namespace must not be empty"):
+        serializer.visit(empty_namespace)
 
 
 def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
@@ -1447,13 +1503,13 @@ def test_json_serializer_rejects_invalid_optional_expression_fields() -> None:
         expressions = [
             StringOffset("$a", invalid_value),
             StringLength("$a", invalid_value),
-            ArrayComprehension(expression=invalid_value),
-            ArrayComprehension(iterable=invalid_value),
-            ArrayComprehension(condition=invalid_value),
-            DictComprehension(key_expression=invalid_value),
-            DictComprehension(value_expression=invalid_value),
-            DictComprehension(iterable=invalid_value),
-            DictComprehension(condition=invalid_value),
+            ArrayComprehension(expression=invalid_value, variable="x"),
+            ArrayComprehension(iterable=invalid_value, variable="x"),
+            ArrayComprehension(condition=invalid_value, variable="x"),
+            DictComprehension(key_expression=invalid_value, key_variable="k"),
+            DictComprehension(value_expression=invalid_value, key_variable="k"),
+            DictComprehension(iterable=invalid_value, key_variable="k"),
+            DictComprehension(condition=invalid_value, key_variable="k"),
             SliceExpression(Identifier("items"), start=invalid_value),
             SliceExpression(Identifier("items"), stop=invalid_value),
             SliceExpression(Identifier("items"), step=invalid_value),
@@ -1477,13 +1533,13 @@ def test_json_serializer_rejects_non_expression_optional_ast_nodes() -> None:
         ForOfExpression("any", "them", invalid_node),
         StringOffset("$a", invalid_node),
         StringLength("$a", invalid_node),
-        ArrayComprehension(expression=invalid_node),
-        ArrayComprehension(iterable=invalid_node),
-        ArrayComprehension(condition=invalid_node),
-        DictComprehension(key_expression=invalid_node),
-        DictComprehension(value_expression=invalid_node),
-        DictComprehension(iterable=invalid_node),
-        DictComprehension(condition=invalid_node),
+        ArrayComprehension(expression=invalid_node, variable="x"),
+        ArrayComprehension(iterable=invalid_node, variable="x"),
+        ArrayComprehension(condition=invalid_node, variable="x"),
+        DictComprehension(key_expression=invalid_node, key_variable="k"),
+        DictComprehension(value_expression=invalid_node, key_variable="k"),
+        DictComprehension(iterable=invalid_node, key_variable="k"),
+        DictComprehension(condition=invalid_node, key_variable="k"),
         SliceExpression(Identifier("items"), start=invalid_node),
         SliceExpression(Identifier("items"), stop=invalid_node),
         SliceExpression(Identifier("items"), step=invalid_node),

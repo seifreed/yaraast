@@ -224,27 +224,55 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternImport module_path must be a string"):
         s._deserialize_extern_import({"module_path": ["external"]})
 
+    with pytest.raises(SerializationError, match="ExternImport module_path must not be empty"):
+        s._deserialize_extern_import({"module_path": ""})
+
     with pytest.raises(SerializationError, match="ExternImport alias must be a string"):
         s._deserialize_extern_import({"module_path": "external", "alias": True})
+
+    with pytest.raises(SerializationError, match="ExternImport alias must not be empty"):
+        s._deserialize_extern_import({"module_path": "external", "alias": ""})
 
     with pytest.raises(SerializationError, match="ExternImport rules must be a list of strings"):
         s._deserialize_extern_import({"module_path": "external", "rules": "RuleA"})
 
+    with pytest.raises(
+        SerializationError, match="ExternImport rules must contain non-empty strings"
+    ):
+        s._deserialize_extern_import({"module_path": "external", "rules": [""]})
+
     with pytest.raises(SerializationError, match="ExternRule name must be a string"):
         s._deserialize_extern_rule({"name": ["RuleA"]})
+
+    with pytest.raises(SerializationError, match="ExternRule name must not be empty"):
+        s._deserialize_extern_rule({"name": ""})
 
     with pytest.raises(SerializationError, match="ExternRule namespace must be a string"):
         s._deserialize_extern_rule({"name": "RuleA", "namespace": True})
 
+    with pytest.raises(SerializationError, match="ExternRule namespace must not be empty"):
+        s._deserialize_extern_rule({"name": "RuleA", "namespace": ""})
+
     with pytest.raises(SerializationError, match="ExternNamespace name must be a string"):
         s._deserialize_extern_namespace({"name": ["ns"]})
+
+    with pytest.raises(SerializationError, match="ExternNamespace name must not be empty"):
+        s._deserialize_extern_namespace({"name": ""})
 
     with pytest.raises(SerializationError, match="ExternRuleReference rule_name must be a string"):
         s._deserialize_expression({"type": "ExternRuleReference", "rule_name": ["RuleA"]})
 
+    with pytest.raises(SerializationError, match="ExternRuleReference rule_name must not be empty"):
+        s._deserialize_expression({"type": "ExternRuleReference", "rule_name": ""})
+
     with pytest.raises(SerializationError, match="ExternRuleReference namespace must be a string"):
         s._deserialize_expression(
             {"type": "ExternRuleReference", "rule_name": "RuleA", "namespace": True}
+        )
+
+    with pytest.raises(SerializationError, match="ExternRuleReference namespace must not be empty"):
+        s._deserialize_expression(
+            {"type": "ExternRuleReference", "rule_name": "RuleA", "namespace": ""}
         )
 
 
@@ -1016,16 +1044,34 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="FunctionCall arguments must be a list"):
         s._deserialize_expression({"type": "FunctionCall", "function": "fn", "arguments": "abc"})
 
+    with pytest.raises(
+        SerializationError, match="StringOperatorExpression operator must not be empty"
+    ):
+        s._deserialize_expression(
+            {
+                "type": "StringOperatorExpression",
+                "left": true_expr,
+                "operator": "",
+                "right": true_expr,
+            }
+        )
+
     with pytest.raises(SerializationError, match="WithDeclaration identifier must be a string"):
         s._deserialize_expression(
             {"type": "WithDeclaration", "identifier": ["x"], "value": true_expr}
         )
+
+    with pytest.raises(SerializationError, match="WithDeclaration identifier must not be empty"):
+        s._deserialize_expression({"type": "WithDeclaration", "identifier": "", "value": true_expr})
 
     with pytest.raises(SerializationError, match="WithStatement declarations must be a list"):
         s._deserialize_expression({"type": "WithStatement", "declarations": "x", "body": true_expr})
 
     with pytest.raises(SerializationError, match="ArrayComprehension variable must be a string"):
         s._deserialize_expression({"type": "ArrayComprehension", "variable": ["x"]})
+
+    with pytest.raises(SerializationError, match="ArrayComprehension variable must not be empty"):
+        s._deserialize_expression({"type": "ArrayComprehension", "variable": ""})
 
     with pytest.raises(SerializationError, match="Expression must be an object"):
         s._deserialize_expression({"type": "ArrayComprehension", "expression": False})
@@ -1035,6 +1081,18 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     ):
         s._deserialize_expression(
             {"type": "DictComprehension", "key_variable": "k", "value_variable": True}
+        )
+
+    with pytest.raises(
+        SerializationError, match="DictComprehension key_variable must not be empty"
+    ):
+        s._deserialize_expression({"type": "DictComprehension", "key_variable": ""})
+
+    with pytest.raises(
+        SerializationError, match="DictComprehension value_variable must not be empty"
+    ):
+        s._deserialize_expression(
+            {"type": "DictComprehension", "key_variable": "k", "value_variable": ""}
         )
 
     with pytest.raises(SerializationError, match="TupleExpression elements must be a list"):
@@ -1121,6 +1179,13 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     ):
         s._deserialize_expression(
             {"type": "LambdaExpression", "parameters": "xy", "body": true_expr}
+        )
+
+    with pytest.raises(
+        SerializationError, match="LambdaExpression parameters must contain non-empty strings"
+    ):
+        s._deserialize_expression(
+            {"type": "LambdaExpression", "parameters": [""], "body": true_expr}
         )
 
     with pytest.raises(SerializationError, match="PatternMatch cases must be a list"):

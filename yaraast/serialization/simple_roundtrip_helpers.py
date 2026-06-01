@@ -403,6 +403,16 @@ def _deserialize_nullable_string_field(
     raise SerializationError(msg)
 
 
+def _deserialize_nullable_nonempty_string_field(
+    data: dict[str, Any], field: str, context: str
+) -> str | None:
+    text = _deserialize_nullable_string_field(data, field, context)
+    if text == "":
+        msg = f"{context} {field} must not be empty"
+        raise SerializationError(msg)
+    return text
+
+
 def _deserialize_optional_node_value(value: Any, context: str) -> ASTNode | None:
     if value is None:
         return None
@@ -492,6 +502,16 @@ def _deserialize_string_list_field(data: dict[str, Any], field: str, context: st
     raise SerializationError(msg)
 
 
+def _deserialize_nonempty_string_list_field(
+    data: dict[str, Any], field: str, context: str
+) -> list[str]:
+    items = _deserialize_string_list_field(data, field, context)
+    if any(not item for item in items):
+        msg = f"{context} {field} must contain non-empty strings"
+        raise SerializationError(msg)
+    return items
+
+
 def _serialize_required_string(value: Any, context: str) -> str:
     if isinstance(value, str):
         return value
@@ -522,11 +542,27 @@ def _serialize_nullable_string(value: Any, context: str) -> str | None:
     return _serialize_required_string(value, context)
 
 
+def _serialize_nullable_nonempty_string(value: Any, context: str) -> str | None:
+    text = _serialize_nullable_string(value, context)
+    if text == "":
+        msg = f"{context} must not be empty"
+        raise SerializationError(msg)
+    return text
+
+
 def _serialize_string_list(values: Any, context: str) -> list[str]:
     if isinstance(values, list | tuple) and all(isinstance(item, str) for item in values):
         return list(values)
     msg = f"{context} must be a list of strings"
     raise SerializationError(msg)
+
+
+def _serialize_nonempty_string_list(values: Any, context: str) -> list[str]:
+    items = _serialize_string_list(values, context)
+    if any(not item for item in items):
+        msg = f"{context} must contain non-empty strings"
+        raise SerializationError(msg)
+    return items
 
 
 def _serialize_string_key_dict(value: Any, context: str) -> dict[str, Any]:
@@ -1024,11 +1060,11 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, ExternRuleReference):
         return {
             "type": "ExternRuleReference",
-            "rule_name": _serialize_required_string(
+            "rule_name": _serialize_required_nonempty_string(
                 node.rule_name,
                 "ExternRuleReference rule_name",
             ),
-            "namespace": _serialize_nullable_string(
+            "namespace": _serialize_nullable_nonempty_string(
                 node.namespace,
                 "ExternRuleReference namespace",
             ),
@@ -1036,12 +1072,12 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, ExternImport):
         return {
             "type": "ExternImport",
-            "module_path": _serialize_required_string(
+            "module_path": _serialize_required_nonempty_string(
                 node.module_path,
                 "ExternImport module_path",
             ),
-            "alias": _serialize_nullable_string(node.alias, "ExternImport alias"),
-            "rules": _serialize_string_list(node.rules, "ExternImport rules"),
+            "alias": _serialize_nullable_nonempty_string(node.alias, "ExternImport alias"),
+            "rules": _serialize_nonempty_string_list(node.rules, "ExternImport rules"),
         }
     if isinstance(node, ExternNamespace):
         extern_rules = _validated_node_collection(
@@ -1051,7 +1087,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         )
         return {
             "type": "ExternNamespace",
-            "name": _serialize_required_string(node.name, "ExternNamespace name"),
+            "name": _serialize_required_nonempty_string(node.name, "ExternNamespace name"),
             "extern_rules": [serialize_extern_rule(rule) for rule in extern_rules],
         }
     if isinstance(node, InRulePragma):
@@ -1261,7 +1297,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "StringOperatorExpression",
             "left": serialize_node(node.left),
-            "operator": _serialize_required_string(
+            "operator": _serialize_required_nonempty_string(
                 node.operator,
                 "StringOperatorExpression operator",
             ),
@@ -1281,7 +1317,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, WithDeclaration):
         return {
             "type": "WithDeclaration",
-            "identifier": _serialize_required_string(
+            "identifier": _serialize_required_nonempty_string(
                 node.identifier,
                 "WithDeclaration identifier",
             ),
@@ -1291,7 +1327,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "ArrayComprehension",
             "expression": serialize_node(node.expression) if node.expression is not None else None,
-            "variable": _serialize_required_string(
+            "variable": _serialize_required_nonempty_string(
                 node.variable,
                 "ArrayComprehension variable",
             ),
@@ -1307,11 +1343,11 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "value_expression": (
                 serialize_node(node.value_expression) if node.value_expression is not None else None
             ),
-            "key_variable": _serialize_required_string(
+            "key_variable": _serialize_required_nonempty_string(
                 node.key_variable,
                 "DictComprehension key_variable",
             ),
-            "value_variable": _serialize_nullable_string(
+            "value_variable": _serialize_nullable_nonempty_string(
                 node.value_variable,
                 "DictComprehension value_variable",
             ),
@@ -1363,7 +1399,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, LambdaExpression):
         return {
             "type": "LambdaExpression",
-            "parameters": _serialize_string_list(node.parameters, "LambdaExpression parameters"),
+            "parameters": _serialize_nonempty_string_list(
+                node.parameters,
+                "LambdaExpression parameters",
+            ),
             "body": serialize_node(node.body),
         }
     if isinstance(node, PatternMatch):
@@ -1459,9 +1498,12 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
 def serialize_extern_rule(extern_rule: ExternRule) -> dict[str, Any]:
     return {
         "type": "ExternRule",
-        "name": _serialize_required_string(extern_rule.name, "ExternRule name"),
+        "name": _serialize_required_nonempty_string(extern_rule.name, "ExternRule name"),
         "modifiers": _serialize_rule_modifiers(extern_rule.modifiers, "ExternRule"),
-        "namespace": _serialize_nullable_string(extern_rule.namespace, "ExternRule namespace"),
+        "namespace": _serialize_nullable_nonempty_string(
+            extern_rule.namespace,
+            "ExternRule namespace",
+        ),
     }
 
 
@@ -1668,18 +1710,30 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return deserialize_extern_rule(data)
     if node_type == "ExternRuleReference":
         return ExternRuleReference(
-            rule_name=_deserialize_string_field(data, "rule_name", "ExternRuleReference"),
-            namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRuleReference"),
+            rule_name=_deserialize_nonempty_string_field(
+                data,
+                "rule_name",
+                "ExternRuleReference",
+            ),
+            namespace=_deserialize_nullable_nonempty_string_field(
+                data,
+                "namespace",
+                "ExternRuleReference",
+            ),
         )
     if node_type == "ExternImport":
         return ExternImport(
-            module_path=_deserialize_string_field(data, "module_path", "ExternImport"),
-            alias=_deserialize_nullable_string_field(data, "alias", "ExternImport"),
-            rules=_deserialize_string_list_field(data, "rules", "ExternImport"),
+            module_path=_deserialize_nonempty_string_field(
+                data,
+                "module_path",
+                "ExternImport",
+            ),
+            alias=_deserialize_nullable_nonempty_string_field(data, "alias", "ExternImport"),
+            rules=_deserialize_nonempty_string_list_field(data, "rules", "ExternImport"),
         )
     if node_type == "ExternNamespace":
         return ExternNamespace(
-            name=_deserialize_string_field(data, "name", "ExternNamespace"),
+            name=_deserialize_nonempty_string_field(data, "name", "ExternNamespace"),
             extern_rules=[
                 deserialize_extern_rule(rule)
                 for rule in _deserialize_list_field(data, "extern_rules", "ExternNamespace")
@@ -1847,7 +1901,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             right = {"type": "Identifier", "name": "true"}
         return StringOperatorExpression(
             _deserialize_required_node_value(left, "StringOperatorExpression left"),
-            _deserialize_string_field(data, "operator", "StringOperatorExpression"),
+            _deserialize_nonempty_string_field(data, "operator", "StringOperatorExpression"),
             _deserialize_required_node_value(right, "StringOperatorExpression right"),
         )
     if node_type == "WithStatement":
@@ -1857,15 +1911,19 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "WithDeclaration":
         return WithDeclaration(
-            identifier=_deserialize_string_field(data, "identifier", "WithDeclaration"),
+            identifier=_deserialize_nonempty_string_field(data, "identifier", "WithDeclaration"),
             value=_deserialize_required_node(data, "value", "WithDeclaration"),
         )
     if node_type == "ArrayComprehension":
+        variable = _deserialize_optional_string_field(data, "variable", "ArrayComprehension")
+        if "variable" in data and not variable:
+            msg = "ArrayComprehension variable must not be empty"
+            raise SerializationError(msg)
         return ArrayComprehension(
             expression=_deserialize_optional_node_field(
                 data, "expression", "ArrayComprehension expression"
             ),
-            variable=_deserialize_optional_string_field(data, "variable", "ArrayComprehension"),
+            variable=variable,
             iterable=_deserialize_optional_node_field(
                 data, "iterable", "ArrayComprehension iterable"
             ),
@@ -1874,6 +1932,15 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             ),
         )
     if node_type == "DictComprehension":
+        key_variable = _deserialize_optional_string_field(data, "key_variable", "DictComprehension")
+        if "key_variable" in data and not key_variable:
+            msg = "DictComprehension key_variable must not be empty"
+            raise SerializationError(msg)
+        value_variable = _deserialize_nullable_nonempty_string_field(
+            data,
+            "value_variable",
+            "DictComprehension",
+        )
         return DictComprehension(
             key_expression=_deserialize_optional_node_field(
                 data, "key_expression", "DictComprehension key_expression"
@@ -1881,12 +1948,8 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             value_expression=_deserialize_optional_node_field(
                 data, "value_expression", "DictComprehension value_expression"
             ),
-            key_variable=_deserialize_optional_string_field(
-                data, "key_variable", "DictComprehension"
-            ),
-            value_variable=_deserialize_nullable_string_field(
-                data, "value_variable", "DictComprehension"
-            ),
+            key_variable=key_variable,
+            value_variable=value_variable,
             iterable=_deserialize_optional_node_field(
                 data, "iterable", "DictComprehension iterable"
             ),
@@ -1925,7 +1988,11 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "LambdaExpression":
         return LambdaExpression(
-            parameters=_deserialize_string_list_field(data, "parameters", "LambdaExpression"),
+            parameters=_deserialize_nonempty_string_list_field(
+                data,
+                "parameters",
+                "LambdaExpression",
+            ),
             body=_deserialize_required_node(data, "body", "LambdaExpression"),
         )
     if node_type == "PatternMatch":
@@ -2038,11 +2105,11 @@ def _deserialize_rule_modifiers(modifiers: list[Any]) -> list[Any]:
 
 def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
     return ExternRule(
-        name=_deserialize_string_field(data, "name", "ExternRule"),
+        name=_deserialize_nonempty_string_field(data, "name", "ExternRule"),
         modifiers=_deserialize_rule_modifiers(
             _deserialize_string_list_field(data, "modifiers", "ExternRule")
         ),
-        namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRule"),
+        namespace=_deserialize_nullable_nonempty_string_field(data, "namespace", "ExternRule"),
     )
 
 
