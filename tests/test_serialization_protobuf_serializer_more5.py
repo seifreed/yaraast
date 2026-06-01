@@ -1698,6 +1698,10 @@ def test_protobuf_deserializer_rejects_empty_rule_modifier_names(
             "ExternRuleReference namespace must be a string",
         ),
         (
+            ExternRuleReference("ExternalRule", namespace=""),
+            "ExternRuleReference namespace must not be empty",
+        ),
+        (
             StringOperatorExpression(StringLiteral("a"), cast(Any, 123), StringLiteral("b")),
             "StringOperatorExpression operator must be a string",
         ),

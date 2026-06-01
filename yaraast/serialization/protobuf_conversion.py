@@ -1313,7 +1313,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             "ExternRuleReference rule_name",
         )
         if expr.namespace is not None:
-            pb_expr.extern_rule_reference.namespace = _protobuf_required_string(
+            pb_expr.extern_rule_reference.namespace = _protobuf_required_nonempty_string(
                 expr.namespace,
                 "ExternRuleReference namespace",
             )
