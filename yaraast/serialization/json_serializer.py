@@ -329,7 +329,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
                 name = None
         return self._simple_node(
             "StringModifier",
-            name=_serialize_required_string(name, "StringModifier name"),
+            name=_serialize_required_nonempty_string(name, "StringModifier name"),
             value=_serialize_modifier_value(node.value),
         )
 

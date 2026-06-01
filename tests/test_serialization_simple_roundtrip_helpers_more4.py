@@ -251,6 +251,12 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         deserialize_rule({"name": "r1", "tags": [{"name": 7}], "condition": None})
 
+    with pytest.raises(SerializationError, match="Tag name must not be empty"):
+        deserialize_rule({"name": "r1", "tags": [{"name": ""}], "condition": None})
+
+    with pytest.raises(SerializationError, match="Tag name must not be empty"):
+        deserialize_rule({"name": "r1", "tags": [""], "condition": None})
+
 
 def test_simple_roundtrip_unknown_node_fallback_rejects_invalid_payload() -> None:
     fallback = deserialize_node({"type": "UnknownNode", "data": "fallback"})
@@ -704,11 +710,19 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
     with pytest.raises(SerializationError, match="Rule modifiers must be a list of strings"):
         deserialize_rule({"name": "r1", "modifiers": [7], "condition": None})
 
+    with pytest.raises(SerializationError, match="Rule modifiers must contain non-empty strings"):
+        deserialize_rule({"name": "r1", "modifiers": [""], "condition": None})
+
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
         deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private"})
 
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list of strings"):
         deserialize_extern_rule({"name": "RemoteRule", "modifiers": [7]})
+
+    with pytest.raises(
+        SerializationError, match="ExternRule modifiers must contain non-empty strings"
+    ):
+        deserialize_extern_rule({"name": "RemoteRule", "modifiers": [""]})
 
     with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
         deserialize_node(
@@ -727,6 +741,16 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
                 "identifier": "$a",
                 "value": "abc",
                 "modifiers": [{"name": 7}],
+            }
+        )
+
+    with pytest.raises(SerializationError, match="StringModifier name must not be empty"):
+        deserialize_string(
+            {
+                "type": "PlainString",
+                "identifier": "$a",
+                "value": "abc",
+                "modifiers": [{"name": ""}],
             }
         )
 
@@ -762,9 +786,28 @@ def test_simple_roundtrip_serializers_reject_non_list_collections() -> None:
     with pytest.raises(SerializationError, match="Rule tags must be a list"):
         serialize_rule(rule)
 
+    cast(Any, rule).tags = [Tag("")]
+    with pytest.raises(SerializationError, match="Tag name must not be empty"):
+        serialize_rule(rule)
+
+    cast(Any, rule).tags = [""]
+    with pytest.raises(SerializationError, match="Tag name must not be empty"):
+        serialize_rule(rule)
+
+    cast(Any, rule).tags = []
+    cast(Any, rule).modifiers = [""]
+    with pytest.raises(SerializationError, match="Rule modifiers must contain non-empty strings"):
+        serialize_rule(rule)
+
     extern_rule = ExternRule(name="RemoteRule")
     cast(Any, extern_rule).modifiers = "private"
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
+        serialize_extern_rule(extern_rule)
+
+    cast(Any, extern_rule).modifiers = [""]
+    with pytest.raises(
+        SerializationError, match="ExternRule modifiers must contain non-empty strings"
+    ):
         serialize_extern_rule(extern_rule)
 
     plain = PlainString(identifier="$a", value="abc")
@@ -1386,6 +1429,10 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
         (
             StringModifier(cast(Any, 123)),
             "StringModifier name must be a string",
+        ),
+        (
+            PlainString(identifier="$a", value="abc", modifiers=[""]),
+            "StringModifier name must not be empty",
         ),
         (
             StringDefinition(identifier=""),

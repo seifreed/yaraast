@@ -484,11 +484,19 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
     with pytest.raises(SerializationError, match="Rule modifiers must be a list of strings"):
         s._deserialize_rule({"name": "r1", "modifiers": [7], "condition": None})
 
+    with pytest.raises(SerializationError, match="Rule modifiers must contain non-empty strings"):
+        s._deserialize_rule({"name": "r1", "modifiers": [""], "condition": None})
+
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
         s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private"})
 
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list of strings"):
         s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": [7]})
+
+    with pytest.raises(
+        SerializationError, match="ExternRule modifiers must contain non-empty strings"
+    ):
+        s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": [""]})
 
     with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
         s._deserialize_extern_namespace({"name": "remote", "extern_rules": "RemoteRule"})
@@ -505,6 +513,16 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
                 "identifier": "$a",
                 "value": "abc",
                 "modifiers": [{"name": 7}],
+            }
+        )
+
+    with pytest.raises(SerializationError, match="StringModifier name must not be empty"):
+        s._deserialize_string(
+            {
+                "type": "PlainString",
+                "identifier": "$a",
+                "value": "abc",
+                "modifiers": [{"name": ""}],
             }
         )
 

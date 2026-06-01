@@ -284,7 +284,7 @@ def _serialize_string_modifier(serializer, modifier, context: str) -> dict[str, 
     if isinstance(modifier, str):
         return {
             "type": "StringModifier",
-            "name": _serialize_required_string(modifier, "StringModifier name"),
+            "name": _serialize_required_nonempty_string(modifier, "StringModifier name"),
             "value": None,
         }
     msg = f"{context} modifiers item must be a string or StringModifier"
@@ -382,6 +382,9 @@ def _serialize_rule_modifiers(values, context: str = "Rule") -> list[str]:
             serialized.append(value)
             continue
         msg = f"{context} modifiers item must be a string or RuleModifier"
+        raise SerializationError(msg)
+    if any(not value for value in serialized):
+        msg = f"{context} modifiers must contain non-empty strings"
         raise SerializationError(msg)
     return serialized
 

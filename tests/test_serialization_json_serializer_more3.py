@@ -269,6 +269,14 @@ def test_json_serializer_rejects_invalid_rule_lists() -> None:
         ):
             serializer.serialize(ast)
 
+    rule = Rule("invalid_rule", condition=BooleanLiteral(True))
+    cast(Any, rule).modifiers = [""]
+    with pytest.raises(
+        SerializationError,
+        match="Rule modifiers must contain non-empty strings",
+    ):
+        serializer.serialize(YaraFile(rules=[rule]))
+
 
 def test_json_serializer_rejects_invalid_string_definition_lists() -> None:
     serializer = JsonSerializer(include_metadata=False)
@@ -300,6 +308,13 @@ def test_json_serializer_rejects_invalid_string_definition_lists() -> None:
         with pytest.raises(
             SerializationError,
             match=f"{context} modifiers item must be",
+        ):
+            serializer.serialize(ast)
+
+        cast(Any, string_definition).modifiers = [""]
+        with pytest.raises(
+            SerializationError,
+            match="StringModifier name must not be empty",
         ):
             serializer.serialize(ast)
 
@@ -886,6 +901,10 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
         (
             YaraFile(extern_rules=[invalid_extern_rule_modifier_item]),
             "ExternRule modifiers item must be",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("external_rule", modifiers=cast(Any, [""]))]),
+            "ExternRule modifiers must contain non-empty strings",
         ),
         (
             YaraFile(namespaces=[ExternNamespace(invalid_text)]),

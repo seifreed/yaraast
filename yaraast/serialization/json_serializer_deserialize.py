@@ -1075,7 +1075,7 @@ class JsonSerializerDeserializeMixin:
         return self._apply_node_metadata(
             Rule(
                 name=_deserialize_nonempty_string_field(data, "name", "Rule"),
-                modifiers=_deserialize_string_list_field(data, "modifiers", "Rule"),
+                modifiers=_deserialize_nonempty_string_list_field(data, "modifiers", "Rule"),
                 tags=tags,
                 meta=meta,
                 strings=strings,
@@ -1221,9 +1221,12 @@ class JsonSerializerDeserializeMixin:
         from yaraast.ast.modifiers import StringModifier
 
         if isinstance(data, dict):
-            name = _deserialize_string_field(data, "name", "StringModifier")
+            name = _deserialize_nonempty_string_field(data, "name", "StringModifier")
             value = self._deserialize_modifier_value(name, data.get("value"))
         elif isinstance(data, str):
+            if not data:
+                msg = "StringModifier name must not be empty"
+                raise SerializationError(msg)
             name = data
             value = None
         else:
@@ -1327,7 +1330,7 @@ class JsonSerializerDeserializeMixin:
             ExternRule(
                 name=_deserialize_nonempty_string_field(data, "name", "ExternRule"),
                 modifiers=Rule._normalize_modifiers(
-                    _deserialize_string_list_field(data, "modifiers", "ExternRule")
+                    _deserialize_nonempty_string_list_field(data, "modifiers", "ExternRule")
                 ),
                 namespace=_deserialize_nullable_nonempty_string_field(
                     data,

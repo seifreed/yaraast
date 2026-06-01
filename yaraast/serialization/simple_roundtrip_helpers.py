@@ -680,15 +680,19 @@ def _serialize_meta_value(value: Any) -> str | int | bool:
 
 def _deserialize_rule_tag(value: Any) -> Tag:
     if isinstance(value, Tag):
+        _serialize_required_nonempty_string(value.name, "Tag name")
         return value
     if isinstance(value, str):
+        if not value:
+            msg = "Tag name must not be empty"
+            raise SerializationError(msg)
         return Tag(name=value)
     if isinstance(value, dict):
         node_type = value.get("type")
         if node_type is not None and node_type != "Tag":
             msg = "Rule tags must contain Tag nodes"
             raise SerializationError(msg)
-        return Tag(name=_deserialize_string_field(value, "name", "Tag"))
+        return Tag(name=_deserialize_nonempty_string_field(value, "name", "Tag"))
     msg = "Tag name must be a string"
     raise SerializationError(msg)
 
@@ -699,9 +703,9 @@ def _deserialize_modifier_value(name: str, value: Any) -> Any:
 
 def _serialize_string_modifier_name(modifier: Any) -> str:
     if isinstance(modifier, str):
-        return modifier
+        return _serialize_required_nonempty_string(modifier, "StringModifier name")
     if isinstance(modifier, StringModifier):
-        return _serialize_required_string(
+        return _serialize_required_nonempty_string(
             getattr(modifier.modifier_type, "value", None),
             "StringModifier name",
         )
@@ -709,7 +713,7 @@ def _serialize_string_modifier_name(modifier: Any) -> str:
         name = modifier.name
     except AttributeError:
         name = None
-    return _serialize_required_string(name, "StringModifier name")
+    return _serialize_required_nonempty_string(name, "StringModifier name")
 
 
 def _serialize_modifiers(modifiers: Any, context: str) -> list[dict[str, Any]]:
@@ -786,9 +790,12 @@ def _format_unknown_modifier(name: str, value: Any) -> str:
 
 def _deserialize_modifier(modifier: Any) -> Any:
     if isinstance(modifier, dict):
-        name = _deserialize_string_field(modifier, "name", "StringModifier")
+        name = _deserialize_nonempty_string_field(modifier, "name", "StringModifier")
         value = _deserialize_modifier_value(name, modifier.get("value"))
     elif isinstance(modifier, str):
+        if not modifier:
+            msg = "StringModifier name must not be empty"
+            raise SerializationError(msg)
         name = modifier
         value = None
     else:
@@ -1525,6 +1532,9 @@ def _serialize_rule_modifiers(modifiers: Any, context: str) -> list[str]:
             continue
         msg = f"{context} modifiers must contain strings or RuleModifier nodes"
         raise SerializationError(msg)
+    if any(not modifier for modifier in serialized):
+        msg = f"{context} modifiers must contain non-empty strings"
+        raise SerializationError(msg)
     return serialized
 
 
@@ -1536,10 +1546,10 @@ def _serialize_rule_tags(tags: Any) -> list[str]:
     serialized = []
     for tag in tags:
         if isinstance(tag, Tag):
-            serialized.append(_serialize_required_string(tag.name, "Tag name"))
+            serialized.append(_serialize_required_nonempty_string(tag.name, "Tag name"))
             continue
         if isinstance(tag, str):
-            serialized.append(tag)
+            serialized.append(_serialize_required_nonempty_string(tag, "Tag name"))
             continue
         msg = "Rule tags must contain Tag nodes or strings"
         raise SerializationError(msg)
@@ -2067,7 +2077,7 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     rule = Rule(
         name=_deserialize_nonempty_string_field(data, "name", "Rule"),
         modifiers=_deserialize_rule_modifiers(
-            _deserialize_string_list_field(data, "modifiers", "Rule")
+            _deserialize_nonempty_string_list_field(data, "modifiers", "Rule")
         ),
         condition=condition if condition is not None else BooleanLiteral(True),
     )
@@ -2111,7 +2121,7 @@ def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
     return ExternRule(
         name=_deserialize_nonempty_string_field(data, "name", "ExternRule"),
         modifiers=_deserialize_rule_modifiers(
-            _deserialize_string_list_field(data, "modifiers", "ExternRule")
+            _deserialize_nonempty_string_list_field(data, "modifiers", "ExternRule")
         ),
         namespace=_deserialize_nullable_nonempty_string_field(data, "namespace", "ExternRule"),
     )
