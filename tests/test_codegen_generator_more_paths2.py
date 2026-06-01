@@ -987,6 +987,48 @@ def test_codegen_generators_reject_non_string_rule_tags() -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+def test_codegen_generators_reject_expression_rule_tags() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_tags",
+                tags=[cast(Any, Identifier("not_a_tag"))],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
+        PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_generators_reject_invalid_rule_pragma_nodes() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_pragmas",
+                pragmas=[cast(Any, Identifier("not_a_pragma"))],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="Rule pragmas must contain InRulePragma nodes"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule pragmas must contain InRulePragma nodes"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule pragmas must contain InRulePragma nodes"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule pragmas must contain InRulePragma nodes"):
+        PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_tag_visitors_reject_non_string_tag_names() -> None:
     tag = Tag(cast(Any, True))
 

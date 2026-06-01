@@ -93,6 +93,22 @@ def _require_ast_node_sequence(values: Any, field_name: str) -> list[ASTNode]:
     return list(values)
 
 
+def _require_ast_node_sequence_type(
+    values: Any,
+    field_name: str,
+    expected_type: type[ASTNode] | tuple[type[ASTNode], ...],
+    expected_name: str,
+) -> list[ASTNode]:
+    if not isinstance(values, list | tuple):
+        msg = f"{field_name.replace('.', ' ')} must be a list or tuple"
+        raise TypeError(msg)
+    for value in values:
+        if not isinstance(value, expected_type):
+            msg = f"{field_name.replace('.', ' ')} must contain {expected_name} nodes"
+            raise TypeError(msg)
+    return list(values)
+
+
 @dataclass
 class YaraFile(ASTNode):
     """Root node representing a complete YARA file with enhanced syntax support."""
@@ -107,13 +123,32 @@ class YaraFile(ASTNode):
 
     def validate_structure(self, *, deep: bool = True) -> None:
         """Validate child containers before traversal."""
-        _require_ast_node_sequence(self.imports, "YaraFile.imports")
-        _require_ast_node_sequence(self.includes, "YaraFile.includes")
-        _require_ast_node_sequence(self.rules, "YaraFile.rules")
-        _require_ast_node_sequence(self.extern_rules, "YaraFile.extern_rules")
-        _require_ast_node_sequence(self.extern_imports, "YaraFile.extern_imports")
-        _require_ast_node_sequence(self.pragmas, "YaraFile.pragmas")
-        _require_ast_node_sequence(self.namespaces, "YaraFile.namespaces")
+        from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+        from yaraast.ast.pragmas import Pragma
+        from yaraast.ast.rules import Import, Include, Rule
+
+        _require_ast_node_sequence_type(self.imports, "YaraFile.imports", Import, "Import")
+        _require_ast_node_sequence_type(self.includes, "YaraFile.includes", Include, "Include")
+        _require_ast_node_sequence_type(self.rules, "YaraFile.rules", Rule, "Rule")
+        _require_ast_node_sequence_type(
+            self.extern_rules,
+            "YaraFile.extern_rules",
+            ExternRule,
+            "ExternRule",
+        )
+        _require_ast_node_sequence_type(
+            self.extern_imports,
+            "YaraFile.extern_imports",
+            ExternImport,
+            "ExternImport",
+        )
+        _require_ast_node_sequence_type(self.pragmas, "YaraFile.pragmas", Pragma, "Pragma")
+        _require_ast_node_sequence_type(
+            self.namespaces,
+            "YaraFile.namespaces",
+            ExternNamespace,
+            "ExternNamespace",
+        )
         if deep:
             for rule in self.rules:
                 validate_structure = getattr(rule, "validate_structure", None)

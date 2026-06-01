@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, cast
 from yaraast.ast.base import (
     ASTNode,
     _require_ast_node,
-    _require_ast_node_sequence,
+    _require_ast_node_sequence_type,
     _VisitorType,
 )
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
@@ -138,8 +138,27 @@ class Rule(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate child containers before traversal."""
-        _require_ast_node_sequence(self.strings, "Rule.strings")
-        _require_ast_node_sequence(self.pragmas, "Rule.pragmas")
+        from yaraast.ast.pragmas import InRulePragma
+        from yaraast.ast.strings import StringDefinition
+
+        _require_ast_node_sequence_type(
+            self.tags,
+            "Rule.tags",
+            Tag,
+            "Tag",
+        )
+        _require_ast_node_sequence_type(
+            self.strings,
+            "Rule.strings",
+            StringDefinition,
+            "StringDefinition",
+        )
+        _require_ast_node_sequence_type(
+            self.pragmas,
+            "Rule.pragmas",
+            InRulePragma,
+            "InRulePragma",
+        )
         if self.condition is not None:
             _require_ast_node(self.condition, "Rule.condition")
         for string in self.strings:

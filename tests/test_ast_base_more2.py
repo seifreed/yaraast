@@ -46,13 +46,13 @@ def test_ast_node_children_flattens_nested_ast_lists() -> None:
 def test_yarafile_accept_rejects_non_ast_children() -> None:
     file_node = YaraFile(rules=[cast(Any, object())])
 
-    with pytest.raises(TypeError, match=r"YaraFile\.rules must contain AST nodes"):
+    with pytest.raises(TypeError, match="YaraFile rules must contain Rule nodes"):
         file_node.accept(cast(Any, object()))
 
 
 def test_rule_validate_structure_rejects_non_ast_children() -> None:
     invalid_strings = Rule(name="bad", strings=[cast(Any, object())])
-    with pytest.raises(TypeError, match=r"Rule\.strings must contain AST nodes"):
+    with pytest.raises(TypeError, match="Rule strings must contain StringDefinition nodes"):
         invalid_strings.validate_structure()
 
     invalid_condition = Rule(name="bad", condition=cast(Any, object()))
@@ -63,7 +63,7 @@ def test_rule_validate_structure_rejects_non_ast_children() -> None:
 def test_direct_yarafile_optimizers_validate_structure() -> None:
     malformed_file = YaraFile(rules=[cast(Any, object())])
 
-    with pytest.raises(TypeError, match=r"YaraFile\.rules must contain AST nodes"):
+    with pytest.raises(TypeError, match="YaraFile rules must contain Rule nodes"):
         ExpressionOptimizer().optimize(malformed_file)
 
 

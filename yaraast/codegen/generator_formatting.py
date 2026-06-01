@@ -5,7 +5,10 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from yaraast.ast.base import ASTNode
 from yaraast.ast.modifiers import RuleModifier
+from yaraast.ast.pragmas import InRulePragma
+from yaraast.ast.rules import Tag
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
@@ -140,10 +143,14 @@ def validate_yara_file_collections(node: Any) -> None:
 def validate_rule_collections(node: Any) -> None:
     for field_name, display_name in _RULE_COLLECTION_FIELDS:
         value = getattr(node, field_name)
-        if isinstance(value, list | tuple):
-            continue
-        msg = f"{display_name} must be a list or tuple for libyara output"
-        raise TypeError(msg)
+        if not isinstance(value, list | tuple):
+            msg = f"{display_name} must be a list or tuple for libyara output"
+            raise TypeError(msg)
+        if field_name == "pragmas":
+            for item in value:
+                if not isinstance(item, InRulePragma):
+                    msg = "Rule pragmas must contain InRulePragma nodes for libyara output"
+                    raise TypeError(msg)
 
 
 def format_rule_tags(tags: list[Any] | tuple[Any, ...] | None) -> str:
@@ -193,7 +200,7 @@ def validate_rule_meta(meta: object) -> None:
 def validate_rule_tag_name(tag: Any) -> str:
     if isinstance(tag, str):
         return tag
-    if hasattr(tag, "name"):
+    if isinstance(tag, Tag) or (not isinstance(tag, ASTNode) and hasattr(tag, "name")):
         name = tag.name
         if isinstance(name, str):
             return name
