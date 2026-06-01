@@ -24,8 +24,21 @@ from yaraast.cli.serialize_reporting import (
     display_validation_result,
     write_diff_output,
 )
+from yaraast.cli.utils import _require_file_path
 
 console = Console()
+
+
+def _validate_output_path(output: str | None) -> str | None:
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output
 
 
 @click.group()
@@ -87,8 +100,9 @@ def import_ast(input_file: str, format: str, output: str | None) -> None:
 
     """
     try:
+        output = _validate_output_path(output)
         ast = import_serialized(input_file, format)
-        if output:
+        if output is not None:
             generate_imported_yara(ast, output)
 
         display_import_result(console, input_file, format, ast, output)
@@ -131,6 +145,7 @@ def diff(
 
     """
     try:
+        output = _validate_output_path(output)
         with console.status("[bold green]Parsing files..."):
             differ, diff_result, _ = diff_serialized(old_file, new_file, stats)
 
@@ -138,7 +153,7 @@ def diff(
             display_diff_no_changes(console)
             return
 
-        if output or patch:
+        if output is not None or patch:
             output_path = build_diff_output_path(old_file, new_file, output, format)
 
             if patch:
