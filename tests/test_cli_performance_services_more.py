@@ -87,6 +87,27 @@ def test_extract_successful_asts_and_file_name_mapping_paths(tmp_path: Path) -> 
     assert ps._get_corresponding_file_name(1, 0, file_paths, 2) is None
 
 
+def test_convert_operations_rejects_invalid_operations() -> None:
+    assert [op.value for op in ps.convert_operations(["parse", "complexity"])] == [
+        "parse",
+        "complexity",
+    ]
+
+    for invalid_operation in [None, 123]:
+        with pytest.raises(TypeError, match="batch operation must be a string"):
+            ps.convert_operations(["parse", invalid_operation])
+
+    for unknown_operation in ["", "bad"]:
+        with pytest.raises(
+            ValueError,
+            match=(
+                "batch operation must be one of: "
+                "complexity, dependency_graph, html_tree, parse, serialize, validate"
+            ),
+        ):
+            ps.convert_operations(["parse", unknown_operation])
+
+
 def test_build_parallel_summary_and_plans_cover_remaining_branches() -> None:
     summary = ps.build_parallel_summary(
         [Path("a.yar")],

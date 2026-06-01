@@ -29,8 +29,20 @@ BATCH_OPERATION_MAP = {
 BATCH_OPERATION_CHOICES = tuple(BATCH_OPERATION_MAP)
 
 
-def convert_operations(operations: Iterable[str]) -> list[BatchOperation]:
-    return [BATCH_OPERATION_MAP[op] for op in operations if op in BATCH_OPERATION_MAP]
+def convert_operations(operations: Iterable[object]) -> list[BatchOperation]:
+    converted = []
+    for operation in operations:
+        converted.append(_require_batch_operation(operation))
+    return converted
+
+
+def _require_batch_operation(operation: object) -> BatchOperation:
+    if not isinstance(operation, str):
+        raise TypeError("batch operation must be a string")
+    if operation not in BATCH_OPERATION_MAP:
+        valid = ", ".join(sorted(BATCH_OPERATION_MAP))
+        raise ValueError(f"batch operation must be one of: {valid}")
+    return BATCH_OPERATION_MAP[operation]
 
 
 def run_batch_processing(
