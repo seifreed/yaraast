@@ -44,18 +44,23 @@ def test_fluent_commands_emit_real_output(tmp_path: Path) -> None:
     assert "alpha" in template.output and "beta" in template.output
 
 
-def test_fluent_commands_abort_on_real_output_write_error(tmp_path: Path) -> None:
+def test_fluent_commands_reject_invalid_output_paths(tmp_path: Path) -> None:
     runner = CliRunner()
     bad_output = tmp_path / "as_dir"
     bad_output.mkdir()
 
-    for cmd in [
-        ["examples", "--output", str(bad_output)],
-        ["string-patterns", "--output", str(bad_output)],
-        ["conditions", "--output", str(bad_output)],
-        ["transformations", "--output", str(bad_output)],
-        ["template", "broken_rule", "--output", str(bad_output)],
+    for output, message in [
+        ("", "path must not be empty"),
+        (str(bad_output), "output path must not be a directory"),
     ]:
-        result = runner.invoke(fluent, cmd)
-        assert result.exit_code != 0
-        assert "Error generating" in result.output
+        for cmd in [
+            ["examples", "--output", output],
+            ["string-patterns", "--output", output],
+            ["conditions", "--output", output],
+            ["transformations", "--output", output],
+            ["template", "broken_rule", "--output", output],
+        ]:
+            result = runner.invoke(fluent, cmd)
+            assert result.exit_code == 2
+            assert message in result.output
+            assert "Error generating" not in result.output

@@ -16,6 +16,7 @@ from yaraast.cli.fluent_services import (
     create_transformation_rules,
     generate_code,
 )
+from yaraast.cli.utils import _require_file_path
 
 
 @click.group()
@@ -28,24 +29,37 @@ def fluent() -> None:
     """
 
 
+def _validate_output_path(output: str | None) -> Path | None:
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output_path
+
+
 @fluent.command()
 @click.option(
     "--output",
     "-o",
-    type=click.Path(path_type=Path),
+    type=click.Path(),
     help="Output file (default: stdout)",
 )
-def examples(output: Path | None) -> None:
+def examples(output: str | None) -> None:
     """Generate example rules using the fluent API.
 
     This command demonstrates various fluent API patterns for building
     YARA rules programmatically, including string definitions, conditions,
     and rule transformations.
     """
+    output_path = _validate_output_path(output)
     try:
         yara_ast = create_example_rules()
         yara_code = generate_code(yara_ast)
-        write_output(output, yara_code, f"✅ Example rules written to {output}")
+        write_output(output_path, yara_code, f"✅ Example rules written to {output_path}")
     except Exception as e:
         display_error(f"❌ Error generating examples: {e}")
         raise click.Abort from None
@@ -55,19 +69,20 @@ def examples(output: Path | None) -> None:
 @click.option(
     "--output",
     "-o",
-    type=click.Path(path_type=Path),
+    type=click.Path(),
     help="Output file (default: stdout)",
 )
-def string_patterns(output: Path | None) -> None:
+def string_patterns(output: str | None) -> None:
     """Demonstrate string pattern builders.
 
     Shows how to use the fluent string builder API to create various
     types of string patterns with modifiers.
     """
+    output_path = _validate_output_path(output)
     try:
         rule_ast = create_string_patterns_rule()
         yara_code = generate_code(rule_ast)
-        write_output(output, yara_code, f"✅ String pattern demo written to {output}")
+        write_output(output_path, yara_code, f"✅ String pattern demo written to {output_path}")
 
     except Exception as e:
         display_error(f"❌ Error generating string patterns: {e}")
@@ -78,19 +93,20 @@ def string_patterns(output: Path | None) -> None:
 @click.option(
     "--output",
     "-o",
-    type=click.Path(path_type=Path),
+    type=click.Path(),
     help="Output file (default: stdout)",
 )
-def conditions(output: Path | None) -> None:
+def conditions(output: str | None) -> None:
     """Demonstrate condition builders.
 
     Shows how to use the fluent condition builder API to create
     complex rule conditions with logical operators and quantifiers.
     """
+    output_path = _validate_output_path(output)
     try:
         rules = create_condition_demo_rules()
         yara_code = build_yara_file_with_rules(rules)
-        write_output(output, yara_code, f"✅ Condition demo written to {output}")
+        write_output(output_path, yara_code, f"✅ Condition demo written to {output_path}")
 
     except Exception as e:
         display_error(f"❌ Error generating conditions: {e}")
@@ -101,19 +117,20 @@ def conditions(output: Path | None) -> None:
 @click.option(
     "--output",
     "-o",
-    type=click.Path(path_type=Path),
+    type=click.Path(),
     help="Output file (default: stdout)",
 )
-def transformations(output: Path | None) -> None:
+def transformations(output: str | None) -> None:
     """Demonstrate AST transformations.
 
     Shows how to clone and transform existing rules to create variants
     with different names, tags, conditions, and string identifiers.
     """
+    output_path = _validate_output_path(output)
     try:
         rules = create_transformation_rules()
         yara_code = build_yara_file_with_rules(rules)
-        write_output(output, yara_code, f"✅ Transformation demo written to {output}")
+        write_output(output_path, yara_code, f"✅ Transformation demo written to {output_path}")
 
     except Exception as e:
         display_error(f"❌ Error generating transformations: {e}")
@@ -134,7 +151,7 @@ def transformations(output: Path | None) -> None:
 @click.option(
     "--output",
     "-o",
-    type=click.Path(path_type=Path),
+    type=click.Path(),
     help="Output file (default: stdout)",
 )
 def template(
@@ -142,7 +159,7 @@ def template(
     rule_type: str,
     author: str,
     tags: str | None,
-    output: Path | None,
+    output: str | None,
 ) -> None:
     """Generate a rule template using fluent API.
 
@@ -151,6 +168,7 @@ def template(
 
     RULE_NAME: Name for the generated rule
     """
+    output_path = _validate_output_path(output)
     try:
         tag_list = []
         if tags:
@@ -158,7 +176,7 @@ def template(
 
         built_rule = create_template_rule(rule_name, rule_type, author, tag_list)
         yara_code = generate_code(built_rule)
-        write_output(output, yara_code, f"✅ Rule template written to {output}")
+        write_output(output_path, yara_code, f"✅ Rule template written to {output_path}")
 
     except Exception as e:
         display_error(f"❌ Error generating template: {e}")
