@@ -202,7 +202,7 @@ class ParallelAnalyzer:
 
     def analyze_complexity_parallel(
         self,
-        asts: list[YaraFile],
+        asts: Sequence[YaraFile],
         max_workers: int | None = None,
     ) -> list[Job]:
         """Analyze complexity of YARA files in parallel.
@@ -219,7 +219,7 @@ class ParallelAnalyzer:
 
     def generate_graphs_parallel(
         self,
-        asts: list[YaraFile],
+        asts: Sequence[YaraFile],
         output_dir: str | Path,
         graph_types: Sequence[str] | None = None,
     ) -> list[Job]:

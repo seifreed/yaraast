@@ -286,6 +286,19 @@ def test_parallel_analyzer_files_custom_and_graphs(tmp_path: Path) -> None:
         assert Path(output).exists()
 
 
+@pytest.mark.parametrize("asts", ["abc", b"abc", None, 123])
+def test_parallel_ast_job_apis_reject_non_ast_sequences(
+    tmp_path: Path,
+    asts: object,
+) -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+
+    with pytest.raises(TypeError, match="asts must be a sequence of YaraFile objects"):
+        analyzer.analyze_complexity_parallel(cast(Any, asts), max_workers=1)
+    with pytest.raises(TypeError, match="asts must be a sequence of YaraFile objects"):
+        analyzer.generate_graphs_parallel(cast(Any, asts), tmp_path / "graphs")
+
+
 @pytest.mark.parametrize("graph_types", ["full", b"full"])
 def test_parallel_graph_export_rejects_scalar_graph_types(
     tmp_path: Path,

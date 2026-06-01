@@ -19,6 +19,7 @@ from yaraast.performance.validation import (
 _EXPECTED_PARSE_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
 GRAPH_TYPES_TYPE_ERROR = "graph_types must be a sequence of strings"
 GRAPH_TYPE_ENTRY_ERROR = "graph_types must contain non-empty strings"
+YARA_FILE_SEQUENCE_TYPE_ERROR = "asts must be a sequence of YaraFile objects"
 
 
 def default_parallel_stats() -> dict[str, float | int]:
@@ -73,6 +74,13 @@ def validate_graph_types(graph_types: object) -> list[str]:
     return normalized
 
 
+def validate_yara_file_sequence(asts: object) -> list[object]:
+    """Reject scalar values before treating AST inputs as a job sequence."""
+    if isinstance(asts, (str, bytes)) or not isinstance(asts, Sequence):
+        raise TypeError(YARA_FILE_SEQUENCE_TYPE_ERROR)
+    return list(asts)
+
+
 def analyze_file_path(path: str, analyzer: Any) -> dict[str, Any]:
     """Parse and analyze a file path using a provided analyzer instance."""
     from yaraast.parser.source import parse_yara_source
@@ -96,11 +104,12 @@ def export_graph_files(
     )
 
     graph_types = validate_graph_types(graph_types)
+    ast_items = validate_yara_file_sequence(asts)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     jobs: list[Job] = []
 
-    for index, ast in enumerate(asts):
+    for index, ast in enumerate(ast_items):
         job = start_job("dependency_graph")
         jobs.append(job)
         if not isinstance(ast, YaraFile):

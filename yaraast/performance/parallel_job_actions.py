@@ -14,6 +14,7 @@ from yaraast.performance.parallel_job_helpers import (
     parse_file_chunks,
     process_items,
     start_job,
+    validate_yara_file_sequence,
 )
 from yaraast.performance.parallel_models import Job, JobStatus
 
@@ -25,12 +26,13 @@ if TYPE_CHECKING:
 
 def analyze_complexity_parallel(
     analyzer: ParallelAnalyzer,
-    asts: list[YaraFile],
+    asts: Sequence[YaraFile],
     max_workers: int | None = None,
 ) -> list[Job]:
     """Create tracked complexity jobs for ASTs."""
     jobs: list[Job] = []
-    for ast in asts:
+    ast_items = validate_yara_file_sequence(asts)
+    for ast in ast_items:
         job = start_job("complexity")
         jobs.append(job)
         analyzer._stats["jobs_submitted"] += 1
@@ -56,7 +58,7 @@ def analyze_complexity_parallel(
 
 def generate_graphs_parallel(
     analyzer: ParallelAnalyzer,
-    asts: list[YaraFile],
+    asts: Sequence[YaraFile],
     output_dir: str | Path,
     graph_types: Sequence[str] | None = None,
 ) -> list[Job]:
