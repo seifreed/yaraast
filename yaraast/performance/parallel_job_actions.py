@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -59,7 +60,7 @@ def analyze_complexity_parallel(
 def generate_graphs_parallel(
     analyzer: ParallelAnalyzer,
     asts: Sequence[YaraFile],
-    output_dir: str | Path,
+    output_dir: str | PathLike[str],
     graph_types: Sequence[str] | None = None,
 ) -> list[Job]:
     """Generate dependency graph export jobs and update analyzer stats."""

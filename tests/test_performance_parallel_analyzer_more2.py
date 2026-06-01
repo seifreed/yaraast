@@ -331,6 +331,33 @@ def test_parallel_graph_export_rejects_invalid_graph_type_entries(
         )
 
 
+def test_parallel_graph_export_rejects_empty_output_dir() -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+    ast = _parsed_ast("graph_rule")
+
+    with pytest.raises(ValueError, match="output_dir must not be empty"):
+        analyzer.generate_graphs_parallel([ast], "")
+
+
+@pytest.mark.parametrize("output_dir", [None, False, 123, object(), b"graphs"])
+def test_parallel_graph_export_rejects_invalid_output_dir_types(output_dir: object) -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+    ast = _parsed_ast("graph_rule")
+
+    with pytest.raises(TypeError, match="output_dir must be a directory path"):
+        analyzer.generate_graphs_parallel([ast], cast(Any, output_dir))
+
+
+def test_parallel_graph_export_rejects_file_output_dir(tmp_path: Path) -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+    ast = _parsed_ast("graph_rule")
+    output_dir = tmp_path / "not_a_directory"
+    output_dir.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="output_dir must not be a file"):
+        analyzer.generate_graphs_parallel([ast], output_dir)
+
+
 def test_parallel_parse_mixed_chunk_preserves_successful_files(tmp_path: Path) -> None:
     good_a = tmp_path / "a.yar"
     bad = tmp_path / "broken.yar"

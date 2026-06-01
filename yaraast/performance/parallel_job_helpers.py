@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from os import PathLike, fspath
 from pathlib import Path
 import time
 from typing import Any
@@ -20,6 +21,7 @@ _EXPECTED_PARSE_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
 GRAPH_TYPES_TYPE_ERROR = "graph_types must be a sequence of strings"
 GRAPH_TYPE_ENTRY_ERROR = "graph_types must contain non-empty strings"
 YARA_FILE_SEQUENCE_TYPE_ERROR = "asts must be a sequence of YaraFile objects"
+OUTPUT_DIR_TYPE_ERROR = "output_dir must be a directory path"
 
 
 def default_parallel_stats() -> dict[str, float | int]:
@@ -81,6 +83,23 @@ def validate_yara_file_sequence(asts: object) -> list[object]:
     return list(asts)
 
 
+def require_output_dir_path(output_dir: object) -> Path:
+    """Normalize a graph export output directory path."""
+    if isinstance(output_dir, bool | bytes) or not isinstance(output_dir, str | PathLike):
+        raise TypeError(OUTPUT_DIR_TYPE_ERROR)
+    raw_path = fspath(output_dir)
+    if not isinstance(raw_path, str):
+        raise TypeError(OUTPUT_DIR_TYPE_ERROR)
+    if not raw_path:
+        msg = "output_dir must not be empty"
+        raise ValueError(msg)
+    path = Path(raw_path)
+    if path.exists() and not path.is_dir():
+        msg = "output_dir must not be a file"
+        raise ValueError(msg)
+    return path
+
+
 def analyze_file_path(path: str, analyzer: Any) -> dict[str, Any]:
     """Parse and analyze a file path using a provided analyzer instance."""
     from yaraast.parser.source import parse_yara_source
@@ -95,7 +114,9 @@ def analyze_file_path(path: str, analyzer: Any) -> dict[str, Any]:
 
 
 def export_graph_files(
-    asts: Sequence[YaraFile], output_dir: str | Path, graph_types: Sequence[str] | None = None
+    asts: Sequence[YaraFile],
+    output_dir: str | PathLike[str],
+    graph_types: Sequence[str] | None = None,
 ) -> list[Job]:
     """Generate dependency graph export jobs for ASTs."""
     from yaraast.metrics.dependency_graph_utils import (
@@ -105,7 +126,7 @@ def export_graph_files(
 
     graph_types = validate_graph_types(graph_types)
     ast_items = validate_yara_file_sequence(asts)
-    output_dir = Path(output_dir)
+    output_dir = require_output_dir_path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     jobs: list[Job] = []
 

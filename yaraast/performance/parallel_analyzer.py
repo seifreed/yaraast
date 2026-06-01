@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import multiprocessing as mp
+from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -220,7 +221,7 @@ class ParallelAnalyzer:
     def generate_graphs_parallel(
         self,
         asts: Sequence[YaraFile],
-        output_dir: str | Path,
+        output_dir: str | PathLike[str],
         graph_types: Sequence[str] | None = None,
     ) -> list[Job]:
         """Generate dependency graph exports for ASTs."""
