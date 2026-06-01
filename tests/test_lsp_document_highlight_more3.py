@@ -102,6 +102,32 @@ rule shadowed {
     ]
 
 
+def test_document_highlight_yarax_local_declaration_uses_utf16_range() -> None:
+    text = """
+rule shadowed {
+    strings:
+        $a = "abc"
+    condition:
+        /* 😀 */ with $a = 1:
+            $a > 0
+}
+""".lstrip()
+    line = text.splitlines()[4]
+    start = line.index("$a")
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(4, utf8_col_to_utf16(line, start)))
+
+    assert [
+        (highlight.range.start.character, highlight.range.end.character) for highlight in highlights
+    ] == [
+        (
+            utf8_col_to_utf16(line, start),
+            utf8_col_to_utf16(line, start + len("$a")),
+        )
+    ]
+
+
 def test_document_highlight_fallback_ignores_string_identifier_in_non_code() -> None:
     text = """
 rule r {

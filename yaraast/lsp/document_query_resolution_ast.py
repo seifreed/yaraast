@@ -25,6 +25,7 @@ from yaraast.lsp.document_query_reference_ast import (
 )
 from yaraast.lsp.document_query_resolution_ranges import narrow_range_to_name, resolved_if_contains
 from yaraast.lsp.document_types import ResolvedSymbol
+from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 from yaraast.lsp.utils import find_node_at_position, get_word_at_position, location_to_range
 from yaraast.yarax.ast_nodes import WithStatement
 
@@ -100,7 +101,7 @@ def _with_declaration_identifier_range(
     if line_index < 0 or line_index >= len(ctx.lines):
         return None
     line = ctx.lines[line_index]
-    value_start = value_range.start.character
+    value_start = utf16_col_to_utf8(line, value_range.start.character)
     identifier_start = line.rfind(identifier, 0, value_start)
     if identifier_start < 0:
         return None
@@ -108,8 +109,14 @@ def _with_declaration_identifier_range(
     if "=" not in between_identifier_and_value:
         return None
     return Range(
-        start=Position(line=line_index, character=identifier_start),
-        end=Position(line=line_index, character=identifier_start + len(identifier)),
+        start=Position(
+            line=line_index,
+            character=utf8_col_to_utf16(line, identifier_start),
+        ),
+        end=Position(
+            line=line_index,
+            character=utf8_col_to_utf16(line, identifier_start + len(identifier)),
+        ),
     )
 
 
