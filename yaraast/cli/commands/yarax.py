@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import click
 
-from yaraast.cli.utils import read_text
+from yaraast.cli.utils import read_text, write_text
 from yaraast.cli.yarax_reporting import (
     display_compatibility_issues,
     display_feature_showcase,
@@ -43,8 +41,8 @@ def parse(file: str, output: str | None, show_features: bool):
 
         _ast, code = parse_yarax_content(content)
 
-        if output:
-            Path(output).write_text(code, encoding="utf-8")
+        if output is not None:
+            write_text(output, code)
             click.echo(f"✅ AST written to {output}")
         else:
             click.echo(code)
@@ -105,8 +103,8 @@ def convert(file: str, output: str | None, target: str):
 
             click.echo("⚠️  Converted to standard YARA (some features may be lost)")
 
-        if output:
-            Path(output).write_text(converted, encoding="utf-8")
+        if output is not None:
+            write_text(output, converted)
             click.echo(f"✅ Converted file written to {output}")
         else:
             click.echo(converted)

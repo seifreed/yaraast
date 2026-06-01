@@ -36,3 +36,25 @@ def test_yarax_check_reports_real_compatibility_issues(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert "Errors:" in result.output or "Warnings:" in result.output
     assert "Unescaped '{'" in result.output or "Escape the brace" in result.output
+
+
+def test_yarax_rejects_empty_output_path(tmp_path: Path) -> None:
+    file_path = _write(
+        tmp_path,
+        "rule.yar",
+        """
+        rule ok {
+            condition:
+                true
+        }
+        """,
+    )
+    runner = CliRunner()
+
+    parsed = runner.invoke(yarax, ["parse", file_path, "--output", ""])
+    assert parsed.exit_code != 0
+    assert "path must not be empty" in parsed.output
+
+    converted = runner.invoke(yarax, ["convert", file_path, "--output", ""])
+    assert converted.exit_code != 0
+    assert "path must not be empty" in converted.output
