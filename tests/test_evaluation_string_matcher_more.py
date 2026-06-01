@@ -424,8 +424,8 @@ def test_string_matcher_regex_invalid_nocase_and_range_queries() -> None:
     assert matcher.string_in("$re", 5, 7) is False
 
     invalid = RegexString("$bad", regex=cast(Any, None), modifiers=[])
-    matcher.match_all(b"anything", [invalid])
-    assert matcher.matches["$bad"] == []
+    with pytest.raises(TypeError, match="Regex pattern must be a string"):
+        matcher.match_all(b"anything", [invalid])
 
 
 def test_string_matcher_regex_dotall_modifier_matches_across_newline() -> None:

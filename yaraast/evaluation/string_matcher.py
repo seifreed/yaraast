@@ -618,6 +618,9 @@ class StringMatcher:
         """Match regex string against data."""
         # Prepare regex pattern
         pattern = string_def.regex
+        if not isinstance(pattern, str):
+            msg = "Regex pattern must be a string"
+            raise TypeError(msg)
         flags = 0
         modifiers = self._string_modifiers(string_def)
 
@@ -637,12 +640,12 @@ class StringMatcher:
         fullword = "fullword" in modifier_names
 
         regex_pattern = (
-            self._shortest_first_literal_alternation(str(pattern))
-            or self._longest_first_quantified_literal_group(str(pattern))
-            or str(pattern)
+            self._shortest_first_literal_alternation(pattern)
+            or self._longest_first_quantified_literal_group(pattern)
+            or pattern
         )
         bounded_group_matches = self._find_bounded_literal_group_matches(
-            str(pattern),
+            pattern,
             data,
             flags,
         )
@@ -656,7 +659,7 @@ class StringMatcher:
             )
             if wide:
                 raw_matches.extend(
-                    self._find_bounded_literal_group_wide_matches(str(pattern), data, flags)
+                    self._find_bounded_literal_group_wide_matches(pattern, data, flags)
                 )
         else:
             # Compile regex
@@ -667,7 +670,7 @@ class StringMatcher:
                 self.matches[self._string_identifier(string_def)] = []
                 return
             regexes = [regex]
-            longest_first_pattern = self._longest_first_literal_alternation(str(pattern))
+            longest_first_pattern = self._longest_first_literal_alternation(pattern)
             if (
                 fullword
                 and longest_first_pattern is not None

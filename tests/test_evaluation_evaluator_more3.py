@@ -39,7 +39,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Import, Rule
-from yaraast.ast.strings import HexByte, HexString, PlainString
+from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.evaluator import YaraEvaluator
@@ -1349,6 +1349,22 @@ def test_evaluate_file_rejects_invalid_hex_token_values() -> None:
 
     with pytest.raises(TypeError, match="HexByte value must be a byte"):
         YaraEvaluator(data=b"a").evaluate_file(ast)
+
+
+def test_evaluate_file_rejects_non_string_regex_patterns() -> None:
+    invalid_pattern: Any = False
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_regex_pattern",
+                strings=[RegexString("$r", regex=invalid_pattern)],
+                condition=StringIdentifier("$r"),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="Regex pattern must be a string"):
+        YaraEvaluator(data=b"False").evaluate_file(ast)
 
 
 def test_string_count_offset_length_and_wildcard() -> None:
