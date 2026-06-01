@@ -231,7 +231,7 @@ class BatchProcessor:
         return {
             **self._stats,
             "avg_batch_size": (
-                self._stats["items_processed"] / self._stats["batches_processed"]
+                attempted_items / self._stats["batches_processed"]
                 if self._stats["batches_processed"] > 0
                 else 0
             ),
