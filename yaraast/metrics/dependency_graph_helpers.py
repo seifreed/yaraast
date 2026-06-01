@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from pathlib import Path
 from typing import Any
 
@@ -34,10 +35,25 @@ def require_graph_format(format: object) -> str:
     return format
 
 
-def render_graph(dot, output_path: str | None, format: str) -> str:
+def require_output_path(output_path: object, name: str = "output_path") -> Path:
+    """Validate a metrics output file path."""
+    if isinstance(output_path, bool) or not isinstance(output_path, str | PathLike):
+        msg = f"{name} must be a file path"
+        raise TypeError(msg)
+    if isinstance(output_path, str) and not output_path:
+        msg = f"{name} must not be empty"
+        raise ValueError(msg)
+    path = Path(output_path)
+    if path.exists() and path.is_dir():
+        msg = f"{name} must not be a directory"
+        raise ValueError(msg)
+    return path
+
+
+def render_graph(dot, output_path: str | PathLike[str] | None, format: str) -> str:
     format = require_graph_format(format)
-    if output_path:
-        output_path_obj = Path(output_path)
+    if output_path is not None:
+        output_path_obj = require_output_path(output_path)
         if format == "dot":
             output_path_obj.write_text(dot.source, encoding="utf-8")
             return str(output_path_obj)

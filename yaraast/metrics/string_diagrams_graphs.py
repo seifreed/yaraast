@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ class StringDiagramGraphsMixin:
     """Mixin providing string diagram helpers."""
 
     @staticmethod
-    def _render_or_write_dot(dot, output_path: str, format: str) -> str:
+    def _render_or_write_dot(dot, output_path: str | PathLike[str], format: str) -> str:
         return _graph_builders().render_or_write_dot(dot, output_path, format)
 
     def generate_pattern_flow_diagram(

@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
+from typing import Any, cast
+
+import pytest
 
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.parser import Parser
@@ -54,3 +57,25 @@ def test_html_tree_generation_accepts_yarax_nodes() -> None:
 
     assert "With Statement" in html
     assert "Pattern Match" in html
+
+
+def test_html_tree_rejects_empty_output_path() -> None:
+    ast = Parser().parse("rule tree { condition: true }")
+
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        HtmlTreeGenerator().generate_html(ast, "")
+
+
+def test_html_tree_rejects_directory_output_path(tmp_path: Path) -> None:
+    ast = Parser().parse("rule tree { condition: true }")
+
+    with pytest.raises(ValueError, match="output_path must not be a directory"):
+        HtmlTreeGenerator().generate_interactive_html(ast, str(tmp_path))
+
+
+@pytest.mark.parametrize("output_path", [False, 0, object()])
+def test_html_tree_rejects_invalid_output_path_types(output_path: Any) -> None:
+    ast = Parser().parse("rule tree { condition: true }")
+
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        HtmlTreeGenerator().generate_html(ast, cast(Any, output_path))

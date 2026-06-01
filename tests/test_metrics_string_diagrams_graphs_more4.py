@@ -91,6 +91,39 @@ def test_string_diagram_render_rejects_empty_format(tmp_path: Path) -> None:
         )
 
 
+def test_string_diagram_render_rejects_empty_output_path() -> None:
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        StringDiagramGraphsMixin._render_or_write_dot(_DotFail("digraph { a }"), "", "dot")
+
+
+def test_string_diagram_render_rejects_directory_output_path(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="output_path must not be a directory"):
+        StringDiagramGraphsMixin._render_or_write_dot(_DotFail("digraph { a }"), tmp_path, "dot")
+
+
+@pytest.mark.parametrize("output_path", [False, 0, object()])
+def test_string_diagram_render_rejects_invalid_output_path_types(output_path: Any) -> None:
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        StringDiagramGraphsMixin._render_or_write_dot(
+            _DotFail("digraph { a }"),
+            cast(Any, output_path),
+            "dot",
+        )
+
+
+def test_string_diagram_generators_reject_empty_output_path() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="plain_only", strings=[PlainString(identifier="$a", value="abc", modifiers=[])]
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        StringDiagramGenerator().generate_pattern_flow_diagram(ast, "", format="dot")
+
+
 def test_graph_stats_and_labels_high_complexity_paths(tmp_path: Path) -> None:
     gen = StringDiagramGenerator()
     gen.string_patterns = {

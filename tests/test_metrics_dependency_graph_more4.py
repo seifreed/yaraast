@@ -101,6 +101,22 @@ def test_dependency_graph_render_rejects_empty_format(tmp_path: Path) -> None:
         render_graph(SimpleNamespace(source="digraph G {}"), str(tmp_path / "deps"), "")
 
 
+def test_dependency_graph_render_rejects_empty_output_path() -> None:
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        render_graph(SimpleNamespace(source="digraph G {}"), "", "dot")
+
+
+def test_dependency_graph_render_rejects_directory_output_path(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="output_path must not be a directory"):
+        render_graph(SimpleNamespace(source="digraph G {}"), tmp_path, "dot")
+
+
+@pytest.mark.parametrize("output_path", [False, 0, object()])
+def test_dependency_graph_render_rejects_invalid_output_path_types(output_path: Any) -> None:
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        render_graph(SimpleNamespace(source="digraph G {}"), cast(Any, output_path), "dot")
+
+
 def test_dependency_graph_generator_remaining_visitors_and_stats() -> None:
     code = """
     import "pe"

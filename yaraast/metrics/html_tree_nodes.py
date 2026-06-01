@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 import html as html_mod
-from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import ASTNode
+from yaraast.metrics.dependency_graph_helpers import require_output_path
 
 
 class HtmlTreeNodesMixin:
@@ -15,8 +15,8 @@ class HtmlTreeNodesMixin:
 
     def _write_output(self, output_path: str | None, html_content: str) -> None:
         """Write HTML content to disk if an output path is provided."""
-        if output_path:
-            with Path(output_path).open("w", encoding="utf-8") as f:
+        if output_path is not None:
+            with require_output_path(output_path).open("w", encoding="utf-8") as f:
                 f.write(html_content)
 
     def _get_node_id(self) -> str:
