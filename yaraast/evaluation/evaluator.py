@@ -950,6 +950,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         return 1 if _is_evaluation_truthy(value) else 0
 
     def _loop_variable_names(self, variable: str) -> list[str]:
+        if not isinstance(variable, str):
+            msg = "Local variable name must be a string"
+            raise TypeError(msg)
         return [name.strip() for name in variable.split(",") if name.strip()]
 
     def _evaluate_for_iterable(self, node: Expression | None) -> Any:
@@ -1012,6 +1015,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 self.context.variables[name] = previous_value
 
     def _with_declaration_names(self, identifier: str) -> list[str]:
+        if not isinstance(identifier, str):
+            msg = "Local variable name must be a string"
+            raise TypeError(msg)
         names = [identifier]
         stripped = identifier.lstrip("$")
         if stripped != identifier:
@@ -1030,6 +1036,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return None
 
         def expand_text(text: str) -> list[str] | None:
+            if not isinstance(text, str):
+                msg = "Rule set reference must be a string"
+                raise TypeError(msg)
             if text.startswith("$") or text == "them":
                 return None
             if "*" in text:
@@ -1081,6 +1090,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         anonymous_string_ids = self._anonymous_string_ids()
 
         def expand_text(text: str) -> list[str]:
+            if not isinstance(text, str):
+                msg = "String reference must be a string"
+                raise TypeError(msg)
             if text == "them":
                 return list(self.context.string_matches.keys())
             if text.startswith(("#", "@", "!")):

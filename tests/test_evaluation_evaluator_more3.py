@@ -3234,6 +3234,51 @@ def test_evaluator_resolves_yarax_string_identifier_locals_in_string_sets() -> N
     assert result == {"local_string_set": True}
 
 
+@pytest.mark.parametrize(
+    "condition",
+    [
+        ForExpression(
+            quantifier="any",
+            variable=cast(Any, False),
+            iterable=SetExpression([IntegerLiteral(1)]),
+            body=BooleanLiteral(True),
+        ),
+        WithStatement(
+            declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
+            body=BooleanLiteral(True),
+        ),
+    ],
+)
+def test_evaluator_rejects_invalid_local_variable_names(condition: Any) -> None:
+    ast = YaraFile(rules=[Rule("invalid_local", condition=condition)])
+
+    with pytest.raises(TypeError, match="Local variable name must be a string"):
+        YaraEvaluator().evaluate_file(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        OfExpression("any", StringWildcard(cast(Any, False))),
+        OfExpression("any", Identifier(cast(Any, False))),
+        OfExpression("any", SetExpression([StringWildcard(cast(Any, False))])),
+    ],
+)
+def test_evaluator_rejects_invalid_string_and_rule_set_fields(condition: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_string_set",
+                strings=[PlainString("$a", value="needle")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="must be a string"):
+        YaraEvaluator(data=b"needle").evaluate_file(ast)
+
+
 def test_evaluator_member_access_prefers_mapping_keys_over_methods() -> None:
     ev = YaraEvaluator()
     ev.context.variables["obj"] = {"keys": 7}
