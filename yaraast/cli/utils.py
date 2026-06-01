@@ -22,14 +22,22 @@ def _require_file_path(path: object) -> Path:
     return Path(path)
 
 
+def _require_existing_file_path(path: str | Path) -> Path:
+    path_obj = _require_file_path(path)
+    if path_obj.exists() and path_obj.is_dir():
+        msg = "path must not be a directory"
+        raise ValueError(msg)
+    return path_obj
+
+
 def read_text(path: str | Path) -> str:
     """Read a text file with UTF-8 encoding."""
-    return _require_file_path(path).read_text(encoding="utf-8")
+    return _require_existing_file_path(path).read_text(encoding="utf-8")
 
 
 def write_text(path: str | Path, content: str) -> None:
     """Write a text file with UTF-8 encoding."""
-    _require_file_path(path).write_text(content, encoding="utf-8")
+    _require_existing_file_path(path).write_text(content, encoding="utf-8")
 
 
 def write_json(path: str | Path, data: object, indent: int = 2) -> None:

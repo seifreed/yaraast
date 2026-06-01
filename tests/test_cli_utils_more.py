@@ -49,3 +49,20 @@ def test_cli_utils_reject_empty_path() -> None:
 
     with pytest.raises(ValueError, match="path must not be empty"):
         utils.parse_yara_file("")
+
+
+def test_cli_utils_reject_directory_paths(tmp_path: Path) -> None:
+    directory = tmp_path / "dir"
+    directory.mkdir()
+
+    with pytest.raises(ValueError, match="path must not be a directory"):
+        utils.read_text(directory)
+
+    with pytest.raises(ValueError, match="path must not be a directory"):
+        utils.write_text(directory, "content")
+
+    with pytest.raises(ValueError, match="path must not be a directory"):
+        utils.write_json(directory, {"value": 1})
+
+    with pytest.raises(ValueError, match="path must not be a directory"):
+        utils.parse_yara_file(directory)
