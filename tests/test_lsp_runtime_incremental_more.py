@@ -14,6 +14,7 @@ from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.lsp.diagnostics import DiagnosticsProvider
 from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
+from yaraast.lsp.document_types import LanguageMode
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 from yaraast.lsp.semantic_tokens import SemanticTokensProvider
 from yaraast.lsp.utf16 import utf8_col_to_utf16
@@ -85,6 +86,16 @@ def test_runtime_update_config_rejects_non_mapping_settings() -> None:
     for settings in invalid_settings:
         with pytest.raises(TypeError, match="LSP runtime settings must be a dictionary"):
             runtime.update_config(cast(Any, settings))
+
+
+@pytest.mark.parametrize("dialect_mode", ["", "unknown", 123, None, object()])
+def test_runtime_update_config_ignores_invalid_dialect_modes(dialect_mode: Any) -> None:
+    runtime = LspRuntime()
+    runtime.update_config({"YARA": {"dialectMode": "yarax"}})
+
+    runtime.update_config({"YARA": {"dialectMode": dialect_mode}})
+
+    assert runtime.config.language_mode == LanguageMode.YARA_X
 
 
 def test_runtime_workspace_symbols_ignore_persisted_index_when_cache_disabled(

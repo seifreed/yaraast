@@ -71,6 +71,21 @@ def _parse_non_negative_int_setting(value: Any, default: int) -> int:
     return default
 
 
+def _parse_language_mode(value: object, default: LanguageMode) -> LanguageMode:
+    if not isinstance(value, str):
+        return default
+    raw_mode = value.strip().lower()
+    mapping = {
+        "auto": LanguageMode.AUTO,
+        "yara": LanguageMode.YARA,
+        "yarax": LanguageMode.YARA_X,
+        "yara-x": LanguageMode.YARA_X,
+        "yaral": LanguageMode.YARA_L,
+        "yara-l": LanguageMode.YARA_L,
+    }
+    return mapping.get(raw_mode, default)
+
+
 __all__ = [
     "CacheManager",
     "DocumentContext",
@@ -284,16 +299,9 @@ class LspRuntime:
         if "codeFormatting" in settings and isinstance(settings["codeFormatting"], dict):
             self.config.code_formatting = dict(settings["codeFormatting"])
         if "dialectMode" in settings:
-            raw_mode = str(settings["dialectMode"]).strip().lower()
-            mapping = {
-                "auto": LanguageMode.AUTO,
-                "yara": LanguageMode.YARA,
-                "yarax": LanguageMode.YARA_X,
-                "yara-x": LanguageMode.YARA_X,
-                "yaral": LanguageMode.YARA_L,
-                "yara-l": LanguageMode.YARA_L,
-            }
-            self.config.language_mode = mapping.get(raw_mode, LanguageMode.AUTO)
+            self.config.language_mode = _parse_language_mode(
+                settings["dialectMode"], self.config.language_mode
+            )
         if previous_mode != self.config.language_mode:
             for doc in self.documents.values():
                 doc.set_language_mode(self.config.language_mode)
