@@ -130,8 +130,8 @@ class ASTOptimizer:
     ) -> IntegerLiteral | None:
         """Fold constant expressions."""
         try:
-            left_val = int(left.value)
-            right_val = int(right.value)
+            left_val = _literal_integer_value(left)
+            right_val = _literal_integer_value(right)
 
             if op == "+":
                 return IntegerLiteral(value=normalize_int64(left_val + right_val))
@@ -147,7 +147,14 @@ class ASTOptimizer:
                 if left_val == INT64_MIN and right_val == -1:
                     return None
                 return IntegerLiteral(value=integer_remainder(left_val, right_val))
-        except (ValueError, ZeroDivisionError):
+        except (TypeError, ValueError, ZeroDivisionError):
             pass
 
         return None
+
+
+def _literal_integer_value(node: IntegerLiteral) -> int:
+    if isinstance(node.value, bool) or not isinstance(node.value, int):
+        msg = "IntegerLiteral value must be an integer"
+        raise TypeError(msg)
+    return node.value

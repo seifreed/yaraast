@@ -105,6 +105,10 @@ def test_ast_optimizer_rule_and_constant_paths() -> None:
     assert (
         optimizer._fold_constants(IntegerLiteral(cast(Any, "bad")), "+", IntegerLiteral(1)) is None
     )
+    assert (
+        optimizer._fold_constants(IntegerLiteral(cast(Any, True)), "+", IntegerLiteral(1)) is None
+    )
+    assert optimizer._fold_constants(IntegerLiteral(cast(Any, 1.5)), "+", IntegerLiteral(1)) is None
 
 
 def test_ast_optimizer_rule_removes_unused_strings() -> None:
