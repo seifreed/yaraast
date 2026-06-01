@@ -105,7 +105,24 @@ def test_bench_services_operations_and_summary() -> None:
     assert bs._run_single_operation(bench, path, "parse", 2).success is True
     assert bs._run_single_operation(bench, path, "codegen", 2).success is False
     assert bs._run_single_operation(bench, path, "roundtrip", 2).success is True
-    assert bs._run_single_operation(bench, path, "unknown", 2) is None
+
+    for invalid_operation in [None, 123]:
+        with pytest.raises(TypeError, match="benchmark operation must be a string"):
+            bs._determine_operations_to_run(invalid_operation)
+        with pytest.raises(TypeError, match="benchmark operation must be a string"):
+            bs._run_single_operation(bench, path, invalid_operation, 2)
+
+    for unknown_operation in ["", "unknown"]:
+        with pytest.raises(
+            ValueError,
+            match="benchmark operation must be one of: all, codegen, parse, roundtrip",
+        ):
+            bs._determine_operations_to_run(unknown_operation)
+        with pytest.raises(
+            ValueError,
+            match="benchmark operation must be one of: codegen, parse, roundtrip",
+        ):
+            bs._run_single_operation(bench, path, unknown_operation, 2)
 
     file_results = bs._run_benchmarks_for_single_file(bench, path, "all", 3)
     assert "parse" in file_results
