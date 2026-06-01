@@ -41,6 +41,9 @@ class YamlSerializer(JsonSerializer):
         if not yaml_str:
             msg = "No YAML input provided"
             raise SerializationError(msg)
+        if not isinstance(yaml_str, str):
+            msg = "YAML input must be a string"
+            raise TypeError(msg)
 
         try:
             data = yaml.safe_load(yaml_str)

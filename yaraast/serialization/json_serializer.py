@@ -211,6 +211,9 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         if not json_str:
             msg = "No JSON input provided"
             raise SerializationError(msg)
+        if not isinstance(json_str, str):
+            msg = "JSON input must be a string"
+            raise TypeError(msg)
 
         try:
             data = json.loads(json_str)
