@@ -254,6 +254,21 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
     assert OptimizedMatcher(compiled.compiled_rules)._get_ast_context_for_rule("hint_rule") is None
     assert matcher._estimate_condition_complexity(None) == 0
 
+    class FalsyBinaryExpression(BinaryExpression):
+        def __bool__(self) -> bool:
+            return False
+
+    assert (
+        matcher._estimate_condition_complexity(
+            FalsyBinaryExpression(
+                left=StringIdentifier("$a"),
+                operator="and",
+                right=BooleanLiteral(True),
+            )
+        )
+        == 3
+    )
+
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 def test_direct_compiler_rejects_yarax_ast_before_codegen() -> None:

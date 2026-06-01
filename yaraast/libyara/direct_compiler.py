@@ -347,7 +347,7 @@ class OptimizedMatcher:
 
     def _estimate_condition_complexity(self, condition: Any) -> int:
         """Estimate condition complexity for optimization hints."""
-        if not condition:
+        if condition is None:
             return 0
 
         complexity = 1
