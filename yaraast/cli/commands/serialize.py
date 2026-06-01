@@ -70,6 +70,7 @@ def export(input_file: str, output: str | None, format: str, minimal: bool, pret
         yaraast serialize export rules.yar --pretty
 
     """
+    output = _validate_output_path(output)
     try:
         with console.status(f"[bold green]Parsing {input_file}..."):
             result, stats = export_serialized(input_file, format, output, minimal)
@@ -99,8 +100,8 @@ def import_ast(input_file: str, format: str, output: str | None) -> None:
         yaraast serialize import rules.json -f json -o rules.yar
 
     """
+    output = _validate_output_path(output)
     try:
-        output = _validate_output_path(output)
         ast = import_serialized(input_file, format)
         if output is not None:
             generate_imported_yara(ast, output)
@@ -144,8 +145,8 @@ def diff(
         yaraast serialize diff old.yar new.yar --stats
 
     """
+    output = _validate_output_path(output)
     try:
-        output = _validate_output_path(output)
         with console.status("[bold green]Parsing files..."):
             differ, diff_result, _ = diff_serialized(old_file, new_file, stats)
 
