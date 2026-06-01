@@ -192,6 +192,22 @@ def test_semantic_validator_reports_invalid_expression_children(
     assert any(error.message == message for error in result.errors)
 
 
+def test_semantic_validator_checks_function_calls_inside_at_subject() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "unknown_at_subject_function",
+                condition=AtExpression(FunctionCall("unknown_func", []), IntegerLiteral(0)),
+            )
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any("Unknown function 'unknown_func'" in warning.message for warning in result.warnings)
+
+
 def test_validate_rule_detects_undefined_strings_in_raw_string_sets() -> None:
     rules = [
         Rule(

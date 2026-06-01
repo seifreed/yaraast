@@ -213,6 +213,8 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
             self._visit_required_expression(node.condition, node, "For-of condition")
 
     def visit_at_expression(self, node: Any) -> None:
+        if not isinstance(node.string_id, str):
+            self._visit_ast_value(node.string_id)
         self._visit_required_expression(node.offset, node, "At-expression offset")
 
     def visit_in_expression(self, node: Any) -> None:
