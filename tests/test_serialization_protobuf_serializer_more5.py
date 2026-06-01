@@ -620,7 +620,7 @@ def test_protobuf_serializer_rejects_invalid_anonymous_string_flags(
             serializer.serialize(ast)
 
 
-def test_protobuf_serializer_preserves_empty_hex_string() -> None:
+def test_protobuf_serializer_rejects_empty_hex_string() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     empty_hex = HexString(identifier="$h", tokens=[])
     ast = YaraFile(
@@ -633,9 +633,22 @@ def test_protobuf_serializer_preserves_empty_hex_string() -> None:
         ]
     )
 
-    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    with pytest.raises(SerializationError, match="HexString must contain at least one token"):
+        serializer.serialize(ast)
 
-    assert restored.rules[0].strings == [empty_hex]
+
+def test_protobuf_deserializer_rejects_empty_hex_string() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_hex_string"
+    pb_rule.condition.boolean_literal.value = True
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$h"
+    pb_string.hex.SetInParent()
+
+    with pytest.raises(SerializationError, match="HexString must contain at least one token"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
 def _invalid_modifier_and_hex_container_cases() -> list[tuple[YaraFile, str]]:

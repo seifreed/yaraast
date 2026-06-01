@@ -686,8 +686,12 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
             _copy_modifier_to_protobuf(mod, pb_mod)
 
     elif isinstance(string_def, HexString):
+        tokens = _protobuf_list(string_def.tokens, "HexString tokens")
+        if not tokens:
+            msg = "HexString must contain at least one token"
+            raise SerializationError(msg)
         pb_string.hex.SetInParent()
-        for token in _protobuf_list(string_def.tokens, "HexString tokens"):
+        for token in tokens:
             pb_token = pb_string.hex.tokens.add()
             convert_hex_token_to_protobuf(token, pb_token)
 
@@ -1751,6 +1755,9 @@ def protobuf_to_string(pb_string) -> Any:
         s.modifiers = modifiers
         return _apply_node_metadata_from_protobuf(pb_string, s)
     if pb_string.HasField("hex"):
+        if not pb_string.hex.tokens:
+            msg = "HexString must contain at least one token"
+            raise SerializationError(msg)
         tokens = []
         for pb_token in pb_string.hex.tokens:
             tokens.append(_protobuf_to_hex_token(pb_token))
