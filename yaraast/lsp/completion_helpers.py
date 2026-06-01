@@ -326,14 +326,14 @@ def build_condition_completions(text: str, keywords: list[str]) -> list[Completi
 
     try:
         ast = parse_source(text)
-        if not ast:
+        if ast is None:
             raise ParseError("Failed to parse")
         items.extend(_string_identifier_completions(ast))
     except Exception:
         logger.debug("Operation failed in %s", __name__, exc_info=True)
 
     try:
-        if ast:
+        if ast is not None:
             items.extend(_loop_variable_completions(ast))
     except Exception:
         logger.debug("Operation failed in %s", __name__, exc_info=True)

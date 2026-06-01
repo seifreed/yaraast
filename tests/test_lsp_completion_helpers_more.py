@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from lsprotocol.types import Position
+from pytest import MonkeyPatch
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
+from yaraast.lsp import completion_helpers
 from yaraast.lsp.completion_helpers import (
     analyze_context,
     build_condition_completions,
@@ -145,6 +151,28 @@ def test_lsp_condition_completions_parse_yarax_sources() -> None:
     labels = {item.label for item in items}
     assert ast.rules[0].condition.__class__.__name__ == "WithStatement"
     assert "$a" in labels
+
+
+def test_condition_completions_use_falsy_present_ast(monkeypatch: MonkeyPatch) -> None:
+    class FalsyYaraFile(YaraFile):
+        def __bool__(self) -> bool:
+            return False
+
+    ast = FalsyYaraFile(
+        rules=[
+            Rule(
+                name="x",
+                strings=[PlainString("$a", value="x")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+    monkeypatch.setattr(completion_helpers, "parse_source", lambda _text: ast)
+
+    labels = {item.label for item in build_condition_completions("rule x", [])}
+
+    assert "$a" in labels
+    assert "#a" in labels
 
 
 def test_condition_completions_hide_anonymous_internal_string_ids() -> None:
