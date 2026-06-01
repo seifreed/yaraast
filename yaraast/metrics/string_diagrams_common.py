@@ -81,12 +81,18 @@ def format_hex_token_for_diagram(token) -> str:
 
 
 def _format_hex_value(value: int | str) -> str:
+    if isinstance(value, bool):
+        msg = "Hex value cannot be boolean"
+        raise TypeError(msg)
     if isinstance(value, int):
         return f"{value:02X}"
     return value.upper()
 
 
 def _format_hex_nibble_value(value: int | str) -> str:
+    if isinstance(value, bool):
+        msg = "Hex nibble value cannot be boolean"
+        raise TypeError(msg)
     if isinstance(value, int):
         return f"{value:X}"
     return value.upper()

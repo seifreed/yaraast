@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import importlib
+from typing import Any, cast
+
+import pytest
 
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.strings import (
@@ -163,3 +166,18 @@ def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None
     )
     assert one_plain["patterns"]["common_prefixes"] == []
     assert one_plain["patterns"]["duplicates"] == []
+
+
+def test_hex_diagrams_reject_boolean_hex_values() -> None:
+    invalid_tokens = [
+        HexByte(value=cast(Any, True)),
+        HexNegatedByte(value=cast(Any, False)),
+        HexNibble(high=True, value=cast(Any, True)),
+        HexAlternative(alternatives=[cast(Any, False)]),
+    ]
+
+    for token in invalid_tokens:
+        with pytest.raises(TypeError, match="boolean"):
+            render.create_hex_diagram([token])
+        with pytest.raises(TypeError, match="boolean"):
+            helpers.create_hex_diagram([token])
