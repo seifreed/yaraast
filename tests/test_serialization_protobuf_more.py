@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -61,3 +62,41 @@ def test_protobuf_deserialize_rejects_malformed_binary() -> None:
     serializer = ProtobufSerializer()
     with pytest.raises(SerializationError, match="Invalid Protobuf input"):
         serializer.deserialize(binary_data=b"\xff\xff\xff")
+
+
+@pytest.mark.parametrize("output_path", [False, 0, object()])
+def test_protobuf_serialize_rejects_invalid_output_path_types(output_path: Any) -> None:
+    ast = _sample_ast()
+    serializer = ProtobufSerializer()
+
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        serializer.serialize(ast, output_path=cast(Any, output_path))
+
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        serializer.serialize_text(ast, output_path=cast(Any, output_path))
+
+
+def test_protobuf_serialize_rejects_empty_output_path() -> None:
+    ast = _sample_ast()
+    serializer = ProtobufSerializer()
+
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        serializer.serialize(ast, output_path="")
+
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        serializer.serialize_text(ast, output_path="")
+
+
+@pytest.mark.parametrize("input_path", [False, 0, object()])
+def test_protobuf_deserialize_rejects_invalid_input_path_types(input_path: Any) -> None:
+    serializer = ProtobufSerializer()
+
+    with pytest.raises(TypeError, match="input_path must be a file path"):
+        serializer.deserialize(input_path=cast(Any, input_path))
+
+
+def test_protobuf_deserialize_rejects_empty_input_path() -> None:
+    serializer = ProtobufSerializer()
+
+    with pytest.raises(ValueError, match="input_path must not be empty"):
+        serializer.deserialize(input_path="")
