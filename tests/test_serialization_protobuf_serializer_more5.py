@@ -1616,8 +1616,16 @@ def test_protobuf_deserializer_rejects_empty_rule_modifier_names(
             "BinaryExpression operator must be a string",
         ),
         (
+            BinaryExpression(BooleanLiteral(True), "", BooleanLiteral(False)),
+            "BinaryExpression operator must not be empty",
+        ),
+        (
             UnaryExpression(cast(Any, 123), BooleanLiteral(True)),
             "UnaryExpression operator must be a string",
+        ),
+        (
+            UnaryExpression("", BooleanLiteral(True)),
+            "UnaryExpression operator must not be empty",
         ),
         (FunctionCall(cast(Any, 123), []), "FunctionCall function must be a string"),
         (FunctionCall("", []), "FunctionCall function must not be empty"),
@@ -1735,6 +1743,8 @@ def test_protobuf_serializer_rejects_invalid_expression_leaf_fields(
         ("string_count", "StringCount string_id must not be empty"),
         ("string_offset", "StringOffset string_id must not be empty"),
         ("string_length", "StringLength string_id must not be empty"),
+        ("binary_expression", "BinaryExpression operator must not be empty"),
+        ("unary_expression", "UnaryExpression operator must not be empty"),
         ("function_call", "FunctionCall function must not be empty"),
         ("member_access", "MemberAccess member must not be empty"),
         ("for_expression", "ForExpression variable must not be empty"),
@@ -1767,6 +1777,11 @@ def test_protobuf_deserializer_rejects_empty_expression_identifier_fields(
         getattr(condition, expression_kind).index.integer_literal.value = 0
     elif expression_kind == "function_call":
         condition.function_call.SetInParent()
+    elif expression_kind == "binary_expression":
+        condition.binary_expression.left.boolean_literal.value = True
+        condition.binary_expression.right.boolean_literal.value = False
+    elif expression_kind == "unary_expression":
+        condition.unary_expression.operand.boolean_literal.value = True
     elif expression_kind == "member_access":
         condition.member_access.object.identifier.name = "pe"
     elif expression_kind == "for_expression":

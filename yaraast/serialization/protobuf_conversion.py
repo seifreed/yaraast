@@ -1256,14 +1256,14 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             "BooleanLiteral value",
         )
     elif isinstance(expr, BinaryExpression):
-        pb_expr.binary_expression.operator = _protobuf_required_string(
+        pb_expr.binary_expression.operator = _protobuf_required_nonempty_string(
             expr.operator,
             "BinaryExpression operator",
         )
         convert_expression_to_protobuf(expr.left, pb_expr.binary_expression.left)
         convert_expression_to_protobuf(expr.right, pb_expr.binary_expression.right)
     elif isinstance(expr, UnaryExpression):
-        pb_expr.unary_expression.operator = _protobuf_required_string(
+        pb_expr.unary_expression.operator = _protobuf_required_nonempty_string(
             expr.operator,
             "UnaryExpression operator",
         )
@@ -2076,14 +2076,20 @@ def protobuf_to_expression(pb_expr):
         return with_metadata(
             BinaryExpression(
                 left=protobuf_to_expression(pb_expr.binary_expression.left),
-                operator=pb_expr.binary_expression.operator,
+                operator=_protobuf_required_nonempty_string(
+                    pb_expr.binary_expression.operator,
+                    "BinaryExpression operator",
+                ),
                 right=protobuf_to_expression(pb_expr.binary_expression.right),
             ),
         )
     if pb_expr.HasField("unary_expression"):
         return with_metadata(
             UnaryExpression(
-                operator=pb_expr.unary_expression.operator,
+                operator=_protobuf_required_nonempty_string(
+                    pb_expr.unary_expression.operator,
+                    "UnaryExpression operator",
+                ),
                 operand=protobuf_to_expression(pb_expr.unary_expression.operand),
             ),
         )
