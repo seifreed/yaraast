@@ -72,8 +72,7 @@ def validate_rule_identifiers(rules: list[Any] | tuple[Any, ...]) -> None:
 
     seen: set[str] = set()
     for rule in rules:
-        name = str(getattr(rule, "name", ""))
-        _validate_yara_identifier(name, "rule")
+        name = validate_yara_identifier(getattr(rule, "name", ""), "rule")
         if name in seen:
             msg = f"Duplicate rule identifier '{name}' for libyara output"
             raise ValueError(msg)
@@ -85,7 +84,7 @@ def validate_extern_rule_identifiers(
     extern_rules: list[Any] | tuple[Any, ...],
     namespaces: list[Any] | tuple[Any, ...],
 ) -> None:
-    rule_names = {str(getattr(rule, "name", "")) for rule in rules}
+    rule_names = {validate_yara_identifier(getattr(rule, "name", ""), "rule") for rule in rules}
     seen: set[tuple[str | None, str]] = set()
 
     for extern_rule in extern_rules:
@@ -204,24 +203,29 @@ def validate_rule_tag_name(tag: Any) -> str:
     raise TypeError(msg)
 
 
-def _validate_yara_identifier(name: str, kind: str) -> None:
+def _validate_yara_identifier(name: object, kind: str) -> str:
+    if not isinstance(name, str):
+        msg = f"{kind.capitalize()} identifier must be a string for libyara output"
+        raise TypeError(msg)
     if (
         len(name) <= YARA_IDENTIFIER_MAX_LENGTH
         and _YARA_IDENTIFIER_RE.fullmatch(name) is not None
         and name not in _YARA_KEYWORDS
     ):
-        return
+        return name
 
     msg = f"Invalid {kind} identifier '{name}' for libyara output"
     raise ValueError(msg)
 
 
-def validate_yara_identifier(name: str, kind: str) -> str:
-    _validate_yara_identifier(name, kind)
-    return name
+def validate_yara_identifier(name: object, kind: str) -> str:
+    return _validate_yara_identifier(name, kind)
 
 
-def validate_yara_expression_identifier(name: str) -> str:
+def validate_yara_expression_identifier(name: object) -> str:
+    if not isinstance(name, str):
+        msg = "Identifier must be a string for libyara output"
+        raise TypeError(msg)
     if name.startswith("$"):
         return validate_string_identifier_text(name)
     if name in _YARA_EXPRESSION_KEYWORDS:
@@ -229,7 +233,10 @@ def validate_yara_expression_identifier(name: str) -> str:
     return validate_yara_identifier(name, "identifier")
 
 
-def validate_yara_identifier_path(path: str, kind: str) -> str:
+def validate_yara_identifier_path(path: object, kind: str) -> str:
+    if not isinstance(path, str):
+        msg = f"{kind.capitalize()} identifier must be a string for libyara output"
+        raise TypeError(msg)
     parts = path.split(".")
     if not parts or any(part == "" for part in parts):
         msg = f"Invalid {kind} identifier '{path}' for libyara output"

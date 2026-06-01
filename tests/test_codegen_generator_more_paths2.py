@@ -1163,6 +1163,20 @@ def test_codegen_generators_reject_invalid_rule_identifiers(rule_name: str) -> N
         PrettyPrinter().pretty_print(ast)
 
 
+def test_codegen_generators_reject_non_string_rule_identifiers() -> None:
+    invalid_name: Any = False
+    ast = YaraFile(rules=[Rule(name=invalid_name, condition=BooleanLiteral(True))])
+
+    with pytest.raises(TypeError, match="Rule identifier must be a string"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule identifier must be a string"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule identifier must be a string"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule identifier must be a string"):
+        PrettyPrinter().pretty_print(ast)
+
+
 @pytest.mark.parametrize(
     "rule_name", ["bad-name", "for", "1bad", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)]
 )
@@ -1176,6 +1190,20 @@ def test_codegen_rule_visitors_reject_invalid_rule_identifiers(rule_name: str) -
     with pytest.raises(ValueError, match="Invalid rule identifier"):
         CommentAwareCodeGenerator().generate(rule)
     with pytest.raises(ValueError, match="Invalid rule identifier"):
+        PrettyPrinter().visit_rule(rule)
+
+
+def test_codegen_rule_visitors_reject_non_string_rule_identifiers() -> None:
+    invalid_name: Any = False
+    rule = Rule(name=invalid_name, condition=BooleanLiteral(True))
+
+    with pytest.raises(TypeError, match="Rule identifier must be a string"):
+        CodeGenerator().generate(rule)
+    with pytest.raises(TypeError, match="Rule identifier must be a string"):
+        AdvancedCodeGenerator().generate(rule)
+    with pytest.raises(TypeError, match="Rule identifier must be a string"):
+        CommentAwareCodeGenerator().generate(rule)
+    with pytest.raises(TypeError, match="Rule identifier must be a string"):
         PrettyPrinter().visit_rule(rule)
 
 
