@@ -35,6 +35,7 @@ class YamlSerializer(JsonSerializer):
 
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize AST to YAML format."""
+        ast = self._require_yara_file(ast)
         serialized = self._serialize_with_metadata(ast)
         return serialize_yaml(serialized, output_path, flow_style=self.flow_style)
 
@@ -74,6 +75,7 @@ class YamlSerializer(JsonSerializer):
         output_path: str | Path | None = None,
     ) -> str:
         """Serialize AST to minimal YAML format (AST only, no metadata)."""
+        ast = self._require_yara_file(ast)
         ast_data = self.visit(ast)
         return serialize_yaml(ast_data, output_path, flow_style=False)
 

@@ -71,6 +71,17 @@ def test_yaml_rules_only_rejects_invalid_ast_types(ast: object) -> None:
         serializer.serialize_rules_only(cast(Any, ast))
 
 
+@pytest.mark.parametrize("ast", [None, 123, object()])
+def test_yaml_serializers_reject_invalid_ast_types(ast: object) -> None:
+    serializer = YamlSerializer()
+
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        serializer.serialize(cast(Any, ast))
+
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        serializer.serialize_minimal(cast(Any, ast))
+
+
 def test_yaml_roundtrip_preserves_xor_range_modifier() -> None:
     serializer = YamlSerializer(include_metadata=False)
     ast = YaraFile(
