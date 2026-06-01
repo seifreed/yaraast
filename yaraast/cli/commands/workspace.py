@@ -2,16 +2,25 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import click
 
+from yaraast.cli.utils import _require_file_path, write_text
 from yaraast.cli.workspace_reporting import print_include_tree
 from yaraast.cli.workspace_services import (
     analyze_workspace,
     format_workspace_graph,
     format_workspace_output,
 )
+
+
+def _validate_output_path(output: str | None) -> str | None:
+    if output is None:
+        return None
+    try:
+        _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    return output
 
 
 @click.group()
@@ -44,6 +53,7 @@ def workspace() -> None:
 @click.option("--parallel/--sequential", default=True, help="Analyze files in parallel")
 def analyze(directory, pattern, recursive, output, format, parallel) -> None:
     """Analyze all YARA files in a directory."""
+    output = _validate_output_path(output)
     click.echo(f"Analyzing directory: {directory}")
 
     ws, report = analyze_workspace(directory, pattern, recursive, parallel)
@@ -52,8 +62,8 @@ def analyze(directory, pattern, recursive, output, format, parallel) -> None:
     output_text = format_workspace_output(report, format)
 
     # Output
-    if output:
-        Path(output).write_text(output_text, encoding="utf-8")
+    if output is not None:
+        write_text(output, output_text)
         click.echo(f"Report written to: {output}")
     else:
         click.echo(output_text)
@@ -111,14 +121,15 @@ def resolve(file, search_path, show_tree) -> None:
 )
 def graph(directory, output, format) -> None:
     """Generate dependency graph for YARA files."""
+    output = _validate_output_path(output)
     click.echo(f"Building dependency graph for: {directory}")
 
     _ws, report = analyze_workspace(directory, None, True, True)
     output_text = format_workspace_graph(report, format)
 
     # Output
-    if output:
-        Path(output).write_text(output_text, encoding="utf-8")
+    if output is not None:
+        write_text(output, output_text)
         click.echo(f"Graph written to: {output}")
         if format == "dot":
             click.echo(f"Visualize with: dot -Tpng {output} -o graph.png")

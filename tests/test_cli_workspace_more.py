@@ -70,3 +70,22 @@ def test_workspace_graph_json(tmp_path: Path) -> None:
     payload = json.loads(out_path.read_text(encoding="utf-8"))
     assert "nodes" in payload
     assert any(path.endswith("b.yara") for path in payload["nodes"])
+
+
+def test_workspace_rejects_empty_output_path(tmp_path: Path) -> None:
+    _write(tmp_path, "a.yar", _sample_yara("a"))
+    runner = CliRunner()
+
+    analyze_result = runner.invoke(
+        workspace,
+        ["analyze", str(tmp_path), "--format", "json", "--output", ""],
+    )
+    assert analyze_result.exit_code != 0
+    assert "path must not be empty" in analyze_result.output
+
+    graph_result = runner.invoke(
+        workspace,
+        ["graph", str(tmp_path), "--format", "json", "--output", ""],
+    )
+    assert graph_result.exit_code != 0
+    assert "path must not be empty" in graph_result.output
