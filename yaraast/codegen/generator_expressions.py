@@ -163,7 +163,11 @@ def _render_quantifier(gen: Any, quantifier: Any, *, allow_percentage: bool = Fa
     if isinstance(quantifier, float) and allow_percentage:
         return _format_fractional_percentage_quantifier(quantifier)
     if isinstance(quantifier, IntegerLiteral):
-        return _validate_quantifier_text(str(quantifier.value), allow_percentage=allow_percentage)
+        value = quantifier.value
+        if isinstance(value, bool) or not isinstance(value, int):
+            msg = f"Invalid quantifier '{value}' for libyara output"
+            raise ValueError(msg)
+        return _validate_quantifier_text(str(value), allow_percentage=allow_percentage)
     if isinstance(quantifier, BooleanLiteral):
         msg = f"Invalid quantifier '{gen.visit(quantifier)}' for libyara output"
         raise ValueError(msg)
@@ -177,6 +181,9 @@ def _render_quantifier(gen: Any, quantifier: Any, *, allow_percentage: bool = Fa
 
 
 def _validate_quantifier_text(text: str, *, allow_percentage: bool) -> str:
+    if not isinstance(text, str):
+        msg = f"Invalid quantifier '{text}' for libyara output"
+        raise ValueError(msg)
     if text in {"all", "any", "none"}:
         return text
 

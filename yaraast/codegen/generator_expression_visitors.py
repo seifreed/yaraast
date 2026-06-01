@@ -171,7 +171,11 @@ def _render_for_quantifier(generator: Any, quantifier: Any) -> str:
     if isinstance(quantifier, str):
         return _validate_for_quantifier_text(quantifier)
     if isinstance(quantifier, IntegerLiteral):
-        return _validate_for_quantifier_text(str(quantifier.value))
+        value = quantifier.value
+        if isinstance(value, bool) or not isinstance(value, int):
+            msg = f"Invalid for quantifier '{value}' for libyara output"
+            raise ValueError(msg)
+        return _validate_for_quantifier_text(str(value))
     if isinstance(quantifier, StringLiteral):
         return _validate_for_quantifier_text(quantifier.value)
     if isinstance(quantifier, DoubleLiteral | BooleanLiteral):
@@ -183,6 +187,9 @@ def _render_for_quantifier(generator: Any, quantifier: Any) -> str:
 
 
 def _validate_for_quantifier_text(quantifier: str) -> str:
+    if not isinstance(quantifier, str):
+        msg = f"Invalid for quantifier '{quantifier}' for libyara output"
+        raise ValueError(msg)
     if quantifier in {"all", "any", "none"}:
         return quantifier
     if quantifier.endswith("%") or (quantifier.startswith("-") and quantifier[1:].isdigit()):
