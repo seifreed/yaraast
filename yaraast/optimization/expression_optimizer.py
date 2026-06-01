@@ -196,7 +196,7 @@ class ExpressionOptimizer(ASTTransformer):
             optimized_file.rules = optimized_rules
             return optimized_file, self.optimization_count
         # Single expression optimization
-        return cast(Expression, self.visit(node))
+        return cast(Expression, self.visit(copy.deepcopy(node)))
 
     def _optimize_rule(self, rule: Rule) -> Rule:
         """Optimize expressions in a rule."""

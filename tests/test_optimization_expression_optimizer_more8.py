@@ -117,6 +117,25 @@ def test_parentheses_elimination_counts_as_optimization() -> None:
     assert opt.optimization_count == 1
 
 
+def test_expression_optimization_does_not_mutate_source_tree() -> None:
+    expr = BinaryExpression(
+        ParenthesesExpression(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2))),
+        "==",
+        IntegerLiteral(3),
+    )
+    original = BinaryExpression(
+        ParenthesesExpression(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2))),
+        "==",
+        IntegerLiteral(3),
+    )
+
+    optimized = ExpressionOptimizer().optimize(expr)
+
+    assert optimized == BooleanLiteral(True)
+    assert expr == original
+    assert isinstance(expr.left, ParenthesesExpression)
+
+
 def test_large_integer_division_and_modulo_fold_without_float_conversion() -> None:
     opt = ExpressionOptimizer()
     large = 10**400 + 1
