@@ -4,14 +4,17 @@ import pytest
 
 from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
 from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     Expression,
     IntegerLiteral,
+    SetExpression,
     StringCount,
     StringIdentifier,
     StringLength,
+    StringLiteral,
     StringOffset,
     StringWildcard,
 )
@@ -19,6 +22,7 @@ from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
+from yaraast.yarax.ast_nodes import WithDeclaration, WithStatement
 
 
 def test_best_practices_report_helpers_and_integration_paths() -> None:
@@ -261,6 +265,28 @@ rule shadowed_count {
     ]
 
     assert unused_messages == ["String '$a' is defined but never used in condition"]
+
+
+def test_best_practices_resolves_yarax_string_locals_in_string_sets() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="local_string_set",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", StringLiteral("$a"))],
+                    body=OfExpression("any", SetExpression([StringIdentifier("$x")])),
+                ),
+            )
+        ]
+    )
+
+    report = BestPracticesAnalyzer().analyze(ast)
+
+    assert not any(
+        "String '$a' is defined but never used" in suggestion.message
+        for suggestion in report.suggestions
+    )
 
 
 def test_best_practices_named_wildcard_ignores_anonymous_internal_ids() -> None:
