@@ -24,6 +24,7 @@ from yaraast.ast.expressions import (
     StringOffset,
     UnaryExpression,
 )
+from yaraast.ast.operators import DefinedExpression
 from yaraast.ast.rules import Rule
 from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer, optimize_expression
@@ -115,6 +116,16 @@ def test_parentheses_elimination_counts_as_optimization() -> None:
     optimized = opt.optimize(ParenthesesExpression(BooleanLiteral(True)))
 
     assert optimized == BooleanLiteral(True)
+    assert opt.optimization_count == 1
+
+
+def test_defined_expression_visits_nested_expression() -> None:
+    opt = ExpressionOptimizer()
+    expr = DefinedExpression(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)))
+
+    optimized = opt.optimize(expr)
+
+    assert optimized == DefinedExpression(IntegerLiteral(3))
     assert opt.optimization_count == 1
 
 

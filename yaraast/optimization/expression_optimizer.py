@@ -361,6 +361,7 @@ class ExpressionOptimizer(ASTTransformer):
         return node
 
     def visit_defined_expression(self, node: DefinedExpression) -> DefinedExpression:
+        node.expression = cast(Expression, self.visit(node.expression))
         return node
 
     def visit_for_expression(self, node: Any) -> Any:
