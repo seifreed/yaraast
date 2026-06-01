@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.base import require_yara_file
 from yaraast.errors import ValidationError
 from yaraast.metrics.dependency_graph_finder import DependencyFinder
 
@@ -118,6 +119,7 @@ class DependencyGraph:
 
 def build_dependency_graph(ast: YaraFile) -> DependencyGraph:
     """Build dependency graph from YARA AST."""
+    ast = require_yara_file(ast, "ast")
     graph = DependencyGraph()
     rule_keys, rule_keys_by_name = _rule_occurrence_maps(ast.rules)
 

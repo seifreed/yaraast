@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.base import ASTNode, YaraFile, require_yara_file
 from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
@@ -350,6 +350,7 @@ class ASTFormatter:
             return False, f"Formatting error: {exc}"
 
     def format_ast(self, ast: YaraFile, style: str = "default") -> str:
+        ast = require_yara_file(ast, "ast")
         if style == "compact":
             return self.generator.generate(ast)
         if style in ("pretty", "verbose"):

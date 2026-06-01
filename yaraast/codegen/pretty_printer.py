@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from io import StringIO
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.base import require_yara_file
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.codegen.generator_formatting import validate_yara_file_collections
@@ -126,6 +127,7 @@ class PrettyPrinter(CommentAwareCodeGenerator):
 
     def pretty_print(self, ast: YaraFile) -> str:
         """Pretty print the entire YARA file."""
+        ast = require_yara_file(ast, "ast")
         self.buffer = StringIO()
         self.indent_level = 0
         validate_yara_file_collections(ast)

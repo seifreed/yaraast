@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import YaraFile, require_yara_file
 from yaraast.cli.parser_helpers import parse_yara_source
 from yaraast.cli.serialize_service_helpers import create_serializer, export_with_serializer
 from yaraast.cli.utils import read_text, write_text
@@ -48,6 +48,7 @@ def validate_serialized(input_file: str | Path, fmt: str) -> Any:
 
 
 def build_ast_info(ast: YaraFile) -> dict[str, Any]:
+    ast = require_yara_file(ast, "ast")
     rule_names = [rule.name for rule in ast.rules]
     rule_details = []
     for rule in ast.rules[:10]:

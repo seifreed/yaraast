@@ -7,7 +7,7 @@ import copy
 from fnmatch import fnmatchcase
 from typing import Any, cast
 
-from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.base import ASTNode, YaraFile, require_yara_file
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -75,6 +75,7 @@ class DeadCodeEliminator(ASTTransformer):
         Returns:
             Tuple of (optimized YaraFile, number of eliminations)
         """
+        ast = require_yara_file(ast, "ast")
         ast.validate_structure()
 
         # Reset state

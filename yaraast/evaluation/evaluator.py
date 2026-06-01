@@ -11,7 +11,7 @@ import math
 import struct
 from typing import Any, TypeGuard
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import YaraFile, require_yara_file
 from yaraast.ast.conditions import *
 from yaraast.ast.expressions import *
 from yaraast.ast.rules import Import, Rule
@@ -144,6 +144,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def evaluate_file(self, yara_file: YaraFile) -> dict[str, bool]:
         """Evaluate all rules in a YARA file."""
+        yara_file = require_yara_file(yara_file, "yara_file")
         imports = _validate_imports(yara_file.imports)
         rules = _validate_rules(yara_file.rules)
         results: dict[str, bool] = {}
