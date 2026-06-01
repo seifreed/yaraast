@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import click
 from rich.console import Console
 from rich.syntax import Syntax
@@ -92,7 +90,7 @@ def _generate_yara_output(ast, output: str | None) -> None:
     else:
         result = YaraXGenerator().generate(ast)
 
-    if output:
+    if output is not None:
         write_text(output, result)
         console.print(f"Generated YARA code written to {output}")
     else:
@@ -106,7 +104,7 @@ def _generate_json_output(ast, output: str | None) -> None:
     result = dumper.visit(ast)
     json_str = format_json(result)
 
-    if output:
+    if output is not None:
         write_text(output, json_str)
         console.print(f"AST JSON written to {output}")
     else:
@@ -134,7 +132,7 @@ def _generate_yaml_output(ast, output: str | None) -> None:
         sort_keys=False,
     )
 
-    if output:
+    if output is not None:
         write_text(output, yaml_str)
         console.print(f"AST YAML written to {output}")
     else:
@@ -146,12 +144,12 @@ def _generate_tree_output(ast, output: str | None) -> None:
     builder = ASTTreeBuilder()
     tree = builder.visit(ast)
 
-    if output:
+    if output is not None:
         from rich.console import Console as RichConsole
 
-        with Path(output).open("w", encoding="utf-8") as f:
-            file_console = RichConsole(file=f, width=80)
-            file_console.print(tree)
+        file_console = RichConsole(record=True, width=80)
+        file_console.print(tree)
+        write_text(output, file_console.export_text())
         console.print(f"AST tree written to {output}")
     else:
         console.print(tree)

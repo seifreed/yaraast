@@ -100,6 +100,22 @@ def test_parse_output_generators_for_all_formats(
     assert tree_file.exists()
 
 
+@pytest.mark.parametrize("output_format", ["json", "tree", "yaml", "yara"])
+def test_parse_output_rejects_empty_output_path(output_format: str) -> None:
+    with pytest.raises(ValueError, match="path must not be empty"):
+        po._generate_output_by_format(_ast(), output_format, "")
+
+
+@pytest.mark.parametrize("output", [False, 0, object()])
+@pytest.mark.parametrize("output_format", ["json", "tree", "yaml", "yara"])
+def test_parse_output_rejects_invalid_output_path_types(
+    output_format: str,
+    output: Any,
+) -> None:
+    with pytest.raises(TypeError, match="path must be a file path"):
+        po._generate_output_by_format(_ast(), output_format, output)
+
+
 @pytest.mark.parametrize("output_format", [None, 123])
 def test_parse_output_rejects_non_string_formats(output_format: object) -> None:
     with pytest.raises(TypeError, match="output format must be a string"):
