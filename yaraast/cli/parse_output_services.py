@@ -17,6 +17,10 @@ from yaraast.yarax.generator import YaraXGenerator
 console = Console()
 
 
+def _is_missing_yaml_import(exc: ImportError) -> bool:
+    return (exc.name or "") == "yaml"
+
+
 def _report_parsing_errors(lexer_errors: list, parser_errors: list, ast) -> None:
     """Report lexer and parser errors."""
     total_errors = len(lexer_errors) + len(parser_errors)
@@ -101,7 +105,9 @@ def _generate_yaml_output(ast, output: str | None) -> None:
     """Generate YAML AST output."""
     try:
         import yaml
-    except ImportError:
+    except ImportError as exc:
+        if not _is_missing_yaml_import(exc):
+            raise
         console.print(
             "[red]Error: PyYAML is not installed. Install it with: pip install pyyaml[/red]"
         )

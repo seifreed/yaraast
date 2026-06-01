@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import builtins
+from collections.abc import Callable
 from pathlib import Path
+from types import ModuleType
+from typing import Any
 
 import click
 import pytest
@@ -10,6 +14,8 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.cli import parse_output_services as po
 from yaraast.parser import Parser
+
+ImportFunction = Callable[[str, Any, Any, Any, int], ModuleType]
 
 
 class _Err:
@@ -85,3 +91,25 @@ def test_parse_output_generators_for_all_formats(
     tree_file = tmp_path / "out.tree.txt"
     po._generate_output_by_format(ast, "tree", str(tree_file))
     assert tree_file.exists()
+
+
+def test_parse_output_yaml_propagates_internal_import_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_import: ImportFunction = builtins.__import__
+
+    def fail_internal_yaml_import(
+        name: str,
+        globals_: Any = None,
+        locals_: Any = None,
+        fromlist: Any = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "yaml":
+            raise ImportError("broken yaml internals", name="yaml._broken")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_internal_yaml_import)
+
+    with pytest.raises(ImportError, match="broken yaml internals"):
+        po._generate_yaml_output(_ast(), None)
