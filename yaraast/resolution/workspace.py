@@ -32,7 +32,7 @@ class Workspace:
 
     def __init__(
         self,
-        root_path: str | None = None,
+        root_path: str | PathLike[str] | None = None,
         search_paths: list[str] | None = None,
     ) -> None:
         """Initialize workspace.
@@ -42,10 +42,25 @@ class Workspace:
             search_paths: Additional search paths for includes.
 
         """
-        self.root_path = Path(root_path) if root_path else Path.cwd()
+        self.root_path = self._require_root_path(root_path)
         self.include_resolver = IncludeResolver(search_paths)
         self.files: dict[str, FileAnalysisResult] = {}
         self.dependency_graph = DependencyGraph()
+
+    def _require_root_path(self, root_path: object) -> Path:
+        if root_path is None:
+            return Path.cwd()
+        if isinstance(root_path, bool | bytes) or not isinstance(root_path, str | PathLike):
+            msg = "root_path must be a path"
+            raise TypeError(msg)
+        raw_path = fspath(root_path)
+        if not isinstance(raw_path, str):
+            msg = "root_path must be a text path"
+            raise TypeError(msg)
+        if not raw_path:
+            msg = "root_path must not be empty"
+            raise ValueError(msg)
+        return Path(raw_path)
 
     def add_file(self, file_path: str) -> FileAnalysisResult:
         """Add a single file to the workspace."""

@@ -26,6 +26,23 @@ def _write(path: Path, content: str) -> Path:
     return path
 
 
+def test_workspace_rejects_empty_root_path() -> None:
+    with pytest.raises(ValueError, match="root_path must not be empty"):
+        Workspace("")
+
+
+@pytest.mark.parametrize("root_path", [False, 0, object()])
+def test_workspace_rejects_invalid_root_path_types(root_path: Any) -> None:
+    with pytest.raises(TypeError, match="root_path must be a path"):
+        Workspace(cast(Any, root_path))
+
+
+def test_workspace_accepts_pathlike_root_path(tmp_path: Path) -> None:
+    workspace = Workspace(tmp_path)
+
+    assert workspace.root_path == tmp_path
+
+
 def test_workspace_add_file_error_paths_and_getters(tmp_path: Path) -> None:
     root = tmp_path
     workspace = Workspace(str(root))
