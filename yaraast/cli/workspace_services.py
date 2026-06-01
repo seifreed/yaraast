@@ -7,6 +7,9 @@ from typing import Any
 from yaraast.cli.utils import format_json
 from yaraast.resolution.workspace import Workspace
 
+_WORKSPACE_GRAPH_FORMATS = frozenset({"dot", "json"})
+_WORKSPACE_OUTPUT_FORMATS = frozenset({"dot", "json", "text"})
+
 
 def analyze_workspace(
     directory: str,
@@ -93,7 +96,26 @@ def _format_file_issues(file_path: str, result: Any) -> list[str]:
     return lines
 
 
-def format_workspace_graph(report: Any, fmt: str) -> str:
+def _require_workspace_graph_format(fmt: object) -> str:
+    if not isinstance(fmt, str):
+        raise TypeError("workspace graph format must be a string")
+    if fmt not in _WORKSPACE_GRAPH_FORMATS:
+        valid = ", ".join(sorted(_WORKSPACE_GRAPH_FORMATS))
+        raise ValueError(f"workspace graph format must be one of: {valid}")
+    return fmt
+
+
+def _require_workspace_output_format(fmt: object) -> str:
+    if not isinstance(fmt, str):
+        raise TypeError("workspace output format must be a string")
+    if fmt not in _WORKSPACE_OUTPUT_FORMATS:
+        valid = ", ".join(sorted(_WORKSPACE_OUTPUT_FORMATS))
+        raise ValueError(f"workspace output format must be one of: {valid}")
+    return fmt
+
+
+def format_workspace_graph(report: Any, fmt: object) -> str:
+    fmt = _require_workspace_graph_format(fmt)
     if fmt == "dot":
         return report.dependency_graph.export_dot()
 
@@ -108,8 +130,9 @@ def format_workspace_graph(report: Any, fmt: str) -> str:
     return format_json({"nodes": nodes})
 
 
-def format_workspace_output(report: Any, fmt: str) -> str:
+def format_workspace_output(report: Any, fmt: object) -> str:
     """Format workspace report for a given output format."""
+    fmt = _require_workspace_output_format(fmt)
     if fmt == "json":
         return format_workspace_report_json(report)
     if fmt == "dot":

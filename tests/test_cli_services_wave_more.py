@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from rich.console import Console
 
 from yaraast.analysis.best_practices import AnalysisReport, Suggestion
@@ -168,6 +169,21 @@ def test_workspace_services_formatters() -> None:
     assert ws.format_workspace_output(report, "json") == js
     assert ws.format_workspace_output(report, "dot") == dot
     assert "Workspace Analysis Report" in ws.format_workspace_output(report, "text")
+
+    for invalid_format in [None, 123]:
+        with pytest.raises(TypeError, match="workspace graph format must be a string"):
+            ws.format_workspace_graph(report, invalid_format)
+        with pytest.raises(TypeError, match="workspace output format must be a string"):
+            ws.format_workspace_output(report, invalid_format)
+
+    for unknown_format in ["", "xml", "yaml"]:
+        with pytest.raises(ValueError, match="workspace graph format must be one of: dot, json"):
+            ws.format_workspace_graph(report, unknown_format)
+        with pytest.raises(
+            ValueError,
+            match="workspace output format must be one of: dot, json, text",
+        ):
+            ws.format_workspace_output(report, unknown_format)
 
 
 def test_workspace_graph_json_lists_are_stably_sorted() -> None:
