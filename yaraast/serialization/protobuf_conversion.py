@@ -1685,6 +1685,8 @@ def _typed_modifier_value(pb_modifier):
             return typed_value.int_value
         if typed_value.HasField("double_value"):
             return _finite_double_value(typed_value.double_value, "String modifier")
+        msg = "String modifier typed value is missing a value"
+        raise SerializationError(msg)
     return None
 
 

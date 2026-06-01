@@ -254,6 +254,21 @@ def test_protobuf_deserializer_rejects_malformed_modifier_tuple_values(
         protobuf_to_string(pb_string)
 
 
+def test_protobuf_deserializer_rejects_empty_typed_modifier_value() -> None:
+    pb_string = yara_ast_pb2.StringDefinition()
+    pb_string.identifier = "$a"
+    pb_string.plain.value = "abc"
+    pb_modifier = pb_string.plain.modifiers.add()
+    pb_modifier.name = "xor"
+    pb_modifier.typed_value.SetInParent()
+
+    with pytest.raises(
+        SerializationError,
+        match="String modifier typed value is missing a value",
+    ):
+        protobuf_to_string(pb_string)
+
+
 def test_protobuf_serializer_does_not_coerce_invalid_xor_range_values_to_ints() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(
