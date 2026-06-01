@@ -1046,7 +1046,10 @@ def _percentage_quantifier_value(value: Any) -> float | None:
     return None
 
 
-def _loop_variable_names(variable: str) -> list[str]:
+def _loop_variable_names(ctx: Any, variable: Any) -> list[str]:
+    if not isinstance(variable, str):
+        ctx.errors.append("For-expression variable must be a string")
+        return []
     names = [name.strip() for name in variable.split(",") if name.strip()]
     return names or [variable]
 
@@ -1179,7 +1182,7 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
         if not isinstance(quant_type, StringType | IntegerType):
             ctx.errors.append(f"'for' quantifier must be string or integer, got {quant_type}")
 
-        variable_names = _loop_variable_names(node.variable)
+        variable_names = _loop_variable_names(ctx, node.variable)
         for variable_name in variable_names:
             if ctx.env.has_string(variable_name) or ctx.env.has_string(f"${variable_name}"):
                 ctx.errors.append(

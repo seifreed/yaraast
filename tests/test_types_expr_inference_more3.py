@@ -938,6 +938,22 @@ def test_expr_inference_rejects_raw_boolean_quantifiers() -> None:
     assert any("'for...of' quantifier must be string or integer" in e for e in for_of_inf.errors)
 
 
+def test_expr_inference_rejects_invalid_for_expression_variable_names() -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(
+        ForExpression(
+            quantifier="any",
+            variable=cast(Any, False),
+            iterable=SetExpression([IntegerLiteral(value=1)]),
+            body=BooleanLiteral(value=True),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert "For-expression variable must be a string" in inf.errors
+
+
 def test_expr_inference_for_variable_shadows_same_named_rule() -> None:
     env = TypeEnvironment()
     env.add_rule("item")
