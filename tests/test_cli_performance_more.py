@@ -233,6 +233,30 @@ def test_performance_stream_rejects_empty_output_path(tmp_path: Path) -> None:
     assert "Streaming Parse Results" not in result.output
 
 
+def test_performance_output_dir_commands_reject_empty_path(tmp_path: Path) -> None:
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    runner = CliRunner()
+
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        for command in ("batch", "parallel"):
+            result = runner.invoke(
+                performance,
+                [
+                    command,
+                    file_path,
+                    "--output-dir",
+                    "",
+                ],
+            )
+
+            assert result.exit_code == 2
+            assert "path must not be empty" in result.output
+
+        assert not Path("parallel_analysis_output").exists()
+
+    assert not (tmp_path / "rule.yar_batch_output").exists()
+
+
 def test_performance_stream_rejects_zero_memory_limit(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     result = CliRunner().invoke(
