@@ -74,6 +74,25 @@ def test_display_export_import_reject_empty_output_path() -> None:
         sr.display_import_result(console, "in.json", "json", _Ast(), output="")
 
 
+def test_display_export_import_reject_directory_output_path(tmp_path: Path) -> None:
+    console = Console(record=True, width=120)
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    with pytest.raises(ValueError, match="output path must not be a directory"):
+        sr.display_export_result(
+            console,
+            "{}",
+            "json",
+            output=str(output_dir),
+            pretty=True,
+            stats=None,
+        )
+
+    with pytest.raises(ValueError, match="output path must not be a directory"):
+        sr.display_import_result(console, "in.json", "json", _Ast(), output=str(output_dir))
+
+
 @pytest.mark.parametrize("output", [False, 0, object()])
 def test_display_export_import_reject_invalid_output_path_types(output: Any) -> None:
     console = Console(record=True, width=120)

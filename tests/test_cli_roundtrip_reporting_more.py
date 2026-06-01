@@ -68,6 +68,24 @@ def test_roundtrip_display_helpers_reject_empty_output_path() -> None:
         rr.display_pipeline_result("", "yaml: 1", True, "manifest: 1", ast)
 
 
+def test_roundtrip_display_helpers_reject_directory_output_path(tmp_path: Path) -> None:
+    ast = _Ast()
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+
+    with pytest.raises(ValueError, match="output path must not be a directory"):
+        rr.display_serialize_result(output_dir, "json", ast, False, False, "serialized")
+
+    with pytest.raises(ValueError, match="output path must not be a directory"):
+        rr.display_deserialize_result(output_dir, "json", ast, False, "rule x { condition: true }")
+
+    with pytest.raises(ValueError, match="output path must not be a directory"):
+        rr.display_pretty_result(output_dir, "compact", ast, 2, 80, "formatted")
+
+    with pytest.raises(ValueError, match="output path must not be a directory"):
+        rr.display_pipeline_result(output_dir, "yaml: 1", True, "manifest: 1", ast)
+
+
 @pytest.mark.parametrize("output", [False, 0, object()])
 def test_roundtrip_display_helpers_reject_invalid_output_path_types(output: Any) -> None:
     ast = _Ast()

@@ -18,7 +18,11 @@ def _optional_output_path(output: object, name: str = "output") -> Path | None:
     if isinstance(output, str) and not output:
         msg = f"{name} path must not be empty"
         raise ValueError(msg)
-    return Path(output)
+    output_path = Path(output)
+    if output_path.exists() and output_path.is_dir():
+        msg = f"{name} path must not be a directory"
+        raise ValueError(msg)
+    return output_path
 
 
 def _display_test_success(input_file: Path, result: dict[str, Any], format: str) -> None:

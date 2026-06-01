@@ -24,6 +24,10 @@ def _has_output_path(output: object, name: str = "output") -> bool:
     if isinstance(output, str) and not output:
         msg = f"{name} path must not be empty"
         raise ValueError(msg)
+    output_path = Path(output)
+    if output_path.exists() and output_path.is_dir():
+        msg = f"{name} path must not be a directory"
+        raise ValueError(msg)
     return True
 
 
