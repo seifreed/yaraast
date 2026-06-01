@@ -149,7 +149,13 @@ class SemanticValidator:
         function_validator.visit(expr)
 
         type_checker = TypeChecker(env)
-        type_checker.infer_type(expr)
+        try:
+            type_checker.infer_type(expr)
+        except (AttributeError, TypeError, ValueError) as exc:
+            result.add_error(
+                str(exc),
+                suggestion="Check variable types and function signatures",
+            )
         for error_msg in type_checker.inference.errors:
             result.add_error(
                 error_msg,

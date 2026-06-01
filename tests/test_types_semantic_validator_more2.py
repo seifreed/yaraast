@@ -242,6 +242,29 @@ def test_semantic_validator_reports_invalid_yarax_collection_items(
     assert any(error.message == message for error in result.errors)
 
 
+@pytest.mark.parametrize(
+    ("expression", "message"),
+    [
+        (
+            BinaryExpression(cast(Any, object()), "and", BooleanLiteral(True)),
+            "Binary expression left operand must be Expression",
+        ),
+        (
+            SetExpression(cast(Any, object())),
+            "Set expression elements must be a sequence",
+        ),
+    ],
+)
+def test_validate_expression_reports_invalid_child_structure(
+    expression: Any,
+    message: str,
+) -> None:
+    result = SemanticValidator().validate_expression(expression)
+
+    assert result.is_valid is False
+    assert any(error.message == message for error in result.errors)
+
+
 def test_validate_rule_detects_undefined_strings_in_raw_string_sets() -> None:
     rules = [
         Rule(
