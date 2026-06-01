@@ -25,7 +25,7 @@ console = Console()
 
 
 @click.command(name="performance-check")
-@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option(
     "--severity",
     type=click.Choice(["all", "warning", "critical"]),

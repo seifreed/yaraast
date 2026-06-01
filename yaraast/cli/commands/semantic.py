@@ -26,7 +26,11 @@ from yaraast.cli.utils import _require_file_path
 
 
 @click.command()
-@click.argument("files", nargs=-1, type=click.Path(exists=True, path_type=Path))
+@click.argument(
+    "files",
+    nargs=-1,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
 @click.option(
     "--output",
     "-o",

@@ -38,7 +38,12 @@ def _validate_output_path(output: str | None) -> str | None:
 
 
 @click.command()
-@click.argument("files", nargs=-1, type=click.Path(exists=True), required=True)
+@click.argument(
+    "files",
+    nargs=-1,
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
 @click.option(
     "--operations",
     type=click.Choice(["parse", "codegen", "roundtrip", "all"]),

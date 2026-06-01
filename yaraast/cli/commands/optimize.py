@@ -41,7 +41,7 @@ def _validate_output_path(output_file: str | None) -> Path:
 
 
 @click.command(name="optimize")
-@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.argument("output_file", type=click.Path())
 @click.option(
     "--dry-run",

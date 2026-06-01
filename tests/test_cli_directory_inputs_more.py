@@ -48,6 +48,15 @@ def test_remaining_cli_file_arguments_reject_directories(tmp_path: Path) -> None
         ["validate", "cross", rule_file, str(input_dir)],
         ["validate", "roundtrip", str(input_dir)],
         ["validate", "roundtrip", rule_file, "--test-data", str(input_dir)],
+        ["bench", str(input_dir)],
+        ["optimize", str(input_dir), str(tmp_path / "optimized.yar")],
+        ["performance-check", str(input_dir)],
+        ["semantic", str(input_dir)],
+        ["roundtrip", "serialize", str(input_dir)],
+        ["roundtrip", "deserialize", str(input_dir)],
+        ["roundtrip", "test", str(input_dir)],
+        ["roundtrip", "pretty", str(input_dir)],
+        ["roundtrip", "pipeline", str(input_dir)],
     )
 
     for command in commands:

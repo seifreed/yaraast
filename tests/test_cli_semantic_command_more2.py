@@ -26,7 +26,7 @@ def test_semantic_without_files_exits_with_error() -> None:
     assert "No files provided" in result.output
 
 
-def test_semantic_text_summary_and_processing_error(tmp_path: Path) -> None:
+def test_semantic_rejects_directory_input(tmp_path: Path) -> None:
     runner = CliRunner()
     good_file = _write(
         tmp_path,
@@ -45,12 +45,10 @@ def test_semantic_text_summary_and_processing_error(tmp_path: Path) -> None:
 
     result = runner.invoke(semantic, [str(good_file), str(bad_input)])
 
-    assert result.exit_code == 1
-    assert "Validating" in result.output
-    assert "Validated 2 file(s)" in result.output
-    assert "Error processing" in result.output
-    assert "Found 1 errors" in result.output
-    assert "All files passed validation" not in result.output
+    assert result.exit_code == 2
+    assert "is a directory" in result.output
+    assert "Validating" not in result.output
+    assert "Error processing" not in result.output
 
 
 def test_semantic_yarax_rule_passes_validation(tmp_path: Path) -> None:

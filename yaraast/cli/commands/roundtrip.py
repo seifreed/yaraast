@@ -52,7 +52,7 @@ def _validate_output_path(output: str | None) -> Path | None:
 
 
 @roundtrip.command()
-@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option(
     "--format",
     "-f",
@@ -127,7 +127,7 @@ def serialize(
 
 
 @roundtrip.command()
-@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option(
     "--format",
     "-f",
@@ -189,7 +189,7 @@ def deserialize(
 
 
 @roundtrip.command()
-@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option(
     "--format",
     "-f",
@@ -249,7 +249,7 @@ def test(input_file: Path, format: str, output: str | None, verbose: bool) -> No
 
 
 @roundtrip.command()
-@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option(
     "--output",
     "-o",
@@ -338,7 +338,7 @@ def pretty(
 
 
 @roundtrip.command()
-@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option(
     "--output",
     "-o",
