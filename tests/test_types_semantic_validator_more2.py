@@ -43,6 +43,7 @@ from yaraast.types.semantic_validator import (
     validate_yara_rule,
 )
 from yaraast.types.type_system import TypeEnvironment, TypeValidator
+from yaraast.yarax.ast_nodes import DictExpression, PatternMatch, WithStatement
 
 
 def _rule(name: str = "r", with_condition: bool = True) -> Rule:
@@ -206,6 +207,39 @@ def test_semantic_validator_checks_function_calls_inside_at_subject() -> None:
 
     assert result.is_valid is False
     assert any("Unknown function 'unknown_func'" in warning.message for warning in result.warnings)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            WithStatement(cast(Any, object()), BooleanLiteral(True)),
+            "With-statement declarations must be a sequence",
+        ),
+        (
+            WithStatement([cast(Any, object())], BooleanLiteral(True)),
+            "With-statement declarations item must be WithDeclaration",
+        ),
+        (
+            DictExpression([cast(Any, object())]),
+            "Dict expression items item must be DictItem",
+        ),
+        (
+            PatternMatch(IntegerLiteral(1), [cast(Any, object())]),
+            "Pattern match cases item must be MatchCase",
+        ),
+    ],
+)
+def test_semantic_validator_reports_invalid_yarax_collection_items(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule("invalid_yarax_collection", condition=condition)])
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any(error.message == message for error in result.errors)
 
 
 def test_validate_rule_detects_undefined_strings_in_raw_string_sets() -> None:

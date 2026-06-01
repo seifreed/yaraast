@@ -142,6 +142,18 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         self.errors.append(message)
         return UnknownType()
 
+    def _sequence_or_empty(self, value: Any, message: str) -> list[Any]:
+        if isinstance(value, list | tuple | set | frozenset):
+            return list(value)
+        self.errors.append(message)
+        return []
+
+    def _visit_expression_or_unknown(self, value: Any, message: str) -> YaraType:
+        if hasattr(value, "accept"):
+            return self.visit(value)
+        self.errors.append(message)
+        return UnknownType()
+
     def visit_integer_literal(self, node: IntegerLiteral) -> YaraType:
         if isinstance(node.value, bool) or not isinstance(node.value, int):
             return self._invalid_literal("Integer literal value must be an integer")
@@ -276,14 +288,26 @@ class ExpressionTypeInference(_TypeBaseVisitor):
 
     def visit_with_statement(self, node: Any) -> YaraType:
         self.env.push_scope()
-        for declaration in node.declarations:
+        for declaration in self._sequence_or_empty(
+            node.declarations,
+            "With-statement declarations must be a sequence",
+        ):
+            if not (hasattr(declaration, "identifier") and hasattr(declaration, "value")):
+                self.errors.append("With-statement declarations item must be WithDeclaration")
+                continue
             self.visit(declaration)
-        body_type = self.visit(node.body)
+        body_type = self._visit_expression_or_unknown(
+            node.body,
+            "With-statement body must be Expression",
+        )
         self.env.pop_scope()
         return body_type
 
     def visit_with_declaration(self, node: Any) -> YaraType:
-        value_type = self.visit(node.value)
+        value_type = self._visit_expression_or_unknown(
+            node.value,
+            "With declaration value must be Expression",
+        )
         self.env.define(node.identifier, value_type)
         self.env.define(node.identifier.lstrip("$"), value_type)
         return value_type
@@ -308,7 +332,15 @@ class ExpressionTypeInference(_TypeBaseVisitor):
     def visit_dict_expression(self, node: Any) -> YaraType:
         key_types: list[YaraType] = []
         value_types: list[YaraType] = []
-        for item in node.items:
+        for item in self._sequence_or_empty(
+            node.items,
+            "Dict expression items must be a sequence",
+        ):
+            if not (hasattr(item, "key") and hasattr(item, "value")):
+                self.errors.append("Dict expression items item must be DictItem")
+                key_types.append(UnknownType())
+                value_types.append(UnknownType())
+                continue
             if isinstance(item.value, SpreadOperator) and item.value.is_dict:
                 spread_type = self.visit(item.value)
                 if isinstance(spread_type, DictionaryType):
@@ -395,9 +427,18 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         return UnknownType()
 
     def visit_pattern_match(self, node: Any) -> YaraType:
-        self.visit(node.value)
+        self._visit_expression_or_unknown(
+            node.value,
+            "Pattern match value must be Expression",
+        )
         result_nodes: list[Any] = []
-        for case in node.cases:
+        for case in self._sequence_or_empty(
+            node.cases,
+            "Pattern match cases must be a sequence",
+        ):
+            if not (hasattr(case, "pattern") and hasattr(case, "result")):
+                self.errors.append("Pattern match cases item must be MatchCase")
+                continue
             self.visit(case.pattern)
             result_nodes.append(case.result)
         if node.default is not None:

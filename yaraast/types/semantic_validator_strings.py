@@ -506,7 +506,7 @@ class UndefinedStringDetector:
     ) -> None:
         self._local_string_scopes.append({})
         try:
-            for declaration in node.declarations:
+            for declaration in self._with_declarations(node):
                 self._collect_string_refs(declaration.value, refs, implicit_string_allowed)
                 self._add_local_string_declaration(declaration.identifier, declaration.value)
             self._collect_string_refs(node.body, refs, implicit_string_allowed)
@@ -523,7 +523,7 @@ class UndefinedStringDetector:
     ) -> None:
         self._local_string_scopes.append({})
         try:
-            for declaration in node.declarations:
+            for declaration in self._with_declarations(node):
                 self._collect_used_string_defs(
                     declaration.value,
                     defined,
@@ -541,6 +541,28 @@ class UndefinedStringDetector:
             )
         finally:
             self._local_string_scopes.pop()
+
+    def _with_declarations(self, node: Any) -> list[Any]:
+        declarations = getattr(node, "declarations", None)
+        if not isinstance(declarations, list | tuple):
+            self.result.add_error(
+                "With-statement declarations must be a sequence",
+                getattr(node, "location", None),
+                "Use a list or tuple of with declarations.",
+            )
+            return []
+
+        valid_declarations: list[Any] = []
+        for declaration in declarations:
+            if hasattr(declaration, "identifier") and hasattr(declaration, "value"):
+                valid_declarations.append(declaration)
+                continue
+            self.result.add_error(
+                "With-statement declarations item must be WithDeclaration",
+                getattr(node, "location", None),
+                "Use WithDeclaration nodes in with statements.",
+            )
+        return valid_declarations
 
     def _matches_defined_pattern(
         self, pattern: str, defined: set[str], anonymous: set[str]
