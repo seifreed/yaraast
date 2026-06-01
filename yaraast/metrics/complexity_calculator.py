@@ -99,13 +99,13 @@ class ComplexityCalculator(MetricsVisitorBase):
 
     def visit_string_offset(self, node) -> int:
         complexity = 2
-        if node.index:
+        if node.index is not None:
             complexity += self.calculate(node.index)
         return complexity
 
     def visit_string_length(self, node) -> int:
         complexity = 2
-        if node.index:
+        if node.index is not None:
             complexity += self.calculate(node.index)
         return complexity
 

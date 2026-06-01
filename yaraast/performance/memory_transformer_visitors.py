@@ -128,7 +128,7 @@ def visit_string_count(transformer: Any, node: StringCount) -> StringCount:
 def visit_string_offset(transformer: Any, node: StringOffset) -> StringOffset:
     node = _shallow(node)
     node.string_id = pooled_value(transformer.string_pool, node.string_id)
-    if node.index:
+    if node.index is not None:
         node.index = transformer.visit(node.index)
     return node
 
@@ -136,7 +136,7 @@ def visit_string_offset(transformer: Any, node: StringOffset) -> StringOffset:
 def visit_string_length(transformer: Any, node: StringLength) -> StringLength:
     node = _shallow(node)
     node.string_id = pooled_value(transformer.string_pool, node.string_id)
-    if node.index:
+    if node.index is not None:
         node.index = transformer.visit(node.index)
     return node
 

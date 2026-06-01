@@ -98,7 +98,7 @@ def visit_string_offset(generator: Any, node: Any) -> str:
         node.string_id,
         allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
     )
-    if node.index:
+    if node.index is not None:
         return f"@{suffix}[{generator.visit(node.index)}]"
     return f"@{suffix}"
 
@@ -108,7 +108,7 @@ def visit_string_length(generator: Any, node: Any) -> str:
         node.string_id,
         allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
     )
-    if node.index:
+    if node.index is not None:
         return f"!{suffix}[{generator.visit(node.index)}]"
     return f"!{suffix}"
 

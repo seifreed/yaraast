@@ -228,14 +228,14 @@ class ASTDumper(ASTVisitor[dict]):
         return {
             "type": "StringOffset",
             "string_id": node.string_id,
-            "index": self.visit(node.index) if node.index else None,
+            "index": self.visit(node.index) if node.index is not None else None,
         }
 
     def visit_string_length(self, node: StringLength) -> dict:
         return {
             "type": "StringLength",
             "string_id": node.string_id,
-            "index": self.visit(node.index) if node.index else None,
+            "index": self.visit(node.index) if node.index is not None else None,
         }
 
     def visit_integer_literal(self, node: IntegerLiteral) -> dict:

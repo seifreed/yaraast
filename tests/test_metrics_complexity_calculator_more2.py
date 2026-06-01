@@ -34,6 +34,11 @@ from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.metrics.complexity_calculator import ComplexityCalculator
 
 
+class _FalsyIntegerLiteral(IntegerLiteral):
+    def __bool__(self) -> bool:
+        return False
+
+
 def test_complexity_calculator_core_and_branches() -> None:
     calc = ComplexityCalculator()
 
@@ -71,8 +76,10 @@ def test_complexity_calculator_core_and_branches() -> None:
     assert calc.calculate(StringCount(string_id="a")) == 2
     assert calc.calculate(StringOffset(string_id="a")) == 2
     assert calc.calculate(StringOffset(string_id="a", index=IntegerLiteral(value=0))) == 3
+    assert calc.calculate(StringOffset(string_id="a", index=_FalsyIntegerLiteral(value=0))) == 3
     assert calc.calculate(StringLength(string_id="a")) == 2
     assert calc.calculate(StringLength(string_id="a", index=IntegerLiteral(value=0))) == 3
+    assert calc.calculate(StringLength(string_id="a", index=_FalsyIntegerLiteral(value=0))) == 3
 
     for_expr = ForExpression(
         quantifier="any",

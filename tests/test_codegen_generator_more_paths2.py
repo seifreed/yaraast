@@ -88,6 +88,11 @@ class _BrokenCondition(Condition):
         raise RuntimeError("broken condition")
 
 
+class _FalsyIntegerLiteral(IntegerLiteral):
+    def __bool__(self) -> bool:
+        return False
+
+
 def test_alternate_generators_indent_nested_yarax_match_case_results() -> None:
     nested = PatternMatch(
         value=Identifier("y"),
@@ -1853,6 +1858,8 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
     assert gen.visit_string_count(StringCount("a")) == "#a"
     assert gen.visit_string_offset(StringOffset("a", IntegerLiteral(1))) == "@a[1]"
     assert gen.visit_string_length(StringLength("a", IntegerLiteral(2))) == "!a[2]"
+    assert gen.visit_string_offset(StringOffset("a", _FalsyIntegerLiteral(0))) == "@a[0]"
+    assert gen.visit_string_length(StringLength("a", _FalsyIntegerLiteral(0))) == "!a[0]"
     assert gen.visit_string_count(StringCount("$a")) == "#a"
     assert gen.visit_string_offset(StringOffset("$a", IntegerLiteral(1))) == "@a[1]"
     assert gen.visit_string_length(StringLength("$a", IntegerLiteral(2))) == "!a[2]"

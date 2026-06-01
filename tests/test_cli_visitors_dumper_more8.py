@@ -37,6 +37,11 @@ class _AcceptOnly:
         return {"type": "AcceptOnly"}
 
 
+class _FalsyIntegerLiteral(IntegerLiteral):
+    def __bool__(self) -> bool:
+        return False
+
+
 class _AcceptOnlyModifier:
     def __init__(self, name: str = "x") -> None:
         self.name = name
@@ -96,6 +101,12 @@ def test_dumper_branches_for_modifiers_meta_and_generic_nodes() -> None:
     assert d.visit_string_count(StringCount(string_id="$a"))["string_id"] == "$a"
     assert d.visit_string_offset(StringOffset(string_id="$a"))["index"] is None
     assert d.visit_string_length(StringLength(string_id="$a"))["index"] is None
+    assert d.visit_string_offset(StringOffset(string_id="$a", index=_FalsyIntegerLiteral(0)))[
+        "index"
+    ] == {"type": "IntegerLiteral", "value": 0}
+    assert d.visit_string_length(StringLength(string_id="$a", index=_FalsyIntegerLiteral(0)))[
+        "index"
+    ] == {"type": "IntegerLiteral", "value": 0}
     assert d.visit_double_literal(DoubleLiteral(value=1.2))["value"] == 1.2
     assert d.visit_set_expression(SetExpression(elements=[Identifier(name="x")]))["elements"]
 

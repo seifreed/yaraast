@@ -1101,13 +1101,13 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "StringOffset",
             "string_id": _serialize_required_string(node.string_id, "StringOffset string_id"),
-            "index": serialize_node(node.index) if node.index else None,
+            "index": serialize_node(node.index) if node.index is not None else None,
         }
     if isinstance(node, StringLength):
         return {
             "type": "StringLength",
             "string_id": _serialize_required_string(node.string_id, "StringLength string_id"),
-            "index": serialize_node(node.index) if node.index else None,
+            "index": serialize_node(node.index) if node.index is not None else None,
         }
     if isinstance(node, BinaryExpression):
         return {

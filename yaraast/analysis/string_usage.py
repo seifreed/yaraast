@@ -197,14 +197,14 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         """Visit string offset expression - marks string as used."""
         self._mark_condition_string_ref(node.string_id)
         # Additionally visit index if present for offset expressions
-        if hasattr(node, "index") and node.index:
+        if hasattr(node, "index") and node.index is not None:
             self.visit(node.index)
 
     def visit_string_length(self, node: StringLength) -> None:
         """Visit string length expression - marks string as used."""
         self._mark_condition_string_ref(node.string_id)
         # Additionally visit index if present for length expressions
-        if hasattr(node, "index") and node.index:
+        if hasattr(node, "index") and node.index is not None:
             self.visit(node.index)
 
     def visit_at_expression(self, node: AtExpression) -> None:

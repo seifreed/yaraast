@@ -103,6 +103,11 @@ from yaraast.yarax.ast_nodes import (
 from yaraast.yarax.generator import YaraXGenerator
 
 
+class _FalsyIntegerLiteral(IntegerLiteral):
+    def __bool__(self) -> bool:
+        return False
+
+
 class UnsupportedSimpleNode(ASTNode):
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_unsupported_simple_node(self)
@@ -1844,6 +1849,13 @@ def test_simple_roundtrip_helpers_preserve_extended_expression_nodes() -> None:
 
     for node in nodes:
         assert deserialize_node(serialize_node(node)) == node
+
+    assert deserialize_node(serialize_node(StringOffset("$a", _FalsyIntegerLiteral(0)))) == (
+        StringOffset("$a", IntegerLiteral(0))
+    )
+    assert deserialize_node(serialize_node(StringLength("$a", _FalsyIntegerLiteral(0)))) == (
+        StringLength("$a", IntegerLiteral(0))
+    )
 
     scalar_alt = deserialize_node(serialize_node(HexAlternative([0x90, "91"])))
     assert scalar_alt == HexAlternative([[HexByte(0x90)], [HexByte("91")]])
