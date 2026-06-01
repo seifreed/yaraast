@@ -277,8 +277,9 @@ class MemoryOptimizerTransformer(ASTTransformer):
 
     def visit(self, node: _Node) -> _Node:
         """Visit a node and optimize its memory usage."""
+        optimized = super().visit(node)
         self.nodes_processed += 1
-        return cast(_Node, super().visit(node))
+        return cast(_Node, optimized)
 
     def visit_string_literal(self, node: StringLiteral) -> StringLiteral:
         return transformer_visit_string_literal(self, node)

@@ -200,6 +200,15 @@ def test_memory_optimizer_transformer_visits_real_nodes() -> None:
     assert yara_file.includes[0].path == "common.yar"
 
 
+def test_memory_optimizer_transformer_does_not_count_rejected_nodes() -> None:
+    transformer = MemoryOptimizerTransformer({}, aggressive=False)
+
+    with pytest.raises(TypeError, match="Visitor node must be an ASTNode"):
+        transformer.visit(cast(Any, object()))
+
+    assert transformer.nodes_processed == 0
+
+
 def test_memory_optimizer_transformer_leaf_visitors_are_passthrough_or_pool() -> None:
     pool: dict[str, str] = {}
     transformer = MemoryOptimizerTransformer(pool, aggressive=False)
