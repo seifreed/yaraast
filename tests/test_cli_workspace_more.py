@@ -72,6 +72,21 @@ def test_workspace_graph_json(tmp_path: Path) -> None:
     assert any(path.endswith("b.yara") for path in payload["nodes"])
 
 
+def test_workspace_directory_commands_reject_file_input(tmp_path: Path) -> None:
+    input_file = Path(_write(tmp_path, "a.yar", _sample_yara("a")))
+    runner = CliRunner()
+
+    analyze_result = runner.invoke(workspace, ["analyze", str(input_file)])
+    assert analyze_result.exit_code == 2
+    assert "is a file" in analyze_result.output
+    assert "Found 0 YARA files" not in analyze_result.output
+
+    graph_result = runner.invoke(workspace, ["graph", str(input_file)])
+    assert graph_result.exit_code == 2
+    assert "is a file" in graph_result.output
+    assert "digraph" not in graph_result.output
+
+
 def test_workspace_rejects_empty_output_path(tmp_path: Path) -> None:
     _write(tmp_path, "a.yar", _sample_yara("a"))
     runner = CliRunner()

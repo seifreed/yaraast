@@ -31,7 +31,7 @@ def workspace() -> None:
 
 
 @workspace.command()
-@click.argument("directory", type=click.Path(exists=True))
+@click.argument("directory", type=click.Path(exists=True, file_okay=False))
 @click.option(
     "--pattern",
     "-p",
@@ -112,7 +112,7 @@ def resolve(file, search_path, show_tree) -> None:
 
 
 @workspace.command()
-@click.argument("directory", type=click.Path(exists=True))
+@click.argument("directory", type=click.Path(exists=True, file_okay=False))
 @click.option("--output", "-o", type=click.Path(), help="Output file for graph")
 @click.option(
     "--format",
