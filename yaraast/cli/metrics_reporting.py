@@ -27,7 +27,7 @@ from yaraast.cli.metrics_reporting_display import (
     graphviz_fallback_message as _graphviz_fallback_message,
 )
 from yaraast.cli.metrics_services import MetricsReportData
-from yaraast.cli.utils import format_json
+from yaraast.cli.utils import format_json, write_text
 
 StringDef = PlainString | HexString | RegexString
 
@@ -217,8 +217,8 @@ def _format_strings_text(analysis: dict) -> str:
 
 def _output_string_analysis_results(output_text: str, output: str | None) -> None:
     """Output string analysis results to file or console."""
-    if output:
-        Path(output).write_text(output_text, encoding="utf-8")
+    if output is not None:
+        write_text(output, output_text)
         click.echo(f"String analysis written to {output}")
     else:
         click.echo(output_text)

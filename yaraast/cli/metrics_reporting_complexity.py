@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import click
 
 from yaraast.cli.metrics_services import build_complexity_payload
-from yaraast.cli.utils import format_json
+from yaraast.cli.utils import format_json, write_text
 from yaraast.metrics.complexity_model import ComplexityMetrics
 
 _OUTPUT_FORMATS = frozenset({"json", "text"})
@@ -141,8 +139,8 @@ def complexity_quality_message(quality_score: float, quality_gate: int) -> tuple
 
 
 def emit_text_output(text: str, output: str | None, success_message: str) -> None:
-    if output:
-        Path(output).write_text(text, encoding="utf-8")
+    if output is not None:
+        write_text(output, text)
         click.echo(f"{success_message} {output}")
     else:
         click.echo(text)

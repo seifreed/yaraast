@@ -344,6 +344,23 @@ def test_metrics_reporting_complexity_and_string_outputs(
     assert string_path.read_text(encoding="utf-8").startswith("YARA String Analysis")
 
 
+def test_metrics_reporting_rejects_empty_output_paths() -> None:
+    with pytest.raises(ValueError, match="path must not be empty"):
+        _emit_text_output("complexity", "", "Complexity metrics written to")
+
+    with pytest.raises(ValueError, match="path must not be empty"):
+        _output_string_analysis_results("strings", "")
+
+
+@pytest.mark.parametrize("output", [False, 0, object()])
+def test_metrics_reporting_rejects_invalid_output_path_types(output: Any) -> None:
+    with pytest.raises(TypeError, match="path must be a file path"):
+        _emit_text_output("complexity", cast(Any, output), "Complexity metrics written to")
+
+    with pytest.raises(TypeError, match="path must be a file path"):
+        _output_string_analysis_results("strings", cast(Any, output))
+
+
 def test_metrics_reporting_graph_and_pattern_helpers(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
