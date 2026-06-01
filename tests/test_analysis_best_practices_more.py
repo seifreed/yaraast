@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
@@ -231,6 +233,29 @@ rule holder {
         "String '$alpha_local' is defined but never used" in suggestion.message
         for suggestion in report.suggestions
     )
+
+
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        StringLiteral(cast(Any, False)),
+        StringIdentifier(cast(Any, False)),
+        StringWildcard(cast(Any, False)),
+    ],
+)
+def test_best_practices_rejects_non_string_string_set_values(string_set: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_string_set",
+                strings=[PlainString("$a", value="x")],
+                condition=OfExpression("any", string_set),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String reference must be a string"):
+        BestPracticesAnalyzer().analyze(ast)
 
 
 def test_best_practices_respects_yarax_with_local_string_shadowing() -> None:

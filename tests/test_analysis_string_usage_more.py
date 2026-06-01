@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.analysis.string_usage import StringUsageAnalyzer
@@ -340,6 +342,29 @@ def test_string_usage_analyzer_counts_string_literals_in_condition_sets() -> Non
         )
     )
     assert analyzer.used_strings["manual"] == {"$a", "$missing"}
+
+
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        StringLiteral(cast(Any, False)),
+        StringIdentifier(cast(Any, False)),
+        StringWildcard(cast(Any, False)),
+    ],
+)
+def test_string_usage_analyzer_rejects_non_string_string_set_values(string_set: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_string_set",
+                strings=[PlainString("$a", value="x")],
+                condition=OfExpression("any", string_set),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String reference must be a string"):
+        StringUsageAnalyzer().analyze(ast)
 
 
 def test_string_usage_analyzer_respects_yarax_with_local_shadowing() -> None:
