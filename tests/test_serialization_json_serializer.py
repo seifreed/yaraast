@@ -85,6 +85,14 @@ def test_json_serializer_rejects_empty_output_path() -> None:
         serializer.serialize(ast, output_path="")
 
 
+@pytest.mark.parametrize("ast", [None, False, 0, {}, object()])
+def test_json_serializer_rejects_invalid_ast_types(ast: Any) -> None:
+    serializer = JsonSerializer()
+
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        serializer.serialize(cast(Any, ast))
+
+
 @pytest.mark.parametrize("yaml_str", [False, 0, [], 123, object()])
 def test_yaml_serializer_rejects_non_string_input(yaml_str: Any) -> None:
     serializer = YamlSerializer()

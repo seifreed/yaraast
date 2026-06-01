@@ -139,6 +139,15 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def __init__(self, include_metadata: bool = True) -> None:
         self.include_metadata = require_bool_option(include_metadata, "include_metadata")
 
+    @staticmethod
+    def _require_yara_file(ast: object) -> YaraFile:
+        from yaraast.ast.base import YaraFile
+
+        if not isinstance(ast, YaraFile):
+            msg = "ast must be a YaraFile"
+            raise TypeError(msg)
+        return ast
+
     def visit(self, node: ASTNode) -> dict[str, Any]:
         """Visit a node and attach common AST metadata when present."""
         if not isinstance(node, ASTNode):
@@ -192,6 +201,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
 
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize AST to JSON format."""
+        ast = self._require_yara_file(ast)
         serialized = self._serialize_with_metadata(ast)
         json_str = json.dumps(serialized, indent=JSON_DEFAULT_INDENT, ensure_ascii=False)
 
