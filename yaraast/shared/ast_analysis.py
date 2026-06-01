@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 import hashlib
 import json
+from os import PathLike
 from pathlib import Path
 from typing import Any
 
@@ -336,17 +337,22 @@ class ASTFormatter:
     def format_file(
         self,
         input_path: Path,
-        output_path: Path | None = None,
+        output_path: str | PathLike[str] | None = None,
         style: object = "default",
     ) -> tuple[bool, str]:
+        try:
+            output_file = self._optional_output_path(output_path)
+        except (TypeError, ValueError) as exc:
+            return False, f"Formatting error: {exc}"
+
         try:
             with Path(input_path).open(encoding="utf-8") as f:
                 ast = parse_yara_source_with_comments(f.read())
             formatted = self.format_ast(ast, style)
-            if output_path:
-                with Path(output_path).open("w", encoding="utf-8") as f:
+            if output_file is not None:
+                with output_file.open("w", encoding="utf-8") as f:
                     f.write(formatted)
-                return True, f"Formatted file written to {output_path}"
+                return True, f"Formatted file written to {output_file}"
             return True, formatted
         except (YaraASTError, OSError) as exc:
             return False, f"Formatting error: {exc}"
@@ -368,6 +374,21 @@ class ASTFormatter:
             valid = ", ".join(sorted(self._STYLES))
             raise ValueError(f"format style must be one of: {valid}")
         return style
+
+    def _optional_output_path(self, output_path: object) -> Path | None:
+        if output_path is None:
+            return None
+        if isinstance(output_path, bool) or not isinstance(output_path, str | PathLike):
+            msg = "output_path must be a file path"
+            raise TypeError(msg)
+        if isinstance(output_path, str) and not output_path:
+            msg = "output_path must not be empty"
+            raise ValueError(msg)
+        path = Path(output_path)
+        if path.exists() and path.is_dir():
+            msg = "output_path must not be a directory"
+            raise ValueError(msg)
+        return path
 
     def check_format(self, file_path: Path) -> tuple[bool, list[str]]:
         try:

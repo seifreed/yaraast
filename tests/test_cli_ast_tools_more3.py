@@ -105,6 +105,40 @@ def test_ast_formatter_output_and_errors(tmp_path: Path) -> None:
     assert issues and issues[0].startswith("Check error:")
 
 
+def test_ast_formatter_rejects_empty_output_path(tmp_path: Path) -> None:
+    good = tmp_path / "ok.yar"
+    good.write_text("rule a { condition: true }", encoding="utf-8")
+
+    ok, err = ASTFormatter().format_file(good, output_path="")
+
+    assert ok is False
+    assert err == "Formatting error: output_path must not be empty"
+
+
+def test_ast_formatter_rejects_directory_output_path(tmp_path: Path) -> None:
+    good = tmp_path / "ok.yar"
+    good.write_text("rule a { condition: true }", encoding="utf-8")
+
+    ok, err = ASTFormatter().format_file(good, output_path=tmp_path)
+
+    assert ok is False
+    assert err == "Formatting error: output_path must not be a directory"
+
+
+@pytest.mark.parametrize("output_path", [False, 0, object()])
+def test_ast_formatter_rejects_invalid_output_path_types(
+    output_path: Any,
+    tmp_path: Path,
+) -> None:
+    good = tmp_path / "ok.yar"
+    good.write_text("rule a { condition: true }", encoding="utf-8")
+
+    ok, err = ASTFormatter().format_file(good, output_path=cast(Any, output_path))
+
+    assert ok is False
+    assert err == "Formatting error: output_path must be a file path"
+
+
 def test_ast_formatter_format_file_propagates_internal_generator_errors(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
