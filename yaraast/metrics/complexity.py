@@ -161,9 +161,13 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         return None
 
     def _mark_string_identifier_usage(self, string_id: str) -> None:
-        if self._is_local(string_id):
+        self._mark_condition_string_usage(string_id)
+
+    def _mark_condition_string_usage(self, string_id: str) -> None:
+        normalized = self._normalize_string_id(string_id)
+        if self._is_local(normalized):
             return
-        self._mark_string_usage(string_id)
+        self._mark_string_usage(normalized)
 
     def _mark_all_current_rule_strings(self) -> None:
         if not self._current_rule:
@@ -198,6 +202,8 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             return
 
         normalized = self._normalize_string_id(text)
+        if self._is_local(normalized):
+            return
         if "*" in text and not text.startswith("$"):
             return
         if "*" in normalized:
@@ -243,14 +249,14 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._mark_string_set_text(node.pattern)
 
     def visit_string_count(self, node) -> None:
-        self._mark_string_usage(node.string_id)
+        self._mark_condition_string_usage(node.string_id)
 
     def visit_string_offset(self, node) -> None:
-        self._mark_string_usage(node.string_id)
+        self._mark_condition_string_usage(node.string_id)
         self._visit_ast_value(getattr(node, "index", None))
 
     def visit_string_length(self, node) -> None:
-        self._mark_string_usage(node.string_id)
+        self._mark_condition_string_usage(node.string_id)
         self._visit_ast_value(getattr(node, "index", None))
 
     def visit_parentheses_expression(self, node) -> None:
@@ -276,12 +282,15 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self.visit(node.object)
 
     def visit_at_expression(self, node) -> None:
-        self._mark_string_usage(node.string_id)
+        if isinstance(node.string_id, str):
+            self._mark_condition_string_usage(node.string_id)
+        else:
+            self._visit_ast_value(node.string_id)
         self.visit(node.offset)
 
     def visit_in_expression(self, node) -> None:
         if isinstance(node.subject, str):
-            self._mark_string_usage(node.subject)
+            self._mark_condition_string_usage(node.subject)
         else:
             self._visit_ast_value(node.subject)
         self.visit(node.range)

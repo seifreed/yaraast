@@ -8,11 +8,15 @@ from textwrap import dedent
 import pytest
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     Expression,
+    IntegerLiteral,
+    SetExpression,
     StringCount,
     StringIdentifier,
     StringLength,
+    StringLiteral,
     StringOffset,
     StringWildcard,
 )
@@ -28,6 +32,7 @@ from yaraast.metrics.complexity_helpers import (
 from yaraast.metrics.complexity_reporting import analyze_file_complexity, generate_complexity_report
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
+from yaraast.yarax.ast_nodes import WithDeclaration, WithStatement
 
 
 @pytest.mark.parametrize(
@@ -311,6 +316,37 @@ def test_complexity_string_usage_respects_yarax_with_local_shadowing() -> None:
     assert "shadowed_string" not in metrics.string_dependencies
     assert "declaration_value_uses_string:$a" not in metrics.unused_strings
     assert metrics.string_dependencies["declaration_value_uses_string"] == {"$a"}
+
+
+def test_complexity_string_usage_ignores_yarax_string_locals_in_reference_forms() -> None:
+    cases = [
+        StringIdentifier("$a"),
+        StringCount("a"),
+        StringOffset("a"),
+        StringLength("a"),
+        OfExpression("any", "$a"),
+        OfExpression("any", SetExpression([StringIdentifier("$a")])),
+        OfExpression("any", SetExpression([StringLiteral("$a")])),
+    ]
+
+    for condition in cases:
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="shadowed_string",
+                    strings=[PlainString(identifier="$a", value="value")],
+                    condition=WithStatement(
+                        declarations=[WithDeclaration("$a", IntegerLiteral(1))],
+                        body=condition,
+                    ),
+                )
+            ]
+        )
+
+        metrics = ComplexityAnalyzer().analyze(ast)
+
+        assert metrics.unused_strings == ["shadowed_string:$a"]
+        assert "shadowed_string" not in metrics.string_dependencies
 
 
 def test_complexity_analyzer_counts_yarax_condition_nodes() -> None:
