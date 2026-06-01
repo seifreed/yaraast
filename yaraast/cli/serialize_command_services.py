@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from pathlib import Path
 from typing import Any
 
@@ -60,8 +61,21 @@ def diff_serialized(
     return differ, diff_result, None
 
 
-def build_diff_output_path(old_file: str, new_file: str, output: str | None, format: str) -> str:
-    return output or f"diff_{Path(old_file).stem}_to_{Path(new_file).stem}.{format}"
+def build_diff_output_path(
+    old_file: str,
+    new_file: str,
+    output: str | PathLike[str] | None,
+    format: str,
+) -> str:
+    if output is None:
+        return f"diff_{Path(old_file).stem}_to_{Path(new_file).stem}.{format}"
+    if isinstance(output, bool) or not isinstance(output, str | PathLike):
+        msg = "output path must be a file path"
+        raise TypeError(msg)
+    if isinstance(output, str) and not output:
+        msg = "output path must not be empty"
+        raise ValueError(msg)
+    return str(Path(output))
 
 
 def validate_serialized_input(input_file: str, format: str) -> tuple[Any, Any]:
