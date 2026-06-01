@@ -120,6 +120,19 @@ def test_format_command_writes_output_file(tmp_path: Path) -> None:
     assert "rule fmt" in output_file.read_text(encoding="utf-8")
 
 
+def test_format_command_rejects_empty_output_file(tmp_path: Path) -> None:
+    runner = CliRunner()
+    input_file = tmp_path / "input.yar"
+    input_file.write_text("rule fmt { condition: true }", encoding="utf-8")
+
+    result = runner.invoke(format_yara, [str(input_file), ""])
+
+    assert result.exit_code == 2
+    assert "path must not be empty" in result.output
+    assert "Is a directory" not in result.output
+    assert "Formatted YARA file written" not in result.output
+
+
 def test_format_command_reports_parse_error(tmp_path: Path) -> None:
     runner = CliRunner()
     input_file = tmp_path / "broken.yar"
