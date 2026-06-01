@@ -189,7 +189,13 @@ def test_identity_and_boolean_shortcuts_remaining_paths() -> None:
     )
 
     assert opt.visit(BinaryExpression(BooleanLiteral(True), "or", x)) == BooleanLiteral(True)
-    assert opt.visit(BinaryExpression(BooleanLiteral(False), "or", x)) == x
+    assert opt.visit(BinaryExpression(BooleanLiteral(False), "or", x)) == BinaryExpression(
+        BooleanLiteral(False), "or", x
+    )
+    assert opt.visit(BinaryExpression(BooleanLiteral(True), "and", x)) == BinaryExpression(
+        BooleanLiteral(True), "and", x
+    )
+    assert opt.visit(BinaryExpression(BooleanLiteral(False), "and", x)) == BooleanLiteral(False)
     assert opt.visit(BinaryExpression(x, "and", BooleanLiteral(False))) == BooleanLiteral(False)
     assert opt.visit(BinaryExpression(x, "and", BooleanLiteral(True))) == BinaryExpression(
         x, "and", BooleanLiteral(True)
@@ -222,6 +228,42 @@ def test_optimizer_preserves_arithmetic_identity_semantics_for_unknown_types() -
     optimized_evaluator = YaraEvaluator()
     optimized_evaluator.context.variables["external"] = "text"
     assert optimized_evaluator.evaluate_file(optimized) == {"external_string": False}
+    assert count == 0
+
+
+def test_optimizer_preserves_boolean_identity_semantics_for_undefined_values() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="true_and_undefined",
+                condition=BinaryExpression(
+                    BinaryExpression(BooleanLiteral(True), "and", StringOffset("$missing")),
+                    "==",
+                    BooleanLiteral(False),
+                ),
+            ),
+            Rule(
+                name="false_or_undefined",
+                condition=BinaryExpression(
+                    BinaryExpression(BooleanLiteral(False), "or", StringOffset("$missing")),
+                    "==",
+                    BooleanLiteral(False),
+                ),
+            ),
+        ]
+    )
+
+    assert YaraEvaluator().evaluate_file(ast) == {
+        "true_and_undefined": True,
+        "false_or_undefined": True,
+    }
+
+    optimized, count = ExpressionOptimizer().optimize(ast)
+
+    assert YaraEvaluator().evaluate_file(optimized) == {
+        "true_and_undefined": True,
+        "false_or_undefined": True,
+    }
     assert count == 0
 
 

@@ -15,6 +15,8 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     ParenthesesExpression,
     RangeExpression,
+    StringIdentifier,
+    StringWildcard,
     UnaryExpression,
 )
 from yaraast.ast.operators import DefinedExpression
@@ -123,27 +125,33 @@ def _simplify_identity(node: BinaryExpression) -> tuple[Expression | None, int]:
     return None, 0
 
 
+def _is_static_boolean_identity_operand(node: Expression) -> bool:
+    return isinstance(node, BooleanLiteral | StringIdentifier | StringWildcard | DefinedExpression)
+
+
 def _simplify_boolean_short_circuit(node: BinaryExpression) -> tuple[Expression | None, int]:
     """Simplify boolean short-circuit patterns. Returns (result, opt_count)."""
-    count = 0
-
     if isinstance(node.left, BooleanLiteral):
         if node.operator == "and":
-            count += 1
             if not node.left.value:
-                return BooleanLiteral(value=False), count
-            return node.right, count
+                return BooleanLiteral(value=False), 1
+            if _is_static_boolean_identity_operand(node.right):
+                return node.right, 1
         if node.operator == "or":
-            count += 1
             if node.left.value:
-                return BooleanLiteral(value=True), count
-            return node.right, count
+                return BooleanLiteral(value=True), 1
+            if _is_static_boolean_identity_operand(node.right):
+                return node.right, 1
 
     if isinstance(node.right, BooleanLiteral):
         if node.operator == "and" and not node.right.value:
             return BooleanLiteral(value=False), 1
         if node.operator == "or" and node.right.value:
             return BooleanLiteral(value=True), 1
+        if node.operator == "and" and _is_static_boolean_identity_operand(node.left):
+            return node.left, 1
+        if node.operator == "or" and _is_static_boolean_identity_operand(node.left):
+            return node.left, 1
 
     return None, 0
 
