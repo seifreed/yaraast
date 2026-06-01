@@ -427,5 +427,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
+        if not isinstance(name, str):
+            raise TypeError("Local variable name must be a string")
         names = [part.strip() for part in name.split(",")]
         return {local_name for local_name in names if local_name}

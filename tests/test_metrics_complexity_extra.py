@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
+from typing import Any, cast
 
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import OfExpression
+from yaraast.ast.conditions import ForExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
+    BooleanLiteral,
     Expression,
     IntegerLiteral,
     SetExpression,
@@ -371,6 +373,28 @@ def test_complexity_string_usage_ignores_yarax_string_locals_in_reference_forms(
 
         assert metrics.unused_strings == ["shadowed_string:$a"]
         assert "shadowed_string" not in metrics.string_dependencies
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        ForExpression(
+            quantifier="any",
+            variable=cast(Any, False),
+            iterable=SetExpression([IntegerLiteral(1)]),
+            body=BooleanLiteral(True),
+        ),
+        WithStatement(
+            declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
+            body=BooleanLiteral(True),
+        ),
+    ],
+)
+def test_complexity_analyzer_rejects_invalid_local_variable_names(condition: Any) -> None:
+    ast = YaraFile(rules=[Rule("invalid_local", condition=condition)])
+
+    with pytest.raises(TypeError, match="Local variable name must be a string"):
+        ComplexityAnalyzer().analyze(ast)
 
 
 def test_complexity_string_usage_resolves_yarax_string_locals_in_string_sets() -> None:
