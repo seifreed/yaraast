@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -49,6 +50,39 @@ def test_display_pipeline_result_manifest_header_without_content(
     assert "Rules: 2" in out
     assert "Imports: 1" in out
     assert "Includes: 1" in out
+
+
+def test_roundtrip_display_helpers_reject_empty_output_path() -> None:
+    ast = _Ast()
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        rr.display_serialize_result("", "json", ast, False, False, "serialized")
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        rr.display_deserialize_result("", "json", ast, False, "rule x { condition: true }")
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        rr.display_pretty_result("", "compact", ast, 2, 80, "formatted")
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        rr.display_pipeline_result("", "yaml: 1", True, "manifest: 1", ast)
+
+
+@pytest.mark.parametrize("output", [False, 0, object()])
+def test_roundtrip_display_helpers_reject_invalid_output_path_types(output: Any) -> None:
+    ast = _Ast()
+
+    with pytest.raises(TypeError, match="output path must be a file path"):
+        rr.display_serialize_result(output, "json", ast, False, False, "serialized")
+
+    with pytest.raises(TypeError, match="output path must be a file path"):
+        rr.display_deserialize_result(output, "json", ast, False, "rule x { condition: true }")
+
+    with pytest.raises(TypeError, match="output path must be a file path"):
+        rr.display_pretty_result(output, "compact", ast, 2, 80, "formatted")
+
+    with pytest.raises(TypeError, match="output path must be a file path"):
+        rr.display_pipeline_result(output, "yaml: 1", True, "manifest: 1", ast)
 
 
 def test_display_test_failure_non_verbose(capsys: pytest.CaptureFixture[str]) -> None:

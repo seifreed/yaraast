@@ -2,10 +2,23 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from pathlib import Path
 from typing import Any
 
 import click
+
+
+def _optional_output_path(output: object, name: str = "output") -> Path | None:
+    if output is None:
+        return None
+    if isinstance(output, bool) or not isinstance(output, str | PathLike):
+        msg = f"{name} path must be a file path"
+        raise TypeError(msg)
+    if isinstance(output, str) and not output:
+        msg = f"{name} path must not be empty"
+        raise ValueError(msg)
+    return Path(output)
 
 
 def _display_test_success(input_file: Path, result: dict[str, Any], format: str) -> None:
@@ -49,7 +62,7 @@ def _display_verbose_source(result: dict[str, Any]) -> None:
 
 
 def display_serialize_result(
-    output: Path | None,
+    output: str | Path | None,
     fmt: str,
     ast: Any,
     preserve_comments: bool,
@@ -57,8 +70,9 @@ def display_serialize_result(
     serialized: str,
 ) -> None:
     """Display serialize results."""
-    if output:
-        click.echo(f"✅ Serialized to {output}")
+    output_path = _optional_output_path(output)
+    if output_path is not None:
+        click.echo(f"✅ Serialized to {output_path}")
         click.echo(f"   Format: {fmt.upper()}")
         click.echo(f"   Rules: {len(ast.rules)}")
         click.echo(f"   Comments preserved: {preserve_comments}")
@@ -68,15 +82,16 @@ def display_serialize_result(
 
 
 def display_deserialize_result(
-    output: Path | None,
+    output: str | Path | None,
     fmt: str,
     ast: Any,
     preserve_formatting: bool,
     yara_code: str,
 ) -> None:
     """Display deserialize results."""
-    if output:
-        click.echo(f"✅ Generated YARA code to {output}")
+    output_path = _optional_output_path(output)
+    if output_path is not None:
+        click.echo(f"✅ Generated YARA code to {output_path}")
         click.echo(f"   Format: {fmt.upper()}")
         click.echo(f"   Rules: {len(ast.rules)}")
         click.echo(f"   Formatting preserved: {preserve_formatting}")
@@ -85,7 +100,7 @@ def display_deserialize_result(
 
 
 def display_pretty_result(
-    output: Path | None,
+    output: str | Path | None,
     style: str,
     ast: Any,
     indent_size: int,
@@ -93,8 +108,9 @@ def display_pretty_result(
     formatted_code: str,
 ) -> None:
     """Display pretty print results."""
-    if output:
-        click.echo(f"✅ Pretty printed to {output}")
+    output_path = _optional_output_path(output)
+    if output_path is not None:
+        click.echo(f"✅ Pretty printed to {output_path}")
         click.echo(f"   Style: {style}")
         click.echo(f"   Rules: {len(ast.rules)}")
         click.echo(f"   Indent size: {indent_size}")
@@ -104,21 +120,22 @@ def display_pretty_result(
 
 
 def display_pipeline_result(
-    output: Path | None,
+    output: str | Path | None,
     yaml_content: str,
     include_manifest: bool,
     manifest_content: str | None,
     ast: Any,
 ) -> None:
     """Display pipeline serialization results."""
-    if output:
-        click.echo(f"✅ Pipeline YAML written to {output}")
+    output_path = _optional_output_path(output)
+    if output_path is not None:
+        click.echo(f"✅ Pipeline YAML written to {output_path}")
     else:
         click.echo(yaml_content)
 
     if include_manifest:
-        if output:
-            click.echo(f"✅ Rules manifest written to {output.with_suffix('.manifest.yaml')}")
+        if output_path is not None:
+            click.echo(f"✅ Rules manifest written to {output_path.with_suffix('.manifest.yaml')}")
         else:
             click.echo("\n--- Rules Manifest ---")
             if manifest_content is not None:

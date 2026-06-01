@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 from rich.console import Console
 
 from yaraast.cli import serialize_reporting as sr
+
+
+class _Ast:
+    rules: list[object] = []
+    imports: list[object] = []
 
 
 def test_display_export_import_and_diff_messages(tmp_path: Path) -> None:
@@ -56,6 +62,27 @@ def test_display_export_import_and_diff_messages(tmp_path: Path) -> None:
     assert "No differences found" in out
     assert "Patch file created" in out
     assert "Diff saved to" in out
+
+
+def test_display_export_import_reject_empty_output_path() -> None:
+    console = Console(record=True, width=120)
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        sr.display_export_result(console, "{}", "json", output="", pretty=True, stats=None)
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        sr.display_import_result(console, "in.json", "json", _Ast(), output="")
+
+
+@pytest.mark.parametrize("output", [False, 0, object()])
+def test_display_export_import_reject_invalid_output_path_types(output: Any) -> None:
+    console = Console(record=True, width=120)
+
+    with pytest.raises(TypeError, match="output path must be a file path"):
+        sr.display_export_result(console, "{}", "json", output=output, pretty=True, stats=None)
+
+    with pytest.raises(TypeError, match="output path must be a file path"):
+        sr.display_import_result(console, "in.json", "json", _Ast(), output=output)
 
 
 def test_write_diff_output_and_display_info(tmp_path: Path) -> None:

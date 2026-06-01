@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,18 @@ from yaraast.cli.utils import format_json, write_text
 _DIFF_OUTPUT_FORMATS = frozenset({"json", "yaml"})
 
 
+def _has_output_path(output: object, name: str = "output") -> bool:
+    if output is None:
+        return False
+    if isinstance(output, bool) or not isinstance(output, str | PathLike):
+        msg = f"{name} path must be a file path"
+        raise TypeError(msg)
+    if isinstance(output, str) and not output:
+        msg = f"{name} path must not be empty"
+        raise ValueError(msg)
+    return True
+
+
 def display_export_result(
     console: Console,
     result: str | None,
@@ -22,7 +35,8 @@ def display_export_result(
     pretty: bool,
     stats: dict | None,
 ) -> None:
-    if pretty and result and not output:
+    has_output = _has_output_path(output)
+    if pretty and result and not has_output:
         syntax = Syntax(result, fmt, theme="monokai", line_numbers=True)
         console.print(syntax)
     if stats:
@@ -30,7 +44,7 @@ def display_export_result(
 
         _display_protobuf_stats(stats)
 
-    if output:
+    if has_output:
         console.print(f"✅ AST exported to {output} ({fmt} format)")
     elif not pretty:
         console.print("✅ AST serialized successfully")
@@ -41,7 +55,7 @@ def display_import_result(
 ) -> None:
     console.print(f"✅ AST imported from {input_file} ({fmt} format)")
     console.print(f"📊 Rules: {len(ast.rules)}, Imports: {len(ast.imports)}")
-    if output:
+    if _has_output_path(output):
         console.print(f"✅ YARA code written to {output}")
 
 
