@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+import pytest
+
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -95,6 +97,22 @@ def test_condition_formatter_literals_and_calls() -> None:
     assert formatter.format_condition(StringCount("$a")) == "#a"
     assert formatter.format_condition(StringOffset("$b")) == "@b"
     assert formatter.format_condition(StringLength("$c")) == "!c"
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        StringIdentifier("#a"),
+        StringCount("#a"),
+        StringOffset("@a"),
+        StringLength("!a"),
+    ],
+)
+def test_condition_formatter_rejects_embedded_string_reference_operators(
+    condition: Any,
+) -> None:
+    with pytest.raises(ValueError, match="Invalid string reference"):
+        ConditionStringFormatter().format_condition(condition)
 
 
 def test_condition_formatter_of_expression_and_binary() -> None:

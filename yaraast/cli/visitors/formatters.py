@@ -3,6 +3,7 @@
 from typing import Any
 
 from yaraast.cli.visitors.formatters_helpers import format_int_literal, truncate_string
+from yaraast.string_references import normalize_string_reference_id
 
 
 def _node_text(value: Any, default: str) -> str:
@@ -30,9 +31,7 @@ def _quantifier_text(value: Any, default: str, *, allow_percentage: bool = False
 
 
 def _string_reference_suffix(string_id: Any) -> str:
-    text = str(string_id)
-    text = text.lstrip("#@!")
-    return text[1:] if text.startswith("$") else text
+    return normalize_string_reference_id(str(string_id)).removeprefix("$")
 
 
 def _string_set_item_text(item: Any, formatter: Any, depth: int) -> str:
@@ -164,7 +163,7 @@ class ConditionStringFormatter:
         return getattr(condition, "name", "identifier")
 
     def _format_string_identifier(self, condition: Any, _depth: int) -> str:
-        return getattr(condition, "name", "$string")
+        return normalize_string_reference_id(getattr(condition, "name", "$string"))
 
     def _format_string_count(self, condition: Any, _depth: int) -> str:
         name = getattr(condition, "string_id", getattr(condition, "name", "string"))
