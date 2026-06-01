@@ -508,7 +508,10 @@ def test_performance_parallel_abort_on_real_complexity_write_error(tmp_path: Pat
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="SIGINT via os.kill not reliable on Windows")
-def test_performance_stream_and_parallel_handle_real_sigint(tmp_path: Path) -> None:
+def test_performance_stream_and_parallel_handle_real_sigint(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     rules_dir = tmp_path / "sigint_rules"
     rules_dir.mkdir()
     for i in range(2000):
@@ -526,14 +529,16 @@ def test_performance_stream_and_parallel_handle_real_sigint(tmp_path: Path) -> N
     assert stream.exit_code == 0
     assert "Parsing cancelled by user" in stream.output
 
-    timer = threading.Timer(0.5, lambda: os.kill(os.getpid(), signal.SIGINT))
-    timer.start()
-    try:
-        parallel = CliRunner().invoke(
-            performance,
-            ["parallel", str(rules_dir), "--analysis-type", "complexity", "--chunk-size", "1"],
-        )
-    finally:
-        timer.cancel()
+    def interrupt_parallel_analysis(*args: object, **kwargs: object) -> None:
+        os.kill(os.getpid(), signal.SIGINT)
+
+    monkeypatch.setattr(
+        "yaraast.cli.commands.performance.run_parallel_analysis",
+        interrupt_parallel_analysis,
+    )
+    parallel = CliRunner().invoke(
+        performance,
+        ["parallel", str(rules_dir), "--analysis-type", "complexity", "--chunk-size", "1"],
+    )
     assert parallel.exit_code == 0
     assert "Analysis cancelled by user" in parallel.output

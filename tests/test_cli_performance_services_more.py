@@ -71,6 +71,17 @@ def test_collect_file_paths_deduplicates_relative_absolute_and_directory_paths(
     assert resolved_paths.count(file_path.resolve()) == 1
 
 
+@pytest.mark.parametrize("raw_path", [False, 0, object()])
+def test_collect_file_paths_rejects_invalid_path_types(raw_path: Any) -> None:
+    with pytest.raises(TypeError, match="input path must be a string or path-like object"):
+        ps.collect_file_paths((cast(Any, raw_path),))
+
+
+def test_collect_file_paths_rejects_empty_path() -> None:
+    with pytest.raises(ValueError, match="input path must not be empty"):
+        ps.collect_file_paths(("",))
+
+
 def test_extract_successful_asts_and_file_name_mapping_paths(tmp_path: Path) -> None:
     file_paths = [tmp_path / "a.yar"]
     ok_ast = _ast("ok")

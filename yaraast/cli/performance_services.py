@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from os import PathLike, fspath
 from pathlib import Path
 import time
 from typing import Any
@@ -90,6 +91,17 @@ def build_batch_results_data(results: dict) -> dict[str, Any]:
     }
 
 
+def _require_collect_input_path(raw_path: object) -> Path:
+    if isinstance(raw_path, bytes) or not isinstance(raw_path, str | PathLike):
+        msg = "input path must be a string or path-like object"
+        raise TypeError(msg)
+    path_text = fspath(raw_path)
+    if not path_text:
+        msg = "input path must not be empty"
+        raise ValueError(msg)
+    return Path(path_text)
+
+
 def get_parse_iterator(
     parser: StreamingParser,
     input_path: Path,
@@ -148,7 +160,7 @@ def collect_file_paths(input_paths: tuple) -> list[Path]:
     file_paths = []
     seen: set[Path] = set()
     for raw_path in input_paths:
-        path = Path(raw_path)
+        path = _require_collect_input_path(raw_path)
         candidates: Iterable[Path]
         if path.is_file():
             candidates = [path]
