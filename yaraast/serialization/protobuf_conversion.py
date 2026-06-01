@@ -454,16 +454,17 @@ def _protobuf_rule_modifier_list(values, context: str) -> list:
 
 def _protobuf_modifier_name(modifier, context: str) -> str:
     if isinstance(modifier, str):
-        return modifier
+        return _protobuf_required_nonempty_string(modifier, f"{context} name")
     try:
         name = modifier.name
     except AttributeError as exc:
         msg = f"{context} name must be a string"
         raise SerializationError(msg) from exc
-    if isinstance(name, str):
-        return name
-    msg = f"{context} name must be a string"
-    raise SerializationError(msg)
+    return _protobuf_required_nonempty_string(name, f"{context} name")
+
+
+def _protobuf_modifier_names_from_protobuf(values, context: str) -> list[str]:
+    return [_protobuf_required_nonempty_string(value, f"{context} name") for value in values]
 
 
 def _protobuf_string_modifier_list(values, context: str) -> list:
@@ -1587,7 +1588,10 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
 
         rule = Rule(
             name=_protobuf_required_nonempty_string(pb_rule.name, "Rule name"),
-            modifiers=list(pb_rule.modifiers),
+            modifiers=_protobuf_modifier_names_from_protobuf(
+                pb_rule.modifiers,
+                "Rule modifier",
+            ),
             tags=tags,
             meta=meta,
             strings=strings,
@@ -1614,7 +1618,10 @@ def protobuf_to_extern_rule(pb_extern_rule):
     from yaraast.errors import ValidationError
 
     modifiers = []
-    for modifier in pb_extern_rule.modifiers:
+    for modifier in _protobuf_modifier_names_from_protobuf(
+        pb_extern_rule.modifiers,
+        "ExternRule modifier",
+    ):
         try:
             modifiers.append(RuleModifier.from_string(modifier))
         except (ValueError, ValidationError):

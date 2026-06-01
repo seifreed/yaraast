@@ -1500,6 +1500,64 @@ def test_protobuf_deserializer_rejects_empty_in_rule_pragma_positions() -> None:
 
 
 @pytest.mark.parametrize(
+    ("ast", "message"),
+    [
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_modifier",
+                        modifiers=cast(Any, [""]),
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Rule modifier name must not be empty",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("ExternalRule", modifiers=cast(Any, [""]))]),
+            "ExternRule modifier name must not be empty",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_empty_rule_modifier_names(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("payload_kind", "message"),
+    [
+        ("rule", "Rule modifier name must not be empty"),
+        ("extern_rule", "ExternRule modifier name must not be empty"),
+    ],
+)
+def test_protobuf_deserializer_rejects_empty_rule_modifier_names(
+    payload_kind: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    if payload_kind == "rule":
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "bad_modifier"
+        pb_rule.modifiers.append("")
+        pb_rule.condition.boolean_literal.value = True
+    else:
+        pb_extern_rule = pb_file.extern_rules.add()
+        pb_extern_rule.name = "ExternalRule"
+        pb_extern_rule.modifiers.append("")
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
     ("condition", "message"),
     [
         (
