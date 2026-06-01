@@ -48,7 +48,11 @@ def require_input_path(value: object, name: str) -> Path:
     if isinstance(value, str) and not value:
         msg = f"{name} must not be empty"
         raise ValueError(msg)
-    return Path(value)
+    path = Path(value)
+    if path.exists() and path.is_dir():
+        msg = f"{name} must not be a directory"
+        raise ValueError(msg)
+    return path
 
 
 def read_text(path: str | Path) -> str:

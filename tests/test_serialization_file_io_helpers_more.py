@@ -8,6 +8,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.serialization.file_io_helpers import read_utf8, write_utf8
+from yaraast.serialization.serializer_helpers import require_input_path
 
 
 def test_file_io_helpers_read_and_write_utf8_paths(tmp_path: Path) -> None:
@@ -34,3 +35,17 @@ def test_file_io_helpers_reject_empty_path() -> None:
 
     with pytest.raises(ValueError, match="path must not be empty"):
         write_utf8("", "content")
+
+
+def test_file_io_helpers_reject_directory_paths(tmp_path: Path) -> None:
+    directory = tmp_path / "dir"
+    directory.mkdir()
+
+    with pytest.raises(ValueError, match="path must not be a directory"):
+        read_utf8(directory)
+
+    with pytest.raises(ValueError, match="path must not be a directory"):
+        write_utf8(directory, "content")
+
+    with pytest.raises(ValueError, match="input_path must not be a directory"):
+        require_input_path(directory, "input_path")

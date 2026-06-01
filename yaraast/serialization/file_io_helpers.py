@@ -13,7 +13,11 @@ def _require_file_path(path: object) -> Path:
     if isinstance(path, str) and not path:
         msg = "path must not be empty"
         raise ValueError(msg)
-    return Path(path)
+    path_obj = Path(path)
+    if path_obj.exists() and path_obj.is_dir():
+        msg = "path must not be a directory"
+        raise ValueError(msg)
+    return path_obj
 
 
 def read_utf8(path: str | Path) -> str:
