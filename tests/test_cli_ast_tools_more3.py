@@ -5,6 +5,7 @@ from __future__ import annotations
 from io import StringIO
 from pathlib import Path
 
+import pytest
 from rich.console import Console
 
 from yaraast.ast.base import YaraFile
@@ -78,3 +79,37 @@ def test_ast_formatter_output_and_errors(tmp_path: Path) -> None:
     needs_fmt, issues = formatter.check_format(missing)
     assert needs_fmt is False
     assert issues and issues[0].startswith("Check error:")
+
+
+def test_ast_formatter_format_file_propagates_internal_generator_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    good = tmp_path / "ok.yar"
+    good.write_text("rule a { condition: true }", encoding="utf-8")
+    formatter = ASTFormatter()
+
+    def broken_generate(ast: YaraFile) -> str:
+        raise AttributeError("generator state missing")
+
+    monkeypatch.setattr(formatter.generator, "generate", broken_generate)
+
+    with pytest.raises(AttributeError, match="generator state missing"):
+        formatter.format_file(good, style="compact")
+
+
+def test_ast_formatter_check_format_propagates_internal_printer_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    good = tmp_path / "ok.yar"
+    good.write_text("rule a { condition: true }", encoding="utf-8")
+    formatter = ASTFormatter()
+
+    def broken_pretty_print(ast: YaraFile) -> str:
+        raise AttributeError("printer state missing")
+
+    monkeypatch.setattr(formatter.pretty_printer, "pretty_print", broken_pretty_print)
+
+    with pytest.raises(AttributeError, match="printer state missing"):
+        formatter.check_format(good)

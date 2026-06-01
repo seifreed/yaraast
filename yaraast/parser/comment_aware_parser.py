@@ -186,11 +186,11 @@ class CommentAwareParser(Parser):
         """Parse rule name with comment preservation."""
         if not self._match(TokenType.RULE):
             msg = "Expected 'rule'"
-            raise Exception(msg)
+            raise ParserError(msg, self._peek())
 
         if not self._peek() or self._peek().type != TokenType.IDENTIFIER:
             msg = "Expected rule name"
-            raise Exception(msg)
+            raise ParserError(msg, self._peek())
 
         name_token = self._peek()
         name = str(name_token.value)
@@ -223,7 +223,7 @@ class CommentAwareParser(Parser):
         """Expect and consume left brace."""
         if not self._match(TokenType.LBRACE):
             msg = "Expected '{'"
-            raise Exception(msg)
+            raise ParserError(msg, self._peek())
 
     def _parse_rule_sections_with_comments(self) -> tuple:
         """Parse rule sections (meta, strings, condition) with comments."""
@@ -283,7 +283,7 @@ class CommentAwareParser(Parser):
         """Expect and consume colon after section name."""
         if not self._match(TokenType.COLON):
             msg = f"Expected ':' after '{section_name}'"
-            raise Exception(msg)
+            raise ParserError(msg, self._peek())
 
     def _parse_condition_with_comments(self):
         """Parse condition section with comment preservation."""
@@ -378,7 +378,7 @@ class CommentAwareParser(Parser):
 
             if not self._match(TokenType.ASSIGN):
                 msg = "Expected '='"
-                raise Exception(msg)
+                raise ParserError(msg, self._peek())
 
             # Parse string value
             string_def = None
@@ -415,7 +415,7 @@ class CommentAwareParser(Parser):
                 string_def = RegexString(identifier=identifier, regex=pattern, modifiers=modifiers)
             else:
                 msg = "Expected string value"
-                raise Exception(msg)
+                raise ParserError(msg, self._peek())
             self._set_node_location_from_tokens(string_def, start_token, self._previous())
 
             # Attach comments to string definition
@@ -536,13 +536,13 @@ class CommentAwareParser(Parser):
 
             if not self._match(TokenType.IDENTIFIER):
                 msg = "Expected meta key after scope"
-                raise Exception(msg)
+                raise ParserError(msg, self._peek())
 
             key = str(self._previous().value)
 
             if not self._match(TokenType.ASSIGN):
                 msg = "Expected '=' in meta"
-                raise Exception(msg)
+                raise ParserError(msg, self._peek())
 
             # Parse value
             if self._match(TokenType.MINUS):
@@ -550,7 +550,7 @@ class CommentAwareParser(Parser):
                     value = -self._previous().value
                 else:
                     msg = "Expected integer after '-' in meta value"
-                    raise Exception(msg)
+                    raise ParserError(msg, self._peek())
             elif self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
                 value = self._previous().value
             elif self._match(TokenType.BOOLEAN_TRUE):
@@ -559,7 +559,7 @@ class CommentAwareParser(Parser):
                 value = False
             else:
                 msg = "Expected meta value"
-                raise Exception(msg)
+                raise ParserError(msg, self._peek())
 
             meta = Meta(key=key, value=value)
             cast(Any, meta).scope = MetaScope.from_string(scope) if scope else MetaScope.PUBLIC

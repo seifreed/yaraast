@@ -346,7 +346,7 @@ class ASTFormatter:
                     f.write(formatted)
                 return True, f"Formatted file written to {output_path}"
             return True, formatted
-        except (YaraASTError, OSError, Exception) as exc:  # file I/O + parse + codegen errors
+        except (YaraASTError, OSError) as exc:
             return False, f"Formatting error: {exc}"
 
     def format_ast(self, ast: YaraFile, style: str = "default") -> str:
@@ -372,5 +372,5 @@ class ASTFormatter:
                 if orig != fmt:
                     issues.append(f"Line {i}: formatting issue")
             return len(issues) > 0, issues
-        except (YaraASTError, OSError, Exception) as exc:  # file I/O + parse + codegen errors
+        except (YaraASTError, OSError) as exc:
             return False, [f"Check error: {exc}"]
