@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, require_yara_file
 from yaraast.ast.expressions import Identifier, MemberAccess, StringWildcard
 from yaraast.visitor.base import BaseVisitor
 
@@ -51,6 +51,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     def analyze(self, yara_file: YaraFile) -> dict[str, Any]:
         """Analyze dependencies in YARA file."""
+        yara_file = require_yara_file(yara_file, "yara_file")
         yara_file.validate_structure()
         self.rule_names.clear()
         self.dependencies.clear()

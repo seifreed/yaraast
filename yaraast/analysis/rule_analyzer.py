@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
 from yaraast.analysis.string_usage import StringUsageAnalyzer
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import YaraFile, require_yara_file
 
 
 class RuleAnalyzer:
@@ -25,6 +25,7 @@ class RuleAnalyzer:
 
     def analyze(self, yara_file: YaraFile) -> dict[str, Any]:
         """Perform comprehensive analysis of YARA file."""
+        yara_file = require_yara_file(yara_file, "yara_file")
         # Run individual analyses
         string_analysis = self.string_analyzer.analyze(yara_file)
         dependency_analysis = self.dependency_analyzer.analyze(yara_file)

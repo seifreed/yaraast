@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.base import require_yara_file
 from yaraast.ast.expressions import (
     Expression,
     Identifier,
@@ -49,6 +50,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
 
     def analyze(self, yara_file: YaraFile) -> dict[str, dict[str, Any]]:
         """Analyze string usage in YARA file."""
+        yara_file = require_yara_file(yara_file, "yara_file")
         yara_file.validate_structure()
         self.defined_strings.clear()
         self.anonymous_strings.clear()

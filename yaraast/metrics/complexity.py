@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING
 
+from yaraast.ast.base import require_yara_file
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     Identifier,
@@ -46,6 +47,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
     def analyze(self, ast: YaraFile) -> ComplexityMetrics:
         """Analyze AST and return complexity metrics."""
+        ast = require_yara_file(ast, "ast")
         ast.validate_structure()
         self.metrics = ComplexityMetrics()
         self._current_rule = None

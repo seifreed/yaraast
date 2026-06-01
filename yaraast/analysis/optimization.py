@@ -18,7 +18,7 @@ from yaraast.analysis.optimization_rule_analysis import (
     find_similar_rules,
     visit_binary_expression,
 )
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import YaraFile, require_yara_file
 from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -114,6 +114,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
 
     def analyze(self, ast: YaraFile) -> OptimizationReport:
         """Analyze AST for optimizations."""
+        ast = require_yara_file(ast, "ast")
         ast.validate_structure()
         self.report = OptimizationReport()
         self._local_scopes.clear()

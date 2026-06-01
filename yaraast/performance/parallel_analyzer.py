@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
+from yaraast.ast.base import require_yara_file
 from yaraast.performance.parallel_execution import (
     analyze_rules as execution_analyze_rules,
     analyze_with_custom_function as execution_analyze_with_custom_function,
@@ -94,6 +95,7 @@ class ParallelAnalyzer:
             Analysis results including rule analyses and dependencies
 
         """
+        yara_file = require_yara_file(yara_file, "yara_file")
         # Analyze rules in parallel
         rule_analyses = self.analyze_rules(yara_file.rules, max_workers)
 

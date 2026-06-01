@@ -218,3 +218,11 @@ class YaraFile(ASTNode):
     def get_all_rules(self) -> list[Rule]:
         """Get a copy of all regular rules in this file."""
         return self.rules.copy()
+
+
+def require_yara_file(value: object, name: str) -> YaraFile:
+    """Require a YaraFile instance for public AST APIs."""
+    if not isinstance(value, YaraFile):
+        msg = f"{name} must be a YaraFile"
+        raise TypeError(msg)
+    return value

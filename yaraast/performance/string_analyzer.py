@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.base import require_yara_file
 from yaraast.ast.strings import StringDefinition
 from yaraast.performance.string_analysis_helpers import (
     StringValue,
@@ -122,6 +123,7 @@ class StringPatternAnalyzer:
             Comprehensive string analysis
 
         """
+        yara_file = require_yara_file(yara_file, "yara_file")
         all_strings = []
         rule_analyses = []
 
