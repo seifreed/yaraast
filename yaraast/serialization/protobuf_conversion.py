@@ -735,13 +735,18 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
     elif isinstance(token, HexJump):
         _copy_hex_jump_to_protobuf(token, pb_token.jump)
     elif isinstance(token, HexAlternative):
+        alternatives = _protobuf_list(token.alternatives, "HexAlternative alternatives")
+        if not alternatives:
+            msg = "HexAlternative must contain at least one branch"
+            raise SerializationError(msg)
         pb_token.alternative.SetInParent()
-        for alternative in _protobuf_list(
-            token.alternatives,
-            "HexAlternative alternatives",
-        ):
+        for alternative in alternatives:
+            branch = _coerce_hex_alternative_branch(alternative)
+            if not branch:
+                msg = "HexAlternative branches must not be empty"
+                raise SerializationError(msg)
             pb_alternative = pb_token.alternative.alternatives.add()
-            for alternative_token in _coerce_hex_alternative_branch(alternative):
+            for alternative_token in branch:
                 convert_hex_token_to_protobuf(alternative_token, pb_alternative.tokens.add())
     elif isinstance(token, HexNibble):
         pb_token.nibble.high = _hex_nibble_high_to_protobuf(token.high)
@@ -1646,8 +1651,14 @@ def _protobuf_to_hex_token(pb_token):
             ),
         )
     if pb_token.HasField("alternative"):
+        if not pb_token.alternative.alternatives:
+            msg = "HexAlternative must contain at least one branch"
+            raise SerializationError(msg)
         alternatives = []
         for pb_alternative in pb_token.alternative.alternatives:
+            if not pb_alternative.tokens:
+                msg = "HexAlternative branches must not be empty"
+                raise SerializationError(msg)
             alternative = []
             for nested_pb_token in pb_alternative.tokens:
                 alternative.append(_protobuf_to_hex_token(nested_pb_token))

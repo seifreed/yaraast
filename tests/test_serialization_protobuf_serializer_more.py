@@ -187,7 +187,7 @@ def test_protobuf_serializer_preserves_hex_alternatives() -> None:
     assert string_def.tokens == [alternative]
 
 
-def test_protobuf_serializer_preserves_empty_hex_alternative() -> None:
+def test_protobuf_serializer_rejects_empty_hex_alternative() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     alternative = HexAlternative(alternatives=[])
     ast = YaraFile(
@@ -200,11 +200,33 @@ def test_protobuf_serializer_preserves_empty_hex_alternative() -> None:
         ]
     )
 
-    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
-    string_def = restored.rules[0].strings[0]
+    with pytest.raises(SerializationError, match="HexAlternative must contain at least one branch"):
+        serializer.serialize(ast)
 
-    assert isinstance(string_def, HexString)
-    assert string_def.tokens == [alternative]
+
+def test_protobuf_deserializer_rejects_empty_hex_alternatives() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_hex_alternative"
+    pb_rule.condition.boolean_literal.value = True
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$h"
+    pb_string.hex.tokens.add().alternative.SetInParent()
+
+    with pytest.raises(SerializationError, match="HexAlternative must contain at least one branch"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_hex_alternative_branch"
+    pb_rule.condition.boolean_literal.value = True
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$h"
+    pb_string.hex.tokens.add().alternative.alternatives.add()
+
+    with pytest.raises(SerializationError, match="HexAlternative branches must not be empty"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
 @pytest.mark.parametrize(
