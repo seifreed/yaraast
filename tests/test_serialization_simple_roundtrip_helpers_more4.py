@@ -100,6 +100,7 @@ from yaraast.yarax.ast_nodes import (
     WithDeclaration,
     WithStatement,
 )
+from yaraast.yarax.generator import YaraXGenerator
 
 
 class UnsupportedSimpleNode(ASTNode):
@@ -1961,6 +1962,18 @@ def test_simple_roundtrip_report_propagates_internal_parser_errors(
 
     with pytest.raises(AttributeError, match="broken parser internals"):
         srh.simple_roundtrip_report("rule r { condition: true }")
+
+
+def test_validate_roundtrip_propagates_internal_generator_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_generate(self: Any, node: ASTNode) -> str:
+        raise AttributeError("broken generator internals")
+
+    monkeypatch.setattr(YaraXGenerator, "generate", fail_generate)
+
+    with pytest.raises(AttributeError, match="broken generator internals"):
+        validate_roundtrip(Rule(name="r1", condition=BooleanLiteral(value=True)))
 
     negated_hex = deserialize_string(
         {

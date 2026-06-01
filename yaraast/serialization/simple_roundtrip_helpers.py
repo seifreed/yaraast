@@ -2209,7 +2209,7 @@ def validate_roundtrip(node: ASTNode) -> tuple[bool, dict[str, Any]]:
             "differences": [] if is_valid else ["Code differs after roundtrip"],
         }
         return is_valid, diff
-    except Exception as e:  # serialization + codegen roundtrip errors
+    except (YaraASTError, ValueError, TypeError) as e:  # serialization + codegen roundtrip errors
         return False, {"error": str(e)}
 
 
