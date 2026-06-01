@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import struct
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -2474,6 +2475,27 @@ def test_evaluate_file_with_aliased_import_keeps_original_module_name() -> None:
     )
     out = ev.evaluate_file(file_ast)
     assert out["ok"] is True
+
+
+@pytest.mark.parametrize(
+    ("alias", "error_type", "message"),
+    [
+        ("", EvaluationError, "Import alias must not be empty"),
+        (False, TypeError, "Import alias must be a string"),
+    ],
+)
+def test_evaluate_file_rejects_invalid_import_aliases(
+    alias: Any,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    ast = YaraFile(
+        imports=[Import(module="math", alias=alias)],
+        rules=[Rule(name="r", condition=BooleanLiteral(True))],
+    )
+
+    with pytest.raises(error_type, match=message):
+        YaraEvaluator(data=b"").evaluate_file(ast)
 
 
 def test_evaluate_file_defined_module_reference_after_import() -> None:

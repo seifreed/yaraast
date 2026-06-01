@@ -49,6 +49,18 @@ def _is_evaluation_truthy(value: Any) -> bool:
     return bool(value)
 
 
+def _validate_import_alias(alias: Any) -> str | None:
+    if alias is None:
+        return None
+    if not isinstance(alias, str):
+        msg = "Import alias must be a string"
+        raise TypeError(msg)
+    if not alias:
+        msg = "Import alias must not be empty"
+        raise EvaluationError(msg)
+    return alias
+
+
 _YR_UNDEFINED_VM_INT = normalize_int64(0xFFFABADAFABADAFF)
 
 
@@ -103,8 +115,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             module = self.module_registry.create_module(module_name, self.data)
             if module:
                 self.context.modules[module_name] = module
-                if import_stmt.alias:
-                    self.context.modules[import_stmt.alias] = module
+                alias = _validate_import_alias(getattr(import_stmt, "alias", None))
+                if alias is not None:
+                    self.context.modules[alias] = module
 
         evaluated_rules: list[tuple[str, Rule, bool]] = []
         for rule in yara_file.rules:
