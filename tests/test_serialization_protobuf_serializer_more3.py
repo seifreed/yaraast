@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -43,3 +45,27 @@ def test_protobuf_serializer_empty_data_error() -> None:
     serializer = ProtobufSerializer()
     with pytest.raises(SerializationError):
         serializer.deserialize()
+
+
+@pytest.mark.parametrize("ast", [None, 123, object()])
+def test_protobuf_serializer_serialize_rejects_invalid_ast_types(ast: Any) -> None:
+    serializer = ProtobufSerializer()
+
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        serializer.serialize(cast(YaraFile, ast))
+
+
+@pytest.mark.parametrize("ast", [None, 123, object()])
+def test_protobuf_serializer_serialize_text_rejects_invalid_ast_types(ast: Any) -> None:
+    serializer = ProtobufSerializer()
+
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        serializer.serialize_text(cast(YaraFile, ast))
+
+
+@pytest.mark.parametrize("ast", [None, 123, object()])
+def test_protobuf_serializer_stats_reject_invalid_ast_types(ast: Any) -> None:
+    serializer = ProtobufSerializer()
+
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        serializer.get_serialization_stats(cast(YaraFile, ast))
