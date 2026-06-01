@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from yaraast.ast.rules import Rule
 from yaraast.dialects import YaraDialect
+from yaraast.errors import YaraASTError
 from yaraast.parser.parser import Parser
 from yaraast.parser.source import parse_yara_source
 from yaraast.performance.streaming_mmap import (
@@ -190,7 +191,7 @@ class StreamingParser:
                 parse_time = timed_now() - start_time
                 yield build_rule_parse_result(file_path, rule, parse_time)
                 start_time = timed_now()
-        except Exception as e:
+        except (OSError, UnicodeDecodeError, ValueError, YaraASTError) as e:
             yield build_error_parse_result(file_path, e)
 
     def parse_files(self, file_paths: list[Path]) -> Iterator[Any]:
@@ -216,7 +217,7 @@ class StreamingParser:
                     self.progress_callback(idx, len(normalized_file_paths), str(file_path))
 
                 yield build_file_parse_result(file_path, ast, parse_time)
-            except Exception as e:
+            except (OSError, UnicodeDecodeError, ValueError, YaraASTError) as e:
                 self._stats["files_processed"] += 1
                 self._stats["parse_errors"] += 1
 
@@ -339,7 +340,7 @@ class StreamingParser:
             yara_file = self._parse_content(rule_text)
             if yara_file.rules:
                 return cast(Rule, yara_file.rules[0])
-        except Exception:
+        except (ValueError, YaraASTError):
             self._stats["parse_errors"] += 1
 
         return None

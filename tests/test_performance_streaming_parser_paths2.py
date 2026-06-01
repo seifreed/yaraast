@@ -189,6 +189,54 @@ def test_streaming_parser_parse_files_error_memory_except_and_rule_text_failures
     assert parser._parse_rule_text('import "pe"') is None
 
 
+def test_streaming_parser_parse_rule_text_propagates_internal_parser_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parser = StreamingParser()
+
+    def broken_parse_content(_content: str) -> object:
+        raise AttributeError("parser state missing")
+
+    monkeypatch.setattr(parser, "_parse_content", broken_parse_content)
+
+    with pytest.raises(AttributeError, match="parser state missing"):
+        parser._parse_rule_text("rule ok { condition: true }")
+
+
+def test_streaming_parser_parse_files_propagates_internal_parser_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "ok.yar"
+    path.write_text("rule ok { condition: true }", encoding="utf-8")
+    parser = StreamingParser()
+
+    def broken_parse_content(_content: str) -> object:
+        raise AttributeError("parser state missing")
+
+    monkeypatch.setattr(parser, "_parse_content", broken_parse_content)
+
+    with pytest.raises(AttributeError, match="parser state missing"):
+        list(parser.parse_files([path]))
+
+
+def test_streaming_parser_parse_rules_from_file_propagates_internal_parser_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "ok.yar"
+    path.write_text("rule ok { condition: true }", encoding="utf-8")
+    parser = StreamingParser()
+
+    def broken_parse_rule_text(_rule_text: str) -> object:
+        raise AttributeError("parser state missing")
+
+    monkeypatch.setattr(parser, "_parse_rule_text", broken_parse_rule_text)
+
+    with pytest.raises(AttributeError, match="parser state missing"):
+        list(parser.parse_rules_from_file(path))
+
+
 def test_streaming_parser_parse_stream_invalid_tail_and_mmap_invalid_forms(tmp_path: Path) -> None:
     parser = StreamingParser(buffer_size=8)
     invalid_tail = "rule tail {\n  condition:\n    true"
