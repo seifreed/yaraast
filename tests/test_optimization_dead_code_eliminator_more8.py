@@ -5,11 +5,12 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForOfExpression, OfExpression
+from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     Identifier,
+    IntegerLiteral,
     MemberAccess,
     ParenthesesExpression,
     SetExpression,
@@ -262,6 +263,32 @@ def test_dead_code_eliminator_ignores_member_roots_when_tracking_rule_references
     )
 
     optimized, count = dce.eliminate(ast)
+
+    assert count == 1
+    assert [rule.name for rule in optimized.rules] == ["main"]
+
+
+def test_dead_code_eliminator_ignores_for_loop_variables_as_rule_references() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="i",
+                modifiers=["private"],
+                condition=BooleanLiteral(True),
+            ),
+            Rule(
+                name="main",
+                condition=ForExpression(
+                    quantifier="any",
+                    variable="i",
+                    iterable=SetExpression([IntegerLiteral(1)]),
+                    body=BinaryExpression(Identifier("i"), "==", IntegerLiteral(1)),
+                ),
+            ),
+        ]
+    )
+
+    optimized, count = DeadCodeEliminator().eliminate(ast)
 
     assert count == 1
     assert [rule.name for rule in optimized.rules] == ["main"]

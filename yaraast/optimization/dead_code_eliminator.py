@@ -5,10 +5,16 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 import copy
 from fnmatch import fnmatchcase
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
+from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
     BooleanLiteral,
     Expression,
@@ -26,9 +32,6 @@ from yaraast.ast.expressions import (
 from yaraast.ast.rules import Rule
 from yaraast.visitor.base import ASTTransformer
 
-if TYPE_CHECKING:
-    from yaraast.ast.base import ASTNode
-
 
 class DeadCodeEliminator(ASTTransformer):
     """Eliminates dead code from YARA rules."""
@@ -43,6 +46,7 @@ class DeadCodeEliminator(ASTTransformer):
         self.current_rule_key: str | None = None
         self.current_rule_strings: set[str] = set()
         self.current_rule_anonymous_strings: set[str] = set()
+        self.local_variables: list[str] = []
         self.anonymous_strings_by_rule: dict[str, set[str]] = {}
         self.rule_usage_keys: dict[int, str] = {}
         self.rule_names: set[str] = set()
@@ -63,6 +67,7 @@ class DeadCodeEliminator(ASTTransformer):
         self.current_rule_key = None
         self.current_rule_strings = set()
         self.current_rule_anonymous_strings = set()
+        self.local_variables = []
         self.anonymous_strings_by_rule.clear()
         self.rule_usage_keys.clear()
         self.rule_names.clear()
@@ -147,17 +152,34 @@ class DeadCodeEliminator(ASTTransformer):
             self._mark_used_string(expr.subject)
         elif isinstance(expr, OfExpression | ForOfExpression):
             self._collect_string_set_value(expr.string_set)
+        elif isinstance(expr, ForExpression):
+            self._collect_for_expression_usage(expr)
+            return
         elif isinstance(expr, MemberAccess):
             if not isinstance(expr.object, Identifier):
                 self._collect_from_expression(expr.object)
             return
-        elif isinstance(expr, Identifier) and expr.name not in _RESERVED_IDENTIFIERS:
+        elif (
+            isinstance(expr, Identifier)
+            and expr.name not in _RESERVED_IDENTIFIERS
+            and expr.name not in self.local_variables
+        ):
             # Could be a rule reference
             self.used_rules.add(expr.name)
 
         # Recursively collect from children
         for child in expr.children():
             self._collect_from_expression(child)
+
+    def _collect_for_expression_usage(self, expr: ForExpression) -> None:
+        if isinstance(expr.quantifier, ASTNode):
+            self._collect_from_expression(expr.quantifier)
+        self._collect_from_expression(expr.iterable)
+        self.local_variables.append(expr.variable)
+        try:
+            self._collect_from_expression(expr.body)
+        finally:
+            self.local_variables.pop()
 
     def visit_yara_file(self, node: YaraFile) -> YaraFile:
         """Visit YaraFile and remove unused rules."""
@@ -215,10 +237,29 @@ class DeadCodeEliminator(ASTTransformer):
         return False
 
     def _contains_rule_reference(self, expr: ASTNode) -> bool:
+        return self._contains_rule_reference_with_locals(expr, set())
+
+    def _contains_rule_reference_with_locals(
+        self, expr: ASTNode, local_variables: set[str]
+    ) -> bool:
         """Check if expression contains rule reference."""
+        if isinstance(expr, ForExpression):
+            nested_locals = {*local_variables, expr.variable}
+            return (
+                (
+                    isinstance(expr.quantifier, ASTNode)
+                    and self._contains_rule_reference_with_locals(expr.quantifier, local_variables)
+                )
+                or self._contains_rule_reference_with_locals(expr.iterable, local_variables)
+                or self._contains_rule_reference_with_locals(expr.body, nested_locals)
+            )
+
         if isinstance(expr, MemberAccess):
-            return not isinstance(expr.object, Identifier) and self._contains_rule_reference(
-                expr.object
+            return not isinstance(
+                expr.object, Identifier
+            ) and self._contains_rule_reference_with_locals(
+                expr.object,
+                local_variables,
             )
 
         if isinstance(expr, Identifier) and expr.name not in [
@@ -229,9 +270,12 @@ class DeadCodeEliminator(ASTTransformer):
             "them",
         ]:
             # Could be a rule reference
-            return True
+            return expr.name not in local_variables
 
-        return any(self._contains_rule_reference(child) for child in expr.children())
+        return any(
+            self._contains_rule_reference_with_locals(child, local_variables)
+            for child in expr.children()
+        )
 
     def _normalize_string_id(self, identifier: str) -> str:
         return identifier if identifier.startswith("$") else f"${identifier}"
