@@ -814,6 +814,11 @@ def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> Non
             {"type": "RegexString", "identifier": "$r", "regex": 123, "modifiers": []}
         )
 
+    with pytest.raises(SerializationError, match="RegexString regex must not be empty"):
+        deserialize_string(
+            {"type": "RegexString", "identifier": "$r", "regex": "", "modifiers": []}
+        )
+
 
 def test_simple_roundtrip_hex_tokens_reject_invalid_scalar_fields() -> None:
     for token in (
@@ -987,6 +992,9 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="RegexLiteral pattern must be a string"):
         deserialize_node({"type": "RegexLiteral", "pattern": 123})
 
+    with pytest.raises(SerializationError, match="RegexLiteral pattern must not be empty"):
+        deserialize_node({"type": "RegexLiteral", "pattern": ""})
+
     with pytest.raises(SerializationError, match="RegexLiteral modifiers must be a string"):
         deserialize_node({"type": "RegexLiteral", "pattern": "abc", "modifiers": ["i"]})
 
@@ -1016,6 +1024,7 @@ def test_simple_roundtrip_serialize_literal_nodes_reject_wrong_scalar_types() ->
 def test_simple_roundtrip_serialize_string_reference_nodes_reject_wrong_scalar_types() -> None:
     invalid_cases = (
         (RegexLiteral(cast(Any, 123)), "RegexLiteral pattern must be a string"),
+        (RegexLiteral(""), "RegexLiteral pattern must not be empty"),
         (RegexLiteral("abc", cast(Any, ["i"])), "RegexLiteral modifiers must be a string"),
         (StringIdentifier(cast(Any, ["$a"])), "StringIdentifier name must be a string"),
         (StringWildcard(cast(Any, ["$a*"])), "StringWildcard pattern must be a string"),
@@ -1163,6 +1172,7 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
             "RegexString identifier must be a string",
         ),
         (RegexString(identifier="$r", regex=cast(Any, 123)), "RegexString regex must be a string"),
+        (RegexString(identifier="$r", regex=""), "RegexString regex must not be empty"),
         (
             StringModifier(cast(Any, 123)),
             "StringModifier name must be a string",

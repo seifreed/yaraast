@@ -496,6 +496,7 @@ def test_json_serializer_rejects_invalid_leaf_values() -> None:
         (DoubleLiteral(invalid_number), "DoubleLiteral value must be numeric"),
         (StringLiteral(invalid_string), "StringLiteral value must be a string"),
         (RegexLiteral(invalid_text), "RegexLiteral pattern must be a string"),
+        (RegexLiteral(""), "RegexLiteral pattern must not be empty"),
         (RegexLiteral("abc", invalid_regex_modifiers), "RegexLiteral modifiers must be a string"),
         (BooleanLiteral(invalid_bool), "BooleanLiteral value must be a boolean"),
         (ModuleReference(invalid_list), "ModuleReference module must be a string"),
@@ -600,6 +601,18 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
                 ]
             ),
             "RegexString regex must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="empty_regex_value",
+                        strings=[RegexString(identifier="$a", regex="")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "RegexString regex must not be empty",
         ),
     ]
 

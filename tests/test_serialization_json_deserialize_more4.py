@@ -508,6 +508,11 @@ def test_json_deserialize_strings_reject_wrong_scalar_types() -> None:
             {"type": "RegexString", "identifier": "$r", "regex": 123, "modifiers": []}
         )
 
+    with pytest.raises(SerializationError, match="RegexString regex must not be empty"):
+        s._deserialize_string(
+            {"type": "RegexString", "identifier": "$r", "regex": "", "modifiers": []}
+        )
+
 
 def test_json_deserialize_hex_tokens_reject_invalid_scalar_fields() -> None:
     s = JsonSerializer()
@@ -806,6 +811,9 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="RegexLiteral pattern must be a string"):
         s._deserialize_expression({"type": "RegexLiteral", "pattern": 123})
+
+    with pytest.raises(SerializationError, match="RegexLiteral pattern must not be empty"):
+        s._deserialize_expression({"type": "RegexLiteral", "pattern": ""})
 
     with pytest.raises(SerializationError, match="RegexLiteral modifiers must be a string"):
         s._deserialize_expression({"type": "RegexLiteral", "pattern": "abc", "modifiers": ["i"]})

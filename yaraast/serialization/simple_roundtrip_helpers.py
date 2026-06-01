@@ -373,6 +373,14 @@ def _deserialize_string_field(data: dict[str, Any], field: str, context: str) ->
     raise SerializationError(msg)
 
 
+def _deserialize_nonempty_string_field(data: dict[str, Any], field: str, context: str) -> str:
+    text = _deserialize_string_field(data, field, context)
+    if not text:
+        msg = f"{context} {field} must not be empty"
+        raise SerializationError(msg)
+    return text
+
+
 def _deserialize_optional_string_field(
     data: dict[str, Any], field: str, context: str, default: str = ""
 ) -> str:
@@ -489,6 +497,14 @@ def _serialize_required_string(value: Any, context: str) -> str:
         return value
     msg = f"{context} must be a string"
     raise SerializationError(msg)
+
+
+def _serialize_required_nonempty_string(value: Any, context: str) -> str:
+    text = _serialize_required_string(value, context)
+    if not text:
+        msg = f"{context} must not be empty"
+        raise SerializationError(msg)
+    return text
 
 
 def _serialize_string_or_expression(value: Any, context: str) -> str | dict[str, Any]:
@@ -1074,7 +1090,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, RegexLiteral):
         return {
             "type": "RegexLiteral",
-            "pattern": _serialize_required_string(node.pattern, "RegexLiteral pattern"),
+            "pattern": _serialize_required_nonempty_string(
+                node.pattern,
+                "RegexLiteral pattern",
+            ),
             "modifiers": _serialize_required_string(node.modifiers, "RegexLiteral modifiers"),
         }
     if isinstance(node, Identifier):
@@ -1536,7 +1555,10 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
                 string_def.identifier,
                 "RegexString identifier",
             ),
-            "regex": _serialize_required_string(string_def.regex, "RegexString regex"),
+            "regex": _serialize_required_nonempty_string(
+                string_def.regex,
+                "RegexString regex",
+            ),
             "modifiers": _serialize_modifiers(string_def.modifiers, "RegexString"),
         }
         if string_def.is_anonymous:
@@ -1660,7 +1682,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return StringLiteral(_deserialize_string_field(data, "value", "StringLiteral"))
     if node_type == "RegexLiteral":
         return RegexLiteral(
-            _deserialize_string_field(data, "pattern", "RegexLiteral"),
+            _deserialize_nonempty_string_field(data, "pattern", "RegexLiteral"),
             _deserialize_optional_string_field(data, "modifiers", "RegexLiteral"),
         )
     if node_type == "Identifier":
@@ -2147,7 +2169,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
         return _apply_node_metadata(
             RegexString(
                 identifier=_deserialize_string_field(data, "identifier", "RegexString"),
-                regex=_deserialize_string_field(data, "regex", "RegexString"),
+                regex=_deserialize_nonempty_string_field(data, "regex", "RegexString"),
                 modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),
             ),

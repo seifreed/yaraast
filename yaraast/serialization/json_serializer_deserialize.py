@@ -281,6 +281,14 @@ def _deserialize_string_field(data: dict[str, Any], field: str, context: str) ->
     raise SerializationError(msg)
 
 
+def _deserialize_nonempty_string_field(data: dict[str, Any], field: str, context: str) -> str:
+    text = _deserialize_string_field(data, field, context)
+    if not text:
+        msg = f"{context} {field} must not be empty"
+        raise SerializationError(msg)
+    return text
+
+
 def _deserialize_optional_string_field(
     data: dict[str, Any], field: str, context: str, default: str = ""
 ) -> str:
@@ -620,7 +628,7 @@ def _deser_regex_literal(self, data: dict[str, Any]):
     from yaraast.ast.expressions import RegexLiteral
 
     return RegexLiteral(
-        pattern=_deserialize_string_field(data, "pattern", "RegexLiteral"),
+        pattern=_deserialize_nonempty_string_field(data, "pattern", "RegexLiteral"),
         modifiers=_deserialize_optional_string_field(data, "modifiers", "RegexLiteral"),
     )
 
@@ -1109,7 +1117,7 @@ class JsonSerializerDeserializeMixin:
             return self._apply_node_metadata(
                 RegexString(
                     identifier=_deserialize_string_field(data, "identifier", "RegexString"),
-                    regex=_deserialize_string_field(data, "regex", "RegexString"),
+                    regex=_deserialize_nonempty_string_field(data, "regex", "RegexString"),
                     modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),
                 ),

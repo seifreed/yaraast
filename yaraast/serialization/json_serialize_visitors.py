@@ -20,6 +20,14 @@ def _serialize_required_string(value, context: str) -> str:
     return value
 
 
+def _serialize_required_nonempty_string(value, context: str) -> str:
+    text = _serialize_required_string(value, context)
+    if not text:
+        msg = f"{context} must not be empty"
+        raise SerializationError(msg)
+    return text
+
+
 def _serialize_nullable_string(value, context: str) -> str | None:
     if value is None:
         return None
@@ -477,7 +485,7 @@ def visit_regex_string(serializer, node) -> dict[str, Any]:
     data = {
         "type": "RegexString",
         "identifier": _serialize_required_string(node.identifier, "RegexString identifier"),
-        "regex": _serialize_required_string(node.regex, "RegexString regex"),
+        "regex": _serialize_required_nonempty_string(node.regex, "RegexString regex"),
         "modifiers": _serialize_string_modifiers(serializer, node.modifiers, "RegexString"),
     }
     _serialize_anonymous_flag(data, getattr(node, "is_anonymous", False), "RegexString")

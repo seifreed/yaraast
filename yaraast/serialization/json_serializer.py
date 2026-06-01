@@ -409,9 +409,13 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         )
 
     def visit_regex_literal(self, node) -> dict[str, Any]:
+        pattern = _serialize_required_string(node.pattern, "RegexLiteral pattern")
+        if not pattern:
+            msg = "RegexLiteral pattern must not be empty"
+            raise SerializationError(msg)
         return {
             "type": "RegexLiteral",
-            "pattern": _serialize_required_string(node.pattern, "RegexLiteral pattern"),
+            "pattern": pattern,
             "modifiers": _serialize_required_string(node.modifiers, "RegexLiteral modifiers"),
         }
 
