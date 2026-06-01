@@ -12,6 +12,7 @@ from yaraast.ast.pragmas import CustomPragma
 from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
+import yaraast.performance.batch_processor_ops as batch_processor_ops
 from yaraast.performance.batch_processor_ops import _large_file_asts, parse_item
 
 
@@ -92,6 +93,18 @@ def test_process_batch_parse_handles_invalid_item_without_exceptions() -> None:
 
 def test_parse_item_returns_none_for_invalid_rule_syntax() -> None:
     assert parse_item("rule bad { condition: }") is None
+
+
+def test_parse_item_propagates_internal_parser_attribute_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def broken_parse(_source: str) -> YaraFile:
+        raise AttributeError("parser state missing")
+
+    monkeypatch.setattr(batch_processor_ops, "parse_yara_source", broken_parse)
+
+    with pytest.raises(AttributeError, match="parser state missing"):
+        parse_item("rule ok { condition: true }")
 
 
 def test_large_file_split_preserves_top_level_extensions() -> None:

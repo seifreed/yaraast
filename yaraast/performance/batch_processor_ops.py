@@ -28,7 +28,7 @@ def parse_item(item: str | Path) -> YaraFile | None:
         else:
             content = item
         return parse_yara_source(content)
-    except (OSError, UnicodeDecodeError, ValueError, TypeError, AttributeError, YaraASTError):
+    except (OSError, UnicodeDecodeError, ValueError, TypeError, YaraASTError):
         return None
 
 
