@@ -1012,8 +1012,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         def expand_text(text: str) -> list[str]:
             if text == "them":
                 return list(self.context.string_matches.keys())
+            if text.startswith(("#", "@", "!")):
+                msg = f"Invalid string reference '{text}' in evaluator AST"
+                raise EvaluationError(msg)
             if text.endswith("*"):
-                raw_prefix = text[:-1].lstrip("#@!")
+                raw_prefix = text[:-1]
                 if raw_prefix in {"", "$"}:
                     return list(self.context.string_matches.keys())
                 prefixes = (
@@ -1080,7 +1083,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             if isinstance(implicit, str):
                 text = implicit
 
-        text = text.lstrip("#@!")
+        if text.startswith(("#", "@", "!")):
+            msg = f"Invalid string reference '{text}' in evaluator AST"
+            raise EvaluationError(msg)
         if text in self.context.string_matches:
             return text
         if text.startswith("$"):

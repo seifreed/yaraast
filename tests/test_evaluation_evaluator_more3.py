@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -1252,6 +1252,29 @@ def test_string_count_offset_length_and_wildcard() -> None:
         ev.visit_string_length(StringLength(string_id="$a", index=IntegerLiteral(value=9)))
         is YARA_UNDEFINED
     )
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        StringIdentifier(name="#a"),
+        StringCount(string_id="#a"),
+        StringOffset(string_id="@a"),
+        StringLength(string_id="!a"),
+        StringWildcard(pattern="#a*"),
+    ],
+)
+def test_evaluator_rejects_embedded_string_reference_operators(expression: ASTNode) -> None:
+    ev = YaraEvaluator(data=b"xxabxxab")
+    rule = Rule(
+        name="r",
+        strings=[PlainString(identifier="$a", value="ab")],
+        condition=BooleanLiteral(value=True),
+    )
+    assert ev.evaluate_rule(rule) is True
+
+    with pytest.raises(EvaluationError, match="Invalid string reference"):
+        ev.visit(expression)
 
 
 def test_direct_evaluate_rule_clears_matcher_state_for_rules_without_strings() -> None:
