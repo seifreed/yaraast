@@ -290,6 +290,8 @@ class DependencyAnalyzer(BaseVisitor[None]):
             self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(node.name))
 
     def visit_string_wildcard(self, node: StringWildcard) -> None:
+        if not isinstance(node.pattern, str):
+            raise TypeError("String wildcard pattern must be a string")
         if node.pattern.startswith("$"):
             return
 
@@ -395,5 +397,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
+        if not isinstance(name, str):
+            raise TypeError("Local variable name must be a string")
         names = [part.strip() for part in name.split(",")]
         return {local_name for local_name in names if local_name}

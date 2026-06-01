@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForExpression, InExpression
+from yaraast.ast.conditions import ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
     FunctionCall,
@@ -11,6 +15,7 @@ from yaraast.ast.expressions import (
     MemberAccess,
     RangeExpression,
     SetExpression,
+    StringWildcard,
 )
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.parser import Parser
@@ -378,3 +383,55 @@ def test_dependency_analyzer_keeps_bare_rule_dependency_distinct_from_dollar_loc
     results = DependencyAnalyzer().analyze(ast)
 
     assert results["dependencies"]["caller"] == ["x"]
+
+
+def test_dependency_analyzer_rejects_invalid_string_wildcard_pattern() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="caller",
+                condition=OfExpression(
+                    "any",
+                    StringWildcard(cast(Any, False)),
+                ),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String wildcard pattern must be a string"):
+        DependencyAnalyzer().analyze(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        ForExpression(
+            quantifier="any",
+            variable=cast(Any, False),
+            iterable=SetExpression([IntegerLiteral(1)]),
+            body=BooleanLiteral(True),
+        ),
+        WithStatement(
+            declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
+            body=BooleanLiteral(True),
+        ),
+        ArrayComprehension(
+            expression=IntegerLiteral(1),
+            variable=cast(Any, False),
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        DictComprehension(
+            key_expression=Identifier("k"),
+            value_expression=Identifier("v"),
+            key_variable=cast(Any, False),
+            value_variable="v",
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        LambdaExpression(parameters=[cast(Any, False)], body=BooleanLiteral(True)),
+    ],
+)
+def test_dependency_analyzer_rejects_invalid_local_variable_names(condition: Any) -> None:
+    ast = YaraFile(rules=[Rule(name="caller", condition=condition)])
+
+    with pytest.raises(TypeError, match="Local variable name must be a string"):
+        DependencyAnalyzer().analyze(ast)
