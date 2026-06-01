@@ -58,6 +58,9 @@ class UnifiedParser:
             dialect: Optional dialect to force (auto-detected if None)
 
         """
+        if not isinstance(text, str):
+            msg = "Parser text must be a string"
+            raise TypeError(msg)
         self.text = text
         self.dialect = dialect or detect_dialect(text)
 
@@ -215,6 +218,9 @@ class UnifiedParser:
 
         """
         # Normalize to Path early for consistent handling
+        if not isinstance(file_path, str | Path):
+            msg = "YARA file path must be a string or Path"
+            raise TypeError(msg)
         try:
             file_path_obj = Path(file_path) if isinstance(file_path, str) else file_path
             file_size = file_path_obj.stat().st_size
@@ -228,6 +234,15 @@ class UnifiedParser:
         # Use provided threshold or fall back to class default (100 MB)
         if streaming_threshold_mb is None:
             streaming_threshold_mb = cls.DEFAULT_STREAMING_THRESHOLD_MB
+        if not isinstance(force_streaming, bool):
+            msg = "force_streaming must be a boolean"
+            raise TypeError(msg)
+        if isinstance(streaming_threshold_mb, bool) or not isinstance(streaming_threshold_mb, int):
+            msg = "streaming_threshold_mb must be a non-negative integer"
+            raise TypeError(msg)
+        if streaming_threshold_mb < 0:
+            msg = "streaming_threshold_mb must be a non-negative integer"
+            raise ValueError(msg)
 
         size_threshold_bytes = streaming_threshold_mb * 1024 * 1024
 
