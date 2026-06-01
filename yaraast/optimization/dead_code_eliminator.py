@@ -42,6 +42,9 @@ from yaraast.yarax.ast_nodes import (
 class DeadCodeEliminator(ASTTransformer):
     """Eliminates dead code from YARA rules."""
 
+    _LOCAL_WITHOUT_VALUE = object()
+    _MISSING_LOCAL = object()
+
     def __init__(self) -> None:
         super().__init__()
         self.used_strings: set[str] = set()
@@ -53,6 +56,7 @@ class DeadCodeEliminator(ASTTransformer):
         self.current_rule_strings: set[str] = set()
         self.current_rule_anonymous_strings: set[str] = set()
         self.local_variables: list[str] = []
+        self.local_variable_values: list[object] = []
         self.anonymous_strings_by_rule: dict[str, set[str]] = {}
         self.rule_usage_keys: dict[int, str] = {}
         self.rule_names: set[str] = set()
@@ -74,6 +78,7 @@ class DeadCodeEliminator(ASTTransformer):
         self.current_rule_strings = set()
         self.current_rule_anonymous_strings = set()
         self.local_variables = []
+        self.local_variable_values = []
         self.anonymous_strings_by_rule.clear()
         self.rule_usage_keys.clear()
         self.rule_names.clear()
@@ -199,16 +204,18 @@ class DeadCodeEliminator(ASTTransformer):
             self._collect_from_expression(expr.body)
         finally:
             del self.local_variables[local_count:]
+            del self.local_variable_values[local_count:]
 
     def _collect_with_statement_usage(self, expr: WithStatement) -> None:
         local_count = len(self.local_variables)
         try:
             for declaration in expr.declarations:
                 self._collect_from_expression(declaration.value)
-                self._add_local_variables(declaration.identifier)
+                self._add_local_variables(declaration.identifier, value=declaration.value)
             self._collect_from_expression(expr.body)
         finally:
             del self.local_variables[local_count:]
+            del self.local_variable_values[local_count:]
 
     def _collect_array_comprehension_usage(self, expr: ArrayComprehension) -> None:
         if expr.iterable is not None:
@@ -222,6 +229,7 @@ class DeadCodeEliminator(ASTTransformer):
                 self._collect_from_expression(expr.expression)
         finally:
             del self.local_variables[local_count:]
+            del self.local_variable_values[local_count:]
 
     def _collect_dict_comprehension_usage(self, expr: DictComprehension) -> None:
         if expr.iterable is not None:
@@ -239,6 +247,7 @@ class DeadCodeEliminator(ASTTransformer):
                 self._collect_from_expression(expr.value_expression)
         finally:
             del self.local_variables[local_count:]
+            del self.local_variable_values[local_count:]
 
     def _collect_lambda_expression_usage(self, expr: LambdaExpression) -> None:
         local_count = len(self.local_variables)
@@ -247,6 +256,7 @@ class DeadCodeEliminator(ASTTransformer):
             self._collect_from_expression(expr.body)
         finally:
             del self.local_variables[local_count:]
+            del self.local_variable_values[local_count:]
 
     def visit_yara_file(self, node: YaraFile) -> YaraFile:
         """Visit YaraFile and remove unused rules."""
@@ -439,8 +449,19 @@ class DeadCodeEliminator(ASTTransformer):
         for identifier in self.current_rule_strings:
             self._mark_used_string(identifier)
 
+    def _local_variable_value(self, name: str) -> object:
+        for index in range(len(self.local_variables) - 1, -1, -1):
+            if self.local_variables[index] == name:
+                return self.local_variable_values[index]
+        return self._MISSING_LOCAL
+
     def _collect_string_set_value(self, value: Any) -> None:
         if isinstance(value, str):
+            local_value = self._local_variable_value(self._normalize_string_id(value))
+            if local_value is not self._MISSING_LOCAL:
+                if local_value is not self._LOCAL_WITHOUT_VALUE:
+                    self._collect_string_set_value(local_value)
+                return
             if value == "them":
                 self._mark_all_current_rule_strings()
             else:
@@ -454,10 +475,10 @@ class DeadCodeEliminator(ASTTransformer):
             self._mark_all_current_rule_strings()
             return
         if isinstance(value, StringLiteral):
-            self._mark_used_string(value.value)
+            self._collect_string_set_value(value.value)
             return
         if isinstance(value, StringIdentifier):
-            self._mark_used_string(value.name)
+            self._collect_string_set_value(value.name)
             return
         if isinstance(value, StringWildcard):
             self._mark_used_wildcard(value.pattern)
@@ -556,6 +577,7 @@ class DeadCodeEliminator(ASTTransformer):
             node.body = cast(Expression, self.visit(node.body))
         finally:
             del self.local_variables[local_count:]
+            del self.local_variable_values[local_count:]
         return node
 
     def visit_with_statement(self, node: WithStatement) -> WithStatement:
@@ -563,10 +585,11 @@ class DeadCodeEliminator(ASTTransformer):
         try:
             for declaration in node.declarations:
                 declaration.value = cast(Expression, self.visit(declaration.value))
-                self._add_local_variables(declaration.identifier)
+                self._add_local_variables(declaration.identifier, value=declaration.value)
             node.body = cast(Expression, self.visit(node.body))
         finally:
             del self.local_variables[local_count:]
+            del self.local_variable_values[local_count:]
         return node
 
     def visit_array_comprehension(self, node: ArrayComprehension) -> ArrayComprehension:
@@ -581,6 +604,7 @@ class DeadCodeEliminator(ASTTransformer):
                 node.expression = cast(Expression, self.visit(node.expression))
         finally:
             del self.local_variables[local_count:]
+            del self.local_variable_values[local_count:]
         return node
 
     def visit_dict_comprehension(self, node: DictComprehension) -> DictComprehension:
@@ -599,6 +623,7 @@ class DeadCodeEliminator(ASTTransformer):
                 node.value_expression = cast(Expression, self.visit(node.value_expression))
         finally:
             del self.local_variables[local_count:]
+            del self.local_variable_values[local_count:]
         return node
 
     def visit_lambda_expression(self, node: LambdaExpression) -> LambdaExpression:
@@ -608,6 +633,7 @@ class DeadCodeEliminator(ASTTransformer):
             node.body = cast(Expression, self.visit(node.body))
         finally:
             del self.local_variables[local_count:]
+            del self.local_variable_values[local_count:]
         return node
 
     def visit_member_access(self, node: MemberAccess) -> MemberAccess:
@@ -702,6 +728,8 @@ class DeadCodeEliminator(ASTTransformer):
         # First collect used strings from this rule
         self.used_strings.clear()
         self.used_strings_by_rule.clear()
+        self.local_variables.clear()
+        self.local_variable_values.clear()
         self.current_rule = rule.name
         self.current_rule_key = rule.name
         self.rule_usage_keys[id(rule)] = rule.name
@@ -740,11 +768,15 @@ class DeadCodeEliminator(ASTTransformer):
         self.current_rule_key = None
         self.current_rule_strings = set()
         self.current_rule_anonymous_strings = set()
+        self.local_variables.clear()
+        self.local_variable_values.clear()
         return rule
 
-    def _add_local_variables(self, *names: str) -> None:
+    def _add_local_variables(self, *names: str, value: object = _LOCAL_WITHOUT_VALUE) -> None:
         for name in names:
-            self.local_variables.extend(self._local_name_variants(name))
+            variants = self._local_name_variants(name)
+            self.local_variables.extend(variants)
+            self.local_variable_values.extend(value for _ in variants)
 
     @staticmethod
     def _local_name_variants(name: str) -> tuple[str, ...]:

@@ -387,6 +387,26 @@ def test_dead_code_eliminator_ignores_yarax_string_locals_as_string_references()
         assert optimized.rules[0].strings == []
 
 
+def test_dead_code_eliminator_resolves_yarax_string_locals_in_string_sets() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="local_string_set",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", StringLiteral("$a"))],
+                    body=OfExpression("any", SetExpression([StringIdentifier("$x")])),
+                ),
+            )
+        ]
+    )
+
+    optimized, count = DeadCodeEliminator().eliminate(ast)
+
+    assert count == 0
+    assert [string.identifier for string in optimized.rules[0].strings] == ["$a"]
+
+
 def test_string_wildcard_keeps_matching_strings() -> None:
     dce = DeadCodeEliminator()
     rule = Rule(
