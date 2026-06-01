@@ -102,6 +102,11 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     assert pe64.imports("KERNEL32.DLL", "CreateFileW") is True
     assert pe64.imports("kernel32.dll", "CloseHandle") is False
     assert pe64.imports(RegexLiteral("KERNEL32", "i"), RegexLiteral("createfilew", "i")) is True
+    with pytest.raises(EvaluationError, match="Regex modifiers must be a string"):
+        pe64.imports(
+            RegexLiteral("KERNEL32", cast(Any, False)),
+            RegexLiteral("createfilew", "i"),
+        )
     assert pe64.imports("kernel32.dll", 1) is False
     assert pe64.imports(1, "CreateFileW") is True
     assert pe64.imports(1, "KERNEL32.DLL", "CreateFileW") is True
@@ -118,6 +123,8 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     pe64._export_list = ["ExportedFn"]
     assert pe64.exports("ExportedFn") is True
     assert pe64.exports(RegexLiteral("exportedfn", "i")) is True
+    with pytest.raises(EvaluationError, match="Regex modifiers must be a string"):
+        pe64.exports(RegexLiteral("exportedfn", cast(Any, False)))
     assert pe64.exports("Missing") is False
     assert pe64.exports(1) is False
     with pytest.raises(EvaluationError, match=r"pe\.exports\(\) expects a string or integer"):
@@ -448,6 +455,8 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     cuckoo.sync.mutexes = ["EvilMutexName"]
     assert cuckoo.network.http_request(r"evil\.example") is True
     assert cuckoo.network.http_request(RegexLiteral("EVIL\\.EXAMPLE", "i")) is True
+    with pytest.raises(EvaluationError, match="Regex modifiers must be a string"):
+        cuckoo.network.http_request(RegexLiteral("EVIL", cast(Any, False)))
     assert cuckoo.network.http_get(r"evil\.example") is True
     assert cuckoo.network.http_post(r"post\.example") is True
     assert cuckoo.network.http_user_agent("BadAgent") is True
@@ -455,6 +464,8 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert cuckoo.network.host(r"192\.168\.1\.1") is True
     assert cuckoo.network.tcp(r"192\.168\.1\.1", 443) is True
     assert cuckoo.network.tcp(RegexLiteral("192\\.168\\.1\\.1"), 443) is True
+    with pytest.raises(EvaluationError, match="Regex modifiers must be a string"):
+        cuckoo.network.tcp(RegexLiteral("192", cast(Any, False)), 443)
     assert cuckoo.network.udp(r"8\.8\.8\.8", 53) is True
     assert cuckoo.registry.key_access("Bad") is True
     assert cuckoo.filesystem.file_access(r"autoexec\.bat") is True

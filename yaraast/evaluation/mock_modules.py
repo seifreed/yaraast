@@ -99,7 +99,8 @@ def _regex_matches(pattern: object, values: list[str]) -> bool:
     if not isinstance(pattern_text, str):
         return False
     if not isinstance(modifiers, str):
-        modifiers = ""
+        msg = "Regex modifiers must be a string"
+        raise EvaluationError(msg)
     try:
         regex = re.compile(pattern_text, _regex_flags(modifiers))
         return any(regex.search(value) is not None for value in values)
