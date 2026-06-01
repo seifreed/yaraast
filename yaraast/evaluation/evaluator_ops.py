@@ -211,6 +211,13 @@ def evaluate_string_operator(left: Any, right: Any, operator: str) -> bool | Non
 
 
 def evaluate_regex_match(left: Any, pattern: Any, modifiers: str = "") -> bool:
+    if not isinstance(pattern, str):
+        msg = "Regex pattern must be a string"
+        raise TypeError(msg)
+    if not isinstance(modifiers, str):
+        msg = "Regex modifiers must be a string"
+        raise TypeError(msg)
+
     flags = 0
     if "i" in modifiers:
         flags |= re.IGNORECASE

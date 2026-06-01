@@ -27,6 +27,7 @@ from yaraast.ast.expressions import (
     MemberAccess,
     ParenthesesExpression,
     RangeExpression,
+    RegexLiteral,
     SetExpression,
     StringCount,
     StringIdentifier,
@@ -1365,6 +1366,25 @@ def test_evaluate_file_rejects_non_string_regex_patterns() -> None:
 
     with pytest.raises(TypeError, match="Regex pattern must be a string"):
         YaraEvaluator(data=b"False").evaluate_file(ast)
+
+
+def test_evaluate_file_rejects_non_string_matches_regex_patterns() -> None:
+    invalid_pattern: Any = False
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_matches_regex_pattern",
+                condition=BinaryExpression(
+                    StringLiteral("False"),
+                    "matches",
+                    RegexLiteral(invalid_pattern),
+                ),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="Regex pattern must be a string"):
+        YaraEvaluator().evaluate_file(ast)
 
 
 def test_string_count_offset_length_and_wildcard() -> None:

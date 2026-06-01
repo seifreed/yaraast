@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from typing import Any, cast
 
 import pytest
 
@@ -11,6 +12,7 @@ from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.evaluator_ops import (
     evaluate_arithmetic,
     evaluate_comparison,
+    evaluate_regex_match,
     evaluate_string_operator,
 )
 from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
@@ -170,6 +172,16 @@ def test_evaluate_string_operator_all_paths() -> None:
     assert evaluate_string_operator(None, "a", "matches") is False
     assert evaluate_string_operator("abc", r"(", "matches") is False
     assert evaluate_string_operator("abc", "x", "unknown") is None
+
+
+def test_evaluate_regex_match_rejects_non_string_pattern_and_modifiers() -> None:
+    with pytest.raises(TypeError, match="Regex pattern must be a string"):
+        evaluate_regex_match("False", cast(Any, False))
+
+    with pytest.raises(TypeError, match="Regex modifiers must be a string"):
+        evaluate_regex_match("abc", "abc", cast(Any, False))
+
+    assert evaluate_regex_match("abc", "(") is False
 
 
 @pytest.mark.parametrize(
