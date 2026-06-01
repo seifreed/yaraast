@@ -62,13 +62,15 @@ class Workspace:
             raise ValueError(msg)
         return Path(raw_path)
 
-    def add_file(self, file_path: str) -> FileAnalysisResult:
+    def add_file(self, file_path: str | PathLike[str]) -> FileAnalysisResult:
         """Add a single file to the workspace."""
         return self._add_file(file_path, rebuild_graph=True)
 
-    def _add_file(self, file_path: str, *, rebuild_graph: bool) -> FileAnalysisResult:
+    def _add_file(
+        self, file_path: str | PathLike[str], *, rebuild_graph: bool
+    ) -> FileAnalysisResult:
         """Add a file and optionally rebuild the workspace dependency graph."""
-        path = Path(file_path)
+        path = self._require_workspace_path(file_path, name="file_path")
         if not path.is_absolute():
             path = self.root_path / path
 
@@ -116,20 +118,30 @@ class Workspace:
             recursive: Whether to scan subdirectories.
 
         """
-        if isinstance(directory, bytes) or not isinstance(directory, str | PathLike):
-            msg = "directory must be a string or path-like object"
-            raise TypeError(msg)
         if not isinstance(recursive, bool):
             msg = "recursive must be a boolean"
             raise TypeError(msg)
 
-        dir_path = Path(fspath(directory))
+        dir_path = self._require_workspace_path(directory, name="directory")
         if not dir_path.is_absolute():
             dir_path = self.root_path / dir_path
 
         for file_path in iter_matching_files(dir_path, pattern, recursive):
             self._add_file(str(file_path), rebuild_graph=False)
         self._rebuild_dependency_graph()
+
+    def _require_workspace_path(self, value: object, *, name: str) -> Path:
+        if isinstance(value, bool | bytes) or not isinstance(value, str | PathLike):
+            msg = f"{name} must be a string or path-like object"
+            raise TypeError(msg)
+        raw_path = fspath(value)
+        if not isinstance(raw_path, str):
+            msg = f"{name} must be a string or path-like object"
+            raise TypeError(msg)
+        if not raw_path:
+            msg = f"{name} must not be empty"
+            raise ValueError(msg)
+        return Path(raw_path)
 
     def _rebuild_dependency_graph(self) -> None:
         """Rebuild dependency graph from the current successfully resolved files."""
