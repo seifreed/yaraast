@@ -497,7 +497,7 @@ def _deser_binary_expression(self, data: dict[str, Any]):
     right = _deserialize_required_expression(self, data, "right", "BinaryExpression")
     return BinaryExpression(
         left=left,
-        operator=_deserialize_string_field(data, "operator", "BinaryExpression"),
+        operator=_deserialize_nonempty_string_field(data, "operator", "BinaryExpression"),
         right=right,
     )
 
@@ -565,7 +565,7 @@ def _deser_member_access(self, data: dict[str, Any]):
 def _deser_identifier(self, data: dict[str, Any]):
     from yaraast.ast.expressions import Identifier
 
-    return Identifier(name=_deserialize_string_field(data, "name", "Identifier"))
+    return Identifier(name=_deserialize_nonempty_string_field(data, "name", "Identifier"))
 
 
 def _deser_string_identifier(self, data: dict[str, Any]):
@@ -977,7 +977,7 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             Import(
-                module=_deserialize_string_field(data, "module", "Import"),
+                module=_deserialize_nonempty_string_field(data, "module", "Import"),
                 alias=_deserialize_nullable_string_field(data, "alias", "Import"),
             ),
             data,
@@ -987,7 +987,7 @@ class JsonSerializerDeserializeMixin:
         from yaraast.ast.rules import Include
 
         return self._apply_node_metadata(
-            Include(path=_deserialize_string_field(data, "path", "Include")), data
+            Include(path=_deserialize_nonempty_string_field(data, "path", "Include")), data
         )
 
     def _deserialize_rule(self, data: dict[str, Any]):
@@ -1022,7 +1022,7 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             Rule(
-                name=_deserialize_string_field(data, "name", "Rule"),
+                name=_deserialize_nonempty_string_field(data, "name", "Rule"),
                 modifiers=_deserialize_string_list_field(data, "modifiers", "Rule"),
                 tags=tags,
                 meta=meta,
@@ -1042,7 +1042,7 @@ class JsonSerializerDeserializeMixin:
             msg = "Rule tags must contain Tag nodes"
             raise SerializationError(msg)
         return self._apply_node_metadata(
-            Tag(name=_deserialize_string_field(data, "name", "Tag")), data
+            Tag(name=_deserialize_nonempty_string_field(data, "name", "Tag")), data
         )
 
     def _deserialize_meta(self, data: dict[str, Any]):
@@ -1063,13 +1063,13 @@ class JsonSerializerDeserializeMixin:
 
             return self._apply_node_metadata(
                 Meta(
-                    _deserialize_string_field(data, "key", "Meta"),
+                    _deserialize_nonempty_string_field(data, "key", "Meta"),
                     _deserialize_meta_value(data),
                 ),
                 data,
             )
         return MetaEntry.from_key_value(
-            _deserialize_string_field(data, "key", "Meta"),
+            _deserialize_nonempty_string_field(data, "key", "Meta"),
             _deserialize_meta_value(data),
             deserialize_meta_scope(_deserialize_nullable_string_field(data, "scope", "Meta")),
         )
@@ -1088,7 +1088,11 @@ class JsonSerializerDeserializeMixin:
 
             return self._apply_node_metadata(
                 PlainString(
-                    identifier=_deserialize_string_field(data, "identifier", "PlainString"),
+                    identifier=_deserialize_nonempty_string_field(
+                        data,
+                        "identifier",
+                        "PlainString",
+                    ),
                     value=_deserialize_plain_string_value(data),
                     modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),

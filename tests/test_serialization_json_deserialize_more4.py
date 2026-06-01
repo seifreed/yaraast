@@ -96,9 +96,13 @@ def test_deserialize_import_include_meta_and_rule_meta_variants() -> None:
 
 def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()
+    true_expr = {"type": "BooleanLiteral", "value": True}
 
     with pytest.raises(SerializationError, match="Import module must be a string"):
         s._deserialize_import({"module": ["pe"]})
+
+    with pytest.raises(SerializationError, match="Import module must not be empty"):
+        s._deserialize_import({"module": ""})
 
     with pytest.raises(SerializationError, match="Import alias must be a string"):
         s._deserialize_import({"module": "pe", "alias": True})
@@ -106,14 +110,35 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Include path must be a string"):
         s._deserialize_include({"path": ["x.yar"]})
 
+    with pytest.raises(SerializationError, match="Include path must not be empty"):
+        s._deserialize_include({"path": ""})
+
     with pytest.raises(SerializationError, match="Rule name must be a string"):
         s._deserialize_rule({"name": ["r1"], "condition": None})
+
+    with pytest.raises(SerializationError, match="Rule name must not be empty"):
+        s._deserialize_rule(
+            {
+                "name": "",
+                "modifiers": [],
+                "tags": [],
+                "meta": [],
+                "strings": [],
+                "condition": true_expr,
+            }
+        )
 
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         s._deserialize_tag({"name": 7})
 
+    with pytest.raises(SerializationError, match="Tag name must not be empty"):
+        s._deserialize_tag({"name": ""})
+
     with pytest.raises(SerializationError, match="Meta key must be a string"):
         s._deserialize_meta({"key": ["author"], "value": "me"})
+
+    with pytest.raises(SerializationError, match="Meta key must not be empty"):
+        s._deserialize_meta({"key": "", "value": "me"})
 
     with pytest.raises(SerializationError, match="Meta type must be Meta or MetaEntry"):
         s._deserialize_meta({"type": "Rule", "key": "author", "value": "me"})
@@ -482,6 +507,11 @@ def test_json_deserialize_strings_reject_wrong_scalar_types() -> None:
             {"type": "PlainString", "identifier": ["$a"], "value": "abc", "modifiers": []}
         )
 
+    with pytest.raises(SerializationError, match="PlainString identifier must not be empty"):
+        s._deserialize_string(
+            {"type": "PlainString", "identifier": "", "value": "abc", "modifiers": []}
+        )
+
     with pytest.raises(SerializationError, match="PlainString value must be a string or bytes"):
         s._deserialize_string(
             {"type": "PlainString", "identifier": "$a", "value": True, "modifiers": []}
@@ -562,6 +592,9 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Identifier name must be a string"):
         s._deserialize_expression({"type": "Identifier", "name": ["id"]})
 
+    with pytest.raises(SerializationError, match="Identifier name must not be empty"):
+        s._deserialize_expression({"type": "Identifier", "name": ""})
+
     with pytest.raises(SerializationError, match="BinaryExpression left is required"):
         s._deserialize_expression(
             {"type": "BinaryExpression", "operator": "and", "right": true_expr}
@@ -636,6 +669,16 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
                 "type": "BinaryExpression",
                 "left": true_expr,
                 "operator": ["and"],
+                "right": true_expr,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="BinaryExpression operator must not be empty"):
+        s._deserialize_expression(
+            {
+                "type": "BinaryExpression",
+                "left": true_expr,
+                "operator": "",
                 "right": true_expr,
             }
         )

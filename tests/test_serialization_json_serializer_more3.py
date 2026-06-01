@@ -485,6 +485,7 @@ def test_json_serializer_rejects_invalid_leaf_values() -> None:
     invalid_bool: Any = "true"
 
     invalid_cases = [
+        (Identifier(""), "Identifier name must not be empty"),
         (Identifier(invalid_list), "Identifier name must be a string"),
         (StringIdentifier(invalid_text), "StringIdentifier name must be a string"),
         (StringWildcard(invalid_text), "StringWildcard pattern must be a string"),
@@ -519,6 +520,10 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
             "Import module must be a string",
         ),
         (
+            YaraFile(imports=[Import(module="")]),
+            "Import module must not be empty",
+        ),
+        (
             YaraFile(imports=[Import(module="pe", alias=invalid_text)]),
             "Import alias must be a string",
         ),
@@ -527,8 +532,16 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
             "Include path must be a string",
         ),
         (
+            YaraFile(includes=[Include(path="")]),
+            "Include path must not be empty",
+        ),
+        (
             YaraFile(rules=[Rule(name=invalid_text, condition=BooleanLiteral(True))]),
             "Rule name must be a string",
+        ),
+        (
+            YaraFile(rules=[Rule(name="", condition=BooleanLiteral(True))]),
+            "Rule name must not be empty",
         ),
         (
             YaraFile(
@@ -546,6 +559,30 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
             YaraFile(
                 rules=[
                     Rule(
+                        name="empty_tag",
+                        tags=[Tag(name="")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Tag name must not be empty",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="empty_meta",
+                        meta=[Meta("", "x")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Meta key must not be empty",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
                         name="invalid_plain_identifier",
                         strings=[PlainString(identifier=invalid_text, value="x")],
                         condition=BooleanLiteral(True),
@@ -553,6 +590,18 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
                 ]
             ),
             "PlainString identifier must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="empty_plain_identifier",
+                        strings=[PlainString(identifier="", value="x")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "PlainString identifier must not be empty",
         ),
         (
             YaraFile(
@@ -628,6 +677,10 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
     invalid_parameters: Any = ["x", 123]
 
     invalid_cases = [
+        (
+            BinaryExpression(BooleanLiteral(True), "", BooleanLiteral(False)),
+            "BinaryExpression operator must not be empty",
+        ),
         (
             BinaryExpression(BooleanLiteral(True), invalid_text, BooleanLiteral(False)),
             "BinaryExpression operator must be a string",

@@ -309,7 +309,7 @@ def _serialize_anonymous_flag(data: dict[str, Any], value, context: str) -> None
 
 def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     data = {
-        "key": _serialize_required_string(getattr(meta, "key", ""), "Meta key"),
+        "key": _serialize_required_nonempty_string(getattr(meta, "key", ""), "Meta key"),
         "value": _serialize_meta_value(getattr(meta, "value", "")),
     }
     scope = getattr(meta, "scope", None)
@@ -439,7 +439,7 @@ def visit_rule(serializer, node) -> dict[str, Any]:
 
     return {
         "type": "Rule",
-        "name": _serialize_required_string(node.name, "Rule name"),
+        "name": _serialize_required_nonempty_string(node.name, "Rule name"),
         "modifiers": _serialize_rule_modifiers(node.modifiers),
         "tags": _serialize_node_list(serializer, node.tags, "Rule tags", Tag),
         "meta": _serialize_meta_list(serializer, node.meta),
@@ -462,7 +462,10 @@ def visit_rule(serializer, node) -> dict[str, Any]:
 def visit_plain_string(serializer, node) -> dict[str, Any]:
     data = {
         "type": "PlainString",
-        "identifier": _serialize_required_string(node.identifier, "PlainString identifier"),
+        "identifier": _serialize_required_nonempty_string(
+            node.identifier,
+            "PlainString identifier",
+        ),
         "modifiers": _serialize_string_modifiers(serializer, node.modifiers, "PlainString"),
     }
     _serialize_anonymous_flag(data, getattr(node, "is_anonymous", False), "PlainString")
@@ -547,7 +550,10 @@ def visit_binary_expression(serializer, node) -> dict[str, Any]:
             node.left,
             "BinaryExpression left",
         ),
-        "operator": _serialize_required_string(node.operator, "BinaryExpression operator"),
+        "operator": _serialize_required_nonempty_string(
+            node.operator,
+            "BinaryExpression operator",
+        ),
         "right": _serialize_required_expression(
             serializer,
             node.right,

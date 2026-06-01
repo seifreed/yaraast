@@ -978,13 +978,19 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, Import):
         return {
             "type": "Import",
-            "module": _serialize_required_string(node.module, "Import module"),
+            "module": _serialize_required_nonempty_string(node.module, "Import module"),
             "alias": _serialize_nullable_string(node.alias, "Import alias"),
         }
     if isinstance(node, Include):
-        return {"type": "Include", "path": _serialize_required_string(node.path, "Include path")}
+        return {
+            "type": "Include",
+            "path": _serialize_required_nonempty_string(node.path, "Include path"),
+        }
     if isinstance(node, Tag):
-        return {"type": "Tag", "name": _serialize_required_string(node.name, "Tag name")}
+        return {
+            "type": "Tag",
+            "name": _serialize_required_nonempty_string(node.name, "Tag name"),
+        }
     if isinstance(node, Meta):
         return serialize_meta(node)
     if isinstance(node, Comment):
@@ -1099,7 +1105,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, Identifier):
         return {
             "type": "Identifier",
-            "name": _serialize_required_string(node.name, "Identifier name"),
+            "name": _serialize_required_nonempty_string(node.name, "Identifier name"),
         }
     if isinstance(node, StringIdentifier):
         return {
@@ -1132,7 +1138,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "BinaryExpression",
             "left": serialize_node(node.left),
-            "operator": _serialize_required_string(
+            "operator": _serialize_required_nonempty_string(
                 node.operator,
                 "BinaryExpression operator",
             ),
@@ -1405,7 +1411,7 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
     """Serialize a Rule."""
     data: dict[str, Any] = {
         "type": "Rule",
-        "name": _serialize_required_string(rule.name, "Rule name"),
+        "name": _serialize_required_nonempty_string(rule.name, "Rule name"),
         "modifiers": _serialize_rule_modifiers(rule.modifiers, "Rule"),
         "condition": serialize_node(rule.condition) if rule.condition is not None else None,
     }
@@ -1508,7 +1514,7 @@ def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
     """Serialize a Meta item."""
     data = {
         "type": "Meta",
-        "key": _serialize_required_string(meta.key, "Meta key"),
+        "key": _serialize_required_nonempty_string(meta.key, "Meta key"),
         "value": _serialize_meta_value(meta.value),
     }
     scope = getattr(meta, "scope", None)
@@ -1525,7 +1531,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
     if isinstance(string_def, PlainString):
         data = {
             "type": "PlainString",
-            "identifier": _serialize_required_string(
+            "identifier": _serialize_required_nonempty_string(
                 string_def.identifier,
                 "PlainString identifier",
             ),
@@ -1600,15 +1606,18 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return deserialize_rule(data)
     if node_type == "Import":
         return Import(
-            _deserialize_string_field(data, "module", "Import"),
+            _deserialize_nonempty_string_field(data, "module", "Import"),
             alias=_deserialize_nullable_string_field(data, "alias", "Import"),
         )
     if node_type == "Include":
-        return Include(_deserialize_string_field(data, "path", "Include"))
+        return Include(_deserialize_nonempty_string_field(data, "path", "Include"))
     if node_type == "Tag":
-        return Tag(_deserialize_string_field(data, "name", "Tag"))
+        return Tag(_deserialize_nonempty_string_field(data, "name", "Tag"))
     if node_type == "Meta":
-        return Meta(_deserialize_string_field(data, "key", "Meta"), _deserialize_meta_value(data))
+        return Meta(
+            _deserialize_nonempty_string_field(data, "key", "Meta"),
+            _deserialize_meta_value(data),
+        )
     if node_type == "Comment":
         return Comment(
             _deserialize_comment_text(data),
@@ -1686,7 +1695,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_optional_string_field(data, "modifiers", "RegexLiteral"),
         )
     if node_type == "Identifier":
-        return Identifier(_deserialize_string_field(data, "name", "Identifier"))
+        return Identifier(_deserialize_nonempty_string_field(data, "name", "Identifier"))
     if node_type == "StringIdentifier":
         return StringIdentifier(_deserialize_string_field(data, "name", "StringIdentifier"))
     if node_type == "StringWildcard":
@@ -1706,7 +1715,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "BinaryExpression":
         return BinaryExpression(
             _deserialize_required_node(data, "left", "BinaryExpression"),
-            _deserialize_string_field(data, "operator", "BinaryExpression"),
+            _deserialize_nonempty_string_field(data, "operator", "BinaryExpression"),
             _deserialize_required_node(data, "right", "BinaryExpression"),
         )
     if node_type == "UnaryExpression":
@@ -1956,7 +1965,7 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     condition_data = data.get("condition")
     condition = _deserialize_optional_node_value(condition_data, "Rule condition")
     rule = Rule(
-        name=_deserialize_string_field(data, "name", "Rule"),
+        name=_deserialize_nonempty_string_field(data, "name", "Rule"),
         modifiers=_deserialize_rule_modifiers(
             _deserialize_string_list_field(data, "modifiers", "Rule")
         ),
@@ -2089,12 +2098,15 @@ def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
     scope = data.get("scope")
     if data.get("type") == "MetaEntry" or scope is not None:
         return MetaEntry.from_key_value(
-            _deserialize_string_field(data, "key", "Meta"),
+            _deserialize_nonempty_string_field(data, "key", "Meta"),
             _deserialize_meta_value(data),
             deserialize_meta_scope(_deserialize_nullable_string_field(data, "scope", "Meta")),
         )
     return _apply_node_metadata(
-        Meta(_deserialize_string_field(data, "key", "Meta"), _deserialize_meta_value(data)),
+        Meta(
+            _deserialize_nonempty_string_field(data, "key", "Meta"),
+            _deserialize_meta_value(data),
+        ),
         data,
     )
 
@@ -2112,7 +2124,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
     if string_type == "PlainString":
         return _apply_node_metadata(
             PlainString(
-                identifier=_deserialize_string_field(data, "identifier", "PlainString"),
+                identifier=_deserialize_nonempty_string_field(data, "identifier", "PlainString"),
                 value=_deserialize_plain_string_value(data),
                 modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),

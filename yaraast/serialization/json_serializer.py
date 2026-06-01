@@ -23,6 +23,7 @@ from yaraast.serialization.json_serialize_visitors import (
     _serialize_required_bool,
     _serialize_required_expression,
     _serialize_required_int,
+    _serialize_required_nonempty_string,
     _serialize_required_number,
     _serialize_required_string,
     _serialize_rule_modifiers,
@@ -276,21 +277,24 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_import(self, node) -> dict[str, Any]:
         return self._simple_node(
             "Import",
-            module=_serialize_required_string(node.module, "Import module"),
+            module=_serialize_required_nonempty_string(node.module, "Import module"),
             alias=_serialize_nullable_string(getattr(node, "alias", None), "Import alias"),
         )
 
     def visit_include(self, node) -> dict[str, Any]:
         return self._simple_node(
             "Include",
-            path=_serialize_required_string(node.path, "Include path"),
+            path=_serialize_required_nonempty_string(node.path, "Include path"),
         )
 
     def visit_rule(self, node) -> dict[str, Any]:
         return visit_rule(self, node)
 
     def visit_tag(self, node) -> dict[str, Any]:
-        return self._simple_node("Tag", name=_serialize_required_string(node.name, "Tag name"))
+        return self._simple_node(
+            "Tag",
+            name=_serialize_required_nonempty_string(node.name, "Tag name"),
+        )
 
     def visit_string_definition(self, node) -> dict[str, Any]:
         data = self._simple_node(
@@ -363,7 +367,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_identifier(self, node) -> dict[str, Any]:
         return self._simple_node(
             "Identifier",
-            name=_serialize_required_string(node.name, "Identifier name"),
+            name=_serialize_required_nonempty_string(node.name, "Identifier name"),
         )
 
     def visit_string_identifier(self, node) -> dict[str, Any]:
@@ -470,7 +474,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_meta(self, node) -> dict[str, Any]:
         data = self._simple_node(
             "Meta",
-            key=_serialize_required_string(node.key, "Meta key"),
+            key=_serialize_required_nonempty_string(node.key, "Meta key"),
             value=_serialize_meta_value(node.value),
         )
         scope = getattr(node, "scope", None)

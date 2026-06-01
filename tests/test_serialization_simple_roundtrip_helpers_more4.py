@@ -203,20 +203,35 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Import module must be a string"):
         deserialize_node({"type": "Import", "module": ["pe"]})
 
+    with pytest.raises(SerializationError, match="Import module must not be empty"):
+        deserialize_node({"type": "Import", "module": ""})
+
     with pytest.raises(SerializationError, match="Import alias must be a string"):
         deserialize_node({"type": "Import", "module": "pe", "alias": True})
 
     with pytest.raises(SerializationError, match="Include path must be a string"):
         deserialize_node({"type": "Include", "path": ["x.yar"]})
 
+    with pytest.raises(SerializationError, match="Include path must not be empty"):
+        deserialize_node({"type": "Include", "path": ""})
+
     with pytest.raises(SerializationError, match="Rule name must be a string"):
         deserialize_rule({"name": ["r1"], "condition": None})
+
+    with pytest.raises(SerializationError, match="Rule name must not be empty"):
+        deserialize_rule({"name": "", "condition": None})
 
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         deserialize_node({"type": "Tag", "name": 7})
 
+    with pytest.raises(SerializationError, match="Tag name must not be empty"):
+        deserialize_node({"type": "Tag", "name": ""})
+
     with pytest.raises(SerializationError, match="Meta key must be a string"):
         deserialize_meta({"key": ["author"], "value": "me"})
+
+    with pytest.raises(SerializationError, match="Meta key must not be empty"):
+        deserialize_meta({"key": "", "value": "me"})
 
     with pytest.raises(SerializationError, match="Meta type must be Meta or MetaEntry"):
         deserialize_meta({"type": "Rule", "key": "author", "value": "me"})
@@ -780,6 +795,11 @@ def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> Non
             {"type": "PlainString", "identifier": ["$a"], "value": "abc", "modifiers": []}
         )
 
+    with pytest.raises(SerializationError, match="PlainString identifier must not be empty"):
+        deserialize_string(
+            {"type": "PlainString", "identifier": "", "value": "abc", "modifiers": []}
+        )
+
     with pytest.raises(SerializationError, match="PlainString value must be a string or bytes"):
         deserialize_string(
             {"type": "PlainString", "identifier": "$a", "value": True, "modifiers": []}
@@ -863,6 +883,9 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="Identifier name must be a string"):
         deserialize_node({"type": "Identifier", "name": ["id"]})
 
+    with pytest.raises(SerializationError, match="Identifier name must not be empty"):
+        deserialize_node({"type": "Identifier", "name": ""})
+
     true_expr = {"type": "BooleanLiteral", "value": True}
 
     with pytest.raises(SerializationError, match="BinaryExpression left is required"):
@@ -905,6 +928,16 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
                 "type": "BinaryExpression",
                 "left": true_expr,
                 "operator": ["and"],
+                "right": true_expr,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="BinaryExpression operator must not be empty"):
+        deserialize_node(
+            {
+                "type": "BinaryExpression",
+                "left": true_expr,
+                "operator": "",
                 "right": true_expr,
             }
         )
@@ -1026,6 +1059,7 @@ def test_simple_roundtrip_serialize_string_reference_nodes_reject_wrong_scalar_t
         (RegexLiteral(cast(Any, 123)), "RegexLiteral pattern must be a string"),
         (RegexLiteral(""), "RegexLiteral pattern must not be empty"),
         (RegexLiteral("abc", cast(Any, ["i"])), "RegexLiteral modifiers must be a string"),
+        (Identifier(""), "Identifier name must not be empty"),
         (StringIdentifier(cast(Any, ["$a"])), "StringIdentifier name must be a string"),
         (StringWildcard(cast(Any, ["$a*"])), "StringWildcard pattern must be a string"),
         (StringCount(cast(Any, 7)), "StringCount string_id must be a string"),
@@ -1041,6 +1075,10 @@ def test_simple_roundtrip_serialize_string_reference_nodes_reject_wrong_scalar_t
 def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types() -> None:
     true_expr = BooleanLiteral(True)
     invalid_cases = (
+        (
+            BinaryExpression(true_expr, "", BooleanLiteral(False)),
+            "BinaryExpression operator must not be empty",
+        ),
         (
             BinaryExpression(true_expr, cast(Any, ["and"]), BooleanLiteral(False)),
             "BinaryExpression operator must be a string",
@@ -1121,15 +1159,19 @@ def test_simple_roundtrip_serialize_expression_collections_reject_non_lists(
 
 def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types() -> None:
     invalid_cases = (
+        (Import(""), "Import module must not be empty"),
         (Import(cast(Any, 123)), "Import module must be a string"),
         (Import("pe", alias=cast(Any, 123)), "Import alias must be a string"),
+        (Include(""), "Include path must not be empty"),
         (Include(cast(Any, 123)), "Include path must be a string"),
+        (Tag(""), "Tag name must not be empty"),
         (Tag(cast(Any, 123)), "Tag name must be a string"),
         (Comment(cast(Any, 123)), "Comment text must be a string"),
         (
             Comment("note", is_multiline=cast(Any, "false")),
             "Comment is_multiline must be a boolean",
         ),
+        (Rule("", condition=BooleanLiteral(True)), "Rule name must not be empty"),
         (Rule(cast(Any, 123), condition=BooleanLiteral(True)), "Rule name must be a string"),
         (ExternRule(cast(Any, 123)), "ExternRule name must be a string"),
         (ExternRule("remote", namespace=cast(Any, 123)), "ExternRule namespace must be a string"),
@@ -1157,8 +1199,13 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
 
 def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_types() -> None:
     invalid_cases = (
+        (Meta("", "value"), "Meta key must not be empty"),
         (Meta(cast(Any, 123), "value"), "Meta key must be a string"),
         (Meta("key", cast(Any, 1.2)), "Meta value must be a string, integer, or boolean"),
+        (
+            PlainString(identifier="", value="abc"),
+            "PlainString identifier must not be empty",
+        ),
         (
             PlainString(identifier=cast(Any, 123), value="abc"),
             "PlainString identifier must be a string",
