@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import graphviz
 import pytest
@@ -65,6 +66,28 @@ def test_graph_helpers_propagate_non_graphviz_render_errors(tmp_path: Path) -> N
             _DotBroken(),
             str(tmp_path / "broken.svg"),
             "svg",
+        )
+
+
+@pytest.mark.parametrize("format", [None, 123])
+def test_string_diagram_render_rejects_non_string_formats(
+    tmp_path: Path,
+    format: object,
+) -> None:
+    with pytest.raises(TypeError, match="graph format must be a string"):
+        StringDiagramGraphsMixin._render_or_write_dot(
+            _DotFail("digraph { a }"),
+            str(tmp_path / "broken"),
+            cast(Any, format),
+        )
+
+
+def test_string_diagram_render_rejects_empty_format(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="graph format must not be empty"):
+        StringDiagramGraphsMixin._render_or_write_dot(
+            _DotFail("digraph { a }"),
+            str(tmp_path / "broken"),
+            "",
         )
 
 

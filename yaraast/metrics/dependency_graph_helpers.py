@@ -23,7 +23,19 @@ def reset_graph_state(generator) -> None:
     generator._rule_graph_keys_by_name.clear()
 
 
+def require_graph_format(format: object) -> str:
+    """Validate a Graphviz output format name."""
+    if not isinstance(format, str):
+        msg = "graph format must be a string"
+        raise TypeError(msg)
+    if not format:
+        msg = "graph format must not be empty"
+        raise ValueError(msg)
+    return format
+
+
 def render_graph(dot, output_path: str | None, format: str) -> str:
+    format = require_graph_format(format)
     if output_path:
         output_path_obj = Path(output_path)
         if format == "dot":

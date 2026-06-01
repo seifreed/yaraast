@@ -7,6 +7,7 @@ from pathlib import Path
 
 import graphviz
 
+from yaraast.metrics.dependency_graph_helpers import require_graph_format
 from yaraast.metrics.graphviz_errors import is_graphviz_error
 from yaraast.metrics.string_diagrams_graphviz import (
     create_complexity_graph,
@@ -26,6 +27,7 @@ def pattern_sort_key(pattern_id: str) -> tuple[str, int, str]:
 
 def render_or_write_dot(dot: graphviz.Digraph, output_path: str, format: str) -> str:
     """Render graph output, with DOT/text fallback when executables are unavailable."""
+    format = require_graph_format(format)
     output_path_obj = Path(output_path)
     if format == "dot":
         output_path_obj.write_text(dot.source, encoding="utf-8")

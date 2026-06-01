@@ -85,6 +85,22 @@ def test_dependency_graph_render_propagates_non_graphviz_errors(tmp_path: Path) 
         render_graph(_BrokenDot(), str(tmp_path / "deps.svg"), "svg")
 
 
+@pytest.mark.parametrize("format", [None, 123])
+def test_dependency_graph_render_rejects_non_string_formats(
+    tmp_path: Path,
+    format: object,
+) -> None:
+    with pytest.raises(TypeError, match="graph format must be a string"):
+        render_graph(
+            SimpleNamespace(source="digraph G {}"), str(tmp_path / "deps"), cast(Any, format)
+        )
+
+
+def test_dependency_graph_render_rejects_empty_format(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="graph format must not be empty"):
+        render_graph(SimpleNamespace(source="digraph G {}"), str(tmp_path / "deps"), "")
+
+
 def test_dependency_graph_generator_remaining_visitors_and_stats() -> None:
     code = """
     import "pe"
