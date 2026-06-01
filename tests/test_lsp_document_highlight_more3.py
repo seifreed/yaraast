@@ -166,6 +166,42 @@ rule local_ref {
     ]
 
 
+def test_document_highlight_yarax_comprehension_declaration_after_for_newline_is_local() -> None:
+    text = """
+rule helper { condition: true }
+rule local_ref {
+    condition:
+        [helper for
+            helper in (1, 2) if helper > 0]
+}
+""".lstrip()
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(4, 12))
+
+    assert [(highlight.range.start.line, highlight.range.end.line) for highlight in highlights] == [
+        (4, 4)
+    ]
+
+
+def test_document_highlight_yarax_dict_value_declaration_after_newline_is_local() -> None:
+    text = """
+rule value { condition: true }
+rule local_ref {
+    condition:
+        {key: value for key,
+            value in dict if value > 0}
+}
+""".lstrip()
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(4, 12))
+
+    assert [(highlight.range.start.line, highlight.range.end.line) for highlight in highlights] == [
+        (4, 4)
+    ]
+
+
 def test_document_highlight_yarax_lambda_parameter_declaration_is_local() -> None:
     text = """
 rule helper { condition: true }

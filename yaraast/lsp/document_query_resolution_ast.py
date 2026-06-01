@@ -197,40 +197,47 @@ def _resolve_names_before_iterable(
     iterable_range = _first_value_range(iterable, ctx.text)
     if iterable_range is None:
         return None
-    header_bounds = _loop_declaration_header_bounds(ctx, iterable_range)
-    if header_bounds is None:
-        return None
-    line_index, identifier_list_start, identifier_list_end = header_bounds
-    line = ctx.lines[line_index]
-    identifier_start = line.find(word, identifier_list_start, identifier_list_end)
-    while identifier_start >= 0:
-        declaration_range = _same_line_identifier_range(line, line_index, identifier_start, word)
-        if declaration_range is not None:
-            resolved = _resolved_local_identifier(ctx, word, declaration_range, position)
-            if resolved is not None:
-                return resolved
-        identifier_start = line.find(word, identifier_start + len(word), identifier_list_end)
+    for line_index, identifier_list_start, identifier_list_end in _loop_declaration_header_bounds(
+        ctx, iterable_range
+    ):
+        line = ctx.lines[line_index]
+        identifier_start = line.find(word, identifier_list_start, identifier_list_end)
+        while identifier_start >= 0:
+            declaration_range = _same_line_identifier_range(
+                line, line_index, identifier_start, word
+            )
+            if declaration_range is not None:
+                resolved = _resolved_local_identifier(ctx, word, declaration_range, position)
+                if resolved is not None:
+                    return resolved
+            identifier_start = line.find(word, identifier_start + len(word), identifier_list_end)
     return None
 
 
 def _loop_declaration_header_bounds(
     ctx: DocumentContext,
     iterable_range: Range,
-) -> tuple[int, int, int] | None:
+) -> list[tuple[int, int, int]]:
     line_index = iterable_range.start.line
     if line_index < 0 or line_index >= len(ctx.lines):
-        return None
+        return []
     line = ctx.lines[line_index]
     iterable_start = utf16_col_to_utf8(line, iterable_range.start.character)
     bounds = _same_line_loop_declaration_bounds(line, line_index, iterable_start)
     if bounds is not None:
-        return bounds
+        return [bounds]
     for header_line_index in range(line_index - 1, -1, -1):
         header_line = ctx.lines[header_line_index]
         if not header_line.strip():
             continue
-        return _previous_line_loop_declaration_bounds(header_line, header_line_index)
-    return None
+        previous_bounds = _previous_line_loop_declaration_bounds(header_line, header_line_index)
+        if previous_bounds is None:
+            return []
+        current_bounds = _continuation_line_loop_declaration_bounds(line, line_index)
+        if current_bounds is None:
+            return [previous_bounds]
+        return [previous_bounds, current_bounds]
+    return []
 
 
 def _same_line_loop_declaration_bounds(
@@ -257,6 +264,16 @@ def _previous_line_loop_declaration_bounds(
     separator_start = _rfind_keyword(line, "in", declaration_start + len("for"), len(line))
     identifier_list_end = separator_start if separator_start >= 0 else len(line)
     return line_index, declaration_start + len("for"), identifier_list_end
+
+
+def _continuation_line_loop_declaration_bounds(
+    line: str,
+    line_index: int,
+) -> tuple[int, int, int] | None:
+    separator_start = _rfind_keyword(line, "in", 0, len(line))
+    if separator_start < 0:
+        return None
+    return line_index, 0, separator_start
 
 
 def _first_value_range(value: Any, source_text: str) -> Range | None:
