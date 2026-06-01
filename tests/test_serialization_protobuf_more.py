@@ -64,6 +64,14 @@ def test_protobuf_deserialize_rejects_malformed_binary() -> None:
         serializer.deserialize(binary_data=b"\xff\xff\xff")
 
 
+@pytest.mark.parametrize("binary_data", [False, 0, "", [], object()])
+def test_protobuf_deserialize_rejects_invalid_binary_data_types(binary_data: Any) -> None:
+    serializer = ProtobufSerializer()
+
+    with pytest.raises(TypeError, match="binary_data must be bytes"):
+        serializer.deserialize(binary_data=cast(Any, binary_data))
+
+
 @pytest.mark.parametrize("output_path", [False, 0, object()])
 def test_protobuf_serialize_rejects_invalid_output_path_types(output_path: Any) -> None:
     ast = _sample_ast()

@@ -87,6 +87,9 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
         if binary_data is None:
             msg = "No binary data provided"
             raise SerializationError(msg)
+        if not isinstance(binary_data, bytes):
+            msg = "binary_data must be bytes"
+            raise TypeError(msg)
 
         pb_yara_file = yara_ast_pb2.YaraFile()
         try:
