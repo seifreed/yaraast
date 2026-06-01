@@ -2084,6 +2084,27 @@ def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path:
     assert restored.rules[0].strings[0].modifiers[0].value == (1, 3)
 
 
+@pytest.mark.parametrize("file_path", [False, 0, object()])
+def test_simple_roundtrip_helpers_file_io_rejects_invalid_path_types(file_path: Any) -> None:
+    ast = YaraFile()
+
+    with pytest.raises(TypeError, match="file_path must be a file path"):
+        serialize_to_file(ast, cast(Any, file_path))
+
+    with pytest.raises(TypeError, match="file_path must be a file path"):
+        deserialize_from_file(cast(Any, file_path))
+
+
+def test_simple_roundtrip_helpers_file_io_rejects_empty_path() -> None:
+    ast = YaraFile()
+
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        serialize_to_file(ast, "")
+
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        deserialize_from_file("")
+
+
 def test_simple_roundtrip_helpers_preserve_file_extensions_and_pragmas() -> None:
     ast = YaraFile(
         extern_rules=[
