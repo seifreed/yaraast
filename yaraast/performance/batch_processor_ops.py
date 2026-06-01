@@ -20,7 +20,9 @@ if TYPE_CHECKING:
     from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
 
 
-def parse_item(item: str | Path) -> YaraFile | None:
+def parse_item(item: object) -> YaraFile | None:
+    if not isinstance(item, (str, Path)):
+        return None
     try:
         if isinstance(item, Path):
             with open(item, encoding="utf-8") as handle:
@@ -28,7 +30,7 @@ def parse_item(item: str | Path) -> YaraFile | None:
         else:
             content = item
         return parse_yara_source(content)
-    except (OSError, UnicodeDecodeError, ValueError, TypeError, YaraASTError):
+    except (OSError, UnicodeDecodeError, ValueError, YaraASTError):
         return None
 
 

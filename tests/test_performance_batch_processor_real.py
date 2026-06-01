@@ -107,6 +107,18 @@ def test_parse_item_propagates_internal_parser_attribute_errors(
         parse_item("rule ok { condition: true }")
 
 
+def test_parse_item_propagates_internal_parser_type_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def broken_parse(_source: str) -> YaraFile:
+        raise TypeError("parser state invalid")
+
+    monkeypatch.setattr(batch_processor_ops, "parse_yara_source", broken_parse)
+
+    with pytest.raises(TypeError, match="parser state invalid"):
+        parse_item("rule ok { condition: true }")
+
+
 def test_large_file_split_preserves_top_level_extensions() -> None:
     parsed = YaraFile(
         rules=[
