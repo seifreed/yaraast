@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.base import YaraFile
+from yaraast.errors import YaraASTError
 from yaraast.performance.parallel_job_helpers import (
     complete_job,
     export_graph_files,
@@ -18,7 +20,6 @@ from yaraast.performance.parallel_models import Job, JobStatus
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from yaraast.ast.base import YaraFile
     from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 
 
@@ -33,6 +34,10 @@ def analyze_complexity_parallel(
         job = start_job("complexity")
         jobs.append(job)
         analyzer._stats["jobs_submitted"] += 1
+        if not isinstance(ast, YaraFile):
+            fail_job(job, "complexity analysis input must be a YaraFile")
+            analyzer._stats["jobs_failed"] += 1
+            continue
         try:
             analysis = analyzer.analyze_file(ast, max_workers)
             analysis["metrics"] = analysis.get("stats", {})
@@ -43,7 +48,7 @@ def analyze_complexity_parallel(
             analysis["quality_score"] = max(0, 100 - (error_rate * 100))
             complete_job(job, analysis)
             analyzer._stats["jobs_completed"] += 1
-        except Exception as exc:
+        except (ValueError, YaraASTError) as exc:
             fail_job(job, exc)
             analyzer._stats["jobs_failed"] += 1
     return jobs

@@ -349,6 +349,21 @@ def test_parallel_graph_export_propagates_internal_export_errors(
         analyzer.generate_graphs_parallel([ast], tmp_path / "graphs", ["full"])
 
 
+def test_parallel_complexity_jobs_propagate_internal_analysis_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+    ast = _parsed_ast("complexity_rule")
+
+    def broken_analyze_file(*_args: object, **_kwargs: object) -> dict[str, object]:
+        raise AttributeError("complexity analyzer state missing")
+
+    monkeypatch.setattr(analyzer, "analyze_file", broken_analyze_file)
+
+    with pytest.raises(AttributeError, match="complexity analyzer state missing"):
+        analyzer.analyze_complexity_parallel([ast])
+
+
 def test_parallel_analyzer_error_paths_without_mocks(tmp_path: Path) -> None:
     analyzer = ParallelAnalyzer(max_workers=1)
 
