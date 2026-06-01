@@ -1092,7 +1092,7 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
                 rules=[
                     Rule(
                         "invalid_meta_value",
-                        meta=[MetaEntry("key", invalid_float)],
+                        meta=[Meta("key", invalid_float)],
                         condition=BooleanLiteral(True),
                     )
                 ]
@@ -1888,6 +1888,7 @@ def test_json_roundtrip_preserves_meta_entry_scope() -> None:
                 meta=[
                     MetaEntry.from_key_value("secret", "token", "private"),
                     MetaEntry.from_key_value("owner", "team"),
+                    MetaEntry.from_key_value("score", 1.5),
                 ],
                 condition=BooleanLiteral(True),
             )
@@ -1901,7 +1902,10 @@ def test_json_roundtrip_preserves_meta_entry_scope() -> None:
     assert [entry.scope for entry in restored.rules[0].meta] == [
         MetaScope.PRIVATE,
         MetaScope.PUBLIC,
+        MetaScope.PUBLIC,
     ]
+    assert serialized["ast"]["rules"][0]["meta"][2]["value"] == 1.5
+    assert restored.rules[0].meta[2].value == 1.5
     assert [entry.key for entry in restored.rules[0].get_private_meta()] == ["secret"]
 
 

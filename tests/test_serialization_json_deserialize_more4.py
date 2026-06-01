@@ -68,19 +68,22 @@ def test_deserialize_import_include_meta_and_rule_meta_variants() -> None:
     assert isinstance(typed_meta, Meta)
     typed_meta_entry = s._deserialize_meta({"type": "MetaEntry", "key": "owner", "value": "team"})
     assert not isinstance(typed_meta_entry, Meta)
+    float_meta_entry = s._deserialize_meta({"type": "MetaEntry", "key": "score", "value": 1.5})
+    assert float_meta_entry.value == 1.5
 
     rule_dict_meta = s._deserialize_rule(
         {
             "name": "r1",
             "modifiers": ["private"],
             "tags": [{"name": "t1"}],
-            "meta": {"a": 1, "b": "x"},
+            "meta": {"a": 1, "b": "x", "score": 1.5},
             "strings": [{"type": "PlainString", "identifier": "$a", "value": "x", "modifiers": []}],
             "condition": {"type": "Identifier", "name": "true"},
         }
     )
     assert isinstance(rule_dict_meta, Rule)
-    assert len(rule_dict_meta.meta) == 2
+    assert len(rule_dict_meta.meta) == 3
+    assert rule_dict_meta.meta[2].value == 1.5
 
     rule_list_meta = s._deserialize_rule(
         {
@@ -149,20 +152,13 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(
         SerializationError, match="Meta value must be a string, integer, or boolean"
     ):
-        s._deserialize_meta({"key": "score", "value": 1.5})
+        s._deserialize_meta({"type": "Meta", "key": "score", "value": 1.5})
 
     with pytest.raises(
         SerializationError, match="Meta scope must be public, private, or protected"
     ):
         s._deserialize_meta(
             {"type": "MetaEntry", "key": "owner", "value": "team", "scope": "secret"}
-        )
-
-    with pytest.raises(
-        SerializationError, match="Meta value must be a string, integer, or boolean"
-    ):
-        s._deserialize_rule(
-            {"name": "r1", "meta": {"score": 1.5}, "strings": [], "condition": None}
         )
 
 

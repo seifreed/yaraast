@@ -245,7 +245,7 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(
         SerializationError, match="Meta value must be a string, integer, or boolean"
     ):
-        deserialize_meta({"key": "score", "value": 1.5})
+        deserialize_meta({"type": "Meta", "key": "score", "value": 1.5})
 
     with pytest.raises(
         SerializationError, match="Meta scope must be public, private, or protected"
@@ -672,8 +672,10 @@ def test_simple_roundtrip_node_metadata_preserves_leading_comment_groups() -> No
 
 def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     private_meta = MetaEntry.from_key_value("classification", "restricted", "private")
+    float_meta = MetaEntry.from_key_value("score", 1.5)
 
     serialized = serialize_meta(private_meta)
+    serialized_float = serialize_meta(float_meta)
 
     assert serialized == {
         "type": "MetaEntry",
@@ -681,10 +683,14 @@ def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
         "value": "restricted",
         "scope": "private",
     }
+    assert serialized_float["value"] == 1.5
 
     restored = deserialize_meta(serialized)
+    restored_float = deserialize_meta(serialized_float)
     assert isinstance(restored, MetaEntry)
     assert restored.scope == MetaScope.PRIVATE
+    assert isinstance(restored_float, MetaEntry)
+    assert restored_float.value == 1.5
 
     invalid_meta = MetaEntry("owner", "team")
     cast(Any, invalid_meta).scope = "secret"

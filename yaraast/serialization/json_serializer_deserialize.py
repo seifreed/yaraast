@@ -418,6 +418,18 @@ def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
     raise SerializationError(msg)
 
 
+def _deserialize_meta_entry_value(data: dict[str, Any]) -> str | int | bool | float:
+    value = _deserialize_required_field(data, "value", "Meta")
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    msg = "Meta value must be a string, integer, boolean, or finite float"
+    raise SerializationError(msg)
+
+
 def _deserialize_hex_byte_value(data: dict[str, Any], context: str) -> int | str:
     value = _deserialize_required_field(data, "value", context)
     if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
@@ -1136,7 +1148,7 @@ class JsonSerializerDeserializeMixin:
             )
         return MetaEntry.from_key_value(
             _deserialize_nonempty_string_field(data, "key", "Meta"),
-            _deserialize_meta_value(data),
+            _deserialize_meta_entry_value(data),
             deserialize_meta_scope(_deserialize_nullable_string_field(data, "scope", "Meta")),
         )
 

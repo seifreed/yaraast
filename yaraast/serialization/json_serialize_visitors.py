@@ -87,6 +87,17 @@ def _serialize_meta_value(value) -> str | int | bool:
     raise SerializationError(msg)
 
 
+def _serialize_meta_entry_value(value) -> str | int | bool | float:
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    msg = "Meta value must be a string, integer, boolean, or finite float"
+    raise SerializationError(msg)
+
+
 def _serialize_required_int(value, context: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         msg = f"{context} must be an integer"
@@ -335,9 +346,16 @@ def _serialize_anonymous_flag(data: dict[str, Any], value, context: str) -> None
 
 
 def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
+    from yaraast.ast.modifiers import MetaEntry
+
+    value = (
+        _serialize_meta_entry_value(getattr(meta, "value", ""))
+        if isinstance(meta, MetaEntry)
+        else _serialize_meta_value(getattr(meta, "value", ""))
+    )
     data = {
         "key": _serialize_required_nonempty_string(getattr(meta, "key", ""), "Meta key"),
-        "value": _serialize_meta_value(getattr(meta, "value", "")),
+        "value": value,
     }
     scope = getattr(meta, "scope", None)
     if scope is not None:

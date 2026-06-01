@@ -694,12 +694,35 @@ def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
     raise SerializationError(msg)
 
 
+def _deserialize_meta_entry_value(data: dict[str, Any]) -> str | int | bool | float:
+    value = _deserialize_required_field(data, "value", "Meta")
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    msg = "Meta value must be a string, integer, boolean, or finite float"
+    raise SerializationError(msg)
+
+
 def _serialize_meta_value(value: Any) -> str | int | bool:
     if isinstance(value, str | bool):
         return value
     if isinstance(value, int):
         return value
     msg = "Meta value must be a string, integer, or boolean"
+    raise SerializationError(msg)
+
+
+def _serialize_meta_entry_value(value: Any) -> str | int | bool | float:
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    msg = "Meta value must be a string, integer, boolean, or finite float"
     raise SerializationError(msg)
 
 
@@ -1626,10 +1649,15 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
 
 def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
     """Serialize a Meta item."""
+    value = (
+        _serialize_meta_entry_value(meta.value)
+        if isinstance(meta, MetaEntry)
+        else _serialize_meta_value(meta.value)
+    )
     data = {
         "type": "Meta",
         "key": _serialize_required_nonempty_string(meta.key, "Meta key"),
-        "value": _serialize_meta_value(meta.value),
+        "value": value,
     }
     scope = getattr(meta, "scope", None)
     if scope is not None:
@@ -2267,7 +2295,7 @@ def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
     if data.get("type") == "MetaEntry" or scope is not None:
         return MetaEntry.from_key_value(
             _deserialize_nonempty_string_field(data, "key", "Meta"),
-            _deserialize_meta_value(data),
+            _deserialize_meta_entry_value(data),
             deserialize_meta_scope(_deserialize_nullable_string_field(data, "scope", "Meta")),
         )
     return _apply_node_metadata(
