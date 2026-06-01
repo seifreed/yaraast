@@ -30,9 +30,13 @@ def normalize_file_patterns(
 def iter_matching_files(
     directory: Path,
     patterns: FilePatterns = None,
-    recursive: bool = False,
+    recursive: object = False,
 ) -> Iterator[Path]:
     """Yield matching files once, preserving pattern and filesystem order."""
+    if not isinstance(recursive, bool):
+        msg = "recursive must be a boolean"
+        raise TypeError(msg)
+
     seen: set[Path] = set()
     for pattern in normalize_file_patterns(patterns):
         matches = directory.rglob(pattern) if recursive else directory.glob(pattern)

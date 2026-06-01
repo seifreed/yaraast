@@ -16,3 +16,12 @@ def test_normalize_file_patterns_rejects_non_string_entries(tmp_path: Path) -> N
 
     with pytest.raises(TypeError, match="File patterns must be a string or iterable of strings"):
         list(iter_matching_files(tmp_path, cast(Any, b"*.yar")))
+
+
+@pytest.mark.parametrize("recursive", [None, 1, "yes", object()])
+def test_iter_matching_files_rejects_invalid_recursive_types(
+    tmp_path: Path,
+    recursive: Any,
+) -> None:
+    with pytest.raises(TypeError, match="recursive must be a boolean"):
+        list(iter_matching_files(tmp_path, recursive=recursive))
