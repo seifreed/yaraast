@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import builtins
 from pathlib import Path
 from textwrap import dedent
+from types import ModuleType
+from typing import Any
 
 from click.testing import CliRunner
+import pytest
 import yaml
 
 from yaraast.cli.commands.analyze import analyze
@@ -172,6 +176,33 @@ def test_yaral_real_paths(tmp_path: Path) -> None:
 
     info = runner.invoke(yaral, ["info", "--examples", "--fields", "--functions"])
     assert info.exit_code == 0
+
+
+def test_yaral_parse_yaml_propagates_internal_yaml_import_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    good = _write(tmp_path, "ok.yaral", _sample_yaral())
+    real_import = builtins.__import__
+
+    def fail_internal_yaml_import(
+        name: str,
+        globals_: dict[str, Any] | None = None,
+        locals_: dict[str, Any] | None = None,
+        fromlist: tuple[str, ...] = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "yaml":
+            raise ImportError("broken yaml internals", name="yaml._broken")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_internal_yaml_import)
+
+    with pytest.raises(ImportError, match="broken yaml internals"):
+        CliRunner().invoke(
+            yaral,
+            ["parse", good, "--format", "yaml"],
+            catch_exceptions=False,
+        )
 
 
 def test_analyze_real_paths(tmp_path: Path) -> None:

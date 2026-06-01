@@ -85,6 +85,11 @@ def parse(file: str, enhanced: bool, output: str | None, format: str):
         write_output(output, output_str, f"AST written to {output}")
         display_parse_success(len(ast.rules))
 
+    except ImportError as e:
+        if format != "yaml" or e.name != "yaml":
+            raise
+        click.echo(f"❌ Error parsing YARA-L file: {e}", err=True)
+        raise click.Abort() from None
     except Exception as e:
         click.echo(f"❌ Error parsing YARA-L file: {e}", err=True)
         raise click.Abort() from None
