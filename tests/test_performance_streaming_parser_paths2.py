@@ -90,6 +90,16 @@ def test_streaming_parser_parse_with_progress_rejects_non_callable_callback(
         StreamingParser().parse_with_progress(empty_file, cast(Any, None))
 
 
+def test_streaming_parser_parse_with_progress_rejects_empty_file_path() -> None:
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        StreamingParser().parse_with_progress("", lambda _processed, _total: None)
+
+
+def test_streaming_parser_parse_with_progress_rejects_directory_path(tmp_path: Path) -> None:
+    with pytest.raises(IsADirectoryError, match="file_path must not be a directory"):
+        StreamingParser().parse_with_progress(tmp_path, lambda _processed, _total: None)
+
+
 def test_streaming_parser_emits_falsy_present_rule(monkeypatch: pytest.MonkeyPatch) -> None:
     class FalsyRule(Rule):
         def __bool__(self) -> bool:
@@ -238,6 +248,16 @@ def test_streaming_parser_empty_file_yields_no_rules(tmp_path: Path) -> None:
     parser = StreamingParser()
 
     assert list(parser.parse_file(path)) == []
+
+
+def test_streaming_parser_parse_file_rejects_empty_path() -> None:
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        list(StreamingParser().parse_file(""))
+
+
+def test_streaming_parser_parse_file_rejects_directory_path(tmp_path: Path) -> None:
+    with pytest.raises(IsADirectoryError, match="file_path must not be a directory"):
+        list(StreamingParser().parse_file(tmp_path))
 
 
 def test_streaming_parser_chunk_residual_callbacks_and_cancellation(tmp_path: Path) -> None:
@@ -398,6 +418,12 @@ def test_streaming_parser_parse_rules_from_file_success_progress_recursive_and_e
     assert estimate["estimated_ast_mb"] >= estimate["file_size_mb"]
     assert estimate["estimated_peak_mb"] >= estimate["estimated_ast_mb"]
 
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        parser.estimate_memory_usage("")
+
+    with pytest.raises(IsADirectoryError, match="file_path must not be a directory"):
+        parser.estimate_memory_usage(root)
+
 
 def test_streaming_parser_parse_directory_accepts_string_path(tmp_path: Path) -> None:
     rule_file = tmp_path / "sample.yar"
@@ -407,6 +433,19 @@ def test_streaming_parser_parse_directory_accepts_string_path(tmp_path: Path) ->
 
     assert len(results) == 1
     assert results[0].rule_name == "sample"
+
+
+def test_streaming_parser_parse_directory_rejects_empty_path() -> None:
+    with pytest.raises(ValueError, match="dir_path must not be empty"):
+        list(StreamingParser().parse_directory(""))
+
+
+def test_streaming_parser_parse_directory_rejects_file_path(tmp_path: Path) -> None:
+    rule_file = tmp_path / "sample.yar"
+    rule_file.write_text("rule sample { condition: true }", encoding="utf-8")
+
+    with pytest.raises(NotADirectoryError, match="dir_path must be a directory"):
+        list(StreamingParser().parse_directory(rule_file))
 
 
 @pytest.mark.parametrize("dir_path", [None, 123, object()])

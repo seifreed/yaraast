@@ -41,6 +41,36 @@ def _validate_optional_callable(value: object, name: str) -> None:
         raise TypeError(msg)
 
 
+def _require_pathlike(value: object, name: str) -> Path:
+    if isinstance(value, bytes) or not isinstance(value, str | PathLike):
+        msg = f"{name} must be a string or path-like object"
+        raise TypeError(msg)
+    raw_path = fspath(value)
+    if not isinstance(raw_path, str):
+        msg = f"{name} must be a text path"
+        raise TypeError(msg)
+    if not raw_path:
+        msg = f"{name} must not be empty"
+        raise ValueError(msg)
+    return Path(raw_path)
+
+
+def _require_file_path(value: object, name: str = "file_path") -> Path:
+    path = _require_pathlike(value, name)
+    if path.exists() and path.is_dir():
+        msg = f"{name} must not be a directory"
+        raise IsADirectoryError(msg)
+    return path
+
+
+def _require_directory_path(value: object, name: str = "dir_path") -> Path:
+    path = _require_pathlike(value, name)
+    if path.exists() and not path.is_dir():
+        msg = f"{name} must be a directory"
+        raise NotADirectoryError(msg)
+    return path
+
+
 class StreamingParser:
     """Parse large YARA files efficiently using streaming."""
 
@@ -101,7 +131,7 @@ class StreamingParser:
 
         """
         _validate_optional_callable(callback, "callback")
-        file_path = Path(file_path)
+        file_path = _require_file_path(file_path)
         if file_path.stat().st_size == 0:
             return
 
@@ -254,14 +284,11 @@ class StreamingParser:
         recursive: bool = False,
     ) -> Iterator[Any]:
         """Parse all files in a directory."""
-        if isinstance(dir_path, bytes) or not isinstance(dir_path, str | PathLike):
-            msg = "dir_path must be a string or path-like object"
-            raise TypeError(msg)
         if not isinstance(recursive, bool):
             msg = "recursive must be a boolean"
             raise TypeError(msg)
 
-        dir_path = Path(fspath(dir_path))
+        dir_path = _require_directory_path(dir_path)
         files = list(iter_matching_files(dir_path, pattern, recursive))
 
         yield from self.parse_files(files)
@@ -293,7 +320,7 @@ class StreamingParser:
             msg = "progress_callback must be callable"
             raise TypeError(msg)
 
-        file_path = Path(file_path)
+        file_path = _require_file_path(file_path)
         file_size = file_path.stat().st_size
         rules: list[Rule] = []
 
@@ -405,7 +432,7 @@ class StreamingParser:
             Memory usage estimates
 
         """
-        file_path = Path(file_path)
+        file_path = _require_file_path(file_path)
         file_size = file_path.stat().st_size
 
         # Rough estimates based on experience
