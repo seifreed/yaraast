@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -92,6 +93,35 @@ def test_serialize_services_compare_and_error_paths(tmp_path: Path) -> None:
 
     with pytest.raises(ValidationError, match="Unknown format"):
         ss.import_ast(str(old_file), "badfmt")
+
+
+@pytest.mark.parametrize("minimal", [None, 1, "yes", object()])
+def test_export_ast_rejects_invalid_minimal_types(
+    tmp_path: Path,
+    minimal: Any,
+) -> None:
+    source = tmp_path / "source.yar"
+    source.write_text("rule a { condition: true }", encoding="utf-8")
+    ast = ss.parse_yara_file(source)
+
+    with pytest.raises(TypeError, match="minimal must be a boolean"):
+        ss.export_ast(ast, "yaml", None, minimal=cast(bool, minimal))
+
+
+@pytest.mark.parametrize("fmt", [None, 123, object()])
+def test_serialize_services_reject_non_string_formats(
+    tmp_path: Path,
+    fmt: Any,
+) -> None:
+    source = tmp_path / "source.yar"
+    source.write_text("rule a { condition: true }", encoding="utf-8")
+    ast = ss.parse_yara_file(source)
+
+    with pytest.raises(TypeError, match="serialization format must be a string"):
+        ss.export_ast(ast, cast(str, fmt), None, minimal=False)
+
+    with pytest.raises(TypeError, match="serialization format must be a string"):
+        ss.import_ast(str(source), cast(str, fmt))
 
 
 def test_serialize_services_parse_export_and_compare_yarax(tmp_path: Path) -> None:
