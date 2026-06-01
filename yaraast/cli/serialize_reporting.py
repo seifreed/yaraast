@@ -11,6 +11,8 @@ from rich.table import Table
 
 from yaraast.cli.utils import format_json, write_text
 
+_DIFF_OUTPUT_FORMATS = frozenset({"json", "yaml"})
+
 
 def display_export_result(
     console: Console,
@@ -47,20 +49,31 @@ def display_diff_no_changes(console: Console) -> None:
     console.print("✅ No differences found - ASTs are identical")
 
 
-def write_diff_output(output_path: str, fmt: str, diff_data: dict) -> None:
+def _require_diff_output_format(fmt: object) -> str:
+    if not isinstance(fmt, str):
+        raise TypeError("diff output format must be a string")
+    if fmt not in _DIFF_OUTPUT_FORMATS:
+        valid = ", ".join(sorted(_DIFF_OUTPUT_FORMATS))
+        raise ValueError(f"diff output format must be one of: {valid}")
+    return fmt
+
+
+def write_diff_output(output_path: str, fmt: object, diff_data: dict) -> None:
+    fmt = _require_diff_output_format(fmt)
     if fmt == "json":
         write_text(output_path, format_json(diff_data, ensure_ascii=False))
-    else:
-        import yaml
+        return
 
-        write_text(
-            output_path,
-            yaml.safe_dump(
-                diff_data,
-                default_flow_style=False,
-                sort_keys=False,
-            ),
-        )
+    import yaml
+
+    write_text(
+        output_path,
+        yaml.safe_dump(
+            diff_data,
+            default_flow_style=False,
+            sort_keys=False,
+        ),
+    )
 
 
 def display_diff_saved(console: Console, output_path: str, patch: bool) -> None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from rich.console import Console
 
 from yaraast.cli import serialize_reporting as sr
@@ -89,3 +90,21 @@ def test_write_diff_output_and_display_info(tmp_path: Path) -> None:
     assert "AST Information" in text
     assert "Rule Analysis" in text
     assert "hash123" in text
+
+
+@pytest.mark.parametrize("output_format", [None, 123])
+def test_write_diff_output_rejects_non_string_formats(
+    tmp_path: Path,
+    output_format: object,
+) -> None:
+    with pytest.raises(TypeError, match="diff output format must be a string"):
+        sr.write_diff_output(str(tmp_path / "diff.out"), output_format, {"changed": True})
+
+
+@pytest.mark.parametrize("output_format", ["", "xml", "txt"])
+def test_write_diff_output_rejects_unknown_formats(
+    tmp_path: Path,
+    output_format: str,
+) -> None:
+    with pytest.raises(ValueError, match="diff output format must be one of: json, yaml"):
+        sr.write_diff_output(str(tmp_path / "diff.out"), output_format, {"changed": True})
