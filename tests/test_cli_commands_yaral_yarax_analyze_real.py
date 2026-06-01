@@ -139,6 +139,11 @@ def test_yaral_real_paths(tmp_path: Path) -> None:
     parse_text = runner.invoke(yaral, ["parse", good, "--format", "text"])
     assert parse_text.exit_code == 0
 
+    for command in ("parse", "optimize", "generate"):
+        empty_output = runner.invoke(yaral, [command, good, "--output", ""])
+        assert empty_output.exit_code == 2
+        assert "path must not be empty" in empty_output.output
+
     parse_bad = runner.invoke(yaral, ["parse", bad])
     assert parse_bad.exit_code != 0
 

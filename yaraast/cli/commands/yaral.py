@@ -7,7 +7,7 @@ from typing import Any
 
 import click
 
-from yaraast.cli.utils import format_json, read_text
+from yaraast.cli.utils import _require_file_path, format_json, read_text
 from yaraast.cli.yaral_reporting import (
     display_generate_success,
     display_info,
@@ -50,6 +50,18 @@ def yaral():
     pass
 
 
+def _validate_output_path(output: str | None) -> str | None:
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output
+
+
 @yaral.command()
 @click.argument("file", type=click.Path(exists=True))
 @click.option("--enhanced", is_flag=True, help="Use enhanced parser with full YARA-L 2.0 support")
@@ -62,6 +74,7 @@ def yaral():
 )
 def parse(file: str, enhanced: bool, output: str | None, format: str):
     """Parse YARA-L file and display AST."""
+    output = _validate_output_path(output)
     try:
         content = read_text(file)
         display_parse_mode(enhanced)
@@ -123,6 +136,7 @@ def validate(file: str, strict: bool, output_json: bool):
 )
 def optimize(file: str, output: str | None, stats: bool, dry_run: bool):
     """Optimize YARA-L rules for better performance."""
+    output = _validate_output_path(output)
     try:
         content = read_text(file)
         ast = parse_yaral(content, enhanced=False)
@@ -148,6 +162,7 @@ def optimize(file: str, output: str | None, stats: bool, dry_run: bool):
 @click.option("--format", is_flag=True, help="Format the output code")
 def generate(file: str, output: str | None, format: bool):
     """Generate YARA-L code from AST or transform existing rules."""
+    output = _validate_output_path(output)
     try:
         content = read_text(file)
         ast = parse_yaral_best_effort(content)
