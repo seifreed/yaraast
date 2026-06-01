@@ -6,6 +6,7 @@ import click
 from rich.console import Console
 
 from yaraast.cli.libyara_handlers import handle_compile, handle_optimize, handle_scan
+from yaraast.cli.utils import _require_file_path
 
 console = Console()
 
@@ -13,6 +14,18 @@ console = Console()
 @click.group()
 def libyara() -> None:
     """LibYARA integration commands for compilation and scanning."""
+
+
+def _validate_output_path(output: str | None) -> str | None:
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output
 
 
 # ==============================================================================
@@ -34,6 +47,7 @@ def compile(
     stats: bool,
 ) -> None:
     """Compile YARA file using direct AST compilation."""
+    output = _validate_output_path(output)
     handle_compile(console, input_file, output, optimize, debug, stats)
 
 
