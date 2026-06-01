@@ -40,11 +40,11 @@ def _expression_text(value: Any) -> str | None:
 
     raw_value = getattr(value, "value", None)
     if raw_value is not None:
-        return str(raw_value)
+        return raw_value if isinstance(raw_value, str) else None
 
     name = getattr(value, "name", None)
     if name is not None:
-        return str(name)
+        return _require_string(name, "Expression name")
 
     return None
 
@@ -179,9 +179,10 @@ class OptimizationAnalyzer(BaseVisitor[None]):
 
     def visit_string_identifier(self, node: StringIdentifier) -> None:
         """Track string references."""
-        if self._is_local(node.name):
+        name = _require_string_reference(node.name)
+        if self._is_local(name):
             return
-        self._string_refs.setdefault(node.name, []).append(node)
+        self._string_refs.setdefault(name, []).append(node)
 
     def visit_of_expression(self, node: OfExpression) -> None:
         """Analyze 'of' expressions."""
@@ -293,7 +294,11 @@ class OptimizationAnalyzer(BaseVisitor[None]):
         comparison = extract_comparison(expression)
         if comparison is None:
             return None
-        if self._is_local_comparison_var(str(comparison["var"])):
+        variable = comparison["var"]
+        if not isinstance(variable, str):
+            msg = "Comparison variable must be a string"
+            raise TypeError(msg)
+        if self._is_local_comparison_var(variable):
             return None
         return comparison
 
@@ -304,6 +309,9 @@ class OptimizationAnalyzer(BaseVisitor[None]):
 
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
+        if not isinstance(name, str):
+            msg = "Local variable name must be a string"
+            raise TypeError(msg)
         names = [part.strip() for part in name.split(",")]
         return {local_name for local_name in names if local_name}
 
@@ -322,16 +330,20 @@ class OptimizationAnalyzer(BaseVisitor[None]):
             for item in string_set:
                 self._visit_string_set_value(item)
             return
-        if isinstance(string_set, Identifier) and string_set.name == "them":
+        if isinstance(string_set, Identifier):
+            name = _require_string(string_set.name, "String set identifier")
+            if name == "them":
+                return
+            self._visit_ast_value(string_set)
             return
         if isinstance(string_set, StringLiteral):
-            self._mark_string_set_text(string_set.value)
+            self._mark_string_set_text(_require_string_reference(string_set.value))
             return
         if isinstance(string_set, StringIdentifier):
-            self._mark_string_set_text(string_set.name)
+            self._mark_string_set_text(_require_string_reference(string_set.name))
             return
         if isinstance(string_set, StringWildcard):
-            self._mark_string_set_text(string_set.pattern)
+            self._mark_string_set_text(_require_string_reference(string_set.pattern))
             return
         if isinstance(string_set, ParenthesesExpression):
             self._visit_string_set_value(string_set.expression)
@@ -343,6 +355,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
         self._visit_ast_value(string_set)
 
     def _mark_string_set_text(self, text: str) -> None:
+        _require_string_reference(text)
         local_value = self._local_value(text)
         if local_value is not self._MISSING_LOCAL:
             if local_value is not self._LOCAL_WITHOUT_VALUE:
@@ -359,6 +372,20 @@ class OptimizationAnalyzer(BaseVisitor[None]):
     def _find_similar_rules(self, rules: list[Rule]) -> None:
         """Find rules with similar structure that could be combined."""
         find_similar_rules(self, rules)
+
+
+def _require_string(value: Any, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
+def _require_string_reference(value: Any) -> str:
+    if not isinstance(value, str):
+        msg = "String reference must be a string"
+        raise TypeError(msg)
+    return value
 
     # Helper methods
 

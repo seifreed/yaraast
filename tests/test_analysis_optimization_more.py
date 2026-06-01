@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.analysis.optimization import OptimizationAnalyzer, OptimizationReport
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import OfExpression
@@ -12,6 +16,7 @@ from yaraast.ast.expressions import (
     SetExpression,
     StringIdentifier,
     StringLiteral,
+    StringWildcard,
 )
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
@@ -153,6 +158,30 @@ def test_optimization_analyzer_tracks_string_refs_inside_of_expressions() -> Non
     report = OptimizationAnalyzer().analyze(ast)
 
     assert any("String '$s' is referenced 4 times" in s.description for s in report.suggestions)
+
+
+def test_optimization_analyzer_rejects_non_string_string_references() -> None:
+    cases = [
+        StringIdentifier(cast(Any, False)),
+        OfExpression(1, [StringIdentifier(cast(Any, False))]),
+        OfExpression(1, [StringLiteral(cast(Any, False))]),
+        OfExpression(1, [StringWildcard(cast(Any, False))]),
+        OfExpression(1, Identifier(cast(Any, False))),
+    ]
+
+    for condition in cases:
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="invalid_string_reference",
+                    strings=[PlainString(identifier="$s", value="value")],
+                    condition=condition,
+                )
+            ],
+        )
+
+        with pytest.raises(TypeError, match="string"):
+            OptimizationAnalyzer().analyze(ast)
 
 
 def test_optimization_analyzer_resolves_yarax_string_locals_in_string_sets() -> None:
