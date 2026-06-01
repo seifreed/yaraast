@@ -275,15 +275,30 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
     # Expression evaluation
 
     def visit_boolean_literal(self, node: BooleanLiteral) -> bool:
+        if not isinstance(node.value, bool):
+            msg = "BooleanLiteral value must be a boolean"
+            raise TypeError(msg)
         return node.value
 
     def visit_integer_literal(self, node: IntegerLiteral) -> int:
-        return int(node.value)
-
-    def visit_double_literal(self, node: DoubleLiteral) -> float:
+        if isinstance(node.value, bool) or not isinstance(node.value, int):
+            msg = "IntegerLiteral value must be an integer"
+            raise TypeError(msg)
         return node.value
 
+    def visit_double_literal(self, node: DoubleLiteral) -> float:
+        if isinstance(node.value, bool) or not isinstance(node.value, int | float):
+            msg = "DoubleLiteral value must be numeric"
+            raise TypeError(msg)
+        if not math.isfinite(node.value):
+            msg = "DoubleLiteral value must be finite"
+            raise TypeError(msg)
+        return float(node.value)
+
     def visit_string_literal(self, node: StringLiteral) -> str:
+        if not isinstance(node.value, str):
+            msg = "StringLiteral value must be a string"
+            raise TypeError(msg)
         return node.value
 
     def visit_identifier(self, node: Identifier) -> Any:

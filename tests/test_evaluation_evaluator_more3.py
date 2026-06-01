@@ -1352,6 +1352,25 @@ def test_evaluate_file_rejects_invalid_hex_token_values() -> None:
         YaraEvaluator(data=b"a").evaluate_file(ast)
 
 
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (BooleanLiteral(cast(Any, "false")), "BooleanLiteral value must be a boolean"),
+        (IntegerLiteral(cast(Any, True)), "IntegerLiteral value must be an integer"),
+        (IntegerLiteral(cast(Any, "0")), "IntegerLiteral value must be an integer"),
+        (DoubleLiteral(cast(Any, True)), "DoubleLiteral value must be numeric"),
+        (DoubleLiteral(cast(Any, "1.0")), "DoubleLiteral value must be numeric"),
+        (DoubleLiteral(float("nan")), "DoubleLiteral value must be finite"),
+        (StringLiteral(cast(Any, False)), "StringLiteral value must be a string"),
+    ],
+)
+def test_evaluate_file_rejects_invalid_literal_values(condition: Any, message: str) -> None:
+    ast = YaraFile(rules=[Rule("invalid_literal", condition=condition)])
+
+    with pytest.raises(TypeError, match=message):
+        YaraEvaluator(data=b"a").evaluate_file(ast)
+
+
 def test_evaluate_file_rejects_non_string_regex_patterns() -> None:
     invalid_pattern: Any = False
     ast = YaraFile(
