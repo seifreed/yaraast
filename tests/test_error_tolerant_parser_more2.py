@@ -195,6 +195,7 @@ def test_recovered_nodes_include_basic_locations() -> None:
     result = parser.parse(dedent("""
             import "pe"
             include "common.yar"
+            invalid top level tokens
             rule sample {
                 meta:
                     author = "me"

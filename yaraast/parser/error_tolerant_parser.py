@@ -8,7 +8,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.lexer.lexer_errors import LexerError
+from yaraast.errors import YaraASTError
 from yaraast.parser.error_tolerant_flow import (
     collect_rule_body,
     extract_rule_header,
@@ -26,7 +26,7 @@ from yaraast.parser.error_tolerant_recovery import (
     set_recovered_location,
 )
 from yaraast.parser.error_tolerant_types import ParserError, ParseResult, format_parser_errors
-from yaraast.parser.parser import Parser, ParserError as BaseParserError
+from yaraast.parser.parser import Parser
 
 
 class ErrorTolerantParser(Parser):
@@ -46,7 +46,7 @@ class ErrorTolerantParser(Parser):
         # Try normal parsing first
         try:
             ast = super().parse(text)
-        except (ValueError, TypeError, AttributeError, BaseParserError, LexerError):
+        except (YaraASTError, ValueError):
             # If normal parsing fails, try error-tolerant parsing
             ast = self._parse_with_recovery(text)
             return ParseResult(ast=ast, errors=list(self.errors), warnings=[])
@@ -143,11 +143,13 @@ class ErrorTolerantParser(Parser):
 
     def _parse_condition(
         self,
-        condition_text: str,
+        condition_text: str | None = None,
         line_num: int | None = None,
         raw_line: str | None = None,
     ) -> Any:
         """Parse a condition expression (simplified)."""
+        if condition_text is None:
+            return super()._parse_condition()
         return parse_condition(self, condition_text, line_num, raw_line)
 
     def _set_recovered_location(

@@ -27,10 +27,10 @@ def test_enhanced_parser_consumes_long_non_rule_prefix_and_index_end_path() -> N
     assert p2._is_at_end() is True
 
 
-def test_error_tolerant_parser_valid_input_currently_recovers_cleanly() -> None:
+def test_error_tolerant_parser_valid_input_parses_without_recovery() -> None:
     parser = ErrorTolerantParser()
     result = parser.parse("rule ok {\ncondition:\ntrue\n}\n")
 
     assert result.errors == []
-    assert parser.get_recovered_rules()
+    assert parser.get_recovered_rules() == []
     assert result.ast.rules

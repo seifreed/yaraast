@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+import pytest
+
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
+from yaraast.parser.parser import Parser
 
 
 def test_error_tolerant_parser_recovers_rules_and_imports() -> None:
@@ -58,3 +61,15 @@ def test_error_tolerant_parse_with_errors() -> None:
     assert ast is not None
     assert lexer_errors == []
     assert parser_errors
+
+
+def test_error_tolerant_parser_propagates_internal_parser_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_parser_parse(self: Parser, text: str | None = None) -> object:
+        raise AttributeError("broken parser internals")
+
+    monkeypatch.setattr(Parser, "parse", fail_parser_parse)
+
+    with pytest.raises(AttributeError, match="broken parser internals"):
+        ErrorTolerantParser().parse("rule r { condition: true }")
