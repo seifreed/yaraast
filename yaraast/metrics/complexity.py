@@ -277,7 +277,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self.visit(node.high)
 
     def visit_function_call(self, node) -> None:
-        for arg in node.arguments:
+        for arg in self._required_ast_sequence(node.arguments, "Function arguments"):
             self.visit(arg)
 
     def visit_array_access(self, node) -> None:
@@ -292,14 +292,14 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             self._mark_condition_string_usage(node.string_id)
         else:
             self._visit_ast_value(node.string_id)
-        self.visit(node.offset)
+        self.visit(self._required_ast_node(node.offset, "'at' offset"))
 
     def visit_in_expression(self, node) -> None:
         if isinstance(node.subject, str):
             self._mark_condition_string_usage(node.subject)
         else:
             self._visit_ast_value(node.subject)
-        self.visit(node.range)
+        self.visit(self._required_ast_node(node.range, "'in' range"))
 
     def visit_dictionary_access(self, node) -> None:
         self.visit(node.object)

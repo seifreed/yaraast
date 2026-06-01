@@ -9,11 +9,12 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForExpression, OfExpression
+from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     Expression,
+    FunctionCall,
     IntegerLiteral,
     SetExpression,
     StringCount,
@@ -394,6 +395,36 @@ def test_complexity_analyzer_rejects_invalid_local_variable_names(condition: Any
     ast = YaraFile(rules=[Rule("invalid_local", condition=condition)])
 
     with pytest.raises(TypeError, match="Local variable name must be a string"):
+        ComplexityAnalyzer().analyze(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (AtExpression("$a", cast(Any, False)), "'at' offset must be an AST node"),
+        (InExpression("$a", cast(Any, False)), "'in' range must be an AST node"),
+        (FunctionCall("uint8", cast(Any, False)), "Function arguments must be a list or tuple"),
+        (
+            FunctionCall("uint8", [cast(Any, object())]),
+            "Function arguments must contain AST nodes",
+        ),
+    ],
+)
+def test_complexity_analyzer_rejects_invalid_traversal_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_traversal",
+                strings=[PlainString("$a", value="x")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match=message):
         ComplexityAnalyzer().analyze(ast)
 
 
