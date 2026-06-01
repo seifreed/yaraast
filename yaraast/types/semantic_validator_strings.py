@@ -36,6 +36,14 @@ class StringIdentifierValidator(DefaultASTVisitor[None]):
         if getattr(node, "is_anonymous", False):
             return
 
+        if not isinstance(node.identifier, str):
+            self.result.add_error(
+                "String identifier must be a string",
+                node.location,
+                "Use a string identifier such as '$s1'.",
+            )
+            return
+
         # Normalize: always use $ prefix for consistency with type environment
         identifier = node.identifier if node.identifier.startswith("$") else f"${node.identifier}"
 

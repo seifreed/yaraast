@@ -53,6 +53,23 @@ def test_string_identifier_validator_covers_plain_hex_regex_and_empty_id() -> No
     assert validator.current_rule_strings == {"$a", "$b"}
 
 
+def test_semantic_validator_reports_non_string_string_definition_identifiers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_string_identifier",
+                strings=[PlainString(identifier=cast(Any, False), value="x")],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any(error.message == "String identifier must be a string" for error in result.errors)
+
+
 def test_string_identifier_validator_ignores_anonymous_internal_identifiers() -> None:
     ast = YaraFile(
         rules=[
