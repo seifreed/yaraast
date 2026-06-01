@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from pathlib import Path
 import re
 
@@ -64,10 +65,16 @@ def parse_externals(external: object) -> dict[str, str]:
     return externals
 
 
-def read_test_data(test_data_path: str | None) -> bytes | None:
+def read_test_data(test_data_path: str | PathLike[str] | None) -> bytes | None:
     """Read test data if provided."""
-    if not test_data_path:
+    if test_data_path is None:
         return None
+    if not isinstance(test_data_path, str | PathLike):
+        msg = "test data path must be a string or path-like object"
+        raise TypeError(msg)
+    if isinstance(test_data_path, str) and not test_data_path:
+        msg = "test data path cannot be empty"
+        raise ValueError(msg)
 
     try:
         with Path(test_data_path).open("rb") as f:

@@ -29,6 +29,25 @@ def test_read_test_data_without_path_returns_none() -> None:
     assert vs.read_test_data(None) is None
 
 
+def test_read_test_data_accepts_string_and_path_inputs(tmp_path: Path) -> None:
+    data_path = tmp_path / "sample.bin"
+    data_path.write_bytes(b"abc")
+
+    assert vs.read_test_data(data_path) == b"abc"
+    assert vs.read_test_data(str(data_path)) == b"abc"
+
+
+@pytest.mark.parametrize("test_data_path", [False, 0, object()])
+def test_read_test_data_rejects_invalid_path_types(test_data_path: Any) -> None:
+    with pytest.raises(TypeError, match="test data path must be a string or path-like object"):
+        vs.read_test_data(cast(Any, test_data_path))
+
+
+def test_read_test_data_rejects_empty_path() -> None:
+    with pytest.raises(ValueError, match="test data path cannot be empty"):
+        vs.read_test_data("")
+
+
 def test_yarax_check_varies_with_strict_flag() -> None:
     ast = _ast_with_regex_issue()
 
