@@ -25,10 +25,15 @@ SLICE_PATTERN = r"(?:[A-Za-z_$]\w*(?:\s*\([^)]*\))?|\"\"|\])\s*\[[^\]\n]*:[^\]\n
 TUPLE_INDEXING_PATTERN = r"\([^()\n]*,[^()\n]*\)\s*\["
 
 
-def parse_yarax_content(content: str):
-    if not isinstance(content, str):
-        msg = "content must be a string"
+def _require_string(value: object, name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{name} must be a string"
         raise TypeError(msg)
+    return value
+
+
+def parse_yarax_content(content: str):
+    content = _require_string(content, "content")
     parser = YaraXParser(content)
     ast = parser.parse()
     generator = YaraXGenerator()
@@ -55,6 +60,7 @@ def convert_yara_to_yarax(content: str) -> str:
 
 
 def convert_yarax_to_yara(content: str) -> str:
+    content = _require_string(content, "content")
     parser = YaraXParser(content)
     ast = parser.parse()
     checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())

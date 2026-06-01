@@ -9,11 +9,16 @@ from yaraast.yaral.parser import YaraLParser
 from yaraast.yaral.validator import YaraLValidator
 
 
+def _require_string(value: object, name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
 def parse_yaral(content: str, enhanced: bool):
     """Parse YARA-L content using selected parser."""
-    if not isinstance(content, str):
-        msg = "content must be a string"
-        raise TypeError(msg)
+    content = _require_string(content, "content")
     if not isinstance(enhanced, bool):
         msg = "enhanced must be a boolean"
         raise TypeError(msg)
@@ -46,6 +51,7 @@ def generate_yaral(ast) -> str:
 
 def format_yaral_code(code: str) -> str:
     """Format YARA-L code with proper indentation."""
+    code = _require_string(code, "code")
     lines = code.split("\n")
     formatted_lines = []
     indent = 0

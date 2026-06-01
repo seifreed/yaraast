@@ -18,6 +18,12 @@ def test_format_yaral_code_preserves_blank_lines() -> None:
     assert "\n\n" in formatted
 
 
+@pytest.mark.parametrize("code", [None, 123, object()])
+def test_format_yaral_code_rejects_invalid_code_types(code: Any) -> None:
+    with pytest.raises(TypeError, match="code must be a string"):
+        ys.format_yaral_code(cast(str, code))
+
+
 def test_format_line_handles_section_keyword_without_suffix() -> None:
     line, new_indent = ys._format_line(
         "meta", 0, ["rule", "meta", "events", "match", "condition", "outcome", "options"]

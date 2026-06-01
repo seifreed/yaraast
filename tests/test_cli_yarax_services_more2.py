@@ -121,6 +121,12 @@ rule native_yarax {
     assert "with statements" in message
 
 
+@pytest.mark.parametrize("content", [None, 123, object()])
+def test_yarax_to_yara_conversion_rejects_invalid_content_types(content: Any) -> None:
+    with pytest.raises(TypeError, match="content must be a string"):
+        ys.convert_yarax_to_yara(cast(str, content))
+
+
 def test_yarax_services_compatibility_check() -> None:
     ast, _generated = ys.parse_yarax_content("rule c { condition: true }")
     result_non_strict = ys.check_yarax_compatibility(ast, strict=False)
