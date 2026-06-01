@@ -70,6 +70,21 @@ def test_json_serializer_rejects_empty_input_path() -> None:
         serializer.deserialize(input_path="")
 
 
+@pytest.mark.parametrize("output_path", [False, 0, object()])
+def test_json_serializer_rejects_invalid_output_path_types(output_path: Any) -> None:
+    serializer = JsonSerializer()
+    ast = _parse_yara("rule sample { condition: true }")
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        serializer.serialize(ast, output_path=cast(Any, output_path))
+
+
+def test_json_serializer_rejects_empty_output_path() -> None:
+    serializer = JsonSerializer()
+    ast = _parse_yara("rule sample { condition: true }")
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        serializer.serialize(ast, output_path="")
+
+
 @pytest.mark.parametrize("yaml_str", [False, 0, [], 123, object()])
 def test_yaml_serializer_rejects_non_string_input(yaml_str: Any) -> None:
     serializer = YamlSerializer()
@@ -88,6 +103,21 @@ def test_yaml_serializer_rejects_empty_input_path() -> None:
     serializer = YamlSerializer()
     with pytest.raises(ValueError, match="input_path must not be empty"):
         serializer.deserialize(input_path="")
+
+
+@pytest.mark.parametrize("output_path", [False, 0, object()])
+def test_yaml_serializer_rejects_invalid_output_path_types(output_path: Any) -> None:
+    serializer = YamlSerializer()
+    ast = _parse_yara("rule sample { condition: true }")
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        serializer.serialize(ast, output_path=cast(Any, output_path))
+
+
+def test_yaml_serializer_rejects_empty_output_path() -> None:
+    serializer = YamlSerializer()
+    ast = _parse_yara("rule sample { condition: true }")
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        serializer.serialize(ast, output_path="")
 
 
 def test_json_serializer_rejects_malformed_json() -> None:

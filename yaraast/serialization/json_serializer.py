@@ -195,8 +195,8 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         serialized = self._serialize_with_metadata(ast)
         json_str = json.dumps(serialized, indent=JSON_DEFAULT_INDENT, ensure_ascii=False)
 
-        if output_path:
-            write_text(output_path, json_str)
+        if output_path is not None:
+            write_text(require_input_path(output_path, "output_path"), json_str)
 
         return json_str
 
