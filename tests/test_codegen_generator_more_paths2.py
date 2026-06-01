@@ -1626,6 +1626,32 @@ def test_codegen_generators_reject_invalid_string_references(condition: Conditio
 
 
 @pytest.mark.parametrize(
+    "string_set",
+    [
+        StringLiteral(cast(Any, False)),
+        SetExpression([StringLiteral(cast(Any, False))]),
+        Identifier(cast(Any, False)),
+        SetExpression([Identifier(cast(Any, False))]),
+        StringWildcard(cast(Any, False)),
+        SetExpression([StringWildcard(cast(Any, False))]),
+    ],
+)
+def test_codegen_generators_reject_non_string_string_set_fields(string_set: Any) -> None:
+    ast = YaraFile(
+        rules=[Rule(name="invalid_string_set_field", condition=OfExpression("any", string_set))]
+    )
+
+    with pytest.raises(TypeError, match="must be a string"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="must be a string"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="must be a string"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="must be a string"):
+        PrettyPrinter().pretty_print(ast)
+
+
+@pytest.mark.parametrize(
     ("string_set", "expected"),
     [
         ("$a", "any of ($a)"),

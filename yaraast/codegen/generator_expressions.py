@@ -32,13 +32,15 @@ def _render_string_set(gen: Any, string_set: Any) -> str:
     if isinstance(string_set, StringIdentifier):
         return f"({gen.visit(string_set)})"
     if isinstance(string_set, StringWildcard):
-        if not string_set.pattern.startswith("$"):
-            return f"({_render_rule_wildcard(string_set.pattern)})"
+        pattern = _require_string_set_field(string_set.pattern, "String wildcard")
+        if not pattern.startswith("$"):
+            return f"({_render_rule_wildcard(pattern)})"
         return f"({gen.visit(string_set)})"
     if isinstance(string_set, Identifier):
-        if string_set.name != "them" and not string_set.name.startswith("$"):
-            return f"({_render_rule_identifier(string_set.name)})"
-        return _render_single_string_set_text(string_set.name)
+        name = _require_string_set_field(string_set.name, "String set identifier")
+        if name != "them" and not name.startswith("$"):
+            return f"({_render_rule_identifier(name)})"
+        return _render_single_string_set_text(name)
     if isinstance(string_set, ParenthesesExpression):
         return _render_string_set(gen, string_set.expression)
     if isinstance(string_set, SetExpression):
@@ -77,21 +79,25 @@ def _is_rule_set_item(item: Any) -> bool:
     from yaraast.ast.expressions import Identifier, StringWildcard
 
     if isinstance(item, Identifier):
-        return item.name != "them" and not item.name.startswith("$")
-    return isinstance(item, StringWildcard) and not item.pattern.startswith("$")
+        return isinstance(item.name, str) and item.name != "them" and not item.name.startswith("$")
+    return (
+        isinstance(item, StringWildcard)
+        and isinstance(item.pattern, str)
+        and not item.pattern.startswith("$")
+    )
 
 
 def _is_string_set_item(item: Any) -> bool:
     from yaraast.ast.expressions import Identifier, StringIdentifier, StringLiteral, StringWildcard
 
     if isinstance(item, Identifier):
-        return item.name == "them" or item.name.startswith("$")
+        return isinstance(item.name, str) and (item.name == "them" or item.name.startswith("$"))
     if isinstance(item, StringIdentifier):
         return True
     if isinstance(item, StringWildcard):
-        return item.pattern.startswith("$")
+        return isinstance(item.pattern, str) and item.pattern.startswith("$")
     if isinstance(item, StringLiteral):
-        return item.value == "them" or item.value.startswith("$")
+        return isinstance(item.value, str) and (item.value == "them" or item.value.startswith("$"))
     return bool(isinstance(item, str))
 
 
@@ -107,7 +113,7 @@ def _render_rule_set_item(item: Any) -> str:
 
 
 def _render_rule_identifier(name: object) -> str:
-    text = str(name)
+    text = _require_string_set_field(name, "String or rule set identifier")
     try:
         return validate_yara_identifier(text, "rule")
     except ValueError as exc:
@@ -116,7 +122,7 @@ def _render_rule_identifier(name: object) -> str:
 
 
 def _render_rule_wildcard(pattern: object) -> str:
-    text = str(pattern)
+    text = _require_string_set_field(pattern, "String or rule set wildcard")
     if text.startswith("$") or not text.endswith("*") or text == "*":
         msg = f"Invalid string or rule set wildcard '{text}' for libyara output"
         raise ValueError(msg)
@@ -125,10 +131,17 @@ def _render_rule_wildcard(pattern: object) -> str:
 
 
 def _render_single_string_set_text(string_set: object) -> str:
-    text = str(string_set)
+    text = _require_string_set_field(string_set, "String set item")
     if text == "them":
         return text
     return f"({validate_string_set_item_text(text)})"
+
+
+def _require_string_set_field(value: object, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string for libyara output"
+        raise TypeError(msg)
+    return value
 
 
 def _render_string_set_item(gen: Any, item: Any) -> str:
