@@ -31,6 +31,8 @@ from yaraast.cli.utils import format_json
 
 StringDef = PlainString | HexString | RegexString
 
+_STRING_OUTPUT_FORMATS = frozenset({"json", "text"})
+
 __all__ = [
     "_display_graph_statistics",
     "_display_graphviz_installation_help",
@@ -158,8 +160,18 @@ def _display_pattern_statistics(generator: Any) -> None:  # generator typing: pr
         pass
 
 
-def _format_string_analysis_output(analysis: dict[str, Any], format: str) -> str:
+def _require_string_output_format(format: object) -> str:
+    if not isinstance(format, str):
+        raise TypeError("string analysis output format must be a string")
+    if format not in _STRING_OUTPUT_FORMATS:
+        valid = ", ".join(sorted(_STRING_OUTPUT_FORMATS))
+        raise ValueError(f"string analysis output format must be one of: {valid}")
+    return format
+
+
+def _format_string_analysis_output(analysis: dict[str, Any], format: object) -> str:
     """Format analysis results for output."""
+    format = _require_string_output_format(format)
     if format == "json":
         return format_json(analysis)
     return _format_strings_text(analysis)

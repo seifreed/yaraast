@@ -10,6 +10,8 @@ from yaraast.cli.metrics_services import build_complexity_payload
 from yaraast.cli.utils import format_json
 from yaraast.metrics.complexity_model import ComplexityMetrics
 
+_OUTPUT_FORMATS = frozenset({"json", "text"})
+
 
 def format_complexity_text(metrics: ComplexityMetrics) -> str:
     lines: list[str] = []
@@ -114,7 +116,17 @@ def _format_quality_section(metrics: ComplexityMetrics) -> list[str]:
     return lines
 
 
-def format_complexity_output(metrics: ComplexityMetrics, fmt: str) -> str:
+def _require_output_format(fmt: object) -> str:
+    if not isinstance(fmt, str):
+        raise TypeError("complexity output format must be a string")
+    if fmt not in _OUTPUT_FORMATS:
+        valid = ", ".join(sorted(_OUTPUT_FORMATS))
+        raise ValueError(f"complexity output format must be one of: {valid}")
+    return fmt
+
+
+def format_complexity_output(metrics: ComplexityMetrics, fmt: object) -> str:
+    fmt = _require_output_format(fmt)
     return (
         format_json(build_complexity_payload(metrics))
         if fmt == "json"

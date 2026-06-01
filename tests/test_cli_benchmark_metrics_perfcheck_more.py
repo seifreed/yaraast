@@ -292,6 +292,17 @@ def test_metrics_reporting_complexity_and_string_outputs(
     assert '"quality_score"' in json_output
     assert _format_complexity_output(metrics, "text").startswith("YARA Rule Complexity Analysis")
 
+    for invalid_format in [None, 123]:
+        with pytest.raises(TypeError, match="complexity output format must be a string"):
+            _format_complexity_output(metrics, invalid_format)
+
+    for unknown_format in ["", "xml", "yaml"]:
+        with pytest.raises(
+            ValueError,
+            match="complexity output format must be one of: json, text",
+        ):
+            _format_complexity_output(metrics, unknown_format)
+
     warn_message, warn_ok = complexity_quality_message(10.0, 70)
     pass_message, pass_ok = complexity_quality_message(90.0, 70)
     assert warn_ok is False and "warning" in warn_message.lower()
@@ -308,6 +319,17 @@ def test_metrics_reporting_complexity_and_string_outputs(
 
     assert _format_string_analysis_output(analysis, "json").startswith("{")
     assert _format_string_analysis_output(analysis, "text").startswith("YARA String Analysis")
+
+    for invalid_format in [None, 123]:
+        with pytest.raises(TypeError, match="string analysis output format must be a string"):
+            _format_string_analysis_output(analysis, invalid_format)
+
+    for unknown_format in ["", "xml", "yaml"]:
+        with pytest.raises(
+            ValueError,
+            match="string analysis output format must be one of: json, text",
+        ):
+            _format_string_analysis_output(analysis, unknown_format)
 
     string_path = tmp_path / "strings.txt"
     _output_string_analysis_results(string_text, str(string_path))
