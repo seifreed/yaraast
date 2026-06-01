@@ -267,6 +267,16 @@ def test_document_context_symbol_indexes_invalidate_on_update() -> None:
     assert doc.find_symbol_record("include", "common.yar") is not None
 
 
+def test_document_context_rejects_invalid_text_inputs() -> None:
+    with pytest.raises(TypeError, match="Document text must be a string"):
+        DocumentContext("file://sample.yar", cast(Any, object()))
+
+    doc = DocumentContext("file://sample.yar", "rule r { condition: true }")
+
+    with pytest.raises(TypeError, match="Document text must be a string"):
+        doc.update(cast(Any, object()))
+
+
 def test_runtime_indexes_yaral_sections_as_section_symbols(tmp_path: Path) -> None:
     rule_file = tmp_path / "login.yar"
     text = """

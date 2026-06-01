@@ -55,6 +55,20 @@ def test_semantic_tokens_range_rejects_non_range_inputs() -> None:
         )
 
 
+@pytest.mark.parametrize("text", [None, 1, b"rule r { condition: true }"])
+def test_semantic_tokens_reject_non_string_text(text: Any) -> None:
+    provider = SemanticTokensProvider()
+
+    with pytest.raises(TypeError, match="Semantic token text must be a string"):
+        provider.get_semantic_tokens(cast(str, text))
+
+    with pytest.raises(TypeError, match="Semantic token text must be a string"):
+        provider.get_semantic_tokens_range(
+            cast(str, text),
+            Range(start=Position(line=0, character=0), end=Position(line=0, character=1)),
+        )
+
+
 def test_semantic_tokens_range_excludes_tokens_outside_nonempty_range() -> None:
     provider = SemanticTokensProvider()
     text = "rule sample { condition: true }\n"

@@ -34,6 +34,13 @@ from yaraast.lsp.document_types import (
 from yaraast.unified_parser import UnifiedParser
 
 
+def _require_document_string(value: object, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
 class _SymbolIndex:
     """Internal helper managing symbol indexing for a DocumentContext."""
 
@@ -95,8 +102,11 @@ class DocumentContext:
         is_open: bool = False,
         language_mode: LanguageMode = LanguageMode.AUTO,
     ) -> None:
-        self.uri = uri
-        self.text = text
+        self.uri = _require_document_string(uri, "Document URI")
+        self.text = _require_document_string(text, "Document text")
+        if version is not None and (isinstance(version, bool) or not isinstance(version, int)):
+            msg = "Document version must be an integer or None"
+            raise TypeError(msg)
         self.version = version
         self.is_open = is_open
         self.language_mode = language_mode
@@ -135,9 +145,15 @@ class DocumentContext:
         return uri_to_path(self.uri)
 
     def update(self, text: str, version: int | None = None, *, is_open: bool | None = None) -> None:
-        self.text = text
+        self.text = _require_document_string(text, "Document text")
+        if version is not None and (isinstance(version, bool) or not isinstance(version, int)):
+            msg = "Document version must be an integer or None"
+            raise TypeError(msg)
         self.version = version
         if is_open is not None:
+            if not isinstance(is_open, bool):
+                msg = "Document is_open flag must be a boolean"
+                raise TypeError(msg)
             self.is_open = is_open
         self._ast = None
         self._parse_error = None
@@ -147,6 +163,9 @@ class DocumentContext:
         self._analysis_cache = {}
 
     def set_language_mode(self, language_mode: LanguageMode) -> None:
+        if not isinstance(language_mode, LanguageMode):
+            msg = "Document language_mode must be a LanguageMode"
+            raise TypeError(msg)
         if self.language_mode == language_mode:
             return
         self.language_mode = language_mode

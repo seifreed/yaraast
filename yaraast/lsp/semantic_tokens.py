@@ -70,6 +70,13 @@ def _require_range(value: object) -> Range:
     return value
 
 
+def _require_text(value: object) -> str:
+    if not isinstance(value, str):
+        msg = "Semantic token text must be a string"
+        raise TypeError(msg)
+    return value
+
+
 class SemanticTokensProvider:
     """Provides semantic tokens for advanced syntax highlighting."""
 
@@ -94,6 +101,7 @@ class SemanticTokensProvider:
         Returns:
             SemanticTokens with token information
         """
+        text = _require_text(text)
         ctx = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
         if ctx is not None:
             cached = ctx.get_cached("semantic_tokens:full")
@@ -126,6 +134,7 @@ class SemanticTokensProvider:
         self, text: str, range_: Range, uri: str | None = None
     ) -> SemanticTokens:
         """Get semantic tokens for a specific range."""
+        text = _require_text(text)
         range_ = _require_range(range_)
         ctx = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
         cache_key = None
