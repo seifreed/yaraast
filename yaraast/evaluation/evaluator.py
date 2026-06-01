@@ -1136,7 +1136,10 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         }
 
     def _normalize_string_id(self, string_id: Any) -> str:
-        text = str(string_id)
+        if not isinstance(string_id, str):
+            msg = "String identifier must be a string"
+            raise TypeError(msg)
+        text = string_id
         if text in {"", "$"}:
             implicit = self.context.variables.get("$")
             if isinstance(implicit, str):

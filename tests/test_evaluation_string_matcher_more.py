@@ -69,6 +69,17 @@ def test_string_matcher_match_string_for_plain_hex_regex_and_unknown_type() -> N
     assert matcher.match_string(object(), b"abc") == []
 
 
+def test_string_matcher_rejects_non_string_string_identifiers() -> None:
+    invalid_identifier: Any = False
+    plain = PlainString(invalid_identifier, value="abc", modifiers=[])
+
+    matcher = StringMatcher()
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        matcher.match_all([plain], b"abc")
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        matcher.match_string(plain, b"abc")
+
+
 def test_string_matcher_match_string_replaces_previous_match_state() -> None:
     matcher = StringMatcher()
 

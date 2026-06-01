@@ -45,7 +45,10 @@ class StringMatcher:
         self._cache: dict[str, Any] = {}
 
     def _string_identifier(self, string_def: object) -> str:
-        identifier = str(getattr(string_def, "identifier", ""))
+        identifier = getattr(string_def, "identifier", "")
+        if not isinstance(identifier, str):
+            msg = "String identifier must be a string"
+            raise TypeError(msg)
         return identifier if identifier.startswith("$") else f"${identifier}"
 
     @overload

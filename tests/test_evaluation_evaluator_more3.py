@@ -1286,6 +1286,37 @@ def test_evaluate_file_rejects_empty_rule_names() -> None:
         YaraEvaluator().evaluate_file(ast)
 
 
+def test_evaluate_file_rejects_non_string_string_definition_identifiers() -> None:
+    invalid_identifier: Any = False
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_string_identifier",
+                strings=[PlainString(invalid_identifier, value="a")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        YaraEvaluator(data=b"a").evaluate_file(ast)
+
+
+def test_evaluate_file_rejects_non_string_string_reference_identifiers() -> None:
+    invalid_identifier: Any = False
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_string_reference",
+                condition=StringIdentifier(invalid_identifier),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        YaraEvaluator(data=b"a").evaluate_file(ast)
+
+
 def test_string_count_offset_length_and_wildcard() -> None:
     ev = YaraEvaluator(data=b"xxabxxab")
     rule = Rule(
