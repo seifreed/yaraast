@@ -35,6 +35,12 @@ if TYPE_CHECKING:
     import io
 
 
+def _validate_optional_callable(value: object, name: str) -> None:
+    if value is not None and not callable(value):
+        msg = f"{name} must be callable"
+        raise TypeError(msg)
+
+
 class StreamingParser:
     """Parse large YARA files efficiently using streaming."""
 
@@ -63,6 +69,11 @@ class StreamingParser:
 
         if max_memory_mb is not None:
             validate_positive_int_setting(max_memory_mb, "max_memory_mb")
+        if not isinstance(enable_gc, bool):
+            msg = "enable_gc must be a boolean"
+            raise TypeError(msg)
+        _validate_optional_callable(progress_callback, "progress_callback")
+        _validate_optional_callable(dialect_parser_factory, "dialect_parser_factory")
 
         self.buffer_size = buffer_size
         self.max_memory_mb = max_memory_mb
@@ -89,6 +100,7 @@ class StreamingParser:
             Parsed rules one at a time
 
         """
+        _validate_optional_callable(callback, "callback")
         file_path = Path(file_path)
         if file_path.stat().st_size == 0:
             return
@@ -116,6 +128,7 @@ class StreamingParser:
             Parsed rules one at a time
 
         """
+        _validate_optional_callable(callback, "callback")
         chunks: list[str] = []
         decoder = codecs.getincrementaldecoder("utf-8")("replace")
         read_bytes = False
@@ -268,6 +281,10 @@ class StreamingParser:
             List of parsed rules
 
         """
+        if not callable(progress_callback):
+            msg = "progress_callback must be callable"
+            raise TypeError(msg)
+
         file_path = Path(file_path)
         file_size = file_path.stat().st_size
         rules: list[Rule] = []

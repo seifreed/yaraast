@@ -37,6 +37,44 @@ def test_streaming_parser_bytes_stream_remaining_buffer_and_reset(tmp_path: Path
     assert results[0].status.name == "ERROR"
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"enable_gc": "true"}, "enable_gc must be a boolean"),
+        ({"progress_callback": "bad"}, "progress_callback must be callable"),
+        ({"dialect_parser_factory": "bad"}, "dialect_parser_factory must be callable"),
+    ],
+)
+def test_streaming_parser_rejects_invalid_constructor_options(
+    kwargs: dict[str, Any], message: str
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        StreamingParser(**kwargs)
+
+
+def test_streaming_parser_parse_file_rejects_non_callable_callback(tmp_path: Path) -> None:
+    empty_file = tmp_path / "empty.yar"
+    empty_file.write_text("", encoding="utf-8")
+
+    with pytest.raises(TypeError, match="callback must be callable"):
+        list(StreamingParser().parse_file(empty_file, callback=cast(Any, "bad")))
+
+
+def test_streaming_parser_parse_stream_rejects_non_callable_callback() -> None:
+    with pytest.raises(TypeError, match="callback must be callable"):
+        list(StreamingParser().parse_stream(io.StringIO(""), callback=cast(Any, "bad")))
+
+
+def test_streaming_parser_parse_with_progress_rejects_non_callable_callback(
+    tmp_path: Path,
+) -> None:
+    empty_file = tmp_path / "empty.yar"
+    empty_file.write_text("", encoding="utf-8")
+
+    with pytest.raises(TypeError, match="progress_callback must be callable"):
+        StreamingParser().parse_with_progress(empty_file, cast(Any, None))
+
+
 def test_streaming_parser_emits_falsy_present_rule(monkeypatch: pytest.MonkeyPatch) -> None:
     class FalsyRule(Rule):
         def __bool__(self) -> bool:
