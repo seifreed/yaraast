@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -16,6 +18,7 @@ from yaraast.ast.conditions import (
 )
 from yaraast.ast.expressions import (
     ArrayAccess,
+    BooleanLiteral,
     Identifier,
     IntegerLiteral,
     MemberAccess,
@@ -23,6 +26,7 @@ from yaraast.ast.expressions import (
     RangeExpression,
     SetExpression,
     StringLiteral,
+    StringWildcard,
     UnaryExpression,
 )
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
@@ -33,6 +37,7 @@ from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 from yaraast.metrics.dependency_graph_helpers import render_graph, rule_info
 from yaraast.metrics.dependency_graph_utils import build_dependency_graph
 from yaraast.parser import Parser
+from yaraast.yarax.ast_nodes import WithDeclaration, WithStatement
 
 
 class _RaisingDot:
@@ -266,6 +271,59 @@ rule caller {
 
     assert gen.dependencies["caller"] == {"a1", "a2"}
     assert gen.dependencies.get("other", set()) == set()
+
+
+@pytest.mark.parametrize(
+    "analyze",
+    [
+        lambda ast: DependencyGraphGenerator().visit(ast),
+        build_dependency_graph,
+    ],
+)
+def test_dependency_graph_rejects_invalid_rule_wildcard_pattern(analyze: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "caller",
+                condition=OfExpression("any", StringWildcard(cast(Any, False))),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String wildcard pattern must be a string"):
+        analyze(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        ForExpression(
+            quantifier="any",
+            variable=cast(Any, False),
+            iterable=SetExpression([IntegerLiteral(1)]),
+            body=BooleanLiteral(True),
+        ),
+        WithStatement(
+            declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
+            body=BooleanLiteral(True),
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "analyze",
+    [
+        lambda ast: DependencyGraphGenerator().visit(ast),
+        build_dependency_graph,
+    ],
+)
+def test_dependency_graph_rejects_invalid_local_variable_names(
+    analyze: Any,
+    condition: Any,
+) -> None:
+    ast = YaraFile(rules=[Rule("caller", condition=condition)])
+
+    with pytest.raises(TypeError, match="Local variable name must be a string"):
+        analyze(ast)
 
 
 def test_dependency_graph_generator_complexity_graph(tmp_path: Path) -> None:

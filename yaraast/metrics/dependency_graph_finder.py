@@ -103,7 +103,9 @@ class DependencyFinder(MetricsVisitorBase):
         self.visit(node.right)
 
     def visit_string_wildcard(self, node) -> None:
-        pattern = str(node.pattern)
+        if not isinstance(node.pattern, str):
+            raise TypeError("String wildcard pattern must be a string")
+        pattern = node.pattern
         if pattern.startswith("$") or not pattern.endswith("*"):
             return
 
@@ -179,6 +181,8 @@ class DependencyFinder(MetricsVisitorBase):
 
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
+        if not isinstance(name, str):
+            raise TypeError("Local variable name must be a string")
         names = [part.strip() for part in name.split(",")]
         return {local_name for local_name in names if local_name}
 
