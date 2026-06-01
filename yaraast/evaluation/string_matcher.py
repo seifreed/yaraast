@@ -51,6 +51,12 @@ class StringMatcher:
             raise TypeError(msg)
         return identifier if identifier.startswith("$") else f"${identifier}"
 
+    def _match_identifier(self, identifier: object) -> str:
+        if not isinstance(identifier, str):
+            msg = "String identifier must be a string"
+            raise TypeError(msg)
+        return identifier if identifier.startswith("$") else f"${identifier}"
+
     def _string_modifiers(self, string_def: object) -> list[Any]:
         modifiers = getattr(string_def, "modifiers", [])
         if not isinstance(modifiers, list | tuple):
@@ -1142,18 +1148,18 @@ class StringMatcher:
 
     def get_match_count(self, identifier: str) -> int:
         """Get number of matches for a string."""
-        identifier = identifier if identifier.startswith("$") else f"${identifier}"
+        identifier = self._match_identifier(identifier)
         return len(self.matches.get(identifier, []))
 
     def get_match_count_in_range(self, identifier: str, start: int, end: int) -> int:
         """Get number of matches whose offsets are within a half-open range."""
-        identifier = identifier if identifier.startswith("$") else f"${identifier}"
+        identifier = self._match_identifier(identifier)
         matches = self.matches.get(identifier, [])
         return sum(1 for match in matches if start <= match.offset < end)
 
     def get_match_offset(self, identifier: str, index: int = 0) -> int | None:
         """Get offset of a specific match."""
-        identifier = identifier if identifier.startswith("$") else f"${identifier}"
+        identifier = self._match_identifier(identifier)
         matches = self.matches.get(identifier, [])
         if 0 <= index < len(matches):
             return matches[index].offset
@@ -1161,7 +1167,7 @@ class StringMatcher:
 
     def get_match_length(self, identifier: str, index: int = 0) -> int | None:
         """Get length of a specific match."""
-        identifier = identifier if identifier.startswith("$") else f"${identifier}"
+        identifier = self._match_identifier(identifier)
         matches = self.matches.get(identifier, [])
         if 0 <= index < len(matches):
             return matches[index].length
@@ -1169,12 +1175,12 @@ class StringMatcher:
 
     def string_at(self, identifier: str, offset: int) -> bool:
         """Check if string matches at specific offset."""
-        identifier = identifier if identifier.startswith("$") else f"${identifier}"
+        identifier = self._match_identifier(identifier)
         matches = self.matches.get(identifier, [])
         return any(m.offset == offset for m in matches)
 
     def string_in(self, identifier: str, start: int, end: int) -> bool:
         """Check if string matches within range."""
-        identifier = identifier if identifier.startswith("$") else f"${identifier}"
+        identifier = self._match_identifier(identifier)
         matches = self.matches.get(identifier, [])
         return any(start <= m.offset < end for m in matches)

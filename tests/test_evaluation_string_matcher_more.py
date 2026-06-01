@@ -80,6 +80,28 @@ def test_string_matcher_rejects_non_string_string_identifiers() -> None:
         matcher.match_string(plain, b"abc")
 
 
+@pytest.mark.parametrize(
+    ("method_name", "args"),
+    [
+        ("get_match_count", ()),
+        ("get_match_count_in_range", (0, 1)),
+        ("get_match_offset", ()),
+        ("get_match_length", ()),
+        ("string_at", (0,)),
+        ("string_in", (0, 1)),
+    ],
+)
+def test_string_matcher_rejects_non_string_match_query_identifiers(
+    method_name: str,
+    args: tuple[int, ...],
+) -> None:
+    matcher = StringMatcher()
+    invalid_identifier: Any = False
+
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        getattr(matcher, method_name)(invalid_identifier, *args)
+
+
 def test_string_matcher_rejects_invalid_string_modifier_collections() -> None:
     invalid_modifiers: Any = False
     plain = PlainString("$a", value="abc", modifiers=[])
