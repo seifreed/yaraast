@@ -7,6 +7,7 @@ from textwrap import dedent
 import pytest
 
 from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, Identifier, StringIdentifier
+from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.error_tolerant_types import ParserError
@@ -92,6 +93,30 @@ def test_error_tolerant_parser_preserves_rule_modifiers() -> None:
     assert rule.is_private is True
     assert rule.is_global is True
     assert [str(modifier) for modifier in rule.modifiers] == ["private", "global"]
+
+
+def test_error_tolerant_recovery_preserves_falsy_present_rule(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FalsyRule(Rule):
+        def __bool__(self) -> bool:
+            return False
+
+    recovered = FalsyRule(name="recovered", condition=BooleanLiteral(True))
+    parser = ErrorTolerantParser()
+    parser.lines = dedent("""
+        private rule recovered {
+            condition:
+                true
+        }
+        """).splitlines()
+    monkeypatch.setattr(parser, "_create_rule_from_body", lambda *_args, **_kwargs: recovered)
+
+    ast = parser._parse_with_recovery("\n".join(parser.lines))
+
+    assert ast.rules == [recovered]
+    assert parser.get_recovered_rules() == [recovered]
+    assert [str(modifier) for modifier in recovered.modifiers] == ["private"]
 
 
 def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:

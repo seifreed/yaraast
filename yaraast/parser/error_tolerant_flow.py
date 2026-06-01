@@ -25,21 +25,21 @@ def parse_with_recovery(parser) -> YaraFile:
 
         if line.startswith("import "):
             import_stmt = parser._parse_import_line(line, line_index)
-            if import_stmt:
+            if import_stmt is not None:
                 yara_file.imports.append(import_stmt)
             line_index += 1
             continue
 
         if line.startswith("include "):
             include_stmt = parser._parse_include_line(line, line_index)
-            if include_stmt:
+            if include_stmt is not None:
                 yara_file.includes.append(include_stmt)
             line_index += 1
             continue
 
         if line.startswith("rule ") or line.startswith("private ") or line.startswith("global "):
             rule, lines_consumed = parse_rule_with_recovery(parser, line_index)
-            if rule:
+            if rule is not None:
                 yara_file.rules.append(rule)
                 parser.recovered_rules.append(rule)
             line_index += lines_consumed
@@ -63,7 +63,7 @@ def parse_rule_with_recovery(parser, start_line: int) -> tuple[Rule | None, int]
     rule = parser._create_rule_from_body(
         rule_name, tags, body_lines=rule_body_lines, start_line=start_line
     )
-    if rule:
+    if rule is not None:
         rule.modifiers = Rule._normalize_modifiers(modifiers)
     return rule, current_line - start_line + 1
 
