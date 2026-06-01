@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from os import PathLike, fspath
 from pathlib import Path
 import tempfile
 from typing import TYPE_CHECKING, Any, overload
@@ -77,7 +78,7 @@ class BatchProcessor:
         max_workers: int | None = None,
         max_memory_mb: int = 1000,
         batch_size: int = 50,
-        temp_dir: str | None = None,
+        temp_dir: str | PathLike[str] | None = None,
         progress_callback: Callable[[str, int, int], None] | None = None,
     ) -> None:
         """Initialize batch processor."""
@@ -91,13 +92,28 @@ class BatchProcessor:
         self.max_workers = max_workers if max_workers is not None else 4
         self.max_memory_mb = max_memory_mb
         self.batch_size = batch_size
-        self.temp_dir = Path(temp_dir) if temp_dir else Path(tempfile.gettempdir())
+        self.temp_dir = self._require_temp_dir(temp_dir)
         self.progress_callback = progress_callback
         self._stats = {
             "batches_processed": 0,
             "items_processed": 0,
             "failures": 0,
         }
+
+    def _require_temp_dir(self, temp_dir: object) -> Path:
+        if temp_dir is None:
+            return Path(tempfile.gettempdir())
+        if isinstance(temp_dir, bool | bytes) or not isinstance(temp_dir, str | PathLike):
+            msg = "temp_dir must be a path"
+            raise TypeError(msg)
+        raw_path = fspath(temp_dir)
+        if not isinstance(raw_path, str):
+            msg = "temp_dir must be a text path"
+            raise TypeError(msg)
+        if not raw_path:
+            msg = "temp_dir must not be empty"
+            raise ValueError(msg)
+        return Path(raw_path)
 
     def process_batch(
         self,

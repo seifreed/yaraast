@@ -69,6 +69,23 @@ def test_batch_processor_rejects_boolean_numeric_settings() -> None:
         processor.process_batch([1], None, batch_size=cast(Any, True))
 
 
+def test_batch_processor_rejects_empty_temp_dir() -> None:
+    with pytest.raises(ValueError, match="temp_dir must not be empty"):
+        BatchProcessor(temp_dir="")
+
+
+@pytest.mark.parametrize("temp_dir", [False, 0, object()])
+def test_batch_processor_rejects_invalid_temp_dir_types(temp_dir: Any) -> None:
+    with pytest.raises(TypeError, match="temp_dir must be a path"):
+        BatchProcessor(temp_dir=cast(Any, temp_dir))
+
+
+def test_batch_processor_accepts_pathlike_temp_dir(tmp_path: Path) -> None:
+    processor = BatchProcessor(temp_dir=tmp_path)
+
+    assert processor.temp_dir == tmp_path
+
+
 def test_batch_processor_rejects_single_string_file_paths(tmp_path: Path) -> None:
     path = tmp_path / "single.yar"
     path.write_text("rule single { condition: true }", encoding="utf-8")
