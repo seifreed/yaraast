@@ -265,6 +265,22 @@ def test_validate_expression_reports_invalid_child_structure(
     assert any(error.message == message for error in result.errors)
 
 
+@pytest.mark.parametrize(
+    "expression",
+    [
+        BinaryExpression(cast(Any, object()), "and", BooleanLiteral(True)),
+        SetExpression(cast(Any, object())),
+    ],
+)
+def test_type_validator_validate_expression_reports_invalid_child_structure(
+    expression: Any,
+) -> None:
+    expr_type, errors = TypeValidator.validate_expression(expression)
+
+    assert str(expr_type) == "unknown"
+    assert errors
+
+
 def test_validate_rule_detects_undefined_strings_in_raw_string_sets() -> None:
     rules = [
         Rule(

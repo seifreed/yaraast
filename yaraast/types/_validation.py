@@ -20,6 +20,7 @@ from ._registry import (
     StringIdentifierType,
     StringType,
     TypeEnvironment,
+    UnknownType,
     YaraType,
 )
 from .type_environment import _normalize_string_id
@@ -333,5 +334,8 @@ class TypeValidator:
             env = TypeEnvironment()
 
         inference = TypeInference(env)
-        expr_type = inference.infer(expr)
+        try:
+            expr_type = inference.infer(expr)
+        except (AttributeError, TypeError, ValueError) as exc:
+            return UnknownType(), [str(exc), *inference.errors]
         return expr_type, inference.errors
