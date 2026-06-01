@@ -359,6 +359,27 @@ rule declaration_value_uses_string {
     assert results["declaration_value_uses_string"]["unused"] == []
 
 
+def test_string_usage_analyzer_resolves_yarax_string_locals_in_string_sets() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="local_string_set",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", StringLiteral("$a"))],
+                    body=OfExpression("any", SetExpression([StringIdentifier("$x")])),
+                ),
+            )
+        ]
+    )
+
+    result = StringUsageAnalyzer().analyze(ast)["local_string_set"]
+
+    assert result["used"] == ["$a"]
+    assert result["unused"] == []
+    assert result["undefined"] == []
+
+
 def test_string_usage_analyzer_counts_parenthesized_string_literal_sets() -> None:
     analyzer = StringUsageAnalyzer()
     analyzer.current_rule = "manual"

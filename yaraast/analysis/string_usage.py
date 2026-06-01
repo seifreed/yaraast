@@ -32,6 +32,9 @@ if TYPE_CHECKING:
 class StringUsageAnalyzer(BaseVisitor[None]):
     """Analyze string usage in YARA rules."""
 
+    _LOCAL_WITHOUT_VALUE = object()
+    _MISSING_LOCAL = object()
+
     def __init__(self) -> None:
         self.defined_strings: dict[str, set[str]] = {}  # rule_name -> set of string ids
         self.anonymous_strings: dict[str, set[str]] = {}  # rule_name -> anonymous internal ids
@@ -41,7 +44,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.rule_usage_keys: dict[int, str] = {}
         self.in_condition: bool = False
         self.implicit_current_string_allowed: bool = False
-        self.local_scopes: list[set[str]] = []
+        self.local_scopes: list[dict[str, Any]] = []
 
     def analyze(self, yara_file: YaraFile) -> dict[str, dict[str, Any]]:
         """Analyze string usage in YARA file."""
@@ -254,7 +257,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
 
     def visit_with_declaration(self, node: Any) -> None:
         self._visit_ast_value(node.value)
-        self._define_local(node.identifier)
+        self._define_local(node.identifier, node.value)
 
     def visit_array_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.iterable)
@@ -288,18 +291,26 @@ class StringUsageAnalyzer(BaseVisitor[None]):
     def _is_local(self, name: str) -> bool:
         return any(name in scope for scope in reversed(self.local_scopes))
 
+    def _local_value(self, name: str) -> object:
+        for scope in reversed(self.local_scopes):
+            if name in scope:
+                return scope[name]
+        return self._MISSING_LOCAL
+
     def _push_local_scope(self, *names: str) -> None:
-        scope: set[str] = set()
+        scope: dict[str, Any] = {}
         for name in names:
-            scope.update(self._local_name_variants(name))
+            for local_name in self._local_name_variants(name):
+                scope[local_name] = self._LOCAL_WITHOUT_VALUE
         self.local_scopes.append(scope)
 
     def _pop_local_scope(self) -> None:
         self.local_scopes.pop()
 
-    def _define_local(self, name: str) -> None:
+    def _define_local(self, name: str, value: object = _LOCAL_WITHOUT_VALUE) -> None:
         if self.local_scopes:
-            self.local_scopes[-1].update(self._local_name_variants(name))
+            for local_name in self._local_name_variants(name):
+                self.local_scopes[-1][local_name] = value
 
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
@@ -351,7 +362,10 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             return
 
         normalized = self._normalize_string_id(text)
-        if self._is_local(normalized):
+        local_value = self._local_value(normalized)
+        if local_value is not self._MISSING_LOCAL:
+            if local_value is not self._LOCAL_WITHOUT_VALUE:
+                self._visit_string_set_value(local_value)
             return
         if "*" in text and not text.startswith("$"):
             return
