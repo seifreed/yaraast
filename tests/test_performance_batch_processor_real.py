@@ -218,7 +218,15 @@ def test_process_batch_custom_callable_exception_tracks_failure() -> None:
     stats = processor.get_statistics()
     assert stats["items_processed"] == 1
     assert stats["failures"] == 1
+    assert stats["failure_rate"] == 50.0
     assert progress_calls[-1] == ("Processing", 2, 2)
+
+    failing_processor = BatchProcessor()
+    assert failing_processor.process_batch([42], lambda x: cast(Any, x)["ok"]) == [None]
+    failing_stats = failing_processor.get_statistics()
+    assert failing_stats["items_processed"] == 0
+    assert failing_stats["failures"] == 1
+    assert failing_stats["failure_rate"] == 100.0
 
 
 def test_process_files_uses_real_invalid_path_and_collects_error(tmp_path: Path) -> None:

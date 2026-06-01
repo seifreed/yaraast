@@ -227,6 +227,7 @@ class BatchProcessor:
 
     def get_statistics(self) -> dict[str, Any]:
         """Get processing statistics."""
+        attempted_items = self._stats["items_processed"] + self._stats["failures"]
         return {
             **self._stats,
             "avg_batch_size": (
@@ -235,9 +236,7 @@ class BatchProcessor:
                 else 0
             ),
             "failure_rate": (
-                self._stats["failures"] / self._stats["items_processed"] * 100
-                if self._stats["items_processed"] > 0
-                else 0
+                self._stats["failures"] / attempted_items * 100 if attempted_items > 0 else 0
             ),
         }
 
