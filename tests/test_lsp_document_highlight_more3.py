@@ -237,6 +237,42 @@ rule local_ref {
     ]
 
 
+def test_document_highlight_yarax_lambda_parameter_after_newline_is_local() -> None:
+    text = """
+rule helper { condition: true }
+rule local_ref {
+    condition:
+        lambda
+            helper: helper
+}
+""".lstrip()
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(4, 12))
+
+    assert [(highlight.range.start.line, highlight.range.end.line) for highlight in highlights] == [
+        (4, 4)
+    ]
+
+
+def test_document_highlight_yarax_second_lambda_parameter_after_newline_is_local() -> None:
+    text = """
+rule value { condition: true }
+rule local_ref {
+    condition:
+        lambda key,
+            value: value
+}
+""".lstrip()
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(4, 12))
+
+    assert [(highlight.range.start.line, highlight.range.end.line) for highlight in highlights] == [
+        (4, 4)
+    ]
+
+
 def test_document_highlight_fallback_ignores_string_identifier_in_non_code() -> None:
     text = """
 rule r {

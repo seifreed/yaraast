@@ -272,6 +272,46 @@ rule local_ref {
     assert [text_edit.range.start.line for text_edit in edit.changes[uri]] == [0]
 
 
+def test_lsp_rule_navigation_ignores_yarax_lambda_parameter_after_newline() -> None:
+    text = """
+rule helper { condition: true }
+rule local_ref {
+  condition:
+    lambda
+      helper: helper
+}
+""".lstrip()
+    uri = "file://test.yar"
+
+    assert DefinitionProvider().get_definition(text, _pos(4, 8), uri) is None
+    assert RenameProvider().prepare_rename(text, _pos(4, 8), uri) is None
+
+    edit = RenameProvider().rename(text, _pos(0, 7), "renamed", uri)
+    assert edit is not None
+    assert edit.changes is not None
+    assert [text_edit.range.start.line for text_edit in edit.changes[uri]] == [0]
+
+
+def test_lsp_rule_navigation_ignores_yarax_second_lambda_parameter_after_newline() -> None:
+    text = """
+rule value { condition: true }
+rule local_ref {
+  condition:
+    lambda key,
+      value: value
+}
+""".lstrip()
+    uri = "file://test.yar"
+
+    assert DefinitionProvider().get_definition(text, _pos(4, 8), uri) is None
+    assert RenameProvider().prepare_rename(text, _pos(4, 8), uri) is None
+
+    edit = RenameProvider().rename(text, _pos(0, 7), "renamed", uri)
+    assert edit is not None
+    assert edit.changes is not None
+    assert [text_edit.range.start.line for text_edit in edit.changes[uri]] == [0]
+
+
 def test_reference_section_lookup_ignores_inline_markers_inside_literals() -> None:
     line = 'rule r { condition: "strings:" and $a }'
     col = line.index("$a")
