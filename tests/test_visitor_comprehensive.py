@@ -774,6 +774,28 @@ class TestBaseVisitorComprehensive:
             visitor.string_offsets_with_index >= 0
         )  # May or may not have index depending on parsing
 
+    def test_visitor_traverses_falsy_present_optional_node(self) -> None:
+        """Test optional AST fields are skipped only when absent."""
+
+        class FalsyBooleanLiteral(BooleanLiteral):
+            def __bool__(self) -> bool:
+                return False
+
+        class ConditionVisitor(BaseVisitor[None]):
+            def __init__(self) -> None:
+                self.boolean_literals = 0
+
+            def visit_boolean_literal(self, node: BooleanLiteral) -> None:
+                self.boolean_literals += 1
+                return super().visit_boolean_literal(node)
+
+        ast = YaraFile(rules=[Rule(name="falsy", condition=FalsyBooleanLiteral(False))])
+        visitor = ConditionVisitor()
+
+        visitor.visit(ast)
+
+        assert visitor.boolean_literals == 1
+
 
 class TestDirectNodeVisitation:
     """Test direct visitation of AST nodes without parsing."""

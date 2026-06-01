@@ -37,7 +37,7 @@ class BaseVisitorHelpersMixin[T]:
                 visitor.visit(item)
 
     def _visit_if(self, node: ASTNode | None) -> None:
-        if node:
+        if node is not None:
             visitor = cast(ASTVisitor[T], self)
             visitor.visit(node)
 
