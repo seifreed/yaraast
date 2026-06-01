@@ -84,6 +84,52 @@ def test_optimizer_condition_simplify_and_match_window() -> None:
     assert optimized_match.variables[0].time_window.unit == "h"
 
 
+def test_optimizer_simplifies_falsy_present_condition_expression() -> None:
+    class FalsyBinaryCondition(BinaryCondition):
+        def __bool__(self) -> bool:
+            return False
+
+    optimizer = YaraLOptimizer()
+    condition = ConditionSection(
+        expression=FalsyBinaryCondition(
+            operator="and",
+            left=EventExistsCondition(event="e"),
+            right=EventExistsCondition(event="e"),
+        )
+    )
+
+    optimized = optimizer._optimize_condition_section(condition)
+
+    assert optimized is not None
+    assert isinstance(optimized.expression, EventExistsCondition)
+    assert optimizer.stats.conditions_simplified >= 1
+
+
+def test_optimizer_visits_falsy_present_binary_condition_operands() -> None:
+    from yaraast.yaral.ast_nodes import UnaryCondition
+
+    class FalsyUnaryCondition(UnaryCondition):
+        def __bool__(self) -> bool:
+            return False
+
+    optimizer = YaraLOptimizer()
+    condition = BinaryCondition(
+        operator="and",
+        left=FalsyUnaryCondition(
+            operator="not",
+            operand=UnaryCondition(operator="not", operand=EventExistsCondition(event="e")),
+        ),
+        right=EventExistsCondition(event="other"),
+    )
+
+    optimized = optimizer._optimize_binary_condition(condition)
+
+    assert isinstance(optimized, BinaryCondition)
+    assert isinstance(optimized.left, EventExistsCondition)
+    assert optimized.left.event == "e"
+    assert optimizer.stats.conditions_simplified >= 1
+
+
 def test_optimizer_options_and_outcome() -> None:
     optimizer = YaraLOptimizer()
     rule = YaraLRule(

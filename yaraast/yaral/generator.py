@@ -246,8 +246,14 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_binary_condition(self, node: BinaryCondition) -> str:
         """Generate code for binary condition."""
-        left = self._format_value(node.left) if hasattr(node, "left") and node.left else ""
-        right = self._format_value(node.right) if hasattr(node, "right") and node.right else ""
+        left = (
+            self._format_value(node.left) if hasattr(node, "left") and node.left is not None else ""
+        )
+        right = (
+            self._format_value(node.right)
+            if hasattr(node, "right") and node.right is not None
+            else ""
+        )
         operator = node.operator
 
         if operator in ["and", "or"]:
@@ -256,7 +262,11 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_unary_condition(self, node: UnaryCondition) -> str:
         """Generate code for unary condition."""
-        operand = self.visit(node.operand) if hasattr(node, "operand") and node.operand else ""
+        operand = (
+            self.visit(node.operand)
+            if hasattr(node, "operand") and node.operand is not None
+            else ""
+        )
         return f"{node.operator} {operand}"
 
     def visit_event_count_condition(self, node: EventCountCondition) -> str:

@@ -23,7 +23,7 @@ class ConditionValidationMixin:
 
     def _validate_condition_section(self, node: ConditionSection) -> None:
         """Validate condition section."""
-        if not hasattr(node, "expression") or not node.expression:
+        if not hasattr(node, "expression") or node.expression is None:
             self._add_error(
                 "condition",
                 "Condition section cannot be empty",

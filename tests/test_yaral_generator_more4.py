@@ -173,6 +173,31 @@ def test_generator_covers_base_conditions_outcomes_and_wrappers() -> None:
     )
 
 
+def test_generator_renders_falsy_present_condition_operands() -> None:
+    class FalsyEventExistsCondition(EventExistsCondition):
+        def __bool__(self) -> bool:
+            return False
+
+    generator = YaraLGenerator()
+
+    assert (
+        generator.visit_binary_condition(
+            BinaryCondition(
+                operator="and",
+                left=FalsyEventExistsCondition(event="$left"),
+                right=FalsyEventExistsCondition(event="$right"),
+            )
+        )
+        == "($left and $right)"
+    )
+    assert (
+        generator.visit_unary_condition(
+            UnaryCondition(operator="not", operand=FalsyEventExistsCondition(event="$evt"))
+        )
+        == "not $evt"
+    )
+
+
 def test_generator_renders_prefixed_methods_and_non_default_values() -> None:
     generator = YaraLGenerator()
 

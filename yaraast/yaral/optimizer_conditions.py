@@ -19,7 +19,7 @@ class YaraLOptimizerConditionsMixin:
     def _optimize_condition_section(
         self, condition: ConditionSection | None
     ) -> ConditionSection | None:
-        if not condition or not condition.expression:
+        if condition is None or condition.expression is None:
             return condition
 
         optimized_expr = self._optimize_condition_expression(condition.expression)
@@ -36,10 +36,8 @@ class YaraLOptimizerConditionsMixin:
         return expr
 
     def _optimize_binary_condition(self, cond: BinaryCondition) -> ConditionExpression:
-        optimized_left = self._optimize_condition_expression(cond.left) if cond.left else cond.left
-        optimized_right = (
-            self._optimize_condition_expression(cond.right) if cond.right else cond.right
-        )
+        optimized_left = self._optimize_condition_expression(cond.left)
+        optimized_right = self._optimize_condition_expression(cond.right)
 
         if cond.operator == "and":
             return self._optimize_and_condition(optimized_left, optimized_right)

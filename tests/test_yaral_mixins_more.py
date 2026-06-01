@@ -198,11 +198,21 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
 
 
 def test_yaral_validator_condition_and_outcome_mixins() -> None:
+    class FalsyEventExistsCondition(EventExistsCondition):
+        def __bool__(self) -> bool:
+            return False
+
     validator = YaraLValidator()
     validator.current_rule = "r1"
 
     validator._validate_condition_section(ConditionSection(expression=None))
     assert any("Condition section cannot be empty" in err.message for err in validator.errors)
+
+    validator.errors.clear()
+    validator._validate_condition_section(
+        ConditionSection(expression=FalsyEventExistsCondition(event="present"))
+    )
+    assert not any("Condition section cannot be empty" in err.message for err in validator.errors)
 
     validator.errors.clear()
     validator.warnings.clear()
