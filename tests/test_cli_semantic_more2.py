@@ -65,3 +65,22 @@ def test_semantic_text_output_file(tmp_path: Path) -> None:
     content = out_path.read_text(encoding="utf-8")
     assert "File:" in content
     assert "Valid:" in content
+
+
+def test_semantic_rejects_empty_output_path(tmp_path: Path) -> None:
+    code = """
+    rule ok_rule {
+        condition:
+            true
+    }
+    """
+    file_path = _write(tmp_path, "ok.yar", code)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        semantic,
+        [file_path, "--format", "json", "--output", "", "--quiet"],
+    )
+
+    assert result.exit_code != 0
+    assert "path must not be empty" in result.output

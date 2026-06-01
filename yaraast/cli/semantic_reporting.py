@@ -85,7 +85,7 @@ def _require_output_format(format: object) -> str:
     return format
 
 
-def write_output_file(output_path: Path, results: list[dict], format: object) -> None:
+def write_output_file(output_path: str | Path, results: list[dict], format: object) -> None:
     format = _require_output_format(format)
     if format == "json":
         write_text(output_path, format_json(results))
