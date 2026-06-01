@@ -135,7 +135,11 @@ def format_string_reference_identifier(identifier: Any, *, allow_placeholder: bo
 
 def format_string_reference_suffix(identifier: Any, *, allow_placeholder: bool) -> str:
     """Return the suffix for #/@/! string references."""
-    text = str(identifier).lstrip("#@!")
+    raw_text = str(identifier)
+    if raw_text.startswith(("#", "@", "!")):
+        msg = f"Invalid string reference '{raw_text}' for libyara output"
+        raise ValueError(msg)
+    text = raw_text.removeprefix("$")
     if allow_placeholder and text in _STRING_PLACEHOLDER_REFERENCES:
         return ""
     return validate_string_identifier_text(text).removeprefix("$")
