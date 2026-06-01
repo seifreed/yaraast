@@ -18,6 +18,7 @@ from yaraast.ast.expressions import (
 from yaraast.metrics._visitor_base import MetricsVisitorBase
 from yaraast.metrics.complexity_analysis_helpers import analyze_rule, calculate_derived_metrics
 from yaraast.metrics.complexity_model import ComplexityMetrics
+from yaraast.string_references import normalize_string_reference_id
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -136,7 +137,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
                 self._visit_ast_value(item)
 
     def _normalize_string_id(self, string_id: str) -> str:
-        return string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
+        return normalize_string_reference_id(string_id)
 
     def _mark_string_usage(self, string_id: str) -> None:
         rule_key = self._active_rule_key()

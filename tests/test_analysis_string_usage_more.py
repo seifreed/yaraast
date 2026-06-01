@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from yaraast.analysis.string_usage import StringUsageAnalyzer
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import (
@@ -11,6 +13,7 @@ from yaraast.ast.conditions import (
 )
 from yaraast.ast.expressions import (
     BinaryExpression,
+    Expression,
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
@@ -276,6 +279,33 @@ def test_string_usage_analyzer_traverses_condition_quantifier_nodes() -> None:
     analyzer.used_strings["manual"] = set()
     analyzer.visit_for_of_expression(ForOfExpression(StringCount("$b"), "$a"))
     assert analyzer.used_strings["manual"] == {"$a", "$b"}
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        StringIdentifier("#a"),
+        StringCount("#a"),
+        StringOffset("@a"),
+        StringLength("!a"),
+        StringWildcard("#a*"),
+    ],
+)
+def test_string_usage_analyzer_rejects_embedded_string_reference_operators(
+    condition: Expression,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_reference",
+                strings=[PlainString(identifier="$a", value="value")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Invalid string reference"):
+        StringUsageAnalyzer().analyze(ast)
 
 
 def test_string_usage_analyzer_counts_string_literals_in_condition_sets() -> None:

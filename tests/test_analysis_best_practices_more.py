@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import pytest
+
 from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    Expression,
     IntegerLiteral,
     StringCount,
+    StringIdentifier,
+    StringLength,
+    StringOffset,
     StringWildcard,
 )
 from yaraast.ast.rules import Rule
@@ -126,6 +132,33 @@ def test_best_practices_treats_string_count_as_string_usage() -> None:
         "String '$a' is defined but never used" in suggestion.message
         for suggestion in report.suggestions
     )
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        StringIdentifier("#a"),
+        StringCount("#a"),
+        StringOffset("@a"),
+        StringLength("!a"),
+        StringWildcard("#a*"),
+    ],
+)
+def test_best_practices_rejects_embedded_string_reference_operators(
+    condition: Expression,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_reference",
+                strings=[PlainString(identifier="$a", value="value")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Invalid string reference"):
+        BestPracticesAnalyzer().analyze(ast)
 
 
 def test_best_practices_treats_condition_string_set_forms_as_usage() -> None:

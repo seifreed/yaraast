@@ -30,6 +30,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.metrics.string_diagrams_common import plain_value_length
+from yaraast.string_references import normalize_string_reference_id
 from yaraast.visitor.base import BaseVisitor
 
 if TYPE_CHECKING:
@@ -356,7 +357,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         self._mark_condition_string_usage(string_id)
 
     def _normalize_string_id(self, string_id: str) -> str:
-        return string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
+        return normalize_string_reference_id(string_id)
 
     def _mark_string_set_text(self, text: str) -> None:
         if text == "them":

@@ -5,6 +5,19 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 
+import pytest
+
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import (
+    Expression,
+    StringCount,
+    StringIdentifier,
+    StringLength,
+    StringOffset,
+    StringWildcard,
+)
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.complexity_helpers import (
     calculate_cognitive_complexity,
@@ -15,6 +28,33 @@ from yaraast.metrics.complexity_helpers import (
 from yaraast.metrics.complexity_reporting import analyze_file_complexity, generate_complexity_report
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        StringIdentifier("#a"),
+        StringCount("#a"),
+        StringOffset("@a"),
+        StringLength("!a"),
+        StringWildcard("#a*"),
+    ],
+)
+def test_complexity_analyzer_rejects_embedded_string_reference_operators(
+    condition: Expression,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_reference",
+                strings=[PlainString(identifier="$a", value="value")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Invalid string reference"):
+        ComplexityAnalyzer().analyze(ast)
 
 
 def test_complexity_analyzer_metrics_and_report(tmp_path: Path) -> None:

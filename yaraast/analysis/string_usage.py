@@ -14,6 +14,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     StringWildcard,
 )
+from yaraast.string_references import normalize_string_reference_id
 from yaraast.visitor.base import BaseVisitor
 
 if TYPE_CHECKING:
@@ -74,8 +75,8 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         return results
 
     def _normalize_string_id(self, string_id: str) -> str:
-        """Normalize string ids so #a/@a/!a map to $a like normal string refs."""
-        return string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
+        """Normalize string ids while rejecting embedded reference operators."""
+        return normalize_string_reference_id(string_id)
 
     def get_unused_strings(self, rule_name: str | None = None) -> dict[str, list[str]]:
         """Get unused strings for a specific rule or all rules."""
