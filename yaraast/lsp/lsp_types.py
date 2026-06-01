@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+_LSPROTOCOL_TYPES_IMPORT_NAMES = {"lsprotocol", "lsprotocol.types"}
+
+
+def _is_missing_lsprotocol_types(exc: ImportError) -> bool:
+    return (exc.name or "") in _LSPROTOCOL_TYPES_IMPORT_NAMES
+
+
 try:
     from lsprotocol.types import (
         TEXT_DOCUMENT_CODE_ACTION,
@@ -80,7 +87,9 @@ try:
         WorkspaceFoldersServerCapabilities,
         WorkspaceSymbolParams,
     )
-except ImportError:
+except ImportError as exc:
+    if not _is_missing_lsprotocol_types(exc):
+        raise
     import importlib
     import site
     import sys

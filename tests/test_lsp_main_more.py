@@ -105,6 +105,36 @@ def test_lsp_server_import_propagates_pygls_internal_import_errors(
         importlib.reload(lsp_server)
 
 
+def test_lsp_types_propagates_internal_lsprotocol_import_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import yaraast.lsp.lsp_types as lsp_types
+
+    real_import: ImportFunction = builtins.__import__
+    failed_once = False
+
+    def fail_lsprotocol_internal_import_once(
+        name: str,
+        globals_: Any = None,
+        locals_: Any = None,
+        fromlist: Any = (),
+        level: int = 0,
+    ) -> ModuleType:
+        nonlocal failed_once
+        if name == "lsprotocol.types" and not failed_once:
+            failed_once = True
+            raise ImportError("broken lsprotocol internals", name="lsprotocol._broken")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_lsprotocol_internal_import_once)
+    try:
+        with pytest.raises(ImportError, match="broken lsprotocol internals"):
+            importlib.reload(lsp_types)
+    finally:
+        monkeypatch.setattr(builtins, "__import__", real_import)
+        importlib.reload(lsp_types)
+
+
 def test_lsp_main_raises_when_stdio_cannot_start_under_pytest_capture() -> None:
     with pytest.raises((ModuleNotFoundError, OSError)):
         main()
