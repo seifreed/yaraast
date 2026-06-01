@@ -9,6 +9,8 @@ import click
 
 from yaraast.cli.utils import format_json, write_text
 
+_OUTPUT_FORMATS = frozenset({"json", "text"})
+
 
 def display_validation_start(file_path: Path, quiet: bool) -> None:
     if not quiet:
@@ -74,7 +76,17 @@ def display_summary(total_files: int, total_errors: int, total_warnings: int) ->
         click.echo(click.style("All files passed validation", fg="green"))
 
 
-def write_output_file(output_path: Path, results: list[dict], format: str) -> None:
+def _require_output_format(format: object) -> str:
+    if not isinstance(format, str):
+        raise TypeError("semantic output format must be a string")
+    if format not in _OUTPUT_FORMATS:
+        valid = ", ".join(sorted(_OUTPUT_FORMATS))
+        raise ValueError(f"semantic output format must be one of: {valid}")
+    return format
+
+
+def write_output_file(output_path: Path, results: list[dict], format: object) -> None:
+    format = _require_output_format(format)
     if format == "json":
         write_text(output_path, format_json(results))
         return

@@ -16,9 +16,20 @@ from yaraast.yarax.generator import YaraXGenerator
 
 console = Console()
 
+_OUTPUT_FORMATS = frozenset({"json", "tree", "yaml", "yara"})
+
 
 def _is_missing_yaml_import(exc: ImportError) -> bool:
     return (exc.name or "") == "yaml"
+
+
+def _require_output_format(output_format: object) -> str:
+    if not isinstance(output_format, str):
+        raise TypeError("output format must be a string")
+    if output_format not in _OUTPUT_FORMATS:
+        valid = ", ".join(sorted(_OUTPUT_FORMATS))
+        raise ValueError(f"output format must be one of: {valid}")
+    return output_format
 
 
 def _report_parsing_errors(lexer_errors: list, parser_errors: list, ast) -> None:
@@ -61,8 +72,9 @@ def _display_parser_errors(parser_errors: list) -> None:
         console.print(f"\\n[dim]... and {len(parser_errors) - 5} more parser issues[/dim]")
 
 
-def _generate_output_by_format(ast, output_format: str, output: str | None) -> None:
+def _generate_output_by_format(ast, output_format: object, output: str | None) -> None:
     """Generate output based on specified format."""
+    output_format = _require_output_format(output_format)
     if output_format == "yara":
         _generate_yara_output(ast, output)
     elif output_format == "json":

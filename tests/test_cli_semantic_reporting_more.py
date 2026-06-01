@@ -111,3 +111,23 @@ def test_semantic_reporting_text_and_json_outputs(
 
     sr.emit_json_results(results)
     assert '"is_valid": false' in capsys.readouterr().out.lower()
+
+
+@pytest.mark.parametrize("output_format", [None, 123])
+def test_semantic_reporting_rejects_non_string_file_formats(
+    tmp_path: Path,
+    output_format: object,
+) -> None:
+    output_path = tmp_path / "semantic.txt"
+    with pytest.raises(TypeError, match="semantic output format must be a string"):
+        sr.write_output_file(output_path, [], format=output_format)
+
+
+@pytest.mark.parametrize("output_format", ["", "xml", "yaml"])
+def test_semantic_reporting_rejects_unknown_file_formats(
+    tmp_path: Path,
+    output_format: str,
+) -> None:
+    output_path = tmp_path / "semantic.txt"
+    with pytest.raises(ValueError, match="semantic output format must be one of: json, text"):
+        sr.write_output_file(output_path, [], format=output_format)

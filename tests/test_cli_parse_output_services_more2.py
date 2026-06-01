@@ -100,6 +100,18 @@ def test_parse_output_generators_for_all_formats(
     assert tree_file.exists()
 
 
+@pytest.mark.parametrize("output_format", [None, 123])
+def test_parse_output_rejects_non_string_formats(output_format: object) -> None:
+    with pytest.raises(TypeError, match="output format must be a string"):
+        po._generate_output_by_format(_ast(), output_format, None)
+
+
+@pytest.mark.parametrize("output_format", ["", "xml", "text"])
+def test_parse_output_rejects_unknown_formats(output_format: str) -> None:
+    with pytest.raises(ValueError, match="output format must be one of: json, tree, yaml, yara"):
+        po._generate_output_by_format(_ast(), output_format, None)
+
+
 def test_parse_output_yaml_propagates_internal_import_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
