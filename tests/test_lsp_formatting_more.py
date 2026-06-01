@@ -64,6 +64,21 @@ def test_formatting_ignores_invalid_runtime_enum_config() -> None:
     assert "rule a" in edits[0].new_text
 
 
+def test_formatting_ignores_incomplete_runtime_section_order() -> None:
+    runtime = LspRuntime()
+    runtime.update_config({"YARA": {"codeFormatting": {"section_order": ["meta"]}}})
+    provider = FormattingProvider(runtime)
+    text = 'rule a { meta: author = "me" strings: $a = "x" condition: $a }'
+
+    edits = provider.format_document(text, "file:///sample.yar")
+
+    assert edits
+    formatted = edits[0].new_text
+    assert "meta:" in formatted
+    assert "strings:" in formatted
+    assert "condition:" in formatted
+
+
 def test_formatting_range_formats_enclosing_rule_only() -> None:
     runtime = LspRuntime()
     provider = FormattingProvider(runtime)

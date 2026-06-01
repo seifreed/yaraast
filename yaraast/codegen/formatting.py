@@ -37,8 +37,16 @@ def _coerce_int(value: object, default: int, *, minimum: int | None = None) -> i
     return result
 
 
+_RULE_SECTIONS = frozenset({"meta", "strings", "condition"})
+
+
 def _coerce_section_order(value: object, default: list[str]) -> list[str]:
-    if isinstance(value, list) and all(isinstance(section, str) for section in value):
+    if (
+        isinstance(value, list)
+        and all(isinstance(section, str) for section in value)
+        and len(value) == len(_RULE_SECTIONS)
+        and set(value) == _RULE_SECTIONS
+    ):
         return list(value)
     return default
 

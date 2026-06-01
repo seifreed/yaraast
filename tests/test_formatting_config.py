@@ -232,6 +232,17 @@ class TestFormattingConfigSerialization:
             assert config.indent_style == IndentStyle.SPACES
             assert config.indent_size == 4
 
+    def test_from_dict_rejects_incomplete_section_order(self) -> None:
+        """Section order must include each supported rule section exactly once."""
+        for section_order in (
+            ["meta"],
+            ["condition", "condition", "strings"],
+            ["meta", "strings", "condition", "unknown"],
+        ):
+            config = FormattingConfig.from_dict({"section_order": section_order})
+
+            assert config.section_order == ["meta", "strings", "condition"]
+
     def test_roundtrip_serialization(self) -> None:
         """Config should survive to_dict/from_dict roundtrip."""
         original = FormattingConfig(
