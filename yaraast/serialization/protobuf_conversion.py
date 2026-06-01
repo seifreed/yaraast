@@ -1094,11 +1094,13 @@ def _expression_string_set_item_text(item) -> str | None:
     from yaraast.ast.expressions import StringIdentifier, StringLiteral, StringWildcard
 
     if isinstance(item, StringIdentifier):
-        return item.name
+        return _protobuf_required_nonempty_string(item.name, "StringIdentifier name")
     if isinstance(item, StringWildcard):
-        return item.pattern
-    if isinstance(item, StringLiteral) and item.value.startswith("$"):
-        return item.value
+        return _protobuf_required_nonempty_string(item.pattern, "StringWildcard pattern")
+    if isinstance(item, StringLiteral):
+        value = _protobuf_required_string(item.value, "StringLiteral value")
+        if value.startswith("$"):
+            return value
     return None
 
 

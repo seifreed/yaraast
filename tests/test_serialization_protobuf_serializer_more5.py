@@ -1758,6 +1758,27 @@ def test_protobuf_serializer_rejects_invalid_expression_leaf_fields(
 
 
 @pytest.mark.parametrize(
+    ("string_set", "message"),
+    [
+        ([StringIdentifier(cast(Any, False))], "StringIdentifier name must be a string"),
+        ([StringLiteral(cast(Any, False))], "StringLiteral value must be a string"),
+        ([StringWildcard(cast(Any, False))], "StringWildcard pattern must be a string"),
+    ],
+)
+def test_protobuf_serializer_rejects_invalid_string_set_reference_fields(
+    string_set: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[Rule(name="invalid_string_set_reference", condition=OfExpression("any", string_set))]
+    )
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
     ("expression_kind", "message"),
     [
         ("identifier", "Identifier name must not be empty"),
