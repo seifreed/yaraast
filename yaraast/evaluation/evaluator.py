@@ -61,6 +61,16 @@ def _validate_import_alias(alias: Any) -> str | None:
     return alias
 
 
+def _validate_import_module(module: Any) -> str:
+    if not isinstance(module, str):
+        msg = "Import module must be a string"
+        raise TypeError(msg)
+    if not module:
+        msg = "Import module must not be empty"
+        raise EvaluationError(msg)
+    return module
+
+
 _YR_UNDEFINED_VM_INT = normalize_int64(0xFFFABADAFABADAFF)
 
 
@@ -111,7 +121,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         # Process imports
         for import_stmt in yara_file.imports:
-            module_name = import_stmt.module
+            module_name = _validate_import_module(import_stmt.module)
             module = self.module_registry.create_module(module_name, self.data)
             if module:
                 self.context.modules[module_name] = module

@@ -2498,6 +2498,27 @@ def test_evaluate_file_rejects_invalid_import_aliases(
         YaraEvaluator(data=b"").evaluate_file(ast)
 
 
+@pytest.mark.parametrize(
+    ("module", "error_type", "message"),
+    [
+        ("", EvaluationError, "Import module must not be empty"),
+        (False, TypeError, "Import module must be a string"),
+    ],
+)
+def test_evaluate_file_rejects_invalid_import_modules(
+    module: Any,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    ast = YaraFile(
+        imports=[Import(module=module)],
+        rules=[Rule(name="r", condition=BooleanLiteral(True))],
+    )
+
+    with pytest.raises(error_type, match=message):
+        YaraEvaluator(data=b"").evaluate_file(ast)
+
+
 def test_evaluate_file_defined_module_reference_after_import() -> None:
     ast = Parser().parse("""
         import "math"
