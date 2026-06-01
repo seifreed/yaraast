@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+import pytest
+
 from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, Identifier, StringIdentifier
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.error_tolerant_types import ParserError
+from yaraast.parser.parser import Parser
 
 
 def test_parser_error_format_and_normal_parse_success() -> None:
@@ -176,6 +179,18 @@ def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     assert isinstance(parsed_binary_condition.left, StringIdentifier)
     assert isinstance(parsed_binary_condition.right, BooleanLiteral)
     assert p._parse_condition("$a or") == Identifier("$a or")
+
+
+def test_recovered_condition_propagates_internal_parser_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_parser_parse(self: Parser, text: str | None = None) -> object:
+        raise AttributeError("broken parser internals")
+
+    monkeypatch.setattr(Parser, "parse", fail_parser_parse)
+
+    with pytest.raises(AttributeError, match="broken parser internals"):
+        ErrorTolerantParser()._parse_condition("$a or true")
 
 
 def test_parse_with_errors_api_and_format_errors_no_errors_branch() -> None:

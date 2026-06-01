@@ -224,7 +224,7 @@ def _parse_recovered_condition_expression(condition_text: str) -> Any:
 
     try:
         ast = Parser().parse(f"rule __recovered_condition {{ condition: {condition_text} }}")
-    except (YaraASTError, ValueError, TypeError, AttributeError):
+    except (YaraASTError, ValueError):
         return Identifier(condition_text)
     if not ast.rules or ast.rules[0].condition is None:
         return Identifier(condition_text)
