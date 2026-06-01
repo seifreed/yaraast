@@ -30,6 +30,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
 )
 from yaraast.ast.rules import Rule
+from yaraast.string_references import normalize_string_reference_id
 from yaraast.visitor.base import ASTTransformer
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -414,7 +415,7 @@ class DeadCodeEliminator(ASTTransformer):
         )
 
     def _normalize_string_id(self, identifier: str) -> str:
-        return identifier if identifier.startswith("$") else f"${identifier}"
+        return normalize_string_reference_id(identifier)
 
     def _mark_used_string(self, identifier: str) -> None:
         normalized = self._normalize_string_id(identifier)

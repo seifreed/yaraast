@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
@@ -505,6 +507,28 @@ def test_dead_code_eliminator_keeps_raw_string_set_references() -> None:
     )
     out_rule = dce.eliminate_dead_code(rule)
     assert [string.identifier for string in out_rule.strings] == ["$b", "$c"]
+
+
+def test_dead_code_eliminator_rejects_embedded_string_reference_operators() -> None:
+    invalid_conditions = [
+        (BinaryExpression(StringCount("#a"), ">", IntegerLiteral(0)), "#a"),
+        (BinaryExpression(StringOffset("@a"), ">=", IntegerLiteral(0)), "@a"),
+        (BinaryExpression(StringLength("!a"), ">", IntegerLiteral(0)), "!a"),
+    ]
+
+    for condition, invalid_reference in invalid_conditions:
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="invalid_string_ref",
+                    strings=[PlainString(identifier="$a", value="a")],
+                    condition=condition,
+                )
+            ]
+        )
+
+        with pytest.raises(ValueError, match=f"Invalid string reference '{invalid_reference}'"):
+            DeadCodeEliminator().eliminate(ast)
 
 
 def test_dead_code_eliminator_keeps_parenthesized_string_literal_sets() -> None:
