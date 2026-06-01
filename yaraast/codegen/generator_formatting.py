@@ -112,9 +112,10 @@ def _validate_extern_rule_identifier(
     seen: set[tuple[str | None, str]],
 ) -> None:
     name = validate_yara_identifier(getattr(extern_rule, "name", ""), "extern rule")
-    namespace = getattr(extern_rule, "namespace", None) or default_namespace
-    if namespace is not None:
-        namespace = validate_yara_identifier_path(namespace, "namespace")
+    namespace = validate_optional_namespace(
+        getattr(extern_rule, "namespace", None),
+        default_namespace,
+    )
 
     if namespace is None and name in rule_names:
         msg = f"Duplicate rule identifier '{name}' for libyara output"
@@ -236,6 +237,17 @@ def validate_yara_identifier_path(path: str, kind: str) -> str:
     for part in parts:
         _validate_yara_identifier(part, kind)
     return path
+
+
+def validate_optional_namespace(
+    namespace: object, default_namespace: str | None = None
+) -> str | None:
+    if namespace is None:
+        return default_namespace
+    if not isinstance(namespace, str):
+        msg = "Namespace must be a string for libyara output"
+        raise TypeError(msg)
+    return validate_yara_identifier_path(namespace, "namespace")
 
 
 def format_meta_key(key: str, scope: object | None = None) -> str:

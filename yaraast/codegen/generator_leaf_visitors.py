@@ -13,6 +13,7 @@ from yaraast.codegen.generator_formatting import (
     format_meta_value,
     format_nonempty_quoted_value,
     format_regex_literal,
+    validate_optional_namespace,
     validate_rule_modifiers,
     validate_yara_expression_identifier,
     validate_yara_identifier,
@@ -214,17 +215,17 @@ def _render_extern_rule(node: Any, default_namespace: str | None = None) -> str:
     validate_rule_modifiers(modifiers_value)
     modifiers = " ".join(str(m) for m in modifiers_value)
     prefix = f"{modifiers} " if modifiers else ""
-    namespace_name = getattr(node, "namespace", None) or default_namespace
-    namespace = (
-        f"{validate_yara_identifier_path(namespace_name, 'namespace')}." if namespace_name else ""
+    namespace_name = validate_optional_namespace(
+        getattr(node, "namespace", None), default_namespace
     )
+    namespace = f"{namespace_name}." if namespace_name else ""
     rule_name = validate_yara_identifier(node.name, "extern rule")
     return f"extern rule {prefix}{namespace}{rule_name}"
 
 
 def visit_extern_rule_reference(node: Any) -> str:
-    if node.namespace:
-        namespace = validate_yara_identifier_path(node.namespace, "namespace")
+    namespace = validate_optional_namespace(getattr(node, "namespace", None))
+    if namespace is not None:
         rule_name = validate_yara_identifier(node.rule_name, "extern rule")
         return f"{namespace}.{rule_name}"
     return validate_yara_identifier(node.rule_name, "extern rule")

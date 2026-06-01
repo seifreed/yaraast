@@ -1025,9 +1025,14 @@ def test_codegen_tag_visitors_reject_invalid_rule_tags(tag_name: str) -> None:
         (ExternNamespace("bad-ns"), "Invalid namespace identifier"),
         (ExternRule("bad-rule"), "Invalid extern rule identifier"),
         (ExternRule("Remote", namespace="bad-ns"), "Invalid namespace identifier"),
+        (ExternRule("Remote", namespace=""), "Invalid namespace identifier"),
         (ExternRuleReference("bad-rule"), "Invalid extern rule identifier"),
         (
             ExternRuleReference("Remote", namespace="bad-ns"),
+            "Invalid namespace identifier",
+        ),
+        (
+            ExternRuleReference("Remote", namespace=""),
             "Invalid namespace identifier",
         ),
     ],
@@ -1061,6 +1066,24 @@ def test_codegen_generators_reject_non_string_import_aliases(node: Any) -> None:
     with pytest.raises(TypeError, match="Import alias must be a string"):
         CommentAwareCodeGenerator().generate(node)
     with pytest.raises(TypeError, match="Import alias must be a string"):
+        PrettyPrinter().generate(node)
+
+
+@pytest.mark.parametrize(
+    "node",
+    [
+        ExternRule("Remote", namespace=cast(Any, False)),
+        ExternRuleReference("Remote", namespace=cast(Any, False)),
+    ],
+)
+def test_codegen_generators_reject_non_string_optional_namespaces(node: Any) -> None:
+    with pytest.raises(TypeError, match="Namespace must be a string"):
+        CodeGenerator().generate(node)
+    with pytest.raises(TypeError, match="Namespace must be a string"):
+        AdvancedCodeGenerator().generate(node)
+    with pytest.raises(TypeError, match="Namespace must be a string"):
+        CommentAwareCodeGenerator().generate(node)
+    with pytest.raises(TypeError, match="Namespace must be a string"):
         PrettyPrinter().generate(node)
 
 
