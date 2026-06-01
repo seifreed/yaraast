@@ -292,7 +292,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         _copy_node_metadata_to_protobuf(tag, pb_tag)
 
     for entry in _protobuf_node_list(rule.meta, "Rule meta", (Meta, MetaEntry)):
-        key = _protobuf_required_string(getattr(entry, "key", None), "Meta key")
+        key = _protobuf_required_nonempty_string(getattr(entry, "key", None), "Meta key")
         value = getattr(entry, "value", "")
         scope = getattr(entry, "scope", None)
         meta_val = pb_rule.meta[key]
@@ -505,12 +505,13 @@ def protobuf_to_rule_meta_entry(pb_meta_entry):
     from yaraast.ast.meta import Meta
     from yaraast.ast.modifiers import MetaEntry
 
+    key = _protobuf_required_nonempty_string(pb_meta_entry.key, "Meta key")
     value = _meta_value_to_python(pb_meta_entry.value)
     if pb_meta_entry.ast_node or _protobuf_has_field(pb_meta_entry, "node_metadata"):
-        meta = Meta(pb_meta_entry.key, value)
+        meta = Meta(key, value)
         return _apply_node_metadata_from_protobuf(pb_meta_entry, meta)
     return MetaEntry.from_key_value(
-        pb_meta_entry.key,
+        key,
         value,
         deserialize_meta_scope(pb_meta_entry.scope or None),
     )
@@ -1557,7 +1558,8 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
         else:
             meta_values = {}
             for key, meta_val in pb_rule.meta.items():
-                meta_values[key] = _meta_value_to_python(meta_val)
+                meta_key = _protobuf_required_nonempty_string(key, "Meta key")
+                meta_values[meta_key] = _meta_value_to_python(meta_val)
 
             from yaraast.ast.modifiers import MetaEntry
 

@@ -1364,6 +1364,40 @@ def test_protobuf_deserializer_rejects_empty_extern_import_rules() -> None:
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
+def test_protobuf_serializer_rejects_empty_meta_keys() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_meta",
+                meta=[Meta("", "value")],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    with pytest.raises(SerializationError, match="Meta key must not be empty"):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize("legacy_map", [False, True])
+def test_protobuf_deserializer_rejects_empty_meta_keys(legacy_map: bool) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "bad_meta"
+    pb_rule.condition.boolean_literal.value = True
+    if legacy_map:
+        pb_rule.meta[""].string_value = "value"
+    else:
+        pb_meta = pb_rule.meta_entries.add()
+        pb_meta.key = ""
+        pb_meta.value.string_value = "value"
+
+    with pytest.raises(SerializationError, match="Meta key must not be empty"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 @pytest.mark.parametrize(
     ("condition", "message"),
     [
