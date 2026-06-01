@@ -2,22 +2,15 @@
 
 from typing import Any
 
+from yaraast.lsp.optional_dependencies import is_missing_lsp_dependency
+
 YaraLanguageServer: Any
-_OPTIONAL_LSP_DEPENDENCY_ROOTS = ("pygls", "lsprotocol")
-
-
-def _is_optional_lsp_dependency_error(exc: ImportError) -> bool:
-    missing_name = exc.name or ""
-    return any(
-        missing_name == dependency or missing_name.startswith(f"{dependency}.")
-        for dependency in _OPTIONAL_LSP_DEPENDENCY_ROOTS
-    )
 
 
 try:
     from yaraast.lsp.server import YaraLanguageServer
 except ImportError as exc:
-    if not _is_optional_lsp_dependency_error(exc):
+    if not is_missing_lsp_dependency(exc):
         raise
     YaraLanguageServer = None
 

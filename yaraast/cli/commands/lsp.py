@@ -12,16 +12,7 @@ from yaraast.cli.lsp_reporting import (
     display_starting,
     get_console,
 )
-
-_OPTIONAL_LSP_DEPENDENCY_ROOTS = ("pygls", "lsprotocol")
-
-
-def _is_optional_lsp_dependency_error(exc: ImportError) -> bool:
-    missing_name = exc.name or ""
-    return any(
-        missing_name == dependency or missing_name.startswith(f"{dependency}.")
-        for dependency in _OPTIONAL_LSP_DEPENDENCY_ROOTS
-    )
+from yaraast.lsp.optional_dependencies import is_missing_lsp_dependency
 
 
 @click.command()
@@ -58,7 +49,7 @@ def lsp(tcp: int | None, host: str) -> None:
 
         start_lsp_server(server, tcp, host)
     except ImportError as exc:
-        if not _is_optional_lsp_dependency_error(exc):
+        if not is_missing_lsp_dependency(exc):
             raise
         display_missing_dependency(console, exc)
         raise click.Abort from None

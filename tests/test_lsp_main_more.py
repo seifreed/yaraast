@@ -77,6 +77,33 @@ def test_lsp_package_propagates_internal_import_errors(
         importlib.reload(lsp_pkg)
 
 
+def test_lsp_package_propagates_internal_optional_dependency_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import yaraast.lsp as lsp_pkg
+
+    real_import: ImportFunction = builtins.__import__
+
+    def fail_internal_optional_dependency_import(
+        name: str,
+        globals_: Any = None,
+        locals_: Any = None,
+        fromlist: Any = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "yaraast.lsp.server":
+            raise ImportError("broken lsprotocol internals", name="lsprotocol._broken")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_internal_optional_dependency_import)
+    try:
+        with pytest.raises(ImportError, match="broken lsprotocol internals"):
+            importlib.reload(lsp_pkg)
+    finally:
+        monkeypatch.setattr(builtins, "__import__", real_import)
+        importlib.reload(lsp_pkg)
+
+
 def test_lsp_server_import_propagates_pygls_internal_import_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -194,6 +221,28 @@ def test_lsp_command_reports_optional_dependency_import_errors(
 
     assert result.exit_code != 0
     assert "Missing dependency" in result.output
+
+
+def test_lsp_command_propagates_internal_optional_dependency_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_import: ImportFunction = builtins.__import__
+
+    def fail_internal_optional_dependency_import(
+        name: str,
+        globals_: Any = None,
+        locals_: Any = None,
+        fromlist: Any = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "yaraast.cli.lsp_services":
+            raise ImportError("broken pygls internals", name="pygls.protocol")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_internal_optional_dependency_import)
+
+    with pytest.raises(ImportError, match="broken pygls internals"):
+        CliRunner().invoke(lsp_cmd, [], catch_exceptions=False)
 
 
 def test_lsp_command_tcp_rejects_negative_port() -> None:
