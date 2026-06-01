@@ -8,6 +8,13 @@ from typing import Any
 from yaraast.ast.base import ASTNode, _require_ast_node_sequence, _VisitorType
 
 
+def _require_string(value: Any, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
 @dataclass
 class StringDefinition(ASTNode):
     """Base class for string definitions."""
@@ -15,6 +22,10 @@ class StringDefinition(ASTNode):
     identifier: str
     modifiers: list[Any] = field(default_factory=list)
     is_anonymous: bool = field(default=False, kw_only=True)
+
+    def validate_structure(self) -> None:
+        """Validate string definition scalar fields before direct analysis."""
+        _require_string(self.identifier, "String identifier")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_definition(self)
@@ -25,6 +36,13 @@ class PlainString(StringDefinition):
     """Plain text string definition."""
 
     value: str | bytes = ""
+
+    def validate_structure(self) -> None:
+        """Validate plain string scalar fields before direct analysis."""
+        super().validate_structure()
+        if not isinstance(self.value, str | bytes):
+            msg = "Plain string value must be a string or bytes"
+            raise TypeError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_plain_string(self)
@@ -38,6 +56,7 @@ class HexString(StringDefinition):
 
     def validate_structure(self) -> None:
         """Validate hex token containers before direct analysis."""
+        super().validate_structure()
         _require_ast_node_sequence(self.tokens, "HexString.tokens")
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -119,6 +138,11 @@ class RegexString(StringDefinition):
     """Regular expression string."""
 
     regex: str = ""  # Add default
+
+    def validate_structure(self) -> None:
+        """Validate regex string scalar fields before direct analysis."""
+        super().validate_structure()
+        _require_string(self.regex, "Regex string pattern")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_regex_string(self)

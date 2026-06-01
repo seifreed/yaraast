@@ -150,8 +150,16 @@ class YaraFile(ASTNode):
             "ExternNamespace",
         )
         if deep:
-            for rule in self.rules:
-                validate_structure = getattr(rule, "validate_structure", None)
+            for item in (
+                *self.imports,
+                *self.includes,
+                *self.rules,
+                *self.extern_rules,
+                *self.extern_imports,
+                *self.pragmas,
+                *self.namespaces,
+            ):
+                validate_structure = getattr(item, "validate_structure", None)
                 if callable(validate_structure):
                     validate_structure()
 

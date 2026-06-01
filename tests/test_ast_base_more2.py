@@ -82,6 +82,37 @@ def test_direct_yarafile_optimizers_validate_nested_hex_tokens() -> None:
         ExpressionOptimizer().optimize(malformed_file)
 
 
+@pytest.mark.parametrize(
+    ("field_name", "value", "message"),
+    [
+        ("imports", [Import(cast(Any, object()))], "Import module must be a string"),
+        ("includes", [Include(cast(Any, object()))], "Include path must be a string"),
+        ("rules", [Rule(cast(Any, object()))], "Rule name must be a string"),
+        ("rules", [Rule("bad_tag", tags=[Tag(cast(Any, object()))])], "Tag name must be a string"),
+        (
+            "rules",
+            [Rule("bad_string", strings=[PlainString(cast(Any, object()), "x")])],
+            "String identifier must be a string",
+        ),
+        (
+            "rules",
+            [Rule("bad_value", strings=[PlainString("$a", value=cast(Any, object()))])],
+            "Plain string value must be a string or bytes",
+        ),
+    ],
+)
+def test_direct_yarafile_optimizers_validate_scalar_fields(
+    field_name: str,
+    value: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile()
+    setattr(malformed_file, field_name, value)
+
+    with pytest.raises(TypeError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
 def test_yarafile_helpers() -> None:
     file_node = YaraFile(
         imports=[Import(module="pe")],
