@@ -19,6 +19,13 @@ from yaraast.serialization.roundtrip_serializer import (
 )
 from yaraast.shared.numeric_validation import validate_positive_int_setting
 
+_PRETTY_STYLE_PRESETS = {
+    "compact": StylePresets.compact,
+    "dense": StylePresets.dense,
+    "readable": StylePresets.readable,
+    "verbose": StylePresets.verbose,
+}
+
 
 def _parse_pipeline_info(pipeline_info: str | None) -> dict[str, Any] | None:
     if not pipeline_info:
@@ -70,7 +77,7 @@ def test_roundtrip_file(input_file: Path, format: str) -> dict[str, Any]:
 
 def pretty_print_file(
     input_file: Path,
-    style: str,
+    style: object,
     indent_size: int,
     max_line_length: int,
     align_strings: bool,
@@ -83,14 +90,12 @@ def pretty_print_file(
 
     yara_source = read_text(input_file)
     ast = parse_yara_source(yara_source)
-    if style == "compact":
-        options = StylePresets.compact()
-    elif style == "dense":
-        options = StylePresets.dense()
-    elif style == "verbose":
-        options = StylePresets.verbose()
-    else:
-        options = StylePresets.readable()
+    if not isinstance(style, str):
+        raise TypeError("pretty style must be a string")
+    if style not in _PRETTY_STYLE_PRESETS:
+        valid = ", ".join(sorted(_PRETTY_STYLE_PRESETS))
+        raise ValueError(f"pretty style must be one of: {valid}")
+    options = _PRETTY_STYLE_PRESETS[style]()
     options.indent_size = indent_size
     options.max_line_length = max_line_length
     options.align_string_definitions = align_strings

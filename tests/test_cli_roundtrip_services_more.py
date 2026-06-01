@@ -43,13 +43,13 @@ def test_pretty_print_file_uses_dense_style(tmp_path: Path) -> None:
     assert "rule sample" in formatted
 
 
-def test_pretty_print_file_falls_back_to_readable_style(tmp_path: Path) -> None:
+def test_pretty_print_file_uses_readable_style(tmp_path: Path) -> None:
     yara_path = tmp_path / "readable.yar"
     _write_rule(yara_path)
 
     ast, formatted = pretty_print_file(
         yara_path,
-        "unknown-style",
+        "readable",
         4,
         120,
         False,
@@ -60,6 +60,27 @@ def test_pretty_print_file_falls_back_to_readable_style(tmp_path: Path) -> None:
 
     assert ast.rules[0].name == "sample"
     assert "condition:" in formatted
+
+
+@pytest.mark.parametrize("style", [None, 123])
+def test_pretty_print_file_rejects_non_string_styles(tmp_path: Path, style: object) -> None:
+    yara_path = tmp_path / "style.yar"
+    _write_rule(yara_path)
+
+    with pytest.raises(TypeError, match="pretty style must be a string"):
+        pretty_print_file(yara_path, style, 4, 120, True, True, True, True)
+
+
+@pytest.mark.parametrize("style", ["", "unknown-style"])
+def test_pretty_print_file_rejects_unknown_styles(tmp_path: Path, style: str) -> None:
+    yara_path = tmp_path / "style.yar"
+    _write_rule(yara_path)
+
+    with pytest.raises(
+        ValueError,
+        match="pretty style must be one of: compact, dense, readable, verbose",
+    ):
+        pretty_print_file(yara_path, style, 4, 120, True, True, True, True)
 
 
 def test_pretty_print_file_rejects_invalid_numeric_options(tmp_path: Path) -> None:
