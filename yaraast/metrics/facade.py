@@ -9,9 +9,17 @@ from typing import Any
 from yaraast.ast.base import YaraFile
 from yaraast.metrics.capabilities import CAPABILITIES, MetricsCapability, get_capability
 from yaraast.metrics.complexity import ComplexityAnalyzer
-from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
+
+DependencyGraphGenerator: Any
+
+try:
+    from yaraast.metrics.dependency_graph import DependencyGraphGenerator
+except ModuleNotFoundError as exc:
+    if exc.name != "graphviz":
+        raise
+    DependencyGraphGenerator = None
 
 
 @dataclass(frozen=True)
@@ -19,14 +27,17 @@ class MetricsSubsystem:
     """Provide a single conceptual entry point for metrics capabilities."""
 
     complexity_analyzer: type[ComplexityAnalyzer] = ComplexityAnalyzer
-    dependency_graph_generator: type[DependencyGraphGenerator] = DependencyGraphGenerator
+    dependency_graph_generator: Any = DependencyGraphGenerator
     html_tree_generator: type[HtmlTreeGenerator] = HtmlTreeGenerator
     string_diagram_generator: type[StringDiagramGenerator] = StringDiagramGenerator
 
     def new_complexity_analyzer(self) -> ComplexityAnalyzer:
         return self.complexity_analyzer()
 
-    def new_dependency_graph_generator(self) -> DependencyGraphGenerator:
+    def new_dependency_graph_generator(self) -> Any:
+        if self.dependency_graph_generator is None:
+            msg = "Graph visualization requires the 'graphviz' Python package."
+            raise RuntimeError(msg)
         return self.dependency_graph_generator()
 
     def new_html_tree_generator(self) -> HtmlTreeGenerator:

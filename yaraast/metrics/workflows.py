@@ -11,16 +11,9 @@ from yaraast.ast.base import YaraFile
 from yaraast.errors import ValidationError
 from yaraast.metrics.capabilities import get_capability
 from yaraast.metrics.complexity_model import ComplexityMetrics
-from yaraast.metrics.facade import METRICS
+from yaraast.metrics.facade import METRICS, DependencyGraphGenerator
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
-
-DependencyGraphGenerator: Any
-
-try:
-    from yaraast.metrics.dependency_graph import DependencyGraphGenerator
-except ModuleNotFoundError:
-    DependencyGraphGenerator = None
 
 
 @dataclass
@@ -38,6 +31,9 @@ def analyze_complexity(ast: YaraFile) -> ComplexityMetrics:
 
 def is_graphviz_error(error: Exception) -> bool:
     """Check if error is caused by missing graphviz installation."""
+    if isinstance(error, ModuleNotFoundError) and error.name == "graphviz":
+        return True
+
     # Check exception type first (more reliable than string matching)
     error_type = type(error).__name__
     if error_type in ("ExecutableNotFound", "CalledProcessError"):
