@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.base import require_yara_file
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
 from yaraast.shared.numeric_validation import validate_positive_int_setting
@@ -37,6 +38,7 @@ class RuleOptimizer:
             Tuple of (optimized AST, optimization statistics)
 
         """
+        yara_file = require_yara_file(yara_file, "yara_file")
         validate_positive_int_setting(passes, "passes")
 
         total_expr_opts = 0
@@ -79,6 +81,7 @@ class RuleOptimizer:
 
     def get_optimization_report(self, yara_file: YaraFile) -> dict[str, Any]:
         """Generate a detailed optimization report."""
+        yara_file = require_yara_file(yara_file, "yara_file")
         original_rule_count = len(yara_file.rules)
         original_strings = sum(len(rule.strings) for rule in yara_file.rules)
 

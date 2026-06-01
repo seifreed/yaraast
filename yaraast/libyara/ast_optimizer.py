@@ -3,7 +3,7 @@
 import copy
 from dataclasses import dataclass
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import YaraFile, require_yara_file
 from yaraast.ast.expressions import BinaryExpression, Expression, IntegerLiteral, UnaryExpression
 from yaraast.ast.rules import Rule
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
@@ -36,6 +36,7 @@ class ASTOptimizer:
 
     def optimize(self, ast: YaraFile) -> YaraFile:
         """Apply optimizations to AST."""
+        ast = require_yara_file(ast, "ast")
         ast.validate_structure()
         self.stats = OptimizationStats()
         self.optimizations_applied = []

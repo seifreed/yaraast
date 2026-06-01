@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, TypeVar, overload
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import YaraFile, require_yara_file
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 from yaraast.optimization.rule_optimizer import RuleOptimizer
@@ -90,6 +90,7 @@ class PerformanceOptimizer:
         strategy: str = "balanced",
     ) -> YaraFile:
         """Optimize an entire YARA file."""
+        yara_file = require_yara_file(yara_file, "yara_file")
         # Apply file-level optimizations
         optimized_file, _ = self.rule_optimizer.optimize(yara_file)
         yara_file = optimized_file
