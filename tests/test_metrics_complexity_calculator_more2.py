@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -37,6 +41,13 @@ from yaraast.metrics.complexity_calculator import ComplexityCalculator
 class _FalsyIntegerLiteral(IntegerLiteral):
     def __bool__(self) -> bool:
         return False
+
+
+def test_complexity_calculator_rejects_non_ast_nodes() -> None:
+    calc = ComplexityCalculator()
+
+    with pytest.raises(TypeError, match="Visitor node must be an ASTNode"):
+        calc.calculate(cast(Any, object()))
 
 
 def test_complexity_calculator_core_and_branches() -> None:

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.base import ASTNode
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
 from yaraast.metrics._visitor_base import MetricsVisitorBase
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import ASTNode
     from yaraast.ast.expressions import BinaryExpression, UnaryExpression
 
 
@@ -24,7 +24,7 @@ class ComplexityCalculator(MetricsVisitorBase):
         """Calculate complexity for an AST node."""
         if node is None:
             return 0
-        return node.accept(self)
+        return self.visit(node)
 
     def _calculate_ast_value(self, value: Any) -> int:
         if hasattr(value, "accept"):
