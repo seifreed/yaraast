@@ -314,6 +314,9 @@ class StringUsageAnalyzer(BaseVisitor[None]):
 
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
+        if not isinstance(name, str):
+            msg = "Local variable name must be a string"
+            raise TypeError(msg)
         names = [part.strip() for part in name.split(",")]
         return {local_name for local_name in names if local_name}
 
@@ -332,8 +335,12 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             for item in string_set:
                 self._visit_string_set_value(item)
             return
-        if isinstance(string_set, Identifier) and string_set.name == "them":
-            self._mark_all_current_rule_strings()
+        if isinstance(string_set, Identifier):
+            name = self._require_string_reference(string_set.name)
+            if name == "them":
+                self._mark_all_current_rule_strings()
+            else:
+                self._visit_ast_value(string_set)
             return
         if isinstance(string_set, StringLiteral):
             self._mark_string_set_text(string_set.value)
@@ -354,6 +361,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self._visit_ast_value(string_set)
 
     def _mark_string_set_text(self, text: str) -> None:
+        self._require_string_reference(text)
         rule_key = self._active_rule_key()
         if not (rule_key and self.in_condition):
             return
@@ -386,9 +394,17 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.used_strings[rule_key].add(normalized)
 
     def _mark_condition_string_identifier(self, string_id: str) -> None:
-        if self._is_local(string_id):
+        normalized = self._require_string_reference(string_id)
+        if self._is_local(normalized):
             return
-        self._mark_condition_string_ref(string_id)
+        self._mark_condition_string_ref(normalized)
+
+    @staticmethod
+    def _require_string_reference(value: Any) -> str:
+        if not isinstance(value, str):
+            msg = "String reference must be a string"
+            raise TypeError(msg)
+        return value
 
     def _mark_wildcard_string_set(self, pattern: str) -> None:
         rule_key = self._active_rule_key()

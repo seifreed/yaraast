@@ -367,6 +367,51 @@ def test_string_usage_analyzer_rejects_non_string_string_set_values(string_set: 
         StringUsageAnalyzer().analyze(ast)
 
 
+def test_string_usage_analyzer_rejects_non_string_identifier_string_set() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_identifier_string_set",
+                strings=[PlainString("$a", value="x")],
+                condition=OfExpression("any", Identifier(cast(Any, False))),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String reference must be a string"):
+        StringUsageAnalyzer().analyze(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        ForExpression(
+            "any",
+            cast(Any, False),
+            SetExpression([IntegerLiteral(1)]),
+            StringIdentifier("$a"),
+        ),
+        WithStatement(
+            declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
+            body=StringIdentifier("$a"),
+        ),
+    ],
+)
+def test_string_usage_analyzer_rejects_non_string_local_names(condition: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                "invalid_local_name",
+                strings=[PlainString("$a", value="x")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="Local variable name must be a string"):
+        StringUsageAnalyzer().analyze(ast)
+
+
 def test_string_usage_analyzer_respects_yarax_with_local_shadowing() -> None:
     ast = parse_yara_source("""
 rule shadowed_string {
