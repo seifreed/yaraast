@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.extern import ExternRule
 from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexAlternative, HexByte, HexWildcard, PlainString
+from yaraast.optimization.expression_optimizer import ExpressionOptimizer
 from yaraast.parser import Parser
 
 
@@ -36,6 +41,30 @@ def test_ast_node_children_flattens_nested_ast_lists() -> None:
     alternative = HexAlternative(alternatives=[[byte], [wildcard]])
 
     assert alternative.children() == [byte, wildcard]
+
+
+def test_yarafile_accept_rejects_non_ast_children() -> None:
+    file_node = YaraFile(rules=[cast(Any, object())])
+
+    with pytest.raises(TypeError, match=r"YaraFile\.rules must contain AST nodes"):
+        file_node.accept(cast(Any, object()))
+
+
+def test_rule_validate_structure_rejects_non_ast_children() -> None:
+    invalid_strings = Rule(name="bad", strings=[cast(Any, object())])
+    with pytest.raises(TypeError, match=r"Rule\.strings must contain AST nodes"):
+        invalid_strings.validate_structure()
+
+    invalid_condition = Rule(name="bad", condition=cast(Any, object()))
+    with pytest.raises(TypeError, match=r"Rule\.condition must be an AST node"):
+        invalid_condition.validate_structure()
+
+
+def test_direct_yarafile_optimizers_validate_structure() -> None:
+    malformed_file = YaraFile(rules=[cast(Any, object())])
+
+    with pytest.raises(TypeError, match=r"YaraFile\.rules must contain AST nodes"):
+        ExpressionOptimizer().optimize(malformed_file)
 
 
 def test_yarafile_helpers() -> None:

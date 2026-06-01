@@ -75,6 +75,24 @@ class ASTNode(ABC):
         return children
 
 
+def _require_ast_node(value: Any, field_name: str) -> ASTNode:
+    if not isinstance(value, ASTNode):
+        msg = f"{field_name} must be an AST node"
+        raise TypeError(msg)
+    return value
+
+
+def _require_ast_node_sequence(values: Any, field_name: str) -> list[ASTNode]:
+    if not isinstance(values, list | tuple):
+        msg = f"{field_name.replace('.', ' ')} must be a list or tuple"
+        raise TypeError(msg)
+    for value in values:
+        if not isinstance(value, ASTNode):
+            msg = f"{field_name} must contain AST nodes"
+            raise TypeError(msg)
+    return list(values)
+
+
 @dataclass
 class YaraFile(ASTNode):
     """Root node representing a complete YARA file with enhanced syntax support."""
@@ -87,7 +105,23 @@ class YaraFile(ASTNode):
     pragmas: list[Pragma] = field(default_factory=list)
     namespaces: list[ExternNamespace] = field(default_factory=list)
 
+    def validate_structure(self, *, deep: bool = True) -> None:
+        """Validate child containers before traversal."""
+        _require_ast_node_sequence(self.imports, "YaraFile.imports")
+        _require_ast_node_sequence(self.includes, "YaraFile.includes")
+        _require_ast_node_sequence(self.rules, "YaraFile.rules")
+        _require_ast_node_sequence(self.extern_rules, "YaraFile.extern_rules")
+        _require_ast_node_sequence(self.extern_imports, "YaraFile.extern_imports")
+        _require_ast_node_sequence(self.pragmas, "YaraFile.pragmas")
+        _require_ast_node_sequence(self.namespaces, "YaraFile.namespaces")
+        if deep:
+            for rule in self.rules:
+                validate_structure = getattr(rule, "validate_structure", None)
+                if callable(validate_structure):
+                    validate_structure()
+
     def accept(self, visitor: _VisitorType) -> Any:
+        self.validate_structure(deep=False)
         return visitor.visit_yara_file(self)
 
     def add_extern_rule(self, extern_rule: ExternRule) -> None:

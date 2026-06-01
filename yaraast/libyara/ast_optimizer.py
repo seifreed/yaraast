@@ -36,6 +36,7 @@ class ASTOptimizer:
 
     def optimize(self, ast: YaraFile) -> YaraFile:
         """Apply optimizations to AST."""
+        ast.validate_structure()
         self.stats = OptimizationStats()
         self.optimizations_applied = []
 

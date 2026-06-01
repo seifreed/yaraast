@@ -140,7 +140,15 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
 
     def visit(self, node: ASTNode) -> dict[str, Any]:
         """Visit a node and attach common AST metadata when present."""
-        return self._with_node_metadata(node, super().visit(node))
+        if not isinstance(node, ASTNode):
+            return super().visit(node)
+
+        from yaraast.ast.base import YaraFile
+
+        serialized = (
+            self.visit_yara_file(node) if isinstance(node, YaraFile) else super().visit(node)
+        )
+        return self._with_node_metadata(node, serialized)
 
     def _serialize_location(self, location: Location) -> dict[str, Any]:
         data: dict[str, Any] = {

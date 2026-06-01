@@ -75,6 +75,8 @@ class DeadCodeEliminator(ASTTransformer):
         Returns:
             Tuple of (optimized YaraFile, number of eliminations)
         """
+        ast.validate_structure()
+
         # Reset state
         self.used_strings.clear()
         self.used_strings_by_rule.clear()

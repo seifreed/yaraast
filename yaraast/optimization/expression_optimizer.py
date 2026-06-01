@@ -223,6 +223,7 @@ class ExpressionOptimizer(ASTTransformer):
             If YaraFile: tuple of (optimized YaraFile, optimization count)
         """
         if isinstance(node, YaraFile):
+            node.validate_structure()
             self.optimization_count = 0
             optimized_rules: list[Rule] = []
             for rule in node.rules:

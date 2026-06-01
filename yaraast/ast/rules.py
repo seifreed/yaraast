@@ -6,7 +6,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
 
-from yaraast.ast.base import ASTNode, _VisitorType
+from yaraast.ast.base import (
+    ASTNode,
+    _require_ast_node,
+    _require_ast_node_sequence,
+    _VisitorType,
+)
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
 from yaraast.errors import ValidationError
 
@@ -130,6 +135,13 @@ class Rule(ASTNode):
         if isinstance(meta, list | tuple):
             return list(meta)
         return [meta]
+
+    def validate_structure(self) -> None:
+        """Validate child containers before traversal."""
+        _require_ast_node_sequence(self.strings, "Rule.strings")
+        _require_ast_node_sequence(self.pragmas, "Rule.pragmas")
+        if self.condition is not None:
+            _require_ast_node(self.condition, "Rule.condition")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_rule(self)

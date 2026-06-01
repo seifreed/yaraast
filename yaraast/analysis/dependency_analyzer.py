@@ -51,6 +51,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     def analyze(self, yara_file: YaraFile) -> dict[str, Any]:
         """Analyze dependencies in YARA file."""
+        yara_file.validate_structure()
         self.rule_names.clear()
         self.dependencies.clear()
         self.imported_modules.clear()

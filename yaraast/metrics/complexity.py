@@ -46,6 +46,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
     def analyze(self, ast: YaraFile) -> ComplexityMetrics:
         """Analyze AST and return complexity metrics."""
+        ast.validate_structure()
         self.metrics = ComplexityMetrics()
         self._current_rule = None
         self._current_rule_key = None

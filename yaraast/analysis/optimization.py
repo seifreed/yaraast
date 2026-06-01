@@ -114,6 +114,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
 
     def analyze(self, ast: YaraFile) -> OptimizationReport:
         """Analyze AST for optimizations."""
+        ast.validate_structure()
         self.report = OptimizationReport()
         self._local_scopes.clear()
 
