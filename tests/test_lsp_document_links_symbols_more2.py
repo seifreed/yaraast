@@ -224,6 +224,24 @@ def test_symbols_provider_without_runtime_uses_document_context_fallback() -> No
     assert rule_symbol.selection_range.start.line == 1
 
 
+def test_symbols_provider_preserves_duplicate_imports_and_includes() -> None:
+    text = """
+import "pe"
+import "pe"
+include "common.yar"
+include "common.yar"
+rule sample { condition: true }
+""".lstrip()
+    provider = SymbolsProvider()
+
+    symbols = provider.get_symbols(text)
+    imports = [symbol for symbol in symbols if symbol.name == 'import "pe"']
+    includes = [symbol for symbol in symbols if symbol.name == 'include "common.yar"']
+
+    assert [symbol.range.start.line for symbol in imports] == [0, 1]
+    assert [symbol.range.start.line for symbol in includes] == [2, 3]
+
+
 def test_symbols_provider_caches_results_per_document_revision(tmp_path: Path) -> None:
     doc = tmp_path / "doc.yar"
     text_v1 = "rule sample { condition: true }\n"

@@ -30,15 +30,28 @@ def build_document_symbols(doc: DocumentContext, lines: list[str]) -> list[Docum
 def _append_import_symbols(
     symbols: list[DocumentSymbol], doc: DocumentContext, lines: list[str]
 ) -> None:
-    for module_name in doc.get_import_modules():
-        record = doc.find_symbol_record("import", module_name)
-        if record is not None:
+    import_records = [record for record in doc.symbols() if record.kind == "import"]
+    if import_records:
+        for import_record in import_records:
             symbols.append(
                 DocumentSymbol(
-                    name=f'import "{record.name}"',
+                    name=f'import "{import_record.name}"',
                     kind=SymbolKind.Namespace,
-                    range=record.range,
-                    selection_range=record.range,
+                    range=import_record.range,
+                    selection_range=import_record.range,
+                )
+            )
+        return
+
+    for module_name in doc.get_import_modules():
+        fallback_import_record = doc.find_symbol_record("import", module_name)
+        if fallback_import_record is not None:
+            symbols.append(
+                DocumentSymbol(
+                    name=f'import "{fallback_import_record.name}"',
+                    kind=SymbolKind.Namespace,
+                    range=fallback_import_record.range,
+                    selection_range=fallback_import_record.range,
                 )
             )
             continue
@@ -58,15 +71,28 @@ def _append_import_symbols(
 def _append_include_symbols(
     symbols: list[DocumentSymbol], doc: DocumentContext, lines: list[str]
 ) -> None:
-    for include_path in doc.get_include_paths():
-        record = doc.find_symbol_record("include", include_path)
-        if record is not None:
+    include_records = [record for record in doc.symbols() if record.kind == "include"]
+    if include_records:
+        for include_record in include_records:
             symbols.append(
                 DocumentSymbol(
-                    name=f'include "{record.name}"',
+                    name=f'include "{include_record.name}"',
                     kind=SymbolKind.File,
-                    range=record.range,
-                    selection_range=record.range,
+                    range=include_record.range,
+                    selection_range=include_record.range,
+                )
+            )
+        return
+
+    for include_path in doc.get_include_paths():
+        fallback_include_record = doc.find_symbol_record("include", include_path)
+        if fallback_include_record is not None:
+            symbols.append(
+                DocumentSymbol(
+                    name=f'include "{fallback_include_record.name}"',
+                    kind=SymbolKind.File,
+                    range=fallback_include_record.range,
+                    selection_range=fallback_include_record.range,
                 )
             )
             continue
