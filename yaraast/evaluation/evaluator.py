@@ -470,30 +470,33 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def visit_function_call(self, node: FunctionCall) -> Any:
         """Evaluate function call."""
-        # Evaluate arguments
-        args = [self.visit(arg) for arg in node.arguments]
+        function = self._function_name(node.function)
+        arguments = self._function_arguments(node.arguments)
 
-        function = self._little_endian_aliases.get(node.function, node.function)
-        reader = self._builtin_readers.get(function)
+        # Evaluate arguments
+        args = [self.visit(arg) for arg in arguments]
+
+        resolved_function = self._little_endian_aliases.get(function, function)
+        reader = self._builtin_readers.get(resolved_function)
         if reader:
             if len(args) != 1:
-                msg = f"{node.function}() expects exactly 1 argument"
+                msg = f"{function}() expects exactly 1 argument"
                 raise EvaluationError(msg)
             offset = args[0]
             if is_yara_undefined(offset):
                 return YARA_UNDEFINED
             if not _is_evaluation_int(offset):
-                msg = f"{node.function}() offset must be an integer"
+                msg = f"{function}() offset must be an integer"
                 raise EvaluationError(msg)
             return reader(self.data, offset)
 
-        local_function = self.context.variables.get(node.function)
+        local_function = self.context.variables.get(function)
         if callable(local_function):
             return local_function(*args)
 
         # Module functions
-        if "." in node.function:
-            module_name, func_name = node.function.split(".", 1)
+        if "." in function:
+            module_name, func_name = function.split(".", 1)
             if module_name in self.context.modules:
                 module = self.context.modules[module_name]
                 resolved = self._resolve_module_function(module, func_name)
@@ -512,8 +515,24 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                             return func(*module_args)
                         return func
 
-        msg = f"Unknown function: {node.function}"
+        msg = f"Unknown function: {function}"
         raise EvaluationError(msg)
+
+    def _function_name(self, value: Any) -> str:
+        if not isinstance(value, str):
+            msg = "Function name must be a string"
+            raise TypeError(msg)
+        return value
+
+    def _function_arguments(self, value: Any) -> list[Expression]:
+        if not isinstance(value, list | tuple):
+            msg = "Function arguments must be a list or tuple"
+            raise TypeError(msg)
+        for argument in value:
+            if not isinstance(argument, Expression):
+                msg = "Function arguments must contain Expression nodes"
+                raise TypeError(msg)
+        return list(value)
 
     def _resolve_module_function(
         self, module: object, dotted_name: str

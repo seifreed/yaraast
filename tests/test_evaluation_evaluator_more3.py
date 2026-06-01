@@ -1610,6 +1610,18 @@ def test_binary_unary_function_member_array_and_errors() -> None:
     with pytest.raises(EvaluationError, match="Unknown function"):
         ev.visit_function_call(FunctionCall(function="nope.fn", arguments=[]))
 
+    invalid_name: Any = False
+    with pytest.raises(TypeError, match="Function name must be a string"):
+        ev.visit_function_call(FunctionCall(function=invalid_name, arguments=[]))
+
+    invalid_arguments: Any = False
+    with pytest.raises(TypeError, match="Function arguments must be a list or tuple"):
+        ev.visit_function_call(FunctionCall(function="uint16", arguments=invalid_arguments))
+
+    invalid_argument_item: Any = object()
+    with pytest.raises(TypeError, match="Function arguments must contain Expression nodes"):
+        ev.visit_function_call(FunctionCall(function="uint16", arguments=[invalid_argument_item]))
+
     obj = SimpleNamespace(v=9)
     assert (
         ev.visit_member_access(MemberAccess(object=StringLiteral(value="x"), member="upper"))
