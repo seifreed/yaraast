@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import Any, TypeGuard, cast
 
 from lsprotocol.types import CodeAction, Diagnostic
 
@@ -16,6 +16,10 @@ from yaraast.lsp.code_action_semantic_quickfixes import (
     create_trim_arguments_action,
 )
 from yaraast.lsp.lsp_docs import MODULE_DOCS
+
+
+def _is_arity_int(value: object) -> TypeGuard[int]:
+    return isinstance(value, int) and not isinstance(value, bool)
 
 
 def handle_module_not_imported(
@@ -62,15 +66,15 @@ def handle_invalid_arity(
         isinstance(function_name, str)
         and arity_kind == "min"
         and actual_args == 0
-        and isinstance(expected_min, int)
+        and _is_arity_int(expected_min)
         and expected_min >= 1
     ):
         return create_add_placeholder_argument_action(text, diagnostic, uri, function_name)
     if (
         isinstance(function_name, str)
         and arity_kind == "exact"
-        and isinstance(actual_args, int)
-        and isinstance(expected_args, int)
+        and _is_arity_int(actual_args)
+        and _is_arity_int(expected_args)
         and actual_args < expected_args
     ):
         return create_add_missing_arguments_action(
@@ -83,16 +87,16 @@ def handle_invalid_arity(
     if (
         isinstance(function_name, str)
         and arity_kind == "max"
-        and isinstance(actual_args, int)
-        and isinstance(expected_max, int)
+        and _is_arity_int(actual_args)
+        and _is_arity_int(expected_max)
         and actual_args > expected_max
     ):
         return create_trim_arguments_action(text, diagnostic, uri, function_name, expected_max)
     if (
         isinstance(function_name, str)
         and arity_kind == "exact"
-        and isinstance(actual_args, int)
-        and isinstance(expected_args, int)
+        and _is_arity_int(actual_args)
+        and _is_arity_int(expected_args)
         and actual_args > expected_args
     ):
         return create_trim_arguments_action(text, diagnostic, uri, function_name, expected_args)

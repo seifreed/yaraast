@@ -466,6 +466,35 @@ rule sample {
     assert "Add 1 missing argument(s) to uint8()" in titles
 
 
+def test_code_action_ignores_boolean_arity_metadata() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        uint8()
+}
+""".lstrip()
+    diag = Diagnostic(
+        range=_range(2, 8, 13),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "uint8",
+                "arity_kind": "exact",
+                "actual_args": False,
+                "expected_args": True,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(text, _range(2, 8, 13), [diag], "file://test.yar")
+
+    assert all("uint8()" not in action.title for action in actions)
+
+
 def test_code_action_add_missing_argument_uses_outer_call_close() -> None:
     provider = CodeActionsProvider()
     text = """
