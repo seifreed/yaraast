@@ -773,12 +773,16 @@ def _is_string_set_expression(node: SetExpression) -> bool:
 
 def _is_string_set_element(element: Any) -> bool:
     if isinstance(element, StringIdentifier | StringWildcard):
-        return not isinstance(element, StringWildcard) or element.pattern.startswith("$")
+        return not isinstance(element, StringWildcard) or (
+            isinstance(element.pattern, str) and element.pattern.startswith("$")
+        )
     if isinstance(element, StringLiteral):
         value = element.value
-        return value == "them" or value.startswith("$")
+        return isinstance(value, str) and (value == "them" or value.startswith("$"))
     if isinstance(element, Identifier):
-        return element.name == "them" or element.name.startswith("$")
+        return isinstance(element.name, str) and (
+            element.name == "them" or element.name.startswith("$")
+        )
     return False
 
 
@@ -808,7 +812,11 @@ def _infer_string_set_value(ctx: Any, value: Any) -> YaraType:
         return _infer_string_set_value(ctx, value.expression)
     if isinstance(value, StringIdentifier | StringLiteral):
         return StringSetType()
-    if isinstance(value, StringWildcard) and value.pattern.startswith("$"):
+    if (
+        isinstance(value, StringWildcard)
+        and isinstance(value.pattern, str)
+        and value.pattern.startswith("$")
+    ):
         return StringSetType()
     if hasattr(value, "accept"):
         return cast(YaraType, ctx.visit(value))
@@ -840,6 +848,9 @@ def _validate_raw_string_ref(ctx: Any, value: str) -> None:
 
 
 def _lookup_string_set_local(ctx: Any, name: str) -> YaraType | None:
+    if not isinstance(name, str):
+        ctx.errors.append("String reference must be a string")
+        return None
     names = [name]
     if name.startswith("$"):
         names.append(name.lstrip("$"))
@@ -882,16 +893,25 @@ def _validate_string_set_refs(ctx: Any, value: Any) -> None:
         return
 
     if isinstance(value, StringLiteral):
+        if not isinstance(value.value, str):
+            ctx.errors.append("String reference must be a string")
+            return
         _validate_string_set_refs(ctx, value.value)
         return
 
     if isinstance(value, StringIdentifier):
+        if not isinstance(value.name, str):
+            ctx.errors.append("String reference must be a string")
+            return
         if _validate_string_set_local_ref(ctx, value.name):
             return
         _validate_raw_string_ref(ctx, value.name)
         return
 
     if isinstance(value, StringWildcard):
+        if not isinstance(value.pattern, str):
+            ctx.errors.append("String reference must be a string")
+            return
         if value.pattern.startswith("$"):
             _validate_raw_string_ref(ctx, value.pattern)
         return
@@ -937,18 +957,26 @@ def _is_string_set_value(value: Any) -> bool:
     if isinstance(value, StringIdentifier):
         return True
     if isinstance(value, StringWildcard):
-        return value.pattern.startswith("$")
+        return isinstance(value.pattern, str) and value.pattern.startswith("$")
     if isinstance(value, StringLiteral):
-        return value.value == "them" or value.value.startswith("$")
+        return isinstance(value.value, str) and (
+            value.value == "them" or value.value.startswith("$")
+        )
     if isinstance(value, Identifier):
-        return value.name == "them" or value.name.startswith("$")
+        return isinstance(value.name, str) and (value.name == "them" or value.name.startswith("$"))
     return bool(isinstance(value, str))
 
 
 def _is_rule_set_value(value: Any) -> bool:
     if isinstance(value, Identifier):
-        return value.name != "them" and not value.name.startswith("$")
-    return isinstance(value, StringWildcard) and not value.pattern.startswith("$")
+        return (
+            isinstance(value.name, str) and value.name != "them" and not value.name.startswith("$")
+        )
+    return (
+        isinstance(value, StringWildcard)
+        and isinstance(value.pattern, str)
+        and not value.pattern.startswith("$")
+    )
 
 
 def _validate_rule_set_refs(ctx: Any, value: Any) -> None:
@@ -967,12 +995,16 @@ def _validate_rule_set_refs(ctx: Any, value: Any) -> None:
         return
 
     if isinstance(value, Identifier):
+        if not isinstance(value.name, str):
+            ctx.errors.append("Rule reference must be a string")
+            return
         if not ctx.env.has_rule(value.name):
             ctx.errors.append(f"Undefined rule: {value.name}")
         return
 
     if (
         isinstance(value, StringWildcard)
+        and isinstance(value.pattern, str)
         and not value.pattern.startswith("$")
         and not ctx.env.has_rule_pattern(value.pattern)
     ):

@@ -108,7 +108,11 @@ class TypeChecker(BaseVisitor[None]):
         rule_strings: set[str] = set()
         rule_anonymous_strings: set[str] = set()
         for string in node.strings:
-            string_id = _normalize_string_id(string.identifier)
+            try:
+                string_id = _normalize_string_id(string.identifier)
+            except (TypeError, ValueError) as exc:
+                self.errors.append(str(exc))
+                continue
             rule_strings.add(string_id)
             if getattr(string, "is_anonymous", False):
                 rule_anonymous_strings.add(string_id)
@@ -119,7 +123,11 @@ class TypeChecker(BaseVisitor[None]):
         try:
             # Type check condition
             if node.condition is not None:
-                cond_type = self.inference.infer(node.condition)
+                try:
+                    cond_type = self.inference.infer(node.condition)
+                except (TypeError, ValueError) as exc:
+                    self.errors.append(str(exc))
+                    return
                 # In YARA, integer conditions are valid (0 = false, non-zero = true)
                 # Also string counts and offsets return integers that can be used as conditions
                 # String identifiers ($a, $b) are also valid as boolean conditions

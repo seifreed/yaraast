@@ -9,10 +9,12 @@ from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    Identifier,
     IntegerLiteral,
     SetExpression,
     StringIdentifier,
     StringLiteral,
+    StringWildcard,
 )
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Rule
@@ -722,3 +724,29 @@ def test_semantic_validator_does_not_match_anonymous_strings_with_named_wildcard
         "anonymous_global_wildcard" in message and "Undefined string pattern" in message
         for message in messages
     )
+
+
+def test_semantic_validator_reports_non_string_string_references() -> None:
+    conditions = [
+        StringIdentifier(cast(Any, False)),
+        OfExpression("any", [StringIdentifier(cast(Any, False))]),
+        OfExpression("any", [StringLiteral(cast(Any, False))]),
+        OfExpression("any", [StringWildcard(cast(Any, False))]),
+        OfExpression("any", Identifier(cast(Any, False))),
+    ]
+
+    for condition in conditions:
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    "invalid_string_reference",
+                    strings=[PlainString("$a", value="x")],
+                    condition=condition,
+                )
+            ]
+        )
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        assert any(error.message == "String reference must be a string" for error in result.errors)
