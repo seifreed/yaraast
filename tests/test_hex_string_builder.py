@@ -226,6 +226,14 @@ class TestHexStringBuilderErrorHandling:
         with pytest.raises(ValidationError, match="Invalid hex value"):
             builder.add("XY")
 
+    def test_add_hex_string_rejects_non_prefix_0x_markers(self) -> None:
+        """Add should only treat 0x as a leading hex prefix."""
+        builder = HexStringBuilder()
+
+        for value in ("AB0x", "0x0xAB"):
+            with pytest.raises(ValidationError, match="Hex value must be 2 characters"):
+                builder.add(value)
+
     def test_add_invalid_type(self) -> None:
         """Add should reject invalid types."""
         builder = HexStringBuilder()

@@ -33,7 +33,7 @@ class HexStringBuilder:
             msg = f"Byte value must be 0-255, got {value}"
             raise ValidationError(msg)
 
-        hex_val = value.upper().replace("0X", "")
+        hex_val = value.upper().removeprefix("0X")
         if len(hex_val) != 2:
             msg = f"Hex value must be 2 characters, got {value}"
             raise ValidationError(msg)
