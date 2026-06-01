@@ -603,6 +603,11 @@ def _modifier_value_text(value) -> str:
     return str(value)
 
 
+def _raise_invalid_modifier_value() -> None:
+    msg = "String modifier value must be a string, number, tuple, or null"
+    raise SerializationError(msg)
+
+
 def _is_protobuf_int(value) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
@@ -633,7 +638,7 @@ def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
     ):
         pb_mod.tuple_value.extend([int(value[0]), int(value[1])])
     elif isinstance(value, bool):
-        pb_mod.typed_value.bool_value = value
+        _raise_invalid_modifier_value()
     elif isinstance(value, int):
         pb_mod.typed_value.int_value = value
     elif isinstance(value, float):
@@ -1663,7 +1668,7 @@ def _typed_modifier_value(pb_modifier):
         if typed_value.HasField("string_value"):
             return typed_value.string_value
         if typed_value.HasField("bool_value"):
-            return typed_value.bool_value
+            _raise_invalid_modifier_value()
         if typed_value.HasField("int_value"):
             return typed_value.int_value
         if typed_value.HasField("double_value"):
