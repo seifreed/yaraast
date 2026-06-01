@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from yaraast.cli.commands.lsp import lsp
 
 
-def test_lsp_command_missing_dependency_path() -> None:
+def test_lsp_command_propagates_internal_lsp_module_import_error() -> None:
     runner = CliRunner()
 
     import yaraast.lsp as lsp_pkg
@@ -19,11 +19,12 @@ def test_lsp_command_missing_dependency_path() -> None:
     original_lsp_services = sys.modules.pop("yaraast.cli.lsp_services", None)
 
     try:
-        # Make submodule discovery fail to force ImportError in command body.
         lsp_pkg.__path__ = []
         result = runner.invoke(lsp, ["--stdio"])
         assert result.exit_code != 0
-        assert "Missing dependency" in result.output
+        assert isinstance(result.exception, ModuleNotFoundError)
+        assert result.exception.name == "yaraast.lsp.server"
+        assert result.output == ""
     finally:
         lsp_pkg.__path__ = original_path
         if original_server is not None:

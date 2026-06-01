@@ -120,6 +120,52 @@ def test_lsp_command_stdio_starts_in_cli_runner() -> None:
     assert "Using stdio for communication" in result.output
 
 
+def test_lsp_command_propagates_internal_import_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_import: ImportFunction = builtins.__import__
+
+    def fail_internal_lsp_services_import(
+        name: str,
+        globals_: Any = None,
+        locals_: Any = None,
+        fromlist: Any = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "yaraast.cli.lsp_services":
+            raise ImportError("broken lsp services", name="yaraast.lsp.server_factory")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_internal_lsp_services_import)
+
+    with pytest.raises(ImportError, match="broken lsp services"):
+        CliRunner().invoke(lsp_cmd, [], catch_exceptions=False)
+
+
+def test_lsp_command_reports_optional_dependency_import_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_import: ImportFunction = builtins.__import__
+
+    def fail_optional_lsp_dependency_import(
+        name: str,
+        globals_: Any = None,
+        locals_: Any = None,
+        fromlist: Any = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "yaraast.cli.lsp_services":
+            raise ImportError("missing pygls", name="pygls")
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_optional_lsp_dependency_import)
+
+    result = CliRunner().invoke(lsp_cmd, [])
+
+    assert result.exit_code != 0
+    assert "Missing dependency" in result.output
+
+
 def test_lsp_command_tcp_rejects_negative_port() -> None:
     runner = CliRunner()
 
