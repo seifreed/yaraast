@@ -143,12 +143,10 @@ def test_protobuf_serializer_preserves_hex_jump_zero_and_open_bounds() -> None:
                 name="jump_bounds",
                 strings=[
                     HexString(
-                        identifier="$h",
-                        tokens=[
-                            HexJump(min_jump=min_jump, max_jump=max_jump)
-                            for min_jump, max_jump in expected_jumps
-                        ],
+                        identifier=f"$h{index}",
+                        tokens=[HexByte(0x90), HexJump(min_jump, max_jump), HexByte(0x91)],
                     )
+                    for index, (min_jump, max_jump) in enumerate(expected_jumps)
                 ],
                 condition=BooleanLiteral(value=True),
             )
@@ -156,10 +154,12 @@ def test_protobuf_serializer_preserves_hex_jump_zero_and_open_bounds() -> None:
     )
 
     restored = serializer.deserialize(binary_data=serializer.serialize(ast))
-    string_def = restored.rules[0].strings[0]
 
-    assert isinstance(string_def, HexString)
-    assert [(token.min_jump, token.max_jump) for token in string_def.tokens] == expected_jumps
+    assert [
+        (string_def.tokens[1].min_jump, string_def.tokens[1].max_jump)
+        for string_def in restored.rules[0].strings
+        if isinstance(string_def, HexString)
+    ] == expected_jumps
 
 
 def test_protobuf_serializer_preserves_hex_alternatives() -> None:
@@ -167,7 +167,11 @@ def test_protobuf_serializer_preserves_hex_alternatives() -> None:
     alternative = HexAlternative(
         alternatives=[
             [HexByte(value=0xAA), HexWildcard()],
-            [HexJump(min_jump=1, max_jump=3), HexNibble(high=False, value=0xF)],
+            [
+                HexByte(value=0xBB),
+                HexJump(min_jump=1, max_jump=3),
+                HexNibble(high=False, value=0xF),
+            ],
         ]
     )
     ast = YaraFile(
@@ -593,11 +597,12 @@ def test_protobuf_serializer_rejects_unsupported_hex_tokens() -> None:
 )
 def test_protobuf_serializer_rejects_invalid_hex_token_fields(token: Any, message: str) -> None:
     serializer = ProtobufSerializer(include_metadata=False)
+    tokens = [HexByte(0x90), token, HexByte(0x91)] if isinstance(token, HexJump) else [token]
     ast = YaraFile(
         rules=[
             Rule(
                 name="invalid_hex_token",
-                strings=[HexString(identifier="$h", tokens=[token])],
+                strings=[HexString(identifier="$h", tokens=tokens)],
                 condition=BooleanLiteral(True),
             )
         ]

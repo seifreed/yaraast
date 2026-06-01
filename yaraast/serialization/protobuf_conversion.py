@@ -690,6 +690,11 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
         if not tokens:
             msg = "HexString must contain at least one token"
             raise SerializationError(msg)
+        _validate_hex_token_sequence_for_protobuf(
+            tokens,
+            "hex string",
+            inside_alternative=False,
+        )
         pb_string.hex.SetInParent()
         for token in tokens:
             pb_token = pb_string.hex.tokens.add()
@@ -749,6 +754,11 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
             if not branch:
                 msg = "HexAlternative branches must not be empty"
                 raise SerializationError(msg)
+            _validate_hex_token_sequence_for_protobuf(
+                branch,
+                "hex alternative branch",
+                inside_alternative=True,
+            )
             pb_alternative = pb_token.alternative.alternatives.add()
             for alternative_token in branch:
                 convert_hex_token_to_protobuf(alternative_token, pb_alternative.tokens.add())
@@ -908,6 +918,40 @@ def _coerce_hex_alternative_branch(alternative) -> list:
     if isinstance(alternative, list):
         return alternative
     return [HexByte(alternative)]
+
+
+def _validate_hex_token_sequence_for_protobuf(
+    tokens: list,
+    context: str,
+    *,
+    inside_alternative: bool,
+) -> None:
+    from yaraast.ast.strings import HexAlternative, HexJump
+
+    if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
+        msg = f"HexJump cannot appear at the beginning or end of {context}"
+        raise SerializationError(msg)
+
+    for token in tokens:
+        if isinstance(token, HexAlternative):
+            for alternative in _protobuf_list(token.alternatives, "HexAlternative alternatives"):
+                branch = _coerce_hex_alternative_branch(alternative)
+                if not branch:
+                    msg = "HexAlternative branches must not be empty"
+                    raise SerializationError(msg)
+                _validate_hex_token_sequence_for_protobuf(
+                    branch,
+                    "hex alternative branch",
+                    inside_alternative=True,
+                )
+
+    if not inside_alternative:
+        return
+
+    for token in tokens:
+        if isinstance(token, HexJump) and token.max_jump is None:
+            msg = "Unbounded HexJump is not allowed inside hex alternatives"
+            raise SerializationError(msg)
 
 
 def _coerce_quantifier_text(value) -> str:
@@ -1666,6 +1710,11 @@ def _protobuf_to_hex_token(pb_token):
             alternative = []
             for nested_pb_token in pb_alternative.tokens:
                 alternative.append(_protobuf_to_hex_token(nested_pb_token))
+            _validate_hex_token_sequence_for_protobuf(
+                alternative,
+                "hex alternative branch",
+                inside_alternative=True,
+            )
             alternatives.append(alternative)
         return _apply_node_metadata_from_protobuf(
             pb_token,
@@ -1761,6 +1810,11 @@ def protobuf_to_string(pb_string) -> Any:
         tokens = []
         for pb_token in pb_string.hex.tokens:
             tokens.append(_protobuf_to_hex_token(pb_token))
+        _validate_hex_token_sequence_for_protobuf(
+            tokens,
+            "hex string",
+            inside_alternative=False,
+        )
         modifiers = _protobuf_modifiers_to_ast(pb_string.hex.modifiers)
         s = HexString(
             identifier=pb_string.identifier,

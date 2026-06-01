@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, cast
 
 import pytest
@@ -41,7 +42,15 @@ from yaraast.ast.pragmas import (
     PragmaType,
 )
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import HexAlternative, HexByte, HexString, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexString,
+    HexWildcard,
+    PlainString,
+    RegexString,
+)
 from yaraast.errors import SerializationError
 from yaraast.serialization import yara_ast_pb2
 from yaraast.serialization.protobuf_conversion import protobuf_to_ast, protobuf_to_string
@@ -648,6 +657,87 @@ def test_protobuf_deserializer_rejects_empty_hex_string() -> None:
     pb_string.hex.SetInParent()
 
     with pytest.raises(SerializationError, match="HexString must contain at least one token"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("tokens", "message"),
+    [
+        ([HexJump(1, 2), HexByte(0x90)], "HexJump cannot appear"),
+        ([HexByte(0x90), HexJump(1, 2)], "HexJump cannot appear"),
+        (
+            [HexAlternative([[HexByte(0x90), HexJump(1, None), HexWildcard()]])],
+            "Unbounded HexJump is not allowed inside hex alternatives",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_unemittable_hex_token_sequences(
+    tokens: list[Any],
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_hex_sequence",
+                strings=[HexString(identifier="$h", tokens=tokens)],
+                condition=BooleanLiteral(True),
+            )
+        ],
+    )
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+def _add_leading_protobuf_hex_jump(pb_hex: Any) -> None:
+    pb_hex.tokens.add().jump.min_jump = 1
+    pb_hex.tokens.add().byte.value = "90"
+
+
+def _add_trailing_protobuf_hex_jump(pb_hex: Any) -> None:
+    pb_hex.tokens.add().byte.value = "90"
+    pb_hex.tokens.add().jump.min_jump = 1
+
+
+def _add_unbounded_protobuf_hex_jump_in_alternative(pb_hex: Any) -> None:
+    pb_alternative = pb_hex.tokens.add().alternative.alternatives.add()
+    pb_alternative.tokens.add().byte.value = "90"
+    pb_alternative.tokens.add().jump.min_jump = 1
+    pb_alternative.tokens.add().wildcard.SetInParent()
+
+
+@pytest.mark.parametrize(
+    ("hex_token_builder", "message"),
+    [
+        (
+            _add_leading_protobuf_hex_jump,
+            "HexJump cannot appear",
+        ),
+        (
+            _add_trailing_protobuf_hex_jump,
+            "HexJump cannot appear",
+        ),
+        (
+            _add_unbounded_protobuf_hex_jump_in_alternative,
+            "Unbounded HexJump is not allowed inside hex alternatives",
+        ),
+    ],
+)
+def test_protobuf_deserializer_rejects_unemittable_hex_token_sequences(
+    hex_token_builder: Callable[[Any], Any],
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "bad_hex_sequence"
+    pb_rule.condition.boolean_literal.value = True
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$h"
+    hex_token_builder(pb_string.hex)
+
+    with pytest.raises(SerializationError, match=message):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
