@@ -6,6 +6,8 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any, cast
 
+import pytest
+
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
@@ -210,6 +212,30 @@ def test_ast_diff_detects_duplicate_include_changes() -> None:
     assert include_diff.old_value == ["shared.yar", "shared.yar"]
     assert include_diff.new_value == ["shared.yar"]
     assert result.has_changes
+
+
+def test_ast_diff_rejects_non_string_file_identity_fields() -> None:
+    cases = [
+        (
+            "Rule name must be a string",
+            YaraFile(rules=[Rule(cast(Any, False), condition=BooleanLiteral(True))]),
+            YaraFile(rules=[Rule("False", condition=BooleanLiteral(True))]),
+        ),
+        (
+            "Import module must be a string",
+            YaraFile(imports=[Import(cast(Any, False))]),
+            YaraFile(imports=[Import("False")]),
+        ),
+        (
+            "Include path must be a string",
+            YaraFile(includes=[Include(cast(Any, False))]),
+            YaraFile(includes=[Include("False")]),
+        ),
+    ]
+
+    for message, old_ast, new_ast in cases:
+        with pytest.raises(TypeError, match=message):
+            AstDiff().compare(old_ast, new_ast)
 
 
 def test_ast_diff_detects_duplicate_string_identifier_changes() -> None:

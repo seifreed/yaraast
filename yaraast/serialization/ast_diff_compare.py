@@ -225,7 +225,7 @@ def _nodes_by_key(nodes, key_func) -> dict[str, list]:
 
 
 def _import_key(node) -> str:
-    return str(getattr(node, "module", ""))
+    return _string_attr_or_empty(node, "module", "Import module")
 
 
 def _import_payload(node) -> dict[str, str | None]:
@@ -249,7 +249,7 @@ def _import_bucket_value(module: str, imports):
 
 
 def _include_key(node) -> str:
-    return str(getattr(node, "path", ""))
+    return _string_attr_or_empty(node, "path", "Include path")
 
 
 def _include_bucket_value(path: str, includes):
@@ -263,29 +263,62 @@ def _include_payloads(path: str, includes) -> list[str]:
 
 
 def _extern_import_key(node) -> str:
-    return str(getattr(node, "module_path", getattr(node, "module", "")))
+    if hasattr(node, "module_path"):
+        return _string_attr_or_empty(node, "module_path", "ExternImport module path")
+    return _string_attr_or_empty(node, "module", "ExternImport module")
 
 
 def _extern_rule_key(node) -> str:
-    name = str(getattr(node, "name", ""))
-    namespace = getattr(node, "namespace", None)
+    name = _string_attr_or_empty(node, "name", "ExternRule name")
+    namespace = _optional_string_attr(node, "namespace", "ExternRule namespace")
     return f"{namespace}.{name}" if namespace else name
 
 
 def _pragma_key(node) -> str:
-    pragma_type = getattr(getattr(node, "pragma_type", None), "value", "")
-    name = str(getattr(node, "name", ""))
-    macro_name = str(getattr(node, "macro_name", ""))
+    pragma_type = _pragma_type_value(node)
+    name = _string_attr_or_empty(node, "name", "Pragma name")
+    macro_name = _string_attr_or_empty(node, "macro_name", "Pragma macro name")
     return f"{pragma_type}:{name}:{macro_name}"
 
 
 def _in_rule_pragma_key(node) -> str:
-    position = str(getattr(node, "position", ""))
+    position = _string_attr_or_empty(node, "position", "InRulePragma position")
     return f"{position}:{_pragma_key(getattr(node, 'pragma', None))}"
 
 
 def _name_key(node) -> str:
-    return str(getattr(node, "name", ""))
+    return _string_attr_or_empty(node, "name", "Node name")
+
+
+def _string_attr_or_empty(node, attr: str, field_name: str) -> str:
+    if not hasattr(node, attr):
+        return ""
+    value = getattr(node, attr)
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
+def _optional_string_attr(node, attr: str, field_name: str) -> str | None:
+    value = getattr(node, attr, None)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
+def _pragma_type_value(node) -> str:
+    pragma_type = getattr(node, "pragma_type", None)
+    if pragma_type is None:
+        return ""
+    value = getattr(pragma_type, "value", "")
+    if not isinstance(value, str):
+        msg = "Pragma type value must be a string"
+        raise TypeError(msg)
+    return value
 
 
 def compare_includes(old_includes, new_includes, result, diff_node, diff_type) -> None:
