@@ -13,9 +13,18 @@ from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
-from yaraast.serialization.roundtrip_serializer import RoundTripSerializer
+from yaraast.serialization.roundtrip_serializer import (
+    EnhancedYamlSerializer,
+    RoundTripSerializer,
+    create_rules_manifest,
+    serialize_for_pipeline,
+)
 from yaraast.yarax.ast_nodes import WithStatement
 from yaraast.yarax.parser import YaraXParser
+
+
+def _sample_ast() -> YaraFile:
+    return YaraFile(rules=[Rule(name="r1", condition=BooleanLiteral(value=True))])
 
 
 def test_roundtrip_parse_and_serialize_json() -> None:
@@ -264,3 +273,59 @@ def test_roundtrip_test_uses_structural_success_for_reformatted_source() -> None
     assert result["round_trip_successful"] is True
     assert result["differences"] == []
     assert result["metadata"]["source_differences"]
+
+
+@pytest.mark.parametrize("include_pipeline_metadata", [None, 1, "yes", object()])
+def test_enhanced_yaml_rejects_invalid_pipeline_metadata_flag(
+    include_pipeline_metadata: Any,
+) -> None:
+    with pytest.raises(TypeError, match="include_pipeline_metadata must be a boolean"):
+        EnhancedYamlSerializer(
+            include_pipeline_metadata=cast(bool, include_pipeline_metadata),
+        )
+
+
+@pytest.mark.parametrize("ast", [None, 123, object()])
+def test_enhanced_yaml_pipeline_rejects_invalid_ast_types(ast: Any) -> None:
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        EnhancedYamlSerializer().serialize_for_pipeline(cast(YaraFile, ast))
+
+
+@pytest.mark.parametrize("pipeline_info", [123, "ci", object()])
+def test_enhanced_yaml_pipeline_rejects_invalid_pipeline_info_types(
+    pipeline_info: Any,
+) -> None:
+    with pytest.raises(TypeError, match="pipeline_info must be a dictionary"):
+        EnhancedYamlSerializer().serialize_for_pipeline(
+            _sample_ast(),
+            pipeline_info=cast(dict[str, Any], pipeline_info),
+        )
+
+
+@pytest.mark.parametrize("ast", [None, 123, object()])
+def test_enhanced_yaml_manifest_rejects_invalid_ast_types(ast: Any) -> None:
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        EnhancedYamlSerializer().serialize_rules_manifest(cast(YaraFile, ast))
+
+
+@pytest.mark.parametrize("ast", [None, 123, object()])
+def test_pipeline_convenience_rejects_invalid_ast_types(ast: Any) -> None:
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        serialize_for_pipeline(cast(YaraFile, ast))
+
+
+@pytest.mark.parametrize("pipeline_info", [123, "ci", object()])
+def test_pipeline_convenience_rejects_invalid_pipeline_info_types(
+    pipeline_info: Any,
+) -> None:
+    with pytest.raises(TypeError, match="pipeline_info must be a dictionary"):
+        serialize_for_pipeline(
+            _sample_ast(),
+            pipeline_info=cast(dict[str, Any], pipeline_info),
+        )
+
+
+@pytest.mark.parametrize("ast", [None, 123, object()])
+def test_manifest_convenience_rejects_invalid_ast_types(ast: Any) -> None:
+    with pytest.raises(TypeError, match="ast must be a YaraFile"):
+        create_rules_manifest(cast(YaraFile, ast))

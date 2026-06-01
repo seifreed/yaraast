@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
+from yaraast.ast.base import YaraFile
 from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.errors import SerializationError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
@@ -34,7 +35,6 @@ from yaraast.serialization.yaml_serializer import YamlSerializer
 from yaraast.yarax.parser import YaraXParser
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import YaraFile
     from yaraast.serialization.ast_diff import DiffNode
 
 
@@ -92,6 +92,22 @@ def _normalize_roundtrip_format(format_name: object) -> str:
         msg = "format must be 'json' or 'yaml'"
         raise ValueError(msg)
     return normalized
+
+
+def _require_yara_file(value: object, name: str) -> YaraFile:
+    if not isinstance(value, YaraFile):
+        msg = f"{name} must be a YaraFile"
+        raise TypeError(msg)
+    return value
+
+
+def _require_optional_dict(value: object, name: str) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        msg = f"{name} must be a dictionary"
+        raise TypeError(msg)
+    return value
 
 
 class RoundTripSerializer:
@@ -268,6 +284,10 @@ class EnhancedYamlSerializer(YamlSerializer):
         include_pipeline_metadata: bool = True,
     ) -> None:
         super().__init__(include_metadata, flow_style)
+        include_pipeline_metadata = _require_boolean(
+            include_pipeline_metadata,
+            "include_pipeline_metadata",
+        )
         self.include_pipeline_metadata = include_pipeline_metadata
 
     def serialize_for_pipeline(
@@ -277,6 +297,8 @@ class EnhancedYamlSerializer(YamlSerializer):
         output_path: str | Path | None = None,
     ) -> str:
         """Serialize for CI/CD pipeline with additional metadata."""
+        ast = _require_yara_file(ast, "ast")
+        pipeline_info = _require_optional_dict(pipeline_info, "pipeline_info")
         serialized = self._serialize_with_metadata(ast)
 
         if self.include_pipeline_metadata:
@@ -294,6 +316,7 @@ class EnhancedYamlSerializer(YamlSerializer):
         output_path: str | Path | None = None,
     ) -> str:
         """Create a rules manifest for pipeline automation."""
+        ast = _require_yara_file(ast, "ast")
         manifest = build_rules_manifest(ast)
         return dump_pipeline_yaml(manifest, output_path)
 
@@ -318,11 +341,14 @@ def serialize_for_pipeline(
     pipeline_info: dict[str, Any] | None = None,
 ) -> str:
     """Serialize AST for CI/CD pipeline."""
+    ast = _require_yara_file(ast, "ast")
+    pipeline_info = _require_optional_dict(pipeline_info, "pipeline_info")
     serializer = EnhancedYamlSerializer(include_pipeline_metadata=True)
     return serializer.serialize_for_pipeline(ast, pipeline_info)
 
 
 def create_rules_manifest(ast: YaraFile) -> str:
     """Create rules manifest for pipeline automation."""
+    ast = _require_yara_file(ast, "ast")
     serializer = EnhancedYamlSerializer()
     return serializer.serialize_rules_manifest(ast)
