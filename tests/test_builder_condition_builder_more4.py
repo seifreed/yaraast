@@ -51,6 +51,24 @@ def test_condition_builder_rejects_invalid_logical_operands() -> None:
         builder.or_(cast(Any, True))
 
 
+def test_condition_builder_accepts_falsy_present_expressions() -> None:
+    class FalsyBooleanLiteral(BooleanLiteral):
+        def __bool__(self) -> bool:
+            return False
+
+    falsy_builder = ConditionBuilder(FalsyBooleanLiteral(value=False))
+
+    assert isinstance(falsy_builder.build(), FalsyBooleanLiteral)
+
+    logical = falsy_builder.and_(ConditionBuilder().true()).build()
+    assert isinstance(logical, BinaryExpression)
+    assert isinstance(logical.left, FalsyBooleanLiteral)
+
+    converted_operand = ConditionBuilder().true().or_(falsy_builder).build()
+    assert isinstance(converted_operand, BinaryExpression)
+    assert isinstance(converted_operand.right, FalsyBooleanLiteral)
+
+
 @pytest.mark.parametrize("member", ["bad-key", "for", "1bad", ""])
 def test_condition_builder_rejects_invalid_member_names(member: str) -> None:
     with pytest.raises(ValidationError, match="Invalid member identifier"):

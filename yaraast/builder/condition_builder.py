@@ -125,7 +125,7 @@ class ConditionBuilder:
     # Logical operators
     def and_(self, other: ConditionBuilder | Expression) -> ConditionBuilder:
         """Logical AND."""
-        if not self._expression:
+        if self._expression is None:
             msg = "Cannot apply AND to empty expression"
             raise ValidationError(msg)
 
@@ -136,7 +136,7 @@ class ConditionBuilder:
 
     def or_(self, other: ConditionBuilder | Expression) -> ConditionBuilder:
         """Logical OR."""
-        if not self._expression:
+        if self._expression is None:
             msg = "Cannot apply OR to empty expression"
             raise ValidationError(msg)
 
@@ -147,7 +147,7 @@ class ConditionBuilder:
 
     def not_(self) -> ConditionBuilder:
         """Logical NOT."""
-        if not self._expression:
+        if self._expression is None:
             msg = "Cannot apply NOT to empty expression"
             raise ValidationError(msg)
 
@@ -208,7 +208,7 @@ class ConditionBuilder:
     # Special conditions
     def at(self, offset: int | ConditionBuilder) -> ConditionBuilder:
         """String at offset."""
-        if not self._expression or not isinstance(self._expression, StringIdentifier):
+        if self._expression is None or not isinstance(self._expression, StringIdentifier):
             msg = "'at' can only be used with string identifiers"
             raise ValidationError(msg)
 
@@ -223,7 +223,7 @@ class ConditionBuilder:
         end: int | ConditionBuilder,
     ) -> ConditionBuilder:
         """String in range."""
-        if not self._expression or not isinstance(self._expression, StringIdentifier):
+        if self._expression is None or not isinstance(self._expression, StringIdentifier):
             msg = "'in' can only be used with string identifiers"
             raise ValidationError(msg)
 
@@ -355,7 +355,7 @@ class ConditionBuilder:
 
     def bitwise_not(self) -> ConditionBuilder:
         """Bitwise NOT."""
-        if not self._expression:
+        if self._expression is None:
             msg = "Cannot apply bitwise NOT to empty expression"
             raise ValidationError(msg)
 
@@ -372,7 +372,7 @@ class ConditionBuilder:
     # Grouping
     def group(self) -> ConditionBuilder:
         """Group expression in parentheses."""
-        if not self._expression:
+        if self._expression is None:
             msg = "Cannot group empty expression"
             raise ValidationError(msg)
 
@@ -385,7 +385,7 @@ class ConditionBuilder:
         other: ConditionBuilder | Expression | int | str,
     ) -> ConditionBuilder:
         """Create binary expression."""
-        if not self._expression:
+        if self._expression is None:
             msg = f"Cannot apply {op} to empty expression"
             raise ValidationError(msg)
 
@@ -399,7 +399,7 @@ class ConditionBuilder:
         op: str,
         other: ConditionBuilder | Expression | int,
     ) -> ConditionBuilder:
-        if not self._expression:
+        if self._expression is None:
             msg = f"Cannot apply {op} to empty expression"
             raise ValidationError(msg)
 
@@ -413,7 +413,7 @@ class ConditionBuilder:
         op: str,
         pattern: ConditionBuilder | Expression | str,
     ) -> ConditionBuilder:
-        if not self._expression:
+        if self._expression is None:
             msg = f"Cannot apply {op} to empty expression"
             raise ValidationError(msg)
 
@@ -424,7 +424,7 @@ class ConditionBuilder:
 
     def _to_logical_operand(self, value: ConditionBuilder | Expression) -> Expression:
         if isinstance(value, ConditionBuilder):
-            if not value._expression:
+            if value._expression is None:
                 msg = "Empty condition builder"
                 raise ValidationError(msg)
             return value._expression
@@ -438,7 +438,7 @@ class ConditionBuilder:
         value: ConditionBuilder | Expression | str,
     ) -> Expression:
         if isinstance(value, ConditionBuilder):
-            if not value._expression:
+            if value._expression is None:
                 msg = "Empty condition builder"
                 raise ValidationError(msg)
             return value._expression
@@ -455,7 +455,7 @@ class ConditionBuilder:
     ) -> Expression:
         """Convert value to expression."""
         if isinstance(value, ConditionBuilder):
-            if not value._expression:
+            if value._expression is None:
                 msg = "Empty condition builder"
                 raise ValidationError(msg)
             return value._expression
@@ -479,7 +479,7 @@ class ConditionBuilder:
     ) -> Expression:
         """Convert integer-position arguments without accepting booleans as 0/1."""
         if isinstance(value, ConditionBuilder):
-            if not value._expression:
+            if value._expression is None:
                 msg = "Empty condition builder"
                 raise ValidationError(msg)
             return value._expression
@@ -517,7 +517,7 @@ class ConditionBuilder:
 
     def build(self) -> Expression:
         """Build the final expression."""
-        if not self._expression:
+        if self._expression is None:
             msg = "Cannot build empty expression"
             raise ValidationError(msg)
         return deepcopy(self._expression)
