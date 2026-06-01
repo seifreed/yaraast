@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from yaraast.ast.base import ASTNode, _VisitorType
+from yaraast.ast.base import ASTNode, _require_ast_node_sequence, _VisitorType
 
 
 @dataclass
@@ -35,6 +35,10 @@ class HexString(StringDefinition):
     """Hex string definition."""
 
     tokens: list[Any] = field(default_factory=list)
+
+    def validate_structure(self) -> None:
+        """Validate hex token containers before direct analysis."""
+        _require_ast_node_sequence(self.tokens, "HexString.tokens")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_string(self)

@@ -49,6 +49,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
 
     def analyze(self, yara_file: YaraFile) -> dict[str, dict[str, Any]]:
         """Analyze string usage in YARA file."""
+        yara_file.validate_structure()
         self.defined_strings.clear()
         self.anonymous_strings.clear()
         self.used_strings.clear()

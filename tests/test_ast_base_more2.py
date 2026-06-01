@@ -11,7 +11,7 @@ from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.extern import ExternRule
 from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import HexAlternative, HexByte, HexWildcard, PlainString
+from yaraast.ast.strings import HexAlternative, HexByte, HexString, HexWildcard, PlainString
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
 from yaraast.parser import Parser
 
@@ -64,6 +64,21 @@ def test_direct_yarafile_optimizers_validate_structure() -> None:
     malformed_file = YaraFile(rules=[cast(Any, object())])
 
     with pytest.raises(TypeError, match=r"YaraFile\.rules must contain AST nodes"):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+def test_direct_yarafile_optimizers_validate_nested_hex_tokens() -> None:
+    malformed_file = YaraFile(
+        rules=[
+            Rule(
+                name="bad_hex",
+                strings=[HexString("$h", tokens=[cast(Any, object())])],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match=r"HexString\.tokens must contain AST nodes"):
         ExpressionOptimizer().optimize(malformed_file)
 
 

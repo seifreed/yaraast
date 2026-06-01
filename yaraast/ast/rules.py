@@ -142,6 +142,10 @@ class Rule(ASTNode):
         _require_ast_node_sequence(self.pragmas, "Rule.pragmas")
         if self.condition is not None:
             _require_ast_node(self.condition, "Rule.condition")
+        for string in self.strings:
+            validate_structure = getattr(string, "validate_structure", None)
+            if callable(validate_structure):
+                validate_structure()
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_rule(self)
