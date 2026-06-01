@@ -73,6 +73,19 @@ def test_fmt_cmd_formats_to_separate_output(tmp_path: Path) -> None:
     assert "Formatted file written" in result.output
 
 
+def test_fmt_cmd_rejects_empty_output_without_overwriting_input(tmp_path: Path) -> None:
+    runner = CliRunner()
+    source = tmp_path / "source.yar"
+    original = 'rule x { strings: $a = "x" condition: $a }\n'
+    source.write_text(original, encoding="utf-8")
+
+    result = runner.invoke(fmt, [str(source), "--output", ""])
+
+    assert result.exit_code != 0
+    assert "path must not be empty" in result.output
+    assert source.read_text(encoding="utf-8") == original
+
+
 def test_fmt_cmd_formats_yarax(tmp_path: Path) -> None:
     runner = CliRunner()
     source = tmp_path / "x.yar"

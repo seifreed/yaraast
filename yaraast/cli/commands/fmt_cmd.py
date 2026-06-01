@@ -14,7 +14,7 @@ from yaraast.cli.fmt_reporting import (
     display_format_result,
 )
 from yaraast.cli.fmt_services import check_format, format_file, format_for_diff, get_formatter
-from yaraast.cli.utils import print_cli_error
+from yaraast.cli.utils import _require_file_path, print_cli_error
 
 console = Console()
 
@@ -49,7 +49,7 @@ def fmt(
     """Format YARA file using AST-based formatting (like black for Python)."""
     try:
         input_path = Path(input_file)
-        output_path = Path(output) if output else input_path
+        output_path = input_path if output is None else _require_file_path(output)
         formatter = get_formatter()
 
         if check:
