@@ -239,10 +239,10 @@ class DependencyGraph:
     def _remove_existing_file_state(self, file_key: str) -> None:
         """Remove stale graph state before re-adding a file."""
         file_node = self.nodes.get(file_key)
-        if file_node:
+        if file_node is not None:
             for dependency in list(file_node.dependencies):
                 dependency_node = self.nodes.get(dependency)
-                if dependency_node:
+                if dependency_node is not None:
                     dependency_node.dependents.discard(file_key)
                     self._remove_orphan_external_node(dependency)
             file_node.dependencies.clear()
@@ -250,7 +250,7 @@ class DependencyGraph:
         for rule_name in self.file_rules.get(file_key, set()).copy():
             rule_key = f"rule:{rule_name}"
             rule_node = self.nodes.get(rule_key)
-            if rule_node and str(rule_node.file_path) == file_key:
+            if rule_node is not None and str(rule_node.file_path) == file_key:
                 self._remove_rule_node(rule_key)
             if self.rule_files.get(rule_name) == file_key:
                 del self.rule_files[rule_name]
@@ -260,24 +260,24 @@ class DependencyGraph:
     def _remove_rule_node(self, rule_key: str) -> None:
         """Remove a rule node and references to it."""
         rule_node = self.nodes.pop(rule_key, None)
-        if not rule_node:
+        if rule_node is None:
             return
 
         for dependency in list(rule_node.dependencies):
             dependency_node = self.nodes.get(dependency)
-            if dependency_node:
+            if dependency_node is not None:
                 dependency_node.dependents.discard(rule_key)
                 self._remove_orphan_external_node(dependency)
 
         for dependent in list(rule_node.dependents):
             dependent_node = self.nodes.get(dependent)
-            if dependent_node:
+            if dependent_node is not None:
                 dependent_node.dependencies.discard(rule_key)
 
     def _remove_orphan_external_node(self, node_key: str) -> None:
         """Remove include/module placeholders that no node references anymore."""
         node = self.nodes.get(node_key)
-        if node and node.type in {"include", "module"} and not node.dependents:
+        if node is not None and node.type in {"include", "module"} and not node.dependents:
             self.nodes.pop(node_key, None)
 
     def _add_module_dependency(self, file_key: str, module_name: str) -> None:
@@ -402,7 +402,7 @@ class DependencyGraph:
 
             visited.add(current)
             node = self.nodes.get(current)
-            if node:
+            if node is not None:
                 dependencies.update(node.dependencies)
                 to_visit.extend(node.dependencies)
 
@@ -425,7 +425,7 @@ class DependencyGraph:
 
             visited.add(current)
             node = self.nodes.get(current)
-            if node:
+            if node is not None:
                 dependents.update(node.dependents)
                 to_visit.extend(node.dependents)
 

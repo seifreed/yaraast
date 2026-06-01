@@ -128,6 +128,26 @@ def test_dependency_graph_transitive_queries_cycles_and_export() -> None:
     assert graph.get_file_dependents("missing") == set()
 
 
+def test_dependency_graph_traverses_falsy_present_nodes() -> None:
+    class FalsyDependencyNode(DependencyNode):
+        def __bool__(self) -> bool:
+            return False
+
+    graph = DependencyGraph()
+    graph.nodes["A"] = FalsyDependencyNode("A", "rule", dependencies={"B"})
+    graph.nodes["B"] = DependencyNode("B", "rule", dependencies={"C"})
+    graph.nodes["C"] = DependencyNode("C", "rule")
+
+    assert graph._get_transitive_dependencies("A") == {"B", "C"}
+
+    dependent_graph = DependencyGraph()
+    dependent_graph.nodes["A"] = FalsyDependencyNode("A", "rule", dependents={"B"})
+    dependent_graph.nodes["B"] = DependencyNode("B", "rule", dependents={"C"})
+    dependent_graph.nodes["C"] = DependencyNode("C", "rule")
+
+    assert dependent_graph._get_transitive_dependents("A") == {"B", "C"}
+
+
 def test_rule_dependency_getter_does_not_expose_internal_set() -> None:
     graph = DependencyGraph()
     graph.nodes["rule:test"] = DependencyNode("test", "rule", dependencies={"dep"})
