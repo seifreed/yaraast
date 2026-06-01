@@ -4,7 +4,7 @@ from typing import Any
 
 from rich.tree import Tree
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.expressions import StringWildcard
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString, RegexString
@@ -39,11 +39,8 @@ class ASTTreeBuilder:
         if node is None:
             return Tree("None")
 
-        if hasattr(node, "accept"):
-            import contextlib
-
-            with contextlib.suppress(Exception):
-                return node.accept(self)
+        if isinstance(node, ASTNode):
+            return node.accept(self)
 
         method_name = f"visit_{type(node).__name__.lower()}"
         return getattr(self, method_name)(node)

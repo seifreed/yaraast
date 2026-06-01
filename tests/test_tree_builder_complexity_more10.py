@@ -6,8 +6,10 @@ from io import StringIO
 from textwrap import dedent
 from typing import Any, NoReturn
 
+import pytest
 from rich.console import Console
 
+from yaraast.ast.base import ASTNode
 from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
@@ -36,7 +38,7 @@ def _render(tree: Any) -> str:
     return console.export_text()
 
 
-class _BrokenAccept:
+class _BrokenAccept(ASTNode):
     def accept(self, _visitor: object) -> NoReturn:
         raise ValueError("boom")
 
@@ -44,8 +46,8 @@ class _BrokenAccept:
 def test_tree_builder_remaining_fallback_and_hex_paths() -> None:
     builder = ASTTreeBuilder()
 
-    rendered = _render(builder.visit(_BrokenAccept()))
-    assert rendered == "\n"
+    with pytest.raises(ValueError, match="boom"):
+        builder.visit(_BrokenAccept())
 
     generated = builder._get_condition_string(_BrokenAccept())
     assert isinstance(generated, str)
