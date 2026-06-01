@@ -831,8 +831,35 @@ def _validate_raw_string_ref(ctx: Any, value: str) -> None:
         ctx.errors.append(f"Undefined string: {normalized}")
 
 
+def _lookup_string_set_local(ctx: Any, name: str) -> YaraType | None:
+    names = [name]
+    if name.startswith("$"):
+        names.append(name.lstrip("$"))
+    else:
+        names.append(f"${name}")
+
+    for local_name in names:
+        local_type = ctx.env.lookup(local_name)
+        if local_type is not None:
+            return cast(YaraType, local_type)
+    return None
+
+
+def _validate_string_set_local_ref(ctx: Any, name: str) -> bool:
+    local_type = _lookup_string_set_local(ctx, name)
+    if local_type is None:
+        return False
+    if not isinstance(local_type, StringIdentifierType | StringSetType | StringType | UnknownType):
+        ctx.errors.append(
+            f"String set local '{name}' must be string or string set, got {local_type}"
+        )
+    return True
+
+
 def _validate_string_set_refs(ctx: Any, value: Any) -> None:
     if isinstance(value, str):
+        if _validate_string_set_local_ref(ctx, value):
+            return
         if value != "them":
             _validate_raw_string_ref(ctx, value)
         return
@@ -851,6 +878,8 @@ def _validate_string_set_refs(ctx: Any, value: Any) -> None:
         return
 
     if isinstance(value, StringIdentifier):
+        if _validate_string_set_local_ref(ctx, value.name):
+            return
         _validate_raw_string_ref(ctx, value.name)
         return
 

@@ -60,6 +60,8 @@ from yaraast.yarax.ast_nodes import (
     SliceExpression,
     SpreadOperator,
     TupleIndexing,
+    WithDeclaration,
+    WithStatement,
 )
 
 
@@ -185,6 +187,23 @@ def test_expr_inference_reports_undefined_raw_string_references() -> None:
         BooleanType,
     )
     assert "Undefined string: $missing" in nested_expr_inf.errors
+
+
+def test_expr_inference_resolves_yarax_string_locals_in_string_sets() -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(
+        WithStatement(
+            declarations=[WithDeclaration("$x", StringLiteral("$a"))],
+            body=OfExpression("any", SetExpression([StringIdentifier("$x")])),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert "Undefined string: $x" not in inf.errors
+    assert inf.errors == []
 
 
 def test_expr_inference_accepts_non_list_string_set_containers() -> None:
