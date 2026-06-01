@@ -247,7 +247,7 @@ def _serialize_string_or_expression(serializer, value, context: str):
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, str):
-        return value
+        return _serialize_required_nonempty_string(value, context)
     if isinstance(value, Expression):
         return serializer.visit(value)
     msg = f"{context} must be a string or expression"
@@ -476,7 +476,10 @@ def visit_plain_string(serializer, node) -> dict[str, Any]:
 def visit_hex_string(serializer, node) -> dict[str, Any]:
     data = {
         "type": "HexString",
-        "identifier": _serialize_required_string(node.identifier, "HexString identifier"),
+        "identifier": _serialize_required_nonempty_string(
+            node.identifier,
+            "HexString identifier",
+        ),
         "tokens": _serialize_hex_tokens(serializer, node.tokens, "HexString"),
         "modifiers": _serialize_string_modifiers(serializer, node.modifiers, "HexString"),
     }
@@ -487,7 +490,10 @@ def visit_hex_string(serializer, node) -> dict[str, Any]:
 def visit_regex_string(serializer, node) -> dict[str, Any]:
     data = {
         "type": "RegexString",
-        "identifier": _serialize_required_string(node.identifier, "RegexString identifier"),
+        "identifier": _serialize_required_nonempty_string(
+            node.identifier,
+            "RegexString identifier",
+        ),
         "regex": _serialize_required_nonempty_string(node.regex, "RegexString regex"),
         "modifiers": _serialize_string_modifiers(serializer, node.modifiers, "RegexString"),
     }
@@ -529,7 +535,10 @@ def _coerce_hex_alternative_token(token):
 def visit_string_offset(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringOffset",
-        "string_id": _serialize_required_string(node.string_id, "StringOffset string_id"),
+        "string_id": _serialize_required_nonempty_string(
+            node.string_id,
+            "StringOffset string_id",
+        ),
         "index": _serialize_optional_expression(serializer, node.index, "StringOffset index"),
     }
 
@@ -537,7 +546,10 @@ def visit_string_offset(serializer, node) -> dict[str, Any]:
 def visit_string_length(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringLength",
-        "string_id": _serialize_required_string(node.string_id, "StringLength string_id"),
+        "string_id": _serialize_required_nonempty_string(
+            node.string_id,
+            "StringLength string_id",
+        ),
         "index": _serialize_optional_expression(serializer, node.index, "StringLength index"),
     }
 
@@ -565,7 +577,10 @@ def visit_binary_expression(serializer, node) -> dict[str, Any]:
 def visit_unary_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "UnaryExpression",
-        "operator": _serialize_required_string(node.operator, "UnaryExpression operator"),
+        "operator": _serialize_required_nonempty_string(
+            node.operator,
+            "UnaryExpression operator",
+        ),
         "operand": _serialize_required_expression(
             serializer,
             node.operand,
@@ -603,7 +618,10 @@ def visit_range_expression(serializer, node) -> dict[str, Any]:
 def visit_function_call(serializer, node) -> dict[str, Any]:
     return {
         "type": "FunctionCall",
-        "function": _serialize_required_string(node.function, "FunctionCall function"),
+        "function": _serialize_required_nonempty_string(
+            node.function,
+            "FunctionCall function",
+        ),
         "arguments": _serialize_expression_list(
             serializer,
             node.arguments,
@@ -628,7 +646,7 @@ def visit_member_access(serializer, node) -> dict[str, Any]:
             node.object,
             "MemberAccess object",
         ),
-        "member": _serialize_required_string(node.member, "MemberAccess member"),
+        "member": _serialize_required_nonempty_string(node.member, "MemberAccess member"),
     }
 
 
@@ -636,7 +654,10 @@ def visit_for_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "ForExpression",
         "quantifier": _serialize_quantifier(serializer, node.quantifier),
-        "variable": _serialize_required_string(node.variable, "ForExpression variable"),
+        "variable": _serialize_required_nonempty_string(
+            node.variable,
+            "ForExpression variable",
+        ),
         "iterable": _serialize_required_expression(
             serializer,
             node.iterable,

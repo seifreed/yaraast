@@ -821,6 +821,9 @@ def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> Non
             {"type": "HexString", "identifier": ["$h"], "tokens": [], "modifiers": []}
         )
 
+    with pytest.raises(SerializationError, match="HexString identifier must not be empty"):
+        deserialize_string({"type": "HexString", "identifier": "", "tokens": [], "modifiers": []})
+
     with pytest.raises(SerializationError, match="HexString identifier is required"):
         deserialize_string({"type": "HexString", "tokens": 7, "modifiers": []})
 
@@ -832,6 +835,11 @@ def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="RegexString regex must be a string"):
         deserialize_string(
             {"type": "RegexString", "identifier": "$r", "regex": 123, "modifiers": []}
+        )
+
+    with pytest.raises(SerializationError, match="RegexString identifier must not be empty"):
+        deserialize_string(
+            {"type": "RegexString", "identifier": "", "regex": "abc", "modifiers": []}
         )
 
     with pytest.raises(SerializationError, match="RegexString regex must not be empty"):
@@ -886,6 +894,17 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="Identifier name must not be empty"):
         deserialize_node({"type": "Identifier", "name": ""})
 
+    empty_string_reference_cases = (
+        ({"type": "StringIdentifier", "name": ""}, "StringIdentifier name must not be empty"),
+        ({"type": "StringWildcard", "pattern": ""}, "StringWildcard pattern must not be empty"),
+        ({"type": "StringCount", "string_id": ""}, "StringCount string_id must not be empty"),
+        ({"type": "StringOffset", "string_id": ""}, "StringOffset string_id must not be empty"),
+        ({"type": "StringLength", "string_id": ""}, "StringLength string_id must not be empty"),
+    )
+    for payload, message in empty_string_reference_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
     true_expr = {"type": "BooleanLiteral", "value": True}
 
     with pytest.raises(SerializationError, match="BinaryExpression left is required"):
@@ -894,7 +913,7 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="BinaryExpression right is required"):
         deserialize_node({"type": "BinaryExpression", "left": true_expr, "operator": "and"})
 
-    missing_expression_cases = (
+    missing_expression_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (
             {"type": "UnaryExpression", "operator": "not"},
             "UnaryExpression operand is required",
@@ -945,8 +964,14 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="UnaryExpression operator must be a string"):
         deserialize_node({"type": "UnaryExpression", "operator": ["not"], "operand": true_expr})
 
+    with pytest.raises(SerializationError, match="UnaryExpression operator must not be empty"):
+        deserialize_node({"type": "UnaryExpression", "operator": "", "operand": true_expr})
+
     with pytest.raises(SerializationError, match="FunctionCall function must be a string"):
         deserialize_node({"type": "FunctionCall", "function": ["fn"], "arguments": []})
+
+    with pytest.raises(SerializationError, match="FunctionCall function must not be empty"):
+        deserialize_node({"type": "FunctionCall", "function": "", "arguments": []})
 
     with pytest.raises(SerializationError, match="SetExpression elements must be a list"):
         deserialize_node({"type": "SetExpression", "elements": "x"})
@@ -954,6 +979,11 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="MemberAccess member must be a string"):
         deserialize_node(
             {"type": "MemberAccess", "object": {"type": "Identifier", "name": "pe"}, "member": []}
+        )
+
+    with pytest.raises(SerializationError, match="MemberAccess member must not be empty"):
+        deserialize_node(
+            {"type": "MemberAccess", "object": {"type": "Identifier", "name": "pe"}, "member": ""}
         )
 
     with pytest.raises(SerializationError, match="AtExpression string_id must be a string"):
@@ -965,8 +995,17 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
             }
         )
 
+    with pytest.raises(SerializationError, match="AtExpression string_id must not be empty"):
+        deserialize_node(
+            {
+                "type": "AtExpression",
+                "string_id": "",
+                "offset": {"type": "IntegerLiteral", "value": 0},
+            }
+        )
+
     int_expr = {"type": "IntegerLiteral", "value": 1}
-    missing_condition_cases = (
+    missing_condition_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (
             {"type": "ForExpression", "variable": "i", "iterable": int_expr, "body": int_expr},
             "ForExpression quantifier is required",
@@ -1004,6 +1043,9 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
 
     with pytest.raises(SerializationError, match="ModuleReference module must be a string"):
         deserialize_node({"type": "ModuleReference", "module": ["pe"]})
+
+    with pytest.raises(SerializationError, match="ModuleReference module must not be empty"):
+        deserialize_node({"type": "ModuleReference", "module": ""})
 
     with pytest.raises(SerializationError, match="ModuleReference module is required"):
         deserialize_node({"type": "ModuleReference"})
@@ -1060,10 +1102,15 @@ def test_simple_roundtrip_serialize_string_reference_nodes_reject_wrong_scalar_t
         (RegexLiteral(""), "RegexLiteral pattern must not be empty"),
         (RegexLiteral("abc", cast(Any, ["i"])), "RegexLiteral modifiers must be a string"),
         (Identifier(""), "Identifier name must not be empty"),
+        (StringIdentifier(""), "StringIdentifier name must not be empty"),
         (StringIdentifier(cast(Any, ["$a"])), "StringIdentifier name must be a string"),
+        (StringWildcard(""), "StringWildcard pattern must not be empty"),
         (StringWildcard(cast(Any, ["$a*"])), "StringWildcard pattern must be a string"),
+        (StringCount(""), "StringCount string_id must not be empty"),
         (StringCount(cast(Any, 7)), "StringCount string_id must be a string"),
+        (StringOffset(""), "StringOffset string_id must not be empty"),
         (StringOffset(cast(Any, 7)), "StringOffset string_id must be a string"),
+        (StringLength(""), "StringLength string_id must not be empty"),
         (StringLength(cast(Any, 7)), "StringLength string_id must be a string"),
     )
 
@@ -1087,16 +1134,28 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             UnaryExpression(cast(Any, ["not"]), true_expr),
             "UnaryExpression operator must be a string",
         ),
+        (UnaryExpression("", true_expr), "UnaryExpression operator must not be empty"),
+        (FunctionCall("", []), "FunctionCall function must not be empty"),
         (FunctionCall(cast(Any, ["fn"]), []), "FunctionCall function must be a string"),
+        (
+            MemberAccess(Identifier("pe"), ""),
+            "MemberAccess member must not be empty",
+        ),
         (
             MemberAccess(Identifier("pe"), cast(Any, ["machine"])),
             "MemberAccess member must be a string",
         ),
+        (AtExpression("", IntegerLiteral(0)), "AtExpression string_id must not be empty"),
         (AtExpression(cast(Any, 7), IntegerLiteral(0)), "AtExpression string_id must be a string"),
+        (
+            ForExpression("any", "", SetExpression([]), true_expr),
+            "ForExpression variable must not be empty",
+        ),
         (
             ForExpression("any", cast(Any, ["i"]), SetExpression([]), true_expr),
             "ForExpression variable must be a string",
         ),
+        (ModuleReference(""), "ModuleReference module must not be empty"),
         (ModuleReference(cast(Any, ["pe"])), "ModuleReference module must be a string"),
         (
             WithDeclaration(cast(Any, ["x"]), IntegerLiteral(1)),
@@ -1215,8 +1274,16 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
             "HexString identifier must be a string",
         ),
         (
+            HexString(identifier="", tokens=[]),
+            "HexString identifier must not be empty",
+        ),
+        (
             RegexString(identifier=cast(Any, 123), regex="abc"),
             "RegexString identifier must be a string",
+        ),
+        (
+            RegexString(identifier="", regex="abc"),
+            "RegexString identifier must not be empty",
         ),
         (RegexString(identifier="$r", regex=cast(Any, 123)), "RegexString regex must be a string"),
         (RegexString(identifier="$r", regex=""), "RegexString regex must not be empty"),
@@ -1496,6 +1563,17 @@ def test_simple_roundtrip_condition_fields_reject_wrong_scalar_types() -> None:
                 "type": "ForExpression",
                 "quantifier": "any",
                 "variable": ["i"],
+                "iterable": true_expr,
+                "body": true_expr,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="ForExpression variable must not be empty"):
+        deserialize_node(
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": "",
                 "iterable": true_expr,
                 "body": true_expr,
             }

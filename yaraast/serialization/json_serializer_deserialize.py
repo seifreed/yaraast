@@ -507,7 +507,7 @@ def _deser_unary_expression(self, data: dict[str, Any]):
 
     operand = _deserialize_required_expression(self, data, "operand", "UnaryExpression")
     return UnaryExpression(
-        operator=_deserialize_string_field(data, "operator", "UnaryExpression"),
+        operator=_deserialize_nonempty_string_field(data, "operator", "UnaryExpression"),
         operand=operand,
     )
 
@@ -539,7 +539,7 @@ def _deser_function_call(self, data: dict[str, Any]):
 
     args = _deserialize_expression_list_field(self, data, "arguments", "FunctionCall")
     return FunctionCall(
-        function=_deserialize_string_field(data, "function", "FunctionCall"),
+        function=_deserialize_nonempty_string_field(data, "function", "FunctionCall"),
         arguments=args,
     )
 
@@ -558,7 +558,7 @@ def _deser_member_access(self, data: dict[str, Any]):
     obj = _deserialize_required_expression(self, data, "object", "MemberAccess")
     return MemberAccess(
         object=obj,
-        member=_deserialize_string_field(data, "member", "MemberAccess"),
+        member=_deserialize_nonempty_string_field(data, "member", "MemberAccess"),
     )
 
 
@@ -571,19 +571,25 @@ def _deser_identifier(self, data: dict[str, Any]):
 def _deser_string_identifier(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringIdentifier
 
-    return StringIdentifier(name=_deserialize_string_field(data, "name", "StringIdentifier"))
+    return StringIdentifier(
+        name=_deserialize_nonempty_string_field(data, "name", "StringIdentifier")
+    )
 
 
 def _deser_string_wildcard(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringWildcard
 
-    return StringWildcard(pattern=_deserialize_string_field(data, "pattern", "StringWildcard"))
+    return StringWildcard(
+        pattern=_deserialize_nonempty_string_field(data, "pattern", "StringWildcard")
+    )
 
 
 def _deser_string_count(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringCount
 
-    return StringCount(string_id=_deserialize_string_field(data, "string_id", "StringCount"))
+    return StringCount(
+        string_id=_deserialize_nonempty_string_field(data, "string_id", "StringCount")
+    )
 
 
 def _deser_string_offset(self, data: dict[str, Any]):
@@ -591,7 +597,7 @@ def _deser_string_offset(self, data: dict[str, Any]):
 
     index = data.get("index")
     return StringOffset(
-        string_id=_deserialize_string_field(data, "string_id", "StringOffset"),
+        string_id=_deserialize_nonempty_string_field(data, "string_id", "StringOffset"),
         index=_deserialize_optional_expression(self, index, "StringOffset index"),
     )
 
@@ -601,7 +607,7 @@ def _deser_string_length(self, data: dict[str, Any]):
 
     index = data.get("index")
     return StringLength(
-        string_id=_deserialize_string_field(data, "string_id", "StringLength"),
+        string_id=_deserialize_nonempty_string_field(data, "string_id", "StringLength"),
         index=_deserialize_optional_expression(self, index, "StringLength index"),
     )
 
@@ -642,9 +648,13 @@ def _deser_boolean_literal(self, data: dict[str, Any]):
 def _deser_for_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import ForExpression
 
+    variable = _deserialize_optional_string_field(data, "variable", "ForExpression", "i")
+    if not variable:
+        msg = "ForExpression variable must not be empty"
+        raise SerializationError(msg)
     return ForExpression(
         quantifier=_deserialize_required_quantifier(self, data, "quantifier", "ForExpression"),
-        variable=_deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
+        variable=variable,
         iterable=_deserialize_required_expression(self, data, "iterable", "ForExpression"),
         body=_deserialize_required_expression(self, data, "body", "ForExpression"),
     )
@@ -668,7 +678,7 @@ def _deser_at_expression(self, data: dict[str, Any]):
     if isinstance(raw_subject, dict):
         subject = _deserialize_required_expression(self, data, "string_id", "AtExpression")
     else:
-        subject = _deserialize_string_field(data, "string_id", "AtExpression")
+        subject = _deserialize_nonempty_string_field(data, "string_id", "AtExpression")
     return AtExpression(
         string_id=subject,
         offset=_deserialize_required_expression(self, data, "offset", "AtExpression"),
@@ -706,7 +716,9 @@ def _deser_of_expression(self, data: dict[str, Any]):
 def _deser_module_reference(self, data: dict[str, Any]):
     from yaraast.ast.modules import ModuleReference
 
-    return ModuleReference(module=_deserialize_string_field(data, "module", "ModuleReference"))
+    return ModuleReference(
+        module=_deserialize_nonempty_string_field(data, "module", "ModuleReference")
+    )
 
 
 def _deser_dictionary_access(self, data: dict[str, Any]):
@@ -1108,7 +1120,11 @@ class JsonSerializerDeserializeMixin:
             ]
             return self._apply_node_metadata(
                 HexString(
-                    identifier=_deserialize_string_field(data, "identifier", "HexString"),
+                    identifier=_deserialize_nonempty_string_field(
+                        data,
+                        "identifier",
+                        "HexString",
+                    ),
                     tokens=tokens,
                     modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),
@@ -1120,7 +1136,11 @@ class JsonSerializerDeserializeMixin:
 
             return self._apply_node_metadata(
                 RegexString(
-                    identifier=_deserialize_string_field(data, "identifier", "RegexString"),
+                    identifier=_deserialize_nonempty_string_field(
+                        data,
+                        "identifier",
+                        "RegexString",
+                    ),
                     regex=_deserialize_nonempty_string_field(data, "regex", "RegexString"),
                     modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),

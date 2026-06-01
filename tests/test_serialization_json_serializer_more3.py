@@ -487,10 +487,15 @@ def test_json_serializer_rejects_invalid_leaf_values() -> None:
     invalid_cases = [
         (Identifier(""), "Identifier name must not be empty"),
         (Identifier(invalid_list), "Identifier name must be a string"),
+        (StringIdentifier(""), "StringIdentifier name must not be empty"),
         (StringIdentifier(invalid_text), "StringIdentifier name must be a string"),
+        (StringWildcard(""), "StringWildcard pattern must not be empty"),
         (StringWildcard(invalid_text), "StringWildcard pattern must be a string"),
+        (StringCount(""), "StringCount string_id must not be empty"),
         (StringCount(invalid_text), "StringCount string_id must be a string"),
+        (StringOffset(""), "StringOffset string_id must not be empty"),
         (StringOffset(invalid_text), "StringOffset string_id must be a string"),
+        (StringLength(""), "StringLength string_id must not be empty"),
         (StringLength(invalid_text), "StringLength string_id must be a string"),
         (IntegerLiteral(True), "IntegerLiteral value must be an integer"),
         (IntegerLiteral(invalid_integer), "IntegerLiteral value must be an integer"),
@@ -500,7 +505,9 @@ def test_json_serializer_rejects_invalid_leaf_values() -> None:
         (RegexLiteral(""), "RegexLiteral pattern must not be empty"),
         (RegexLiteral("abc", invalid_regex_modifiers), "RegexLiteral modifiers must be a string"),
         (BooleanLiteral(invalid_bool), "BooleanLiteral value must be a boolean"),
+        (ModuleReference(""), "ModuleReference module must not be empty"),
         (ModuleReference(invalid_list), "ModuleReference module must be a string"),
+        (AtExpression("", IntegerLiteral(0)), "AtExpression string_id must not be empty"),
         (AtExpression(invalid_text, IntegerLiteral(0)), "AtExpression string_id must be a string"),
     ]
 
@@ -631,6 +638,18 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
             YaraFile(
                 rules=[
                     Rule(
+                        name="empty_hex_identifier",
+                        strings=[HexString(identifier="", tokens=[])],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexString identifier must not be empty",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
                         name="invalid_regex_identifier",
                         strings=[RegexString(identifier=invalid_text, regex="x")],
                         condition=BooleanLiteral(True),
@@ -638,6 +657,18 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
                 ]
             ),
             "RegexString identifier must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="empty_regex_identifier",
+                        strings=[RegexString(identifier="", regex="x")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "RegexString identifier must not be empty",
         ),
         (
             YaraFile(
@@ -686,16 +717,32 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
             "BinaryExpression operator must be a string",
         ),
         (
+            UnaryExpression("", BooleanLiteral(True)),
+            "UnaryExpression operator must not be empty",
+        ),
+        (
             UnaryExpression(invalid_text, BooleanLiteral(True)),
             "UnaryExpression operator must be a string",
+        ),
+        (
+            FunctionCall("", []),
+            "FunctionCall function must not be empty",
         ),
         (
             FunctionCall(invalid_text, []),
             "FunctionCall function must be a string",
         ),
         (
+            MemberAccess(Identifier("pe"), ""),
+            "MemberAccess member must not be empty",
+        ),
+        (
             MemberAccess(Identifier("pe"), invalid_text),
             "MemberAccess member must be a string",
+        ),
+        (
+            ForExpression("any", "", Identifier("items"), BooleanLiteral(True)),
+            "ForExpression variable must not be empty",
         ),
         (
             ForExpression("any", invalid_text, Identifier("items"), BooleanLiteral(True)),

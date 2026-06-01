@@ -533,6 +533,16 @@ def test_json_deserialize_strings_reject_wrong_scalar_types() -> None:
             {"type": "HexString", "identifier": ["$h"], "tokens": [], "modifiers": []}
         )
 
+    with pytest.raises(SerializationError, match="HexString identifier must not be empty"):
+        s._deserialize_string(
+            {"type": "HexString", "identifier": "", "tokens": [], "modifiers": []}
+        )
+
+    with pytest.raises(SerializationError, match="RegexString identifier must not be empty"):
+        s._deserialize_string(
+            {"type": "RegexString", "identifier": "", "regex": "abc", "modifiers": []}
+        )
+
     with pytest.raises(SerializationError, match="RegexString regex must be a string"):
         s._deserialize_string(
             {"type": "RegexString", "identifier": "$r", "regex": 123, "modifiers": []}
@@ -595,6 +605,17 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Identifier name must not be empty"):
         s._deserialize_expression({"type": "Identifier", "name": ""})
 
+    empty_string_reference_cases = (
+        ({"type": "StringIdentifier", "name": ""}, "StringIdentifier name must not be empty"),
+        ({"type": "StringWildcard", "pattern": ""}, "StringWildcard pattern must not be empty"),
+        ({"type": "StringCount", "string_id": ""}, "StringCount string_id must not be empty"),
+        ({"type": "StringOffset", "string_id": ""}, "StringOffset string_id must not be empty"),
+        ({"type": "StringLength", "string_id": ""}, "StringLength string_id must not be empty"),
+    )
+    for payload, message in empty_string_reference_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
     with pytest.raises(SerializationError, match="BinaryExpression left is required"):
         s._deserialize_expression(
             {"type": "BinaryExpression", "operator": "and", "right": true_expr}
@@ -605,7 +626,7 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             {"type": "BinaryExpression", "left": true_expr, "operator": "and"}
         )
 
-    missing_expression_cases = (
+    missing_expression_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (
             {"type": "UnaryExpression", "operator": "not"},
             "UnaryExpression operand is required",
@@ -688,8 +709,14 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             {"type": "UnaryExpression", "operator": ["not"], "operand": true_expr}
         )
 
+    with pytest.raises(SerializationError, match="UnaryExpression operator must not be empty"):
+        s._deserialize_expression({"type": "UnaryExpression", "operator": "", "operand": true_expr})
+
     with pytest.raises(SerializationError, match="FunctionCall function must be a string"):
         s._deserialize_expression({"type": "FunctionCall", "function": ["fn"], "arguments": []})
+
+    with pytest.raises(SerializationError, match="FunctionCall function must not be empty"):
+        s._deserialize_expression({"type": "FunctionCall", "function": "", "arguments": []})
 
     with pytest.raises(SerializationError, match="SetExpression elements must be a list"):
         s._deserialize_expression({"type": "SetExpression", "elements": "x"})
@@ -705,6 +732,11 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             {"type": "MemberAccess", "object": {"type": "Identifier", "name": "pe"}, "member": []}
         )
 
+    with pytest.raises(SerializationError, match="MemberAccess member must not be empty"):
+        s._deserialize_expression(
+            {"type": "MemberAccess", "object": {"type": "Identifier", "name": "pe"}, "member": ""}
+        )
+
     with pytest.raises(SerializationError, match="AtExpression string_id must be a string"):
         s._deserialize_expression(
             {
@@ -714,8 +746,17 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             }
         )
 
+    with pytest.raises(SerializationError, match="AtExpression string_id must not be empty"):
+        s._deserialize_expression(
+            {
+                "type": "AtExpression",
+                "string_id": "",
+                "offset": {"type": "IntegerLiteral", "value": 0},
+            }
+        )
+
     int_expr = {"type": "IntegerLiteral", "value": 1}
-    missing_condition_cases = (
+    missing_condition_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (
             {"type": "ForExpression", "variable": "i", "iterable": int_expr, "body": int_expr},
             "ForExpression quantifier is required",
@@ -825,6 +866,9 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="ModuleReference module must be a string"):
         s._deserialize_expression({"type": "ModuleReference", "module": ["pe"]})
+
+    with pytest.raises(SerializationError, match="ModuleReference module must not be empty"):
+        s._deserialize_expression({"type": "ModuleReference", "module": ""})
 
     with pytest.raises(SerializationError, match="ModuleReference module is required"):
         s._deserialize_expression({"type": "ModuleReference"})
@@ -1098,6 +1142,17 @@ def test_json_deserialize_condition_fields_reject_wrong_scalar_types() -> None:
                 "type": "ForExpression",
                 "quantifier": "any",
                 "variable": ["i"],
+                "iterable": true_expr,
+                "body": true_expr,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="ForExpression variable must not be empty"):
+        s._deserialize_expression(
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": "",
                 "iterable": true_expr,
                 "body": true_expr,
             }

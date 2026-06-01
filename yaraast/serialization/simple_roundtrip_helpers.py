@@ -509,7 +509,7 @@ def _serialize_required_nonempty_string(value: Any, context: str) -> str:
 
 def _serialize_string_or_expression(value: Any, context: str) -> str | dict[str, Any]:
     if isinstance(value, str):
-        return value
+        return _serialize_required_nonempty_string(value, context)
     if isinstance(value, Expression):
         return serialize_node(value)
     msg = f"{context} must be a string"
@@ -1110,28 +1110,40 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, StringIdentifier):
         return {
             "type": "StringIdentifier",
-            "name": _serialize_required_string(node.name, "StringIdentifier name"),
+            "name": _serialize_required_nonempty_string(node.name, "StringIdentifier name"),
         }
     if isinstance(node, StringWildcard):
         return {
             "type": "StringWildcard",
-            "pattern": _serialize_required_string(node.pattern, "StringWildcard pattern"),
+            "pattern": _serialize_required_nonempty_string(
+                node.pattern,
+                "StringWildcard pattern",
+            ),
         }
     if isinstance(node, StringCount):
         return {
             "type": "StringCount",
-            "string_id": _serialize_required_string(node.string_id, "StringCount string_id"),
+            "string_id": _serialize_required_nonempty_string(
+                node.string_id,
+                "StringCount string_id",
+            ),
         }
     if isinstance(node, StringOffset):
         return {
             "type": "StringOffset",
-            "string_id": _serialize_required_string(node.string_id, "StringOffset string_id"),
+            "string_id": _serialize_required_nonempty_string(
+                node.string_id,
+                "StringOffset string_id",
+            ),
             "index": serialize_node(node.index) if node.index is not None else None,
         }
     if isinstance(node, StringLength):
         return {
             "type": "StringLength",
-            "string_id": _serialize_required_string(node.string_id, "StringLength string_id"),
+            "string_id": _serialize_required_nonempty_string(
+                node.string_id,
+                "StringLength string_id",
+            ),
             "index": serialize_node(node.index) if node.index is not None else None,
         }
     if isinstance(node, BinaryExpression):
@@ -1147,7 +1159,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, UnaryExpression):
         return {
             "type": "UnaryExpression",
-            "operator": _serialize_required_string(node.operator, "UnaryExpression operator"),
+            "operator": _serialize_required_nonempty_string(
+                node.operator,
+                "UnaryExpression operator",
+            ),
             "operand": serialize_node(node.operand),
         }
     if isinstance(node, ParenthesesExpression):
@@ -1172,7 +1187,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         )
         return {
             "type": "FunctionCall",
-            "function": _serialize_required_string(node.function, "FunctionCall function"),
+            "function": _serialize_required_nonempty_string(
+                node.function,
+                "FunctionCall function",
+            ),
             "arguments": [serialize_node(argument) for argument in arguments],
         }
     if isinstance(node, ArrayAccess):
@@ -1185,13 +1203,16 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "MemberAccess",
             "object": serialize_node(node.object),
-            "member": _serialize_required_string(node.member, "MemberAccess member"),
+            "member": _serialize_required_nonempty_string(node.member, "MemberAccess member"),
         }
     if isinstance(node, ForExpression):
         return {
             "type": "ForExpression",
             "quantifier": _serialize_ast_value(node.quantifier),
-            "variable": _serialize_required_string(node.variable, "ForExpression variable"),
+            "variable": _serialize_required_nonempty_string(
+                node.variable,
+                "ForExpression variable",
+            ),
             "iterable": serialize_node(node.iterable),
             "body": serialize_node(node.body),
         }
@@ -1226,7 +1247,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, ModuleReference):
         return {
             "type": "ModuleReference",
-            "module": _serialize_required_string(node.module, "ModuleReference module"),
+            "module": _serialize_required_nonempty_string(node.module, "ModuleReference module"),
         }
     if isinstance(node, DictionaryAccess):
         return {
@@ -1544,7 +1565,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
     if isinstance(string_def, HexString):
         data = {
             "type": "HexString",
-            "identifier": _serialize_required_string(
+            "identifier": _serialize_required_nonempty_string(
                 string_def.identifier,
                 "HexString identifier",
             ),
@@ -1557,7 +1578,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
     if isinstance(string_def, RegexString):
         data = {
             "type": "RegexString",
-            "identifier": _serialize_required_string(
+            "identifier": _serialize_required_nonempty_string(
                 string_def.identifier,
                 "RegexString identifier",
             ),
@@ -1697,19 +1718,21 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "Identifier":
         return Identifier(_deserialize_nonempty_string_field(data, "name", "Identifier"))
     if node_type == "StringIdentifier":
-        return StringIdentifier(_deserialize_string_field(data, "name", "StringIdentifier"))
+        return StringIdentifier(
+            _deserialize_nonempty_string_field(data, "name", "StringIdentifier")
+        )
     if node_type == "StringWildcard":
-        return StringWildcard(_deserialize_string_field(data, "pattern", "StringWildcard"))
+        return StringWildcard(_deserialize_nonempty_string_field(data, "pattern", "StringWildcard"))
     if node_type == "StringCount":
-        return StringCount(_deserialize_string_field(data, "string_id", "StringCount"))
+        return StringCount(_deserialize_nonempty_string_field(data, "string_id", "StringCount"))
     if node_type == "StringOffset":
         return StringOffset(
-            _deserialize_string_field(data, "string_id", "StringOffset"),
+            _deserialize_nonempty_string_field(data, "string_id", "StringOffset"),
             _deserialize_optional_node_field(data, "index", "StringOffset index"),
         )
     if node_type == "StringLength":
         return StringLength(
-            _deserialize_string_field(data, "string_id", "StringLength"),
+            _deserialize_nonempty_string_field(data, "string_id", "StringLength"),
             _deserialize_optional_node_field(data, "index", "StringLength index"),
         )
     if node_type == "BinaryExpression":
@@ -1720,7 +1743,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "UnaryExpression":
         return UnaryExpression(
-            _deserialize_string_field(data, "operator", "UnaryExpression"),
+            _deserialize_nonempty_string_field(data, "operator", "UnaryExpression"),
             _deserialize_required_node(data, "operand", "UnaryExpression"),
         )
     if node_type == "ParenthesesExpression":
@@ -1736,7 +1759,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "FunctionCall":
         return FunctionCall(
-            _deserialize_string_field(data, "function", "FunctionCall"),
+            _deserialize_nonempty_string_field(data, "function", "FunctionCall"),
             _deserialize_node_list_field(data, "arguments", "FunctionCall"),
         )
     if node_type == "ArrayAccess":
@@ -1747,12 +1770,16 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "MemberAccess":
         return MemberAccess(
             _deserialize_required_node(data, "object", "MemberAccess"),
-            _deserialize_string_field(data, "member", "MemberAccess"),
+            _deserialize_nonempty_string_field(data, "member", "MemberAccess"),
         )
     if node_type == "ForExpression":
+        variable = _deserialize_optional_string_field(data, "variable", "ForExpression", "i")
+        if not variable:
+            msg = "ForExpression variable must not be empty"
+            raise SerializationError(msg)
         return ForExpression(
             _deserialize_required_quantifier(data, "quantifier", "ForExpression"),
-            _deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
+            variable,
             _deserialize_required_node(data, "iterable", "ForExpression"),
             _deserialize_required_node(data, "body", "ForExpression"),
         )
@@ -1767,7 +1794,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         if isinstance(raw_subject, dict):
             subject = _deserialize_required_node_value(raw_subject, "AtExpression string_id")
         elif isinstance(raw_subject, str):
-            subject = raw_subject
+            subject = _deserialize_nonempty_string_field(data, "string_id", "AtExpression")
         else:
             subject = _deserialize_string_field(data, "string_id", "AtExpression")
         return AtExpression(
@@ -1792,7 +1819,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_required_string_set(data, "string_set", "OfExpression"),
         )
     if node_type == "ModuleReference":
-        return ModuleReference(_deserialize_string_field(data, "module", "ModuleReference"))
+        return ModuleReference(
+            _deserialize_nonempty_string_field(data, "module", "ModuleReference")
+        )
     if node_type == "DictionaryAccess":
         return DictionaryAccess(
             _deserialize_required_node(data, "object", "DictionaryAccess"),
@@ -2137,7 +2166,11 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             tokens = [_deserialize_hex_token(t) for t in raw_tokens]
             return _apply_node_metadata(
                 HexString(
-                    identifier=_deserialize_string_field(data, "identifier", "HexString"),
+                    identifier=_deserialize_nonempty_string_field(
+                        data,
+                        "identifier",
+                        "HexString",
+                    ),
                     tokens=tokens,
                     modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),
@@ -2148,7 +2181,11 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             try:
                 return _apply_node_metadata(
                     HexString(
-                        identifier=_deserialize_string_field(data, "identifier", "HexString"),
+                        identifier=_deserialize_nonempty_string_field(
+                            data,
+                            "identifier",
+                            "HexString",
+                        ),
                         tokens=_deserialize_legacy_hex_tokens(raw_tokens),
                         modifiers=modifiers,
                         is_anonymous=_deserialize_is_anonymous(data),
@@ -2162,7 +2199,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
         # Legacy format with invalid token payloads: preserve type but do not invent tokens.
         import warnings
 
-        identifier = _deserialize_string_field(data, "identifier", "HexString")
+        identifier = _deserialize_nonempty_string_field(data, "identifier", "HexString")
         warnings.warn(
             f"HexString '{identifier}' has non-list tokens in serialized data, "
             "tokens will be empty after deserialization",
@@ -2180,7 +2217,11 @@ def deserialize_string(data: dict[str, Any]) -> Any:
     if string_type == "RegexString":
         return _apply_node_metadata(
             RegexString(
-                identifier=_deserialize_string_field(data, "identifier", "RegexString"),
+                identifier=_deserialize_nonempty_string_field(
+                    data,
+                    "identifier",
+                    "RegexString",
+                ),
                 regex=_deserialize_nonempty_string_field(data, "regex", "RegexString"),
                 modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),

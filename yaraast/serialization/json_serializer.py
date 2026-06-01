@@ -373,19 +373,25 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_string_identifier(self, node) -> dict[str, Any]:
         return self._simple_node(
             "StringIdentifier",
-            name=_serialize_required_string(node.name, "StringIdentifier name"),
+            name=_serialize_required_nonempty_string(node.name, "StringIdentifier name"),
         )
 
     def visit_string_wildcard(self, node) -> dict[str, Any]:
         return self._simple_node(
             "StringWildcard",
-            pattern=_serialize_required_string(node.pattern, "StringWildcard pattern"),
+            pattern=_serialize_required_nonempty_string(
+                node.pattern,
+                "StringWildcard pattern",
+            ),
         )
 
     def visit_string_count(self, node) -> dict[str, Any]:
         return self._simple_node(
             "StringCount",
-            string_id=_serialize_required_string(node.string_id, "StringCount string_id"),
+            string_id=_serialize_required_nonempty_string(
+                node.string_id,
+                "StringCount string_id",
+            ),
         )
 
     def visit_string_offset(self, node) -> dict[str, Any]:
@@ -485,7 +491,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_module_reference(self, node) -> dict[str, Any]:
         return self._simple_node(
             "ModuleReference",
-            module=_serialize_required_string(node.module, "ModuleReference module"),
+            module=_serialize_required_nonempty_string(node.module, "ModuleReference module"),
         )
 
     def visit_dictionary_access(self, node) -> dict[str, Any]:
