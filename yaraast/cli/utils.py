@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from os import PathLike
 from pathlib import Path
 
 from rich.console import Console
@@ -11,14 +12,24 @@ from rich.markup import escape
 from yaraast.cli.parser_helpers import parse_yara_source
 
 
+def _require_file_path(path: object) -> Path:
+    if isinstance(path, bool) or not isinstance(path, str | PathLike):
+        msg = "path must be a file path"
+        raise TypeError(msg)
+    if isinstance(path, str) and not path:
+        msg = "path must not be empty"
+        raise ValueError(msg)
+    return Path(path)
+
+
 def read_text(path: str | Path) -> str:
     """Read a text file with UTF-8 encoding."""
-    return Path(path).read_text(encoding="utf-8")
+    return _require_file_path(path).read_text(encoding="utf-8")
 
 
 def write_text(path: str | Path, content: str) -> None:
     """Write a text file with UTF-8 encoding."""
-    Path(path).write_text(content, encoding="utf-8")
+    _require_file_path(path).write_text(content, encoding="utf-8")
 
 
 def write_json(path: str | Path, data: object, indent: int = 2) -> None:
