@@ -6,8 +6,10 @@ from pathlib import Path
 
 from lsprotocol.types import Position
 
+from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.document_query_reference_text import section_for_occurrence
 from yaraast.lsp.references import ReferencesProvider
+from yaraast.lsp.rename import RenameProvider
 from yaraast.lsp.runtime import LspRuntime, path_to_uri
 
 
@@ -102,6 +104,30 @@ rule a {
     provider = ReferencesProvider()
 
     assert provider.get_references(text, _pos(3, 10), "file://test.yar") == []
+
+
+def test_lsp_string_navigation_ignores_yarax_local_string_shadowing() -> None:
+    text = """
+rule shadowed {
+  strings:
+    $a = "x"
+  condition:
+    with $a = 1:
+      $a > 0
+}
+""".lstrip()
+    uri = "file://test.yar"
+
+    references = ReferencesProvider().get_references(text, _pos(2, 5), uri)
+    assert [(ref.range.start.line, ref.range.end.line) for ref in references] == [(2, 2)]
+
+    assert DefinitionProvider().get_definition(text, _pos(5, 7), uri) is None
+    assert RenameProvider().prepare_rename(text, _pos(5, 7), uri) is None
+
+    edit = RenameProvider().rename(text, _pos(2, 5), "renamed", uri)
+    assert edit is not None
+    assert edit.changes is not None
+    assert [text_edit.range.start.line for text_edit in edit.changes[uri]] == [2]
 
 
 def test_reference_section_lookup_ignores_inline_markers_inside_literals() -> None:

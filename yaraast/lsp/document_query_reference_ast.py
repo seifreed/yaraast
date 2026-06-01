@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from typing import TYPE_CHECKING
 
 from lsprotocol.types import Location, Position, Range, TextEdit
 
 from yaraast.ast.base import ASTNode
+from yaraast.ast.conditions import ForExpression
 from yaraast.ast.expressions import (
     Identifier,
     StringCount,
@@ -17,6 +18,13 @@ from yaraast.ast.expressions import (
 )
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 from yaraast.lsp.utils import location_to_range
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    LambdaExpression,
+    WithDeclaration,
+    WithStatement,
+)
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
@@ -41,12 +49,12 @@ def collect_string_reference_locations_from_ast(
         condition = getattr(rule, "condition", None)
         if condition is None:
             continue
-        for node in iter_ast_nodes(condition):
+        for node, local_scopes in iter_ast_nodes_with_local_scopes(condition):
             node_name = string_reference_name(node)
             if node_name is None:
                 continue
             saw_supported_node = True
-            if node_name != normalized:
+            if node_name != normalized or name_is_local(node_name, local_scopes):
                 continue
             node_location = getattr(node, "location", None)
             if node_location is None:
@@ -74,11 +82,11 @@ def collect_rule_reference_locations_from_ast(
         condition = getattr(rule, "condition", None)
         if condition is None:
             continue
-        for node in iter_ast_nodes(condition):
+        for node, local_scopes in iter_ast_nodes_with_local_scopes(condition):
             if not isinstance(node, Identifier):
                 continue
             saw_supported_node = True
-            if node.name != rule_name:
+            if node.name != rule_name or name_is_local(node.name, local_scopes):
                 continue
             node_location = getattr(node, "location", None)
             if node_location is None:
@@ -114,12 +122,12 @@ def build_string_rename_edits_from_ast(
         condition = getattr(rule, "condition", None)
         if condition is None:
             continue
-        for node in iter_ast_nodes(condition):
+        for node, local_scopes in iter_ast_nodes_with_local_scopes(condition):
             node_name = string_reference_name(node)
             if node_name is None:
                 continue
             saw_supported_node = True
-            if node_name != normalized:
+            if node_name != normalized or name_is_local(node_name, local_scopes):
                 continue
             node_location = getattr(node, "location", None)
             if node_location is None:
@@ -138,9 +146,115 @@ def build_string_rename_edits_from_ast(
 
 
 def iter_ast_nodes(node: ASTNode) -> Iterable[ASTNode]:
-    yield node
+    for child, _local_scopes in iter_ast_nodes_with_local_scopes(node):
+        yield child
+
+
+def iter_ast_nodes_with_local_scopes(
+    node: ASTNode,
+) -> Iterable[tuple[ASTNode, tuple[frozenset[str], ...]]]:
+    yield from _iter_ast_nodes_with_local_scopes(node, ())
+
+
+def node_has_local_binding(root: ASTNode, target: ASTNode, name: str) -> bool:
+    for node, local_scopes in iter_ast_nodes_with_local_scopes(root):
+        if node is target:
+            return name_is_local(name, local_scopes)
+    return False
+
+
+def name_is_local(name: str, local_scopes: tuple[frozenset[str], ...]) -> bool:
+    normalized = _normalized_local_lookup_name(name)
+    return any(normalized in scope for scope in reversed(local_scopes))
+
+
+def _iter_ast_nodes_with_local_scopes(
+    node: ASTNode,
+    local_scopes: tuple[frozenset[str], ...],
+) -> Iterable[tuple[ASTNode, tuple[frozenset[str], ...]]]:
+    yield node, local_scopes
+    if isinstance(node, WithStatement):
+        local_names: set[str] = set()
+        for declaration in node.declarations:
+            active_scopes = _extend_scopes(local_scopes, local_names)
+            yield declaration, active_scopes
+            yield from _iter_ast_value_with_local_scopes(declaration.value, active_scopes)
+            local_names.update(_local_name_variants(declaration.identifier))
+        yield from _iter_ast_value_with_local_scopes(
+            node.body, _extend_scopes(local_scopes, local_names)
+        )
+        return
+    if isinstance(node, WithDeclaration):
+        yield from _iter_ast_value_with_local_scopes(node.value, local_scopes)
+        return
+    if isinstance(node, ForExpression):
+        yield from _iter_ast_value_with_local_scopes(node.quantifier, local_scopes)
+        yield from _iter_ast_value_with_local_scopes(node.iterable, local_scopes)
+        yield from _iter_ast_value_with_local_scopes(
+            node.body, _extend_scopes(local_scopes, _local_name_variants(node.variable))
+        )
+        return
+    if isinstance(node, ArrayComprehension):
+        yield from _iter_ast_value_with_local_scopes(node.iterable, local_scopes)
+        scoped = _extend_scopes(local_scopes, _local_name_variants(node.variable))
+        yield from _iter_ast_value_with_local_scopes(node.condition, scoped)
+        yield from _iter_ast_value_with_local_scopes(node.expression, scoped)
+        return
+    if isinstance(node, DictComprehension):
+        yield from _iter_ast_value_with_local_scopes(node.iterable, local_scopes)
+        dict_local_names = _local_name_variants(node.key_variable)
+        if node.value_variable:
+            dict_local_names.update(_local_name_variants(node.value_variable))
+        scoped = _extend_scopes(local_scopes, dict_local_names)
+        yield from _iter_ast_value_with_local_scopes(node.condition, scoped)
+        yield from _iter_ast_value_with_local_scopes(node.key_expression, scoped)
+        yield from _iter_ast_value_with_local_scopes(node.value_expression, scoped)
+        return
+    if isinstance(node, LambdaExpression):
+        lambda_local_names: set[str] = set()
+        for parameter in node.parameters:
+            lambda_local_names.update(_local_name_variants(parameter))
+        yield from _iter_ast_value_with_local_scopes(
+            node.body, _extend_scopes(local_scopes, lambda_local_names)
+        )
+        return
     for child in node.children():
-        yield from iter_ast_nodes(child)
+        yield from _iter_ast_nodes_with_local_scopes(child, local_scopes)
+
+
+def _iter_ast_value_with_local_scopes(
+    value: object,
+    local_scopes: tuple[frozenset[str], ...],
+) -> Iterable[tuple[ASTNode, tuple[frozenset[str], ...]]]:
+    if isinstance(value, ASTNode):
+        yield from _iter_ast_nodes_with_local_scopes(value, local_scopes)
+    elif isinstance(value, Mapping):
+        for item in value.values():
+            yield from _iter_ast_value_with_local_scopes(item, local_scopes)
+    elif isinstance(value, list | tuple | set | frozenset):
+        for item in value:
+            yield from _iter_ast_value_with_local_scopes(item, local_scopes)
+
+
+def _extend_scopes(
+    local_scopes: tuple[frozenset[str], ...],
+    local_names: Iterable[str],
+) -> tuple[frozenset[str], ...]:
+    scope = frozenset(local_names)
+    if not scope:
+        return local_scopes
+    return (*local_scopes, scope)
+
+
+def _local_name_variants(name: str) -> set[str]:
+    names = [part.strip() for part in name.split(",")]
+    return {local_name for local_name in names if local_name}
+
+
+def _normalized_local_lookup_name(name: str) -> str:
+    if name.startswith(("#", "@", "!")):
+        return f"${name[1:]}"
+    return name
 
 
 def string_reference_name(node: ASTNode) -> str | None:

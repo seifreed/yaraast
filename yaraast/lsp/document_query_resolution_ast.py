@@ -16,7 +16,10 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.modules import ModuleReference
 from yaraast.ast.rules import Rule as RuleNode
-from yaraast.lsp.document_query_reference_ast import string_reference_range
+from yaraast.lsp.document_query_reference_ast import (
+    node_has_local_binding,
+    string_reference_range,
+)
 from yaraast.lsp.document_query_resolution_ranges import narrow_range_to_name, resolved_if_contains
 from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.utils import find_node_at_position, get_word_at_position, location_to_range
@@ -39,7 +42,7 @@ def resolve_symbol_from_ast(ctx: DocumentContext, position: Position) -> Resolve
         return None
     node_range = location_to_range(node_location, ctx.text)
 
-    result = _resolve_typed_node(ctx, position, node, node_range)
+    result = _resolve_typed_node(ctx, position, node, node_range, ast)
     if result is not None:
         return result
     return _resolve_expression_context(ctx, position, node)
@@ -50,9 +53,15 @@ def _resolve_typed_node(
     position: Position,
     node: Any,
     node_range: Range,
+    root: Any,
 ) -> ResolvedSymbol | None:
     if isinstance(node, StringIdentifier):
         reference_range = string_reference_range(node, ctx.text)
+        if node_has_local_binding(root, node, node.name):
+            return resolved_if_contains(
+                position,
+                ResolvedSymbol(ctx.uri, node.name, node.name, "identifier", reference_range),
+            )
         return resolved_if_contains(
             position, ResolvedSymbol(ctx.uri, node.name, node.name, "string", reference_range)
         )
@@ -62,6 +71,10 @@ def _resolve_typed_node(
         word, _word_range = get_word_at_position(ctx.text, position)
         name = word or normalized
         reference_range = string_reference_range(node, ctx.text)
+        if node_has_local_binding(root, node, normalized):
+            return resolved_if_contains(
+                position, ResolvedSymbol(ctx.uri, name, normalized, "identifier", reference_range)
+            )
         return resolved_if_contains(
             position, ResolvedSymbol(ctx.uri, name, normalized, "string", reference_range)
         )
@@ -105,7 +118,12 @@ def _resolve_typed_node(
             ),
         )
     if isinstance(node, Identifier):
-        kind = "rule" if ctx.find_rule_definition(node.name) is not None else "identifier"
+        kind = (
+            "rule"
+            if ctx.find_rule_definition(node.name) is not None
+            and not node_has_local_binding(root, node, node.name)
+            else "identifier"
+        )
         return resolved_if_contains(
             position, ResolvedSymbol(ctx.uri, node.name, node.name, kind, node_range)
         )
