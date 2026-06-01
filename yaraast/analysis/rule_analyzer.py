@@ -269,7 +269,7 @@ class RuleAnalyzer:
                 rule = r
                 break
 
-        if not rule:
+        if rule is None:
             return None
 
         # Analyze just this file

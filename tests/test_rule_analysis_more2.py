@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from yaraast.analysis import RuleAnalyzer
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 
 
@@ -65,6 +68,19 @@ def test_rule_report_sorts_transitive_dependencies() -> None:
 
     assert report is not None
     assert report["transitive_dependencies"] == sorted(dependency_names)
+
+
+def test_rule_report_preserves_falsy_present_rule() -> None:
+    class FalsyRule(Rule):
+        def __bool__(self) -> bool:
+            return False
+
+    ast = YaraFile(rules=[FalsyRule(name="target", condition=BooleanLiteral(True))])
+
+    report = RuleAnalyzer().get_rule_report("target", ast)
+
+    assert report is not None
+    assert report["name"] == "target"
 
 
 def test_rule_analyzer_recommendations_and_metrics_paths() -> None:
