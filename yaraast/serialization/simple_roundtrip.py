@@ -72,7 +72,7 @@ class SimpleRoundTrip:
                 self.success_count += 1
 
             return success, original_ast, regenerated_ast
-        except (ValueError, TypeError, AttributeError, YaraASTError):
+        except (ValueError, TypeError, YaraASTError):
             return False, None, None
 
     def test_batch(self, yara_codes: list[str]) -> list[tuple[bool, Any, Any]]:

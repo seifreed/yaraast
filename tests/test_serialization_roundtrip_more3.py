@@ -14,6 +14,7 @@ from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import RegexString
 from yaraast.errors import SerializationError
+from yaraast.serialization import simple_roundtrip as simple_roundtrip_module
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.roundtrip_pipeline_helpers import (
     build_pipeline_statistics,
@@ -114,6 +115,18 @@ def test_simple_roundtrip_test_handles_real_type_error() -> None:
     assert success is False
     assert original_ast is None
     assert regenerated_ast is None
+
+
+def test_simple_roundtrip_test_propagates_internal_parser_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_parse_yara_source(content: str) -> YaraFile:
+        raise AttributeError("broken parser internals")
+
+    monkeypatch.setattr(simple_roundtrip_module, "parse_yara_source", fail_parse_yara_source)
+
+    with pytest.raises(AttributeError, match="broken parser internals"):
+        SimpleRoundTrip().test("rule r { condition: true }")
 
 
 def test_roundtrip_deserialize_without_roundtrip_metadata_uses_plain_json() -> None:
