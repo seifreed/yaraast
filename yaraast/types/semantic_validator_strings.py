@@ -329,9 +329,11 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
 class UndefinedStringDetector:
     """Detects string identifiers used in conditions but not defined in strings section."""
 
+    _MISSING_LOCAL_STRING = object()
+
     def __init__(self, result: ValidationResult) -> None:
         self.result = result
-        self._local_string_scopes: list[set[str]] = []
+        self._local_string_scopes: list[dict[str, object]] = []
 
     def check_rule(self, rule: Rule) -> None:
         """Check a rule for undefined string references in its condition."""
@@ -388,10 +390,17 @@ class UndefinedStringDetector:
         normalized = self._normalize_ref(ref)
         return any(normalized in scope for scope in reversed(self._local_string_scopes))
 
-    def _add_local_string_declaration(self, identifier: str) -> None:
+    def _local_string_value(self, ref: str) -> object:
+        normalized = self._normalize_ref(ref)
+        for scope in reversed(self._local_string_scopes):
+            if normalized in scope:
+                return scope[normalized]
+        return self._MISSING_LOCAL_STRING
+
+    def _add_local_string_declaration(self, identifier: str, value: object) -> None:
         if not identifier.startswith("$") or not self._local_string_scopes:
             return
-        self._local_string_scopes[-1].add(identifier)
+        self._local_string_scopes[-1][identifier] = value
 
     def _collect_with_statement_refs(
         self,
@@ -399,11 +408,11 @@ class UndefinedStringDetector:
         refs: set[str],
         implicit_string_allowed: bool,
     ) -> None:
-        self._local_string_scopes.append(set())
+        self._local_string_scopes.append({})
         try:
             for declaration in node.declarations:
                 self._collect_string_refs(declaration.value, refs, implicit_string_allowed)
-                self._add_local_string_declaration(declaration.identifier)
+                self._add_local_string_declaration(declaration.identifier, declaration.value)
             self._collect_string_refs(node.body, refs, implicit_string_allowed)
         finally:
             self._local_string_scopes.pop()
@@ -416,7 +425,7 @@ class UndefinedStringDetector:
         used: set[str],
         implicit_string_allowed: bool,
     ) -> None:
-        self._local_string_scopes.append(set())
+        self._local_string_scopes.append({})
         try:
             for declaration in node.declarations:
                 self._collect_used_string_defs(
@@ -426,7 +435,7 @@ class UndefinedStringDetector:
                     used,
                     implicit_string_allowed,
                 )
-                self._add_local_string_declaration(declaration.identifier)
+                self._add_local_string_declaration(declaration.identifier, declaration.value)
             self._collect_used_string_defs(
                 node.body,
                 defined,
@@ -516,7 +525,10 @@ class UndefinedStringDetector:
         )
 
         if isinstance(string_set, str):
-            if string_set != "them" and not self._is_local_string_ref(string_set):
+            local_value = self._local_string_value(string_set)
+            if local_value is not self._MISSING_LOCAL_STRING:
+                self._collect_string_set_refs(local_value, refs)
+            elif string_set != "them":
                 refs.add(string_set)
             return
 
@@ -530,7 +542,10 @@ class UndefinedStringDetector:
             return
 
         if isinstance(string_set, StringIdentifier):
-            if not self._is_local_string_ref(string_set.name):
+            local_value = self._local_string_value(string_set.name)
+            if local_value is not self._MISSING_LOCAL_STRING:
+                self._collect_string_set_refs(local_value, refs)
+            else:
                 refs.add(string_set.name)
         elif isinstance(string_set, StringWildcard):
             if string_set.pattern.startswith("$") and not self._is_local_string_ref(
@@ -669,9 +684,12 @@ class UndefinedStringDetector:
         )
 
         if isinstance(string_set, str):
-            if string_set == "them":
+            local_value = self._local_string_value(string_set)
+            if local_value is not self._MISSING_LOCAL_STRING:
+                self._mark_used_string_set(local_value, defined, anonymous, used)
+            elif string_set == "them":
                 used.update(defined)
-            elif not self._is_local_string_ref(string_set):
+            else:
                 self._mark_used_string_ref(string_set, defined, anonymous, used)
             return
 
@@ -683,7 +701,10 @@ class UndefinedStringDetector:
         if isinstance(string_set, ParenthesesExpression):
             self._mark_used_string_set(string_set.expression, defined, anonymous, used)
         elif isinstance(string_set, StringIdentifier):
-            if not self._is_local_string_ref(string_set.name):
+            local_value = self._local_string_value(string_set.name)
+            if local_value is not self._MISSING_LOCAL_STRING:
+                self._mark_used_string_set(local_value, defined, anonymous, used)
+            else:
                 self._mark_used_string_ref(string_set.name, defined, anonymous, used)
         elif isinstance(string_set, StringWildcard):
             if string_set.pattern.startswith("$") and not self._is_local_string_ref(

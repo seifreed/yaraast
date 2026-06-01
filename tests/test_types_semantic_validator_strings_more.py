@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     IntegerLiteral,
+    SetExpression,
     StringIdentifier,
     StringLiteral,
 )
@@ -231,6 +233,37 @@ def test_semantic_validator_respects_yarax_with_local_string_variables() -> None
     )
     assert any(
         "Unreferenced string '$x' in rule 'shadowed_string'" in message for message in messages
+    )
+
+
+def test_semantic_validator_resolves_yarax_string_locals_in_string_sets() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="local_string_set",
+                strings=[
+                    PlainString(identifier="$a", value="needle"),
+                    PlainString(identifier="$x", value="shadowed"),
+                ],
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", StringLiteral("$a"))],
+                    body=OfExpression("any", SetExpression([StringIdentifier("$x")])),
+                ),
+            )
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert not any(
+        "Unreferenced string '$a' in rule 'local_string_set'" in message for message in messages
+    )
+    assert not any(
+        "Undefined string '$a' in rule 'local_string_set'" in message for message in messages
+    )
+    assert any(
+        "Unreferenced string '$x' in rule 'local_string_set'" in message for message in messages
     )
 
 
