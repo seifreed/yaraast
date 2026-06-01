@@ -7,7 +7,7 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -1372,6 +1372,12 @@ class TestASTVisitorAbstractBase:
         # The visit method should dispatch to visit_rule via accept
         result = visitor.visit(rule)
         assert result == "Rule: test"
+
+    def test_visitor_rejects_non_ast_nodes(self) -> None:
+        visitor: ASTVisitor[Any] = ASTVisitor()
+
+        with pytest.raises(TypeError, match="Visitor node must be an ASTNode"):
+            visitor.visit(cast(Any, object()))
 
 
 class TestModuleAndDictionaryAccess:

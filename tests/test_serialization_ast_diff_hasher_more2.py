@@ -8,7 +8,7 @@ from typing import Any, cast
 
 import pytest
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.conditions import ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -43,7 +43,7 @@ from yaraast.yarax.ast_nodes import (
 )
 
 
-class _AcceptNode:
+class _AcceptNode(ASTNode):
     def __init__(self, visit_method: str, **attrs: object) -> None:
         self._visit_method = visit_method
         for key, value in attrs.items():

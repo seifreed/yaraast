@@ -82,9 +82,7 @@ def test_generate_regenerated_code_helper_records_failure() -> None:
     assert regenerated is None
     assert result.equivalent is False
     assert result.code_equivalent is False
-    assert result.ast_differences == [
-        "Re-generation failed: 'str' object has no attribute 'accept'"
-    ]
+    assert result.ast_differences == ["Re-generation failed: Visitor node must be an ASTNode"]
 
 
 def test_compare_ast_and_scans_report_differences() -> None:

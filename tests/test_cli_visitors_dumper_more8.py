@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any, cast
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.conditions import InExpression
 from yaraast.ast.expressions import (
     DoubleLiteral,
@@ -32,7 +32,7 @@ from yaraast.ast.strings import (
 from yaraast.cli.visitors import ASTDumper
 
 
-class _AcceptOnly:
+class _AcceptOnly(ASTNode):
     def accept(self, _visitor: object) -> dict[str, str]:
         return {"type": "AcceptOnly"}
 
@@ -42,7 +42,7 @@ class _FalsyIntegerLiteral(IntegerLiteral):
         return False
 
 
-class _AcceptOnlyModifier:
+class _AcceptOnlyModifier(ASTNode):
     def __init__(self, name: str = "x") -> None:
         self.name = name
         self.value = None

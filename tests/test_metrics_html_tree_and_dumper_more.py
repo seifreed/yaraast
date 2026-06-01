@@ -18,6 +18,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
     UnaryExpression,
 )
+from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.operators import DefinedExpression
 from yaraast.ast.rules import Import, Include
 from yaraast.ast.strings import HexByte, HexJump, HexNibble, HexString, PlainString, RegexString
@@ -49,17 +50,9 @@ def test_html_tree_byte_plain_string_uses_yara_literal_text() -> None:
 def test_ast_dumper_direct_visitors_for_remaining_nodes() -> None:
     dumper = ASTDumper()
 
-    rule_with_accept_modifier = SimpleNamespace(
-        modifiers=[
-            SimpleNamespace(
-                accept=lambda visitor: visitor.visit_string_modifier(
-                    SimpleNamespace(name="global", value=None)
-                )
-            )
-        ]
-    )
+    rule_with_accept_modifier = SimpleNamespace(modifiers=[StringModifier.from_name_value("ascii")])
     assert dumper._process_modifiers(cast(Any, rule_with_accept_modifier)) == [
-        {"type": "StringModifier", "name": "global", "value": None},
+        {"type": "StringModifier", "name": "ascii", "value": None},
     ]
     assert dumper._process_meta(None) == []
 
@@ -126,11 +119,7 @@ def test_ast_dumper_direct_visitors_for_remaining_nodes() -> None:
 
 def test_ast_dumper_plain_and_regex_string_accept_modifiers() -> None:
     dumper = ASTDumper()
-    modifier = SimpleNamespace(
-        accept=lambda visitor: visitor.visit_string_modifier(
-            SimpleNamespace(name="ascii", value=None)
-        )
-    )
+    modifier = StringModifier.from_name_value("ascii")
 
     plain = PlainString(identifier="$a", value="abc")
     plain.modifiers = [modifier]

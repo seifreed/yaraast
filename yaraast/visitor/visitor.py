@@ -98,6 +98,9 @@ class ASTVisitor[T]:
 
     def visit(self, node: ASTNode) -> T:
         """Visit a node by calling its accept method."""
+        if not isinstance(node, ASTNode):
+            msg = "Visitor node must be an ASTNode"
+            raise TypeError(msg)
         return cast(T, node.accept(self))
 
     # Base nodes
