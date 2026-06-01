@@ -8,16 +8,19 @@ from yaraast.dialects import YaraDialect
 from yaraast.errors import YaraASTError
 from yaraast.unified_parser import UnifiedParser
 
+_DIALECTS = frozenset({"auto", "yara", "yara-l", "yara-x"})
+
 
 def parse_content_by_dialect(
     content: str,
-    dialect: str,
+    dialect: object,
     show_status: bool,
     status_cb: Callable[[str], None] | None = None,
 ) -> tuple:
     lexer_errors = []
     parser_errors = []
 
+    dialect = _require_dialect(dialect)
     if dialect == "auto":
         ast, lexer_errors, parser_errors = _parse_auto_detect_dialect(
             content,
@@ -32,6 +35,15 @@ def parse_content_by_dialect(
         ast, lexer_errors, parser_errors = _parse_standard_yara_dialect(content)
 
     return ast, lexer_errors, parser_errors
+
+
+def _require_dialect(dialect: object) -> str:
+    if not isinstance(dialect, str):
+        raise TypeError("dialect must be a string")
+    if dialect not in _DIALECTS:
+        valid = ", ".join(sorted(_DIALECTS))
+        raise ValueError(f"dialect must be one of: {valid}")
+    return dialect
 
 
 def _parse_auto_detect_dialect(

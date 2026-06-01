@@ -116,3 +116,15 @@ rule std {
     assert lex_x == []
     assert par_x == []
     assert any("Using YARA-X parser" in m for m in msgs)
+
+
+@pytest.mark.parametrize("dialect", [None, 123])
+def test_parse_services_rejects_non_string_dialects(dialect: object) -> None:
+    with pytest.raises(TypeError, match="dialect must be a string"):
+        parse_content_by_dialect("rule r { condition: true }", dialect, show_status=False)
+
+
+@pytest.mark.parametrize("dialect", ["", "xml", "yarax"])
+def test_parse_services_rejects_unknown_dialects(dialect: str) -> None:
+    with pytest.raises(ValueError, match="dialect must be one of: auto, yara, yara-l, yara-x"):
+        parse_content_by_dialect("rule r { condition: true }", dialect, show_status=False)
