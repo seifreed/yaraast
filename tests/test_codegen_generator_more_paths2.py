@@ -94,6 +94,11 @@ class _FalsyIntegerLiteral(IntegerLiteral):
         return False
 
 
+class _FalsyBooleanLiteral(BooleanLiteral):
+    def __bool__(self) -> bool:
+        return False
+
+
 def test_alternate_generators_indent_nested_yarax_match_case_results() -> None:
     nested = PatternMatch(
         value=Identifier("y"),
@@ -318,6 +323,12 @@ def test_codegen_generator_meta_and_string_section_variants() -> None:
     gen5 = CodeGenerator()
     gen5._write_condition_section(None)
     assert gen5.buffer.getvalue() == ""
+
+    out_falsy = CodeGenerator().generate(
+        YaraFile(rules=[Rule(name="falsy_condition", condition=_FalsyBooleanLiteral(False))])
+    )
+    assert "condition:" in out_falsy
+    assert "false" in out_falsy
 
 
 def test_codegen_generator_formats_string_backed_negated_hex_bytes() -> None:

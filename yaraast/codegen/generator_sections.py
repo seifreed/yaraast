@@ -71,7 +71,7 @@ def write_strings_section(
 
 def write_condition_section(gen: Any, condition: Any) -> None:
     """Write condition section if present."""
-    if not condition:
+    if condition is None:
         return
     gen._writeline("condition:")
     gen._indent()
