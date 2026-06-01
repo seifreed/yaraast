@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from yaraast.cli.utils import read_text, write_text
+from yaraast.cli.utils import _require_file_path, read_text, write_text
 from yaraast.cli.yarax_reporting import (
     display_compatibility_issues,
     display_feature_showcase,
@@ -30,12 +30,25 @@ def yarax():
     pass
 
 
+def _validate_output_path(output: str | None) -> str | None:
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output
+
+
 @yarax.command()
 @click.argument("file", type=click.Path(exists=True))
 @click.option("--output", "-o", type=click.Path(), help="Output AST to file")
 @click.option("--show-features", is_flag=True, help="Show YARA-X features used")
 def parse(file: str, output: str | None, show_features: bool):
     """Parse YARA-X file with support for new syntax features."""
+    output = _validate_output_path(output)
     try:
         content = read_text(file)
 
@@ -89,6 +102,7 @@ def check(file: str, strict: bool, fix: bool):
 )
 def convert(file: str, output: str | None, target: str):
     """Convert between YARA and YARA-X formats."""
+    output = _validate_output_path(output)
     try:
         content = read_text(file)
 

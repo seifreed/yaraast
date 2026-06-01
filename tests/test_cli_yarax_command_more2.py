@@ -52,9 +52,11 @@ def test_yarax_rejects_empty_output_path(tmp_path: Path) -> None:
     runner = CliRunner()
 
     parsed = runner.invoke(yarax, ["parse", file_path, "--output", ""])
-    assert parsed.exit_code != 0
+    assert parsed.exit_code == 2
     assert "path must not be empty" in parsed.output
+    assert "Error parsing" not in parsed.output
 
     converted = runner.invoke(yarax, ["convert", file_path, "--output", ""])
-    assert converted.exit_code != 0
+    assert converted.exit_code == 2
     assert "path must not be empty" in converted.output
+    assert "Converted to YARA-X format" not in converted.output
