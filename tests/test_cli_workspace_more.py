@@ -89,3 +89,26 @@ def test_workspace_rejects_empty_output_path(tmp_path: Path) -> None:
     )
     assert graph_result.exit_code != 0
     assert "path must not be empty" in graph_result.output
+
+
+def test_workspace_rejects_directory_output_path(tmp_path: Path) -> None:
+    _write(tmp_path, "a.yar", _sample_yara("a"))
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    runner = CliRunner()
+
+    analyze_result = runner.invoke(
+        workspace,
+        ["analyze", str(tmp_path), "--format", "json", "--output", str(output_dir)],
+    )
+    assert analyze_result.exit_code == 2
+    assert "output path must not be a directory" in analyze_result.output
+    assert "Analyzing directory" not in analyze_result.output
+
+    graph_result = runner.invoke(
+        workspace,
+        ["graph", str(tmp_path), "--format", "json", "--output", str(output_dir)],
+    )
+    assert graph_result.exit_code == 2
+    assert "output path must not be a directory" in graph_result.output
+    assert "Building dependency graph" not in graph_result.output
