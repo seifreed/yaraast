@@ -1,4 +1,4 @@
-"""Shared visitor base for YARA-L that stubs core YARA visitors."""
+"""Shared visitor base for YARA-L nodes."""
 
 from __future__ import annotations
 
@@ -10,172 +10,109 @@ T = TypeVar("T")
 
 
 class YaraLVisitor[T](ASTVisitor[T]):
-    """YARA-L visitor base that stubs standard YARA AST methods."""
+    """YARA-L visitor base with explicit handlers for every YARA-L AST node."""
 
-    def visit_yara_file(self, node: Any) -> T:
-        raise NotImplementedError
+    def _visit_yaral_node(self, node: Any) -> T:
+        return self._default_visit(node)
 
-    def visit_import(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_file(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_include(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_rule(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_rule(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_meta_section(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_tag(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_meta_entry(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_string_definition(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_events_section(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_plain_string(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_event_statement(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_hex_string(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_event_assignment(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_regex_string(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_event_variable(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_string_modifier(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_udm_field_path(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_hex_token(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_udm_field_access(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_hex_byte(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_reference_list(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_hex_wildcard(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_match_section(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_hex_jump(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_match_variable(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_hex_alternative(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_time_window(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_hex_nibble(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_condition_section(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_expression(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_condition_expression(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_identifier(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_binary_condition(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_string_identifier(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_unary_condition(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_string_wildcard(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_event_count_condition(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_string_count(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_event_exists_condition(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_string_offset(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_variable_comparison_condition(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_string_length(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_join_condition(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_integer_literal(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_n_of_condition(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_double_literal(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_null_check_condition(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_string_literal(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_outcome_section(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_regex_literal(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_outcome_assignment(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_boolean_literal(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_outcome_expression(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_binary_expression(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_aggregation_function(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_unary_expression(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_conditional_expression(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_parentheses_expression(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_arithmetic_expression(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_set_expression(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_options_section(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_range_expression(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_regex_pattern(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_function_call(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_cidr_expression(self, node: Any) -> T:
+        return self._visit_yaral_node(node)
 
-    def visit_array_access(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_member_access(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_condition(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_for_expression(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_for_of_expression(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_at_expression(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_in_expression(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_of_expression(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_meta(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_module_reference(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_dictionary_access(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_comment(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_comment_group(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_defined_expression(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_string_operator_expression(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_extern_rule(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_extern_rule_reference(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_extern_import(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_extern_namespace(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_pragma(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_in_rule_pragma(self, node: Any) -> T:
-        raise NotImplementedError
-
-    def visit_pragma_block(self, node: Any) -> T:
-        raise NotImplementedError
+    def visit_yaral_function_call(self, node: Any) -> T:
+        return self._visit_yaral_node(node)

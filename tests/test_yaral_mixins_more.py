@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import pytest
+
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
@@ -26,9 +28,11 @@ from yaraast.yaral.ast_nodes import (
     UDMFieldPath,
     UnaryCondition,
     YaraLFile,
+    YaraLRule,
 )
 from yaraast.yaral.optimizer import YaraLOptimizer
 from yaraast.yaral.validator import ValidationError, YaraLValidator
+from yaraast.yaral.visitor_base import YaraLVisitor
 
 
 @dataclass
@@ -40,6 +44,16 @@ class OutcomeVariablesContainer:
 @dataclass
 class EmptyLegacyOutcome:
     pass
+
+
+def test_yaral_visitor_base_declares_yaral_node_handlers() -> None:
+    visitor = YaraLVisitor[object]()
+
+    with pytest.raises(NotImplementedError, match="YaraLFile"):
+        visitor.visit(YaraLFile(rules=[]))
+
+    with pytest.raises(NotImplementedError, match="YaraLRule"):
+        visitor.visit(YaraLRule(name="r"))
 
 
 def _assignment(
