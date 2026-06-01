@@ -20,8 +20,21 @@ from yaraast.cli.bench_services import (
     _get_benchmark_summary,
     _run_single_operation,
 )
+from yaraast.cli.utils import _require_file_path
 
 console = Console()
+
+
+def _validate_output_path(output: str | None) -> str | None:
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output
 
 
 @click.command()
@@ -55,6 +68,7 @@ def bench(
     try:
         from yaraast.cli.ast_tools import ASTBenchmarker
 
+        output = _validate_output_path(output)
         file_paths = [Path(f) for f in files]
         benchmarker = ASTBenchmarker()
 
@@ -84,7 +98,7 @@ def bench(
         if compare and len(file_paths) > 1:
             display_performance_comparison(all_results)
 
-        if output:
+        if output is not None:
             save_benchmark_results(output, iterations, operations, all_results, summary)
 
         console.print("\nBenchmarking completed!")

@@ -58,6 +58,21 @@ def test_bench_command_aborts_on_output_write_error(tmp_path: Path) -> None:
     assert "Error:" in result.output
 
 
+def test_bench_command_rejects_empty_output_path(tmp_path: Path) -> None:
+    runner = CliRunner()
+    file_a = tmp_path / "a.yar"
+    _write_rule(file_a, "a")
+
+    result = runner.invoke(
+        bench,
+        [str(file_a), "--iterations", "1", "--output", ""],
+    )
+
+    assert result.exit_code != 0
+    assert "path must not be empty" in result.output
+    assert "Benchmarking" not in result.output
+
+
 def test_bench_command_rejects_zero_iterations(tmp_path: Path) -> None:
     runner = CliRunner()
     file_a = tmp_path / "a.yar"
