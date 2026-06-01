@@ -275,6 +275,19 @@ def test_rule_builder_copies_direct_condition_expressions() -> None:
     assert built_condition.value is True
 
 
+def test_rule_builder_preserves_falsy_present_condition_expression() -> None:
+    class FalsyBooleanLiteral(BooleanLiteral):
+        def __bool__(self) -> bool:
+            return False
+
+    condition = FalsyBooleanLiteral(value=False)
+
+    rule = RuleBuilder("falsy_condition").with_condition(condition).require_condition().build()
+
+    assert isinstance(rule.condition, FalsyBooleanLiteral)
+    assert rule.condition.value is False
+
+
 def test_rule_builder_raw_hex_rejects_invalid_input() -> None:
     with pytest.raises(
         ValidationError,

@@ -467,7 +467,7 @@ class RuleBuilder:
 
         validate_new_string_definitions([], self._strings)
 
-        if not self._condition:
+        if self._condition is None:
             if self._require_condition:
                 msg = "Rule condition is required"
                 raise ValidationError(msg)
