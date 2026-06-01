@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 import hashlib
+from os import PathLike, fspath
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -88,7 +89,7 @@ class Workspace:
 
     def add_directory(
         self,
-        directory: str,
+        directory: str | PathLike[str],
         pattern: FilePatterns = None,
         recursive: bool = True,
     ) -> None:
@@ -100,7 +101,14 @@ class Workspace:
             recursive: Whether to scan subdirectories.
 
         """
-        dir_path = Path(directory)
+        if isinstance(directory, bytes) or not isinstance(directory, str | PathLike):
+            msg = "directory must be a string or path-like object"
+            raise TypeError(msg)
+        if not isinstance(recursive, bool):
+            msg = "recursive must be a boolean"
+            raise TypeError(msg)
+
+        dir_path = Path(fspath(directory))
         if not dir_path.is_absolute():
             dir_path = self.root_path / dir_path
 

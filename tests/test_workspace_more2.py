@@ -342,6 +342,26 @@ def test_workspace_add_directory_default_includes_yara_extension(tmp_path: Path)
     assert str(yarax) not in workspace.files
 
 
+@pytest.mark.parametrize("directory", [None, 123, object()])
+def test_workspace_add_directory_rejects_invalid_directory_types(
+    tmp_path: Path, directory: Any
+) -> None:
+    workspace = Workspace(str(tmp_path))
+
+    with pytest.raises(TypeError, match="directory must be a string or path-like object"):
+        workspace.add_directory(cast(Any, directory))
+
+
+@pytest.mark.parametrize("recursive", [None, 1, "yes", object()])
+def test_workspace_add_directory_rejects_invalid_recursive_types(
+    tmp_path: Path, recursive: Any
+) -> None:
+    workspace = Workspace(str(tmp_path))
+
+    with pytest.raises(TypeError, match="recursive must be a boolean"):
+        workspace.add_directory(".", recursive=cast(bool, recursive))
+
+
 def test_workspace_sequential_analysis_with_relative_directory_and_nonrecursive(
     tmp_path: Path,
 ) -> None:
