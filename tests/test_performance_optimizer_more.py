@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
+from typing import Any, cast
+
+import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.strings import PlainString, RegexString
@@ -70,3 +73,36 @@ def test_optimize_yara_file(tmp_path: Path) -> None:
     assert ast.rules
     assert out.exists()
     assert stats["rules_optimized"] == 1
+
+
+def test_optimize_yara_file_rejects_empty_output_path(tmp_path: Path) -> None:
+    path = tmp_path / "perf.yar"
+    path.write_text("rule perf { condition: true }", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        optimize_yara_file(str(path), output_path="")
+
+
+def test_optimize_yara_file_rejects_directory_paths(tmp_path: Path) -> None:
+    input_dir = tmp_path / "input_dir"
+    input_dir.mkdir()
+    output_dir = tmp_path / "output_dir"
+    output_dir.mkdir()
+    path = tmp_path / "perf.yar"
+    path.write_text("rule perf { condition: true }", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="file_path must not be a directory"):
+        optimize_yara_file(input_dir)
+    with pytest.raises(ValueError, match="output_path must not be a directory"):
+        optimize_yara_file(path, output_path=output_dir)
+
+
+@pytest.mark.parametrize("value", [False, 0, object()])
+def test_optimize_yara_file_rejects_invalid_path_types(value: Any, tmp_path: Path) -> None:
+    path = tmp_path / "perf.yar"
+    path.write_text("rule perf { condition: true }", encoding="utf-8")
+
+    with pytest.raises(TypeError, match="file_path must be a file path"):
+        optimize_yara_file(cast(Any, value))
+    with pytest.raises(TypeError, match="output_path must be a file path"):
+        optimize_yara_file(path, output_path=cast(Any, value))

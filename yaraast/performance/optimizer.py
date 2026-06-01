@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from os import PathLike
+from pathlib import Path
 from typing import Any, TypeVar, overload
 
 from yaraast.ast.base import YaraFile, require_yara_file
@@ -24,6 +26,20 @@ def _require_strategy(strategy: object) -> str:
         msg = f"optimization strategy must be one of: {valid}"
         raise ValueError(msg)
     return strategy
+
+
+def _require_file_path(value: object, name: str) -> Path:
+    if isinstance(value, bool) or not isinstance(value, str | PathLike):
+        msg = f"{name} must be a file path"
+        raise TypeError(msg)
+    if isinstance(value, str) and not value:
+        msg = f"{name} must not be empty"
+        raise ValueError(msg)
+    path = Path(value)
+    if path.exists() and path.is_dir():
+        msg = f"{name} must not be a directory"
+        raise ValueError(msg)
+    return path
 
 
 class PerformanceOptimizer:
@@ -207,8 +223,8 @@ class PerformanceOptimizer:
 
 
 def optimize_yara_file(
-    file_path: str,
-    output_path: str | None = None,
+    file_path: str | PathLike[str],
+    output_path: str | PathLike[str] | None = None,
     strategy: str = "balanced",
 ) -> tuple[YaraFile, dict[str, Any]]:
     """Optimize a YARA file for performance.
@@ -224,8 +240,13 @@ def optimize_yara_file(
     """
     from yaraast.parser.source import parse_yara_source
 
+    input_file = _require_file_path(file_path, "file_path")
+    output_file = (
+        _require_file_path(output_path, "output_path") if output_path is not None else None
+    )
+
     # Parse the file
-    with open(file_path, encoding="utf-8") as f:
+    with input_file.open(encoding="utf-8") as f:
         content = f.read()
     ast = parse_yara_source(content)
 
@@ -235,12 +256,12 @@ def optimize_yara_file(
     stats = optimizer.get_statistics()
 
     # Write output if requested
-    if output_path:
+    if output_file is not None:
         from yaraast.yarax.generator import YaraXGenerator
 
         gen = YaraXGenerator()
         output = gen.generate(optimized_ast)
-        with open(output_path, "w", encoding="utf-8") as f:
+        with output_file.open("w", encoding="utf-8") as f:
             f.write(output)
 
     return optimized_ast, stats
