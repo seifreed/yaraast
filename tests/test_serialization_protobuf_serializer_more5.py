@@ -570,6 +570,10 @@ def test_protobuf_serializer_rejects_non_string_file_and_rule_fields(
             RegexString(identifier="$r", regex=cast(Any, 123)),
             "RegexString regex must be a string",
         ),
+        (
+            RegexString(identifier="$r", regex=""),
+            "RegexString regex must not be empty",
+        ),
     ],
 )
 def test_protobuf_serializer_rejects_invalid_string_definition_fields(
@@ -693,6 +697,20 @@ def test_protobuf_deserializer_rejects_empty_plain_string(use_raw_value: bool) -
         pb_string.plain.value = ""
 
     with pytest.raises(SerializationError, match="PlainString must contain at least one byte"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserializer_rejects_empty_regex_string() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_regex_string"
+    pb_rule.condition.boolean_literal.value = True
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$r"
+    pb_string.regex.SetInParent()
+
+    with pytest.raises(SerializationError, match="RegexString regex must not be empty"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
@@ -1719,6 +1737,7 @@ def test_protobuf_serializer_rejects_invalid_expression_scalar_fields(
         (IntegerLiteral(cast(Any, "1")), "IntegerLiteral value must be an integer"),
         (StringLiteral(cast(Any, True)), "StringLiteral value must be a string"),
         (RegexLiteral(cast(Any, 123)), "RegexLiteral pattern must be a string"),
+        (RegexLiteral(""), "RegexLiteral pattern must not be empty"),
         (RegexLiteral("abc", cast(Any, ["i"])), "RegexLiteral modifiers must be a string"),
         (BooleanLiteral(cast(Any, "true")), "BooleanLiteral value must be a boolean"),
     ],
@@ -1745,6 +1764,7 @@ def test_protobuf_serializer_rejects_invalid_expression_leaf_fields(
         ("string_length", "StringLength string_id must not be empty"),
         ("binary_expression", "BinaryExpression operator must not be empty"),
         ("unary_expression", "UnaryExpression operator must not be empty"),
+        ("regex_literal", "RegexLiteral pattern must not be empty"),
         ("function_call", "FunctionCall function must not be empty"),
         ("member_access", "MemberAccess member must not be empty"),
         ("for_expression", "ForExpression variable must not be empty"),
@@ -1782,6 +1802,8 @@ def test_protobuf_deserializer_rejects_empty_expression_identifier_fields(
         condition.binary_expression.right.boolean_literal.value = False
     elif expression_kind == "unary_expression":
         condition.unary_expression.operand.boolean_literal.value = True
+    elif expression_kind == "regex_literal":
+        condition.regex_literal.SetInParent()
     elif expression_kind == "member_access":
         condition.member_access.object.identifier.name = "pe"
     elif expression_kind == "for_expression":

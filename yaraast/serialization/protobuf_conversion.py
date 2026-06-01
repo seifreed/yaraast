@@ -746,7 +746,7 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
             _copy_modifier_to_protobuf(mod, pb_mod)
 
     elif isinstance(string_def, RegexString):
-        pb_string.regex.regex = _protobuf_required_string(
+        pb_string.regex.regex = _protobuf_required_nonempty_string(
             string_def.regex,
             "RegexString regex",
         )
@@ -1242,7 +1242,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             "StringLiteral value",
         )
     elif isinstance(expr, RegexLiteral):
-        pb_expr.regex_literal.pattern = _protobuf_required_string(
+        pb_expr.regex_literal.pattern = _protobuf_required_nonempty_string(
             expr.pattern,
             "RegexLiteral pattern",
         )
@@ -1932,7 +1932,10 @@ def protobuf_to_string(pb_string) -> Any:
                 pb_string.identifier,
                 "RegexString identifier",
             ),
-            regex=pb_string.regex.regex,
+            regex=_protobuf_required_nonempty_string(
+                pb_string.regex.regex,
+                "RegexString regex",
+            ),
             is_anonymous=pb_string.is_anonymous,
         )
         s.modifiers = modifiers
@@ -2066,7 +2069,10 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("regex_literal"):
         return with_metadata(
             RegexLiteral(
-                pattern=pb_expr.regex_literal.pattern,
+                pattern=_protobuf_required_nonempty_string(
+                    pb_expr.regex_literal.pattern,
+                    "RegexLiteral pattern",
+                ),
                 modifiers=pb_expr.regex_literal.modifiers,
             ),
         )
