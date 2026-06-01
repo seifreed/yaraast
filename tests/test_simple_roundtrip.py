@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
+
+import pytest
 
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -109,6 +112,42 @@ def test_simple_roundtrip_helpers(tmp_path: Path) -> None:
 
     report = simple_roundtrip_test(yara_code)
     assert report["round_trip_successful"] in {True, False}
+
+
+def test_simple_roundtrip_helpers_accept_string_paths(tmp_path: Path) -> None:
+    helper = SimpleRoundTrip()
+    file_path = tmp_path / "sample.yar"
+    file_path.write_text(_sample_yara_rule(), encoding="utf-8")
+
+    file_ok, _, _ = helper.test_file(str(file_path))
+    directory_results = helper.test_directory(str(tmp_path))
+
+    assert isinstance(file_ok, bool)
+    assert directory_results
+
+
+@pytest.mark.parametrize("yara_codes", [None, 123, "rule a { condition: true }", object()])
+def test_simple_roundtrip_batch_rejects_invalid_batch_types(yara_codes: Any) -> None:
+    with pytest.raises(TypeError, match="yara_codes must be a sequence of strings"):
+        SimpleRoundTrip().test_batch(cast(list[str], yara_codes))
+
+
+@pytest.mark.parametrize("yara_codes", [[123], [object()]])
+def test_simple_roundtrip_batch_rejects_invalid_batch_items(yara_codes: Any) -> None:
+    with pytest.raises(TypeError, match="yara_codes must contain only strings"):
+        SimpleRoundTrip().test_batch(cast(list[str], yara_codes))
+
+
+@pytest.mark.parametrize("file_path", [None, 123, object()])
+def test_simple_roundtrip_file_rejects_invalid_path_types(file_path: Any) -> None:
+    with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
+        SimpleRoundTrip().test_file(cast(Any, file_path))
+
+
+@pytest.mark.parametrize("dir_path", [None, 123, object()])
+def test_simple_roundtrip_directory_rejects_invalid_path_types(dir_path: Any) -> None:
+    with pytest.raises(TypeError, match="dir_path must be a string or path-like object"):
+        SimpleRoundTrip().test_directory(cast(Any, dir_path))
 
 
 def test_simple_roundtrip_helpers_accept_yarax() -> None:

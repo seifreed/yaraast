@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from os import PathLike, fspath
 from pathlib import Path
 from typing import Any
 
@@ -79,15 +81,29 @@ class SimpleRoundTrip:
 
     def test_batch(self, yara_codes: list[str]) -> list[tuple[bool, Any, Any]]:
         """Test multiple YARA rules."""
+        if isinstance(yara_codes, str) or not isinstance(yara_codes, Sequence):
+            msg = "yara_codes must be a sequence of strings"
+            raise TypeError(msg)
+        if not all(isinstance(code, str) for code in yara_codes):
+            msg = "yara_codes must contain only strings"
+            raise TypeError(msg)
         return [self.test(code) for code in yara_codes]
 
-    def test_file(self, file_path: Path) -> tuple[bool, Any, Any]:
+    def test_file(self, file_path: str | PathLike[str]) -> tuple[bool, Any, Any]:
         """Test a YARA file."""
+        if isinstance(file_path, bytes) or not isinstance(file_path, str | PathLike):
+            msg = "file_path must be a string or path-like object"
+            raise TypeError(msg)
+        file_path = Path(fspath(file_path))
         yara_code = file_path.read_text(encoding="utf-8")
         return self.test(yara_code)
 
-    def test_directory(self, dir_path: Path) -> list[tuple[Path, bool, Any, Any]]:
+    def test_directory(self, dir_path: str | PathLike[str]) -> list[tuple[Path, bool, Any, Any]]:
         """Test all YARA files in a directory."""
+        if isinstance(dir_path, bytes) or not isinstance(dir_path, str | PathLike):
+            msg = "dir_path must be a string or path-like object"
+            raise TypeError(msg)
+        dir_path = Path(fspath(dir_path))
         results = []
         for yar_file in iter_matching_files(dir_path):
             success, orig, regen = self.test_file(yar_file)
