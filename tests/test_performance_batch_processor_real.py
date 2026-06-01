@@ -94,6 +94,52 @@ def test_batch_processor_rejects_single_string_file_paths(tmp_path: Path) -> Non
         BatchProcessor().process_files(cast(Any, str(path)), BatchOperation.PARSE)
 
 
+def test_batch_processor_process_files_rejects_empty_output_dir(tmp_path: Path) -> None:
+    path = tmp_path / "single.yar"
+    path.write_text("rule single { condition: true }", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="output_dir must not be empty"):
+        BatchProcessor().process_files([path], BatchOperation.HTML_TREE, output_dir="")
+
+
+@pytest.mark.parametrize("output_dir", [False, 123, object(), b"out"])
+def test_batch_processor_process_files_rejects_invalid_output_dir_types(
+    tmp_path: Path,
+    output_dir: object,
+) -> None:
+    path = tmp_path / "single.yar"
+    path.write_text("rule single { condition: true }", encoding="utf-8")
+
+    with pytest.raises(TypeError, match="output_dir must be a directory path"):
+        BatchProcessor().process_files(
+            [path],
+            BatchOperation.HTML_TREE,
+            output_dir=cast(Any, output_dir),
+        )
+
+
+def test_batch_processor_process_files_rejects_file_output_dir(tmp_path: Path) -> None:
+    path = tmp_path / "single.yar"
+    path.write_text("rule single { condition: true }", encoding="utf-8")
+    output_dir = tmp_path / "not_a_directory"
+    output_dir.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="output_dir must not be a file"):
+        BatchProcessor().process_files([path], BatchOperation.HTML_TREE, output_dir=output_dir)
+
+
+def test_batch_processor_process_large_file_rejects_empty_output_dir(tmp_path: Path) -> None:
+    path = tmp_path / "large.yar"
+    path.write_text("rule large { condition: true }", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="output_dir must not be empty"):
+        BatchProcessor().process_large_file(
+            path,
+            [BatchOperation.SERIALIZE],
+            output_dir="",
+        )
+
+
 def test_process_batch_parse_handles_invalid_item_without_exceptions() -> None:
     processor = BatchProcessor(batch_size=1)
 

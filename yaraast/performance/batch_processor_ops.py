@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 import copy
+from os import PathLike, fspath
 from pathlib import Path
 import time
 from typing import TYPE_CHECKING, Any
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
 
 _EXPECTED_BATCH_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
+OUTPUT_DIR_TYPE_ERROR = "output_dir must be a directory path"
 
 
 def parse_item(item: object) -> YaraFile | None:
@@ -186,17 +188,37 @@ def _requires_output_dir(operation: BatchOperation) -> bool:
     }
 
 
+def require_output_dir_path(output_dir: object) -> Path | None:
+    """Normalize an optional batch output directory path."""
+    if output_dir is None:
+        return None
+    if isinstance(output_dir, bool | bytes) or not isinstance(output_dir, str | PathLike):
+        raise TypeError(OUTPUT_DIR_TYPE_ERROR)
+    raw_path = fspath(output_dir)
+    if not isinstance(raw_path, str):
+        raise TypeError(OUTPUT_DIR_TYPE_ERROR)
+    if not raw_path:
+        msg = "output_dir must not be empty"
+        raise ValueError(msg)
+    path = Path(raw_path)
+    if path.exists() and not path.is_dir():
+        msg = "output_dir must not be a file"
+        raise ValueError(msg)
+    return path
+
+
 def process_files_single(
     processor: BatchProcessor,
     file_paths: list[Path],
     operation: BatchOperation,
-    output_dir: Path | None = None,
+    output_dir: str | PathLike[str] | None = None,
 ) -> BatchResult:
     from yaraast.performance.batch_processor import BatchOperation, BatchResult
 
     start_time = time.time()
     result = BatchResult(operation=operation, input_count=len(file_paths))
-    if output_dir:
+    output_dir = require_output_dir_path(output_dir)
+    if output_dir is not None:
         output_dir.mkdir(parents=True, exist_ok=True)
     elif file_paths and _requires_output_dir(operation):
         result.failed_count = len(file_paths)
@@ -211,16 +233,16 @@ def process_files_single(
             parsed = _require_parsed_item(parse_item(content), file_path)
             if operation == BatchOperation.COMPLEXITY:
                 _add_complexity_summaries(result.summary, parsed.rules)
-            elif operation == BatchOperation.HTML_TREE and output_dir:
+            elif operation == BatchOperation.HTML_TREE and output_dir is not None:
                 output_file = output_dir / f"{file_path.stem}.html"
                 html_content = HtmlTreeGenerator().generate_html(parsed, None)
                 output_file.write_text(html_content, encoding="utf-8")
                 result.output_files.append(str(output_file))
-            elif operation == BatchOperation.SERIALIZE and output_dir:
+            elif operation == BatchOperation.SERIALIZE and output_dir is not None:
                 output_file = output_dir / f"{file_path.stem}.json"
                 output_file.write_text(serialize_item(parsed), encoding="utf-8")
                 result.output_files.append(str(output_file))
-            elif operation == BatchOperation.DEPENDENCY_GRAPH and output_dir:
+            elif operation == BatchOperation.DEPENDENCY_GRAPH and output_dir is not None:
                 _process_dependency_graph(file_path, parsed, output_dir, result)
             elif operation == BatchOperation.VALIDATE:
                 is_valid = all(validate_item(rule) for rule in parsed.rules)
@@ -250,14 +272,17 @@ def process_large_file(
     processor: BatchProcessor,
     file_path: Path,
     operations: list[BatchOperation],
-    output_dir: Path,
+    output_dir: str | PathLike[str],
     split_rules: bool = False,
 ) -> dict[BatchOperation, BatchResult]:
     from yaraast.performance.batch_processor import BatchOperation, BatchResult
 
+    output_path = require_output_dir_path(output_dir)
+    if output_path is None:
+        raise TypeError(OUTPUT_DIR_TYPE_ERROR)
     results: dict[BatchOperation, BatchResult] = {}
     try:
-        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path.mkdir(parents=True, exist_ok=True)
         with open(file_path, encoding="utf-8") as handle:
             content = handle.read()
         parsed = _require_parsed_item(parse_item(content), file_path)
@@ -270,13 +295,13 @@ def process_large_file(
                 _add_complexity_summaries(result.summary, parsed.rules)
                 result.successful_count = len(parsed.rules) if split_rules else 1
             elif operation == BatchOperation.SERIALIZE:
-                _process_large_serialize(file_path, parsed, output_dir, split_rules, result)
+                _process_large_serialize(file_path, parsed, output_path, split_rules, result)
             elif operation == BatchOperation.HTML_TREE:
-                _process_large_html_tree(file_path, parsed, output_dir, split_rules, result)
+                _process_large_html_tree(file_path, parsed, output_path, split_rules, result)
             elif operation == BatchOperation.VALIDATE:
                 _process_large_validate(parsed, split_rules, result)
             elif operation == BatchOperation.DEPENDENCY_GRAPH:
-                _process_dependency_graph(file_path, parsed, output_dir, result)
+                _process_dependency_graph(file_path, parsed, output_path, result)
                 result.successful_count = 1
             results[operation] = result
             if processor.progress_callback:

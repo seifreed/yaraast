@@ -180,7 +180,7 @@ class BatchProcessor:
         self,
         file_paths: list[Path],
         operations: BatchOperation,
-        output_dir: Path | None = None,
+        output_dir: str | PathLike[str] | None = None,
     ) -> BatchResult: ...
 
     @overload
@@ -188,14 +188,14 @@ class BatchProcessor:
         self,
         file_paths: list[Path],
         operations: list[BatchOperation],
-        output_dir: Path | None = None,
+        output_dir: str | PathLike[str] | None = None,
     ) -> dict[BatchOperation, BatchResult]: ...
 
     def process_files(
         self,
         file_paths: list[Path],
         operations: list[BatchOperation] | BatchOperation,
-        output_dir: Path | None = None,
+        output_dir: str | PathLike[str] | None = None,
     ) -> dict[BatchOperation, BatchResult] | BatchResult:
         """Process multiple YARA files with one or more operations."""
         normalized_file_paths = [Path(path) for path in validate_file_path_sequence(file_paths)]
@@ -217,7 +217,7 @@ class BatchProcessor:
         self,
         file_paths: list[Path],
         operation: BatchOperation,
-        output_dir: Path | None = None,
+        output_dir: str | PathLike[str] | None = None,
     ) -> BatchResult:
         """Process multiple YARA files with a single operation."""
         return process_files_single(self, file_paths, operation, output_dir)
@@ -269,7 +269,7 @@ class BatchProcessor:
         self,
         directory: Path,
         operations: BatchOperation,
-        output_dir: Path | None = None,
+        output_dir: str | PathLike[str] | None = None,
         file_pattern: FilePatterns = None,
         recursive: bool = False,
     ) -> BatchResult: ...
@@ -279,7 +279,7 @@ class BatchProcessor:
         self,
         directory: Path,
         operations: list[BatchOperation],
-        output_dir: Path | None = None,
+        output_dir: str | PathLike[str] | None = None,
         file_pattern: FilePatterns = None,
         recursive: bool = False,
     ) -> dict[BatchOperation, BatchResult]: ...
@@ -288,7 +288,7 @@ class BatchProcessor:
         self,
         directory: Path,
         operations: list[BatchOperation] | BatchOperation,
-        output_dir: Path | None = None,
+        output_dir: str | PathLike[str] | None = None,
         file_pattern: FilePatterns = None,
         recursive: bool = False,
     ) -> dict[BatchOperation, BatchResult] | BatchResult:
@@ -302,7 +302,7 @@ class BatchProcessor:
         self,
         file_path: Path,
         operations: list[BatchOperation],
-        output_dir: Path,
+        output_dir: str | PathLike[str],
         split_rules: bool = False,
     ) -> dict[BatchOperation, BatchResult]:
         """Process a large YARA file, optionally splitting rules."""
