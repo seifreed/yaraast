@@ -11,7 +11,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.cli.performance_services import extract_successful_asts
-from yaraast.parser import Parser
+from yaraast.parser import Parser, source as parser_source
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 
 
@@ -309,6 +309,23 @@ def test_parallel_parse_mixed_chunk_preserves_successful_files(tmp_path: Path) -
     asts, file_names = extract_successful_asts(jobs, file_paths, chunk_size=3)
     assert [ast.rules[0].name for ast in asts] == ["a", "b"]
     assert file_names == [str(good_a), str(good_b)]
+
+
+def test_parallel_parse_file_chunks_propagates_internal_parser_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    file_path = tmp_path / "ok.yar"
+    file_path.write_text(_rule_code("ok"), encoding="utf-8")
+    analyzer = ParallelAnalyzer(max_workers=1)
+
+    def broken_parse_yara_source(_content: str) -> YaraFile:
+        raise AttributeError("parser state missing")
+
+    monkeypatch.setattr(parser_source, "parse_yara_source", broken_parse_yara_source)
+
+    with pytest.raises(AttributeError, match="parser state missing"):
+        analyzer.parse_files_parallel([str(file_path)], chunk_size=1)
 
 
 def test_parallel_analyzer_error_paths_without_mocks(tmp_path: Path) -> None:

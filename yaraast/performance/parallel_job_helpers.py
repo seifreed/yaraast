@@ -8,6 +8,7 @@ import time
 from typing import TYPE_CHECKING, Any
 import uuid
 
+from yaraast.errors import YaraASTError
 from yaraast.performance.parallel_models import Job, JobStatus, ParseErrorMarker
 from yaraast.performance.validation import (
     validate_file_path_sequence,
@@ -16,6 +17,8 @@ from yaraast.performance.validation import (
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
+
+_EXPECTED_PARSE_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
 
 
 def default_parallel_stats() -> dict[str, float | int]:
@@ -124,7 +127,7 @@ def parse_file_chunks(file_paths: Sequence[str | Path], chunk_size: int = 10) ->
                     content = Path(file_path).read_text(encoding="utf-8")
                     ast = parse_yara_source(content)
                     results.append(ast)
-                except Exception as e:
+                except _EXPECTED_PARSE_ERRORS as e:
                     results.append(ParseErrorMarker(str(file_path), str(e)))
                     errors.append(f"{file_path}: {e}")
             if errors:
@@ -132,7 +135,7 @@ def parse_file_chunks(file_paths: Sequence[str | Path], chunk_size: int = 10) ->
                 fail_job(job, "; ".join(errors))
             else:
                 complete_job(job, results)
-        except Exception as e:
+        except _EXPECTED_PARSE_ERRORS as e:
             job.result = results
             fail_job(job, e)
     return jobs
