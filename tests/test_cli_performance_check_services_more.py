@@ -47,6 +47,18 @@ def test_filter_issues_rejects_invalid_limit() -> None:
         filter_issues([_issue("r1", "short_string", "warning")], "all", 0)
 
 
+@pytest.mark.parametrize("severity", [None, 123])
+def test_filter_issues_rejects_non_string_severity(severity: object) -> None:
+    with pytest.raises(TypeError, match="severity must be a string"):
+        filter_issues([_issue("r1", "short_string", "warning")], severity, None)
+
+
+@pytest.mark.parametrize("severity", ["", "xml", "info"])
+def test_filter_issues_rejects_unknown_severity(severity: str) -> None:
+    with pytest.raises(ValueError, match="severity must be one of: all, critical, warning"):
+        filter_issues([_issue("r1", "short_string", "warning")], severity, None)
+
+
 def test_summarize_issues_counts_criticals_and_rules() -> None:
     issues = [
         _issue("r1", "short_string", "critical"),
