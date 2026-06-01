@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
@@ -437,6 +439,60 @@ def test_semantic_validator_rejects_duplicate_string_modifiers() -> None:
     )
     assert any(
         "Duplicate string modifier 'nocase' on string '$regex'" in message for message in messages
+    )
+
+
+def test_semantic_validator_rejects_invalid_string_modifier_collections() -> None:
+    invalid_modifiers: Any = False
+    string = PlainString(identifier="$a", value="abc")
+    string.modifiers = invalid_modifiers
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_modifier_collection",
+                strings=[string],
+                condition=StringIdentifier("$a"),
+            )
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any(
+        "String modifiers for string '$a' in rule 'bad_modifier_collection' must be a list or tuple"
+        in error.message
+        for error in result.errors
+    )
+
+
+def test_semantic_validator_rejects_invalid_string_modifier_items() -> None:
+    class BadModifier:
+        name = False
+
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_modifier_items",
+                strings=[
+                    PlainString(identifier="$a", value="abc", modifiers=[cast(Any, False)]),
+                    RegexString(identifier="$b", regex="abc", modifiers=[BadModifier()]),
+                ],
+                condition=StringIdentifier("$a"),
+            )
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert (
+        sum(
+            "String modifiers for string" in error.message
+            and "must contain strings or StringModifier nodes" in error.message
+            for error in result.errors
+        )
+        == 2
     )
 
 

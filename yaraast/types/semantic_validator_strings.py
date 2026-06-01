@@ -123,6 +123,10 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
             self.visit(string_def)
 
     def visit_plain_string(self, node: PlainString) -> None:
+        if not self._check_modifier_collection(node):
+            return
+        if not self._check_modifier_items(node):
+            return
         self._check_duplicate_modifiers(node)
         self._check_plain_string_content(node)
         self._check_unsupported_modifiers(node, self._TEXT_UNSUPPORTED_MODIFIERS, "string")
@@ -131,6 +135,10 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
         self._check_text_string_modifier_values(node)
 
     def visit_hex_string(self, node: HexString) -> None:
+        if not self._check_modifier_collection(node):
+            return
+        if not self._check_modifier_items(node):
+            return
         self._check_duplicate_modifiers(node)
         if not node.tokens:
             self.result.add_error(
@@ -140,7 +148,9 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
             )
 
         for modifier in node.modifiers:
-            name = self._modifier_name(modifier)
+            name = self._modifier_name(node, modifier)
+            if name is None:
+                continue
             if name in self._HEX_ALLOWED_MODIFIERS:
                 continue
             self.result.add_error(
@@ -150,9 +160,15 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
             )
 
     def visit_regex_string(self, node: RegexString) -> None:
+        if not self._check_modifier_collection(node):
+            return
+        if not self._check_modifier_items(node):
+            return
         self._check_duplicate_modifiers(node)
         for modifier in node.modifiers:
-            name = self._modifier_name(modifier)
+            name = self._modifier_name(node, modifier)
+            if name is None:
+                continue
             if name in self._REGEX_UNSUPPORTED_MODIFIERS:
                 self.result.add_error(
                     f"Unsupported regex modifier '{name}' used on regex string '{node.identifier}' in rule '{self.current_rule_name}'",
@@ -175,7 +191,9 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
         label: str,
     ) -> None:
         for modifier in node.modifiers:
-            name = self._modifier_name(modifier)
+            name = self._modifier_name(node, modifier)
+            if name is None:
+                continue
             if name not in unsupported_modifiers:
                 continue
 
@@ -198,7 +216,9 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
     def _check_duplicate_modifiers(self, node: StringDefinition) -> None:
         seen: set[str] = set()
         for modifier in node.modifiers:
-            name = self._modifier_name(modifier)
+            name = self._modifier_name(node, modifier)
+            if name is None:
+                continue
             if name in seen:
                 self.result.add_error(
                     f"Duplicate string modifier '{name}' on string '{node.identifier}' in rule '{self.current_rule_name}'",
@@ -210,7 +230,9 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
 
     def _check_non_regex_string(self, node: StringDefinition, string_type: str) -> None:
         for modifier in node.modifiers:
-            name = self._modifier_name(modifier)
+            name = self._modifier_name(node, modifier)
+            if name is None:
+                continue
             if name not in self._REGEX_ONLY_MODIFIERS:
                 continue
 
@@ -221,7 +243,7 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
             )
 
     def _check_text_string_combinations(self, node: PlainString) -> None:
-        modifier_names = {self._modifier_name(modifier) for modifier in node.modifiers}
+        modifier_names = self._modifier_names(node)
         for base64_name in sorted(modifier_names & self._BASE64_MODIFIERS):
             for incompatible_name in sorted(modifier_names & self._BASE64_INCOMPATIBLE_MODIFIERS):
                 self.result.add_error(
@@ -242,7 +264,9 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
 
     def _check_text_string_modifier_values(self, node: PlainString) -> None:
         for modifier in node.modifiers:
-            name = self._modifier_name(modifier)
+            name = self._modifier_name(node, modifier)
+            if name is None:
+                continue
             value = getattr(modifier, "value", None)
             if name == StringModifierType.XOR.value:
                 self._check_xor_value(node, value)
@@ -322,8 +346,44 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
             "Use a 64-byte ASCII alphabet or remove the custom alphabet.",
         )
 
-    def _modifier_name(self, modifier: object) -> str:
-        return str(getattr(modifier, "name", modifier))
+    def _check_modifier_collection(self, node: StringDefinition) -> bool:
+        if isinstance(node.modifiers, list | tuple):
+            return True
+        self.result.add_error(
+            f"String modifiers for string '{node.identifier}' in rule '{self.current_rule_name}' must be a list or tuple",
+            node.location,
+            "Use a list of string modifier names or StringModifier nodes.",
+        )
+        return False
+
+    def _modifier_names(self, node: StringDefinition) -> set[str]:
+        names: set[str] = set()
+        for modifier in node.modifiers:
+            name = self._modifier_name(node, modifier)
+            if name is not None:
+                names.add(name)
+        return names
+
+    def _check_modifier_items(self, node: StringDefinition) -> bool:
+        valid = True
+        for modifier in node.modifiers:
+            if self._modifier_name(node, modifier) is None:
+                valid = False
+        return valid
+
+    def _modifier_name(self, node: StringDefinition, modifier: object) -> str | None:
+        if isinstance(modifier, str):
+            return modifier
+        if hasattr(modifier, "name"):
+            name = modifier.name
+            if isinstance(name, str):
+                return name
+        self.result.add_error(
+            f"String modifiers for string '{node.identifier}' in rule '{self.current_rule_name}' must contain strings or StringModifier nodes",
+            node.location,
+            "Use string modifier names or StringModifier nodes.",
+        )
+        return None
 
 
 class UndefinedStringDetector:
