@@ -38,6 +38,23 @@ def test_analyze_full_and_best_practices(tmp_path: Path) -> None:
     assert result.exit_code in (0, 1)
 
 
+def test_analyze_rejects_empty_json_output_path(tmp_path: Path) -> None:
+    runner = CliRunner()
+    yara_path = tmp_path / "sample.yar"
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
+
+    full = runner.invoke(analyze, ["full", str(yara_path), "-f", "json", "--output", ""])
+    assert full.exit_code != 0
+    assert "path must not be empty" in full.output
+
+    optimized = runner.invoke(
+        analyze,
+        ["optimize", str(yara_path), "-f", "json", "--output", ""],
+    )
+    assert optimized.exit_code != 0
+    assert "path must not be empty" in optimized.output
+
+
 def test_optimize_dry_run(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"

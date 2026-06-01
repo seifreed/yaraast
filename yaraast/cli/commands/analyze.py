@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import click
 
 from yaraast.cli.analyze_reporting import (
@@ -20,7 +18,7 @@ from yaraast.cli.analyze_services import (
     _opt_report_to_dict,
     _parse_rule_file,
 )
-from yaraast.cli.utils import format_json
+from yaraast.cli.utils import format_json, write_text
 
 
 @click.group()
@@ -52,8 +50,8 @@ def full(rule_file: str, output_format: str, output: str | None) -> None:
                 "optimization": _opt_report_to_dict(opt_report),
             }
             json_output = format_json(result)
-            if output:
-                Path(output).write_text(json_output, encoding="utf-8")
+            if output is not None:
+                write_text(output, json_output)
             else:
                 click.echo(json_output)
             return
@@ -118,8 +116,8 @@ def optimize(rule_file: str, verbose: bool, output_format: str, output: str | No
         if output_format == "json":
             payload = _opt_report_to_dict(report)
             text = format_json(payload)
-            if output:
-                Path(output).write_text(text, encoding="utf-8")
+            if output is not None:
+                write_text(output, text)
             else:
                 click.echo(text)
             return
