@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.codegen.generator_helpers import escape_plain_string_value
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
 from ._shared import (
@@ -598,8 +599,7 @@ def _event_statement_token_text(token: Any) -> str:
     if value is None:
         return ""
     if token.type == BaseTokenType.STRING:
-        escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
-        return f'"{escaped}"'
+        return f'"{escape_plain_string_value(str(value))}"'
     return str(value)
 
 

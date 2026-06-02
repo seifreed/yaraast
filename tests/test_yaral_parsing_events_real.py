@@ -663,3 +663,22 @@ def test_parse_event_symbolic_regex_operator_preserves_generated_text(operator: 
 
     generated = YaraLGenerator().generate(ast)
     assert f"$e.target.hostname {operator} /admin.*/" in generated
+
+
+def test_event_statement_string_value_escapes_control_characters() -> None:
+    ast = YaraLParser(r"""
+        rule control_chars_in_event_string {
+          events:
+            $e1 != "a\nb\tc"
+          condition:
+            $e1
+        }
+        """).parse()
+
+    generated = YaraLGenerator().generate(ast)
+
+    assert '"a\\nb\\tc"' in generated
+    assert "\n            $e1" not in generated.replace("\r\n", "\n")
+    assert '"a\nb' not in generated
+    reparsed = YaraLGenerator().generate(YaraLParser(generated).parse())
+    assert generated == reparsed
