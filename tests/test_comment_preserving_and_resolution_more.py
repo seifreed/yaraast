@@ -9,7 +9,7 @@ import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import Identifier
-from yaraast.ast.rules import Import, Include, Rule
+from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.errors import ValidationError
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.lexer.tokens import TokenType
@@ -249,6 +249,8 @@ def test_dependency_graph_file_queries_reject_invalid_paths() -> None:
     for query in (graph.get_file_dependencies, graph.get_file_dependents):
         with pytest.raises(ValidationError, match="DependencyGraph file_path must not be empty"):
             query("")
+        with pytest.raises(ValidationError, match="DependencyGraph file_path must not be empty"):
+            query("   ")
         with pytest.raises(ValidationError, match="DependencyGraph file_path must be a path"):
             query(cast(Any, False))
 
@@ -301,6 +303,8 @@ def test_dependency_graph_add_file_rejects_invalid_inputs_without_partial_update
 
     invalid_cases: list[tuple[tuple[Any, ...], str]] = [
         (("", YaraFile()), "DependencyGraph file_path must not be empty"),
+        (("   ", YaraFile()), "DependencyGraph file_path must not be empty"),
+        ((Path("   "), YaraFile()), "DependencyGraph file_path must not be empty"),
         ((object(), YaraFile()), "DependencyGraph file_path must be a path"),
         (("bad_ast.yar", object()), "DependencyGraph ast must be a YaraFile"),
         (
@@ -308,16 +312,52 @@ def test_dependency_graph_add_file_rejects_invalid_inputs_without_partial_update
             "DependencyGraph import module must be a string",
         ),
         (
+            ("bad_import.yar", YaraFile(imports=[Import(module="   ")])),
+            "DependencyGraph import module must not be empty",
+        ),
+        (
+            ("bad_import_alias.yar", YaraFile(imports=[Import(module="pe", alias="\t")])),
+            "DependencyGraph import alias must not be empty",
+        ),
+        (
             ("bad_include.yar", YaraFile(includes=[Include(path=cast(Any, object()))])),
             "DependencyGraph include path must be a string or path",
+        ),
+        (
+            ("bad_include.yar", YaraFile(includes=[Include(path="   ")])),
+            "DependencyGraph include path must not be empty",
         ),
         (
             ("bad_rule.yar", YaraFile(rules=[Rule(name=cast(Any, object()))])),
             "DependencyGraph rule name must be a string",
         ),
         (
+            ("bad_rule.yar", YaraFile(rules=[Rule(name="   ")])),
+            "DependencyGraph rule name must not be empty",
+        ),
+        (
+            ("bad_tag.yar", YaraFile(rules=[Rule(name="r", tags=[Tag(name="   ")])])),
+            "DependencyGraph tag name must not be empty",
+        ),
+        (
             ("bad_resolution.yar", YaraFile(includes=[Include(path="shared.yar")]), "not-map"),
             "DependencyGraph include resolutions must be a mapping",
+        ),
+        (
+            (
+                "bad_resolution.yar",
+                YaraFile(includes=[Include(path="shared.yar")]),
+                {"   ": "shared.yar"},
+            ),
+            "DependencyGraph include resolution key must not be empty",
+        ),
+        (
+            (
+                "bad_resolution.yar",
+                YaraFile(includes=[Include(path="shared.yar")]),
+                {"shared.yar": "   "},
+            ),
+            "DependencyGraph include resolution value must not be empty",
         ),
     ]
 

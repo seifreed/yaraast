@@ -18,9 +18,12 @@ if TYPE_CHECKING:
 
 def _require_path(value: object, context: str) -> Path:
     if isinstance(value, Path):
+        if not str(value).strip():
+            msg = f"{context} must not be empty"
+            raise ValidationError(msg)
         return value
     if isinstance(value, str):
-        if not value:
+        if not value.strip():
             msg = f"{context} must not be empty"
             raise ValidationError(msg)
         return Path(value)
@@ -29,21 +32,29 @@ def _require_path(value: object, context: str) -> Path:
 
 
 def _require_query_path(value: object, context: str) -> Path:
-    if isinstance(value, str) and not value:
-        msg = f"{context} must not be empty"
-        raise ValidationError(msg)
     return _require_path(value, context)
 
 
 def _require_string(value: object, context: str) -> str:
     if isinstance(value, str):
+        if not value.strip():
+            msg = f"{context} must not be empty"
+            raise ValidationError(msg)
         return value
     msg = f"{context} must be a string"
     raise ValidationError(msg)
 
 
 def _require_string_or_path(value: object, context: str) -> str | Path:
-    if isinstance(value, str | Path):
+    if isinstance(value, str):
+        if not value.strip():
+            msg = f"{context} must not be empty"
+            raise ValidationError(msg)
+        return value
+    if isinstance(value, Path):
+        if not str(value).strip():
+            msg = f"{context} must not be empty"
+            raise ValidationError(msg)
         return value
     msg = f"{context} must be a string or path"
     raise ValidationError(msg)
@@ -228,6 +239,8 @@ class DependencyGraph:
                 msg = "DependencyGraph imports must contain Import nodes"
                 raise ValidationError(msg)
             _require_string(import_stmt.module, "DependencyGraph import module")
+            if import_stmt.alias is not None:
+                _require_string(import_stmt.alias, "DependencyGraph import alias")
 
         for include_stmt in ast.includes:
             if not isinstance(include_stmt, Include):
