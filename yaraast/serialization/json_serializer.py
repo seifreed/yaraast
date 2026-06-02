@@ -549,12 +549,16 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
 
     # Add missing abstract methods
     def visit_extern_import(self, node) -> dict[str, Any]:
+        module_path = _serialize_required_nonempty_string(
+            node.module_path,
+            "ExternImport module_path",
+        )
+        if not module_path.strip():
+            msg = "ExternImport module_path must not be empty"
+            raise SerializationError(msg)
         return self._simple_node(
             "ExternImport",
-            module_path=_serialize_required_nonempty_string(
-                node.module_path,
-                "ExternImport module_path",
-            ),
+            module_path=module_path,
             alias=_serialize_nullable_nonempty_string(node.alias, "ExternImport alias"),
             rules=_serialize_nonempty_string_list(node.rules, "ExternImport rules"),
         )

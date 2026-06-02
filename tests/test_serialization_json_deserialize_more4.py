@@ -223,8 +223,9 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternImport module_path must be a string"):
         s._deserialize_extern_import({"module_path": ["external"]})
 
-    with pytest.raises(SerializationError, match="ExternImport module_path must not be empty"):
-        s._deserialize_extern_import({"module_path": ""})
+    for module_path in ("", "   ", "\t"):
+        with pytest.raises(SerializationError, match="ExternImport module_path must not be empty"):
+            s._deserialize_extern_import({"module_path": module_path})
 
     with pytest.raises(SerializationError, match="ExternImport alias must be a string"):
         s._deserialize_extern_import({"module_path": "external", "alias": True})

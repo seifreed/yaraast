@@ -1126,12 +1126,16 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             ),
         }
     if isinstance(node, ExternImport):
+        module_path = _serialize_required_nonempty_string(
+            node.module_path,
+            "ExternImport module_path",
+        )
+        if not module_path.strip():
+            msg = "ExternImport module_path must not be empty"
+            raise SerializationError(msg)
         return {
             "type": "ExternImport",
-            "module_path": _serialize_required_nonempty_string(
-                node.module_path,
-                "ExternImport module_path",
-            ),
+            "module_path": module_path,
             "alias": _serialize_nullable_nonempty_string(node.alias, "ExternImport alias"),
             "rules": _serialize_nonempty_string_list(node.rules, "ExternImport rules"),
         }
@@ -1802,12 +1806,16 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             ),
         )
     if node_type == "ExternImport":
+        module_path = _deserialize_nonempty_string_field(
+            data,
+            "module_path",
+            "ExternImport",
+        )
+        if not module_path.strip():
+            msg = "ExternImport module_path must not be empty"
+            raise SerializationError(msg)
         return ExternImport(
-            module_path=_deserialize_nonempty_string_field(
-                data,
-                "module_path",
-                "ExternImport",
-            ),
+            module_path=module_path,
             alias=_deserialize_nullable_nonempty_string_field(data, "alias", "ExternImport"),
             rules=_deserialize_nonempty_string_list_field(data, "rules", "ExternImport"),
         )

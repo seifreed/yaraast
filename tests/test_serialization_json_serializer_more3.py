@@ -863,6 +863,10 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
             "ExternImport module_path must not be empty",
         ),
         (
+            YaraFile(extern_imports=[ExternImport("   ")]),
+            "ExternImport module_path must not be empty",
+        ),
+        (
             YaraFile(extern_imports=[ExternImport(invalid_text)]),
             "ExternImport module_path must be a string",
         ),

@@ -539,10 +539,14 @@ def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
 
 
 def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
-    pb_extern_import.module_path = _protobuf_required_nonempty_string(
+    module_path = _protobuf_required_nonempty_string(
         extern_import.module_path,
         "ExternImport module_path",
     )
+    if not module_path.strip():
+        msg = "ExternImport module_path must not be empty"
+        raise SerializationError(msg)
+    pb_extern_import.module_path = module_path
     if extern_import.alias is not None:
         pb_extern_import.alias = _protobuf_required_nonempty_string(
             extern_import.alias,
@@ -1654,13 +1658,17 @@ def protobuf_to_extern_rule(pb_extern_rule):
 def protobuf_to_extern_import(pb_extern_import):
     from yaraast.ast.extern import ExternImport
 
+    module_path = _protobuf_required_nonempty_string(
+        pb_extern_import.module_path,
+        "ExternImport module_path",
+    )
+    if not module_path.strip():
+        msg = "ExternImport module_path must not be empty"
+        raise SerializationError(msg)
     return _apply_node_metadata_from_protobuf(
         pb_extern_import,
         ExternImport(
-            module_path=_protobuf_required_nonempty_string(
-                pb_extern_import.module_path,
-                "ExternImport module_path",
-            ),
+            module_path=module_path,
             alias=pb_extern_import.alias or None,
             rules=_protobuf_nonempty_string_list(
                 list(pb_extern_import.rules),

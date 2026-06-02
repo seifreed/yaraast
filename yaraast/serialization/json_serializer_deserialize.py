@@ -1332,7 +1332,7 @@ class JsonSerializerDeserializeMixin:
         if not isinstance(module_path, str):
             msg = "ExternImport module_path must be a string"
             raise SerializationError(msg)
-        if not module_path:
+        if not module_path.strip():
             msg = "ExternImport module_path must not be empty"
             raise SerializationError(msg)
         return self._apply_node_metadata(

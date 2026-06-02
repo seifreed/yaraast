@@ -374,6 +374,9 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternImport module_path must not be empty"):
         deserialize_node({"type": "ExternImport", "module_path": ""})
 
+    with pytest.raises(SerializationError, match="ExternImport module_path must not be empty"):
+        deserialize_node({"type": "ExternImport", "module_path": "   "})
+
     with pytest.raises(SerializationError, match="ExternImport alias must be a string"):
         deserialize_node({"type": "ExternImport", "module_path": "external", "alias": True})
 
@@ -1423,6 +1426,7 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
             "ExternRuleReference namespace must be a string",
         ),
         (ExternImport(""), "ExternImport module_path must not be empty"),
+        (ExternImport("   "), "ExternImport module_path must not be empty"),
         (ExternImport(cast(Any, 123)), "ExternImport module_path must be a string"),
         (ExternImport("external", alias=""), "ExternImport alias must not be empty"),
         (ExternImport("external", alias=cast(Any, 123)), "ExternImport alias must be a string"),

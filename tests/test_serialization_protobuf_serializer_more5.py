@@ -1350,6 +1350,10 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
             "ExternImport module_path must not be empty",
         ),
         (
+            YaraFile(extern_imports=[ExternImport("   ")]),
+            "ExternImport module_path must not be empty",
+        ),
+        (
             YaraFile(extern_imports=[ExternImport("external", alias="")]),
             "ExternImport alias must not be empty",
         ),
@@ -1379,6 +1383,7 @@ def test_protobuf_serializer_rejects_empty_top_level_identifier_fields(
         ("string", "PlainString identifier must not be empty"),
         ("extern_rule", "ExternRule name must not be empty"),
         ("extern_import", "ExternImport module_path must not be empty"),
+        ("extern_import_whitespace", "ExternImport module_path must not be empty"),
         ("namespace", "ExternNamespace name must not be empty"),
     ],
 )
@@ -1408,6 +1413,8 @@ def test_protobuf_deserializer_rejects_empty_top_level_identifier_fields(
         pb_file.extern_rules.add()
     elif payload_kind == "extern_import":
         pb_file.extern_imports.add()
+    elif payload_kind == "extern_import_whitespace":
+        pb_file.extern_imports.add().module_path = "   "
     elif payload_kind == "namespace":
         pb_file.namespaces.add()
 
