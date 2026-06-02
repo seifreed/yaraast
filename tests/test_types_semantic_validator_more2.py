@@ -637,3 +637,25 @@ def test_semantic_validator_rejects_empty_external_names(externals: dict[str, ob
 
     with pytest.raises(ValueError, match="SemanticValidator external names must not be empty"):
         validator.validate_expression(BooleanLiteral(True), externals=externals)
+
+
+@pytest.mark.parametrize("externals", [{"bad-name": 1}, {"1bad": 1}, {"for": 1}])
+def test_semantic_validator_rejects_invalid_external_names(
+    externals: dict[str, object],
+) -> None:
+    ast = YaraFile(rules=[Rule(name="externals", condition=BooleanLiteral(True))])
+    rule = ast.rules[0]
+
+    with pytest.raises(ValueError, match="SemanticValidator external names must be valid"):
+        SemanticValidator(externals=externals)
+
+    validator = SemanticValidator()
+
+    with pytest.raises(ValueError, match="SemanticValidator external names must be valid"):
+        validator.validate(ast, externals=externals)
+
+    with pytest.raises(ValueError, match="SemanticValidator external names must be valid"):
+        validator.validate_rule(rule, externals=externals)
+
+    with pytest.raises(ValueError, match="SemanticValidator external names must be valid"):
+        validator.validate_expression(BooleanLiteral(True), externals=externals)

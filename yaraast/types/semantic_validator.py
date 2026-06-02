@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import re
 from typing import TYPE_CHECKING
 
 from yaraast.ast.base import YaraFile
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.types.module_loader import ModuleLoader
 from yaraast.types.semantic_validator_core import ValidationError, ValidationResult
 from yaraast.types.semantic_validator_functions import FunctionCallValidator
@@ -43,6 +45,9 @@ if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.expressions import Expression
     from yaraast.ast.rules import Rule
+
+_YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
 
 
 class SemanticValidator:
@@ -190,6 +195,13 @@ def _normalize_externals(externals: Mapping[str, object] | None) -> dict[str, ob
             raise TypeError(msg)
         if not name.strip():
             msg = "SemanticValidator external names must not be empty"
+            raise ValueError(msg)
+        if (
+            len(name) > YARA_IDENTIFIER_MAX_LENGTH
+            or _YARA_IDENTIFIER_RE.fullmatch(name) is None
+            or name in _YARA_KEYWORDS
+        ):
+            msg = f"SemanticValidator external names must be valid identifiers: {name}"
             raise ValueError(msg)
         normalized[name] = value
     return normalized
