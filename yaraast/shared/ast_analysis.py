@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 import hashlib
 import json
-from os import PathLike
+from os import PathLike, fspath
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +22,24 @@ from yaraast.visitor.base import BaseVisitor
 from yaraast.yarax.generator import YaraXGenerator
 
 StringDef = PlainString | HexString | RegexString
+
+
+def _require_file_path(value: object, name: str) -> Path:
+    if isinstance(value, bool | bytes) or not isinstance(value, str | PathLike):
+        msg = f"{name} must be a file path"
+        raise TypeError(msg)
+    raw_path = fspath(value)
+    if not isinstance(raw_path, str):
+        msg = f"{name} must be a file path"
+        raise TypeError(msg)
+    if not raw_path:
+        msg = f"{name} must not be empty"
+        raise ValueError(msg)
+    path = Path(raw_path)
+    if path.exists() and path.is_dir():
+        msg = f"{name} must not be a directory"
+        raise ValueError(msg)
+    return path
 
 
 @dataclass
@@ -215,17 +233,23 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
 class ASTDiffer:
     """Compare ASTs and identify logical vs stylistic changes."""
 
-    def diff_files(self, file1_path: Path, file2_path: Path) -> ASTDiffResult:
+    def diff_files(
+        self,
+        file1_path: str | PathLike[str],
+        file2_path: str | PathLike[str],
+    ) -> ASTDiffResult:
         try:
-            with Path(file1_path).open(encoding="utf-8") as f:
+            file1 = _require_file_path(file1_path, "file1_path")
+            file2 = _require_file_path(file2_path, "file2_path")
+            with file1.open(encoding="utf-8") as f:
                 content1 = f.read()
                 ast1 = parse_yara_source(content1)
-            with Path(file2_path).open(encoding="utf-8") as f:
+            with file2.open(encoding="utf-8") as f:
                 content2 = f.read()
                 ast2 = parse_yara_source(content2)
             result = self.diff_asts(ast1, ast2)
             return self._detect_style_changes_from_text(content1, content2, result)
-        except (YaraASTError, OSError) as exc:  # file I/O + parse errors from multiple paths
+        except (TypeError, ValueError, YaraASTError, OSError) as exc:
             result = ASTDiffResult(has_changes=True)
             result.logical_changes.append(f"Error comparing files: {exc}")
             return result
@@ -336,17 +360,18 @@ class ASTFormatter:
 
     def format_file(
         self,
-        input_path: Path,
+        input_path: str | PathLike[str],
         output_path: str | PathLike[str] | None = None,
         style: object = "default",
     ) -> tuple[bool, str]:
         try:
+            input_file = _require_file_path(input_path, "input_path")
             output_file = self._optional_output_path(output_path)
         except (TypeError, ValueError) as exc:
             return False, f"Formatting error: {exc}"
 
         try:
-            with Path(input_path).open(encoding="utf-8") as f:
+            with input_file.open(encoding="utf-8") as f:
                 ast = parse_yara_source_with_comments(f.read())
             formatted = self.format_ast(ast, style)
             if output_file is not None:
@@ -390,9 +415,10 @@ class ASTFormatter:
             raise ValueError(msg)
         return path
 
-    def check_format(self, file_path: Path) -> tuple[bool, list[str]]:
+    def check_format(self, file_path: str | PathLike[str]) -> tuple[bool, list[str]]:
         try:
-            with Path(file_path).open(encoding="utf-8") as f:
+            input_file = _require_file_path(file_path, "file_path")
+            with input_file.open(encoding="utf-8") as f:
                 original = f.read()
             formatted = self.pretty_printer.pretty_print(parse_yara_source_with_comments(original))
             if original.strip() == formatted.strip():
@@ -405,5 +431,5 @@ class ASTFormatter:
                 if orig != fmt:
                     issues.append(f"Line {i}: formatting issue")
             return len(issues) > 0, issues
-        except (YaraASTError, OSError) as exc:
+        except (TypeError, ValueError, YaraASTError, OSError) as exc:
             return False, [f"Check error: {exc}"]

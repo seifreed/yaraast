@@ -16,6 +16,7 @@ from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.cli.ast_tools import ASTFormatter, print_ast, visualize_ast
 from yaraast.errors import ValidationError
+from yaraast.shared.ast_analysis import ASTDiffer
 
 
 def test_print_ast_and_visualize_formats() -> None:
@@ -115,6 +116,28 @@ def test_ast_formatter_rejects_empty_output_path(tmp_path: Path) -> None:
     assert err == "Formatting error: output_path must not be empty"
 
 
+def test_ast_formatter_rejects_empty_input_path() -> None:
+    ok, err = ASTFormatter().format_file("")
+
+    assert ok is False
+    assert err == "Formatting error: input_path must not be empty"
+
+
+@pytest.mark.parametrize("input_path", [False, 0, object(), b"ok.yar"])
+def test_ast_formatter_rejects_invalid_input_path_types(input_path: Any) -> None:
+    ok, err = ASTFormatter().format_file(cast(Any, input_path))
+
+    assert ok is False
+    assert err == "Formatting error: input_path must be a file path"
+
+
+def test_ast_formatter_check_format_rejects_empty_file_path() -> None:
+    needs_format, issues = ASTFormatter().check_format("")
+
+    assert needs_format is False
+    assert issues == ["Check error: file_path must not be empty"]
+
+
 def test_ast_formatter_rejects_directory_output_path(tmp_path: Path) -> None:
     good = tmp_path / "ok.yar"
     good.write_text("rule a { condition: true }", encoding="utf-8")
@@ -137,6 +160,30 @@ def test_ast_formatter_rejects_invalid_output_path_types(
 
     assert ok is False
     assert err == "Formatting error: output_path must be a file path"
+
+
+def test_ast_differ_rejects_empty_file_paths(tmp_path: Path) -> None:
+    good = tmp_path / "ok.yar"
+    good.write_text("rule a { condition: true }", encoding="utf-8")
+
+    result = ASTDiffer().diff_files("", good)
+
+    assert result.has_changes is True
+    assert result.logical_changes == ["Error comparing files: file1_path must not be empty"]
+
+
+@pytest.mark.parametrize("file_path", [False, 0, object(), b"ok.yar"])
+def test_ast_differ_rejects_invalid_file_path_types(
+    tmp_path: Path,
+    file_path: Any,
+) -> None:
+    good = tmp_path / "ok.yar"
+    good.write_text("rule a { condition: true }", encoding="utf-8")
+
+    result = ASTDiffer().diff_files(cast(Any, file_path), good)
+
+    assert result.has_changes is True
+    assert result.logical_changes == ["Error comparing files: file1_path must be a file path"]
 
 
 def test_ast_formatter_format_file_propagates_internal_generator_errors(
