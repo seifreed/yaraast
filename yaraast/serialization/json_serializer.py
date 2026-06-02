@@ -556,11 +556,19 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         if not module_path.strip():
             msg = "ExternImport module_path must not be empty"
             raise SerializationError(msg)
+        alias = _serialize_nullable_nonempty_string(node.alias, "ExternImport alias")
+        if alias is not None and not alias.strip():
+            msg = "ExternImport alias must not be empty"
+            raise SerializationError(msg)
+        rules = _serialize_nonempty_string_list(node.rules, "ExternImport rules")
+        if any(not rule.strip() for rule in rules):
+            msg = "ExternImport rules must contain non-empty strings"
+            raise SerializationError(msg)
         return self._simple_node(
             "ExternImport",
             module_path=module_path,
-            alias=_serialize_nullable_nonempty_string(node.alias, "ExternImport alias"),
-            rules=_serialize_nonempty_string_list(node.rules, "ExternImport rules"),
+            alias=alias,
+            rules=rules,
         )
 
     def visit_extern_namespace(self, node) -> dict[str, Any]:

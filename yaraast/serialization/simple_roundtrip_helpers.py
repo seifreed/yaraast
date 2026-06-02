@@ -1133,11 +1133,19 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         if not module_path.strip():
             msg = "ExternImport module_path must not be empty"
             raise SerializationError(msg)
+        alias = _serialize_nullable_nonempty_string(node.alias, "ExternImport alias")
+        if alias is not None and not alias.strip():
+            msg = "ExternImport alias must not be empty"
+            raise SerializationError(msg)
+        rules = _serialize_nonempty_string_list(node.rules, "ExternImport rules")
+        if any(not rule.strip() for rule in rules):
+            msg = "ExternImport rules must contain non-empty strings"
+            raise SerializationError(msg)
         return {
             "type": "ExternImport",
             "module_path": module_path,
-            "alias": _serialize_nullable_nonempty_string(node.alias, "ExternImport alias"),
-            "rules": _serialize_nonempty_string_list(node.rules, "ExternImport rules"),
+            "alias": alias,
+            "rules": rules,
         }
     if isinstance(node, ExternNamespace):
         extern_rules = _validated_node_collection(
@@ -1814,10 +1822,18 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         if not module_path.strip():
             msg = "ExternImport module_path must not be empty"
             raise SerializationError(msg)
+        alias = _deserialize_nullable_nonempty_string_field(data, "alias", "ExternImport")
+        if alias is not None and not alias.strip():
+            msg = "ExternImport alias must not be empty"
+            raise SerializationError(msg)
+        rules = _deserialize_nonempty_string_list_field(data, "rules", "ExternImport")
+        if any(not rule.strip() for rule in rules):
+            msg = "ExternImport rules must contain non-empty strings"
+            raise SerializationError(msg)
         return ExternImport(
             module_path=module_path,
-            alias=_deserialize_nullable_nonempty_string_field(data, "alias", "ExternImport"),
-            rules=_deserialize_nonempty_string_list_field(data, "rules", "ExternImport"),
+            alias=alias,
+            rules=rules,
         )
     if node_type == "ExternNamespace":
         return ExternNamespace(

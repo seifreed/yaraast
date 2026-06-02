@@ -1358,6 +1358,10 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
             "ExternImport alias must not be empty",
         ),
         (
+            YaraFile(extern_imports=[ExternImport("external", alias="   ")]),
+            "ExternImport alias must not be empty",
+        ),
+        (
             YaraFile(namespaces=[ExternNamespace("")]),
             "ExternNamespace name must not be empty",
         ),
@@ -1424,10 +1428,10 @@ def test_protobuf_deserializer_rejects_empty_top_level_identifier_fields(
 
 def test_protobuf_serializer_rejects_empty_extern_import_rules() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
-    ast = YaraFile(extern_imports=[ExternImport("external", rules=[""])])
-
-    with pytest.raises(SerializationError, match="ExternImport rules item must not be empty"):
-        serializer.serialize(ast)
+    for rule_name in ("", "   ", "\t"):
+        ast = YaraFile(extern_imports=[ExternImport("external", rules=[rule_name])])
+        with pytest.raises(SerializationError, match="ExternImport rules item must not be empty"):
+            serializer.serialize(ast)
 
 
 def test_protobuf_deserializer_rejects_empty_extern_import_rules() -> None:
@@ -1435,10 +1439,23 @@ def test_protobuf_deserializer_rejects_empty_extern_import_rules() -> None:
     pb_file = yara_ast_pb2.YaraFile()
     pb_import = pb_file.extern_imports.add()
     pb_import.module_path = "external"
-    pb_import.rules.append("")
+    for rule_name in ("", "   ", "\t"):
+        del pb_import.rules[:]
+        pb_import.rules.append(rule_name)
+        with pytest.raises(SerializationError, match="ExternImport rules item must not be empty"):
+            serializer.deserialize(binary_data=pb_file.SerializeToString())
 
-    with pytest.raises(SerializationError, match="ExternImport rules item must not be empty"):
-        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+def test_protobuf_deserializer_rejects_empty_extern_import_alias() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_import = pb_file.extern_imports.add()
+    pb_import.module_path = "external"
+
+    for alias in ("   ", "\t"):
+        pb_import.alias = alias
+        with pytest.raises(SerializationError, match="ExternImport alias must not be empty"):
+            serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
 def test_protobuf_serializer_rejects_empty_meta_keys() -> None:

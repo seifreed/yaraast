@@ -1335,15 +1335,23 @@ class JsonSerializerDeserializeMixin:
         if not module_path.strip():
             msg = "ExternImport module_path must not be empty"
             raise SerializationError(msg)
+        alias = _deserialize_nullable_nonempty_string_field(
+            data,
+            "alias",
+            "ExternImport",
+        )
+        if alias is not None and not alias.strip():
+            msg = "ExternImport alias must not be empty"
+            raise SerializationError(msg)
+        rules = _deserialize_nonempty_string_list_field(data, "rules", "ExternImport")
+        if any(not rule.strip() for rule in rules):
+            msg = "ExternImport rules must contain non-empty strings"
+            raise SerializationError(msg)
         return self._apply_node_metadata(
             ExternImport(
                 module_path=module_path,
-                alias=_deserialize_nullable_nonempty_string_field(
-                    data,
-                    "alias",
-                    "ExternImport",
-                ),
-                rules=_deserialize_nonempty_string_list_field(data, "rules", "ExternImport"),
+                alias=alias,
+                rules=rules,
             ),
             data,
         )

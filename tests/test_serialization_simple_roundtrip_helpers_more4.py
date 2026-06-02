@@ -380,8 +380,9 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternImport alias must be a string"):
         deserialize_node({"type": "ExternImport", "module_path": "external", "alias": True})
 
-    with pytest.raises(SerializationError, match="ExternImport alias must not be empty"):
-        deserialize_node({"type": "ExternImport", "module_path": "external", "alias": ""})
+    for alias in ("", "   ", "\t"):
+        with pytest.raises(SerializationError, match="ExternImport alias must not be empty"):
+            deserialize_node({"type": "ExternImport", "module_path": "external", "alias": alias})
 
     with pytest.raises(SerializationError, match="ExternImport rules must be a list of strings"):
         deserialize_node({"type": "ExternImport", "module_path": "external", "rules": "RuleA"})
@@ -389,7 +390,10 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(
         SerializationError, match="ExternImport rules must contain non-empty strings"
     ):
-        deserialize_node({"type": "ExternImport", "module_path": "external", "rules": [""]})
+        for rule_name in ("", "   ", "\t"):
+            deserialize_node(
+                {"type": "ExternImport", "module_path": "external", "rules": [rule_name]}
+            )
 
     with pytest.raises(SerializationError, match="ExternRule name must be a string"):
         deserialize_extern_rule({"name": ["RuleA"]})
@@ -1429,9 +1433,14 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
         (ExternImport("   "), "ExternImport module_path must not be empty"),
         (ExternImport(cast(Any, 123)), "ExternImport module_path must be a string"),
         (ExternImport("external", alias=""), "ExternImport alias must not be empty"),
+        (ExternImport("external", alias="   "), "ExternImport alias must not be empty"),
         (ExternImport("external", alias=cast(Any, 123)), "ExternImport alias must be a string"),
         (
             ExternImport("external", rules=[""]),
+            "ExternImport rules must contain non-empty strings",
+        ),
+        (
+            ExternImport("external", rules=["   "]),
             "ExternImport rules must contain non-empty strings",
         ),
         (

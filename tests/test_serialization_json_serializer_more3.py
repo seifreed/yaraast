@@ -875,11 +875,19 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
             "ExternImport alias must not be empty",
         ),
         (
+            YaraFile(extern_imports=[ExternImport("external", alias="   ")]),
+            "ExternImport alias must not be empty",
+        ),
+        (
             YaraFile(extern_imports=[ExternImport("external", alias=invalid_text)]),
             "ExternImport alias must be a string",
         ),
         (
             YaraFile(extern_imports=[ExternImport("external", rules=[""])]),
+            "ExternImport rules must contain non-empty strings",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("external", rules=["   "])]),
             "ExternImport rules must contain non-empty strings",
         ),
         (

@@ -230,8 +230,9 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternImport alias must be a string"):
         s._deserialize_extern_import({"module_path": "external", "alias": True})
 
-    with pytest.raises(SerializationError, match="ExternImport alias must not be empty"):
-        s._deserialize_extern_import({"module_path": "external", "alias": ""})
+    for alias in ("", "   ", "\t"):
+        with pytest.raises(SerializationError, match="ExternImport alias must not be empty"):
+            s._deserialize_extern_import({"module_path": "external", "alias": alias})
 
     with pytest.raises(SerializationError, match="ExternImport rules must be a list of strings"):
         s._deserialize_extern_import({"module_path": "external", "rules": "RuleA"})
@@ -239,7 +240,8 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(
         SerializationError, match="ExternImport rules must contain non-empty strings"
     ):
-        s._deserialize_extern_import({"module_path": "external", "rules": [""]})
+        for rule_name in ("", "   ", "\t"):
+            s._deserialize_extern_import({"module_path": "external", "rules": [rule_name]})
 
     with pytest.raises(SerializationError, match="ExternRule name must be a string"):
         s._deserialize_extern_rule({"name": ["RuleA"]})

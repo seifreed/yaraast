@@ -548,13 +548,19 @@ def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
         raise SerializationError(msg)
     pb_extern_import.module_path = module_path
     if extern_import.alias is not None:
-        pb_extern_import.alias = _protobuf_required_nonempty_string(
+        alias = _protobuf_required_nonempty_string(
             extern_import.alias,
             "ExternImport alias",
         )
-    pb_extern_import.rules.extend(
-        _protobuf_nonempty_string_list(extern_import.rules, "ExternImport rules")
-    )
+        if not alias.strip():
+            msg = "ExternImport alias must not be empty"
+            raise SerializationError(msg)
+        pb_extern_import.alias = alias
+    rules = _protobuf_nonempty_string_list(extern_import.rules, "ExternImport rules")
+    if any(not rule.strip() for rule in rules):
+        msg = "ExternImport rules item must not be empty"
+        raise SerializationError(msg)
+    pb_extern_import.rules.extend(rules)
     _copy_node_metadata_to_protobuf(extern_import, pb_extern_import)
 
 
@@ -1665,15 +1671,23 @@ def protobuf_to_extern_import(pb_extern_import):
     if not module_path.strip():
         msg = "ExternImport module_path must not be empty"
         raise SerializationError(msg)
+    alias = pb_extern_import.alias or None
+    if alias is not None and not alias.strip():
+        msg = "ExternImport alias must not be empty"
+        raise SerializationError(msg)
+    rules = _protobuf_nonempty_string_list(
+        list(pb_extern_import.rules),
+        "ExternImport rules",
+    )
+    if any(not rule.strip() for rule in rules):
+        msg = "ExternImport rules item must not be empty"
+        raise SerializationError(msg)
     return _apply_node_metadata_from_protobuf(
         pb_extern_import,
         ExternImport(
             module_path=module_path,
-            alias=pb_extern_import.alias or None,
-            rules=_protobuf_nonempty_string_list(
-                list(pb_extern_import.rules),
-                "ExternImport rules",
-            ),
+            alias=alias,
+            rules=rules,
         ),
     )
 
