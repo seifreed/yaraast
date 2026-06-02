@@ -102,7 +102,8 @@ def read_regex(lexer: LexerLike) -> Token:
     value_chars: list[str] = []
     lexer._advance()
     char = lexer._current_char()
-    while char is not None and char != "/":
+    in_class = False
+    while char is not None and (char != "/" or in_class):
         if char == "\n":
             raise LexerError("Unterminated regex", start_line, start_column)
         if char == "\\":
@@ -114,6 +115,10 @@ def read_regex(lexer: LexerLike) -> Token:
             if current:
                 value_chars.append(current)
         else:
+            if char == "[":
+                in_class = True
+            elif char == "]":
+                in_class = False
             value_chars.append(char)
         lexer._advance()
         char = lexer._current_char()
