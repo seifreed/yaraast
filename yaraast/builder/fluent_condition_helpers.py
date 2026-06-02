@@ -99,8 +99,14 @@ def build_of_expression(quantifier: int | str, string_set: Expression) -> OfExpr
     quant_expr: Expression
     if isinstance(quantifier, int):
         quant_expr = make_integer_literal(quantifier)
-    else:
+    elif isinstance(quantifier, str):
+        if not quantifier:
+            msg = "of quantifier must not be empty"
+            raise ValidationError(msg)
         quant_expr = StringLiteral(value=quantifier)
+    else:
+        msg = "of quantifier must be an integer or string"
+        raise TypeError(msg)
     return OfExpression(quantifier=quant_expr, string_set=string_set)
 
 

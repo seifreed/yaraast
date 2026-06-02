@@ -75,6 +75,15 @@ def test_fluent_condition_helpers_reject_boolean_integer_arguments() -> None:
         build_entropy_call(True, 1024)
 
 
+def test_fluent_condition_helpers_reject_invalid_of_quantifiers() -> None:
+    with pytest.raises(ValidationError, match="of quantifier must not be empty"):
+        build_of_expression("", Identifier(name="them"))
+
+    invalid_quantifier: Any = object()
+    with pytest.raises(TypeError, match="of quantifier must be an integer or string"):
+        build_of_expression(invalid_quantifier, Identifier(name="them"))
+
+
 def test_rule_builder_builds_independent_ast_nodes() -> None:
     builder = RuleBuilder("stable").with_plain_string("$a", "alpha").with_condition("$a")
 
