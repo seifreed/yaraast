@@ -171,9 +171,10 @@ def test_libyara_scanner_file_process_and_error_paths(tmp_path: Path) -> None:
     assert dir_result.success is False
     assert dir_result.errors
 
-    empty_path_result = scanner.scan_file(compilation.compiled_rules, "")
-    assert empty_path_result.success is False
-    assert empty_path_result.errors == ["filepath must not be empty"]
+    for filepath in ["", "   ", "\t"]:
+        empty_path_result = scanner.scan_file(compilation.compiled_rules, filepath)
+        assert empty_path_result.success is False
+        assert empty_path_result.errors == ["filepath must not be empty"]
 
     data_error = scanner.scan_data(object(), b"abc")
     assert data_error.success is False

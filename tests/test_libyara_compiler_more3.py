@@ -38,8 +38,9 @@ def test_libyara_compiler_handles_type_error_and_null_byte_source_paths() -> Non
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
-def test_libyara_compiler_compile_file_rejects_empty_filepath() -> None:
-    result = LibyaraCompiler().compile_file("")
+@pytest.mark.parametrize("filepath", ["", "   ", "\t"])
+def test_libyara_compiler_compile_file_rejects_empty_filepath(filepath: str) -> None:
+    result = LibyaraCompiler().compile_file(filepath)
 
     assert result.success is False
     assert result.errors == ["filepath must not be empty"]
