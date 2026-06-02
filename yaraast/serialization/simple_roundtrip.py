@@ -95,7 +95,10 @@ class SimpleRoundTrip:
             msg = "file_path must be a string or path-like object"
             raise TypeError(msg)
         raw_path = fspath(file_path)
-        if not raw_path:
+        if not isinstance(raw_path, str):
+            msg = "file_path must be a string or path-like object"
+            raise TypeError(msg)
+        if not raw_path.strip():
             msg = "file_path must not be empty"
             raise ValueError(msg)
         path = Path(raw_path)
@@ -108,7 +111,10 @@ class SimpleRoundTrip:
             msg = "dir_path must be a string or path-like object"
             raise TypeError(msg)
         raw_path = fspath(dir_path)
-        if not raw_path:
+        if not isinstance(raw_path, str):
+            msg = "dir_path must be a string or path-like object"
+            raise TypeError(msg)
+        if not raw_path.strip():
             msg = "dir_path must not be empty"
             raise ValueError(msg)
         dir_path = Path(raw_path)

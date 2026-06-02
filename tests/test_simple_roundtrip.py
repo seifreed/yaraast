@@ -144,9 +144,10 @@ def test_simple_roundtrip_file_rejects_invalid_path_types(file_path: Any) -> Non
         SimpleRoundTrip().test_file(cast(Any, file_path))
 
 
-def test_simple_roundtrip_file_rejects_empty_path() -> None:
+@pytest.mark.parametrize("file_path", ["", "   ", "\t"])
+def test_simple_roundtrip_file_rejects_empty_path(file_path: str) -> None:
     with pytest.raises(ValueError, match="file_path must not be empty"):
-        SimpleRoundTrip().test_file("")
+        SimpleRoundTrip().test_file(file_path)
 
 
 @pytest.mark.parametrize("dir_path", [None, 123, object()])
@@ -155,9 +156,10 @@ def test_simple_roundtrip_directory_rejects_invalid_path_types(dir_path: Any) ->
         SimpleRoundTrip().test_directory(cast(Any, dir_path))
 
 
-def test_simple_roundtrip_directory_rejects_empty_path() -> None:
+@pytest.mark.parametrize("dir_path", ["", "   ", "\t"])
+def test_simple_roundtrip_directory_rejects_empty_path(dir_path: str) -> None:
     with pytest.raises(ValueError, match="dir_path must not be empty"):
-        SimpleRoundTrip().test_directory("")
+        SimpleRoundTrip().test_directory(dir_path)
 
 
 def test_simple_roundtrip_helpers_accept_yarax() -> None:

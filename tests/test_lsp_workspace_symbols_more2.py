@@ -32,11 +32,12 @@ def test_workspace_symbols_empty_and_exception_paths() -> None:
         assert exp.get_workspace_symbols("") == []
 
 
-def test_workspace_symbols_rejects_empty_workspace_root() -> None:
+@pytest.mark.parametrize("root_path", ["", "   ", "\t"])
+def test_workspace_symbols_rejects_empty_workspace_root(root_path: str) -> None:
     provider = WorkspaceSymbolsProvider()
 
     with pytest.raises(ValueError, match="root_path must not be empty"):
-        provider.set_workspace_root("")
+        provider.set_workspace_root(root_path)
 
 
 @pytest.mark.parametrize("root_path", [None, False, 123, object(), b"."])

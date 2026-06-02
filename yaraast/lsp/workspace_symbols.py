@@ -22,7 +22,7 @@ def _require_workspace_root(root_path: object) -> Path:
     if not isinstance(raw_path, str):
         msg = "root_path must be a string or path-like object"
         raise TypeError(msg)
-    if not raw_path:
+    if not raw_path.strip():
         msg = "root_path must not be empty"
         raise ValueError(msg)
     path = Path(raw_path)
