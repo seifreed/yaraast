@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -88,4 +89,20 @@ rule main_rule {
     assert [match.rule for match in result.compiled_rules.match(data=b"")] == [
         "virtual_rule",
         "main_rule",
+    ]
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_direct_compiler_compile_ast_rejects_invalid_source_path() -> None:
+    ast = Parser().parse("rule main_rule { condition: true }")
+    compiler = DirectASTCompiler(enable_optimization=False)
+
+    empty_result = compiler.compile_ast(ast, source_path="")
+    type_result = compiler.compile_ast(ast, source_path=cast(Any, False))
+
+    assert empty_result.success is False
+    assert empty_result.errors == ["Direct compilation error: source_path must not be empty"]
+    assert type_result.success is False
+    assert type_result.errors == [
+        "Direct compilation error: source_path must be a string or path-like object",
     ]

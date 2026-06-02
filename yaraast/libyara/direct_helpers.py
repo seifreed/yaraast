@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from os import PathLike, fspath
 from pathlib import Path
 import tempfile
 from typing import Any
@@ -12,6 +13,20 @@ from yaraast.codegen.generator import CodeGenerator
 from yaraast.libyara.compatibility import ensure_libyara_compatible_ast
 from yaraast.libyara.compiler import LibyaraCompiler
 from yaraast.libyara.direct_models import DirectCompilationResult
+
+
+def _require_source_path(source_path: object) -> Path:
+    if isinstance(source_path, bool | bytes) or not isinstance(source_path, str | PathLike):
+        msg = "source_path must be a string or path-like object"
+        raise TypeError(msg)
+    raw_path = fspath(source_path)
+    if not isinstance(raw_path, str):
+        msg = "source_path must be a string or path-like object"
+        raise TypeError(msg)
+    if not raw_path:
+        msg = "source_path must not be empty"
+        raise ValueError(msg)
+    return Path(raw_path)
 
 
 def generate_source(ast: YaraFile) -> str:
@@ -40,7 +55,7 @@ def compile_source(
 def compile_source_with_file_context(
     source: str,
     externals: dict[str, Any],
-    source_path: str | Path,
+    source_path: object,
     error_on_warning: bool,
     includes: dict[str, str] | None = None,
 ) -> DirectCompilationResult:
@@ -50,7 +65,7 @@ def compile_source_with_file_context(
     source compiled as an in-memory string has no directory context, so CLI/direct
     compilation must use a temporary file beside the original rules file.
     """
-    source_dir = Path(source_path).resolve().parent
+    source_dir = _require_source_path(source_path).resolve().parent
     temp_path = None
     with tempfile.NamedTemporaryFile(
         mode="w",
