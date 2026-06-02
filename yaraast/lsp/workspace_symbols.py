@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from os import PathLike, fspath
 from pathlib import Path
 
 from lsprotocol.types import SymbolInformation
@@ -11,6 +12,24 @@ from yaraast.lsp.document_types import YARA_FILE_SUFFIXES
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 
 logger = logging.getLogger(__name__)
+
+
+def _require_workspace_root(root_path: object) -> Path:
+    if isinstance(root_path, bool | bytes) or not isinstance(root_path, str | PathLike):
+        msg = "root_path must be a string or path-like object"
+        raise TypeError(msg)
+    raw_path = fspath(root_path)
+    if not isinstance(raw_path, str):
+        msg = "root_path must be a string or path-like object"
+        raise TypeError(msg)
+    if not raw_path:
+        msg = "root_path must not be empty"
+        raise ValueError(msg)
+    path = Path(raw_path)
+    if path.exists() and not path.is_dir():
+        msg = "root_path must not be a file"
+        raise ValueError(msg)
+    return path
 
 
 class WorkspaceSymbolsProvider:
@@ -22,9 +41,9 @@ class WorkspaceSymbolsProvider:
         self.symbol_cache: dict[str, tuple[float, list[SymbolInformation]]] = {}
         self.workspace_root: Path | None = None
 
-    def set_workspace_root(self, root_path: str) -> None:
+    def set_workspace_root(self, root_path: str | PathLike[str]) -> None:
         """Set the workspace root directory."""
-        self.workspace_root = Path(root_path)
+        self.workspace_root = _require_workspace_root(root_path)
 
     def get_workspace_symbols(self, query: object) -> list[SymbolInformation]:
         """Search for symbols across the entire workspace."""

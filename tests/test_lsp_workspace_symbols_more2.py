@@ -32,6 +32,38 @@ def test_workspace_symbols_empty_and_exception_paths() -> None:
         assert exp.get_workspace_symbols("") == []
 
 
+def test_workspace_symbols_rejects_empty_workspace_root() -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    with pytest.raises(ValueError, match="root_path must not be empty"):
+        provider.set_workspace_root("")
+
+
+@pytest.mark.parametrize("root_path", [None, False, 123, object(), b"."])
+def test_workspace_symbols_rejects_invalid_workspace_root_types(root_path: Any) -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    with pytest.raises(TypeError, match="root_path must be a string or path-like object"):
+        provider.set_workspace_root(cast(Any, root_path))
+
+
+def test_workspace_symbols_rejects_file_workspace_root(tmp_path: Path) -> None:
+    root_path = tmp_path / "not_a_directory"
+    root_path.write_text("not a directory", encoding="utf-8")
+    provider = WorkspaceSymbolsProvider()
+
+    with pytest.raises(ValueError, match="root_path must not be a file"):
+        provider.set_workspace_root(root_path)
+
+
+def test_workspace_symbols_accepts_pathlike_workspace_root(tmp_path: Path) -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    provider.set_workspace_root(tmp_path)
+
+    assert provider.workspace_root == tmp_path
+
+
 def test_workspace_symbols_cache_helpers_and_not_found_paths() -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
