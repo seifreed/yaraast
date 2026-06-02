@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from os import PathLike
+from os import PathLike, fspath
 from pathlib import Path
 from typing import Any
 
@@ -15,10 +15,14 @@ def _optional_output_path(output: object, name: str = "output") -> Path | None:
     if isinstance(output, bool) or not isinstance(output, str | PathLike):
         msg = f"{name} path must be a file path"
         raise TypeError(msg)
-    if isinstance(output, str) and not output:
+    raw_path = fspath(output)
+    if not isinstance(raw_path, str):
+        msg = f"{name} path must be a file path"
+        raise TypeError(msg)
+    if not raw_path:
         msg = f"{name} path must not be empty"
         raise ValueError(msg)
-    output_path = Path(output)
+    output_path = Path(raw_path)
     if output_path.exists() and output_path.is_dir():
         msg = f"{name} path must not be a directory"
         raise ValueError(msg)

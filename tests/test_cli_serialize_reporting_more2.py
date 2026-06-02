@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from rich.console import Console
@@ -72,6 +72,21 @@ def test_display_export_import_reject_empty_output_path() -> None:
 
     with pytest.raises(ValueError, match="output path must not be empty"):
         sr.display_import_result(console, "in.json", "json", _Ast(), output="")
+
+
+def test_display_export_import_reject_empty_pathlike_output_path() -> None:
+    class EmptyPathLike:
+        def __fspath__(self) -> str:
+            return ""
+
+    console = Console(record=True, width=120)
+    output = cast(Any, EmptyPathLike())
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        sr.display_export_result(console, "{}", "json", output=output, pretty=True, stats=None)
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        sr.display_import_result(console, "in.json", "json", _Ast(), output=output)
 
 
 def test_display_export_import_reject_directory_output_path(tmp_path: Path) -> None:

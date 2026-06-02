@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -66,6 +66,27 @@ def test_roundtrip_display_helpers_reject_empty_output_path() -> None:
 
     with pytest.raises(ValueError, match="output path must not be empty"):
         rr.display_pipeline_result("", "yaml: 1", True, "manifest: 1", ast)
+
+
+def test_roundtrip_display_helpers_reject_empty_pathlike_output_path() -> None:
+    class EmptyPathLike:
+        def __fspath__(self) -> str:
+            return ""
+
+    ast = _Ast()
+    output = cast(Any, EmptyPathLike())
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        rr.display_serialize_result(output, "json", ast, False, False, "serialized")
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        rr.display_deserialize_result(output, "json", ast, False, "rule x { condition: true }")
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        rr.display_pretty_result(output, "compact", ast, 2, 80, "formatted")
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        rr.display_pipeline_result(output, "yaml: 1", True, "manifest: 1", ast)
 
 
 def test_roundtrip_display_helpers_reject_directory_output_path(tmp_path: Path) -> None:
