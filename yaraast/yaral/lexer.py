@@ -301,9 +301,14 @@ class YaraLLexer:
                 self.position += advance
                 self.column += advance
             else:
-                value += self.text[self.position]
+                current = self.text[self.position]
+                value += current
+                if current == "\n":
+                    self.line += 1
+                    self.column = 1
+                else:
+                    self.column += 1
                 self.position += 1
-                self.column += 1
 
         if self.position < len(self.text):
             self.position += 1  # Skip closing quote
@@ -364,9 +369,14 @@ class YaraLLexer:
                 self.position += 2
                 self.column += 2
             else:
-                pattern += self.text[self.position]
+                current = self.text[self.position]
+                pattern += current
+                if current == "\n":
+                    self.line += 1
+                    self.column = 1
+                else:
+                    self.column += 1
                 self.position += 1
-                self.column += 1
 
         if self.position < len(self.text):
             self.position += 1  # Skip closing /
