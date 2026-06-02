@@ -8,7 +8,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
-from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
+from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler, normalize_libyara_externals
 from yaraast.libyara.direct_compiler import DirectASTCompiler
 from yaraast.parser.source import parse_yara_source
 
@@ -20,6 +20,18 @@ def test_libyara_compilers_reject_non_mapping_externals() -> None:
 
     with pytest.raises(TypeError, match="libyara externals must be a dictionary"):
         DirectASTCompiler(externals=cast(Any, []))
+
+
+@pytest.mark.parametrize("externals", [{cast(Any, 1): 1}, {cast(Any, True): 1}])
+def test_libyara_externals_reject_non_string_names(externals: dict[Any, object]) -> None:
+    with pytest.raises(TypeError, match="libyara external names must be strings"):
+        normalize_libyara_externals(cast(Any, externals))
+
+
+@pytest.mark.parametrize("externals", [{"": 1}, {"   ": 1}])
+def test_libyara_externals_reject_empty_names(externals: dict[str, object]) -> None:
+    with pytest.raises(ValueError, match="libyara external names must not be empty"):
+        normalize_libyara_externals(externals)
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")

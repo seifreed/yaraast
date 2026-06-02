@@ -34,7 +34,16 @@ def normalize_libyara_externals(externals: dict[str, Any] | None) -> dict[str, A
     if not isinstance(externals, dict):
         msg = "libyara externals must be a dictionary"
         raise TypeError(msg)
-    return dict(externals)
+    normalized: dict[str, Any] = {}
+    for name, value in externals.items():
+        if not isinstance(name, str):
+            msg = "libyara external names must be strings"
+            raise TypeError(msg)
+        if not name.strip():
+            msg = "libyara external names must not be empty"
+            raise ValueError(msg)
+        normalized[name] = value
+    return normalized
 
 
 def _require_file_path(filepath: object, name: str) -> Path:
