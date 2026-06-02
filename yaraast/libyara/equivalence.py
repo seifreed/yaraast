@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from os import PathLike, fspath
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -17,6 +18,20 @@ from .scanner import LibyaraScanner, ScanResult
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
+
+
+def _require_file_path(filepath: object, name: str) -> Path:
+    if isinstance(filepath, bool | bytes) or not isinstance(filepath, str | PathLike):
+        msg = f"{name} must be a string or path-like object"
+        raise TypeError(msg)
+    raw_path = fspath(filepath)
+    if not isinstance(raw_path, str):
+        msg = f"{name} must be a string or path-like object"
+        raise TypeError(msg)
+    if not raw_path:
+        msg = f"{name} must not be empty"
+        raise ValueError(msg)
+    return Path(raw_path)
 
 
 @dataclass
@@ -248,7 +263,7 @@ class EquivalenceTester:
 
     def test_file_round_trip(
         self,
-        filepath: str,
+        filepath: str | PathLike[str],
         test_data: bytes | None = None,
     ) -> EquivalenceResult:
         """Test round-trip starting from a file.
@@ -262,7 +277,8 @@ class EquivalenceTester:
 
         """
         try:
-            with Path(filepath).open(encoding="utf-8") as f:
+            path = _require_file_path(filepath, "filepath")
+            with path.open(encoding="utf-8") as f:
                 original_code = f.read()
 
             original_ast = parse_yara_source(original_code)

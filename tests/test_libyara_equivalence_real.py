@@ -34,6 +34,27 @@ def test_compare_code_normalizes_whitespace_only() -> None:
     assert tester._compare_code(code1, code3) is False
 
 
+def test_file_round_trip_rejects_empty_filepath() -> None:
+    tester = _tester_without_libyara_init()
+
+    result = tester.test_file_round_trip("")
+
+    assert result.equivalent is False
+    assert result.ast_differences == ["Failed to parse file: filepath must not be empty"]
+
+
+@pytest.mark.parametrize("filepath", [None, False, 123, object(), b"rule.yar"])
+def test_file_round_trip_rejects_invalid_filepath_types(filepath: Any) -> None:
+    tester = _tester_without_libyara_init()
+
+    result = tester.test_file_round_trip(cast(Any, filepath))
+
+    assert result.equivalent is False
+    assert result.ast_differences == [
+        "Failed to parse file: filepath must be a string or path-like object"
+    ]
+
+
 def test_equivalence_result_recording_helpers() -> None:
     tester = _tester_without_libyara_init()
 
