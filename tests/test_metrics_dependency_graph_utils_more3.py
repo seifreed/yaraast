@@ -179,11 +179,17 @@ def test_dependency_graph_order_and_export_error(tmp_path: Path) -> None:
         export_dependency_graph(graph, tmp_path / "deps.bad", format="xml")
 
 
-def test_export_dependency_graph_rejects_invalid_output_paths(tmp_path: Path) -> None:
+@pytest.mark.parametrize("output_path", ["", "   ", "\t"])
+def test_export_dependency_graph_rejects_empty_output_paths(output_path: str) -> None:
     graph = DependencyGraph()
 
     with pytest.raises(ValueError, match="output_path must not be empty"):
-        export_dependency_graph(graph, "", format="json")
+        export_dependency_graph(graph, output_path, format="json")
+
+
+def test_export_dependency_graph_rejects_invalid_output_paths(tmp_path: Path) -> None:
+    graph = DependencyGraph()
+
     with pytest.raises(ValueError, match="output_path must not be a directory"):
         export_dependency_graph(graph, tmp_path, format="json")
     with pytest.raises(TypeError, match="output_path must be a file path"):

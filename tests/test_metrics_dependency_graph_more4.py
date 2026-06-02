@@ -101,9 +101,10 @@ def test_dependency_graph_render_rejects_empty_format(tmp_path: Path) -> None:
         render_graph(SimpleNamespace(source="digraph G {}"), str(tmp_path / "deps"), "")
 
 
-def test_dependency_graph_render_rejects_empty_output_path() -> None:
+@pytest.mark.parametrize("output_path", ["", "   ", "\t"])
+def test_dependency_graph_render_rejects_empty_output_path(output_path: str) -> None:
     with pytest.raises(ValueError, match="output_path must not be empty"):
-        render_graph(SimpleNamespace(source="digraph G {}"), "", "dot")
+        render_graph(SimpleNamespace(source="digraph G {}"), output_path, "dot")
 
 
 def test_dependency_graph_render_rejects_empty_pathlike_output_path() -> None:
