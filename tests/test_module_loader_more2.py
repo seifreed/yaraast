@@ -93,6 +93,47 @@ def test_module_loader_rejects_invalid_module_name_without_partial_load(tmp_path
     assert loader.modules == before
 
 
+def test_module_loader_rejects_whitespace_only_module_names_without_partial_load(
+    tmp_path: Path,
+) -> None:
+    json_path = tmp_path / "modules.json"
+    json_path.write_text(
+        json.dumps(
+            [
+                {"name": "first", "attributes": {"enabled": "bool"}},
+                {"name": "   ", "attributes": {"broken": "int"}},
+                {"name": "last", "constants": {"K": "int"}},
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loader = ModuleLoader()
+    before = dict(loader.modules)
+    with pytest.raises(ModuleSpecError, match="Module name must be a non-empty string"):
+        loader._load_module_file(json_path)
+    assert loader.modules == before
+
+
+@pytest.mark.parametrize(
+    ("section", "payload", "message"),
+    [
+        ("attributes", {"   ": "int"}, "Module attribute names must be non-empty strings"),
+        ("functions", {"\t": {"return": "int"}}, "Module function names must be non-empty strings"),
+        ("constants", {"   ": "string"}, "Module constant names must be non-empty strings"),
+    ],
+)
+def test_module_loader_rejects_whitespace_only_member_names(
+    section: str,
+    payload: dict[str, object],
+    message: str,
+) -> None:
+    loader = ModuleLoader()
+
+    with pytest.raises(ValueError, match=message):
+        loader._parse_module("manual", {"name": "manual", section: payload})
+
+
 def test_module_loader_rejects_unreadable_module_specs(tmp_path: Path) -> None:
     loader = ModuleLoader()
 
@@ -151,11 +192,12 @@ def test_module_loader_normalizes_invalid_parameter_names() -> None:
         [
             {"name": ["bad"], "type": "int"},
             {"name": "", "type": "bool"},
+            {"name": "   ", "type": "float"},
             {"type": "string"},
         ]
     )
 
-    assert [name for name, _type in parameters] == ["param_0", "param_1", "param_2"]
+    assert [name for name, _type in parameters] == ["param_0", "param_1", "param_2", "param_3"]
 
 
 def test_module_loader_normalizes_invalid_function_arity_metadata() -> None:

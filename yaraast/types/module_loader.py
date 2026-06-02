@@ -17,13 +17,13 @@ class ModuleSpecError(ValueError):
 
 
 def _normalize_module_name(name: object) -> str:
-    if not isinstance(name, str) or not name:
+    if not isinstance(name, str) or not name.strip():
         raise ValueError("Module name must be a non-empty string")
     return name
 
 
 def _normalize_parameter_name(name: object, index: int) -> str:
-    if isinstance(name, str) and name:
+    if isinstance(name, str) and name.strip():
         return name
     return f"param_{index}"
 
@@ -139,7 +139,7 @@ class ModuleLoader:
             if not isinstance(attributes, dict):
                 raise TypeError("Module attributes must be an object")
             for attr_name, attr_type in attributes.items():
-                if not isinstance(attr_name, str) or not attr_name:
+                if not isinstance(attr_name, str) or not attr_name.strip():
                     raise ValueError("Module attribute names must be non-empty strings")
                 module.attributes[attr_name] = self._parse_type(attr_type)
 
@@ -149,7 +149,7 @@ class ModuleLoader:
             if not isinstance(functions, dict):
                 raise TypeError("Module functions must be an object")
             for func_name, func_data in functions.items():
-                if not isinstance(func_name, str) or not func_name:
+                if not isinstance(func_name, str) or not func_name.strip():
                     raise ValueError("Module function names must be non-empty strings")
                 if not isinstance(func_data, dict):
                     raise TypeError(f"Module function '{func_name}' must be an object")
@@ -172,7 +172,7 @@ class ModuleLoader:
             if not isinstance(constants, dict):
                 raise TypeError("Module constants must be an object")
             for const_name, const_type in constants.items():
-                if not isinstance(const_name, str) or not const_name:
+                if not isinstance(const_name, str) or not const_name.strip():
                     raise ValueError("Module constant names must be non-empty strings")
                 module.constants[const_name] = self._parse_type(const_type)
 
