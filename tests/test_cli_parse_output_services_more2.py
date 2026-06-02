@@ -51,6 +51,8 @@ def test_parse_output_report_parsing_errors(capsys: pytest.CaptureFixture[str]) 
     assert "and 1 more lexer issues" in out
     assert "Parser Issues (2)" in out
     assert "Partial parse successful" in out
+    # Separators must be real newlines, not literal backslash-n rendered by Rich.
+    assert "\\n" not in out
 
     class FalsyYaraFile(YaraFile):
         def __bool__(self) -> bool:
