@@ -154,6 +154,8 @@ def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
         index.set_workspace_folders(cast(Any, str(tmp_path)))
     with pytest.raises(TypeError, match="Workspace folders must be a list of strings"):
         index.set_workspace_folders(cast(Any, [str(tmp_path), object()]))
+    with pytest.raises(ValueError, match="Workspace folder paths must not be empty"):
+        index.set_workspace_folders([""])
 
     assert index.workspace_folders == [tmp_path]
 
@@ -162,6 +164,8 @@ def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
 
     with pytest.raises(TypeError, match="Workspace folders must be a list of strings"):
         runtime.set_workspace_folders(cast(Any, str(tmp_path)))
+    with pytest.raises(ValueError, match="Workspace folder paths must not be empty"):
+        runtime.set_workspace_folders([""])
 
     assert runtime.index.workspace_folders == [tmp_path]
 

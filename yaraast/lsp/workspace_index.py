@@ -18,7 +18,10 @@ def _normalize_workspace_folders(folders: object) -> list[Path]:
     if not isinstance(folders, list) or not all(isinstance(folder, str) for folder in folders):
         msg = "Workspace folders must be a list of strings"
         raise TypeError(msg)
-    return [Path(folder) for folder in folders if folder]
+    if any(not folder for folder in folders):
+        msg = "Workspace folder paths must not be empty"
+        raise ValueError(msg)
+    return [Path(folder) for folder in folders]
 
 
 def _require_workspace_symbol_query(query: object) -> str:
