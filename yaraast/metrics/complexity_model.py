@@ -153,7 +153,9 @@ class ComplexityMetrics:
         if self.rules_with_meta / max(1, self.total_rules) > META_COVERAGE_BONUS_THRESHOLD:
             score += META_COVERAGE_BONUS
 
-        return max(0.0, score)
+        # The bonus may offset deductions but must not push the score past the
+        # documented 0-100 range.
+        return max(0.0, min(100.0, score))
 
     def get_complexity_grade(self) -> str:
         """Get a letter grade derived from the heuristic quality score."""

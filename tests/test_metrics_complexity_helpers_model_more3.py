@@ -141,6 +141,13 @@ def test_complexity_model_to_dict_quality_score_and_grades() -> None:
         assert case_metrics.get_complexity_grade() == expected
 
 
+def test_quality_score_meta_bonus_does_not_exceed_documented_maximum() -> None:
+    # A pristine, fully-documented file earns the meta bonus on top of the base
+    # 100; the score must still respect the documented 0-100 contract.
+    metrics = ComplexityMetrics(total_rules=1, rules_with_meta=1)
+    assert metrics.get_quality_score() == 100.0
+
+
 def test_complexity_model_dependency_lists_are_stably_sorted() -> None:
     metrics = ComplexityMetrics(
         string_dependencies={
