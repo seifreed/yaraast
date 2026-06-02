@@ -63,7 +63,10 @@ class SemanticValidator:
         effective_externals = self._effective_externals(externals)
 
         _define_external_types(env, effective_externals)
-        populate_env_for_file(ast, env)
+        try:
+            populate_env_for_file(ast, env)
+        except (TypeError, ValueError) as exc:
+            result.add_error(str(exc))
 
         string_validator = StringIdentifierValidator(result)
         modifier_validator = StringModifierApplicabilityValidator(result)

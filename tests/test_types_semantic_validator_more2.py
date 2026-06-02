@@ -32,7 +32,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
     UnaryExpression,
 )
-from yaraast.ast.rules import Rule, Tag
+from yaraast.ast.rules import Import, Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.parser import Parser
 from yaraast.types.semantic_validator import (
@@ -409,6 +409,28 @@ def test_validate_file_rejects_invalid_rule_names(rule_name: str) -> None:
 
     assert result.is_valid is False
     assert any(f"Invalid rule identifier: {rule_name}" in error.message for error in result.errors)
+
+
+@pytest.mark.parametrize(
+    "import_node",
+    [
+        Import("pe", alias="bad-name"),
+        Import("pe", alias="for"),
+        Import("   "),
+    ],
+)
+def test_validate_file_rejects_invalid_import_fields_without_aborting(
+    import_node: Import,
+) -> None:
+    ast = YaraFile(
+        imports=[import_node],
+        rules=[Rule(name="ok_rule", condition=BooleanLiteral(True))],
+    )
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert result.errors
 
 
 def test_validate_file_rejects_duplicate_rule_tags() -> None:

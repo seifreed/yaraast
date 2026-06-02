@@ -42,16 +42,20 @@ def _normalize_concrete_string_id(
     return normalize_string_reference_id(string_id, allow_wildcard=False)
 
 
-def _normalize_rule_name(rule_name: str) -> str:
-    rule_name = _require_nonempty_string(rule_name, "TypeEnvironment rule name")
+def _normalize_identifier(value: str, field_name: str, kind: str) -> str:
+    value = _require_nonempty_string(value, field_name)
     if (
-        len(rule_name) <= YARA_IDENTIFIER_MAX_LENGTH
-        and _YARA_IDENTIFIER_RE.fullmatch(rule_name) is not None
-        and rule_name not in _YARA_KEYWORDS
+        len(value) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _YARA_IDENTIFIER_RE.fullmatch(value) is not None
+        and value not in _YARA_KEYWORDS
     ):
-        return rule_name
-    msg = f"Invalid rule identifier: {rule_name}"
+        return value
+    msg = f"Invalid {kind} identifier: {value}"
     raise ValueError(msg)
+
+
+def _normalize_rule_name(rule_name: str) -> str:
+    return _normalize_identifier(rule_name, "TypeEnvironment rule name", "rule")
 
 
 class TypeEnvironment:
@@ -87,11 +91,19 @@ class TypeEnvironment:
         return None
 
     def add_module(self, alias: str, module: str | None = None) -> None:
-        alias = _require_nonempty_string(alias, "TypeEnvironment module alias")
+        alias = _normalize_identifier(
+            alias,
+            "TypeEnvironment module alias",
+            "module alias",
+        )
         if module is None:
             self.modules.add(alias)
         else:
-            module = _require_nonempty_string(module, "TypeEnvironment module name")
+            module = _normalize_identifier(
+                module,
+                "TypeEnvironment module name",
+                "module name",
+            )
             self.modules.add(alias)
             self.modules.add(module)
             self.module_aliases[alias] = module
@@ -107,11 +119,19 @@ class TypeEnvironment:
             self.anonymous_strings.add(string_id)
 
     def has_module(self, name: str) -> bool:
-        name = _require_string(name, "TypeEnvironment module name")
+        name = _normalize_identifier(
+            name,
+            "TypeEnvironment module name",
+            "module name",
+        )
         return name in self.modules or name in self.module_aliases
 
     def get_module_name(self, name: str) -> str | None:
-        name = _require_string(name, "TypeEnvironment module name")
+        name = _normalize_identifier(
+            name,
+            "TypeEnvironment module name",
+            "module name",
+        )
         if name in self.module_aliases:
             return self.module_aliases[name]
         if name in self.modules:

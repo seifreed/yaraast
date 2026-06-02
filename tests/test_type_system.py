@@ -898,6 +898,30 @@ class TestTypeEnvironment:
         assert env.anonymous_strings == set()
         assert env.rules == {"rule1"}
 
+    @pytest.mark.parametrize(
+        ("alias", "module"),
+        [
+            ("bad-name", None),
+            ("for", None),
+            ("bad-alias", "pe"),
+            ("alias", "bad-module"),
+            ("alias", "for"),
+        ],
+    )
+    def test_type_environment_rejects_invalid_module_names_without_partial_update(
+        self,
+        alias: str,
+        module: str | None,
+    ) -> None:
+        env = TypeEnvironment()
+        env.add_module("pe")
+
+        with pytest.raises(ValueError, match=r"Invalid module .* identifier"):
+            env.add_module(alias, module)
+
+        assert env.modules == {"pe"}
+        assert env.module_aliases == {}
+
     def test_type_environment_rejects_empty_public_names_without_partial_update(self) -> None:
         """Test public mutators reject empty names before mutating state."""
         env = TypeEnvironment()

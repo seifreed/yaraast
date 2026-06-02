@@ -115,10 +115,13 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         return normalize_string_reference_id(string_id)
 
     def _resolve_module_type(self, module_name: str) -> ModuleType | None:
-        if not self.env.has_module(module_name):
+        try:
+            if not self.env.has_module(module_name):
+                return None
+            actual_module = self.env.get_module_name(module_name)
+        except ValueError:
             return None
 
-        actual_module = self.env.get_module_name(module_name)
         if not actual_module:
             return None
 

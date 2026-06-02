@@ -97,7 +97,10 @@ class TypeChecker(BaseVisitor[None]):
 
         # Use alias if provided, otherwise use module name
         name = node.alias if node.alias else node.module
-        self.env.add_module(name, node.module)
+        try:
+            self.env.add_module(name, node.module)
+        except ValueError as exc:
+            self.errors.append(str(exc))
 
     def visit_rule(self, node: Rule) -> None:
         seen_tags: set[str] = set()
