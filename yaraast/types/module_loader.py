@@ -38,6 +38,17 @@ def _normalize_variadic(value: object) -> bool:
     return value if isinstance(value, bool) else False
 
 
+def _module_spec_path_entries(env_name: str) -> list[str]:
+    raw_value = os.environ.get(env_name)
+    if not raw_value:
+        return []
+    entries = raw_value.split(os.pathsep)
+    if any(not entry for entry in entries):
+        msg = f"{env_name} must not contain empty path entries"
+        raise ModuleSpecError(msg)
+    return entries
+
+
 class ModuleLoader:
     """Load YARA module definitions from JSON files."""
 
@@ -56,17 +67,16 @@ class ModuleLoader:
         module_paths = []
 
         # YARAAST_MODULE_SPEC_PATH - additional paths
-        if os.environ.get("YARAAST_MODULE_SPEC_PATH"):
-            paths = os.environ["YARAAST_MODULE_SPEC_PATH"].split(os.pathsep)
-            module_paths.extend(paths)
+        module_paths.extend(_module_spec_path_entries("YARAAST_MODULE_SPEC_PATH"))
 
         # YARAAST_MODULE_SPEC_PATH_EXCLUSIVE - exclusive paths (ignore builtins)
         exclusive_mode = False
         if os.environ.get("YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"):
             exclusive_mode = True
             self.modules.clear()  # Clear builtin modules
-            paths = os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"].split(os.pathsep)
-            module_paths.extend(paths)
+            module_paths.extend(
+                _module_spec_path_entries("YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"),
+            )
 
         # Default location (only if not in exclusive mode)
         if not exclusive_mode:

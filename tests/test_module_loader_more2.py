@@ -12,6 +12,25 @@ from yaraast.types.module_loader import ModuleLoader, ModuleSpecError
 from yaraast.types.type_system import AnyType, BooleanType, IntegerType
 
 
+@pytest.mark.parametrize(
+    "env_name",
+    ["YARAAST_MODULE_SPEC_PATH", "YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"],
+)
+def test_module_loader_rejects_empty_env_path_entries(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    env_name: str,
+) -> None:
+    cwd_module = tmp_path / "cwd_module.json"
+    cwd_module.write_text(json.dumps({"name": "cwd_loaded", "attributes": {}}), encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv(env_name, os.pathsep)
+
+    with pytest.raises(ModuleSpecError, match=f"{env_name} must not contain empty path entries"):
+        ModuleLoader()
+
+
 def test_module_loader_rejects_invalid_json_specs(tmp_path: Path) -> None:
     invalid_json = tmp_path / "invalid.json"
     invalid_json.write_text("{ not valid json", encoding="utf-8")
