@@ -52,7 +52,7 @@ def _required_string(value: Any, context: str) -> str:
 
 def _required_nonempty_string(value: Any, context: str) -> str:
     text = _required_string(value, context)
-    if not text:
+    if not text.strip():
         msg = f"{context} must not be empty"
         raise SerializationError(msg)
     return text
@@ -99,7 +99,7 @@ def _validated_rule_modifiers(values: Any) -> list[str]:
             continue
         msg = "Rule modifiers item must be a string or RuleModifier"
         raise SerializationError(msg)
-    if any(not modifier for modifier in serialized):
+    if any(not modifier.strip() for modifier in serialized):
         msg = "Rule modifiers must contain non-empty strings"
         raise SerializationError(msg)
     return serialized

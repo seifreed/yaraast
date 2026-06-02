@@ -119,12 +119,27 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
         ),
         (
             "statistics",
+            YaraFile(imports=[Import(module="   ")], rules=[]),
+            "Import module must not be empty",
+        ),
+        (
+            "statistics",
             YaraFile(imports=[Import(module="pe", alias="")], rules=[]),
             "Import alias must not be empty",
         ),
         (
             "statistics",
+            YaraFile(imports=[Import(module="pe", alias="\t")], rules=[]),
+            "Import alias must not be empty",
+        ),
+        (
+            "statistics",
             YaraFile(rules=[Rule(name="", condition=BooleanLiteral(value=True))]),
+            "Rule name must not be empty",
+        ),
+        (
+            "statistics",
+            YaraFile(rules=[Rule(name="   ", condition=BooleanLiteral(value=True))]),
             "Rule name must not be empty",
         ),
         (
@@ -170,6 +185,11 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
         ),
         (
             "manifest",
+            YaraFile(includes=[Include(path="\t")], rules=[]),
+            "Include path must not be empty",
+        ),
+        (
+            "manifest",
             YaraFile(rules=[Rule(name="", condition=BooleanLiteral(value=True))]),
             "Rule name must not be empty",
         ),
@@ -192,7 +212,33 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
                 rules=[
                     Rule(
                         name="r",
+                        modifiers=["   "],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Rule modifiers must contain non-empty strings",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
                         tags=[Tag(name="")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Tag name must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        tags=[Tag(name="   ")],
                         condition=BooleanLiteral(value=True),
                     ),
                 ],
@@ -232,6 +278,19 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
                     Rule(
                         name="r",
                         strings=[PlainString(identifier="", value="abc")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "PlainString identifier must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        strings=[PlainString(identifier="   ", value="abc")],
                         condition=BooleanLiteral(value=True),
                     ),
                 ],
