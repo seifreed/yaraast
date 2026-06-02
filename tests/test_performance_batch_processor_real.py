@@ -69,9 +69,10 @@ def test_batch_processor_rejects_boolean_numeric_settings() -> None:
         processor.process_batch([1], None, batch_size=cast(Any, True))
 
 
-def test_batch_processor_rejects_empty_temp_dir() -> None:
+@pytest.mark.parametrize("temp_dir", ["", "   ", "\t"])
+def test_batch_processor_rejects_empty_temp_dir(temp_dir: str) -> None:
     with pytest.raises(ValueError, match="temp_dir must not be empty"):
-        BatchProcessor(temp_dir="")
+        BatchProcessor(temp_dir=temp_dir)
 
 
 @pytest.mark.parametrize("temp_dir", [False, 0, object()])
@@ -94,12 +95,16 @@ def test_batch_processor_rejects_single_string_file_paths(tmp_path: Path) -> Non
         BatchProcessor().process_files(cast(Any, str(path)), BatchOperation.PARSE)
 
 
-def test_batch_processor_process_files_rejects_empty_output_dir(tmp_path: Path) -> None:
+@pytest.mark.parametrize("output_dir", ["", "   ", "\t"])
+def test_batch_processor_process_files_rejects_empty_output_dir(
+    tmp_path: Path,
+    output_dir: str,
+) -> None:
     path = tmp_path / "single.yar"
     path.write_text("rule single { condition: true }", encoding="utf-8")
 
     with pytest.raises(ValueError, match="output_dir must not be empty"):
-        BatchProcessor().process_files([path], BatchOperation.HTML_TREE, output_dir="")
+        BatchProcessor().process_files([path], BatchOperation.HTML_TREE, output_dir=output_dir)
 
 
 @pytest.mark.parametrize("output_dir", [False, 123, object(), b"out"])
@@ -128,7 +133,11 @@ def test_batch_processor_process_files_rejects_file_output_dir(tmp_path: Path) -
         BatchProcessor().process_files([path], BatchOperation.HTML_TREE, output_dir=output_dir)
 
 
-def test_batch_processor_process_large_file_rejects_empty_output_dir(tmp_path: Path) -> None:
+@pytest.mark.parametrize("output_dir", ["", "   ", "\t"])
+def test_batch_processor_process_large_file_rejects_empty_output_dir(
+    tmp_path: Path,
+    output_dir: str,
+) -> None:
     path = tmp_path / "large.yar"
     path.write_text("rule large { condition: true }", encoding="utf-8")
 
@@ -136,7 +145,7 @@ def test_batch_processor_process_large_file_rejects_empty_output_dir(tmp_path: P
         BatchProcessor().process_large_file(
             path,
             [BatchOperation.SERIALIZE],
-            output_dir="",
+            output_dir=output_dir,
         )
 
 

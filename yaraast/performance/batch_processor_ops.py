@@ -197,7 +197,7 @@ def require_output_dir_path(output_dir: object) -> Path | None:
     raw_path = fspath(output_dir)
     if not isinstance(raw_path, str):
         raise TypeError(OUTPUT_DIR_TYPE_ERROR)
-    if not raw_path:
+    if not raw_path.strip():
         msg = "output_dir must not be empty"
         raise ValueError(msg)
     path = Path(raw_path)

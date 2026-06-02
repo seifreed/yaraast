@@ -110,7 +110,7 @@ class BatchProcessor:
         if not isinstance(raw_path, str):
             msg = "temp_dir must be a text path"
             raise TypeError(msg)
-        if not raw_path:
+        if not raw_path.strip():
             msg = "temp_dir must not be empty"
             raise ValueError(msg)
         return Path(raw_path)
