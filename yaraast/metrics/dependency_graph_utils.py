@@ -27,6 +27,9 @@ def _deserialize_string_list(value: object, context: str) -> list[str]:
 
 def _require_graph_node(value: object, context: str) -> str:
     if isinstance(value, str):
+        if not value.strip():
+            msg = f"{context} must not be empty"
+            raise ValidationError(msg)
         return value
     msg = f"{context} must be a string"
     raise ValidationError(msg)
@@ -90,7 +93,10 @@ class DependencyGraph:
             msg = "DependencyGraph data must be an object"
             raise ValidationError(msg)
 
-        nodes = _deserialize_string_list(data.get("nodes", []), "DependencyGraph nodes")
+        nodes = [
+            _require_graph_node(node, "DependencyGraph node")
+            for node in _deserialize_string_list(data.get("nodes", []), "DependencyGraph nodes")
+        ]
         raw_edges = data.get("edges", {})
         if not isinstance(raw_edges, Mapping):
             msg = "DependencyGraph edges must be an object"
@@ -101,10 +107,14 @@ class DependencyGraph:
             if not isinstance(from_node, str):
                 msg = "DependencyGraph edge names must be strings"
                 raise ValidationError(msg)
-            edges[from_node] = _deserialize_string_list(
-                to_nodes,
-                "DependencyGraph edge targets",
-            )
+            source = _require_graph_node(from_node, "DependencyGraph edge source")
+            edges[source] = [
+                _require_graph_node(target, "DependencyGraph edge target")
+                for target in _deserialize_string_list(
+                    to_nodes,
+                    "DependencyGraph edge targets",
+                )
+            ]
 
         self.nodes.clear()
         self.edges.clear()

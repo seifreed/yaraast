@@ -220,20 +220,44 @@ def test_dependency_graph_rejects_invalid_public_node_inputs_without_partial_upd
     graph = DependencyGraph()
     graph.add_edge("existing", "dependency")
 
+    with pytest.raises(ValidationError, match="DependencyGraph node must not be empty"):
+        graph.add_node("")
+    with pytest.raises(ValidationError, match="DependencyGraph node must not be empty"):
+        graph.add_node("   ")
     with pytest.raises(ValidationError, match="DependencyGraph node must be a string"):
         graph.add_node(cast(Any, object()))
+    with pytest.raises(ValidationError, match="DependencyGraph edge source must not be empty"):
+        graph.add_edge("", "dependency")
+    with pytest.raises(ValidationError, match="DependencyGraph edge source must not be empty"):
+        graph.add_edge("   ", "dependency")
     with pytest.raises(ValidationError, match="DependencyGraph edge source must be a string"):
         graph.add_edge(cast(Any, object()), "dependency")
+    with pytest.raises(ValidationError, match="DependencyGraph edge target must not be empty"):
+        graph.add_edge("existing", "")
+    with pytest.raises(ValidationError, match="DependencyGraph edge target must not be empty"):
+        graph.add_edge("existing", "\t")
     with pytest.raises(ValidationError, match="DependencyGraph edge target must be a string"):
         graph.add_edge("existing", cast(Any, object()))
+    with pytest.raises(ValidationError, match="DependencyGraph node must not be empty"):
+        graph.has_node("")
+    with pytest.raises(ValidationError, match="DependencyGraph node must not be empty"):
+        graph.has_node("   ")
     with pytest.raises(ValidationError, match="DependencyGraph node must be a string"):
         graph.has_node(cast(Any, object()))
+    with pytest.raises(ValidationError, match="DependencyGraph edge source must not be empty"):
+        graph.has_edge("", "dependency")
+    with pytest.raises(ValidationError, match="DependencyGraph edge target must not be empty"):
+        graph.has_edge("existing", "   ")
     with pytest.raises(ValidationError, match="DependencyGraph edge source must be a string"):
         graph.has_edge(cast(Any, object()), "dependency")
     with pytest.raises(ValidationError, match="DependencyGraph edge target must be a string"):
         graph.has_edge("existing", cast(Any, object()))
+    with pytest.raises(ValidationError, match="DependencyGraph node must not be empty"):
+        graph.get_dependencies("   ")
     with pytest.raises(ValidationError, match="DependencyGraph node must be a string"):
         graph.get_dependencies(cast(Any, object()))
+    with pytest.raises(ValidationError, match="DependencyGraph node must not be empty"):
+        graph.get_dependents("\t")
     with pytest.raises(ValidationError, match="DependencyGraph node must be a string"):
         graph.get_dependents(cast(Any, object()))
 
@@ -249,10 +273,16 @@ def test_dependency_graph_rejects_invalid_public_node_inputs_without_partial_upd
         ("graph", "DependencyGraph data must be an object"),
         ({"nodes": "abc"}, "DependencyGraph nodes must be a list of strings"),
         ({"nodes": [1]}, "DependencyGraph nodes must be a list of strings"),
+        ({"nodes": [""]}, "DependencyGraph node must not be empty"),
+        ({"nodes": ["   "]}, "DependencyGraph node must not be empty"),
         ({"edges": "abc"}, "DependencyGraph edges must be an object"),
         ({"edges": {1: ["a"]}}, "DependencyGraph edge names must be strings"),
+        ({"edges": {"": ["a"]}}, "DependencyGraph edge source must not be empty"),
+        ({"edges": {"   ": ["a"]}}, "DependencyGraph edge source must not be empty"),
         ({"edges": {"a": "b"}}, "DependencyGraph edge targets must be a list of strings"),
         ({"edges": {"a": [1]}}, "DependencyGraph edge targets must be a list of strings"),
+        ({"edges": {"a": [""]}}, "DependencyGraph edge target must not be empty"),
+        ({"edges": {"a": ["   "]}}, "DependencyGraph edge target must not be empty"),
     ],
 )
 def test_dependency_graph_from_dict_rejects_invalid_payloads_without_clearing(
