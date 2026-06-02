@@ -94,33 +94,43 @@ def test_visit_methods_track_usage_and_passthrough_nodes() -> None:
     )
 
 
-def test_binary_and_unary_expression_simplifications() -> None:
+def test_binary_and_unary_expressions_are_not_folded() -> None:
+    # Dead-code elimination must never rewrite expressions: folding a branch
+    # away here would orphan the strings it referenced (see
+    # test_dead_code_eliminator_does_not_orphan_strings_via_folding). Constant
+    # folding is ExpressionOptimizer's responsibility.
     dce = DeadCodeEliminator()
 
-    assert dce.visit_binary_expression(
-        BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False))
-    ) == BooleanLiteral(False)
-    assert dce.visit_binary_expression(
-        BinaryExpression(BooleanLiteral(True), "or", BooleanLiteral(False))
-    ) == BooleanLiteral(True)
-    assert dce.visit_binary_expression(
-        BinaryExpression(BooleanLiteral(False), "and", Identifier("x"))
-    ) == BooleanLiteral(False)
-    assert dce.visit_binary_expression(
-        BinaryExpression(BooleanLiteral(True), "or", Identifier("x"))
-    ) == BooleanLiteral(True)
-    assert dce.visit_binary_expression(
-        BinaryExpression(Identifier("x"), "and", BooleanLiteral(False))
-    ) == BooleanLiteral(False)
-    assert dce.visit_binary_expression(
-        BinaryExpression(Identifier("x"), "or", BooleanLiteral(True))
-    ) == BooleanLiteral(True)
+    binary = BinaryExpression(BooleanLiteral(True), "or", Identifier("x"))
+    assert dce.visit_binary_expression(binary) is binary
 
-    assert dce.visit_unary_expression(
-        UnaryExpression("not", BooleanLiteral(True))
-    ) == BooleanLiteral(False)
+    binary_and = BinaryExpression(Identifier("x"), "and", BooleanLiteral(False))
+    assert dce.visit_binary_expression(binary_and) is binary_and
+
+    unary = UnaryExpression("not", BooleanLiteral(True))
+    assert dce.visit_unary_expression(unary) is unary
     non_folded = UnaryExpression("-", BooleanLiteral(True))
     assert dce.visit_unary_expression(non_folded) is non_folded
+
+
+def test_dead_code_eliminator_does_not_orphan_strings_via_folding() -> None:
+    from yaraast.optimization.dead_code_eliminator import eliminate_dead_code
+    from yaraast.parser import Parser
+
+    # "true or $a" must not be folded to "true" while $a stays defined; that
+    # would make the rule reference no strings yet keep one, which libyara
+    # rejects as an unreferenced string.
+    ast = Parser('rule r { strings: $a = "aaa" condition: true or $a }').parse()
+    optimized, _ = eliminate_dead_code(ast)
+
+    rule = optimized.rules[0]
+    assert [s.identifier for s in rule.strings] == ["$a"]
+    # The surviving string must still be referenced by the surviving condition.
+    assert rule.condition is not None
+    from yaraast.codegen.generator import CodeGenerator
+
+    condition_text = CodeGenerator().visit(rule.condition)
+    assert "$a" in condition_text
 
 
 def test_visit_rule_and_file_filtering_paths() -> None:
@@ -687,8 +697,10 @@ def test_dead_code_eliminator_does_not_mutate_source_conditions() -> None:
     optimized, count = DeadCodeEliminator().eliminate(ast)
 
     assert count == 0
+    # Dead-code elimination does not fold expressions, so the condition is
+    # structurally preserved (constant folding is ExpressionOptimizer's job).
     assert optimized.rules[0].condition == BinaryExpression(
-        BooleanLiteral(False),
+        BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False)),
         "or",
         StringIdentifier("$used"),
     )

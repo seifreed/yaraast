@@ -689,57 +689,25 @@ class DeadCodeEliminator(ASTTransformer):
         return node
 
     def visit_binary_expression(self, node: Any) -> Any:
-        """Visit BinaryExpression and optimize if possible."""
-        # Visit children first
+        """Traverse a BinaryExpression without rewriting it.
+
+        Dead-code elimination must not fold or simplify expressions: usage is
+        collected from the original condition, so folding away a branch here
+        (e.g. ``true or $a`` -> ``true``) would silently orphan the strings it
+        referenced and leave them defined but unreferenced. Constant folding is
+        the responsibility of :class:`ExpressionOptimizer`, which
+        :class:`RuleOptimizer` runs before this pass.
+        """
         node.left = self.visit(node.left)
         node.right = self.visit(node.right)
-
-        # Constant folding for boolean literals
-        if isinstance(node.left, BooleanLiteral) and isinstance(
-            node.right,
-            BooleanLiteral,
-        ):
-            left_value = _boolean_literal_value(node.left)
-            right_value = _boolean_literal_value(node.right)
-            if left_value is None or right_value is None:
-                return node
-            if node.operator == "and":
-                return BooleanLiteral(value=left_value and right_value)
-            if node.operator == "or":
-                return BooleanLiteral(value=left_value or right_value)
-
-        # Simplifications
-        if isinstance(node.left, BooleanLiteral):
-            left_value = _boolean_literal_value(node.left)
-            if left_value is None:
-                return node
-            if node.operator == "and" and not left_value:
-                return BooleanLiteral(value=False)
-            if node.operator == "or" and left_value:
-                return BooleanLiteral(value=True)
-
-        if isinstance(node.right, BooleanLiteral):
-            right_value = _boolean_literal_value(node.right)
-            if right_value is None:
-                return node
-            if node.operator == "and" and not right_value:
-                return BooleanLiteral(value=False)
-            if node.operator == "or" and right_value:
-                return BooleanLiteral(value=True)
-
         return node
 
     def visit_unary_expression(self, node: Any) -> Any:
-        """Visit UnaryExpression and optimize if possible."""
+        """Traverse a UnaryExpression without rewriting it.
+
+        See :meth:`visit_binary_expression` for why this pass never folds.
+        """
         node.operand = self.visit(node.operand)
-
-        # Optimize not on boolean literal
-        if node.operator == "not" and isinstance(node.operand, BooleanLiteral):
-            operand_value = _boolean_literal_value(node.operand)
-            if operand_value is None:
-                return node
-            return BooleanLiteral(value=not operand_value)
-
         return node
 
     def eliminate_dead_code(self, rule: Rule) -> Rule:
