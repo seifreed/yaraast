@@ -71,6 +71,22 @@ def test_parse_for_expression_success_and_error_paths() -> None:
         _expr_parser("any of them :")._parse_for_expression()
 
 
+def test_multi_variable_for_loop_round_trips() -> None:
+    from yaraast.codegen.generator import CodeGenerator
+
+    source = 'rule r { condition: for any k,v in pe.version_info : ( k == "x" ) }'
+    ast = Parser().parse(source)
+    assert isinstance(ast.rules[0].condition, ForExpression)
+    assert ast.rules[0].condition.variable == "k,v"
+
+    generated = CodeGenerator().generate(ast)
+    assert "for any k, v in pe.version_info" in generated
+
+    reparsed = Parser().parse(generated)
+    assert isinstance(reparsed.rules[0].condition, ForExpression)
+    assert reparsed.rules[0].condition.variable == "k,v"
+
+
 def test_parse_for_of_does_not_consume_outer_boolean_expression() -> None:
     ast = Parser().parse('rule r { strings: $a = "a" condition: for any of them : ($) and true }')
     condition = ast.rules[0].condition

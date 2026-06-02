@@ -147,8 +147,17 @@ def visit_for_expression(generator: Any, node: Any) -> str:
         iterable = f"({iterable})"
     body = generator.visit(node.body)
     quantifier = _render_for_quantifier(generator, node.quantifier)
-    variable = validate_yara_identifier(node.variable, "loop variable")
+    variable = _render_for_loop_variable(node.variable)
     return f"for {quantifier} {variable} in {iterable} : ({body})"
+
+
+def _render_for_loop_variable(variable: Any) -> str:
+    if not isinstance(variable, str):
+        return validate_yara_identifier(variable, "loop variable")
+    names = [part.strip() for part in variable.split(",")]
+    if len(names) == 1:
+        return validate_yara_identifier(variable, "loop variable")
+    return ", ".join(validate_yara_identifier(name, "loop variable") for name in names)
 
 
 def _render_for_quantifier(generator: Any, quantifier: Any) -> str:
