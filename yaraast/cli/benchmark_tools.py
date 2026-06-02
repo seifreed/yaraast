@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from os import PathLike, fspath
 from pathlib import Path
 import statistics
 import time
@@ -12,6 +13,24 @@ from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.parser.source import parse_yara_source
 from yaraast.shared.numeric_validation import validate_positive_int_setting
 from yaraast.yarax.generator import YaraXGenerator
+
+
+def _require_benchmark_file_path(file_path: object) -> Path:
+    if isinstance(file_path, bool | bytes) or not isinstance(file_path, str | PathLike):
+        msg = "file_path must be a string or path-like object"
+        raise TypeError(msg)
+    raw_path = fspath(file_path)
+    if not isinstance(raw_path, str):
+        msg = "file_path must be a string or path-like object"
+        raise TypeError(msg)
+    if not raw_path:
+        msg = "file_path must not be empty"
+        raise ValueError(msg)
+    path = Path(raw_path)
+    if path.exists() and path.is_dir():
+        msg = "file_path must not be a directory"
+        raise ValueError(msg)
+    return path
 
 
 @dataclass
@@ -41,14 +60,14 @@ class ASTBenchmarker:
 
     def benchmark_parsing(
         self,
-        file_path: Path,
+        file_path: str | PathLike[str],
         iterations: int = 10,
     ) -> BenchmarkResult:
         """Benchmark parsing performance."""
         self._validate_iterations(iterations)
         try:
             # Read file once
-            with Path(file_path).open(encoding="utf-8") as f:
+            with _require_benchmark_file_path(file_path).open(encoding="utf-8") as f:
                 content = f.read()
 
             file_size = len(content.encode())
@@ -97,14 +116,14 @@ class ASTBenchmarker:
 
     def benchmark_codegen(
         self,
-        file_path: Path,
+        file_path: str | PathLike[str],
         iterations: int = 10,
     ) -> BenchmarkResult:
         """Benchmark code generation performance."""
         self._validate_iterations(iterations)
         try:
             # Parse file once
-            with Path(file_path).open(encoding="utf-8") as f:
+            with _require_benchmark_file_path(file_path).open(encoding="utf-8") as f:
                 content = f.read()
 
             file_size = len(content.encode())
@@ -154,7 +173,7 @@ class ASTBenchmarker:
 
     def benchmark_roundtrip(
         self,
-        file_path: Path,
+        file_path: str | PathLike[str],
         iterations: int = 5,
     ) -> list[BenchmarkResult]:
         """Benchmark full parse->generate roundtrip."""
@@ -162,7 +181,7 @@ class ASTBenchmarker:
         results = []
 
         try:
-            with Path(file_path).open(encoding="utf-8") as f:
+            with _require_benchmark_file_path(file_path).open(encoding="utf-8") as f:
                 content = f.read()
 
             file_size = len(content.encode())
