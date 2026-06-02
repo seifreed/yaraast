@@ -106,6 +106,15 @@ def test_dependency_graph_render_rejects_empty_output_path() -> None:
         render_graph(SimpleNamespace(source="digraph G {}"), "", "dot")
 
 
+def test_dependency_graph_render_rejects_empty_pathlike_output_path() -> None:
+    class EmptyPathLike:
+        def __fspath__(self) -> str:
+            return ""
+
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        render_graph(SimpleNamespace(source="digraph G {}"), cast(Any, EmptyPathLike()), "dot")
+
+
 def test_dependency_graph_render_rejects_directory_output_path(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="output_path must not be a directory"):
         render_graph(SimpleNamespace(source="digraph G {}"), tmp_path, "dot")
