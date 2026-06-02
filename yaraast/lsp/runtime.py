@@ -8,7 +8,6 @@ from typing import Any
 
 from lsprotocol.types import Location, Position, SymbolInformation, TextEdit
 
-from yaraast.config import DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
 from yaraast.lsp.document_context import DocumentContext
 from yaraast.lsp.document_types import (
     LanguageMode,
@@ -308,7 +307,7 @@ class LspRuntime:
                 self._mark_dirty(doc.uri)
         if "diagnosticsDebounceMs" in settings:
             self.config.diagnostics_debounce_ms = _parse_non_negative_int_setting(
-                settings["diagnosticsDebounceMs"], DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
+                settings["diagnosticsDebounceMs"], self.config.diagnostics_debounce_ms
             )
         if not self.config.cache_workspace:
             self.documents = {uri: doc for uri, doc in self.documents.items() if doc.is_open}

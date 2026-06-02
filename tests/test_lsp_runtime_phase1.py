@@ -396,14 +396,20 @@ def test_runtime_config_rejects_invalid_diagnostics_debounce_scalars() -> None:
     runtime = LspRuntime()
     default_debounce = runtime.config.diagnostics_debounce_ms
 
-    runtime.update_config({"YARA": {"diagnosticsDebounceMs": 150}})
-    assert runtime.config.diagnostics_debounce_ms == 150
-
     runtime.update_config({"YARA": {"diagnosticsDebounceMs": True}})
     assert runtime.config.diagnostics_debounce_ms == default_debounce
 
     runtime.update_config({"YARA": {"diagnosticsDebounceMs": 1.5}})
     assert runtime.config.diagnostics_debounce_ms == default_debounce
+
+    runtime.update_config({"YARA": {"diagnosticsDebounceMs": 150}})
+    assert runtime.config.diagnostics_debounce_ms == 150
+
+    runtime.update_config({"YARA": {"diagnosticsDebounceMs": True}})
+    assert runtime.config.diagnostics_debounce_ms == 150
+
+    runtime.update_config({"YARA": {"diagnosticsDebounceMs": 1.5}})
+    assert runtime.config.diagnostics_debounce_ms == 150
 
     runtime.update_config({"YARA": {"diagnosticsDebounceMs": "250"}})
     assert runtime.config.diagnostics_debounce_ms == 250
