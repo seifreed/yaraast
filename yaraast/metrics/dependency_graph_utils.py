@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 from yaraast.ast.base import require_yara_file
 from yaraast.errors import ValidationError
 from yaraast.metrics.dependency_graph_finder import DependencyFinder
+from yaraast.metrics.dependency_graph_helpers import require_output_path
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -267,7 +268,7 @@ def export_dependency_graph(
     format: str = "json",
 ) -> None:
     """Export dependency graph to file."""
-    output_path = Path(output_path)
+    output_path = require_output_path(output_path)
 
     if format == "json":
         with open(output_path, "w", encoding="utf-8") as f:
