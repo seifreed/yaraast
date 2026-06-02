@@ -200,22 +200,28 @@ def test_ast_benchmarker_reports_invalid_file_paths(tmp_path: Path) -> None:
         method = getattr(benchmarker, method_name)
 
         empty = method("", iterations=1)
+        whitespace = method("   ", iterations=1)
         directory = method(tmp_path, iterations=1)
         invalid_type = method(cast(Any, False), iterations=1)
 
         assert empty.success is False
         assert empty.error == "file_path must not be empty"
+        assert whitespace.success is False
+        assert whitespace.error == "file_path must not be empty"
         assert directory.success is False
         assert directory.error == "file_path must not be a directory"
         assert invalid_type.success is False
         assert invalid_type.error == "file_path must be a string or path-like object"
 
     roundtrip_empty = benchmarker.benchmark_roundtrip("", iterations=1)[0]
+    roundtrip_whitespace = benchmarker.benchmark_roundtrip("   ", iterations=1)[0]
     roundtrip_directory = benchmarker.benchmark_roundtrip(tmp_path, iterations=1)[0]
     roundtrip_invalid_type = benchmarker.benchmark_roundtrip(cast(Any, False), iterations=1)[0]
 
     assert roundtrip_empty.success is False
     assert roundtrip_empty.error == "file_path must not be empty"
+    assert roundtrip_whitespace.success is False
+    assert roundtrip_whitespace.error == "file_path must not be empty"
     assert roundtrip_directory.success is False
     assert roundtrip_directory.error == "file_path must not be a directory"
     assert roundtrip_invalid_type.success is False

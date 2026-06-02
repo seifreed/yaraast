@@ -19,7 +19,7 @@ def _optional_output_path(output: object, name: str = "output") -> Path | None:
     if not isinstance(raw_path, str):
         msg = f"{name} path must be a file path"
         raise TypeError(msg)
-    if not raw_path:
+    if not raw_path.strip():
         msg = f"{name} path must not be empty"
         raise ValueError(msg)
     output_path = Path(raw_path)

@@ -96,7 +96,10 @@ def _require_collect_input_path(raw_path: object) -> Path:
         msg = "input path must be a string or path-like object"
         raise TypeError(msg)
     path_text = fspath(raw_path)
-    if not path_text:
+    if not isinstance(path_text, str):
+        msg = "input path must be a string or path-like object"
+        raise TypeError(msg)
+    if not path_text.strip():
         msg = "input path must not be empty"
         raise ValueError(msg)
     return Path(path_text)

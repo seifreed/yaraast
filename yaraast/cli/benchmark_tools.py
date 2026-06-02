@@ -23,7 +23,7 @@ def _require_benchmark_file_path(file_path: object) -> Path:
     if not isinstance(raw_path, str):
         msg = "file_path must be a string or path-like object"
         raise TypeError(msg)
-    if not raw_path:
+    if not raw_path.strip():
         msg = "file_path must not be empty"
         raise ValueError(msg)
     path = Path(raw_path)

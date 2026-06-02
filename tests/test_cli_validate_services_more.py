@@ -43,9 +43,10 @@ def test_read_test_data_rejects_invalid_path_types(test_data_path: Any) -> None:
         vs.read_test_data(cast(Any, test_data_path))
 
 
-def test_read_test_data_rejects_empty_path() -> None:
+@pytest.mark.parametrize("path", ["", "   ", "\t"])
+def test_read_test_data_rejects_empty_path(path: str) -> None:
     with pytest.raises(ValueError, match="test data path cannot be empty"):
-        vs.read_test_data("")
+        vs.read_test_data(path)
 
 
 def test_read_test_data_rejects_empty_pathlike_path() -> None:

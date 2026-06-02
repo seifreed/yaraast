@@ -37,18 +37,19 @@ def test_cli_utils_reject_invalid_path_types(path: Any) -> None:
         utils.parse_yara_file(cast(Any, path))
 
 
-def test_cli_utils_reject_empty_path() -> None:
+@pytest.mark.parametrize("path", ["", "   ", "\t"])
+def test_cli_utils_reject_empty_path(path: str) -> None:
     with pytest.raises(ValueError, match="path must not be empty"):
-        utils.read_text("")
+        utils.read_text(path)
 
     with pytest.raises(ValueError, match="path must not be empty"):
-        utils.write_text("", "content")
+        utils.write_text(path, "content")
 
     with pytest.raises(ValueError, match="path must not be empty"):
-        utils.write_json("", {"value": 1})
+        utils.write_json(path, {"value": 1})
 
     with pytest.raises(ValueError, match="path must not be empty"):
-        utils.parse_yara_file("")
+        utils.parse_yara_file(path)
 
 
 def test_cli_utils_reject_empty_pathlike_path() -> None:

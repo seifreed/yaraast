@@ -64,14 +64,15 @@ def test_display_export_import_and_diff_messages(tmp_path: Path) -> None:
     assert "Diff saved to" in out
 
 
-def test_display_export_import_reject_empty_output_path() -> None:
+@pytest.mark.parametrize("output", ["", "   ", "\t"])
+def test_display_export_import_reject_empty_output_path(output: str) -> None:
     console = Console(record=True, width=120)
 
     with pytest.raises(ValueError, match="output path must not be empty"):
-        sr.display_export_result(console, "{}", "json", output="", pretty=True, stats=None)
+        sr.display_export_result(console, "{}", "json", output=output, pretty=True, stats=None)
 
     with pytest.raises(ValueError, match="output path must not be empty"):
-        sr.display_import_result(console, "in.json", "json", _Ast(), output="")
+        sr.display_import_result(console, "in.json", "json", _Ast(), output=output)
 
 
 def test_display_export_import_reject_empty_pathlike_output_path() -> None:

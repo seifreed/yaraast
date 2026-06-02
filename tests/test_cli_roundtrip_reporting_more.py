@@ -52,20 +52,21 @@ def test_display_pipeline_result_manifest_header_without_content(
     assert "Includes: 1" in out
 
 
-def test_roundtrip_display_helpers_reject_empty_output_path() -> None:
+@pytest.mark.parametrize("output", ["", "   ", "\t"])
+def test_roundtrip_display_helpers_reject_empty_output_path(output: str) -> None:
     ast = _Ast()
 
     with pytest.raises(ValueError, match="output path must not be empty"):
-        rr.display_serialize_result("", "json", ast, False, False, "serialized")
+        rr.display_serialize_result(output, "json", ast, False, False, "serialized")
 
     with pytest.raises(ValueError, match="output path must not be empty"):
-        rr.display_deserialize_result("", "json", ast, False, "rule x { condition: true }")
+        rr.display_deserialize_result(output, "json", ast, False, "rule x { condition: true }")
 
     with pytest.raises(ValueError, match="output path must not be empty"):
-        rr.display_pretty_result("", "compact", ast, 2, 80, "formatted")
+        rr.display_pretty_result(output, "compact", ast, 2, 80, "formatted")
 
     with pytest.raises(ValueError, match="output path must not be empty"):
-        rr.display_pipeline_result("", "yaml: 1", True, "manifest: 1", ast)
+        rr.display_pipeline_result(output, "yaml: 1", True, "manifest: 1", ast)
 
 
 def test_roundtrip_display_helpers_reject_empty_pathlike_output_path() -> None:

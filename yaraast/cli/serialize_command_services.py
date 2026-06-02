@@ -76,7 +76,7 @@ def build_diff_output_path(
     if not isinstance(raw_path, str):
         msg = "output path must be a file path"
         raise TypeError(msg)
-    if not raw_path:
+    if not raw_path.strip():
         msg = "output path must not be empty"
         raise ValueError(msg)
     output_path = Path(raw_path)

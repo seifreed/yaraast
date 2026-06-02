@@ -77,9 +77,10 @@ def test_collect_file_paths_rejects_invalid_path_types(raw_path: Any) -> None:
         ps.collect_file_paths((cast(Any, raw_path),))
 
 
-def test_collect_file_paths_rejects_empty_path() -> None:
+@pytest.mark.parametrize("raw_path", ["", "   ", "\t"])
+def test_collect_file_paths_rejects_empty_path(raw_path: str) -> None:
     with pytest.raises(ValueError, match="input path must not be empty"):
-        ps.collect_file_paths(("",))
+        ps.collect_file_paths((raw_path,))
 
 
 def test_extract_successful_asts_and_file_name_mapping_paths(tmp_path: Path) -> None:

@@ -121,12 +121,16 @@ def test_simple_ast_differ_diff_directories_includes_yara_files(tmp_path: Path) 
     assert added.summary["added"] > 0
 
 
-def test_simple_ast_differ_diff_directories_rejects_empty_directory(tmp_path: Path) -> None:
+@pytest.mark.parametrize("directory", ["", "   ", "\t"])
+def test_simple_ast_differ_diff_directories_rejects_empty_directory(
+    tmp_path: Path,
+    directory: str,
+) -> None:
     with pytest.raises(ValueError, match="dir1 must not be empty"):
-        SimpleASTDiffer().diff_directories("", tmp_path)
+        SimpleASTDiffer().diff_directories(directory, tmp_path)
 
     with pytest.raises(ValueError, match="dir2 must not be empty"):
-        SimpleASTDiffer().diff_directories(tmp_path, "")
+        SimpleASTDiffer().diff_directories(tmp_path, directory)
 
 
 @pytest.mark.parametrize("directory", [None, False, 123, object(), b"."])

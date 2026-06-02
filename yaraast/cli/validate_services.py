@@ -76,7 +76,7 @@ def read_test_data(test_data_path: str | PathLike[str] | None) -> bytes | None:
     if not isinstance(raw_path, str):
         msg = "test data path must be a string or path-like object"
         raise TypeError(msg)
-    if not raw_path:
+    if not raw_path.strip():
         msg = "test data path cannot be empty"
         raise ValueError(msg)
 
