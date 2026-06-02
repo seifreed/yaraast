@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -26,6 +26,15 @@ def test_build_diff_output_path_uses_explicit_output(tmp_path: Path) -> None:
 def test_build_diff_output_path_rejects_empty_output_path() -> None:
     with pytest.raises(ValueError, match="output path must not be empty"):
         build_diff_output_path("old.yar", "new.yar", "", "json")
+
+
+def test_build_diff_output_path_rejects_empty_pathlike_output_path() -> None:
+    class EmptyPathLike:
+        def __fspath__(self) -> str:
+            return ""
+
+    with pytest.raises(ValueError, match="output path must not be empty"):
+        build_diff_output_path("old.yar", "new.yar", cast(Any, EmptyPathLike()), "json")
 
 
 def test_build_diff_output_path_rejects_directory_output_path(tmp_path: Path) -> None:
