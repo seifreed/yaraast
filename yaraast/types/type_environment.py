@@ -58,6 +58,10 @@ def _normalize_rule_name(rule_name: str) -> str:
     return _normalize_identifier(rule_name, "TypeEnvironment rule name", "rule")
 
 
+def _normalize_rule_pattern_prefix(prefix: str) -> str:
+    return _normalize_identifier(prefix, "TypeEnvironment rule pattern", "rule pattern")
+
+
 class TypeEnvironment:
     """Type environment for tracking variable types."""
 
@@ -168,4 +172,5 @@ class TypeEnvironment:
         prefix = pattern[:-1]
         if not prefix:
             return False
+        prefix = _normalize_rule_pattern_prefix(prefix)
         return any(rule_name.startswith(prefix) for rule_name in self.rules)

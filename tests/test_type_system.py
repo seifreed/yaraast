@@ -891,6 +891,8 @@ class TestTypeEnvironment:
             env.add_rule(cast(Any, object()))
         with pytest.raises(TypeError, match="TypeEnvironment rule name must be a string"):
             env.has_rule(cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment rule pattern must be a string"):
+            env.has_rule_pattern(cast(Any, object()))
 
         assert env.lookup("x") is not None
         assert env.modules == {"pe"}
@@ -948,6 +950,19 @@ class TestTypeEnvironment:
         assert env.strings == {"$s"}
         assert env.anonymous_strings == set()
         assert env.rules == {"rule1"}
+
+    @pytest.mark.parametrize("pattern", ["bad-name*", "1bad*", "for*"])
+    def test_type_environment_has_rule_pattern_rejects_invalid_prefixes(
+        self,
+        pattern: str,
+    ) -> None:
+        env = TypeEnvironment()
+        env.add_rule("format_rule")
+
+        with pytest.raises(ValueError, match="Invalid rule pattern identifier"):
+            env.has_rule_pattern(pattern)
+
+        assert env.rules == {"format_rule"}
 
     @pytest.mark.parametrize("rule_name", ["bad-name", "rule*", "*", "for"])
     def test_type_environment_rejects_invalid_rule_names_without_partial_update(

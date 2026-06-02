@@ -390,6 +390,21 @@ def test_validate_rule_wildcard_does_not_report_string_pattern_error() -> None:
     assert not any("Undefined string pattern '$a*'" in message for message in messages)
 
 
+def test_validate_rule_rejects_invalid_rule_wildcard_prefix() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="format_rule", condition=BooleanLiteral(True)),
+            Rule(name="consumer", condition=OfExpression("any", StringWildcard("for*"))),
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any("Invalid rule pattern identifier: for" in message for message in messages)
+
+
 def test_validate_rule_detects_invalid_condition_type() -> None:
     rule = Rule(
         name="bad_type",
