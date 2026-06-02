@@ -20,7 +20,8 @@ def generate_complexity_report(ast: YaraFile) -> dict[str, Any]:
     rules_data = []
     for rule in ast.rules:
         complexity = calculate_rule_complexity(rule)
-        cyclomatic = metrics.cyclomatic_complexity.get(rule.name, 1)
+        metric_key = analyzer._metric_key_for_rule(rule)
+        cyclomatic = metrics.cyclomatic_complexity.get(metric_key, 1)
         cognitive = (
             calculate_cognitive_complexity(rule.condition) if rule.condition is not None else 0
         )

@@ -292,6 +292,35 @@ def test_complexity_metrics_preserve_duplicate_rule_occurrences() -> None:
     assert metrics.unused_strings == ["dup#1:$unused_first", "dup#2:$unused_second"]
 
 
+def test_complexity_report_uses_occurrence_keys_for_duplicate_rule_names() -> None:
+    code = """
+    rule first {
+        condition:
+            2 of ($x*) and (true or false) and (1 < 2)
+    }
+
+    rule second {
+        strings:
+            $x = "x"
+        condition:
+            $x
+    }
+    """
+    ast = Parser().parse(dedent(code))
+    ast.rules[0].name = "dup"
+    ast.rules[1].name = "dup"
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+    report = generate_complexity_report(ast)
+
+    # The report must surface each occurrence's real cyclomatic complexity
+    # rather than silently falling back to the default of 1 because it looked
+    # the value up by the bare duplicated name.
+    expected = [metrics.cyclomatic_complexity["dup#1"], metrics.cyclomatic_complexity["dup#2"]]
+    assert expected[0] > 1
+    assert [rule["cyclomatic_complexity"] for rule in report["rules"]] == expected
+
+
 def test_complexity_analyzer_calculates_falsy_present_rule_condition() -> None:
     class FalsyBinaryExpression(BinaryExpression):
         def __bool__(self) -> bool:
