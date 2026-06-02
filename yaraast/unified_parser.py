@@ -22,7 +22,7 @@ def _require_text_file_path(file_path: object) -> Path:
     if not isinstance(file_path, str | Path):
         msg = "YARA file path must be a string or Path"
         raise TypeError(msg)
-    if isinstance(file_path, str) and not file_path:
+    if isinstance(file_path, str) and not file_path.strip():
         msg = "YARA file path must not be empty"
         raise ValueError(msg)
     return Path(file_path) if isinstance(file_path, str) else file_path

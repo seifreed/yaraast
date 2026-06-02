@@ -25,9 +25,10 @@ def test_unified_parser_parse_file_rejects_invalid_path_types(file_path: Any) ->
         UnifiedParser.parse_file(cast(Any, file_path))
 
 
-def test_unified_parser_parse_file_rejects_empty_path() -> None:
+@pytest.mark.parametrize("file_path", ["", "   ", "\t"])
+def test_unified_parser_parse_file_rejects_empty_path(file_path: str) -> None:
     with pytest.raises(ValueError, match="YARA file path must not be empty"):
-        UnifiedParser.parse_file("")
+        UnifiedParser.parse_file(file_path)
 
 
 def test_unified_parser_parse_file_rejects_directory_path(tmp_path: Path) -> None:
@@ -41,9 +42,10 @@ def test_unified_parser_detect_file_dialect_rejects_invalid_path_types(file_path
         UnifiedParser.detect_file_dialect(cast(Any, file_path))
 
 
-def test_unified_parser_detect_file_dialect_rejects_empty_path() -> None:
+@pytest.mark.parametrize("file_path", ["", "   ", "\t"])
+def test_unified_parser_detect_file_dialect_rejects_empty_path(file_path: str) -> None:
     with pytest.raises(ValueError, match="YARA file path must not be empty"):
-        UnifiedParser.detect_file_dialect("")
+        UnifiedParser.detect_file_dialect(file_path)
 
 
 def test_unified_parser_detect_file_dialect_rejects_directory_path(tmp_path: Path) -> None:

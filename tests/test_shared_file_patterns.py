@@ -10,9 +10,10 @@ import pytest
 from yaraast.shared.file_patterns import iter_matching_files, normalize_file_patterns
 
 
-def test_iter_matching_files_rejects_empty_directory() -> None:
+@pytest.mark.parametrize("directory", ["", "   ", "\t"])
+def test_iter_matching_files_rejects_empty_directory(directory: str) -> None:
     with pytest.raises(ValueError, match="directory must not be empty"):
-        list(iter_matching_files(""))
+        list(iter_matching_files(directory))
 
 
 @pytest.mark.parametrize("directory", [None, False, 123, object(), b"."])

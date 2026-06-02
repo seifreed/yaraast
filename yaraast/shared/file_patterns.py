@@ -40,7 +40,7 @@ def iter_matching_files(
     raw_path = fspath(directory)
     if not isinstance(raw_path, str):
         raise TypeError(DIRECTORY_TYPE_ERROR)
-    if not raw_path:
+    if not raw_path.strip():
         msg = "directory must not be empty"
         raise ValueError(msg)
     directory_path = Path(raw_path)
