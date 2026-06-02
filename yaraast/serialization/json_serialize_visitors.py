@@ -11,6 +11,18 @@ from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.pragma_scopes import serialize_pragma_scope
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+_WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS = frozenset(
+    {
+        "RegexLiteral pattern",
+        "RegexString regex",
+    }
+)
+
+
+def _is_empty_nonempty_text(text: str, context: str) -> bool:
+    return not text or (
+        not text.strip() and context not in _WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS
+    )
 
 
 def _serialize_required_string(value, context: str) -> str:
@@ -22,7 +34,7 @@ def _serialize_required_string(value, context: str) -> str:
 
 def _serialize_required_nonempty_string(value, context: str) -> str:
     text = _serialize_required_string(value, context)
-    if not text:
+    if _is_empty_nonempty_text(text, context):
         msg = f"{context} must not be empty"
         raise SerializationError(msg)
     return text
@@ -36,7 +48,7 @@ def _serialize_nullable_string(value, context: str) -> str | None:
 
 def _serialize_nullable_nonempty_string(value, context: str) -> str | None:
     text = _serialize_nullable_string(value, context)
-    if text == "":
+    if text is not None and _is_empty_nonempty_text(text, context):
         msg = f"{context} must not be empty"
         raise SerializationError(msg)
     return text
@@ -51,7 +63,7 @@ def _serialize_string_list(values, context: str) -> list[str]:
 
 def _serialize_nonempty_string_list(values, context: str) -> list[str]:
     items = _serialize_string_list(values, context)
-    if any(not item for item in items):
+    if any(_is_empty_nonempty_text(item, context) for item in items):
         msg = f"{context} must contain non-empty strings"
         raise SerializationError(msg)
     return items

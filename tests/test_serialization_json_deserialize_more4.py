@@ -107,17 +107,26 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Import module must not be empty"):
         s._deserialize_import({"module": ""})
 
+    with pytest.raises(SerializationError, match="Import module must not be empty"):
+        s._deserialize_import({"module": "   "})
+
     with pytest.raises(SerializationError, match="Import alias must be a string"):
         s._deserialize_import({"module": "pe", "alias": True})
 
     with pytest.raises(SerializationError, match="Import alias must not be empty"):
         s._deserialize_import({"module": "pe", "alias": ""})
 
+    with pytest.raises(SerializationError, match="Import alias must not be empty"):
+        s._deserialize_import({"module": "pe", "alias": "\t"})
+
     with pytest.raises(SerializationError, match="Include path must be a string"):
         s._deserialize_include({"path": ["x.yar"]})
 
     with pytest.raises(SerializationError, match="Include path must not be empty"):
         s._deserialize_include({"path": ""})
+
+    with pytest.raises(SerializationError, match="Include path must not be empty"):
+        s._deserialize_include({"path": "   "})
 
     with pytest.raises(SerializationError, match="Rule name must be a string"):
         s._deserialize_rule({"name": ["r1"], "condition": None})
@@ -134,11 +143,26 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
             }
         )
 
+    with pytest.raises(SerializationError, match="Rule name must not be empty"):
+        s._deserialize_rule(
+            {
+                "name": "   ",
+                "modifiers": [],
+                "tags": [],
+                "meta": [],
+                "strings": [],
+                "condition": true_expr,
+            }
+        )
+
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         s._deserialize_tag({"name": 7})
 
     with pytest.raises(SerializationError, match="Tag name must not be empty"):
         s._deserialize_tag({"name": ""})
+
+    with pytest.raises(SerializationError, match="Tag name must not be empty"):
+        s._deserialize_tag({"name": "   "})
 
     with pytest.raises(SerializationError, match="Meta key must be a string"):
         s._deserialize_meta({"key": ["author"], "value": "me"})

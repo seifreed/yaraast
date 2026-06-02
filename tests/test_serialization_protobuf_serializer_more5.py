@@ -1298,10 +1298,20 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
     ("ast", "message"),
     [
         (YaraFile(imports=[Import("")]), "Import module must not be empty"),
+        (YaraFile(imports=[Import("   ")]), "Import module must not be empty"),
         (YaraFile(includes=[Include("")]), "Include path must not be empty"),
+        (YaraFile(includes=[Include("\t")]), "Include path must not be empty"),
         (YaraFile(rules=[Rule("", condition=BooleanLiteral(True))]), "Rule name must not be empty"),
         (
+            YaraFile(rules=[Rule("   ", condition=BooleanLiteral(True))]),
+            "Rule name must not be empty",
+        ),
+        (
             YaraFile(rules=[Rule("r", tags=[Tag("")], condition=BooleanLiteral(True))]),
+            "Tag name must not be empty",
+        ),
+        (
+            YaraFile(rules=[Rule("r", tags=[Tag("   ")], condition=BooleanLiteral(True))]),
             "Tag name must not be empty",
         ),
         (
@@ -1310,6 +1320,18 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
                     Rule(
                         "r",
                         strings=[PlainString(identifier="", value="abc")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "PlainString identifier must not be empty",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "r",
+                        strings=[PlainString(identifier="   ", value="abc")],
                         condition=BooleanLiteral(True),
                     )
                 ]
@@ -1381,10 +1403,15 @@ def test_protobuf_serializer_rejects_empty_top_level_identifier_fields(
     ("payload_kind", "message"),
     [
         ("import", "Import module must not be empty"),
+        ("import_whitespace", "Import module must not be empty"),
         ("include", "Include path must not be empty"),
+        ("include_whitespace", "Include path must not be empty"),
         ("rule", "Rule name must not be empty"),
+        ("rule_whitespace", "Rule name must not be empty"),
         ("tag", "Tag name must not be empty"),
+        ("tag_whitespace", "Tag name must not be empty"),
         ("string", "PlainString identifier must not be empty"),
+        ("string_whitespace", "PlainString identifier must not be empty"),
         ("extern_rule", "ExternRule name must not be empty"),
         ("extern_import", "ExternImport module_path must not be empty"),
         ("extern_import_whitespace", "ExternImport module_path must not be empty"),
@@ -1399,20 +1426,40 @@ def test_protobuf_deserializer_rejects_empty_top_level_identifier_fields(
     pb_file = yara_ast_pb2.YaraFile()
     if payload_kind == "import":
         pb_file.imports.add()
+    elif payload_kind == "import_whitespace":
+        pb_file.imports.add().module = "   "
     elif payload_kind == "include":
         pb_file.includes.add()
+    elif payload_kind == "include_whitespace":
+        pb_file.includes.add().path = "\t"
     elif payload_kind == "rule":
         pb_file.rules.add().condition.boolean_literal.value = True
+    elif payload_kind == "rule_whitespace":
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "   "
+        pb_rule.condition.boolean_literal.value = True
     elif payload_kind == "tag":
         pb_rule = pb_file.rules.add()
         pb_rule.name = "r"
         pb_rule.condition.boolean_literal.value = True
         pb_rule.tags.add()
+    elif payload_kind == "tag_whitespace":
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "r"
+        pb_rule.condition.boolean_literal.value = True
+        pb_rule.tags.add().name = "   "
     elif payload_kind == "string":
         pb_rule = pb_file.rules.add()
         pb_rule.name = "r"
         pb_rule.condition.boolean_literal.value = True
         pb_rule.strings.add().plain.value = "abc"
+    elif payload_kind == "string_whitespace":
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "r"
+        pb_rule.condition.boolean_literal.value = True
+        pb_string = pb_rule.strings.add()
+        pb_string.identifier = "   "
+        pb_string.plain.value = "abc"
     elif payload_kind == "extern_rule":
         pb_file.extern_rules.add()
     elif payload_kind == "extern_import":

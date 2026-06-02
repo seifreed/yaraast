@@ -1395,12 +1395,16 @@ def test_simple_roundtrip_serialize_expression_collections_reject_non_lists(
 def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types() -> None:
     invalid_cases = (
         (Import(""), "Import module must not be empty"),
+        (Import("   "), "Import module must not be empty"),
         (Import(cast(Any, 123)), "Import module must be a string"),
         (Import("pe", alias=cast(Any, 123)), "Import alias must be a string"),
         (Import("pe", alias=""), "Import alias must not be empty"),
+        (Import("pe", alias="\t"), "Import alias must not be empty"),
         (Include(""), "Include path must not be empty"),
+        (Include("   "), "Include path must not be empty"),
         (Include(cast(Any, 123)), "Include path must be a string"),
         (Tag(""), "Tag name must not be empty"),
+        (Tag("   "), "Tag name must not be empty"),
         (Tag(cast(Any, 123)), "Tag name must be a string"),
         (Comment(cast(Any, 123)), "Comment text must be a string"),
         (
@@ -1408,6 +1412,7 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
             "Comment is_multiline must be a boolean",
         ),
         (Rule("", condition=BooleanLiteral(True)), "Rule name must not be empty"),
+        (Rule("   ", condition=BooleanLiteral(True)), "Rule name must not be empty"),
         (Rule(cast(Any, 123), condition=BooleanLiteral(True)), "Rule name must be a string"),
         (ExternRule(""), "ExternRule name must not be empty"),
         (ExternRule(cast(Any, 123)), "ExternRule name must be a string"),
@@ -1463,6 +1468,10 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
         (Meta("key", cast(Any, 1.2)), "Meta value must be a string, integer, or boolean"),
         (
             PlainString(identifier="", value="abc"),
+            "PlainString identifier must not be empty",
+        ),
+        (
+            PlainString(identifier="   ", value="abc"),
             "PlainString identifier must not be empty",
         ),
         (

@@ -16,6 +16,18 @@ from yaraast.string_escaping import escape_string_source_value
 from . import yara_ast_pb2
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+_WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS = frozenset(
+    {
+        "RegexLiteral pattern",
+        "RegexString regex",
+    }
+)
+
+
+def _is_empty_nonempty_text(text: str, context: str) -> bool:
+    return not text or (
+        not text.strip() and context not in _WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS
+    )
 
 
 def _finite_double_value(value, context: str) -> float:
@@ -354,7 +366,7 @@ def _protobuf_required_string(value, context: str) -> str:
 
 def _protobuf_required_nonempty_string(value, context: str) -> str:
     text = _protobuf_required_string(value, context)
-    if not text:
+    if _is_empty_nonempty_text(text, context):
         msg = f"{context} must not be empty"
         raise SerializationError(msg)
     return text
@@ -405,7 +417,7 @@ def _protobuf_string_list(values, context: str) -> list[str]:
 def _protobuf_nonempty_string_list(values, context: str) -> list[str]:
     items = _protobuf_string_list(values, context)
     for item in items:
-        if not item:
+        if _is_empty_nonempty_text(item, context):
             msg = f"{context} item must not be empty"
             raise SerializationError(msg)
     return items
