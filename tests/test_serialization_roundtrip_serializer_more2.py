@@ -201,6 +201,14 @@ def test_roundtrip_deserialize_rejects_malformed_serialized_input(
             "FormattingInfo indent_size must be an integer",
         ),
         (
+            {"formatting": {"indent_size": 0}},
+            "FormattingInfo indent_size must be at least 1",
+        ),
+        (
+            {"formatting": {"indent_size": -2}},
+            "FormattingInfo indent_size must be at least 1",
+        ),
+        (
             {"comments_preserved": "yes"},
             "RoundTripMetadata comments_preserved must be a boolean",
         ),

@@ -54,6 +54,20 @@ def _deserialize_int_field(
     raise SerializationError(msg)
 
 
+def _deserialize_min_int_field(
+    data: Mapping[str, object],
+    field_name: str,
+    default: int,
+    context: str,
+    minimum: int,
+) -> int:
+    value = _deserialize_int_field(data, field_name, default, context)
+    if value >= minimum:
+        return value
+    msg = f"{context} {field_name} must be at least {minimum}"
+    raise SerializationError(msg)
+
+
 def _deserialize_bool_field(
     data: Mapping[str, object],
     field_name: str,
@@ -101,8 +115,8 @@ class FormattingInfo:
         mapping = _deserialize_object(data, "FormattingInfo")
         defaults = cls()
         return cls(
-            indent_size=_deserialize_int_field(
-                mapping, "indent_size", defaults.indent_size, "FormattingInfo"
+            indent_size=_deserialize_min_int_field(
+                mapping, "indent_size", defaults.indent_size, "FormattingInfo", 1
             ),
             indent_style=_deserialize_string_field(
                 mapping, "indent_style", defaults.indent_style, "FormattingInfo"
