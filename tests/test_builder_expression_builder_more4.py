@@ -35,6 +35,13 @@ def test_expression_builder_combinators() -> None:
     assert isinstance(expr, UnaryExpression)
 
 
+@pytest.mark.parametrize("identifier", ["", "bad-key", "for", "1bad", object()])
+def test_expression_builder_rejects_invalid_generic_identifiers(identifier: Any) -> None:
+    expected_error = TypeError if not isinstance(identifier, str) else ValidationError
+    with pytest.raises(expected_error, match="Invalid identifier identifier"):
+        ExpressionBuilder.identifier(cast(Any, identifier))
+
+
 def test_expression_builder_quantifiers_and_loops() -> None:
     expr = ExpressionBuilder.any_of("$a", "$b")
     assert isinstance(expr, OfExpression)

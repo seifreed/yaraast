@@ -107,6 +107,7 @@ class ExpressionBuilder:
     @staticmethod
     def identifier(name: str) -> Identifier:
         """Create identifier."""
+        validate_identifier_path(name, "identifier")
         return Identifier(name=name)
 
     @staticmethod

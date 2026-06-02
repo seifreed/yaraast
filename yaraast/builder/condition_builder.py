@@ -24,7 +24,7 @@ from yaraast.ast.expressions import (
     StringOffset,
     UnaryExpression,
 )
-from yaraast.builder.file_builder_validation import validate_identifier
+from yaraast.builder.file_builder_validation import validate_identifier, validate_identifier_path
 from yaraast.errors import ValidationError
 
 _STRING_REFERENCE_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
@@ -98,6 +98,7 @@ class ConditionBuilder:
 
     def identifier(self, name: str) -> ConditionBuilder:
         """Generic identifier."""
+        validate_identifier_path(name, "identifier")
         return ConditionBuilder(Identifier(name=name))
 
     def range(self, start: int | ConditionBuilder, end: int | ConditionBuilder) -> ConditionBuilder:

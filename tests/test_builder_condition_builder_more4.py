@@ -101,6 +101,13 @@ def test_condition_builder_keeps_boolean_values_distinct_from_integers() -> None
         ConditionBuilder().integer(cast(Any, "1"))
 
 
+@pytest.mark.parametrize("identifier", ["", "bad-key", "for", "1bad", object()])
+def test_condition_builder_rejects_invalid_generic_identifiers(identifier: Any) -> None:
+    expected_error = TypeError if not isinstance(identifier, str) else ValidationError
+    with pytest.raises(expected_error, match="Invalid identifier identifier"):
+        ConditionBuilder().identifier(cast(Any, identifier))
+
+
 def test_condition_builder_n_of_rejects_boolean_quantifier() -> None:
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         ConditionBuilder().n_of(cast(Any, True), "$a", "$b")
