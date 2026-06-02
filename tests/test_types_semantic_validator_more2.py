@@ -549,3 +549,43 @@ def test_semantic_validator_rejects_non_mapping_externals() -> None:
 
     with pytest.raises(TypeError, match="SemanticValidator externals must be a mapping"):
         validator.validate_expression(BooleanLiteral(True), externals=cast(Any, []))
+
+
+@pytest.mark.parametrize("externals", [{cast(Any, 1): 1}, {cast(Any, True): 1}])
+def test_semantic_validator_rejects_non_string_external_names(externals: dict[Any, object]) -> None:
+    ast = YaraFile(rules=[Rule(name="externals", condition=BooleanLiteral(True))])
+    rule = ast.rules[0]
+
+    with pytest.raises(TypeError, match="SemanticValidator external names must be strings"):
+        SemanticValidator(externals=cast(Any, externals))
+
+    validator = SemanticValidator()
+
+    with pytest.raises(TypeError, match="SemanticValidator external names must be strings"):
+        validator.validate(ast, externals=cast(Any, externals))
+
+    with pytest.raises(TypeError, match="SemanticValidator external names must be strings"):
+        validator.validate_rule(rule, externals=cast(Any, externals))
+
+    with pytest.raises(TypeError, match="SemanticValidator external names must be strings"):
+        validator.validate_expression(BooleanLiteral(True), externals=cast(Any, externals))
+
+
+@pytest.mark.parametrize("externals", [{"": 1}, {"   ": 1}])
+def test_semantic_validator_rejects_empty_external_names(externals: dict[str, object]) -> None:
+    ast = YaraFile(rules=[Rule(name="externals", condition=BooleanLiteral(True))])
+    rule = ast.rules[0]
+
+    with pytest.raises(ValueError, match="SemanticValidator external names must not be empty"):
+        SemanticValidator(externals=externals)
+
+    validator = SemanticValidator()
+
+    with pytest.raises(ValueError, match="SemanticValidator external names must not be empty"):
+        validator.validate(ast, externals=externals)
+
+    with pytest.raises(ValueError, match="SemanticValidator external names must not be empty"):
+        validator.validate_rule(rule, externals=externals)
+
+    with pytest.raises(ValueError, match="SemanticValidator external names must not be empty"):
+        validator.validate_expression(BooleanLiteral(True), externals=externals)

@@ -177,7 +177,16 @@ def _normalize_externals(externals: Mapping[str, object] | None) -> dict[str, ob
     if not isinstance(externals, Mapping):
         msg = "SemanticValidator externals must be a mapping"
         raise TypeError(msg)
-    return dict(externals)
+    normalized: dict[str, object] = {}
+    for name, value in externals.items():
+        if not isinstance(name, str):
+            msg = "SemanticValidator external names must be strings"
+            raise TypeError(msg)
+        if not name.strip():
+            msg = "SemanticValidator external names must not be empty"
+            raise ValueError(msg)
+        normalized[name] = value
+    return normalized
 
 
 def _external_type(value: object) -> YaraType:
