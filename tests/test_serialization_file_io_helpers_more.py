@@ -29,12 +29,16 @@ def test_file_io_helpers_reject_invalid_path_types(path: Any) -> None:
         write_utf8(cast(Any, path), "content")
 
 
-def test_file_io_helpers_reject_empty_path() -> None:
+@pytest.mark.parametrize("path", ["", "   ", "\t"])
+def test_file_io_helpers_reject_empty_path(path: str) -> None:
     with pytest.raises(ValueError, match="path must not be empty"):
-        read_utf8("")
+        read_utf8(path)
 
     with pytest.raises(ValueError, match="path must not be empty"):
-        write_utf8("", "content")
+        write_utf8(path, "content")
+
+    with pytest.raises(ValueError, match="input_path must not be empty"):
+        require_input_path(path, "input_path")
 
 
 def test_file_io_helpers_reject_empty_pathlike_paths() -> None:

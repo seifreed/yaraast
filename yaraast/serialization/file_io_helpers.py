@@ -14,7 +14,7 @@ def _require_file_path(path: object) -> Path:
     if not isinstance(raw_path, str):
         msg = "path must be a file path"
         raise TypeError(msg)
-    if not raw_path:
+    if not raw_path.strip():
         msg = "path must not be empty"
         raise ValueError(msg)
     path_obj = Path(raw_path)

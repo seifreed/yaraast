@@ -49,7 +49,7 @@ def require_input_path(value: object, name: str) -> Path:
     if not isinstance(raw_path, str):
         msg = f"{name} must be a file path"
         raise TypeError(msg)
-    if not raw_path:
+    if not raw_path.strip():
         msg = f"{name} must not be empty"
         raise ValueError(msg)
     path = Path(raw_path)
