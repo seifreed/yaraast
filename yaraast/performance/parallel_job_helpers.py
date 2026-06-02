@@ -70,7 +70,7 @@ def validate_graph_types(graph_types: object) -> list[str]:
         raise TypeError(GRAPH_TYPES_TYPE_ERROR)
     normalized: list[str] = []
     for graph_type in graph_types:
-        if not isinstance(graph_type, str) or not graph_type:
+        if not isinstance(graph_type, str) or not graph_type.strip():
             raise TypeError(GRAPH_TYPE_ENTRY_ERROR)
         normalized.append(graph_type)
     return normalized
@@ -90,7 +90,7 @@ def require_output_dir_path(output_dir: object) -> Path:
     raw_path = fspath(output_dir)
     if not isinstance(raw_path, str):
         raise TypeError(OUTPUT_DIR_TYPE_ERROR)
-    if not raw_path:
+    if not raw_path.strip():
         msg = "output_dir must not be empty"
         raise ValueError(msg)
     path = Path(raw_path)

@@ -315,7 +315,7 @@ def test_parallel_graph_export_rejects_scalar_graph_types(
         )
 
 
-@pytest.mark.parametrize("graph_types", [[123], [None], [""]])
+@pytest.mark.parametrize("graph_types", [[123], [None], [""], ["   "], ["\t"]])
 def test_parallel_graph_export_rejects_invalid_graph_type_entries(
     tmp_path: Path,
     graph_types: object,
@@ -331,12 +331,13 @@ def test_parallel_graph_export_rejects_invalid_graph_type_entries(
         )
 
 
-def test_parallel_graph_export_rejects_empty_output_dir() -> None:
+@pytest.mark.parametrize("output_dir", ["", "   ", "\t"])
+def test_parallel_graph_export_rejects_empty_output_dir(output_dir: str) -> None:
     analyzer = ParallelAnalyzer(max_workers=1)
     ast = _parsed_ast("graph_rule")
 
     with pytest.raises(ValueError, match="output_dir must not be empty"):
-        analyzer.generate_graphs_parallel([ast], "")
+        analyzer.generate_graphs_parallel([ast], output_dir)
 
 
 @pytest.mark.parametrize("output_dir", [None, False, 123, object(), b"graphs"])
