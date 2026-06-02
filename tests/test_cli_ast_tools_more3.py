@@ -106,11 +106,15 @@ def test_ast_formatter_output_and_errors(tmp_path: Path) -> None:
     assert issues and issues[0].startswith("Check error:")
 
 
-def test_ast_formatter_rejects_empty_output_path(tmp_path: Path) -> None:
+@pytest.mark.parametrize("output_path", ["", "   ", "\t"])
+def test_ast_formatter_rejects_empty_output_path(
+    tmp_path: Path,
+    output_path: str,
+) -> None:
     good = tmp_path / "ok.yar"
     good.write_text("rule a { condition: true }", encoding="utf-8")
 
-    ok, err = ASTFormatter().format_file(good, output_path="")
+    ok, err = ASTFormatter().format_file(good, output_path=output_path)
 
     assert ok is False
     assert err == "Formatting error: output_path must not be empty"
@@ -130,8 +134,9 @@ def test_ast_formatter_rejects_empty_pathlike_output_path(tmp_path: Path) -> Non
     assert err == "Formatting error: output_path must not be empty"
 
 
-def test_ast_formatter_rejects_empty_input_path() -> None:
-    ok, err = ASTFormatter().format_file("")
+@pytest.mark.parametrize("input_path", ["", "   ", "\t"])
+def test_ast_formatter_rejects_empty_input_path(input_path: str) -> None:
+    ok, err = ASTFormatter().format_file(input_path)
 
     assert ok is False
     assert err == "Formatting error: input_path must not be empty"
@@ -145,8 +150,9 @@ def test_ast_formatter_rejects_invalid_input_path_types(input_path: Any) -> None
     assert err == "Formatting error: input_path must be a file path"
 
 
-def test_ast_formatter_check_format_rejects_empty_file_path() -> None:
-    needs_format, issues = ASTFormatter().check_format("")
+@pytest.mark.parametrize("file_path", ["", "   ", "\t"])
+def test_ast_formatter_check_format_rejects_empty_file_path(file_path: str) -> None:
+    needs_format, issues = ASTFormatter().check_format(file_path)
 
     assert needs_format is False
     assert issues == ["Check error: file_path must not be empty"]
@@ -176,11 +182,15 @@ def test_ast_formatter_rejects_invalid_output_path_types(
     assert err == "Formatting error: output_path must be a file path"
 
 
-def test_ast_differ_rejects_empty_file_paths(tmp_path: Path) -> None:
+@pytest.mark.parametrize("file1_path", ["", "   ", "\t"])
+def test_ast_differ_rejects_empty_file_paths(
+    tmp_path: Path,
+    file1_path: str,
+) -> None:
     good = tmp_path / "ok.yar"
     good.write_text("rule a { condition: true }", encoding="utf-8")
 
-    result = ASTDiffer().diff_files("", good)
+    result = ASTDiffer().diff_files(file1_path, good)
 
     assert result.has_changes is True
     assert result.logical_changes == ["Error comparing files: file1_path must not be empty"]
