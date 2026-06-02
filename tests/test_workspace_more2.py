@@ -310,6 +310,36 @@ def test_include_resolver_rejects_empty_search_path_entries() -> None:
         IncludeResolver([""])
 
 
+def test_include_resolver_rejects_empty_file_path(tmp_path: Path) -> None:
+    resolver = IncludeResolver([str(tmp_path)])
+
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        resolver.resolve_file("")
+
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        resolver.get_include_tree("")
+
+
+@pytest.mark.parametrize("file_path", [None, False, 123, object(), b"rule.yar"])
+def test_include_resolver_rejects_invalid_file_path_types(
+    tmp_path: Path,
+    file_path: Any,
+) -> None:
+    resolver = IncludeResolver([str(tmp_path)])
+
+    with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
+        resolver.resolve_file(cast(Any, file_path))
+
+
+def test_include_resolver_accepts_pathlike_file_path(tmp_path: Path) -> None:
+    rule_file = _write(tmp_path / "ok.yar", "rule ok { condition: true }")
+    resolver = IncludeResolver([str(tmp_path)])
+
+    resolved = resolver.resolve_file(rule_file)
+
+    assert resolved.path == rule_file.resolve()
+
+
 def test_include_resolver_treats_directory_matches_as_unresolved(tmp_path: Path) -> None:
     directory = tmp_path / "not_a_rule.yar"
     directory.mkdir()

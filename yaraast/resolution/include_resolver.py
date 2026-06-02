@@ -6,6 +6,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 import hashlib
 import os
+from os import PathLike, fspath
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict
 
@@ -95,7 +96,7 @@ class IncludeResolver:
 
     def resolve_file(
         self,
-        file_path: str,
+        file_path: str | PathLike[str],
         base_path: Path | None = None,
     ) -> ResolvedFile:
         """Resolve a YARA file and all its includes.
@@ -163,7 +164,7 @@ class IncludeResolver:
         self.cache[cache_key] = resolved
         return resolved
 
-    def _find_file(self, file_path: str, base_path: Path | None = None) -> Path:
+    def _find_file(self, file_path: str | PathLike[str], base_path: Path | None = None) -> Path:
         """Find a file in search paths.
 
         Args:
@@ -177,7 +178,8 @@ class IncludeResolver:
             FileNotFoundError: If file cannot be found.
 
         """
-        path = Path(file_path)
+        file_path_text = self._require_file_path(file_path)
+        path = Path(file_path_text)
 
         # If absolute and exists, return it
         if path.is_absolute() and path.is_file():
@@ -204,10 +206,23 @@ class IncludeResolver:
         # Not found
         search_dirs = [base_path, *self.search_paths] if base_path else list(self.search_paths)
         searched = [str(d) for d in search_dirs]
-        msg = f"Cannot find include file '{file_path}'. Searched in: {', '.join(searched)}"
+        msg = f"Cannot find include file '{file_path_text}'. Searched in: {', '.join(searched)}"
         raise FileNotFoundError(
             msg,
         )
+
+    def _require_file_path(self, file_path: object) -> str:
+        if isinstance(file_path, bool | bytes) or not isinstance(file_path, str | PathLike):
+            msg = "file_path must be a string or path-like object"
+            raise TypeError(msg)
+        raw_path = fspath(file_path)
+        if not isinstance(raw_path, str):
+            msg = "file_path must be a string or path-like object"
+            raise TypeError(msg)
+        if not raw_path:
+            msg = "file_path must not be empty"
+            raise ValueError(msg)
+        return raw_path
 
     def _includes_unchanged(self, resolved: ResolvedFile) -> bool:
         """Check if all included files still have the same checksum."""
@@ -246,7 +261,7 @@ class IncludeResolver:
         """Get all resolved files from cache."""
         return [deepcopy(resolved) for resolved in self.cache.values()]
 
-    def get_include_tree(self, file_path: str) -> IncludeTree:
+    def get_include_tree(self, file_path: str | PathLike[str]) -> IncludeTree:
         """Get include tree structure for a file.
 
         Returns:
