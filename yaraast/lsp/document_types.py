@@ -33,9 +33,13 @@ def _required_position_int(data: dict[str, Any], key: str) -> int:
 
 
 def uri_to_path(uri: str) -> Path | None:
+    if not uri:
+        return None
     if uri.startswith("file://"):
         parsed = urlparse(uri)
         decoded = unquote(parsed.path)
+        if not decoded:
+            return None
         # On Windows, file:///C:/path yields /C:/path — strip leading slash
         if len(decoded) >= 3 and decoded[0] == "/" and decoded[2] == ":":
             decoded = decoded[1:]

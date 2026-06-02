@@ -6,9 +6,11 @@ import asyncio
 from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 from yaraast.lsp import server_features as sf
+from yaraast.lsp.document_types import uri_to_path
+from yaraast.lsp.server_feature_helpers import get_workspace_folders
 
 
 class _Workspace:
@@ -348,6 +350,17 @@ def test_register_server_features_and_initialize_handlers() -> None:
     assert "YARAAST Language Server initialized" in server.logs
     assert "/tmp/ws3" in server.workspace_symbols_provider.roots
     assert "/tmp/ws2" in server.workspace_symbols_provider.roots
+
+
+def test_lsp_path_helpers_reject_empty_workspace_paths() -> None:
+    assert uri_to_path("") is None
+    assert uri_to_path("file://") is None
+    params = SimpleNamespace(
+        root_uri=None,
+        root_path="",
+        workspace_folders=[SimpleNamespace(uri="file://")],
+    )
+    assert get_workspace_folders(cast(Any, params)) == []
 
 
 def test_did_change_uses_workspace_source_for_incremental_updates() -> None:
