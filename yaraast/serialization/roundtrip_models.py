@@ -29,6 +29,21 @@ def _deserialize_string_field(
     raise SerializationError(msg)
 
 
+def _deserialize_choice_field(
+    data: Mapping[str, object],
+    field_name: str,
+    default: str,
+    context: str,
+    allowed_values: frozenset[str],
+) -> str:
+    value = _deserialize_string_field(data, field_name, default, context)
+    if value in allowed_values:
+        return value
+    allowed = ", ".join(sorted(repr(item) for item in allowed_values))
+    msg = f"{context} {field_name} must be one of: {allowed}"
+    raise SerializationError(msg)
+
+
 def _deserialize_nullable_string_field(
     data: Mapping[str, object],
     field_name: str,
@@ -85,6 +100,10 @@ def _deserialize_bool_field(
 class FormattingInfo:
     """Information about original formatting to preserve."""
 
+    _INDENT_STYLES = frozenset({"spaces", "tabs"})
+    _LINE_ENDINGS = frozenset({"\n", "\r\n", "\r"})
+    _COMMENT_STYLES = frozenset({"line", "block"})
+
     indent_size: int = 4
     indent_style: str = "spaces"  # "spaces" or "tabs"
     line_endings: str = "\n"  # "\n", "\r\n", or "\r"
@@ -118,32 +137,47 @@ class FormattingInfo:
             indent_size=_deserialize_min_int_field(
                 mapping, "indent_size", defaults.indent_size, "FormattingInfo", 1
             ),
-            indent_style=_deserialize_string_field(
-                mapping, "indent_style", defaults.indent_style, "FormattingInfo"
+            indent_style=_deserialize_choice_field(
+                mapping,
+                "indent_style",
+                defaults.indent_style,
+                "FormattingInfo",
+                cls._INDENT_STYLES,
             ),
-            line_endings=_deserialize_string_field(
-                mapping, "line_endings", defaults.line_endings, "FormattingInfo"
+            line_endings=_deserialize_choice_field(
+                mapping,
+                "line_endings",
+                defaults.line_endings,
+                "FormattingInfo",
+                cls._LINE_ENDINGS,
             ),
-            blank_lines_before_rule=_deserialize_int_field(
+            blank_lines_before_rule=_deserialize_min_int_field(
                 mapping,
                 "blank_lines_before_rule",
                 defaults.blank_lines_before_rule,
                 "FormattingInfo",
+                0,
             ),
-            blank_lines_after_imports=_deserialize_int_field(
+            blank_lines_after_imports=_deserialize_min_int_field(
                 mapping,
                 "blank_lines_after_imports",
                 defaults.blank_lines_after_imports,
                 "FormattingInfo",
+                0,
             ),
-            blank_lines_after_includes=_deserialize_int_field(
+            blank_lines_after_includes=_deserialize_min_int_field(
                 mapping,
                 "blank_lines_after_includes",
                 defaults.blank_lines_after_includes,
                 "FormattingInfo",
+                0,
             ),
-            comment_style=_deserialize_string_field(
-                mapping, "comment_style", defaults.comment_style, "FormattingInfo"
+            comment_style=_deserialize_choice_field(
+                mapping,
+                "comment_style",
+                defaults.comment_style,
+                "FormattingInfo",
+                cls._COMMENT_STYLES,
             ),
             preserve_spacing=_deserialize_bool_field(
                 mapping, "preserve_spacing", defaults.preserve_spacing, "FormattingInfo"

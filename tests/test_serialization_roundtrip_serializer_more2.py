@@ -209,6 +209,30 @@ def test_roundtrip_deserialize_rejects_malformed_serialized_input(
             "FormattingInfo indent_size must be at least 1",
         ),
         (
+            {"formatting": {"blank_lines_before_rule": -1}},
+            "FormattingInfo blank_lines_before_rule must be at least 0",
+        ),
+        (
+            {"formatting": {"blank_lines_after_imports": -1}},
+            "FormattingInfo blank_lines_after_imports must be at least 0",
+        ),
+        (
+            {"formatting": {"blank_lines_after_includes": -1}},
+            "FormattingInfo blank_lines_after_includes must be at least 0",
+        ),
+        (
+            {"formatting": {"indent_style": "diagonal"}},
+            "FormattingInfo indent_style must be one of:",
+        ),
+        (
+            {"formatting": {"line_endings": "bad"}},
+            "FormattingInfo line_endings must be one of:",
+        ),
+        (
+            {"formatting": {"comment_style": "emoji"}},
+            "FormattingInfo comment_style must be one of:",
+        ),
+        (
             {"comments_preserved": "yes"},
             "RoundTripMetadata comments_preserved must be a boolean",
         ),
