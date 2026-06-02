@@ -25,6 +25,13 @@ def _require_path(value: object, context: str) -> Path:
     raise ValidationError(msg)
 
 
+def _require_query_path(value: object, context: str) -> Path:
+    if isinstance(value, str) and not value:
+        msg = f"{context} must not be empty"
+        raise ValidationError(msg)
+    return _require_path(value, context)
+
+
 def _require_string(value: object, context: str) -> str:
     if isinstance(value, str):
         return value
@@ -362,22 +369,25 @@ class DependencyGraph:
         self.nodes[from_key].dependencies.add(to_key)
         self.nodes[to_key].dependents.add(from_key)
 
-    def get_file_dependencies(self, file_path: str) -> set[str]:
+    def get_file_dependencies(self, file_path: object) -> set[str]:
         """Get all dependencies of a file (transitive)."""
+        query_path = _require_query_path(file_path, "DependencyGraph file_path")
+
         # Resolve path to handle symlinks (e.g., /var -> /private/var on macOS)
-        resolved_path = str(Path(file_path).resolve())
+        resolved_path = str(query_path.resolve())
 
         # Try both resolved and original paths
         if resolved_path in self.nodes:
             return self._get_transitive_dependencies(resolved_path)
-        return self._get_transitive_dependencies(file_path)
+        return self._get_transitive_dependencies(str(query_path))
 
-    def get_file_dependents(self, file_path: str) -> set[str]:
+    def get_file_dependents(self, file_path: object) -> set[str]:
         """Get all files that depend on this file (transitive)."""
-        resolved_path = str(Path(file_path).resolve())
+        query_path = _require_query_path(file_path, "DependencyGraph file_path")
+        resolved_path = str(query_path.resolve())
         if resolved_path in self.nodes:
             return self._get_transitive_dependents(resolved_path)
-        return self._get_transitive_dependents(file_path)
+        return self._get_transitive_dependents(str(query_path))
 
     def get_rule_dependencies(self, rule_name: str) -> set[str]:
         """Get all dependencies of a rule."""

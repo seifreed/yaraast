@@ -242,6 +242,17 @@ def test_transitive_graph_queries_do_not_return_start_node_in_cycles() -> None:
     assert graph.get_file_dependents("A") == {"B"}
 
 
+def test_dependency_graph_file_queries_reject_invalid_paths() -> None:
+    graph = DependencyGraph()
+    graph.add_file(Path.cwd(), YaraFile(includes=[Include(path="included.yar")]))
+
+    for query in (graph.get_file_dependencies, graph.get_file_dependents):
+        with pytest.raises(ValidationError, match="DependencyGraph file_path must not be empty"):
+            query("")
+        with pytest.raises(ValidationError, match="DependencyGraph file_path must be a path"):
+            query(cast(Any, False))
+
+
 def test_dependency_graph_find_cycles_returns_all_disjoint_cycles() -> None:
     graph = DependencyGraph()
     graph.nodes["A"] = DependencyNode("A", "file", dependencies={"B"})
