@@ -308,31 +308,35 @@ def test_include_resolver_rejects_invalid_search_paths() -> None:
         IncludeResolver(cast(Any, [object()]))
 
 
-def test_include_resolver_rejects_empty_search_path_entries() -> None:
+@pytest.mark.parametrize("search_path", ["", "   ", "\t"])
+def test_include_resolver_rejects_empty_search_path_entries(search_path: str) -> None:
     with pytest.raises(
         ValueError,
         match="IncludeResolver search_paths must not contain empty paths",
     ):
-        IncludeResolver([""])
+        IncludeResolver([search_path])
 
 
+@pytest.mark.parametrize("env_value", [os.pathsep, "   ", "\t"])
 def test_include_resolver_rejects_empty_env_search_path_entries(
     monkeypatch: pytest.MonkeyPatch,
+    env_value: str,
 ) -> None:
-    monkeypatch.setenv("YARA_INCLUDE_PATH", os.pathsep)
+    monkeypatch.setenv("YARA_INCLUDE_PATH", env_value)
 
     with pytest.raises(ValueError, match="YARA_INCLUDE_PATH must not contain empty paths"):
         IncludeResolver([])
 
 
-def test_include_resolver_rejects_empty_file_path(tmp_path: Path) -> None:
+@pytest.mark.parametrize("file_path", ["", "   ", "\t"])
+def test_include_resolver_rejects_empty_file_path(tmp_path: Path, file_path: str) -> None:
     resolver = IncludeResolver([str(tmp_path)])
 
     with pytest.raises(ValueError, match="file_path must not be empty"):
-        resolver.resolve_file("")
+        resolver.resolve_file(file_path)
 
     with pytest.raises(ValueError, match="file_path must not be empty"):
-        resolver.get_include_tree("")
+        resolver.get_include_tree(file_path)
 
 
 @pytest.mark.parametrize("file_path", [None, False, 123, object(), b"rule.yar"])

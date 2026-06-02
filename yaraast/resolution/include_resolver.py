@@ -69,7 +69,7 @@ class IncludeResolver:
             ):
                 msg = "IncludeResolver search_paths must be a list of strings"
                 raise TypeError(msg)
-            if any(not search_path for search_path in search_paths):
+            if any(not search_path.strip() for search_path in search_paths):
                 msg = "IncludeResolver search_paths must not contain empty paths"
                 raise ValueError(msg)
             paths.extend(Path(p).resolve() for p in search_paths)
@@ -81,7 +81,7 @@ class IncludeResolver:
         env_paths = os.environ.get("YARA_INCLUDE_PATH", "")
         if env_paths:
             env_path_entries = env_paths.split(os.pathsep)
-            if any(not env_path for env_path in env_path_entries):
+            if any(not env_path.strip() for env_path in env_path_entries):
                 msg = "YARA_INCLUDE_PATH must not contain empty paths"
                 raise ValueError(msg)
             paths.extend(Path(env_path).resolve() for env_path in env_path_entries)
@@ -221,7 +221,7 @@ class IncludeResolver:
         if not isinstance(raw_path, str):
             msg = "file_path must be a string or path-like object"
             raise TypeError(msg)
-        if not raw_path:
+        if not raw_path.strip():
             msg = "file_path must not be empty"
             raise ValueError(msg)
         return raw_path
