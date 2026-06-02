@@ -116,6 +116,20 @@ def test_ast_formatter_rejects_empty_output_path(tmp_path: Path) -> None:
     assert err == "Formatting error: output_path must not be empty"
 
 
+def test_ast_formatter_rejects_empty_pathlike_output_path(tmp_path: Path) -> None:
+    class EmptyPathLike:
+        def __fspath__(self) -> str:
+            return ""
+
+    good = tmp_path / "ok.yar"
+    good.write_text("rule a { condition: true }", encoding="utf-8")
+
+    ok, err = ASTFormatter().format_file(good, output_path=cast(Any, EmptyPathLike()))
+
+    assert ok is False
+    assert err == "Formatting error: output_path must not be empty"
+
+
 def test_ast_formatter_rejects_empty_input_path() -> None:
     ok, err = ASTFormatter().format_file("")
 

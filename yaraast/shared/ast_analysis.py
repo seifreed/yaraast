@@ -406,10 +406,14 @@ class ASTFormatter:
         if isinstance(output_path, bool) or not isinstance(output_path, str | PathLike):
             msg = "output_path must be a file path"
             raise TypeError(msg)
-        if isinstance(output_path, str) and not output_path:
+        raw_path = fspath(output_path)
+        if not isinstance(raw_path, str):
+            msg = "output_path must be a file path"
+            raise TypeError(msg)
+        if not raw_path:
             msg = "output_path must not be empty"
             raise ValueError(msg)
-        path = Path(output_path)
+        path = Path(raw_path)
         if path.exists() and path.is_dir():
             msg = "output_path must not be a directory"
             raise ValueError(msg)
