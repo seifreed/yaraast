@@ -171,6 +171,10 @@ def test_libyara_scanner_file_process_and_error_paths(tmp_path: Path) -> None:
     assert dir_result.success is False
     assert dir_result.errors
 
+    empty_path_result = scanner.scan_file(compilation.compiled_rules, "")
+    assert empty_path_result.success is False
+    assert empty_path_result.errors == ["filepath must not be empty"]
+
     data_error = scanner.scan_data(object(), b"abc")
     assert data_error.success is False
     assert any("Unexpected error:" in err for err in data_error.errors)
@@ -178,6 +182,22 @@ def test_libyara_scanner_file_process_and_error_paths(tmp_path: Path) -> None:
     proc_ok = scanner.scan_process(compilation.compiled_rules, os.getpid())
     assert proc_ok.scan_time >= 0
     assert proc_ok.success in {True, False}
+
+
+@pytest.mark.skipif(
+    not COMPILER_AVAILABLE or not SCANNER_AVAILABLE, reason="yara-python not available"
+)
+@pytest.mark.parametrize("filepath", [None, False, 123, object(), b"sample.bin"])
+def test_libyara_scanner_scan_file_rejects_invalid_filepath_types(filepath: Any) -> None:
+    compiler = LibyaraCompiler()
+    scanner = LibyaraScanner(timeout=10)
+    compilation = compiler.compile_source("rule always_true { condition: true }")
+    assert compilation.success is True
+
+    result = scanner.scan_file(compilation.compiled_rules, cast(Any, filepath))
+
+    assert result.success is False
+    assert result.errors == ["filepath must be a string or path-like object"]
 
     proc_bad = scanner.scan_process(compilation.compiled_rules, -1)
     assert proc_bad.success is False

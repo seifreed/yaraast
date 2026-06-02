@@ -35,3 +35,20 @@ def test_libyara_compiler_handles_type_error_and_null_byte_source_paths() -> Non
         'rule bad {\nstrings:\n$a = "a\x00b"\ncondition:\n$a\n}\n'
     )
     assert null_byte_result.source_code is not None
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_libyara_compiler_compile_file_rejects_empty_filepath() -> None:
+    result = LibyaraCompiler().compile_file("")
+
+    assert result.success is False
+    assert result.errors == ["filepath must not be empty"]
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.parametrize("filepath", [None, False, 123, object(), b"rule.yar"])
+def test_libyara_compiler_compile_file_rejects_invalid_filepath_types(filepath: Any) -> None:
+    result = LibyaraCompiler().compile_file(cast(Any, filepath))
+
+    assert result.success is False
+    assert result.errors == ["filepath must be a string or path-like object"]

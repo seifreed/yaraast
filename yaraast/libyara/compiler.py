@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from os import PathLike, fspath
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -34,6 +35,20 @@ def normalize_libyara_externals(externals: dict[str, Any] | None) -> dict[str, A
         msg = "libyara externals must be a dictionary"
         raise TypeError(msg)
     return dict(externals)
+
+
+def _require_file_path(filepath: object, name: str) -> Path:
+    if isinstance(filepath, bool | bytes) or not isinstance(filepath, str | PathLike):
+        msg = f"{name} must be a string or path-like object"
+        raise TypeError(msg)
+    raw_path = fspath(filepath)
+    if not isinstance(raw_path, str):
+        msg = f"{name} must be a string or path-like object"
+        raise TypeError(msg)
+    if not raw_path:
+        msg = f"{name} must not be empty"
+        raise ValueError(msg)
+    return Path(raw_path)
 
 
 @dataclass
@@ -198,7 +213,7 @@ class LibyaraCompiler:
 
     def compile_file(
         self,
-        filepath: str | Path,
+        filepath: str | PathLike[str],
         error_on_warning: bool = False,
         includes: dict[str, str] | None = None,
     ) -> CompilationResult:
@@ -213,7 +228,10 @@ class LibyaraCompiler:
             CompilationResult with compiled rules or errors
 
         """
-        filepath = Path(filepath)
+        try:
+            filepath = _require_file_path(filepath, "filepath")
+        except (TypeError, ValueError) as exc:
+            return CompilationResult(success=False, errors=[str(exc)])
 
         if not filepath.exists():
             return CompilationResult(
