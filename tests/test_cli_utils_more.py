@@ -51,6 +51,26 @@ def test_cli_utils_reject_empty_path() -> None:
         utils.parse_yara_file("")
 
 
+def test_cli_utils_reject_empty_pathlike_path() -> None:
+    class EmptyPathLike:
+        def __fspath__(self) -> str:
+            return ""
+
+    empty_path = EmptyPathLike()
+
+    with pytest.raises(ValueError, match="path must not be empty"):
+        utils.read_text(cast(Any, empty_path))
+
+    with pytest.raises(ValueError, match="path must not be empty"):
+        utils.write_text(cast(Any, empty_path), "content")
+
+    with pytest.raises(ValueError, match="path must not be empty"):
+        utils.write_json(cast(Any, empty_path), {"value": 1})
+
+    with pytest.raises(ValueError, match="path must not be empty"):
+        utils.parse_yara_file(cast(Any, empty_path))
+
+
 def test_cli_utils_reject_directory_paths(tmp_path: Path) -> None:
     directory = tmp_path / "dir"
     directory.mkdir()
