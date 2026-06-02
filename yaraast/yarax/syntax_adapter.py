@@ -180,9 +180,27 @@ class YaraXSyntaxAdapter(ASTTransformer):
         return "".join(result)
 
     def _unescape_braces(self, regex: str) -> str:
-        """Unescape braces for YARA compatibility."""
-        # Only unescape braces that aren't part of quantifiers
-        return regex.replace("\\{", "{").replace("\\}", "}")
+        """Unescape braces for YARA compatibility.
+
+        Only a backslash that directly escapes a brace is removed. A backslash
+        that is itself escaped (``\\\\``) is preserved so that a quantifier
+        applied to a literal backslash, such as ``\\\\{2,3}``, keeps its
+        meaning instead of being corrupted into ``\\{2,3}``.
+        """
+        result: list[str] = []
+        i = 0
+        while i < len(regex):
+            if regex[i] == "\\" and i + 1 < len(regex):
+                nxt = regex[i + 1]
+                if nxt in "{}":
+                    result.append(nxt)
+                else:
+                    result.append(regex[i : i + 2])
+                i += 2
+            else:
+                result.append(regex[i])
+                i += 1
+        return "".join(result)
 
     def _is_quantifier_brace(self, regex: str, pos: int) -> bool:
         """Check if brace at position is part of a quantifier."""

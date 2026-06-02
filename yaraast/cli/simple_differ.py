@@ -404,7 +404,12 @@ def _diff_result_for_removed_file(file_path: Path) -> DiffResult:
     return DiffResult(
         has_changes=True,
         lines=diff_lines,
-        summary={"added": 0, "removed": len(lines), "modified": 0},
+        summary={
+            "added": 0,
+            "removed": len(lines),
+            "modified": 0,
+            "total_changes": len(lines),
+        },
     )
 
 
@@ -425,7 +430,12 @@ def _diff_result_for_added_file(file_path: Path) -> DiffResult:
     return DiffResult(
         has_changes=True,
         lines=diff_lines,
-        summary={"added": len(lines), "removed": 0, "modified": 0},
+        summary={
+            "added": len(lines),
+            "removed": 0,
+            "modified": 0,
+            "total_changes": len(lines),
+        },
     )
 
 

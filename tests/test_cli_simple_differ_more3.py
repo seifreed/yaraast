@@ -51,6 +51,10 @@ def test_simple_ast_differ_diff_directories_handles_common_added_and_removed_fil
     assert isinstance(added, DiffResult)
     assert removed.summary["removed"] > 0
     assert added.summary["added"] > 0
+    # The summary contract must expose total_changes on every construction path,
+    # matching the regular diff() path, so consumers never hit a KeyError.
+    assert removed.summary["total_changes"] == removed.summary["removed"]
+    assert added.summary["total_changes"] == added.summary["added"]
 
 
 def test_simple_ast_differ_diff_directories_orders_results(tmp_path: Path) -> None:
