@@ -43,7 +43,16 @@ from yaraast.types.semantic_validator import (
     validate_yara_rule,
 )
 from yaraast.types.type_system import TypeEnvironment, TypeValidator
-from yaraast.yarax.ast_nodes import DictExpression, PatternMatch, WithStatement
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    DictExpression,
+    LambdaExpression,
+    ListExpression,
+    PatternMatch,
+    WithDeclaration,
+    WithStatement,
+)
 
 
 def _rule(name: str = "r", with_condition: bool = True) -> Rule:
@@ -611,6 +620,57 @@ def test_validate_expression_rejects_invalid_for_expression_variable_identifiers
 
     assert result.is_valid is False
     assert any(f"Invalid loop variable identifier: {variable}" in message for message in messages)
+
+
+@pytest.mark.parametrize(
+    ("expr", "variable"),
+    [
+        (
+            WithStatement(
+                declarations=[WithDeclaration("bad-name", IntegerLiteral(1))],
+                body=BooleanLiteral(True),
+            ),
+            "bad-name",
+        ),
+        (
+            ArrayComprehension(
+                expression=IntegerLiteral(1),
+                variable="1bad",
+                iterable=ListExpression([IntegerLiteral(1)]),
+            ),
+            "1bad",
+        ),
+        (
+            DictComprehension(
+                key_expression=StringLiteral("k"),
+                value_expression=IntegerLiteral(1),
+                key_variable="for",
+                iterable=ListExpression([IntegerLiteral(1)]),
+            ),
+            "for",
+        ),
+        (
+            DictComprehension(
+                key_expression=StringLiteral("k"),
+                value_expression=IntegerLiteral(1),
+                key_variable="k",
+                value_variable="bad-name",
+                iterable=ListExpression([IntegerLiteral(1)]),
+            ),
+            "bad-name",
+        ),
+        (LambdaExpression(parameters=["1bad"], body=BooleanLiteral(True)), "1bad"),
+    ],
+)
+def test_validate_expression_rejects_invalid_yarax_local_variable_identifiers(
+    expr: Any,
+    variable: str,
+) -> None:
+    result = SemanticValidator().validate_expression(expr)
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any(f"Invalid local variable identifier: {variable}" in message for message in messages)
 
 
 def test_semantic_validator_rejects_non_mapping_externals() -> None:

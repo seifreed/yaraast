@@ -56,6 +56,7 @@ from yaraast.yarax.ast_nodes import (
     DictComprehension,
     DictExpression,
     DictItem,
+    LambdaExpression,
     ListExpression,
     MatchCase,
     PatternMatch,
@@ -690,6 +691,43 @@ def test_expr_inference_reports_invalid_comprehension_iterables() -> None:
     )
     assert isinstance(dict_out, DictionaryType)
     assert any("Cannot iterate over type: string" in e for e in dict_inf.errors)
+
+
+@pytest.mark.parametrize("variable", ["bad-name", "1bad", "for"])
+def test_expr_inference_rejects_invalid_yarax_local_variable_identifiers(
+    variable: str,
+) -> None:
+    cases = [
+        WithStatement(
+            declarations=[WithDeclaration(variable, IntegerLiteral(1))],
+            body=BooleanLiteral(True),
+        ),
+        ArrayComprehension(
+            expression=IntegerLiteral(1),
+            variable=variable,
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        DictComprehension(
+            key_expression=StringLiteral("k"),
+            value_expression=IntegerLiteral(1),
+            key_variable=variable,
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        DictComprehension(
+            key_expression=StringLiteral("k"),
+            value_expression=IntegerLiteral(1),
+            key_variable="k",
+            value_variable=variable,
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        LambdaExpression(parameters=[variable], body=BooleanLiteral(True)),
+    ]
+
+    for case in cases:
+        inf = ExpressionTypeInference(TypeEnvironment())
+        inf.infer(case)
+
+        assert f"Invalid local variable identifier: {variable}" in inf.errors
 
 
 def test_expr_inference_binds_multi_variable_for_dictionary_items() -> None:

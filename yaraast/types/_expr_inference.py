@@ -61,6 +61,7 @@ from ._registry import (
     UnknownType,
     YaraType,
 )
+from .type_environment import _normalize_identifier
 
 
 class _TypeBaseVisitor(DefaultASTVisitor[YaraType]):
@@ -311,8 +312,14 @@ class ExpressionTypeInference(_TypeBaseVisitor):
             node.value,
             "With declaration value must be Expression",
         )
-        self.env.define(node.identifier, value_type)
-        self.env.define(node.identifier.lstrip("$"), value_type)
+        identifier = self._normalize_local_variable(
+            node.identifier,
+            allow_string_identifier=True,
+        )
+        if identifier is None:
+            return value_type
+        self.env.define(identifier, value_type)
+        self.env.define(identifier.lstrip("$"), value_type)
         return value_type
 
     def visit_list_expression(self, node: Any) -> YaraType:
@@ -366,7 +373,11 @@ class ExpressionTypeInference(_TypeBaseVisitor):
 
     def visit_array_comprehension(self, node: Any) -> YaraType:
         self.env.push_scope()
-        self._define_iteration_variable(node.variable, node.iterable)
+        variable = self._normalize_local_variable(node.variable)
+        if variable is not None:
+            self._define_iteration_variable(variable, node.iterable)
+        elif node.iterable is not None:
+            self.visit(node.iterable)
         if node.condition is not None:
             condition_type = self.visit(node.condition)
             if not isinstance(condition_type, BooleanType):
@@ -379,11 +390,20 @@ class ExpressionTypeInference(_TypeBaseVisitor):
 
     def visit_dict_comprehension(self, node: Any) -> YaraType:
         self.env.push_scope()
-        self._define_dict_comprehension_variables(
-            node.key_variable,
-            node.value_variable,
-            node.iterable,
+        key_variable = self._normalize_local_variable(node.key_variable)
+        value_variable = (
+            self._normalize_local_variable(node.value_variable)
+            if node.value_variable is not None
+            else None
         )
+        if key_variable is not None:
+            self._define_dict_comprehension_variables(
+                key_variable,
+                value_variable,
+                node.iterable,
+            )
+        elif node.iterable is not None:
+            self.visit(node.iterable)
         if node.condition is not None:
             condition_type = self.visit(node.condition)
             if not isinstance(condition_type, BooleanType):
@@ -424,7 +444,9 @@ class ExpressionTypeInference(_TypeBaseVisitor):
     def visit_lambda_expression(self, node: Any) -> YaraType:
         self.env.push_scope()
         for parameter in node.parameters:
-            self.env.define(parameter, UnknownType())
+            normalized = self._normalize_local_variable(parameter)
+            if normalized is not None:
+                self.env.define(normalized, UnknownType())
         self.visit(node.body)
         self.env.pop_scope()
         return UnknownType()
@@ -486,6 +508,27 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         else:
             self.errors.append(f"Cannot iterate over type: {iter_type}")
             self.env.define(variable, UnknownType())
+
+    def _normalize_local_variable(
+        self,
+        variable: Any,
+        *,
+        allow_string_identifier: bool = False,
+    ) -> str | None:
+        if not isinstance(variable, str):
+            self.errors.append("Local variable name must be a string")
+            return None
+        if allow_string_identifier and variable.startswith("$"):
+            try:
+                return normalize_string_reference_id(variable, allow_wildcard=False)
+            except ValueError:
+                self.errors.append(f"Invalid local variable identifier: {variable}")
+                return None
+        try:
+            return _normalize_identifier(variable, "Local variable name", "local variable")
+        except ValueError:
+            self.errors.append(f"Invalid local variable identifier: {variable}")
+            return None
 
     def _infer_common_type(self, nodes: list[Any]) -> YaraType:
         if not nodes:
