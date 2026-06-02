@@ -153,3 +153,19 @@ def test_type_environment_rejects_empty_or_whitespace_string_reference_body(
 
     with pytest.raises(ValueError, match="Invalid string reference"):
         env.add_string(string_id)
+
+
+@pytest.mark.parametrize("string_id", ["$a*", "a*", "$*", "*"])
+def test_type_environment_rejects_wildcard_string_definitions(string_id: str) -> None:
+    env = TypeEnvironment()
+
+    with pytest.raises(ValueError, match="Invalid string reference"):
+        env.add_string(string_id)
+
+
+def test_type_environment_has_string_rejects_wildcard_lookup() -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+
+    with pytest.raises(ValueError, match="Invalid string reference"):
+        env.has_string("$a*")

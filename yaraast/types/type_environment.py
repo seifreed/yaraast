@@ -29,6 +29,14 @@ def _normalize_string_id(string_id: str, field_name: str = "TypeEnvironment stri
     return normalize_string_reference_id(string_id)
 
 
+def _normalize_concrete_string_id(
+    string_id: str,
+    field_name: str = "TypeEnvironment string id",
+) -> str:
+    string_id = _require_string(string_id, field_name)
+    return normalize_string_reference_id(string_id, allow_wildcard=False)
+
+
 class TypeEnvironment:
     """Type environment for tracking variable types."""
 
@@ -76,7 +84,7 @@ class TypeEnvironment:
             msg = "TypeEnvironment is_anonymous must be a boolean"
             raise TypeError(msg)
         _require_nonempty_string(string_id, "TypeEnvironment string id")
-        string_id = _normalize_string_id(string_id)
+        string_id = _normalize_concrete_string_id(string_id)
         self.strings.add(string_id)
         if is_anonymous:
             self.anonymous_strings.add(string_id)
@@ -94,7 +102,7 @@ class TypeEnvironment:
         return None
 
     def has_string(self, string_id: str) -> bool:
-        string_id = _normalize_string_id(string_id)
+        string_id = _normalize_concrete_string_id(string_id)
         return string_id in self.strings
 
     def has_string_pattern(self, pattern: str) -> bool:
