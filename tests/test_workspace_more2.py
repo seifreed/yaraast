@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from threading import Event
 from typing import Any, cast
@@ -308,6 +309,15 @@ def test_include_resolver_rejects_empty_search_path_entries() -> None:
         match="IncludeResolver search_paths must not contain empty paths",
     ):
         IncludeResolver([""])
+
+
+def test_include_resolver_rejects_empty_env_search_path_entries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("YARA_INCLUDE_PATH", os.pathsep)
+
+    with pytest.raises(ValueError, match="YARA_INCLUDE_PATH must not contain empty paths"):
+        IncludeResolver([])
 
 
 def test_include_resolver_rejects_empty_file_path(tmp_path: Path) -> None:

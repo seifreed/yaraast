@@ -80,9 +80,11 @@ class IncludeResolver:
         # Add paths from environment variable
         env_paths = os.environ.get("YARA_INCLUDE_PATH", "")
         if env_paths:
-            for env_path in env_paths.split(os.pathsep):
-                if env_path:
-                    paths.append(Path(env_path).resolve())
+            env_path_entries = env_paths.split(os.pathsep)
+            if any(not env_path for env_path in env_path_entries):
+                msg = "YARA_INCLUDE_PATH must not contain empty paths"
+                raise ValueError(msg)
+            paths.extend(Path(env_path).resolve() for env_path in env_path_entries)
 
         # Remove duplicates while preserving order
         seen: set[Path] = set()
