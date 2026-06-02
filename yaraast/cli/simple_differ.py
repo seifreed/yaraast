@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 import difflib
 from enum import Enum
+from os import PathLike, fspath
 from pathlib import Path
 
 from yaraast.ast.base import YaraFile
@@ -44,6 +45,24 @@ class DiffResult:
     has_changes: bool
     lines: list[DiffLine]
     summary: dict[str, int]
+
+
+def _require_directory_path(value: object, name: str) -> Path:
+    if isinstance(value, bool | bytes) or not isinstance(value, str | PathLike):
+        msg = f"{name} must be a directory path"
+        raise TypeError(msg)
+    raw_path = fspath(value)
+    if not isinstance(raw_path, str):
+        msg = f"{name} must be a directory path"
+        raise TypeError(msg)
+    if not raw_path:
+        msg = f"{name} must not be empty"
+        raise ValueError(msg)
+    path = Path(raw_path)
+    if path.exists() and not path.is_dir():
+        msg = f"{name} must not be a file"
+        raise ValueError(msg)
+    return path
 
 
 class SimpleDiffer:
@@ -341,12 +360,12 @@ class SimpleASTDiffer(SimpleDiffer):
 
     def diff_directories(
         self,
-        dir1: str | Path,
-        dir2: str | Path,
+        dir1: str | PathLike[str],
+        dir2: str | PathLike[str],
     ) -> dict[str, DiffResult | ASTDiffResult]:
         """Diff all YARA files in two directories."""
-        dir1 = Path(dir1)
-        dir2 = Path(dir2)
+        dir1 = _require_directory_path(dir1, "dir1")
+        dir2 = _require_directory_path(dir2, "dir2")
 
         results: dict[str, DiffResult | ASTDiffResult] = {}
 

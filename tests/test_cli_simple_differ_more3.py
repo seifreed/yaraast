@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
+
+import pytest
 
 from yaraast.cli.simple_differ import (
     DiffResult,
@@ -116,6 +119,31 @@ def test_simple_ast_differ_diff_directories_includes_yara_files(tmp_path: Path) 
     added = results["added.yara"]
     assert isinstance(added, DiffResult)
     assert added.summary["added"] > 0
+
+
+def test_simple_ast_differ_diff_directories_rejects_empty_directory(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="dir1 must not be empty"):
+        SimpleASTDiffer().diff_directories("", tmp_path)
+
+    with pytest.raises(ValueError, match="dir2 must not be empty"):
+        SimpleASTDiffer().diff_directories(tmp_path, "")
+
+
+@pytest.mark.parametrize("directory", [None, False, 123, object(), b"."])
+def test_simple_ast_differ_diff_directories_rejects_invalid_directory_types(
+    tmp_path: Path,
+    directory: Any,
+) -> None:
+    with pytest.raises(TypeError, match="dir1 must be a directory path"):
+        SimpleASTDiffer().diff_directories(cast(Any, directory), tmp_path)
+
+
+def test_simple_ast_differ_diff_directories_rejects_file_directory(tmp_path: Path) -> None:
+    path = tmp_path / "not_a_directory"
+    path.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="dir1 must not be a file"):
+        SimpleASTDiffer().diff_directories(path, tmp_path)
 
 
 def test_format_diff_no_changes_and_print_diff() -> None:
