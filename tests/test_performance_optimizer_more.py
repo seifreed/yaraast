@@ -75,12 +75,22 @@ def test_optimize_yara_file(tmp_path: Path) -> None:
     assert stats["rules_optimized"] == 1
 
 
-def test_optimize_yara_file_rejects_empty_output_path(tmp_path: Path) -> None:
+@pytest.mark.parametrize("output_path", ["", "   ", "\t"])
+def test_optimize_yara_file_rejects_empty_output_path(
+    tmp_path: Path,
+    output_path: str,
+) -> None:
     path = tmp_path / "perf.yar"
     path.write_text("rule perf { condition: true }", encoding="utf-8")
 
     with pytest.raises(ValueError, match="output_path must not be empty"):
-        optimize_yara_file(str(path), output_path="")
+        optimize_yara_file(str(path), output_path=output_path)
+
+
+@pytest.mark.parametrize("file_path", ["", "   ", "\t"])
+def test_optimize_yara_file_rejects_empty_file_path(file_path: str) -> None:
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        optimize_yara_file(file_path)
 
 
 def test_optimize_yara_file_rejects_empty_pathlike_paths(tmp_path: Path) -> None:
