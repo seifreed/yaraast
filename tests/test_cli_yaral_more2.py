@@ -56,6 +56,33 @@ def test_yaral_validate_json_strict(tmp_path: Path) -> None:
     assert payload["errors"] == []
 
 
+def _semantically_invalid_rule() -> str:
+    """Parses successfully but fails semantic validation (undefined variable)."""
+    return """
+    rule broken_condition {
+        events:
+            $e.metadata.event_type = "USER_LOGIN"
+
+        condition:
+            #e > 5 and #nonexistent > 1
+    }
+    """
+
+
+def test_yaral_validate_invalid_file_exits_nonzero(tmp_path: Path) -> None:
+    file_path = _write(tmp_path, "broken.yaral", _semantically_invalid_rule())
+    runner = CliRunner()
+
+    text_result = runner.invoke(yaral, ["validate", file_path])
+    assert text_result.exit_code != 0
+
+    json_result = runner.invoke(yaral, ["validate", file_path, "--json"])
+    assert json_result.exit_code != 0
+    payload = json.loads(json_result.output)
+    assert payload["valid"] is False
+    assert payload["errors"]
+
+
 def test_yaral_generate_format_and_optimize(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yaral", _sample_rule())
     runner = CliRunner()

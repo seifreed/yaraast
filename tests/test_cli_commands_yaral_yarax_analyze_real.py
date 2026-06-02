@@ -51,6 +51,7 @@ def _sample_yaral() -> str:
     rule login_attempts {
         meta:
             author = "unit"
+            description = "sample rule"
         events:
             $e.metadata.event_type = "USER_LOGIN"
         condition:

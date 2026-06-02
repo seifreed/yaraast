@@ -119,7 +119,11 @@ def validate(file: str, strict: bool, output_json: bool):
         ast = parse_yaral(content, enhanced=False)
         errors, warnings = validate_yaral(ast)
         display_validation_results(file, ast, errors, warnings, strict, output_json)
+        if errors or (strict and warnings):
+            raise SystemExit(1)
 
+    except (SystemExit, click.Abort):
+        raise
     except Exception as e:
         click.echo(f"❌ Error validating YARA-L file: {e}", err=True)
         raise click.Abort() from None
