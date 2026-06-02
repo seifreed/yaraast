@@ -83,6 +83,21 @@ def test_optimize_yara_file_rejects_empty_output_path(tmp_path: Path) -> None:
         optimize_yara_file(str(path), output_path="")
 
 
+def test_optimize_yara_file_rejects_empty_pathlike_paths(tmp_path: Path) -> None:
+    class EmptyPathLike:
+        def __fspath__(self) -> str:
+            return ""
+
+    path = tmp_path / "perf.yar"
+    path.write_text("rule perf { condition: true }", encoding="utf-8")
+    empty_path = EmptyPathLike()
+
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        optimize_yara_file(cast(Any, empty_path))
+    with pytest.raises(ValueError, match="output_path must not be empty"):
+        optimize_yara_file(path, output_path=cast(Any, empty_path))
+
+
 def test_optimize_yara_file_rejects_directory_paths(tmp_path: Path) -> None:
     input_dir = tmp_path / "input_dir"
     input_dir.mkdir()
