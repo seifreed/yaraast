@@ -601,14 +601,15 @@ def test_yara_file_transformer_rejects_non_callable_filter_predicate() -> None:
     assert [rule.name for rule in transformer.build().rules] == ["stable"]
 
 
-def test_yara_file_transformer_rejects_empty_imports_and_includes() -> None:
+@pytest.mark.parametrize("empty_text", ["", "   ", "\t"])
+def test_yara_file_transformer_rejects_empty_imports_and_includes(empty_text: str) -> None:
     transformer = YaraFileTransformer(YaraFile()).add_import("pe").add_include("common.yar")
 
     with pytest.raises(ValidationError, match="Import module must not be empty"):
-        transformer.add_import("")
+        transformer.add_import(empty_text)
 
     with pytest.raises(ValidationError, match="Include path must not be empty"):
-        transformer.add_include("")
+        transformer.add_include(empty_text)
 
     transformed = transformer.build()
     assert [imp.module for imp in transformed.imports] == ["pe"]

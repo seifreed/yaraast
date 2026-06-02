@@ -209,14 +209,15 @@ def test_fluent_file_builder_copies_direct_rule_inputs() -> None:
     assert [built_rule.name for built_rule in builder.build().rules] == ["stable_rule"]
 
 
-def test_fluent_file_builder_rejects_empty_imports_and_includes() -> None:
+@pytest.mark.parametrize("empty_text", ["", "   ", "\t"])
+def test_fluent_file_builder_rejects_empty_imports_and_includes(empty_text: str) -> None:
     builder = yara_file().import_module("pe").include_file("common.yar")
 
     with pytest.raises(ValidationError, match="Import module must not be empty"):
-        builder.import_module("")
+        builder.import_module(empty_text)
 
     with pytest.raises(ValidationError, match="Include path must not be empty"):
-        builder.include_file("")
+        builder.include_file(empty_text)
 
     built = builder.build()
     assert [imp.module for imp in built.imports] == ["pe"]

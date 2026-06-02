@@ -17,7 +17,7 @@ def validate_nonempty_text(value: object, kind: str) -> None:
     if not isinstance(value, str):
         msg = f"{kind} must be a string"
         raise TypeError(msg)
-    if value:
+    if value.strip():
         return
     msg = f"{kind} must not be empty"
     raise ValidationError(msg)

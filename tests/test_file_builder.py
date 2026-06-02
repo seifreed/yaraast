@@ -93,21 +93,22 @@ class TestYaraFileBuilderImports:
 
         assert len(yara_file.imports) == 4
 
-    def test_reject_empty_imports_without_partial_update(self) -> None:
+    @pytest.mark.parametrize("empty_import", ["", "   ", "\t"])
+    def test_reject_empty_imports_without_partial_update(self, empty_import: str) -> None:
         """Empty import modules should be rejected before code generation."""
         builder = YaraFileBuilder().with_import("pe")
 
         with pytest.raises(ValidationError, match="Import module must not be empty"):
-            builder.with_import("")
+            builder.with_import(empty_import)
 
         with pytest.raises(ValidationError, match="Import module must not be empty"):
-            builder.with_imports("math", "")
+            builder.with_imports("math", empty_import)
 
         assert [imp.module for imp in builder.build().imports] == ["pe"]
 
         empty_builder = YaraFileBuilder()
         with pytest.raises(ValidationError, match="Import module must not be empty"):
-            empty_builder.with_imports("pe", "")
+            empty_builder.with_imports("pe", empty_import)
         assert empty_builder.build().imports == []
 
 
@@ -159,21 +160,22 @@ class TestYaraFileBuilderIncludes:
 
         assert len(yara_file.includes) == 4
 
-    def test_reject_empty_includes_without_partial_update(self) -> None:
+    @pytest.mark.parametrize("empty_include", ["", "   ", "\t"])
+    def test_reject_empty_includes_without_partial_update(self, empty_include: str) -> None:
         """Empty include paths should be rejected before code generation."""
         builder = YaraFileBuilder().with_include("common.yar")
 
         with pytest.raises(ValidationError, match="Include path must not be empty"):
-            builder.with_include("")
+            builder.with_include(empty_include)
 
         with pytest.raises(ValidationError, match="Include path must not be empty"):
-            builder.with_includes("utils.yar", "")
+            builder.with_includes("utils.yar", empty_include)
 
         assert [inc.path for inc in builder.build().includes] == ["common.yar"]
 
         empty_builder = YaraFileBuilder()
         with pytest.raises(ValidationError, match="Include path must not be empty"):
-            empty_builder.with_includes("common.yar", "")
+            empty_builder.with_includes("common.yar", empty_include)
         assert empty_builder.build().includes == []
 
 
