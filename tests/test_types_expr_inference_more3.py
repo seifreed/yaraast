@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
@@ -952,6 +954,25 @@ def test_expr_inference_rejects_invalid_for_expression_variable_names() -> None:
 
     assert isinstance(out, BooleanType)
     assert "For-expression variable must be a string" in inf.errors
+
+
+@pytest.mark.parametrize("variable", ["bad-name", "1bad", "for"])
+def test_expr_inference_rejects_invalid_for_expression_variable_identifiers(
+    variable: str,
+) -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(
+        ForExpression(
+            quantifier="any",
+            variable=variable,
+            iterable=SetExpression([IntegerLiteral(value=1)]),
+            body=BooleanLiteral(value=True),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert f"Invalid loop variable identifier: {variable}" in inf.errors
 
 
 def test_expr_inference_for_variable_shadows_same_named_rule() -> None:

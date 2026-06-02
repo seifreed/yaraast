@@ -595,6 +595,24 @@ def test_validate_expression_detects_type_errors() -> None:
     assert any("Right operand of '+' must be numeric" in error.message for error in result.errors)
 
 
+@pytest.mark.parametrize("variable", ["bad-name", "1bad", "for"])
+def test_validate_expression_rejects_invalid_for_expression_variable_identifiers(
+    variable: str,
+) -> None:
+    expr = ForExpression(
+        quantifier="any",
+        variable=variable,
+        iterable=SetExpression([IntegerLiteral(value=1)]),
+        body=BooleanLiteral(value=True),
+    )
+
+    result = SemanticValidator().validate_expression(expr)
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any(f"Invalid loop variable identifier: {variable}" in message for message in messages)
+
+
 def test_semantic_validator_rejects_non_mapping_externals() -> None:
     ast = YaraFile(rules=[Rule(name="externals", condition=BooleanLiteral(True))])
     rule = ast.rules[0]

@@ -30,6 +30,7 @@ from yaraast.shared.integer_semantics import (
     truncate_integer_division,
 )
 from yaraast.types.module_contracts import FunctionDefinition
+from yaraast.types.type_environment import _normalize_identifier
 
 from ._registry import (
     BUILTIN_INT_FUNCTIONS_1ARG,
@@ -1055,7 +1056,16 @@ def _loop_variable_names(ctx: Any, variable: Any) -> list[str]:
         ctx.errors.append("For-expression variable must be a string")
         return []
     names = [name.strip() for name in variable.split(",") if name.strip()]
-    return names or [variable]
+    variable_names = names or [variable]
+    valid_names: list[str] = []
+    for name in variable_names:
+        try:
+            valid_names.append(
+                _normalize_identifier(name, "For-expression variable", "loop variable")
+            )
+        except ValueError as exc:
+            ctx.errors.append(str(exc))
+    return valid_names
 
 
 def _define_unknown_loop_variables(ctx: Any, variable_names: list[str]) -> None:
