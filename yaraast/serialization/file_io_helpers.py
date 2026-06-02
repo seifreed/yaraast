@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from os import PathLike
+from os import PathLike, fspath
 from pathlib import Path
 
 
@@ -10,10 +10,14 @@ def _require_file_path(path: object) -> Path:
     if isinstance(path, bool) or not isinstance(path, str | PathLike):
         msg = "path must be a file path"
         raise TypeError(msg)
-    if isinstance(path, str) and not path:
+    raw_path = fspath(path)
+    if not isinstance(raw_path, str):
+        msg = "path must be a file path"
+        raise TypeError(msg)
+    if not raw_path:
         msg = "path must not be empty"
         raise ValueError(msg)
-    path_obj = Path(path)
+    path_obj = Path(raw_path)
     if path_obj.exists() and path_obj.is_dir():
         msg = "path must not be a directory"
         raise ValueError(msg)

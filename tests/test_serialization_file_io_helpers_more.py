@@ -37,6 +37,23 @@ def test_file_io_helpers_reject_empty_path() -> None:
         write_utf8("", "content")
 
 
+def test_file_io_helpers_reject_empty_pathlike_paths() -> None:
+    class EmptyPathLike:
+        def __fspath__(self) -> str:
+            return ""
+
+    empty_path = EmptyPathLike()
+
+    with pytest.raises(ValueError, match="path must not be empty"):
+        read_utf8(cast(Any, empty_path))
+
+    with pytest.raises(ValueError, match="path must not be empty"):
+        write_utf8(cast(Any, empty_path), "content")
+
+    with pytest.raises(ValueError, match="input_path must not be empty"):
+        require_input_path(cast(Any, empty_path), "input_path")
+
+
 def test_file_io_helpers_reject_directory_paths(tmp_path: Path) -> None:
     directory = tmp_path / "dir"
     directory.mkdir()
