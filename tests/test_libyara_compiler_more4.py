@@ -8,7 +8,12 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
-from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler, normalize_libyara_externals
+from yaraast.libyara.compiler import (
+    YARA_AVAILABLE,
+    LibyaraCompiler,
+    normalize_libyara_externals,
+    normalize_libyara_includes,
+)
 from yaraast.libyara.direct_compiler import DirectASTCompiler
 from yaraast.parser.source import parse_yara_source
 
@@ -32,6 +37,45 @@ def test_libyara_externals_reject_non_string_names(externals: dict[Any, object])
 def test_libyara_externals_reject_empty_names(externals: dict[str, object]) -> None:
     with pytest.raises(ValueError, match="libyara external names must not be empty"):
         normalize_libyara_externals(externals)
+
+
+@pytest.mark.parametrize("includes", [cast(Any, []), cast(Any, "shared.yar")])
+def test_libyara_includes_reject_non_mapping_inputs(includes: Any) -> None:
+    with pytest.raises(TypeError, match="libyara includes must be a dictionary"):
+        normalize_libyara_includes(includes)
+
+
+@pytest.mark.parametrize("includes", [{cast(Any, 1): "rule r { condition: true }"}])
+def test_libyara_includes_reject_non_string_names(includes: dict[Any, object]) -> None:
+    with pytest.raises(TypeError, match="libyara include names must be strings"):
+        normalize_libyara_includes(cast(Any, includes))
+
+
+@pytest.mark.parametrize(
+    "includes", [{"": "rule r { condition: true }"}, {"   ": "rule r { condition: true }"}]
+)
+def test_libyara_includes_reject_empty_names(includes: dict[str, object]) -> None:
+    with pytest.raises(ValueError, match="libyara include names must not be empty"):
+        normalize_libyara_includes(cast(Any, includes))
+
+
+@pytest.mark.parametrize(
+    "includes", [{"shared.yar": cast(Any, 1)}, {"shared.yar": cast(Any, b"rule")}]
+)
+def test_libyara_includes_reject_non_string_content(includes: dict[str, object]) -> None:
+    with pytest.raises(TypeError, match="libyara include contents must be strings"):
+        normalize_libyara_includes(cast(Any, includes))
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_libyara_compile_source_reports_invalid_include_mapping() -> None:
+    result = LibyaraCompiler().compile_source(
+        'include "shared.yar"\nrule main { condition: true }\n',
+        includes=cast(Any, {"": "rule shared { condition: true }"}),
+    )
+
+    assert result.success is False
+    assert result.errors == ["libyara include names must not be empty"]
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")

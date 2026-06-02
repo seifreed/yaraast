@@ -46,6 +46,28 @@ def normalize_libyara_externals(externals: dict[str, Any] | None) -> dict[str, A
     return normalized
 
 
+def normalize_libyara_includes(includes: dict[str, str] | None) -> dict[str, str] | None:
+    """Normalize virtual include mappings passed to libyara."""
+    if includes is None:
+        return None
+    if not isinstance(includes, dict):
+        msg = "libyara includes must be a dictionary"
+        raise TypeError(msg)
+    normalized: dict[str, str] = {}
+    for name, content in includes.items():
+        if not isinstance(name, str):
+            msg = "libyara include names must be strings"
+            raise TypeError(msg)
+        if not name.strip():
+            msg = "libyara include names must not be empty"
+            raise ValueError(msg)
+        if not isinstance(content, str):
+            msg = "libyara include contents must be strings"
+            raise TypeError(msg)
+        normalized[name] = content
+    return normalized
+
+
 def _require_file_path(filepath: object, name: str) -> Path:
     if isinstance(filepath, bool | bytes) or not isinstance(filepath, str | PathLike):
         msg = f"{name} must be a string or path-like object"
@@ -146,6 +168,14 @@ class LibyaraCompiler:
         """
         try:
             compile_kwargs = self._compile_kwargs(includes, error_on_warning)
+        except (TypeError, ValueError) as exc:
+            return CompilationResult(
+                success=False,
+                errors=[str(exc)],
+                source_code=source if isinstance(source, str) else None,
+            )
+
+        try:
             if "\x00" in source:
                 compiled = self._compile_via_tempfile(source, includes, error_on_warning)
             else:
@@ -211,7 +241,11 @@ class LibyaraCompiler:
         if includes is None:
             kwargs["includes"] = False
             return kwargs
-        kwargs["include_callback"] = self._include_callback(includes)
+        normalized_includes = normalize_libyara_includes(includes)
+        if normalized_includes is None:
+            kwargs["includes"] = False
+            return kwargs
+        kwargs["include_callback"] = self._include_callback(normalized_includes)
         return kwargs
 
     def _include_callback(self, includes: dict[str, str]) -> Callable[..., str | None]:
@@ -262,7 +296,11 @@ class LibyaraCompiler:
                 "error_on_warning": error_on_warning,
             }
             if includes is not None:
-                compile_kwargs["include_callback"] = self._include_callback(includes)
+                normalized_includes = normalize_libyara_includes(includes)
+                if normalized_includes is None:
+                    compile_kwargs["includes"] = False
+                else:
+                    compile_kwargs["include_callback"] = self._include_callback(normalized_includes)
             compiled = yara.compile(
                 filepath=str(filepath),
                 **compile_kwargs,
@@ -280,6 +318,8 @@ class LibyaraCompiler:
             return CompilationResult(
                 success=False, errors=[f"Compilation error: {e!s}"], source_code=source
             )
+        except (TypeError, ValueError) as e:
+            return CompilationResult(success=False, errors=[str(e)], source_code=source)
         except Exception as e:
             return CompilationResult(
                 success=False, errors=[f"Unexpected error: {e!s}"], source_code=source
