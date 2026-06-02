@@ -34,10 +34,11 @@ def test_compare_code_normalizes_whitespace_only() -> None:
     assert tester._compare_code(code1, code3) is False
 
 
-def test_file_round_trip_rejects_empty_filepath() -> None:
+@pytest.mark.parametrize("filepath", ["", "   ", "\t"])
+def test_file_round_trip_rejects_empty_filepath(filepath: str) -> None:
     tester = _tester_without_libyara_init()
 
-    result = tester.test_file_round_trip("")
+    result = tester.test_file_round_trip(filepath)
 
     assert result.equivalent is False
     assert result.ast_differences == ["Failed to parse file: filepath must not be empty"]
