@@ -125,3 +125,27 @@ def test_condition_pattern_duplicate_strings_and_rule_grouping() -> None:
     grouped = group_rules_by_pattern(rules, get_condition_pattern)
     assert grouped[(1, "Identifier")] == ["r1", "r2", "r5"]
     assert grouped[(1, None)] == ["r3", "r4"]
+
+
+def test_group_duplicate_strings_counts_each_rule_once() -> None:
+    """A rule defining the same value twice must count as a single rule."""
+    rules = [
+        Rule(
+            name="r1",
+            strings=[
+                PlainString(identifier="$a", value="shared"),
+                PlainString(identifier="$b", value="shared"),
+            ],
+            condition=Identifier("flag"),
+        ),
+        Rule(
+            name="r2",
+            strings=[PlainString(identifier="$c", value="shared")],
+            condition=Identifier("flag"),
+        ),
+    ]
+
+    duplicates = group_duplicate_strings(rules)
+
+    # The shared value lives in exactly two distinct rules, each listed once.
+    assert duplicates[("plain", "shared")] == ["r1", "r2"]

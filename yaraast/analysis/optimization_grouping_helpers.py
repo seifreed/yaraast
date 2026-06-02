@@ -26,6 +26,7 @@ def hex_to_string(hex_str: HexString) -> str:
 def group_duplicate_strings(rules: list[Rule]) -> dict[tuple[str, str | bytes], list[str]]:
     string_to_rules: dict[tuple[str, str | bytes], list[str]] = defaultdict(list)
     for rule in rules:
+        seen_keys: set[tuple[str, str | bytes]] = set()
         for string_def in rule.strings:
             if isinstance(string_def, PlainString):
                 key = ("plain", string_def.value)
@@ -33,6 +34,9 @@ def group_duplicate_strings(rules: list[Rule]) -> dict[tuple[str, str | bytes], 
                 key = ("hex", hex_to_string(string_def))
             else:
                 continue
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
             string_to_rules[key].append(rule.name)
     return string_to_rules
 
