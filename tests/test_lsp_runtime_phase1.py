@@ -156,6 +156,10 @@ def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
         index.set_workspace_folders(cast(Any, [str(tmp_path), object()]))
     with pytest.raises(ValueError, match="Workspace folder paths must not be empty"):
         index.set_workspace_folders([""])
+    with pytest.raises(ValueError, match="Workspace folder paths must not be empty"):
+        index.set_workspace_folders(["   "])
+    with pytest.raises(ValueError, match="Workspace folder paths must not be empty"):
+        index.set_workspace_folders(["\t"])
 
     assert index.workspace_folders == [tmp_path]
 
@@ -166,6 +170,8 @@ def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
         runtime.set_workspace_folders(cast(Any, str(tmp_path)))
     with pytest.raises(ValueError, match="Workspace folder paths must not be empty"):
         runtime.set_workspace_folders([""])
+    with pytest.raises(ValueError, match="Workspace folder paths must not be empty"):
+        runtime.set_workspace_folders(["   "])
 
     assert runtime.index.workspace_folders == [tmp_path]
 
