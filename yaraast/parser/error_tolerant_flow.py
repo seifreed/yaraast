@@ -87,8 +87,28 @@ def extract_rule_header(parser, line: str, line_num: int) -> tuple[str | None, l
     return rule_name, tags, modifiers
 
 
+def _skip_regex_literal(line: str, slash_index: int) -> int:
+    """Return the index just past a ``/regex/`` literal opened at ``slash_index``."""
+    i = slash_index + 1
+    while i < len(line):
+        ch = line[i]
+        if ch == "\\" and i + 1 < len(line):
+            i += 2
+            continue
+        if ch == "/":
+            return i + 1
+        i += 1
+    return i
+
+
+def _starts_regex_literal(line: str, slash_index: int) -> bool:
+    """Decide whether a ``/`` opens a regex literal (``$id = /.../``) versus division."""
+    preceding = line[:slash_index].rstrip()
+    return preceding.endswith("=")
+
+
 def _count_braces_outside_literals(line: str) -> int:
-    """Count net brace balance ignoring braces inside strings, line comments, and block comments."""
+    """Count net brace balance ignoring braces inside strings, regexes, and comments."""
     count = 0
     in_string = False
     in_block_comment = False
@@ -113,6 +133,9 @@ def _count_braces_outside_literals(line: str) -> int:
         elif ch == "/" and i + 1 < len(line) and line[i + 1] == "*":
             in_block_comment = True
             i += 2
+            continue
+        elif ch == "/" and _starts_regex_literal(line, i):
+            i = _skip_regex_literal(line, i)
             continue
         elif ch == "{":
             count += 1

@@ -119,6 +119,26 @@ def test_error_tolerant_recovery_preserves_falsy_present_rule(
     assert [str(modifier) for modifier in recovered.modifiers] == ["private"]
 
 
+def test_recovery_preserves_rule_after_regex_with_unbalanced_brace() -> None:
+    source = dedent("""
+        @@@ forces error-tolerant recovery
+        rule First {
+            strings:
+                $re = /[{]/
+            condition:
+                $re
+        }
+        rule Second {
+            condition:
+                true
+        }
+        """)
+
+    result = ErrorTolerantParser().parse(source)
+
+    assert [rule.name for rule in result.ast.rules] == ["First", "Second"]
+
+
 def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     p = ErrorTolerantParser()
 
