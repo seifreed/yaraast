@@ -299,7 +299,7 @@ def format_nonempty_quoted_value(value: str, kind: str) -> str:
     if not isinstance(value, str):
         msg = f"{kind} must be a string for libyara output"
         raise TypeError(msg)
-    if not value:
+    if not value.strip():
         msg = f"{kind} must not be empty for libyara output"
         raise ValueError(msg)
     return escape_string_literal(value)

@@ -171,12 +171,27 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
             "Import module must not be empty",
         ),
         (
+            YaraFile(imports=[Import("   ")], rules=[Rule("r", condition=BooleanLiteral(True))]),
+            "Import module must not be empty",
+        ),
+        (
             YaraFile(includes=[Include("")], rules=[Rule("r", condition=BooleanLiteral(True))]),
+            "Include path must not be empty",
+        ),
+        (
+            YaraFile(includes=[Include("\t")], rules=[Rule("r", condition=BooleanLiteral(True))]),
             "Include path must not be empty",
         ),
         (
             YaraFile(
                 extern_imports=[ExternImport("")],
+                rules=[Rule("r", condition=BooleanLiteral(True))],
+            ),
+            "Import module must not be empty",
+        ),
+        (
+            YaraFile(
+                extern_imports=[ExternImport("   ")],
                 rules=[Rule("r", condition=BooleanLiteral(True))],
             ),
             "Import module must not be empty",
