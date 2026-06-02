@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from os import PathLike
+from os import PathLike, fspath
 from pathlib import Path
 import re
 
@@ -72,12 +72,16 @@ def read_test_data(test_data_path: str | PathLike[str] | None) -> bytes | None:
     if not isinstance(test_data_path, str | PathLike):
         msg = "test data path must be a string or path-like object"
         raise TypeError(msg)
-    if isinstance(test_data_path, str) and not test_data_path:
+    raw_path = fspath(test_data_path)
+    if not isinstance(raw_path, str):
+        msg = "test data path must be a string or path-like object"
+        raise TypeError(msg)
+    if not raw_path:
         msg = "test data path cannot be empty"
         raise ValueError(msg)
 
     try:
-        with Path(test_data_path).open("rb") as f:
+        with Path(raw_path).open("rb") as f:
             return f.read()
     except Exception as exc:
         msg = f"Error reading test data: {exc}"

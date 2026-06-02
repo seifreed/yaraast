@@ -48,6 +48,15 @@ def test_read_test_data_rejects_empty_path() -> None:
         vs.read_test_data("")
 
 
+def test_read_test_data_rejects_empty_pathlike_path() -> None:
+    class EmptyPathLike:
+        def __fspath__(self) -> str:
+            return ""
+
+    with pytest.raises(ValueError, match="test data path cannot be empty"):
+        vs.read_test_data(cast(Any, EmptyPathLike()))
+
+
 def test_yarax_check_varies_with_strict_flag() -> None:
     ast = _ast_with_regex_issue()
 
