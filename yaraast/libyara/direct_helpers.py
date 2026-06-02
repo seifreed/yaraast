@@ -23,7 +23,7 @@ def _require_source_path(source_path: object) -> Path:
     if not isinstance(raw_path, str):
         msg = "source_path must be a string or path-like object"
         raise TypeError(msg)
-    if not raw_path:
+    if not raw_path.strip():
         msg = "source_path must not be empty"
         raise ValueError(msg)
     return Path(raw_path)

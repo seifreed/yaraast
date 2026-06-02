@@ -97,11 +97,16 @@ def test_direct_compiler_compile_ast_rejects_invalid_source_path() -> None:
     ast = Parser().parse("rule main_rule { condition: true }")
     compiler = DirectASTCompiler(enable_optimization=False)
 
-    empty_result = compiler.compile_ast(ast, source_path="")
+    empty_results = [
+        compiler.compile_ast(ast, source_path=source_path) for source_path in ["", "   ", "\t"]
+    ]
     type_result = compiler.compile_ast(ast, source_path=cast(Any, False))
 
-    assert empty_result.success is False
-    assert empty_result.errors == ["Direct compilation error: source_path must not be empty"]
+    assert all(result.success is False for result in empty_results)
+    assert all(
+        result.errors == ["Direct compilation error: source_path must not be empty"]
+        for result in empty_results
+    )
     assert type_result.success is False
     assert type_result.errors == [
         "Direct compilation error: source_path must be a string or path-like object",
