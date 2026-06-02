@@ -401,6 +401,16 @@ def test_validate_file_rejects_duplicate_rule_names() -> None:
     assert any("Duplicate rule identifier: dup" in error.message for error in result.errors)
 
 
+@pytest.mark.parametrize("rule_name", ["bad-name", "rule*", "*", "for"])
+def test_validate_file_rejects_invalid_rule_names(rule_name: str) -> None:
+    ast = YaraFile(rules=[Rule(name=rule_name, condition=BooleanLiteral(True))])
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any(f"Invalid rule identifier: {rule_name}" in error.message for error in result.errors)
+
+
 def test_validate_file_rejects_duplicate_rule_tags() -> None:
     ast = YaraFile(
         rules=[

@@ -83,7 +83,11 @@ class TypeChecker(BaseVisitor[None]):
                 self.errors.append(f"Duplicate rule identifier: {rule.name}")
                 continue
             seen_rules.add(rule.name)
-            self.env.add_rule(rule.name)
+            try:
+                self.env.add_rule(rule.name)
+            except ValueError as exc:
+                self.errors.append(str(exc))
+                continue
             self.visit(rule)
 
     def visit_import(self, node: Import) -> None:

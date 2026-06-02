@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.string_references import normalize_string_reference_id
 
 from ._registry_base import YaraType
+
+_YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
 
 
 def _require_string(value: Any, field_name: str) -> str:
@@ -35,6 +40,18 @@ def _normalize_concrete_string_id(
 ) -> str:
     string_id = _require_string(string_id, field_name)
     return normalize_string_reference_id(string_id, allow_wildcard=False)
+
+
+def _normalize_rule_name(rule_name: str) -> str:
+    rule_name = _require_nonempty_string(rule_name, "TypeEnvironment rule name")
+    if (
+        len(rule_name) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _YARA_IDENTIFIER_RE.fullmatch(rule_name) is not None
+        and rule_name not in _YARA_KEYWORDS
+    ):
+        return rule_name
+    msg = f"Invalid rule identifier: {rule_name}"
+    raise ValueError(msg)
 
 
 class TypeEnvironment:
@@ -117,11 +134,11 @@ class TypeEnvironment:
         )
 
     def add_rule(self, rule_name: str) -> None:
-        rule_name = _require_nonempty_string(rule_name, "TypeEnvironment rule name")
+        rule_name = _normalize_rule_name(rule_name)
         self.rules.add(rule_name)
 
     def has_rule(self, rule_name: str) -> bool:
-        rule_name = _require_string(rule_name, "TypeEnvironment rule name")
+        rule_name = _normalize_rule_name(rule_name)
         return rule_name in self.rules
 
     def has_rule_pattern(self, pattern: str) -> bool:

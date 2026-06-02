@@ -925,6 +925,30 @@ class TestTypeEnvironment:
         assert env.anonymous_strings == set()
         assert env.rules == {"rule1"}
 
+    @pytest.mark.parametrize("rule_name", ["bad-name", "rule*", "*", "for"])
+    def test_type_environment_rejects_invalid_rule_names_without_partial_update(
+        self,
+        rule_name: str,
+    ) -> None:
+        env = TypeEnvironment()
+        env.add_rule("rule1")
+
+        with pytest.raises(ValueError, match="Invalid rule identifier"):
+            env.add_rule(rule_name)
+
+        assert env.rules == {"rule1"}
+
+    @pytest.mark.parametrize("rule_name", ["bad-name", "rule*", "*", "for"])
+    def test_type_environment_has_rule_rejects_invalid_exact_rule_names(
+        self,
+        rule_name: str,
+    ) -> None:
+        env = TypeEnvironment()
+        env.add_rule("rule1")
+
+        with pytest.raises(ValueError, match="Invalid rule identifier"):
+            env.has_rule(rule_name)
+
 
 class TestTypeSystem:
     """Tests for TypeSystem class."""
