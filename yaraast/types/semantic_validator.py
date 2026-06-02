@@ -110,7 +110,10 @@ class SemanticValidator:
             env = TypeEnvironment()
 
         _define_external_types(env, self._effective_externals(externals))
-        populate_env_for_rule(rule, env)
+        try:
+            populate_env_for_rule(rule, env)
+        except (TypeError, ValueError) as exc:
+            result.add_error(str(exc))
 
         string_validator = StringIdentifierValidator(result)
         string_validator.visit(rule)

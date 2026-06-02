@@ -77,6 +77,22 @@ def test_validate_rule_detects_undefined_string_references() -> None:
     assert any("Undefined string '$missing'" in error.message for error in result.errors)
 
 
+@pytest.mark.parametrize("identifier", ["$a*", "$"])
+def test_validate_rule_rejects_invalid_string_identifiers_without_aborting(
+    identifier: str,
+) -> None:
+    rule = Rule(
+        name="invalid_string_identifier",
+        strings=[PlainString(identifier=identifier, value="test")],
+        condition=BooleanLiteral(True),
+    )
+
+    result = SemanticValidator().validate_rule(rule)
+
+    assert result.is_valid is False
+    assert any("Invalid string reference" in error.message for error in result.errors)
+
+
 @pytest.mark.parametrize(
     ("condition", "message"),
     [
