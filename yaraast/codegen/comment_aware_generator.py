@@ -190,6 +190,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         self._write_condition_section(node)
 
         # Close rule
+        self._dedent()
         self._writeline("}")
 
         return ""

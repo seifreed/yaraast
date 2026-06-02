@@ -302,3 +302,48 @@ rule sample {
     string_def = rule.strings[0]
     assert string_def.location is not None
     assert string_def.location.end_column is not None
+
+
+def test_condition_trailing_comment_attaches_to_condition_not_file() -> None:
+    source = "rule A {\n    condition:\n        true // trailing cond comment\n}\n"
+    ast = CommentAwareParser().parse(source)
+
+    condition = ast.rules[0].condition
+    assert condition is not None
+    assert condition.trailing_comment is not None
+    assert condition.trailing_comment.text == "// trailing cond comment"
+    assert ast.trailing_comment is None
+
+
+def test_condition_trailing_comment_survives_generation_roundtrip() -> None:
+    source = "rule A {\n    condition:\n        true // trailing cond comment\n}\n"
+    ast = CommentAwareParser().parse(source)
+    output = CommentAwareCodeGenerator().generate(ast)
+
+    condition_line = next(line for line in output.splitlines() if line.strip().startswith("true"))
+    assert "// trailing cond comment" in condition_line
+
+    reparsed = CommentAwareParser().parse(output)
+    reparsed_condition = reparsed.rules[0].condition
+    assert reparsed_condition is not None
+    assert reparsed_condition.trailing_comment is not None
+    assert reparsed.trailing_comment is None
+
+
+def test_comment_aware_generator_does_not_leak_indentation_between_rules() -> None:
+    source = (
+        "rule A {\n    condition:\n        true\n}\n\n"
+        "rule B {\n    condition:\n        false\n}\n"
+    )
+    ast = CommentAwareParser().parse(source)
+    output = CommentAwareCodeGenerator().generate(ast)
+
+    lines = output.splitlines()
+    closing_braces = [line for line in lines if line.strip() == "}"]
+    assert closing_braces, output
+    assert all(line == "}" for line in closing_braces), output
+
+    rule_b_conditions = [
+        line for line in lines if line.strip() == "condition:" and line.startswith("    condition:")
+    ]
+    assert len(rule_b_conditions) == 2, output

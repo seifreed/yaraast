@@ -130,7 +130,7 @@ def test_comment_aware_generator_condition_trailing_comment_stays_on_condition_l
 
     out = CommentAwareCodeGenerator().generate(file_ast)
 
-    assert "true  // condition tail\n    }" in out
+    assert "true  // condition tail\n}" in out
     assert "// condition tail    }" not in out
 
 

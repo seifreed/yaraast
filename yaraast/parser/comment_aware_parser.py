@@ -296,7 +296,20 @@ class CommentAwareParser(Parser):
         if cond_leading_comments:
             condition.leading_comments = cond_leading_comments
 
+        cond_end_line = self._condition_end_line(condition, cond_start_line)
+        trailing = self._collect_trailing_comment(cond_end_line)
+        if trailing:
+            condition.trailing_comment = trailing
+
         return condition
+
+    @staticmethod
+    def _condition_end_line(condition: Expression, fallback: int) -> int:
+        """Return the line where the condition expression ends."""
+        location = getattr(condition, "location", None)
+        if location is not None and location.end_line is not None:
+            return location.end_line
+        return fallback
 
     def _skip_unrecognized_token(self) -> bool:
         """Skip unrecognized token. Returns False if should break loop."""

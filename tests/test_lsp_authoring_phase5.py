@@ -575,7 +575,7 @@ rule demo {
 def test_authoring_noop_paths_return_none() -> None:
     actions = AuthoringActions()
     text = """
-rule demo {
+rule demo{
     strings:
         $a = "abc"
     condition:
