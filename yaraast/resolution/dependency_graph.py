@@ -20,6 +20,9 @@ def _require_path(value: object, context: str) -> Path:
     if isinstance(value, Path):
         return value
     if isinstance(value, str):
+        if not value:
+            msg = f"{context} must not be empty"
+            raise ValidationError(msg)
         return Path(value)
     msg = f"{context} must be a path"
     raise ValidationError(msg)

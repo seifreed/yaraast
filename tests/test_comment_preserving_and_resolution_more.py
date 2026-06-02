@@ -300,6 +300,7 @@ def test_dependency_graph_add_file_rejects_invalid_inputs_without_partial_update
     original_rule_files = dict(graph.rule_files)
 
     invalid_cases: list[tuple[tuple[Any, ...], str]] = [
+        (("", YaraFile()), "DependencyGraph file_path must not be empty"),
         ((object(), YaraFile()), "DependencyGraph file_path must be a path"),
         (("bad_ast.yar", object()), "DependencyGraph ast must be a YaraFile"),
         (
