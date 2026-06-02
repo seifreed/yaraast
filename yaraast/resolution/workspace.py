@@ -57,7 +57,7 @@ class Workspace:
         if not isinstance(raw_path, str):
             msg = "root_path must be a text path"
             raise TypeError(msg)
-        if not raw_path:
+        if not raw_path.strip():
             msg = "root_path must not be empty"
             raise ValueError(msg)
         return Path(raw_path)
@@ -138,7 +138,7 @@ class Workspace:
         if not isinstance(raw_path, str):
             msg = f"{name} must be a string or path-like object"
             raise TypeError(msg)
-        if not raw_path:
+        if not raw_path.strip():
             msg = f"{name} must not be empty"
             raise ValueError(msg)
         return Path(raw_path)

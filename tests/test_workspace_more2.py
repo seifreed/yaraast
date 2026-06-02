@@ -27,9 +27,10 @@ def _write(path: Path, content: str) -> Path:
     return path
 
 
-def test_workspace_rejects_empty_root_path() -> None:
+@pytest.mark.parametrize("root_path", ["", "   ", "\t"])
+def test_workspace_rejects_empty_root_path(root_path: str) -> None:
     with pytest.raises(ValueError, match="root_path must not be empty"):
-        Workspace("")
+        Workspace(root_path)
 
 
 @pytest.mark.parametrize("root_path", [False, 0, object()])
@@ -44,11 +45,15 @@ def test_workspace_accepts_pathlike_root_path(tmp_path: Path) -> None:
     assert workspace.root_path == tmp_path
 
 
-def test_workspace_add_file_rejects_empty_file_path(tmp_path: Path) -> None:
+@pytest.mark.parametrize("file_path", ["", "   ", "\t"])
+def test_workspace_add_file_rejects_empty_file_path(
+    tmp_path: Path,
+    file_path: str,
+) -> None:
     workspace = Workspace(str(tmp_path))
 
     with pytest.raises(ValueError, match="file_path must not be empty"):
-        workspace.add_file("")
+        workspace.add_file(file_path)
 
 
 @pytest.mark.parametrize("file_path", [None, False, 0, object(), b"rule.yar"])
@@ -422,11 +427,15 @@ def test_workspace_add_directory_default_includes_yara_extension(tmp_path: Path)
     assert str(yarax) not in workspace.files
 
 
-def test_workspace_add_directory_rejects_empty_directory(tmp_path: Path) -> None:
+@pytest.mark.parametrize("directory", ["", "   ", "\t"])
+def test_workspace_add_directory_rejects_empty_directory(
+    tmp_path: Path,
+    directory: str,
+) -> None:
     workspace = Workspace(str(tmp_path))
 
     with pytest.raises(ValueError, match="directory must not be empty"):
-        workspace.add_directory("")
+        workspace.add_directory(directory)
 
 
 @pytest.mark.parametrize("directory", [None, 123, object()])
