@@ -1281,10 +1281,11 @@ def test_evaluate_file_rejects_non_string_rule_names() -> None:
 
 
 def test_evaluate_file_rejects_empty_rule_names() -> None:
-    ast = YaraFile(rules=[Rule("", condition=BooleanLiteral(True))])
+    for name in ("", "   ", "\t"):
+        ast = YaraFile(rules=[Rule(name, condition=BooleanLiteral(True))])
 
-    with pytest.raises(EvaluationError, match="Rule name must not be empty"):
-        YaraEvaluator().evaluate_file(ast)
+        with pytest.raises(EvaluationError, match="Rule name must not be empty"):
+            YaraEvaluator().evaluate_file(ast)
 
 
 def test_evaluate_file_rejects_non_string_string_definition_identifiers() -> None:
@@ -2685,6 +2686,8 @@ def test_evaluate_file_with_aliased_import_keeps_original_module_name() -> None:
     ("alias", "error_type", "message"),
     [
         ("", EvaluationError, "Import alias must not be empty"),
+        ("   ", EvaluationError, "Import alias must not be empty"),
+        ("\t", EvaluationError, "Import alias must not be empty"),
         (False, TypeError, "Import alias must be a string"),
     ],
 )
@@ -2706,6 +2709,8 @@ def test_evaluate_file_rejects_invalid_import_aliases(
     ("module", "error_type", "message"),
     [
         ("", EvaluationError, "Import module must not be empty"),
+        ("   ", EvaluationError, "Import module must not be empty"),
+        ("\t", EvaluationError, "Import module must not be empty"),
         (False, TypeError, "Import module must be a string"),
     ],
 )

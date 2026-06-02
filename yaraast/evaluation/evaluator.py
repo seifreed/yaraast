@@ -53,7 +53,7 @@ def _validate_import_alias(alias: Any) -> str | None:
     if not isinstance(alias, str):
         msg = "Import alias must be a string"
         raise TypeError(msg)
-    if not alias:
+    if not alias.strip():
         msg = "Import alias must not be empty"
         raise EvaluationError(msg)
     return alias
@@ -63,7 +63,7 @@ def _validate_import_module(module: Any) -> str:
     if not isinstance(module, str):
         msg = "Import module must be a string"
         raise TypeError(msg)
-    if not module:
+    if not module.strip():
         msg = "Import module must not be empty"
         raise EvaluationError(msg)
     return module
@@ -84,7 +84,7 @@ def _validate_rule_name(name: Any) -> str:
     if not isinstance(name, str):
         msg = "Rule name must be a string"
         raise TypeError(msg)
-    if not name:
+    if not name.strip():
         msg = "Rule name must not be empty"
         raise EvaluationError(msg)
     return name
