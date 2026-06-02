@@ -66,6 +66,21 @@ def test_complexity_analyzer_rejects_embedded_string_reference_operators(
         ComplexityAnalyzer().analyze(ast)
 
 
+def test_complexity_analyzer_allows_implicit_current_string_references() -> None:
+    ast = Parser().parse("""
+rule implicit_current_refs {
+    strings:
+        $a = "abc"
+    condition:
+        for any of them : ($ at @ or # == 1 or ! == 3)
+}
+""")
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.for_of_expressions == 1
+
+
 def test_complexity_analyzer_metrics_and_report(tmp_path: Path) -> None:
     code = """
     import "pe"

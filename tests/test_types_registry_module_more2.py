@@ -143,3 +143,13 @@ def test_type_environment_rejects_embedded_string_reference_operators() -> None:
         env.has_string("@a")
     with pytest.raises(ValueError, match="Invalid string reference '!a'"):
         env.has_string_pattern("!a")
+
+
+@pytest.mark.parametrize("string_id", ["$", "$   "])
+def test_type_environment_rejects_empty_or_whitespace_string_reference_body(
+    string_id: str,
+) -> None:
+    env = TypeEnvironment()
+
+    with pytest.raises(ValueError, match="Invalid string reference"):
+        env.add_string(string_id)

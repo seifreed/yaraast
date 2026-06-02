@@ -44,6 +44,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._string_usage: dict[str, set[str]] = {}
         self._rule_strings: dict[str, set[str]] = {}
         self._local_scopes: list[dict[str, object]] = []
+        self._implicit_current_string_allowed = False
 
     def analyze(self, ast: YaraFile) -> ComplexityMetrics:
         """Analyze AST and return complexity metrics."""
@@ -58,6 +59,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._string_usage = {}
         self._rule_strings = {}
         self._local_scopes.clear()
+        self._implicit_current_string_allowed = False
 
         # File-level metrics
         self.metrics.total_rules = len(ast.rules)
@@ -125,7 +127,12 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._visit_ast_value(node.quantifier)
         self._visit_string_set_value(node.string_set)
         if node.condition is not None:
-            self.visit(node.condition)
+            previous = self._implicit_current_string_allowed
+            self._implicit_current_string_allowed = True
+            try:
+                self.visit(node.condition)
+            finally:
+                self._implicit_current_string_allowed = previous
         self._current_depth -= 1
 
     def visit_of_expression(self, node: OfExpression) -> None:
@@ -170,6 +177,8 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._mark_condition_string_usage(string_id)
 
     def _mark_condition_string_usage(self, string_id: str) -> None:
+        if self._implicit_current_string_allowed and string_id in {"", "$"}:
+            return
         normalized = self._normalize_string_id(string_id)
         if self._is_local(normalized):
             return

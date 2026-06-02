@@ -76,13 +76,17 @@ def infer_string_count_like(
     label: str,
     index: Any = None,
 ) -> YaraType:
+    if string_id in {"", "$"} and ctx.env.lookup("$"):
+        if index is not None:
+            index_type = ctx.visit(index)
+            if not isinstance(index_type, IntegerType):
+                ctx.errors.append(f"{label} index must be integer, got {index_type}")
+        return IntegerType()
     try:
         normalized = ctx._normalize_string_id(string_id)
     except ValueError as exc:
         ctx.errors.append(str(exc))
         return UnknownType()
-    if normalized == "$" and ctx.env.lookup("$"):
-        return IntegerType()
     if ctx.env.has_string(normalized) or ctx.env.has_string_pattern(normalized):
         if index is not None:
             index_type = ctx.visit(index)
@@ -859,13 +863,13 @@ def _should_validate_raw_string_refs(ctx: Any) -> bool:
 def _validate_raw_string_ref(ctx: Any, value: str) -> None:
     if not _should_validate_raw_string_refs(ctx):
         return
+    if value in {"", "$"} and ctx.env.lookup("$"):
+        return
 
     try:
         normalized = ctx._normalize_string_id(value)
     except ValueError as exc:
         ctx.errors.append(str(exc))
-        return
-    if normalized == "$" and ctx.env.lookup("$"):
         return
     if normalized.endswith("*"):
         if not ctx.env.has_string_pattern(normalized):

@@ -394,10 +394,10 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         rule_key = self._active_rule_key()
         if not (rule_key and self.in_condition):
             return
+        if self.implicit_current_string_allowed and string_id in {"", "$"}:
+            return
         normalized = self._normalize_string_id(string_id)
-        if (self.implicit_current_string_allowed and normalized == "$") or self._is_local(
-            normalized
-        ):
+        if self._is_local(normalized):
             return
         self.used_strings[rule_key].add(normalized)
 
