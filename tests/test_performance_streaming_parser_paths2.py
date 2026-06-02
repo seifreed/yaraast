@@ -218,14 +218,16 @@ def test_streaming_parser_rejects_single_string_file_paths(tmp_path: Path) -> No
         list(parser.parse_files(cast(Any, str(path))))
 
 
-def test_validate_file_path_sequence_rejects_empty_entries() -> None:
+@pytest.mark.parametrize("path", ["", "   ", "\t"])
+def test_validate_file_path_sequence_rejects_empty_entries(path: str) -> None:
     with pytest.raises(ValueError, match="file_paths must not contain empty paths"):
-        validate_file_path_sequence([""])
+        validate_file_path_sequence([path])
 
 
-def test_streaming_parser_parse_files_rejects_empty_file_path_entries() -> None:
+@pytest.mark.parametrize("path", ["", "   ", "\t"])
+def test_streaming_parser_parse_files_rejects_empty_file_path_entries(path: str) -> None:
     with pytest.raises(ValueError, match="file_paths must not contain empty paths"):
-        list(StreamingParser().parse_files(cast(Any, [""])))
+        list(StreamingParser().parse_files(cast(Any, [path])))
 
 
 def test_streaming_parser_mmap_import_include_and_token_branches(tmp_path: Path) -> None:
