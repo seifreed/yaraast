@@ -173,6 +173,9 @@ class DependencyGraph:
         self.nodes: dict[str, DependencyNode] = {}
         self.file_rules: dict[str, set[str]] = {}  # file_path -> rule occurrence names
         self.rule_files: dict[str, str] = {}  # rule occurrence name -> file_path
+        # rule_key -> (rule AST, module aliases) for re-analysis once all rule
+        # nodes across every file are present.
+        self._rule_analysis_inputs: dict[str, tuple[Rule, dict[str, str]]] = {}
 
     def add_file(
         self,
@@ -221,14 +224,19 @@ class DependencyGraph:
         # Add all rules first so forward references can resolve during analysis.
         rule_keys = _rule_occurrence_keys(ast.rules)
         for rule in ast.rules:
+            rule_key = f"rule:{rule_keys[id(rule)]}"
             self._add_rule(file_key, rule, rule_keys[id(rule)])
+            self._rule_analysis_inputs[rule_key] = (rule, dict(module_aliases))
 
-        for rule in ast.rules:
-            self._analyze_rule_dependencies(
-                f"rule:{rule_keys[id(rule)]}",
-                rule,
-                module_aliases,
-            )
+        # Re-analyze every known rule so cross-file references resolve regardless
+        # of the order files are added and survive re-adding included files.
+        self._reanalyze_all_rules()
+
+    def _reanalyze_all_rules(self) -> None:
+        """Recompute rule dependency edges for every rule node in the graph."""
+        for rule_key, (rule, module_aliases) in self._rule_analysis_inputs.items():
+            if rule_key in self.nodes:
+                self._analyze_rule_dependencies(rule_key, rule, module_aliases)
 
     def _validate_file_ast(self, ast: YaraFile) -> None:
         """Validate graph-relevant AST fields before mutating graph state."""
@@ -282,6 +290,7 @@ class DependencyGraph:
 
     def _remove_rule_node(self, rule_key: str) -> None:
         """Remove a rule node and references to it."""
+        self._rule_analysis_inputs.pop(rule_key, None)
         rule_node = self.nodes.pop(rule_key, None)
         if rule_node is None:
             return

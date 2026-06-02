@@ -446,3 +446,67 @@ class TestDependencyGraph:
         assert "digraph YaraDependencies" in dot
         assert "test.yar" in dot
         assert "test_rule" in dot
+
+    @pytest.mark.parametrize(
+        "add_order",
+        [
+            ("main.yar",),
+            ("common.yar", "main.yar"),
+            ("main.yar", "common.yar"),
+        ],
+    )
+    def test_cross_file_rule_dependency_resolved(self, add_order: tuple[str, ...]) -> None:
+        """Rule references across an include must produce a dependency edge."""
+        common_content = """
+rule Base {
+    strings:
+        $a = "base"
+    condition:
+        $a
+}
+"""
+        main_content = """
+include "common.yar"
+
+rule Derived {
+    condition:
+        Base
+}
+"""
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            create_temp_file(tmpdir, "common.yar", common_content)
+            create_temp_file(tmpdir, "main.yar", main_content)
+
+            workspace = Workspace(root_path=str(tmpdir), search_paths=[str(tmpdir)])
+            for name in add_order:
+                workspace.add_file(str(tmpdir / name))
+
+            assert "rule:Base" in workspace.dependency_graph.get_rule_dependencies("Derived")
+
+    def test_cross_file_rule_cycle_detected(self) -> None:
+        """A rule cycle spanning an include boundary must be reported."""
+        a_content = """
+include "c2.yar"
+
+rule A {
+    condition:
+        B
+}
+"""
+        b_content = """
+rule B {
+    condition:
+        A
+}
+"""
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            create_temp_file(tmpdir, "c1.yar", a_content)
+            create_temp_file(tmpdir, "c2.yar", b_content)
+
+            workspace = Workspace(root_path=str(tmpdir), search_paths=[str(tmpdir)])
+            workspace.add_file(str(tmpdir / "c1.yar"))
+
+            cycles = workspace.dependency_graph.find_cycles()
+            assert any({"rule:A", "rule:B"}.issubset(set(cycle)) for cycle in cycles)
