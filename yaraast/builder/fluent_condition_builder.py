@@ -81,9 +81,10 @@ class FluentConditionBuilder(ConditionBuilder):
     def at_least_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At least N of the specified strings."""
         self._validate_quantifier_count("Minimum", n)
+        string_set = build_string_set(*strings)
         if n == 0:
             return FluentConditionBuilder(BooleanLiteral(value=True))
-        return FluentConditionBuilder(build_of_expression(n, build_string_set(*strings)))
+        return FluentConditionBuilder(build_of_expression(n, string_set))
 
     def at_most_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At most N of the specified strings."""
