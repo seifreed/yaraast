@@ -35,6 +35,7 @@ def collect_string_reference_locations_from_ast(
     identifier: str,
     *,
     include_declaration: bool,
+    rule_scope: str | None = None,
 ) -> list[Location] | None:
     ast = ctx.ast()
     if ast is None:
@@ -42,10 +43,12 @@ def collect_string_reference_locations_from_ast(
     normalized = identifier if identifier.startswith("$") else f"${identifier}"
     locations: list[Location] = []
     saw_supported_node = False
-    definition = ctx.find_string_definition(normalized)
+    definition = ctx.find_string_definition(normalized, rule_scope=rule_scope)
     if include_declaration and definition is not None:
         locations.append(definition)
     for rule in ctx._iter_rules(ast):
+        if rule_scope is not None and getattr(rule, "name", None) != rule_scope:
+            continue
         condition = getattr(rule, "condition", None)
         if condition is None:
             continue
@@ -105,6 +108,8 @@ def build_string_rename_edits_from_ast(
     ctx: DocumentContext,
     identifier: str,
     new_name: str,
+    *,
+    rule_scope: str | None = None,
 ) -> list[TextEdit] | None:
     ast = ctx.ast()
     if ast is None:
@@ -113,12 +118,14 @@ def build_string_rename_edits_from_ast(
     replacement = new_name if new_name.startswith("$") else f"${new_name}"
     edits: list[TextEdit] = []
 
-    definition = ctx.find_string_definition(normalized)
+    definition = ctx.find_string_definition(normalized, rule_scope=rule_scope)
     if definition is not None:
         edits.append(TextEdit(range=definition.range, new_text=replacement))
 
     saw_supported_node = False
     for rule in ctx._iter_rules(ast):
+        if rule_scope is not None and getattr(rule, "name", None) != rule_scope:
+            continue
         condition = getattr(rule, "condition", None)
         if condition is None:
             continue

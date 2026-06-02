@@ -68,13 +68,14 @@ def find_string_references(
     identifier: str,
     *,
     include_declaration: bool = True,
+    rule_scope: str | None = None,
 ) -> list[Location]:
-    cache_key = f"string_references:{identifier}:{int(include_declaration)}"
+    cache_key = f"string_references:{identifier}:{int(include_declaration)}:{rule_scope}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
         return _copy_locations(cached)
     ast_locations = collect_string_reference_locations_from_ast(
-        ctx, identifier, include_declaration=include_declaration
+        ctx, identifier, include_declaration=include_declaration, rule_scope=rule_scope
     )
     if ast_locations is not None:
         ctx.set_cached(cache_key, list(ast_locations))
@@ -82,7 +83,7 @@ def find_string_references(
     base_name = identifier[1:] if identifier.startswith("$") else identifier
     variants = [f"${base_name}", f"#{base_name}", f"@{base_name}", f"!{base_name}"]
     locations: list[Location] = []
-    definition = ctx.find_string_definition(variants[0])
+    definition = ctx.find_string_definition(variants[0], rule_scope=rule_scope)
     definition_range = definition.range if definition else None
     for line_num, col, variant, section_name in iter_reference_occurrences(
         ctx,
@@ -118,12 +119,13 @@ def find_string_reference_records(
     identifier: str,
     *,
     include_declaration: bool = True,
+    rule_scope: str | None = None,
 ) -> list[ReferenceRecord]:
-    cache_key = f"string_reference_records:{identifier}:{int(include_declaration)}"
+    cache_key = f"string_reference_records:{identifier}:{int(include_declaration)}:{rule_scope}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
         return _copy_reference_records(cached)
-    definition = ctx.find_string_definition(identifier)
+    definition = ctx.find_string_definition(identifier, rule_scope=rule_scope)
     records = [
         ReferenceRecord(
             location=location,
@@ -133,6 +135,7 @@ def find_string_reference_records(
         for location in ctx.find_string_references(
             identifier,
             include_declaration=include_declaration,
+            rule_scope=rule_scope,
         )
     ]
     ctx.set_cached(cache_key, records)
@@ -140,11 +143,15 @@ def find_string_reference_records(
 
 
 def build_string_rename_edits(
-    ctx: DocumentContext, identifier: str, new_name: str
+    ctx: DocumentContext,
+    identifier: str,
+    new_name: str,
+    *,
+    rule_scope: str | None = None,
 ) -> list[TextEdit]:
     if not new_name.startswith("$"):
         new_name = f"${new_name}"
-    ast_edits = build_string_rename_edits_from_ast(ctx, identifier, new_name)
+    ast_edits = build_string_rename_edits_from_ast(ctx, identifier, new_name, rule_scope=rule_scope)
     if ast_edits is not None:
         return ast_edits
     base_name = identifier[1:] if identifier.startswith("$") else identifier

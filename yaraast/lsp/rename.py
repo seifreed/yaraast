@@ -68,7 +68,8 @@ class RenameProvider:
         # Handle string identifier renaming
         if resolved.kind == "string":
             base_identifier = resolved.normalized_name
-            edits = doc.build_string_rename_edits(base_identifier, new_name)
+            rule_scope = doc.rule_name_at_position(resolved.range.start)
+            edits = doc.build_string_rename_edits(base_identifier, new_name, rule_scope=rule_scope)
             if edits:
                 return WorkspaceEdit(changes={uri: edits})
             return None

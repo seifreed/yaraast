@@ -42,7 +42,8 @@ class DefinitionProvider:
         )
         if resolved is not None:
             if resolved.kind == "string":
-                return doc.find_string_definition(resolved.normalized_name)
+                rule_scope = doc.rule_name_at_position(resolved.range.start)
+                return doc.find_string_definition(resolved.normalized_name, rule_scope=rule_scope)
             if resolved.kind == "rule":
                 if self.runtime:
                     return self.runtime.find_rule_definition(resolved.normalized_name, uri)

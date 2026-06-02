@@ -58,9 +58,11 @@ class ReferencesProvider:
 
         if resolved is not None:
             if resolved.kind == "string":
+                rule_scope = doc.rule_name_at_position(resolved.range.start)
                 return doc.find_string_reference_records(
                     resolved.normalized_name,
                     include_declaration=include_declaration,
+                    rule_scope=rule_scope,
                 )
             if resolved.kind == "rule":
                 if self.runtime:

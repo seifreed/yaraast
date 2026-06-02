@@ -27,7 +27,10 @@ class DocumentHighlightProvider:
         resolved = ctx.resolve_symbol(position)
         if resolved is not None:
             if resolved.kind == "string":
-                return self._highlight_string_identifier(text, resolved.normalized_name)
+                rule_scope = ctx.rule_name_at_position(resolved.range.start)
+                return self._highlight_string_identifier(
+                    text, resolved.normalized_name, rule_scope=rule_scope
+                )
             if resolved.kind == "rule":
                 return self._highlight_identifier(text, resolved.normalized_name)
             if self._is_local_shadow(resolved.kind, resolved.normalized_name, word, ctx):
@@ -47,9 +50,11 @@ class DocumentHighlightProvider:
         # Check if it's a rule name or other identifier
         return self._highlight_identifier(text, word)
 
-    def _highlight_string_identifier(self, text: str, identifier: str) -> list[DocumentHighlight]:
+    def _highlight_string_identifier(
+        self, text: str, identifier: str, *, rule_scope: str | None = None
+    ) -> list[DocumentHighlight]:
         """Highlight all occurrences of a string identifier."""
-        records = self._get_string_reference_records(text, identifier)
+        records = self._get_string_reference_records(text, identifier, rule_scope=rule_scope)
         if records:
             return self._highlights_from_records(records)
         return highlight_string_identifier(text, identifier)
@@ -78,11 +83,15 @@ class DocumentHighlightProvider:
             return ctx.find_string_definition(normalized_name) is not None
         return ctx.find_rule_definition(normalized_name) is not None
 
-    def _get_string_reference_records(self, text: str, identifier: str) -> list[ReferenceRecord]:
+    def _get_string_reference_records(
+        self, text: str, identifier: str, *, rule_scope: str | None = None
+    ) -> list[ReferenceRecord]:
         ctx = DocumentContext("file:///document-highlight.yar", text)
         if ctx.ast() is None:
             return []
-        return ctx.find_string_reference_records(identifier, include_declaration=True)
+        return ctx.find_string_reference_records(
+            identifier, include_declaration=True, rule_scope=rule_scope
+        )
 
     def _get_rule_reference_records(self, text: str, identifier: str) -> list[ReferenceRecord]:
         ctx = DocumentContext("file:///document-highlight.yar", text)

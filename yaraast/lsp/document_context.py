@@ -41,6 +41,14 @@ def _require_document_string(value: object, field_name: str) -> str:
     return value
 
 
+def _range_contains_position(range_: Range, position: Position) -> bool:
+    if not (range_.start.line <= position.line <= range_.end.line):
+        return False
+    if position.line == range_.start.line and position.character < range_.start.character:
+        return False
+    return not (position.line == range_.end.line and position.character > range_.end.character)
+
+
 class _SymbolIndex:
     """Internal helper managing symbol indexing for a DocumentContext."""
 
@@ -204,10 +212,31 @@ class DocumentContext:
     def _symbols_of_kind(self, kind: str) -> list[SymbolRecord]:
         return self._symbol_index.symbols_of_kind(self, kind)
 
-    def find_string_definition(self, identifier: str) -> Location | None:
+    def find_string_definition(
+        self, identifier: str, *, rule_scope: str | None = None
+    ) -> Location | None:
         for symbol in self._symbols_of_kind("string"):
-            if symbol.name == identifier:
-                return Location(uri=self.uri, range=symbol.range)
+            if symbol.name != identifier:
+                continue
+            if rule_scope is not None and symbol.container_name != rule_scope:
+                continue
+            return Location(uri=self.uri, range=symbol.range)
+        return None
+
+    def rule_name_at_position(self, position: Position) -> str | None:
+        ast = self.ast()
+        if ast is None:
+            return None
+        from yaraast.lsp.utils import location_to_range
+
+        for rule in self._iter_rules(ast):
+            location = getattr(rule, "location", None)
+            name = getattr(rule, "name", None)
+            if location is None or name is None:
+                continue
+            rule_range = location_to_range(location, self.text)
+            if _range_contains_position(rule_range, position):
+                return str(name)
         return None
 
     def get_rule(self, rule_name: str) -> Any | None:
@@ -286,12 +315,17 @@ class DocumentContext:
         return document_queries.get_dotted_symbol_at_position(self, position)
 
     def find_string_references(
-        self, identifier: str, *, include_declaration: bool = True
+        self,
+        identifier: str,
+        *,
+        include_declaration: bool = True,
+        rule_scope: str | None = None,
     ) -> list[Location]:
         return document_queries.find_string_references(
             self,
             identifier,
             include_declaration=include_declaration,
+            rule_scope=rule_scope,
         )
 
     def find_string_reference_records(
@@ -299,15 +333,21 @@ class DocumentContext:
         identifier: str,
         *,
         include_declaration: bool = True,
+        rule_scope: str | None = None,
     ) -> list[ReferenceRecord]:
         return document_queries.find_string_reference_records(
             self,
             identifier,
             include_declaration=include_declaration,
+            rule_scope=rule_scope,
         )
 
-    def build_string_rename_edits(self, identifier: str, new_name: str) -> list[TextEdit]:
-        return document_queries.build_string_rename_edits(self, identifier, new_name)
+    def build_string_rename_edits(
+        self, identifier: str, new_name: str, *, rule_scope: str | None = None
+    ) -> list[TextEdit]:
+        return document_queries.build_string_rename_edits(
+            self, identifier, new_name, rule_scope=rule_scope
+        )
 
     def rename_rule_edits(self, rule_name: str, new_name: str) -> list[TextEdit]:
         return document_queries.rename_rule_edits(self, rule_name, new_name)
