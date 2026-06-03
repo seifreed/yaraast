@@ -173,7 +173,7 @@ def validate_rule_tags(tags: list[Any] | tuple[Any, ...]) -> None:
     seen: set[str] = set()
     for tag in tags:
         name = validate_rule_tag_name(tag)
-        _validate_yara_identifier(name, "tag")
+        validate_yara_identifier(name, "tag")
         if name in seen:
             msg = f"Duplicate tag identifier '{name}' for libyara output"
             raise ValueError(msg)
@@ -210,7 +210,7 @@ def validate_rule_tag_name(tag: Any) -> str:
     raise TypeError(msg)
 
 
-def _validate_yara_identifier(name: object, kind: str) -> str:
+def validate_yara_identifier(name: object, kind: str) -> str:
     if not isinstance(name, str):
         msg = f"{kind.capitalize()} identifier must be a string for libyara output"
         raise TypeError(msg)
@@ -223,10 +223,6 @@ def _validate_yara_identifier(name: object, kind: str) -> str:
 
     msg = f"Invalid {kind} identifier '{name}' for libyara output"
     raise ValueError(msg)
-
-
-def validate_yara_identifier(name: object, kind: str) -> str:
-    return _validate_yara_identifier(name, kind)
 
 
 def validate_yara_expression_identifier(name: object) -> str:
@@ -249,7 +245,7 @@ def validate_yara_identifier_path(path: object, kind: str) -> str:
         msg = f"Invalid {kind} identifier '{path}' for libyara output"
         raise ValueError(msg)
     for part in parts:
-        _validate_yara_identifier(part, kind)
+        validate_yara_identifier(part, kind)
     return path
 
 
@@ -265,7 +261,7 @@ def validate_optional_namespace(
 
 
 def format_meta_key(key: str, scope: object | None = None) -> str:
-    _validate_yara_identifier(key, "meta")
+    validate_yara_identifier(key, "meta")
     scope_value = getattr(scope, "value", scope)
     if scope_value and scope_value != "public":
         msg = f"Unsupported meta scope '{scope_value}' for libyara output"

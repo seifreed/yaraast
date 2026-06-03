@@ -92,9 +92,6 @@ class YaraLOptimizerHelpersMixin:
 
         return False
 
-    def _is_match_var_used(self, var_name: str) -> bool:
-        return True
-
     def _is_outcome_var_used(self, var_name: str) -> bool:
         return var_name in ["risk_score", "severity", "confidence"]
 

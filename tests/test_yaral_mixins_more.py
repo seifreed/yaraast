@@ -156,7 +156,6 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
     assert not opt._is_more_restrictive(_assignment(["a"], ">", 1), _assignment(["a"], ">=", 5))
     assert not opt._is_more_restrictive(_assignment(["a"], "<", 1), _assignment(["a"], "<", 5))
 
-    assert opt._is_match_var_used("anything")
     assert opt._is_outcome_var_used("risk_score")
     assert not opt._is_outcome_var_used("$custom")
     assert opt._is_always_true(BooleanLiteral(value=True))

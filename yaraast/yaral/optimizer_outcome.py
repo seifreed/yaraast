@@ -14,13 +14,14 @@ class YaraLOptimizerOutcomeMixin:
         if not match:
             return match
 
+        # Match variables are grouping keys; pruning one changes outcome:
+        # aggregation semantics, so every variable is preserved. Only the
+        # per-variable time window is normalized.
         optimized_vars = []
         for var in match.variables:
-            var_name = getattr(var, "variable", getattr(var, "name", None))
-            if var_name and self._is_match_var_used(var_name):
-                if hasattr(var, "time_window") and var.time_window:
-                    var.time_window = self._optimize_time_window(var.time_window)
-                optimized_vars.append(var)
+            if hasattr(var, "time_window") and var.time_window:
+                var.time_window = self._optimize_time_window(var.time_window)
+            optimized_vars.append(var)
 
         return MatchSection(variables=optimized_vars)
 
