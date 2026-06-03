@@ -22,6 +22,7 @@ from yaraast.codegen.generator_formatting import (
 from yaraast.codegen.generator_helpers import (
     validate_string_identifiers,
 )
+from yaraast.codegen.options import GeneratorOptions
 
 if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
@@ -49,8 +50,12 @@ class CommentAwareCodeGenerator(CodeGenerator):
     """Generate YARA code with preserved comments."""
 
     def __init__(self, indent_size: int = 4, preserve_comments: bool = True) -> None:
-        super().__init__(indent_size)
-        self.preserve_comments = preserve_comments
+        super().__init__(
+            options=GeneratorOptions.comment_aware(
+                indent_size=indent_size,
+                preserve_comments=preserve_comments,
+            )
+        )
 
     def _write_comment(
         self,

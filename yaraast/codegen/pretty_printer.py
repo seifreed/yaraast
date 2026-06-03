@@ -91,11 +91,14 @@ class PrettyPrinter(CommentAwareCodeGenerator):
     """Enhanced pretty printer with advanced formatting options."""
 
     def __init__(self, options: PrettyPrintOptions | None = None) -> None:
-        self.options = options or PrettyPrintOptions()
+        pretty_options = options or PrettyPrintOptions()
         super().__init__(
-            indent_size=self.options.indent_size,
-            preserve_comments=self.options.preserve_comments,
+            indent_size=pretty_options.indent_size,
+            preserve_comments=pretty_options.preserve_comments,
         )
+        # The pretty layout engine reads its rich config from ``self.options``;
+        # set it after super().__init__ so it is not clobbered by the base.
+        self.options = pretty_options
         self._string_alignment_column = 0
         self._meta_alignment_column = 0
 

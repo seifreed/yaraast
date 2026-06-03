@@ -130,6 +130,7 @@ from yaraast.codegen.generator_structure_visitors import (
     visit_tag as render_tag,
     visit_yara_file as render_yara_file,
 )
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.visitor.visitor import ASTVisitor
 
 
@@ -146,8 +147,16 @@ class CodeGenerator(ASTVisitor[str]):
         True
     """
 
-    def __init__(self, indent_size: int = 4) -> None:
-        self.indent_size = indent_size
+    def __init__(
+        self,
+        indent_size: int = 4,
+        *,
+        options: GeneratorOptions | None = None,
+    ) -> None:
+        resolved = options or GeneratorOptions(indent_size=indent_size)
+        self.indent_size = resolved.indent_size
+        self.preserve_comments = resolved.preserve_comments
+        self.blank_line_between_sections = resolved.blank_line_between_sections
         self.indent_level = 0
         self.buffer = StringIO()
 
