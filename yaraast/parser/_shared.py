@@ -32,6 +32,7 @@ _REGEX_ZERO_WIDTH_ESCAPES = frozenset("bB")
 _MAX_REGEX_REPEAT_INTERVAL = 32767
 _MAX_XOR_KEY = 0xFF
 _BASE64_ALPHABET_LENGTH = 64
+_DEFAULT_BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 # Each nested expression level of the recursive descent parser consumes a fixed
 # block of Python stack frames, so pathologically nested input (deeply
@@ -97,6 +98,27 @@ def validate_string_modifiers(modifiers: Sequence[StringModifier]) -> None:
         if StringModifierType.FULLWORD in modifier_set:
             msg = f"invalid modifier combination: {base64_type.value} fullword"
             raise ValueError(msg)
+
+    _validate_base64_alphabet_agreement(modifiers)
+
+
+def _validate_base64_alphabet_agreement(modifiers: Sequence[StringModifier]) -> None:
+    """Reject base64 and base64wide that resolve to different alphabets.
+
+    libyara stores a single base64 alphabet shared by both modifiers, so when a
+    rule supplies both ``base64`` and ``base64wide`` their effective alphabets
+    (the custom one if given, otherwise the default) must be identical.
+    """
+    effective: dict[StringModifierType, str] = {}
+    for modifier in modifiers:
+        if modifier.modifier_type in (StringModifierType.BASE64, StringModifierType.BASE64WIDE):
+            value = modifier.value
+            alphabet = value if isinstance(value, str) else _DEFAULT_BASE64_ALPHABET
+            effective[modifier.modifier_type] = alphabet
+
+    if len(effective) == 2 and len(set(effective.values())) > 1:
+        msg = "can not specify multiple alphabets"
+        raise ValueError(msg)
 
 
 def _validate_string_modifier_value(modifier: StringModifier) -> None:

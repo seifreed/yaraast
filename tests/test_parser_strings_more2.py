@@ -236,6 +236,43 @@ def test_parse_accepts_libyara_valid_string_modifier_edges(modifiers: str) -> No
         assert ast.rules[0].strings[0].modifiers
 
 
+_DEFAULT_BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+_ALT_BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+
+@pytest.mark.parametrize(
+    "modifiers",
+    [
+        f'base64("{_ALT_BASE64_ALPHABET}") base64wide',
+        f'base64 base64wide("{_ALT_BASE64_ALPHABET}")',
+        f'base64("{_DEFAULT_BASE64_ALPHABET}") base64wide("{_ALT_BASE64_ALPHABET}")',
+        f'base64wide("{_ALT_BASE64_ALPHABET}") base64("{_DEFAULT_BASE64_ALPHABET}")',
+    ],
+)
+def test_parse_rejects_base64_modifiers_with_differing_alphabets(modifiers: str) -> None:
+    source = f'rule r {{ strings: $a = "abc" {modifiers} condition: $a }}'
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match="can not specify multiple alphabets"):
+            parser_factory().parse(source)
+
+
+@pytest.mark.parametrize(
+    "modifiers",
+    [
+        f'base64("{_DEFAULT_BASE64_ALPHABET}") base64wide',
+        f'base64 base64wide("{_DEFAULT_BASE64_ALPHABET}")',
+        f'base64("{_ALT_BASE64_ALPHABET}") base64wide("{_ALT_BASE64_ALPHABET}")',
+    ],
+)
+def test_parse_accepts_base64_modifiers_with_matching_alphabets(modifiers: str) -> None:
+    source = f'rule r {{ strings: $a = "abc" {modifiers} condition: $a }}'
+
+    for parser_factory in (Parser, CommentAwareParser):
+        ast = parser_factory().parse(source)
+        assert ast.rules[0].strings[0].modifiers
+
+
 def test_parse_rejects_empty_plain_string_definitions() -> None:
     invalid_sources = [
         'rule r { strings: $a = "" condition: $a }',
