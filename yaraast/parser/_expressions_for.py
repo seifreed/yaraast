@@ -21,11 +21,13 @@ from yaraast.ast.expressions import (
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.lexer import TokenType
 
-from ._shared import ParserError
+from ._shared import ParserError, max_expression_depth
 
 
 class ExpressionForMixin:
     """Mixin with quantifier/for/of expression parsing."""
+
+    _expression_depth: int
 
     def _parse_for_expression(self, start_token=None) -> ForExpression | ForOfExpression:
         """Parse for expression."""
@@ -359,8 +361,23 @@ class ExpressionForMixin:
         return f"unknown.{expr.member}"
 
     def _parse_expression(self) -> Expression:
-        """Parse general expression."""
-        return self._parse_or_expression()
+        """Parse general expression.
+
+        Guards against unbounded recursion from pathologically nested input by
+        tracking the current expression nesting depth and rejecting input that
+        gets close to the interpreter recursion limit with a clean ParserError
+        instead of letting the recursive descent exhaust the interpreter stack.
+        """
+        depth = getattr(self, "_expression_depth", 0) + 1
+        limit = max_expression_depth()
+        if depth > limit:
+            msg = f"expression nesting too deep (max: {limit})"
+            raise ParserError(msg, self._peek())
+        self._expression_depth = depth
+        try:
+            return self._parse_or_expression()
+        finally:
+            self._expression_depth = depth - 1
 
     def _member_access_to_string(self, expr: MemberAccess) -> str:
         """Convert MemberAccess to string representation."""

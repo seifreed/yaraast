@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import sys
 
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.errors import YaraASTError
@@ -31,6 +32,35 @@ _REGEX_ZERO_WIDTH_ESCAPES = frozenset("bB")
 _MAX_REGEX_REPEAT_INTERVAL = 32767
 _MAX_XOR_KEY = 0xFF
 _BASE64_ALPHABET_LENGTH = 64
+
+# Each nested expression level of the recursive descent parser consumes a fixed
+# block of Python stack frames, so pathologically nested input (deeply
+# parenthesised conditions, nested for bodies, etc.) would otherwise exhaust the
+# interpreter stack and surface as a RecursionError. Tracking the nesting depth
+# and rejecting input that gets within a safety margin of the interpreter's
+# recursion limit keeps the parser robust against hostile input while leaving
+# ample headroom for realistic rules. The budget is derived from the live
+# recursion limit so the guard fires before the stack is exhausted regardless of
+# any sys.setrecursionlimit the caller has applied.
+#
+# _EXPRESSION_FRAMES_PER_LEVEL is a conservative upper bound on the number of
+# Python frames each nested expression level adds (or-/and-/.../primary descent
+# plus the parenthesised/for re-entry into _parse_expression).
+_EXPRESSION_FRAMES_PER_LEVEL = 20
+# Frames reserved for the non-expression call stack already in flight (rule and
+# section parsing, the caller's own frames) when the first expression is parsed.
+_EXPRESSION_STACK_RESERVE = 120
+
+
+def max_expression_depth() -> int:
+    """Return the maximum allowed expression nesting depth.
+
+    Derived from the live interpreter recursion limit so the parser rejects
+    over-deep input with a clean error before the recursive descent exhausts the
+    Python stack, regardless of any ``sys.setrecursionlimit`` the caller set.
+    """
+    budget = sys.getrecursionlimit() - _EXPRESSION_STACK_RESERVE
+    return max(1, budget // _EXPRESSION_FRAMES_PER_LEVEL)
 
 
 def validate_string_modifiers(modifiers: Sequence[StringModifier]) -> None:
