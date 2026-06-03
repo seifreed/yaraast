@@ -234,7 +234,14 @@ class ErrorTolerantLexer(Lexer[tuple[list[Token], list[LexerErrorInfo]]]):
             return "\\" + next_char, False
         if next_char is None:
             return "\\", True
-        # Unknown escape - keep literal
+        # Unknown escape - keep literal but record it, since YARA only permits
+        # a fixed set of escape sequences and silently accepting others hides
+        # genuinely invalid input.
+        self._add_error(
+            f"Invalid escape sequence '\\{next_char}' kept literal",
+            severity="warning",
+            suggestion='Use a valid YARA escape (\\n \\r \\t \\" \\\\ \\xNN)',
+        )
         return "\\" + next_char, False
 
     def _handle_windows_path_heuristic(self) -> tuple[str, bool]:

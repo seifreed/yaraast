@@ -119,6 +119,8 @@ def parse_section_content(
     elif section == "condition":
         rule.condition = parse_condition(parser, line, line_num, raw_line)
         parser._condition_parsed = True
+    else:
+        parser._add_error(f"Unexpected line outside any section: {line}", line_num, 0)
 
 
 def parse_meta_line(
@@ -134,6 +136,7 @@ def parse_meta_line(
             node = Meta(match.group(1), converter(match))
             set_recovered_location(parser, node, line_num, raw_line, match.start(1), match.end(2))
             return node
+    parser._add_error(f"Invalid meta definition: {line}", line_num or 0, 0)
     return None
 
 
@@ -187,6 +190,7 @@ def parse_string_line(
             parser, node, line_num, raw_line, regex_match.start(1), regex_match.end(2) + 1
         )
         return node
+    parser._add_error(f"Invalid string definition: {line}", line_num or 0, 0)
     return None
 
 

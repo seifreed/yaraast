@@ -101,3 +101,77 @@ def test_error_tolerant_parser_does_not_report_missing_condition_when_present() 
         """)
     result = ErrorTolerantParser().parse(code)
     assert not any("no condition" in error.message for error in result.errors)
+
+
+def test_error_tolerant_parser_reports_string_without_value() -> None:
+    # `$a =` with no value is a syntax error in real YARA. Recovery drops the
+    # string; it must record an error rather than silently losing it.
+    code = dedent("""
+        rule r {
+            strings:
+                $a =
+            condition:
+                $a
+        }
+        """)
+    result = ErrorTolerantParser().parse(code)
+    assert not result.ast.rules[0].strings
+    assert any("Invalid string definition" in error.message for error in result.errors)
+
+
+def test_error_tolerant_parser_reports_unterminated_regex_string() -> None:
+    code = dedent("""
+        rule r {
+            strings:
+                $a = /abc
+            condition:
+                $a
+        }
+        """)
+    result = ErrorTolerantParser().parse(code)
+    assert not result.ast.rules[0].strings
+    assert any("Invalid string definition" in error.message for error in result.errors)
+
+
+def test_error_tolerant_parser_reports_invalid_meta_line() -> None:
+    # `author 12345` (missing `=`) is a syntax error in real YARA. Recovery
+    # drops the meta entry and must record an error.
+    code = dedent("""
+        rule r {
+            meta:
+                author 12345
+            condition:
+                true
+        }
+        """)
+    result = ErrorTolerantParser().parse(code)
+    assert not result.ast.rules[0].meta
+    assert any("Invalid meta definition" in error.message for error in result.errors)
+
+
+def test_error_tolerant_parser_reports_garbage_in_strings_section() -> None:
+    code = dedent("""
+        rule r {
+            strings:
+                garbage nonsense
+                $a = "x"
+            condition:
+                $a
+        }
+        """)
+    result = ErrorTolerantParser().parse(code)
+    identifiers = [s.identifier for s in result.ast.rules[0].strings]
+    assert identifiers == ["$a"]
+    assert any("Invalid string definition" in error.message for error in result.errors)
+
+
+def test_error_tolerant_parser_reports_line_outside_any_section() -> None:
+    code = dedent("""
+        rule r {
+            loose garbage line
+            condition:
+                true
+        }
+        """)
+    result = ErrorTolerantParser().parse(code)
+    assert any("outside any section" in error.message for error in result.errors)

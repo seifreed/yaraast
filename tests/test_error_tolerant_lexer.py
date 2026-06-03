@@ -523,3 +523,22 @@ class TestErrorTolerantLexer:
         # Should handle gracefully
         assert tokens[-1].type == TokenType.EOF
         assert len(errors) > 0
+
+
+def test_invalid_escape_sequence_records_warning() -> None:
+    # YARA only permits a fixed set of escape sequences. The error-tolerant
+    # lexer keeps unknown escapes literal, but must record a warning rather
+    # than silently accepting genuinely invalid input.
+    lexer = ErrorTolerantLexer(r'"a\q b"')
+    tokens, errors = lexer.tokenize()
+
+    string_tokens = [t for t in tokens if t.type == TokenType.STRING]
+    assert string_tokens
+    assert string_tokens[0].value == "a\\q b"
+    assert any(e.severity == "warning" and "Invalid escape sequence" in e.message for e in errors)
+
+
+def test_valid_escape_sequence_records_no_warning() -> None:
+    lexer = ErrorTolerantLexer(r'"a\n\tb"')
+    _tokens, errors = lexer.tokenize()
+    assert not any("Invalid escape sequence" in e.message for e in errors)
