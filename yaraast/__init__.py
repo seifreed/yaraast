@@ -8,6 +8,7 @@ from yaraast.builder import (
     YaraFileBuilder,
 )
 from yaraast.codegen import CodeGenerator
+from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.errors import (
     CodeGenError,
     EvaluationError,
@@ -22,6 +23,7 @@ from yaraast.errors import (
 from yaraast.interfaces import ILexer
 from yaraast.lexer import Lexer
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_source
 from yaraast.version import (
     YARA_SYNTAX_VERSION,
     YARAAST_VERSION,
@@ -32,6 +34,8 @@ from yaraast.version import (
     get_version_string,
 )
 from yaraast.visitor import ASTVisitor, BaseVisitor
+from yaraast.yaral.ast_nodes import YaraLFile
+from yaraast.yaral.parser import YaraLParser
 
 __version__ = YARAAST_VERSION
 __all__ = [
@@ -59,7 +63,12 @@ __all__ = [
     "SerializationError",
     "ValidationError",
     "YaraASTError",
+    "YaraDialect",
     "YaraFileBuilder",
+    "YaraLFile",
+    "YaraLParser",
+    "detect_dialect",
     "get_version_info",
     "get_version_string",
+    "parse_source",
 ]
