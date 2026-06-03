@@ -34,7 +34,6 @@ from yaraast.codegen.advanced_generator_layout import (
     write_strings_section as render_advanced_strings_section,
 )
 from yaraast.codegen.formatting import FormattingConfig, IndentStyle
-from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
     validate_set_expression_elements,
@@ -42,36 +41,18 @@ from yaraast.codegen.generator_expression_visitors import (
 from yaraast.codegen.generator_formatting import validate_rule_meta
 from yaraast.codegen.generator_leaf_visitors import visit_meta as render_meta
 from yaraast.codegen.layouts import GeneratorLayout
-from yaraast.codegen.options import GeneratorOptions
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.meta import Meta
     from yaraast.ast.rules import Rule
-
-
-class _AdvancedExpressionRenderer(CodeGenerator):
-    """Standalone renderer for the advanced (parenthesized) expression style."""
-
-    def __init__(self, config: FormattingConfig) -> None:
-        super().__init__(options=GeneratorOptions(indent_size=config.indent_size))
-        self.config = config
-
-    def visit_binary_expression(self, node: Any) -> str:
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        operator = _render_binary_operator(node.operator)
-        separator = " " if self.config.space_around_operators or operator.isalpha() else ""
-        return f"({left}{separator}{operator}{separator}{right})"
-
-    def visit_set_expression(self, node: Any) -> str:
-        validate_set_expression_elements(node)
-        separator = ", " if self.config.space_after_comma else ","
-        return f"({separator.join(self.visit(elem) for elem in node.elements)})"
+    from yaraast.codegen.generator import CodeGenerator
 
 
 class AdvancedLayout(GeneratorLayout):
     """Configurable advanced formatting engine as a composed layout."""
+
+    custom_expressions = True
 
     def __init__(self, config: FormattingConfig | None = None) -> None:
         self.config = config or FormattingConfig()
@@ -129,12 +110,18 @@ class AdvancedLayout(GeneratorLayout):
     def regex_string(self, gen: CodeGenerator, node: Any) -> str:
         return render_advanced_regex_string(gen, node)
 
-    # Expression renderers (advanced style, for direct visiting / tests)
+    # Expression renderers (advanced style; recursion routes back through gen)
     def binary_expression(self, gen: CodeGenerator, node: Any) -> str:
-        return _AdvancedExpressionRenderer(self.config).visit(node)
+        left = gen.visit(node.left)
+        right = gen.visit(node.right)
+        operator = _render_binary_operator(node.operator)
+        separator = " " if self.config.space_around_operators or operator.isalpha() else ""
+        return f"({left}{separator}{operator}{separator}{right})"
 
     def set_expression(self, gen: CodeGenerator, node: Any) -> str:
-        return _AdvancedExpressionRenderer(self.config).visit(node)
+        validate_set_expression_elements(node)
+        separator = ", " if self.config.space_after_comma else ","
+        return f"({separator.join(gen.visit(elem) for elem in node.elements)})"
 
     def yarax_expression(self, gen: CodeGenerator, node: Any) -> str:
         return generate_condition_string(node, self.config)

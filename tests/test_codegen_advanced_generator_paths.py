@@ -18,28 +18,31 @@ from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Rule, Tag
 from yaraast.ast.strings import PlainString, RegexString
-from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.formatting import BraceStyle, FormattingConfig, StringStyle
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 
 
 def test_advanced_generator_brace_styles_and_section_layout() -> None:
     rule = Rule(name="r", condition=BooleanLiteral(True))
     yara_file = YaraFile(imports=[Import("pe")], rules=[rule])
 
-    same = AdvancedCodeGenerator(FormattingConfig(brace_style=BraceStyle.SAME_LINE)).generate(
-        yara_file
-    )
+    same = CodeGenerator(
+        options=GeneratorOptions(advanced=FormattingConfig(brace_style=BraceStyle.SAME_LINE))
+    ).generate(yara_file)
     assert 'import "pe"' in same
     assert "rule r {" in same
 
-    new_line = AdvancedCodeGenerator(FormattingConfig(brace_style=BraceStyle.NEW_LINE)).generate(
+    new_line = CodeGenerator(
+        options=GeneratorOptions(advanced=FormattingConfig(brace_style=BraceStyle.NEW_LINE))
+    ).generate(
         yara_file,
     )
     assert "rule r\n{" in new_line or "rule r\r\n{" in new_line
 
-    kandr = AdvancedCodeGenerator(FormattingConfig(brace_style=BraceStyle.K_AND_R)).generate(
-        yara_file
-    )
+    kandr = CodeGenerator(
+        options=GeneratorOptions(advanced=FormattingConfig(brace_style=BraceStyle.K_AND_R))
+    ).generate(yara_file)
     assert "rule r\n{" in kandr or "rule r\r\n{" in kandr
 
 
@@ -53,7 +56,7 @@ def test_advanced_generator_yara_file_preserves_top_level_extensions() -> None:
         rules=[Rule(name="r", condition=BooleanLiteral(True))],
     )
 
-    out = AdvancedCodeGenerator().generate(yara_file)
+    out = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(yara_file)
 
     assert "#include_once" in out
     assert 'import "pe"' in out
@@ -76,7 +79,7 @@ def test_advanced_generator_long_condition_path_and_string_styles() -> None:
     )
 
     cfg = FormattingConfig(string_style=StringStyle.COMPACT, max_line_length=5)
-    out = AdvancedCodeGenerator(cfg).generate(YaraFile(rules=[rule]))
+    out = CodeGenerator(options=GeneratorOptions(advanced=cfg)).generate(YaraFile(rules=[rule]))
 
     assert '$a="v"' in out
     assert "condition:" in out
@@ -98,12 +101,12 @@ def test_advanced_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:
         condition=StringIdentifier("$r"),
     )
 
-    compact = AdvancedCodeGenerator(FormattingConfig(string_style=StringStyle.COMPACT)).generate(
-        YaraFile(rules=[rule])
-    )
-    aligned = AdvancedCodeGenerator(FormattingConfig(string_style=StringStyle.ALIGNED)).generate(
-        YaraFile(rules=[rule])
-    )
+    compact = CodeGenerator(
+        options=GeneratorOptions(advanced=FormattingConfig(string_style=StringStyle.COMPACT))
+    ).generate(YaraFile(rules=[rule]))
+    aligned = CodeGenerator(
+        options=GeneratorOptions(advanced=FormattingConfig(string_style=StringStyle.ALIGNED))
+    ).generate(YaraFile(rules=[rule]))
 
     assert "$r=/ab.*/is fullword" in compact
     assert "$r = /ab.*/is  fullword" in aligned
@@ -125,7 +128,9 @@ def test_advanced_generator_rejects_unsupported_regex_multiline_modifier() -> No
     )
 
     with pytest.raises(ValueError, match="Unsupported regex modifier"):
-        AdvancedCodeGenerator().generate(YaraFile(rules=[rule]))
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(
+            YaraFile(rules=[rule])
+        )
 
 
 def test_advanced_generator_rejects_invalid_plain_modifier_combination() -> None:
@@ -145,7 +150,9 @@ def test_advanced_generator_rejects_invalid_plain_modifier_combination() -> None
     )
 
     with pytest.raises(ValueError, match="cannot be combined"):
-        AdvancedCodeGenerator().generate(YaraFile(rules=[rule]))
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(
+            YaraFile(rules=[rule])
+        )
 
 
 def test_advanced_generator_aligned_plain_strings_escape_values() -> None:
@@ -159,23 +166,30 @@ def test_advanced_generator_aligned_plain_strings_escape_values() -> None:
     )
 
     for style in (StringStyle.ALIGNED, StringStyle.TABULAR):
-        out = AdvancedCodeGenerator(FormattingConfig(string_style=style)).generate(
-            YaraFile(rules=[rule])
-        )
+        out = CodeGenerator(
+            options=GeneratorOptions(advanced=FormattingConfig(string_style=style))
+        ).generate(YaraFile(rules=[rule]))
 
         assert '$a = "a\\nb"' in out
         assert '$b = "A\\"\\x00"' in out
 
 
 def test_advanced_generator_skips_missing_condition() -> None:
-    out = AdvancedCodeGenerator().generate(YaraFile(rules=[Rule(name="partial")]))
+    out = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(
+        YaraFile(rules=[Rule(name="partial")])
+    )
 
     assert "rule partial {" in out
     assert "condition:" not in out
 
 
 def test_advanced_generator_generate_returns_direct_expression_output() -> None:
-    assert AdvancedCodeGenerator().generate(BooleanLiteral(True)) == "true"
+    assert (
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(
+            BooleanLiteral(True)
+        )
+        == "true"
+    )
 
 
 def test_advanced_generator_meta_and_tags_branches() -> None:
@@ -196,7 +210,9 @@ def test_advanced_generator_meta_and_tags_branches() -> None:
         space_before_colon=False,
         space_after_colon=False,
     )
-    out = AdvancedCodeGenerator(cfg).generate(YaraFile(imports=[Import("pe")], rules=[rule]))
+    out = CodeGenerator(options=GeneratorOptions(advanced=cfg)).generate(
+        YaraFile(imports=[Import("pe")], rules=[rule])
+    )
 
     assert "rule meta_rule:x y object_tag" in out
     assert 'b             = "\\"already\\""' in out or 'b = "\\"already\\""' in out
@@ -208,12 +224,16 @@ def test_advanced_generator_binary_and_set_spacing() -> None:
     equality = BinaryExpression(IntegerLiteral(1), "==", IntegerLiteral(2))
     division = BinaryExpression(IntegerLiteral(5), "/", IntegerLiteral(2))
 
-    spaced = AdvancedCodeGenerator(FormattingConfig(space_around_operators=True))
+    spaced = CodeGenerator(
+        options=GeneratorOptions(advanced=FormattingConfig(space_around_operators=True))
+    )
     spaced.generate(YaraFile(rules=[]))
     assert "(true and false)" in spaced.visit_binary_expression(expr)
     assert "(5 \\ 2)" in spaced.visit_binary_expression(division)
 
-    compact = AdvancedCodeGenerator(FormattingConfig(space_around_operators=False))
+    compact = CodeGenerator(
+        options=GeneratorOptions(advanced=FormattingConfig(space_around_operators=False))
+    )
     compact.generate(YaraFile(rules=[]))
     assert "(true and false)" in compact.visit_binary_expression(expr)
     assert "(1==2)" in compact.visit_binary_expression(equality)

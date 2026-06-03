@@ -46,6 +46,21 @@ class GeneratorLayout:
     skeleton, the section writers, and the per-string renderers as needed.
     """
 
+    #: When true, CodeGenerator routes binary/set/YARA-X expression nodes to the
+    #: layout (``binary_expression``/``set_expression``/``yarax_expression``)
+    #: instead of its built-in renderers. Off by default so the hot expression
+    #: path stays a plain branch for the plain/comment/pretty engines.
+    custom_expressions: bool = False
+
+    def binary_expression(self, gen: CodeGenerator, node: Any) -> str:
+        raise NotImplementedError
+
+    def set_expression(self, gen: CodeGenerator, node: Any) -> str:
+        raise NotImplementedError
+
+    def yarax_expression(self, gen: CodeGenerator, node: Any) -> str:
+        raise NotImplementedError
+
     def prepare(self, gen: CodeGenerator, node: Any) -> None:
         """Hook run by ``generate`` before visiting (alignment/state setup)."""
 

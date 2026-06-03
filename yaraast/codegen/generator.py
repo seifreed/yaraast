@@ -170,6 +170,7 @@ class CodeGenerator(ASTVisitor[str]):
         self.preserve_comments = resolved.preserve_comments
         self.blank_line_between_sections = resolved.blank_line_between_sections
         self._layout = select_layout(resolved)
+        self._custom_expressions = self._layout.custom_expressions
         self.indent_level = 0
         self.buffer = StringIO()
 
@@ -454,6 +455,8 @@ class CodeGenerator(ASTVisitor[str]):
         return render_boolean_literal(node)
 
     def visit_binary_expression(self, node: BinaryExpression) -> str:
+        if self._custom_expressions:
+            return self._layout.binary_expression(self, node)
         return render_binary_expression(self, node)
 
     def visit_unary_expression(self, node: UnaryExpression) -> str:
@@ -463,6 +466,8 @@ class CodeGenerator(ASTVisitor[str]):
         return render_parentheses_expression(self, node)
 
     def visit_set_expression(self, node: SetExpression) -> str:
+        if self._custom_expressions:
+            return self._layout.set_expression(self, node)
         return render_set_expression(self, node)
 
     def visit_range_expression(self, node: RangeExpression) -> str:
@@ -543,14 +548,20 @@ class CodeGenerator(ASTVisitor[str]):
 
     # YARA-X extended-syntax visitors
     def visit_with_statement(self, node: WithStatement) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         validate_expression_collection(node.declarations, "WithStatement declarations")
         declarations = ", ".join(self.visit(declaration) for declaration in node.declarations)
         return f"with {declarations}: {self.visit(node.body)}"
 
     def visit_with_declaration(self, node: WithDeclaration) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         return f"{node.identifier} = {self.visit(node.value)}"
 
     def visit_array_comprehension(self, node: ArrayComprehension) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         if node.expression is None or node.iterable is None:
             msg = "Array comprehension requires expression and iterable for libyara output"
             raise ValueError(msg)
@@ -562,6 +573,8 @@ class CodeGenerator(ASTVisitor[str]):
         return result + "]"
 
     def visit_dict_comprehension(self, node: DictComprehension) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         if node.key_expression is None or node.value_expression is None or node.iterable is None:
             msg = "Dict comprehension requires key, value, and iterable for libyara output"
             raise ValueError(msg)
@@ -579,6 +592,8 @@ class CodeGenerator(ASTVisitor[str]):
         return result + "}"
 
     def visit_tuple_expression(self, node: TupleExpression) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         validate_expression_collection(node.elements, "TupleExpression elements")
         if not node.elements:
             return "()"
@@ -588,6 +603,8 @@ class CodeGenerator(ASTVisitor[str]):
         return f"({', '.join(elements)})"
 
     def visit_tuple_indexing(self, node: TupleIndexing) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         from yaraast.ast.expressions import FunctionCall, Identifier
         from yaraast.yarax.ast_nodes import TupleExpression
 
@@ -598,10 +615,14 @@ class CodeGenerator(ASTVisitor[str]):
         return f"({tuple_str})[{index_str}]"
 
     def visit_list_expression(self, node: ListExpression) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         validate_expression_collection(node.elements, "ListExpression elements")
         return f"[{', '.join(self.visit(element) for element in node.elements)}]"
 
     def visit_dict_expression(self, node: DictExpression) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         from yaraast.yarax.ast_nodes import SpreadOperator
 
         validate_expression_collection(node.items, "DictExpression items")
@@ -612,9 +633,13 @@ class CodeGenerator(ASTVisitor[str]):
         return f"{{{', '.join(items)}}}"
 
     def visit_dict_item(self, node: DictItem) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         return f"{self.visit(node.key)}: {self.visit(node.value)}"
 
     def visit_slice_expression(self, node: SliceExpression) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         parts = [
             self.visit(node.start) if node.start is not None else "",
             self.visit(node.stop) if node.stop is not None else "",
@@ -624,6 +649,8 @@ class CodeGenerator(ASTVisitor[str]):
         return f"{self.visit(node.target)}[{':'.join(parts)}]"
 
     def visit_lambda_expression(self, node: LambdaExpression) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         validate_expression_collection(node.parameters, "LambdaExpression parameters")
         parameters = ", ".join(node.parameters)
         if parameters:
@@ -631,6 +658,8 @@ class CodeGenerator(ASTVisitor[str]):
         return f"lambda: {self.visit(node.body)}"
 
     def visit_pattern_match(self, node: PatternMatch) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         validate_expression_collection(node.cases, "PatternMatch cases")
         lines = [f"match {self.visit(node.value)} {{"]
         case_indent = " " * self.indent_size
@@ -643,6 +672,8 @@ class CodeGenerator(ASTVisitor[str]):
         return "\n".join(lines)
 
     def visit_match_case(self, node: MatchCase) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         result = self._indent_continuation_lines(self.visit(node.result))
         return f"{self.visit(node.pattern)} => {result}"
 
@@ -651,5 +682,7 @@ class CodeGenerator(ASTVisitor[str]):
         return text.replace("\n", f"\n{continuation_indent}")
 
     def visit_spread_operator(self, node: SpreadOperator) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         prefix = "**" if node.is_dict else "..."
         return f"{prefix}{self.visit(node.expression)}"

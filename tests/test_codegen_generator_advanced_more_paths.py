@@ -35,7 +35,7 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
-from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
+from yaraast.codegen.advanced_layout import AdvancedLayout
 from yaraast.codegen.formatting import BraceStyle, FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
@@ -123,7 +123,7 @@ def test_advanced_generator_keeps_top_level_section_items_adjacent() -> None:
         rules=[Rule("r", condition=BooleanLiteral(True))],
     )
 
-    out = AdvancedCodeGenerator().generate(ast)
+    out = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
 
     assert 'import "pe"\nimport "elf"\n\ninclude "a.yar"\ninclude "b.yar"\n\nrule r' in out
     assert 'import "pe"\n\nimport "elf"' not in out
@@ -148,7 +148,7 @@ def test_code_generators_reject_scoped_meta_keys_for_libyara_output() -> None:
     with pytest.raises(ValueError, match="Unsupported meta scope"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Unsupported meta scope"):
-        AdvancedCodeGenerator().generate(ast)
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
     with pytest.raises(ValueError, match="Unsupported meta scope"):
         PrettyPrinter(PrettyPrintOptions(align_meta_values=False)).pretty_print(ast)
 
@@ -167,7 +167,7 @@ def test_code_generators_allow_public_meta_scope_for_libyara_output() -> None:
     outputs = [
         CodeGenerator().generate(ast),
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast),
-        AdvancedCodeGenerator().generate(ast),
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast),
         PrettyPrinter(PrettyPrintOptions(align_meta_values=False)).pretty_print(ast),
     ]
 
@@ -193,7 +193,7 @@ def test_code_generators_preserve_in_rule_pragmas() -> None:
     outputs = [
         CodeGenerator().generate(ast),
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast),
-        AdvancedCodeGenerator().generate(ast),
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast),
         PrettyPrinter(PrettyPrintOptions(align_meta_values=False)).pretty_print(ast),
     ]
 
@@ -213,7 +213,7 @@ def test_advanced_generator_additional_paths() -> None:
         sort_rules=False,
         max_line_length=4,
     )
-    adv = AdvancedCodeGenerator(cfg)
+    adv = CodeGenerator(options=GeneratorOptions(advanced=cfg))
 
     rule_with_meta = Rule(
         name="a_rule",
@@ -243,8 +243,10 @@ def test_advanced_generator_additional_paths() -> None:
     assert "$h={ 4d }" in out or "$h = { 4d }" in out or "$h={ 4D }" in out or "$h = { 4D }" in out
     assert "$r=/re/" in out
 
-    adv2 = AdvancedCodeGenerator(
-        FormattingConfig(space_around_operators=False, space_after_comma=False)
+    adv2 = CodeGenerator(
+        options=GeneratorOptions(
+            advanced=FormattingConfig(space_around_operators=False, space_after_comma=False)
+        )
     )
     adv2.generate(YaraFile(rules=[]))
     assert "(" in adv2.visit_set_expression(
@@ -256,7 +258,7 @@ def test_advanced_generator_additional_formatting_paths() -> None:
     new_line_cfg = FormattingConfig(
         brace_style=BraceStyle.NEW_LINE, string_style=StringStyle.TABULAR
     )
-    adv = AdvancedCodeGenerator(new_line_cfg)
+    adv = CodeGenerator(options=GeneratorOptions(advanced=new_line_cfg))
     rule = Rule(
         name="fmt",
         tags=[Tag("one"), Tag("two")],
@@ -276,13 +278,15 @@ def test_advanced_generator_additional_formatting_paths() -> None:
 
 
 def test_advanced_generator_direct_remaining_branches() -> None:
-    adv = AdvancedCodeGenerator(
-        FormattingConfig(
-            string_style=StringStyle.ALIGNED,
-            align_string_modifiers=False,
-            blank_lines_between_sections=2,
-            space_after_comma=True,
-            max_line_length=999,
+    adv = CodeGenerator(
+        options=GeneratorOptions(
+            advanced=FormattingConfig(
+                string_style=StringStyle.ALIGNED,
+                align_string_modifiers=False,
+                blank_lines_between_sections=2,
+                space_after_comma=True,
+                max_line_length=999,
+            )
         )
     )
 
@@ -292,8 +296,10 @@ def test_advanced_generator_direct_remaining_branches() -> None:
 
     adv.buffer.seek(0)
     adv.buffer.truncate(0)
-    assert adv._get_max_key_length([]) == 0
-    adv._write_aligned_strings()
+    adv_layout = adv._layout
+    assert isinstance(adv_layout, AdvancedLayout)
+    assert adv_layout.get_max_key_length([]) == 0
+    adv_layout.write_aligned_strings(adv)
     assert adv.buffer.getvalue() == ""
 
     plain = PlainString(
@@ -324,14 +330,17 @@ def test_advanced_generator_direct_remaining_branches() -> None:
     assert "$h = { 4d } private" in out or "$h = { 4D } private" in out
     assert "$r = /abc/ nocase" in out
 
-    adv2 = AdvancedCodeGenerator(FormattingConfig(space_after_comma=False))
+    adv2 = CodeGenerator(
+        options=GeneratorOptions(advanced=FormattingConfig(space_after_comma=False))
+    )
     expr_out = adv2.visit_set_expression(
         SetExpression(elements=[IntegerLiteral(1), IntegerLiteral(2)])
     )
     assert expr_out.endswith("(1,2)")
 
-    adv3 = AdvancedCodeGenerator(FormattingConfig())
-    assert adv3._format_hex_token(HexByte(0x4D)) in {"4d", "4D"}
+    adv3_layout = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig()))._layout
+    assert isinstance(adv3_layout, AdvancedLayout)
+    assert adv3_layout.format_hex_token(HexByte(0x4D)) in {"4d", "4D"}
 
 
 def test_advanced_generator_applies_expression_spacing_in_condition_sections() -> None:
@@ -347,8 +356,10 @@ def test_advanced_generator_applies_expression_spacing_in_condition_sections() -
         ),
     )
 
-    out = AdvancedCodeGenerator(
-        FormattingConfig(space_after_comma=False, space_around_operators=False)
+    out = CodeGenerator(
+        options=GeneratorOptions(
+            advanced=FormattingConfig(space_after_comma=False, space_around_operators=False)
+        )
     ).generate(YaraFile(rules=[rule]))
 
     assert "\n        foo((1,2),a==b,left and right)\n" in out
@@ -362,7 +373,7 @@ def test_advanced_generator_indents_yarax_multiline_match_condition() -> None:
         cases=[MatchCase(pattern=IntegerLiteral(1), result=BooleanLiteral(True))],
         default=BooleanLiteral(False),
     )
-    out = AdvancedCodeGenerator().generate(
+    out = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(
         YaraFile(rules=[Rule(name="yarax_match", condition=condition)])
     )
 
@@ -374,7 +385,11 @@ def test_advanced_generator_indents_yarax_multiline_match_condition() -> None:
         "        }\n"
     ) in out
     assert "\n    1 => true,\n" not in out
-    assert AdvancedCodeGenerator().generate(condition).startswith("match 1 {\n")
+    assert (
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig()))
+        .generate(condition)
+        .startswith("match 1 {\n")
+    )
 
 
 def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
@@ -389,12 +404,14 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
                 return "ephemeral"
             raise AttributeError("key disappeared")
 
-    adv = AdvancedCodeGenerator(
-        FormattingConfig(
-            section_order=["strings", "meta", "condition"],
-            blank_lines_between_sections=1,
-            string_style=StringStyle.ALIGNED,
-            space_after_comma=True,
+    adv = CodeGenerator(
+        options=GeneratorOptions(
+            advanced=FormattingConfig(
+                section_order=["strings", "meta", "condition"],
+                blank_lines_between_sections=1,
+                string_style=StringStyle.ALIGNED,
+                space_after_comma=True,
+            )
         )
     )
 
@@ -419,8 +436,10 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
     out = adv.generate(YaraFile(rules=[rule]))
     assert "\n\n    meta:\n" in out
 
-    adv2 = AdvancedCodeGenerator(
-        FormattingConfig(string_style=StringStyle.ALIGNED, space_after_comma=True)
+    adv2 = CodeGenerator(
+        options=GeneratorOptions(
+            advanced=FormattingConfig(string_style=StringStyle.ALIGNED, space_after_comma=True)
+        )
     )
     adv2.generate(YaraFile(rules=[]))
     assert (
@@ -455,7 +474,9 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
     )
     assert adv2.buffer.getvalue() == "$r = /abc/ nocase"
 
-    adv3 = AdvancedCodeGenerator(FormattingConfig(space_after_comma=True))
+    adv3 = CodeGenerator(
+        options=GeneratorOptions(advanced=FormattingConfig(space_after_comma=True))
+    )
     assert adv3.visit_set_expression(
         SetExpression(elements=[IntegerLiteral(1), IntegerLiteral(2)])
     ).endswith("(1, 2)")

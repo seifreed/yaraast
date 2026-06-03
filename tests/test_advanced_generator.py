@@ -1,6 +1,5 @@
 """Test advanced code generator with formatting options."""
 
-from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.formatting import (
     BraceStyle,
     FormattingConfig,
@@ -8,6 +7,8 @@ from yaraast.codegen.formatting import (
     IndentStyle,
     StringStyle,
 )
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.parser import Parser
 
 
@@ -32,7 +33,7 @@ rule test_rule {
     ast = parser.parse(yara_code)
 
     config = FormattingConfig.compact()
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 
     # Check compact formatting
@@ -57,7 +58,7 @@ rule test_rule {
     ast = parser.parse(yara_code)
 
     config = FormattingConfig.expanded()
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 
     # Check expanded formatting
@@ -79,13 +80,13 @@ rule test {
 
     # Same line style
     config = FormattingConfig(brace_style=BraceStyle.SAME_LINE)
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
     assert "rule test {" in output
 
     # New line style
     config = FormattingConfig(brace_style=BraceStyle.NEW_LINE)
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
     assert "rule test\n{" in output or "rule test\r\n{" in output
 
@@ -109,7 +110,7 @@ rule test {
 
     # Tabular alignment
     config = FormattingConfig(string_style=StringStyle.TABULAR)
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 
     # Should align identifiers and values
@@ -138,13 +139,13 @@ rule test {
 
     # Uppercase hex
     config = FormattingConfig(hex_style=HexStyle.UPPERCASE)
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
     assert "48 65 6C 6C 6F" in output or "48656C6C6F" in output
 
     # Lowercase hex
     config = FormattingConfig(hex_style=HexStyle.LOWERCASE)
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
     assert "48 65 6c 6c 6f" in output or "48656c6c6f" in output
 
@@ -178,7 +179,7 @@ rule mmm_middle {
 
     # Test import sorting
     config = FormattingConfig(sort_imports=True)
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 
     import_lines = [line for line in output.split("\n") if "import" in line]
@@ -187,7 +188,7 @@ rule mmm_middle {
 
     # Test rule sorting
     config = FormattingConfig(sort_rules=True)
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 
     # Rules should be in alphabetical order
@@ -195,7 +196,7 @@ rule mmm_middle {
 
     # Test meta sorting
     config = FormattingConfig(sort_meta=True)
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 
     # Meta should be sorted within the rule
@@ -225,7 +226,7 @@ rule test : tag1 tag2 {
         space_after_colon=False,
         space_around_operators=False,
     )
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 
     assert "test:" in output or "test :" in output  # Colon spacing
@@ -247,7 +248,7 @@ rule test {
 
     # Test tab indentation
     config = FormattingConfig(indent_style=IndentStyle.TABS)
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 
     # Should contain tabs
@@ -255,7 +256,7 @@ rule test {
 
     # Test space indentation
     config = FormattingConfig(indent_style=IndentStyle.SPACES, indent_size=3)
-    generator = AdvancedCodeGenerator(config)
+    generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 
     # Should contain 3-space indents

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from lsprotocol.types import Range
 
-from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 import yaraast.lsp.authoring_actions as authoring_actions
 from yaraast.lsp.authoring_actions import StructuralEdit
 from yaraast.lsp.authoring_support import (
@@ -30,7 +30,9 @@ class AuthoringActions:
     def __init__(self) -> None:
         self._parser = Parser()
         self._generator = CodeGenerator()
-        self._advanced_generator = AdvancedCodeGenerator(canonical_config())
+        self._advanced_generator = CodeGenerator(
+            options=GeneratorOptions(advanced=canonical_config())
+        )
         self._ast_formatter = ASTFormatter()
         self._optimizer = RuleOptimizer()
         self._roundtrip = RoundTripSerializer()

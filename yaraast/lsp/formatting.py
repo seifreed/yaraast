@@ -7,8 +7,9 @@ from typing import Any
 
 from lsprotocol.types import Position, Range, TextEdit
 
-from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.formatting import FormattingConfig
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.lsp.parsing import parse_for_lsp
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.safe_handler import lsp_safe_handler
@@ -71,8 +72,8 @@ class FormattingProvider:
         formatted_rule = self._generator(uri).generate(rule)
         return [TextEdit(range=rule_range, new_text=formatted_rule)]
 
-    def _generator(self, uri: str | None) -> AdvancedCodeGenerator:
-        return AdvancedCodeGenerator(self._config(uri))
+    def _generator(self, uri: str | None) -> CodeGenerator:
+        return CodeGenerator(options=GeneratorOptions(advanced=self._config(uri)))
 
     def _config(self, uri: str | None) -> FormattingConfig:
         if self.runtime is None:

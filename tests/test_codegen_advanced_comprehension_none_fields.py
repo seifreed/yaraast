@@ -18,7 +18,9 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
 )
 from yaraast.ast.rules import Rule
-from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
+from yaraast.codegen.formatting import FormattingConfig
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension
 
 
@@ -35,7 +37,7 @@ def _wrap(condition: Expression) -> YaraFile:
 )
 def test_array_comprehension_missing_field_raises_value_error(node: ArrayComprehension) -> None:
     with pytest.raises(ValueError, match="ArrayComprehension"):
-        AdvancedCodeGenerator().generate(_wrap(node))
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(_wrap(node))
 
 
 @pytest.mark.parametrize(
@@ -63,7 +65,7 @@ def test_array_comprehension_missing_field_raises_value_error(node: ArrayCompreh
 )
 def test_dict_comprehension_missing_field_raises_value_error(node: DictComprehension) -> None:
     with pytest.raises(ValueError, match="DictComprehension"):
-        AdvancedCodeGenerator().generate(_wrap(node))
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(_wrap(node))
 
 
 def test_fully_specified_comprehension_still_generates() -> None:
@@ -72,5 +74,7 @@ def test_fully_specified_comprehension_still_generates() -> None:
         variable="x",
         iterable=Identifier("items"),
     )
-    output = AdvancedCodeGenerator().generate(_wrap(node))
+    output = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(
+        _wrap(node)
+    )
     assert "for x in" in output
