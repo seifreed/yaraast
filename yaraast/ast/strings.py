@@ -5,14 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from yaraast.ast.base import ASTNode, _require_ast_node_sequence, _VisitorType
-
-
-def _require_string(value: Any, field_name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{field_name} must be a string"
-        raise TypeError(msg)
-    return value
+from yaraast.ast.base import ASTNode, _require_ast_node_sequence, _VisitorType, require_string
 
 
 @dataclass
@@ -25,7 +18,7 @@ class StringDefinition(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate string definition scalar fields before direct analysis."""
-        _require_string(self.identifier, "String identifier")
+        require_string(self.identifier, "String identifier")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_definition(self)
@@ -149,7 +142,7 @@ class RegexString(StringDefinition):
     def validate_structure(self) -> None:
         """Validate regex string scalar fields before direct analysis."""
         super().validate_structure()
-        _require_string(self.regex, "Regex string pattern")
+        require_string(self.regex, "Regex string pattern")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_regex_string(self)

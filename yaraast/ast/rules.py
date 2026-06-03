@@ -11,6 +11,7 @@ from yaraast.ast.base import (
     _require_ast_node,
     _require_ast_node_sequence_type,
     _VisitorType,
+    require_string,
 )
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
 from yaraast.errors import ValidationError
@@ -19,13 +20,6 @@ if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
     from yaraast.ast.pragmas import InRulePragma
     from yaraast.ast.strings import StringDefinition
-
-
-def _require_string(value: Any, field_name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{field_name} must be a string"
-        raise TypeError(msg)
-    return value
 
 
 @dataclass
@@ -37,9 +31,9 @@ class Import(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate import scalar fields before direct analysis."""
-        _require_string(self.module, "Import module")
+        require_string(self.module, "Import module")
         if self.alias is not None:
-            _require_string(self.alias, "Import alias")
+            require_string(self.alias, "Import alias")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_import(self)
@@ -53,7 +47,7 @@ class Include(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate include scalar fields before direct analysis."""
-        _require_string(self.path, "Include path")
+        require_string(self.path, "Include path")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_include(self)
@@ -67,7 +61,7 @@ class Tag(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate tag scalar fields before direct analysis."""
-        _require_string(self.name, "Tag name")
+        require_string(self.name, "Tag name")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_tag(self)
@@ -159,7 +153,7 @@ class Rule(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate child containers before traversal."""
-        _require_string(self.name, "Rule name")
+        require_string(self.name, "Rule name")
         from yaraast.ast.pragmas import InRulePragma
         from yaraast.ast.strings import StringDefinition
 

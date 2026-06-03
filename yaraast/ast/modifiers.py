@@ -5,17 +5,10 @@ from enum import Enum
 import math
 from typing import Any
 
-from yaraast.ast.base import ASTNode, _VisitorType
+from yaraast.ast.base import ASTNode, _VisitorType, require_string
 from yaraast.errors import ValidationError
 from yaraast.string_escaping import escape_string_source_value
 from yaraast.xor_keys import parse_xor_key_text
-
-
-def _require_string(value: Any, field_name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{field_name} must be a string"
-        raise TypeError(msg)
-    return value
 
 
 def _require_meta_value(value: Any) -> str | int | bool | float:
@@ -78,7 +71,7 @@ class StringModifierType(Enum):
     @classmethod
     def from_string(cls, modifier_str: str) -> "StringModifierType":
         """Convert string to modifier enum, handling case insensitivity."""
-        modifier_text = _require_string(modifier_str, "String modifier input")
+        modifier_text = require_string(modifier_str, "String modifier input")
         try:
             return cls(modifier_text.lower())
         except ValueError:
@@ -100,7 +93,7 @@ class RuleModifierType(Enum):
     @classmethod
     def from_string(cls, modifier_str: str) -> "RuleModifierType":
         """Convert string to rule modifier enum."""
-        modifier_text = _require_string(modifier_str, "Rule modifier input")
+        modifier_text = require_string(modifier_str, "Rule modifier input")
         try:
             return cls(modifier_text.lower())
         except ValueError:
@@ -121,7 +114,7 @@ class MetaScope(Enum):
     @classmethod
     def from_string(cls, scope_str: str) -> "MetaScope":
         """Convert string to meta scope enum."""
-        scope_text = _require_string(scope_str, "Meta scope input")
+        scope_text = require_string(scope_str, "Meta scope input")
         try:
             return cls(scope_text.lower())
         except ValueError:
@@ -204,7 +197,7 @@ class MetaEntry:
         scope: str | None = None,
     ) -> "MetaEntry":
         """Create MetaEntry from key, value, and optional scope."""
-        meta_key = _require_string(key, "Meta key")
+        meta_key = require_string(key, "Meta key")
         meta_value = _require_meta_value(value)
         meta_scope = MetaScope.from_string(scope) if scope is not None else MetaScope.PUBLIC
         return cls(key=meta_key, value=meta_value, scope=meta_scope)

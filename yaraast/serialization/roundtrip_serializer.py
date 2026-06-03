@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import YaraFile, require_string
 from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.errors import SerializationError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
@@ -66,17 +66,10 @@ def _format_ast_difference(diff: DiffNode) -> str:
     )
 
 
-def _require_string(value: object, name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{name} must be a string"
-        raise TypeError(msg)
-    return value
-
-
 def _require_optional_string(value: object, name: str) -> str | None:
     if value is None:
         return None
-    return _require_string(value, name)
+    return require_string(value, name)
 
 
 def _require_boolean(value: object, name: str) -> bool:
@@ -87,7 +80,7 @@ def _require_boolean(value: object, name: str) -> bool:
 
 
 def _normalize_roundtrip_format(format_name: object) -> str:
-    normalized = _require_string(format_name, "format").lower()
+    normalized = require_string(format_name, "format").lower()
     if normalized not in {"json", "yaml"}:
         msg = "format must be 'json' or 'yaml'"
         raise ValueError(msg)
@@ -142,7 +135,7 @@ class RoundTripSerializer:
         format: str = "json",
     ) -> tuple[YaraFile, str]:
         """Parse YARA source and serialize with metadata."""
-        yara_source = _require_string(yara_source, "yara_source")
+        yara_source = require_string(yara_source, "yara_source")
         source_file = _require_optional_string(source_file, "source_file")
         format_name = _normalize_roundtrip_format(format)
 
@@ -185,7 +178,7 @@ class RoundTripSerializer:
         preserve_original_formatting: bool = True,
     ) -> tuple[YaraFile, str]:
         """Deserialize and generate YARA code with preserved formatting."""
-        serialized_data = _require_string(serialized_data, "serialized_data")
+        serialized_data = require_string(serialized_data, "serialized_data")
         preserve_original_formatting = _require_boolean(
             preserve_original_formatting,
             "preserve_original_formatting",
@@ -229,7 +222,7 @@ class RoundTripSerializer:
 
     def roundtrip_test(self, yara_source: str, format: str = "json") -> dict[str, Any]:
         """Test round-trip conversion and report differences."""
-        yara_source = _require_string(yara_source, "yara_source")
+        yara_source = require_string(yara_source, "yara_source")
         format_name = _normalize_roundtrip_format(format)
 
         # Original → AST → Serialized

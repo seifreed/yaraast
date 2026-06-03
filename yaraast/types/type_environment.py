@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from yaraast.ast.base import require_string
 from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.string_references import normalize_string_reference_id
 
@@ -14,15 +15,8 @@ _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
 
 
-def _require_string(value: Any, field_name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{field_name} must be a string"
-        raise TypeError(msg)
-    return value
-
-
 def _require_nonempty_string(value: Any, field_name: str) -> str:
-    text = _require_string(value, field_name)
+    text = require_string(value, field_name)
     if not text.strip():
         msg = f"{field_name} cannot be empty"
         raise ValueError(msg)
@@ -30,7 +24,7 @@ def _require_nonempty_string(value: Any, field_name: str) -> str:
 
 
 def _normalize_string_id(string_id: str, field_name: str = "TypeEnvironment string id") -> str:
-    string_id = _require_string(string_id, field_name)
+    string_id = require_string(string_id, field_name)
     return normalize_string_reference_id(string_id)
 
 
@@ -38,7 +32,7 @@ def _normalize_concrete_string_id(
     string_id: str,
     field_name: str = "TypeEnvironment string id",
 ) -> str:
-    string_id = _require_string(string_id, field_name)
+    string_id = require_string(string_id, field_name)
     return normalize_string_reference_id(string_id, allow_wildcard=False)
 
 
@@ -88,7 +82,7 @@ class TypeEnvironment:
         self.scopes[-1][variable_name] = type
 
     def lookup(self, name: str) -> YaraType | None:
-        variable_name = _require_string(name, "TypeEnvironment variable name")
+        variable_name = require_string(name, "TypeEnvironment variable name")
         for scope in reversed(self.scopes):
             if variable_name in scope:
                 return scope[variable_name]
@@ -166,7 +160,7 @@ class TypeEnvironment:
         return rule_name in self.rules
 
     def has_rule_pattern(self, pattern: str) -> bool:
-        pattern = _require_string(pattern, "TypeEnvironment rule pattern")
+        pattern = require_string(pattern, "TypeEnvironment rule pattern")
         if not pattern.endswith("*"):
             return self.has_rule(pattern)
         prefix = pattern[:-1]

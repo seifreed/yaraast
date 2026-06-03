@@ -10,22 +10,16 @@ from yaraast.ast.base import (
     _require_ast_node,
     _require_ast_node_sequence_type,
     _VisitorType,
+    require_string,
 )
 from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import Expression
 
 
-def _require_string(value: Any, field_name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{field_name} must be a string"
-        raise TypeError(msg)
-    return value
-
-
 def _require_optional_string(value: Any, field_name: str) -> str | None:
     if value is None:
         return None
-    return _require_string(value, field_name)
+    return require_string(value, field_name)
 
 
 def _validate_child_structure(value: Any) -> None:
@@ -73,7 +67,7 @@ class WithDeclaration(ASTNode):
     value: Expression  # Initial value
 
     def validate_structure(self) -> None:
-        _require_string(self.identifier, "Local variable name")
+        require_string(self.identifier, "Local variable name")
         _validate_child_structure(_require_ast_node(self.value, "WithDeclaration.value"))
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -99,7 +93,7 @@ class ArrayComprehension(Expression):
             _validate_child_structure(
                 _require_ast_node(self.expression, "ArrayComprehension.expression")
             )
-        _require_string(self.variable, "Local variable name")
+        require_string(self.variable, "Local variable name")
         if self.iterable is not None:
             _validate_child_structure(
                 _require_ast_node(self.iterable, "ArrayComprehension.iterable")
@@ -138,7 +132,7 @@ class DictComprehension(Expression):
             _validate_child_structure(
                 _require_ast_node(self.value_expression, "DictComprehension.value_expression")
             )
-        _require_string(self.key_variable, "Local variable name")
+        require_string(self.key_variable, "Local variable name")
         _require_optional_string(self.value_variable, "Local variable name")
         if self.iterable is not None:
             _validate_child_structure(
@@ -306,7 +300,7 @@ class LambdaExpression(Expression):
             msg = "LambdaExpression parameters must be a list or tuple"
             raise TypeError(msg)
         for parameter in self.parameters:
-            _require_string(parameter, "Local variable name")
+            require_string(parameter, "Local variable name")
         _validate_child_structure(_require_ast_node(self.body, "LambdaExpression.body"))
 
     def accept(self, visitor: _VisitorType) -> Any:

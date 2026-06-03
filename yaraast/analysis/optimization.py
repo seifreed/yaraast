@@ -18,7 +18,7 @@ from yaraast.analysis.optimization_rule_analysis import (
     find_similar_rules,
     visit_binary_expression,
 )
-from yaraast.ast.base import YaraFile, require_yara_file
+from yaraast.ast.base import YaraFile, require_string, require_yara_file
 from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -44,7 +44,7 @@ def _expression_text(value: Any) -> str | None:
 
     name = getattr(value, "name", None)
     if name is not None:
-        return _require_string(name, "Expression name")
+        return require_string(name, "Expression name")
 
     return None
 
@@ -333,7 +333,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
                 self._visit_string_set_value(item)
             return
         if isinstance(string_set, Identifier):
-            name = _require_string(string_set.name, "String set identifier")
+            name = require_string(string_set.name, "String set identifier")
             if name == "them":
                 return
             self._visit_ast_value(string_set)
@@ -374,13 +374,6 @@ class OptimizationAnalyzer(BaseVisitor[None]):
     def _find_similar_rules(self, rules: list[Rule]) -> None:
         """Find rules with similar structure that could be combined."""
         find_similar_rules(self, rules)
-
-
-def _require_string(value: Any, field_name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{field_name} must be a string"
-        raise TypeError(msg)
-    return value
 
 
 def _require_string_reference(value: Any) -> str:

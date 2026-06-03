@@ -75,6 +75,18 @@ class ASTNode(ABC):
         return children
 
 
+def require_string(value: Any, field_name: str) -> str:
+    """Require a ``str`` value, raising ``TypeError`` otherwise.
+
+    A leaf guard reused across layers (AST construction, serialization, CLI)
+    so the identical check is defined once.
+    """
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
 def _require_ast_node(value: Any, field_name: str) -> ASTNode:
     if not isinstance(value, ASTNode):
         msg = f"{field_name} must be an AST node"

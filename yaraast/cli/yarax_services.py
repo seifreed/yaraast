@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from yaraast.ast.base import require_string
 from yaraast.cli.utils import parse_yara_file
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.dialects import _strip_string_literals
@@ -25,15 +26,8 @@ SLICE_PATTERN = r"(?:[A-Za-z_$]\w*(?:\s*\([^)]*\))?|\"\"|\])\s*\[[^\]\n]*:[^\]\n
 TUPLE_INDEXING_PATTERN = r"\([^()\n]*,[^()\n]*\)\s*\["
 
 
-def _require_string(value: object, name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{name} must be a string"
-        raise TypeError(msg)
-    return value
-
-
 def parse_yarax_content(content: str):
-    content = _require_string(content, "content")
+    content = require_string(content, "content")
     parser = YaraXParser(content)
     ast = parser.parse()
     generator = YaraXGenerator()
@@ -54,14 +48,14 @@ def check_yarax_compatibility(ast, strict: bool):
 
 
 def convert_yara_to_yarax(content: str) -> str:
-    content = _require_string(content, "content")
+    content = require_string(content, "content")
     ast = parse_yara_source(content)
     generator = YaraXGenerator()
     return generator.generate(ast)
 
 
 def convert_yarax_to_yara(content: str) -> str:
-    content = _require_string(content, "content")
+    content = require_string(content, "content")
     parser = YaraXParser(content)
     ast = parser.parse()
     checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
@@ -100,7 +94,7 @@ def _add_feature(features: list[str], feature: str) -> None:
 
 
 def detect_yarax_features(content: str) -> list[str]:
-    content = _require_string(content, "content")
+    content = require_string(content, "content")
     parsed_features = _features_from_parsed_ast(content)
     if parsed_features:
         return parsed_features
@@ -154,7 +148,7 @@ rule yarax_demo {
 
 
 def detect_playground_features(content: str) -> list[str]:
-    content = _require_string(content, "content")
+    content = require_string(content, "content")
     parsed_features = _features_from_parsed_ast(content)
     if parsed_features:
         return parsed_features

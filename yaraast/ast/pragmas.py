@@ -6,14 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from yaraast.ast.base import ASTNode, _VisitorType
-
-
-def _require_string(value: Any, field_name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{field_name} must be a string"
-        raise TypeError(msg)
-    return value
+from yaraast.ast.base import ASTNode, _VisitorType, require_string
 
 
 def _normalize_arguments(arguments: list[str] | None) -> list[str]:
@@ -54,7 +47,7 @@ class PragmaType(Enum):
     @classmethod
     def from_string(cls, pragma_str: str) -> PragmaType:
         """Convert string to pragma type."""
-        pragma_text = _require_string(pragma_str, "Pragma type input")
+        pragma_text = require_string(pragma_str, "Pragma type input")
         try:
             return cls(pragma_text.lower())
         except ValueError:
@@ -212,11 +205,11 @@ class CustomPragma(Pragma):
 
     def get_parameter(self, key: str, default: Any = None) -> Any:
         """Get a parameter value by key."""
-        return self.parameters.get(_require_string(key, "Pragma parameter key"), default)
+        return self.parameters.get(require_string(key, "Pragma parameter key"), default)
 
     def set_parameter(self, key: str, value: Any) -> None:
         """Set a parameter value."""
-        self.parameters[_require_string(key, "Pragma parameter key")] = value
+        self.parameters[require_string(key, "Pragma parameter key")] = value
 
     def __str__(self) -> str:
         args_str = " " + " ".join(self.arguments) if self.arguments else ""
@@ -291,7 +284,7 @@ def create_pragma(
     scope: PragmaScope = PragmaScope.FILE,
 ) -> Pragma:
     """Create a generic pragma."""
-    pragma_name = _require_string(name, "Pragma name")
+    pragma_name = require_string(name, "Pragma name")
     pragma_arguments = _normalize_arguments(arguments)
     pragma_scope = _require_scope(scope)
     pragma_type = PragmaType.from_string(pragma_name)
@@ -307,25 +300,25 @@ def create_include_once() -> IncludeOncePragma:
 
 def create_define(macro_name: str, macro_value: str | None = None) -> DefineDirective:
     """Create a define directive."""
-    validated_macro_name = _require_string(macro_name, "Pragma macro_name")
+    validated_macro_name = require_string(macro_name, "Pragma macro_name")
     if macro_value is not None:
-        macro_value = _require_string(macro_value, "Pragma macro_value")
+        macro_value = require_string(macro_value, "Pragma macro_value")
     return DefineDirective(validated_macro_name, macro_value)
 
 
 def create_undef(macro_name: str) -> UndefDirective:
     """Create an undef directive."""
-    return UndefDirective(_require_string(macro_name, "Pragma macro_name"))
+    return UndefDirective(require_string(macro_name, "Pragma macro_name"))
 
 
 def create_ifdef(condition: str) -> ConditionalDirective:
     """Create an ifdef directive."""
-    return ConditionalDirective.ifdef(_require_string(condition, "Pragma condition"))
+    return ConditionalDirective.ifdef(require_string(condition, "Pragma condition"))
 
 
 def create_ifndef(condition: str) -> ConditionalDirective:
     """Create an ifndef directive."""
-    return ConditionalDirective.ifndef(_require_string(condition, "Pragma condition"))
+    return ConditionalDirective.ifndef(require_string(condition, "Pragma condition"))
 
 
 def create_endif() -> ConditionalDirective:
@@ -341,4 +334,4 @@ def create_in_rule_pragma(
     if not isinstance(pragma, Pragma):
         msg = "InRulePragma pragma must be a Pragma"
         raise TypeError(msg)
-    return InRulePragma(pragma, _require_string(position, "InRulePragma position"))
+    return InRulePragma(pragma, require_string(position, "InRulePragma position"))
