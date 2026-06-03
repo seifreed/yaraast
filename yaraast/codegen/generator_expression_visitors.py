@@ -191,6 +191,11 @@ def _render_for_quantifier(generator: Any, quantifier: Any) -> str:
         msg = f"Invalid for quantifier '{generator.visit(quantifier)}' for libyara output"
         raise ValueError(msg)
     if isinstance(quantifier, Identifier):
+        # filesize and entrypoint are reserved words libyara accepts as integer
+        # quantifiers; emit them directly. Other identifiers are validated, so
+        # non-count keywords such as true stay rejected (mirrors of-quantifiers).
+        if quantifier.name in {"filesize", "entrypoint"}:
+            return quantifier.name
         return _validate_for_quantifier_text(quantifier.name)
     return cast(str, generator.visit(quantifier))
 

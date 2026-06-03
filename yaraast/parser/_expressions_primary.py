@@ -158,6 +158,8 @@ class ExpressionPrimaryMixin:
 
     def _parse_quantifier_expression(self) -> Expression | None:
         """Parse quantifier expressions (any/all of, numeric of, percentage of)."""
+        if getattr(self, "_suppress_of_postfix", False):
+            return None
         if self._check(TokenType.INTEGER):
             saved_pos = self.current
             self._advance()

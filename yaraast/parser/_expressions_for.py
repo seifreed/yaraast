@@ -5,12 +5,14 @@ from __future__ import annotations
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression, QuantifierValue
 from yaraast.ast.expressions import (
     ArrayAccess,
+    BooleanLiteral,
     Expression,
     FunctionCall,
     Identifier,
     MemberAccess,
     ParenthesesExpression,
     RangeExpression,
+    RegexLiteral,
     SetExpression,
     StringIdentifier,
     StringLiteral,
@@ -28,21 +30,15 @@ class ExpressionForMixin:
     def _parse_for_expression(self, start_token=None) -> ForExpression | ForOfExpression:
         """Parse for expression."""
         start_token = start_token or self._peek()
+        quantifier: QuantifierValue
         if self._match(TokenType.ANY):
             quantifier = "any"
         elif self._match(TokenType.ALL):
             quantifier = "all"
         elif self._match(TokenType.NONE):
             quantifier = "none"
-        elif self._match(TokenType.INTEGER):
-            quantifier_token = self._previous()
-            quantifier = quantifier_token.value
-            if not isinstance(quantifier, int):
-                msg = "Expected integer quantifier after 'for'"
-                raise ParserError(msg, quantifier_token)
         else:
-            msg = "Expected quantifier after 'for'"
-            raise ParserError(msg, self._peek())
+            quantifier = self._parse_for_quantifier_expression()
 
         if self._match(TokenType.OF):
             return self._parse_for_of_expression(quantifier, start_token)
@@ -105,6 +101,37 @@ class ExpressionForMixin:
             start_token,
             self._previous(),
         )
+
+    def _parse_for_quantifier_expression(self) -> QuantifierValue:
+        """Parse a non-keyword 'for' quantifier as a primary expression.
+
+        YARA's grammar defines the loop quantifier as ``primary_expression``,
+        so any arithmetic/bitwise expression is accepted (for example
+        ``for #a i in ...`` or ``for filesize i in ...``).  Boolean, relational
+        and string-reference forms are rejected as syntax errors, matching
+        libyara.
+        """
+        token = self._peek()
+        if token.type == TokenType.COLON or self._is_at_end():
+            msg = "Expected quantifier after 'for'"
+            raise ParserError(msg, token)
+        previous_suppress_of = getattr(self, "_suppress_of_postfix", False)
+        self._suppress_of_postfix = True
+        try:
+            quantifier = self._parse_bitwise_or_expression()
+        except ParserError as exc:
+            msg = "Expected quantifier after 'for'"
+            raise ParserError(msg, token) from exc
+        finally:
+            self._suppress_of_postfix = previous_suppress_of
+        self._reject_invalid_for_quantifier(quantifier, token)
+        return quantifier
+
+    def _reject_invalid_for_quantifier(self, quantifier: Expression, token) -> None:
+        """Reject quantifier nodes libyara treats as syntax errors."""
+        if isinstance(quantifier, BooleanLiteral | RegexLiteral | StringIdentifier):
+            msg = "Expected quantifier after 'for'"
+            raise ParserError(msg, token)
 
     def _is_nested_parenthesized_range(self, iterable: Expression) -> bool:
         if not isinstance(iterable, ParenthesesExpression):

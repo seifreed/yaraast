@@ -8,6 +8,7 @@ from yaraast.ast.conditions import ForExpression, ForOfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    IntegerLiteral,
     MemberAccess,
     StringLiteral,
 )
@@ -37,7 +38,8 @@ def test_parse_for_expression_success_and_error_paths() -> None:
 
     node_n = _expr_parser("3 of them : ( true )")._parse_for_expression()
     assert isinstance(node_n, ForOfExpression)
-    assert node_n.quantifier == 3
+    assert isinstance(node_n.quantifier, IntegerLiteral)
+    assert node_n.quantifier.value == 3
     assert node_n.condition is not None
 
     node_for_of = _expr_parser("any of them : ( true )")._parse_for_expression()
@@ -46,6 +48,8 @@ def test_parse_for_expression_success_and_error_paths() -> None:
     assert node_for_of.condition is not None
 
     with pytest.raises(ParserError, match="Expected quantifier"):
+        _expr_parser(":")._parse_for_expression()
+    with pytest.raises(ParserError, match="Expected variable name"):
         _expr_parser("them")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected variable name"):
         _expr_parser("any in 1 : ( true )")._parse_for_expression()
@@ -96,6 +100,57 @@ def test_parse_for_of_does_not_consume_outer_boolean_expression() -> None:
     assert isinstance(condition.left, ForOfExpression)
     assert isinstance(condition.right, BooleanLiteral)
     assert condition.right.value is True
+
+
+@pytest.mark.parametrize(
+    "quantifier",
+    [
+        "#a",
+        "@a",
+        "@a[1]",
+        "!a",
+        "uint8(0)",
+        "filesize",
+        "entrypoint",
+        "#a + 1",
+        "(1 + 1)",
+        "1 & 2",
+    ],
+)
+def test_for_loop_accepts_primary_expression_quantifier(quantifier: str) -> None:
+    """libyara allows any primary expression as the loop quantifier."""
+    source = f'rule r {{ strings: $a = "x" condition: for {quantifier} i in (1..2) : (@a[i] > 0) }}'
+    ast = Parser().parse(source)
+    condition = ast.rules[0].condition
+    assert isinstance(condition, ForExpression)
+    assert not isinstance(condition.quantifier, str)
+
+
+def test_for_of_accepts_expression_quantifier() -> None:
+    source = 'rule r { strings: $a = "x" $b = "y" condition: for #a of them : ($) }'
+    ast = Parser().parse(source)
+    condition = ast.rules[0].condition
+    assert isinstance(condition, ForOfExpression)
+    assert not isinstance(condition.quantifier, str)
+
+
+@pytest.mark.parametrize(
+    "quantifier",
+    [
+        "true",
+        "false",
+        "$a",
+        "/re/",
+        "1 == 2",
+        "1 < 2",
+        "not 1",
+    ],
+)
+def test_for_loop_rejects_non_primary_quantifier(quantifier: str) -> None:
+    """Boolean, relational and string-reference quantifiers are syntax errors."""
+    source = f'rule r {{ strings: $a = "x" condition: for {quantifier} i in (1..2) : (@a[i] > 0) }}'
+    with pytest.raises(ParserError):
+        Parser().parse(source)
 
 
 @pytest.mark.parametrize(

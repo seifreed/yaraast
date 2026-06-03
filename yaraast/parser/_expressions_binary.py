@@ -83,7 +83,11 @@ class ExpressionBinaryMixin:
         """Parse relational expression."""
         expr = self._parse_range_expression()
 
-        if self._check(TokenType.OF) and self._is_valid_of_quantifier(expr):
+        if (
+            self._check(TokenType.OF)
+            and not getattr(self, "_suppress_of_postfix", False)
+            and self._is_valid_of_quantifier(expr)
+        ):
             expr = self._parse_expression_of_postfix(expr)
 
         if self._match(*RELATIONAL_TOKEN_TYPES):

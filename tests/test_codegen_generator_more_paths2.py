@@ -1854,6 +1854,24 @@ def test_codegen_generators_reject_invalid_for_quantifiers(quantifier: Any) -> N
 
 
 @pytest.mark.parametrize(
+    "source",
+    [
+        'rule r { strings: $a = "x" condition: for #a i in (1..2) : (@a[i] > 0) }',
+        'rule r { strings: $a = "x" condition: for uint8(0) i in (1..2) : (@a[i] > 0) }',
+        'rule r { strings: $a = "x" condition: for filesize i in (1..2) : (@a[i] > 0) }',
+        'rule r { strings: $a = "x" $b = "y" condition: for #a of them : ($) }',
+    ],
+)
+def test_codegen_round_trips_primary_expression_for_quantifier(source: str) -> None:
+    from yaraast.parser.parser import Parser as _Parser
+
+    ast = _Parser().parse(source)
+    generated = CodeGenerator().generate(ast)
+    reparsed = _Parser().parse(generated)
+    assert CodeGenerator().generate(reparsed) == generated
+
+
+@pytest.mark.parametrize(
     "quantifier",
     [IntegerLiteral(cast(Any, True)), IntegerLiteral(cast(Any, "any"))],
 )
