@@ -83,6 +83,9 @@ class ExpressionBinaryMixin:
         """Parse relational expression."""
         expr = self._parse_range_expression()
 
+        if self._check(TokenType.OF) and self._is_valid_of_quantifier(expr):
+            expr = self._parse_expression_of_postfix(expr)
+
         if self._match(*RELATIONAL_TOKEN_TYPES):
             operator_token = self._previous()
             operator = operator_token.value.lower()
@@ -98,6 +101,34 @@ class ExpressionBinaryMixin:
                 raise ParserError(msg, self._peek())
 
         return expr
+
+    def _is_valid_of_quantifier(self, expr: Expression) -> bool:
+        """Return True when ``expr`` may act as the count of an of-expression.
+
+        libyara accepts any ``primary_expression`` (numeric leaf or arithmetic
+        thereof) as the quantifier of an of-expression, e.g. ``#a of them`` or
+        ``#a + 1 of them``.  String identifiers, wildcards, and boolean results
+        such as nested of/at/in expressions are syntax errors as quantifiers.
+        """
+        while isinstance(expr, ParenthesesExpression):
+            expr = expr.expression
+        if isinstance(expr, StringIdentifier | OfExpression | AtExpression | InExpression):
+            return False
+        return not isinstance(expr, RangeExpression)
+
+    def _parse_expression_of_postfix(self, quantifier: Expression) -> Expression:
+        """Wrap ``quantifier`` as the count of an of-expression."""
+        self._match(TokenType.OF)
+        start_token = self._previous()
+        string_set = self._parse_of_string_set()
+        node = OfExpression(quantifier=quantifier, string_set=string_set)
+        if getattr(quantifier, "location", None) is not None:
+            node.location = self._location_from_tokens(
+                self._synthetic_token_from_location(quantifier.location),
+                self._previous(),
+            )
+            return node
+        return self._set_node_location_from_tokens(node, start_token, self._previous())
 
     def _parse_range_expression(self) -> Expression:
         """Parse range expression (a..b)."""

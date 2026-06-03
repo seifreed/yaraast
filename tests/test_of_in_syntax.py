@@ -623,5 +623,91 @@ class TestOfInSyntax:
         assert in_expr.string_id is None
 
 
+class TestExpressionQuantifierOf:
+    """Parsing of of-expressions whose quantifier is a primary expression.
+
+    libyara accepts any ``primary_expression`` (a numeric leaf or arithmetic
+    thereof) as the of-expression quantifier, e.g. ``#a of them`` or
+    ``#a + 1 of (...)``.  These previously failed to parse while the AST and
+    code generator already supported such quantifiers.
+    """
+
+    @staticmethod
+    def _parse(condition: str) -> OfExpression:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "a"
+                $b = "b"
+            condition:
+                {condition}
+        }}
+        """
+        ast = Parser().parse(yara_code)
+        node = ast.rules[0].condition
+        assert isinstance(node, OfExpression)
+        return node
+
+    def test_string_count_quantifier(self) -> None:
+        node = self._parse("#a of ($a, $b)")
+        assert isinstance(node.quantifier, StringCount)
+        assert node.quantifier.string_id == "a"
+
+    def test_arithmetic_count_quantifier(self) -> None:
+        from yaraast.ast.expressions import BinaryExpression
+
+        node = self._parse("#a + #b of ($a, $b)")
+        assert isinstance(node.quantifier, BinaryExpression)
+        assert node.quantifier.operator == "+"
+        assert isinstance(node.quantifier.left, StringCount)
+        assert isinstance(node.quantifier.right, StringCount)
+
+    def test_identifier_quantifier(self) -> None:
+        from yaraast.ast.expressions import Identifier
+
+        node = self._parse("filesize of ($a, $b)")
+        assert isinstance(node.quantifier, Identifier)
+        assert node.quantifier.name == "filesize"
+
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "#a of ($a, $b)",
+            "filesize of ($a, $b)",
+            "entrypoint of ($a, $b)",
+            "uint8(0) of ($a, $b)",
+        ],
+    )
+    def test_primary_expression_quantifier_round_trips(self, condition: str) -> None:
+        node = self._parse(condition)
+        generated = CodeGenerator().generate(
+            Parser().parse(f'rule t {{ strings: $a = "a" $b = "b" condition: {condition} }}')
+        )
+        reparsed = Parser().parse(generated).rules[0].condition
+        assert isinstance(reparsed, OfExpression)
+        assert type(reparsed.quantifier) is type(node.quantifier)
+
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "$a of ($a, $b)",
+            "1 of them of ($a, $b)",
+            "(0..10) of ($a, $b)",
+        ],
+    )
+    def test_invalid_quantifiers_rejected(self, condition: str) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "a"
+                $b = "b"
+            condition:
+                {condition}
+        }}
+        """
+        with pytest.raises(ParserError):
+            Parser().parse(yara_code)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
