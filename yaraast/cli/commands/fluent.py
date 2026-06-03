@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import click
 
 from yaraast.cli.fluent_reporting import display_error, write_output
@@ -16,7 +14,7 @@ from yaraast.cli.fluent_services import (
     create_transformation_rules,
     generate_code,
 )
-from yaraast.cli.utils import _require_file_path
+from yaraast.cli.utils import _resolve_output_path
 
 
 @click.group()
@@ -27,18 +25,6 @@ def fluent() -> None:
     using method chaining and builder patterns, making rule creation
     more readable and maintainable.
     """
-
-
-def _validate_output_path(output: str | None) -> Path | None:
-    if output is None:
-        return None
-    try:
-        output_path = _require_file_path(output)
-    except (TypeError, ValueError) as exc:
-        raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
-    return output_path
 
 
 @fluent.command()
@@ -55,7 +41,7 @@ def examples(output: str | None) -> None:
     YARA rules programmatically, including string definitions, conditions,
     and rule transformations.
     """
-    output_path = _validate_output_path(output)
+    output_path = _resolve_output_path(output)
     try:
         yara_ast = create_example_rules()
         yara_code = generate_code(yara_ast)
@@ -78,7 +64,7 @@ def string_patterns(output: str | None) -> None:
     Shows how to use the fluent string builder API to create various
     types of string patterns with modifiers.
     """
-    output_path = _validate_output_path(output)
+    output_path = _resolve_output_path(output)
     try:
         rule_ast = create_string_patterns_rule()
         yara_code = generate_code(rule_ast)
@@ -102,7 +88,7 @@ def conditions(output: str | None) -> None:
     Shows how to use the fluent condition builder API to create
     complex rule conditions with logical operators and quantifiers.
     """
-    output_path = _validate_output_path(output)
+    output_path = _resolve_output_path(output)
     try:
         rules = create_condition_demo_rules()
         yara_code = build_yara_file_with_rules(rules)
@@ -126,7 +112,7 @@ def transformations(output: str | None) -> None:
     Shows how to clone and transform existing rules to create variants
     with different names, tags, conditions, and string identifiers.
     """
-    output_path = _validate_output_path(output)
+    output_path = _resolve_output_path(output)
     try:
         rules = create_transformation_rules()
         yara_code = build_yara_file_with_rules(rules)
@@ -168,7 +154,7 @@ def template(
 
     RULE_NAME: Name for the generated rule
     """
-    output_path = _validate_output_path(output)
+    output_path = _resolve_output_path(output)
     try:
         tag_list = []
         if tags:

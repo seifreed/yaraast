@@ -34,25 +34,13 @@ from yaraast.cli.metrics_services import (
     parse_yara_file,
 )
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
-from yaraast.cli.utils import _require_file_path, _validate_output_path
+from yaraast.cli.utils import _validate_output_dir_path, _validate_output_path
 from yaraast.metrics import METRICS, DependencyGraphGenerator
 
 
 @click.group()
 def metrics() -> None:
     """Analyze and visualize YARA AST metrics."""
-
-
-def _validate_output_dir_path(output_dir: str | None) -> str | None:
-    if output_dir is None:
-        return None
-    try:
-        output_path = _require_file_path(output_dir)
-    except (TypeError, ValueError) as exc:
-        raise click.BadParameter(str(exc), param_hint="--output-dir") from exc
-    if output_path.exists() and not output_path.is_dir():
-        raise click.BadParameter("output path must be a directory", param_hint="--output-dir")
-    return output_dir
 
 
 @metrics.command()

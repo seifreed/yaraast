@@ -31,6 +31,39 @@ def _validate_output_path(output: str | None) -> str | None:
     return output
 
 
+def _resolve_output_path(output: str | None) -> Path | None:
+    """Validate an optional ``--output`` file path and return it as a ``Path``.
+
+    Like :func:`_validate_output_path` but returns the resolved ``Path`` instead
+    of the original string, for commands that operate on the path object.
+    """
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output_path
+
+
+def _validate_output_dir_path(output_dir: str | None) -> str | None:
+    """Validate an optional ``--output-dir`` path, returning it unchanged.
+
+    Rejects a path that exists but is not a directory with a Click error.
+    """
+    if output_dir is None:
+        return None
+    try:
+        output_path = _require_file_path(output_dir)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output-dir") from exc
+    if output_path.exists() and not output_path.is_dir():
+        raise click.BadParameter("output path must be a directory", param_hint="--output-dir")
+    return output_dir
+
+
 def _require_file_path(path: object) -> Path:
     if isinstance(path, bool) or not isinstance(path, str | PathLike):
         msg = "path must be a file path"
