@@ -20,13 +20,6 @@ from yaraast.codegen.generator_formatting import (
     validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import (
-    escape_regex_delimiter,
-    format_regex_modifiers,
-    output_string_identifier,
-    validate_hex_string_modifiers,
-    validate_hex_string_tokens,
-    validate_plain_string_modifiers,
-    validate_regex_string_modifiers,
     validate_string_identifiers,
 )
 
@@ -34,7 +27,6 @@ if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
     from yaraast.ast.meta import Meta
     from yaraast.ast.rules import Rule
-    from yaraast.ast.strings import HexString, PlainString, RegexString
     from yaraast.yarax.ast_nodes import (
         ArrayComprehension,
         DictComprehension,
@@ -310,69 +302,6 @@ class CommentAwareCodeGenerator(CodeGenerator):
         self._write(indent)
         self._write(f"{format_meta_key(key, scope)} = ")
         self._write(format_meta_literal(value))
-
-    def visit_plain_string(self, node: PlainString) -> str:
-        """Generate code for PlainString with comments."""
-        from yaraast.codegen.generator_helpers import escape_plain_string_value
-
-        validate_plain_string_modifiers(node.modifiers)
-
-        # Add indentation manually
-        indent = " " * (self.indent_level * self.indent_size)
-        self._write(indent)
-        identifier = output_string_identifier(node)
-        self._write(f'{identifier} = "{escape_plain_string_value(node.value)}"')
-
-        # Write modifiers
-        for modifier in node.modifiers:
-            self._write(" ")
-            modifier_str = self.visit(modifier)
-            self._write(modifier_str)
-
-        return ""
-
-    def visit_hex_string(self, node: HexString) -> str:
-        """Generate code for HexString with comments."""
-        validate_hex_string_modifiers(node.modifiers)
-        validate_hex_string_tokens(node.tokens)
-
-        # Add indentation manually
-        indent = " " * (self.indent_level * self.indent_size)
-        self._write(indent)
-        self._write(f"{output_string_identifier(node)} = {{ ")
-
-        # Generate hex tokens
-        for i, token in enumerate(node.tokens):
-            if i > 0:
-                self._write(" ")
-            token_str = self.visit(token)
-            self._write(token_str)
-
-        self._write(" }")
-
-        # Write modifiers
-        for modifier in node.modifiers:
-            self._write(" ")
-            modifier_str = self.visit(modifier)
-            self._write(modifier_str)
-
-        return ""
-
-    def visit_regex_string(self, node: RegexString) -> str:
-        """Generate code for RegexString with comments."""
-        validate_regex_string_modifiers(node.modifiers)
-
-        # Add indentation manually
-        indent = " " * (self.indent_level * self.indent_size)
-        self._write(indent)
-        regex = escape_regex_delimiter(node.regex)
-        self._write(f"{output_string_identifier(node)} = /{regex}/")
-
-        # Write regex modifiers
-        if node.modifiers:
-            self._write(format_regex_modifiers(node.modifiers, self.visit))
-
-        return ""
 
     def visit_meta(self, node: Meta) -> str:
         """Generate code for Meta with comments."""
