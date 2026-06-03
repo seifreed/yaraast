@@ -54,10 +54,6 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
-from yaraast.codegen.generator_comment_sections import (
-    comment_visit_rule,
-    comment_visit_yara_file,
-)
 from yaraast.codegen.generator_expression_visitors import (
     validate_expression_collection,
     visit_array_access as render_array_access,
@@ -109,7 +105,6 @@ from yaraast.codegen.generator_leaf_visitors import (
     visit_identifier as render_identifier,
     visit_in_rule_pragma as render_in_rule_pragma,
     visit_integer_literal as render_integer_literal,
-    visit_meta as render_meta,
     visit_module_reference as render_module_reference,
     visit_pragma as render_pragma,
     visit_pragma_block as render_pragma_block,
@@ -133,11 +128,10 @@ from yaraast.codegen.generator_sections import (
 from yaraast.codegen.generator_structure_visitors import (
     visit_import as render_import,
     visit_include as render_include,
-    visit_rule as render_rule,
     visit_string_definition as render_string_definition,
     visit_tag as render_tag,
-    visit_yara_file as render_yara_file,
 )
+from yaraast.codegen.layouts import select_layout
 from yaraast.codegen.options import GeneratorOptions
 from yaraast.visitor.visitor import ASTVisitor
 
@@ -183,6 +177,7 @@ class CodeGenerator(ASTVisitor[str]):
         self.indent_size = resolved.indent_size
         self.preserve_comments = resolved.preserve_comments
         self.blank_line_between_sections = resolved.blank_line_between_sections
+        self._layout = select_layout(resolved)
         self.indent_level = 0
         self.buffer = StringIO()
 
@@ -202,7 +197,7 @@ class CodeGenerator(ASTVisitor[str]):
     def _writeline(self, text: str = "") -> None:
         """Write line with proper indentation."""
         if text:
-            self.buffer.write(" " * (self.indent_level * self.indent_size))
+            self.buffer.write(self._layout.indent_string(self))
             self.buffer.write(text)
         self.buffer.write("\n")
 
@@ -288,9 +283,7 @@ class CodeGenerator(ASTVisitor[str]):
     # Visit methods
     def visit_yara_file(self, node: YaraFile) -> str:
         """Generate code for YaraFile."""
-        if not self.blank_line_between_sections:
-            return comment_visit_yara_file(self, node)
-        return render_yara_file(self, node)
+        return self._layout.visit_yara_file(self, node)
 
     def visit_import(self, node: Import) -> str:
         """Generate code for Import."""
@@ -304,9 +297,7 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_rule(self, node: Rule) -> str:
         """Generate code for Rule."""
-        if not self.blank_line_between_sections:
-            return comment_visit_rule(self, node)
-        return render_rule(self, node)
+        return self._layout.visit_rule(self, node)
 
     def _write_rule_header(self, node: Rule) -> None:
         """Write rule header with modifiers, name and tags."""
@@ -507,13 +498,7 @@ class CodeGenerator(ASTVisitor[str]):
         return render_of_expression(self, node)
 
     def visit_meta(self, node: Meta) -> str:
-        if not self.blank_line_between_sections:
-            indent = " " * (self.indent_level * self.indent_size)
-            self._write(indent)
-            self._write(f"{format_meta_key(node.key, getattr(node, 'scope', None))} = ")
-            self._write(format_meta_literal(node.value))
-            return ""
-        return render_meta(node)
+        return self._layout.visit_meta(self, node)
 
     def visit_module_reference(self, node: Any) -> str:
         return render_module_reference(node)
