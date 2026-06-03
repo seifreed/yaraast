@@ -232,10 +232,10 @@ def test_ast_formatter_check_format_propagates_internal_printer_errors(
     good.write_text("rule a { condition: true }", encoding="utf-8")
     formatter = ASTFormatter()
 
-    def broken_pretty_print(ast: YaraFile) -> str:
+    def broken_pretty_print(ast: YaraFile, options: object = None) -> str:
         raise AttributeError("printer state missing")
 
-    monkeypatch.setattr(formatter.pretty_printer, "pretty_print", broken_pretty_print)
+    monkeypatch.setattr("yaraast.shared.ast_analysis.pretty_print", broken_pretty_print)
 
     with pytest.raises(AttributeError, match="printer state missing"):
         formatter.check_format(good)

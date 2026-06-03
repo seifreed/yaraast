@@ -9,7 +9,7 @@ from typing import Any, cast
 from yaraast.ast.base import YaraFile
 from yaraast.cli.parser_helpers import parse_yara_source
 from yaraast.cli.utils import read_text
-from yaraast.codegen.pretty_printer import PrettyPrinter, StylePresets
+from yaraast.codegen.pretty_printer import StylePresets, pretty_print
 from yaraast.errors import ValidationError
 from yaraast.serialization.roundtrip_serializer import (
     RoundTripSerializer,
@@ -114,8 +114,7 @@ def pretty_print_file(
     options.align_meta_values = align_meta
     options.sort_imports = sort_imports
     options.sort_tags = sort_tags
-    printer = PrettyPrinter(options)
-    formatted_code = printer.pretty_print(ast)
+    formatted_code = pretty_print(ast, options)
     return ast, formatted_code
 
 

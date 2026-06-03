@@ -2,7 +2,6 @@
 
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.pretty_printer import (
-    PrettyPrinter,
     PrettyPrintOptions,
     StylePresets,
     pretty_print,
@@ -15,7 +14,6 @@ from yaraast.codegen.pretty_printer import (
 __all__ = [
     "CodeGenerator",
     "PrettyPrintOptions",
-    "PrettyPrinter",
     "StylePresets",
     "pretty_print",
     "pretty_print_compact",

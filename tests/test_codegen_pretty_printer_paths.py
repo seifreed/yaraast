@@ -20,8 +20,9 @@ from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.pragmas import CustomPragma, IncludeOncePragma, InRulePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.codegen.pretty_printer import (
-    PrettyPrinter,
     PrettyPrintOptions,
     StylePresets,
     pretty_print,
@@ -29,6 +30,12 @@ from yaraast.codegen.pretty_printer import (
     pretty_print_dense,
     pretty_print_readable,
     pretty_print_verbose,
+)
+from yaraast.codegen.pretty_printer_sections import (
+    write_hex_string_aligned,
+    write_plain_string_aligned,
+    write_regex_string_aligned,
+    write_wrapped_condition,
 )
 from yaraast.yarax.ast_nodes import (
     DictComprehension,
@@ -66,7 +73,7 @@ def test_pretty_printer_paths_for_includes_modifiers_wrapping_and_fallback() -> 
         wrap_long_conditions=True,
         max_line_length=8,
     )
-    out = PrettyPrinter(opts).pretty_print(yf)
+    out = CodeGenerator(options=GeneratorOptions(pretty=opts)).generate(yf)
 
     assert 'include "common.yar"' in out
     assert "private global rule r1 {" in out
@@ -87,9 +94,9 @@ def test_pretty_printer_indents_string_entries_under_section() -> None:
         condition=BooleanLiteral(True),
     )
 
-    out = PrettyPrinter(PrettyPrintOptions(align_string_definitions=False)).pretty_print(
-        YaraFile(rules=[rule])
-    )
+    out = CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions(align_string_definitions=False))
+    ).generate(YaraFile(rules=[rule]))
 
     assert (
         "\n    strings:\n"
@@ -107,9 +114,9 @@ def test_pretty_printer_indents_meta_entries_under_section() -> None:
         condition=BooleanLiteral(True),
     )
 
-    out = PrettyPrinter(PrettyPrintOptions(align_meta_values=False)).pretty_print(
-        YaraFile(rules=[rule])
-    )
+    out = CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions(align_meta_values=False))
+    ).generate(YaraFile(rules=[rule]))
 
     assert (
         "\n    meta:\n" '        author = "me"\n' "        ok = true\n" "\n    condition:\n"
@@ -124,13 +131,15 @@ def test_pretty_printer_honors_tab_indentation_option() -> None:
         condition=BooleanLiteral(True),
     )
 
-    out = PrettyPrinter(
-        PrettyPrintOptions(
-            indent_with_tabs=True,
-            align_meta_values=False,
-            align_string_definitions=False,
+    out = CodeGenerator(
+        options=GeneratorOptions(
+            pretty=PrettyPrintOptions(
+                indent_with_tabs=True,
+                align_meta_values=False,
+                align_string_definitions=False,
+            )
         )
-    ).pretty_print(YaraFile(rules=[rule]))
+    ).generate(YaraFile(rules=[rule]))
 
     assert (
         "rule tabbed {\n"
@@ -154,13 +163,15 @@ def test_pretty_printer_uses_tabs_for_wrapped_condition_continuations() -> None:
     )
     rule = Rule(name="wrapped_tabs", condition=condition)
 
-    out = PrettyPrinter(
-        PrettyPrintOptions(
-            indent_with_tabs=True,
-            wrap_long_conditions=True,
-            max_line_length=12,
+    out = CodeGenerator(
+        options=GeneratorOptions(
+            pretty=PrettyPrintOptions(
+                indent_with_tabs=True,
+                wrap_long_conditions=True,
+                max_line_length=12,
+            )
         )
-    ).pretty_print(YaraFile(rules=[rule]))
+    ).generate(YaraFile(rules=[rule]))
 
     assert "\t\t    " not in out
     assert "\n\t\t\tbeta" in out
@@ -172,9 +183,11 @@ def test_pretty_printer_does_not_insert_blank_line_before_long_wrapped_token() -
         condition=Identifier("very_long_identifier_name"),
     )
 
-    out = PrettyPrinter(
-        PrettyPrintOptions(wrap_long_conditions=True, max_line_length=8)
-    ).pretty_print(YaraFile(rules=[rule]))
+    out = CodeGenerator(
+        options=GeneratorOptions(
+            pretty=PrettyPrintOptions(wrap_long_conditions=True, max_line_length=8)
+        )
+    ).generate(YaraFile(rules=[rule]))
 
     assert "\n    condition:\n\n" not in out
     assert "\n        very_long_identifier_name\n" in out
@@ -186,9 +199,9 @@ def test_pretty_printer_honors_compact_symbolic_operators() -> None:
         condition=BinaryExpression(Identifier("a"), "==", Identifier("b")),
     )
 
-    out = PrettyPrinter(PrettyPrintOptions(space_around_operators=False)).pretty_print(
-        YaraFile(rules=[rule])
-    )
+    out = CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions(space_around_operators=False))
+    ).generate(YaraFile(rules=[rule]))
 
     assert "\n        a==b\n" in out
     assert "\n        a == b\n" not in out
@@ -203,9 +216,9 @@ def test_pretty_printer_honors_compact_expression_commas() -> None:
         ),
     )
 
-    out = PrettyPrinter(PrettyPrintOptions(space_after_comma=False)).pretty_print(
-        YaraFile(rules=[rule])
-    )
+    out = CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions(space_after_comma=False))
+    ).generate(YaraFile(rules=[rule]))
 
     assert "\n        foo((a,b),c)\n" in out
     assert "\n        foo((a, b), c)\n" not in out
@@ -243,9 +256,9 @@ def test_pretty_printer_honors_compact_yarax_expression_commas() -> None:
         ),
     )
 
-    out = PrettyPrinter(PrettyPrintOptions(space_after_comma=False)).pretty_print(
-        YaraFile(rules=[rule])
-    )
+    out = CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions(space_after_comma=False))
+    ).generate(YaraFile(rules=[rule]))
 
     assert (
         "\n        with a = one,b = two: "
@@ -270,7 +283,7 @@ def test_pretty_printer_preserves_top_level_extensions() -> None:
         rules=[Rule(name="r", condition=BooleanLiteral(True))],
     )
 
-    out = PrettyPrinter(PrettyPrintOptions()).pretty_print(yf)
+    out = CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(yf)
 
     assert "#include_once" in out
     assert 'import "pe"' in out
@@ -316,7 +329,7 @@ def test_pretty_printer_preserves_nested_comments_when_enabled() -> None:
         align_meta_values=False,
         align_string_definitions=False,
     )
-    out = PrettyPrinter(options).pretty_print(YaraFile(rules=[rule]))
+    out = CodeGenerator(options=GeneratorOptions(pretty=options)).generate(YaraFile(rules=[rule]))
 
     assert "// rule lead" in out
     assert "rule commented {  // rule tail" in out
@@ -329,14 +342,16 @@ def test_pretty_printer_preserves_nested_comments_when_enabled() -> None:
     assert "// condition lead" in out
     assert "$a  // condition tail" in out
 
-    suppressed = PrettyPrinter(
-        PrettyPrintOptions(
-            align_comments=False,
-            align_meta_values=False,
-            align_string_definitions=False,
-            preserve_comments=False,
+    suppressed = CodeGenerator(
+        options=GeneratorOptions(
+            pretty=PrettyPrintOptions(
+                align_comments=False,
+                align_meta_values=False,
+                align_string_definitions=False,
+                preserve_comments=False,
+            )
         )
-    ).pretty_print(YaraFile(rules=[rule]))
+    ).generate(YaraFile(rules=[rule]))
 
     assert "lead" not in suppressed
     assert "tail" not in suppressed
@@ -351,25 +366,29 @@ def test_pretty_printer_honors_inline_comment_spacing_options() -> None:
         condition=BooleanLiteral(True),
     )
 
-    spaced = PrettyPrinter(
-        PrettyPrintOptions(
-            align_comments=False,
-            align_meta_values=False,
-            inline_comment_spacing=5,
+    spaced = CodeGenerator(
+        options=GeneratorOptions(
+            pretty=PrettyPrintOptions(
+                align_comments=False,
+                align_meta_values=False,
+                inline_comment_spacing=5,
+            )
         )
-    ).pretty_print(YaraFile(rules=[rule]))
+    ).generate(YaraFile(rules=[rule]))
 
     assert 'author = "alice"     // meta tail' in spaced
     assert 'author = "alice"  // meta tail' not in spaced
 
-    aligned = PrettyPrinter(
-        PrettyPrintOptions(
-            align_comments=True,
-            align_meta_values=False,
-            comment_column=32,
-            inline_comment_spacing=1,
+    aligned = CodeGenerator(
+        options=GeneratorOptions(
+            pretty=PrettyPrintOptions(
+                align_comments=True,
+                align_meta_values=False,
+                comment_column=32,
+                inline_comment_spacing=1,
+            )
         )
-    ).pretty_print(YaraFile(rules=[rule]))
+    ).generate(YaraFile(rules=[rule]))
     meta_line = next(line for line in aligned.splitlines() if "author =" in line)
 
     assert meta_line.index("//") == 32
@@ -388,7 +407,9 @@ def test_pretty_printer_regex_suffix_alias_modifiers_are_adjacent() -> None:
         condition=StringIdentifier("$r"),
     )
 
-    out = PrettyPrinter(PrettyPrintOptions()).pretty_print(YaraFile(rules=[rule]))
+    out = CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(
+        YaraFile(rules=[rule])
+    )
 
     assert "$r  = /ab.*/is fullword" in out
     assert "$r = /ab.*/ i" not in out
@@ -408,7 +429,9 @@ def test_pretty_printer_rejects_unsupported_regex_multiline_modifier() -> None:
     )
 
     with pytest.raises(ValueError, match="Unsupported regex modifier"):
-        PrettyPrinter(PrettyPrintOptions()).pretty_print(YaraFile(rules=[rule]))
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(
+            YaraFile(rules=[rule])
+        )
 
 
 def test_pretty_printer_rejects_invalid_regex_string_modifier() -> None:
@@ -425,7 +448,9 @@ def test_pretty_printer_rejects_invalid_regex_string_modifier() -> None:
     )
 
     with pytest.raises(ValueError, match="not valid on regex strings"):
-        PrettyPrinter(PrettyPrintOptions()).pretty_print(YaraFile(rules=[rule]))
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(
+            YaraFile(rules=[rule])
+        )
 
 
 def test_pretty_printer_keeps_yara_string_literals_valid_for_quote_styles() -> None:
@@ -437,13 +462,15 @@ def test_pretty_printer_keeps_yara_string_literals_valid_for_quote_styles() -> N
     )
 
     for quote_style in ("single", "preserve"):
-        out = PrettyPrinter(
-            PrettyPrintOptions(
-                quote_style=quote_style,
-                align_meta_values=False,
-                align_string_definitions=False,
+        out = CodeGenerator(
+            options=GeneratorOptions(
+                pretty=PrettyPrintOptions(
+                    quote_style=quote_style,
+                    align_meta_values=False,
+                    align_string_definitions=False,
+                )
             )
-        ).pretty_print(YaraFile(rules=[rule]))
+        ).generate(YaraFile(rules=[rule]))
 
         assert 'author = "a\\nb"' in out
         assert '$a = "abc"' in out
@@ -453,10 +480,10 @@ def test_pretty_printer_keeps_yara_string_literals_valid_for_quote_styles() -> N
 def test_pretty_printer_style_presets_and_convenience_functions() -> None:
     ast = YaraFile(rules=[Rule(name="x", condition=Condition())])
 
-    compact = PrettyPrinter(StylePresets.compact()).pretty_print(ast)
-    readable = PrettyPrinter(StylePresets.readable()).pretty_print(ast)
-    dense = PrettyPrinter(StylePresets.dense()).pretty_print(ast)
-    verbose = PrettyPrinter(StylePresets.verbose()).pretty_print(ast)
+    compact = CodeGenerator(options=GeneratorOptions(pretty=StylePresets.compact())).generate(ast)
+    readable = CodeGenerator(options=GeneratorOptions(pretty=StylePresets.readable())).generate(ast)
+    dense = CodeGenerator(options=GeneratorOptions(pretty=StylePresets.dense())).generate(ast)
+    verbose = CodeGenerator(options=GeneratorOptions(pretty=StylePresets.verbose())).generate(ast)
     assert len(verbose) >= len(compact)
     assert len(readable) >= len(dense)
 
@@ -480,15 +507,17 @@ def test_pretty_printer_handles_partial_sections_sorting_and_wrapped_condition_l
     )
     ast = YaraFile(rules=[only_meta, only_strings, long_condition])
 
-    out = PrettyPrinter(
-        PrettyPrintOptions(
-            sort_tags=True,
-            sort_meta_keys=True,
-            align_string_definitions=True,
-            wrap_long_conditions=True,
-            max_line_length=12,
+    out = CodeGenerator(
+        options=GeneratorOptions(
+            pretty=PrettyPrintOptions(
+                sort_tags=True,
+                sort_meta_keys=True,
+                align_string_definitions=True,
+                wrap_long_conditions=True,
+                max_line_length=12,
+            )
         )
-    ).pretty_print(ast)
+    ).generate(ast)
 
     assert "rule meta_only : a z {" in out
     assert "a =" in out and '"x"' in out
@@ -501,14 +530,16 @@ def test_pretty_printer_handles_partial_sections_sorting_and_wrapped_condition_l
 
 
 def test_pretty_printer_direct_remaining_helper_paths() -> None:
-    printer = PrettyPrinter(
-        PrettyPrintOptions(
-            sort_imports=True,
-            sort_includes=True,
-            sort_meta_keys=False,
-            align_string_definitions=True,
-            wrap_long_conditions=False,
-            blank_lines_after_imports=3,
+    printer = CodeGenerator(
+        options=GeneratorOptions(
+            pretty=PrettyPrintOptions(
+                sort_imports=True,
+                sort_includes=True,
+                sort_meta_keys=False,
+                align_string_definitions=True,
+                wrap_long_conditions=False,
+                blank_lines_after_imports=3,
+            )
         )
     )
 
@@ -520,14 +551,16 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
             Rule(name="two", condition=BooleanLiteral(False)),
         ],
     )
-    out = printer.pretty_print(ast)
+    out = printer.generate(ast)
     assert out.index('import "a"') < out.index('import "b"')
     assert out.index('include "a.yar"') < out.index('include "z.yar"')
     assert '\n\n\ninclude "a.yar"' in out
 
-    printer2 = PrettyPrinter(
-        PrettyPrintOptions(
-            sort_meta_keys=False, align_string_definitions=True, wrap_long_conditions=False
+    printer2 = CodeGenerator(
+        options=GeneratorOptions(
+            pretty=PrettyPrintOptions(
+                sort_meta_keys=False, align_string_definitions=True, wrap_long_conditions=False
+            )
         )
     )
     from yaraast.codegen.pretty_layout import PrettyLayout
@@ -545,8 +578,8 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
     printer2.buffer.seek(0)
     printer2.buffer.truncate(0)
     layout2._string_alignment_column = 4
-    printer2._write_plain_string_aligned(PlainString("$a", value="x"))
-    printer2._write_hex_string_aligned(HexString("$h", tokens=[HexByte(0x4D)]))
+    write_plain_string_aligned(printer2, PlainString("$a", value="x"))
+    write_hex_string_aligned(printer2, HexString("$h", tokens=[HexByte(0x4D)]))
     aligned_out = printer2.buffer.getvalue()
     assert '$a   = "x"' in aligned_out
     assert "$h   = { 4D }" in aligned_out
@@ -554,7 +587,7 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
     printer2.buffer.seek(0)
     printer2.buffer.truncate(0)
     printer2.indent_level = 1
-    printer2._write_regex_string_aligned(RegexString("$r", regex="x"))
+    write_regex_string_aligned(printer2, RegexString("$r", regex="x"))
     assert printer2.buffer.getvalue() == "    $r   = /x/\n"
     printer2.indent_level = 0
 
@@ -565,5 +598,5 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
 
     printer2.buffer.seek(0)
     printer2.buffer.truncate(0)
-    printer2._write_wrapped_condition("")
+    write_wrapped_condition(printer2, "")
     assert printer2.buffer.getvalue() == ""

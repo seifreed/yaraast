@@ -15,7 +15,7 @@ from yaraast.ast.base import ASTNode, YaraFile, require_yara_file
 from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.codegen.pretty_printer import PrettyPrinter
+from yaraast.codegen.pretty_printer import pretty_print
 from yaraast.errors import YaraASTError
 from yaraast.parser.source import parse_yara_source, parse_yara_source_with_comments
 from yaraast.visitor.base import BaseVisitor
@@ -356,7 +356,6 @@ class ASTFormatter:
 
     def __init__(self) -> None:
         self.generator = YaraXGenerator()
-        self.pretty_printer = PrettyPrinter()
 
     def format_file(
         self,
@@ -387,10 +386,7 @@ class ASTFormatter:
         style = self._require_style(style)
         if style == "compact":
             return self.generator.generate(ast)
-        if style in ("pretty", "verbose"):
-            self.pretty_printer = PrettyPrinter()
-            return self.pretty_printer.pretty_print(ast)
-        return self.pretty_printer.pretty_print(ast)
+        return pretty_print(ast)
 
     def _require_style(self, style: object) -> str:
         if not isinstance(style, str):
@@ -423,7 +419,7 @@ class ASTFormatter:
         input_file = _require_file_path(file_path, "file_path")
         with input_file.open(encoding="utf-8") as f:
             original = f.read()
-        formatted = self.pretty_printer.pretty_print(parse_yara_source_with_comments(original))
+        formatted = pretty_print(parse_yara_source_with_comments(original))
         if original.strip() == formatted.strip():
             return False, []
         issues = []

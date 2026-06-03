@@ -4,7 +4,9 @@ import json
 
 import yaml
 
-from yaraast.codegen.pretty_printer import PrettyPrinter, PrettyPrintOptions, StylePresets
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
+from yaraast.codegen.pretty_printer import PrettyPrintOptions, StylePresets
 from yaraast.parser.parser import Parser
 from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer, RoundTripSerializer
 
@@ -203,8 +205,8 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         parser = Parser(yara_source.strip())
         ast = parser.parse()
 
-        printer = PrettyPrinter()
-        formatted = printer.pretty_print(ast)
+        printer = CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions()))
+        formatted = printer.generate(ast)
 
         # Check that formatting improved
         assert 'import "pe"' in formatted
@@ -230,9 +232,15 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         ast = parser.parse()
 
         # Test different presets
-        compact = PrettyPrinter(StylePresets.compact()).pretty_print(ast)
-        readable = PrettyPrinter(StylePresets.readable()).pretty_print(ast)
-        verbose = PrettyPrinter(StylePresets.verbose()).pretty_print(ast)
+        compact = CodeGenerator(options=GeneratorOptions(pretty=StylePresets.compact())).generate(
+            ast
+        )
+        readable = CodeGenerator(options=GeneratorOptions(pretty=StylePresets.readable())).generate(
+            ast
+        )
+        verbose = CodeGenerator(options=GeneratorOptions(pretty=StylePresets.verbose())).generate(
+            ast
+        )
 
         # Verbose should have more blank lines than compact
         assert verbose.count("\n") > compact.count("\n")
@@ -263,8 +271,8 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
             align_string_definitions=True,
             align_meta_values=True,
         )
-        printer = PrettyPrinter(options)
-        formatted = printer.pretty_print(ast)
+        printer = CodeGenerator(options=GeneratorOptions(pretty=options))
+        formatted = printer.generate(ast)
 
         lines = formatted.split("\n")
 
@@ -292,8 +300,8 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
 
         # Test custom indent size
         options = PrettyPrintOptions(indent_size=2)
-        printer = PrettyPrinter(options)
-        formatted = printer.pretty_print(ast)
+        printer = CodeGenerator(options=GeneratorOptions(pretty=options))
+        formatted = printer.generate(ast)
 
         lines = formatted.split("\n")
         indented_lines = [
@@ -343,8 +351,8 @@ class TestIntegration:
         )
 
         # Step 4: Pretty print
-        printer = PrettyPrinter(StylePresets.readable())
-        pretty_output = printer.pretty_print(reconstructed_ast)
+        printer = CodeGenerator(options=GeneratorOptions(pretty=StylePresets.readable()))
+        pretty_output = printer.generate(reconstructed_ast)
 
         # Verify results
         assert len(original_ast.rules) == len(reconstructed_ast.rules)
@@ -386,8 +394,8 @@ if __name__ == "__main__":
     parser = Parser()
     ast = parser.parse(yara_test.strip())
 
-    printer = PrettyPrinter(StylePresets.readable())
-    pretty = printer.pretty_print(ast)
+    printer = CodeGenerator(options=GeneratorOptions(pretty=StylePresets.readable()))
+    pretty = printer.generate(ast)
 
     print("✓ Pretty printing test: PASSED")
     print("✓ Pretty formatted output:")

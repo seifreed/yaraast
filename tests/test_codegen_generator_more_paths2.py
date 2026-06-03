@@ -65,7 +65,7 @@ from yaraast.ast.strings import (
 from yaraast.codegen.formatting import FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
-from yaraast.codegen.pretty_printer import PrettyPrinter
+from yaraast.codegen.pretty_printer import PrettyPrintOptions
 from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.parser import Parser
@@ -213,7 +213,7 @@ def test_codegen_generators_reject_empty_import_and_include_paths(
     with pytest.raises(ValueError, match=message):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match=message):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generate_resets_indent_after_failed_generation() -> None:
@@ -259,7 +259,7 @@ def test_codegen_generators_emit_anonymous_string_identifier() -> None:
         """)
 
     generated = CodeGenerator().generate(ast)
-    pretty = PrettyPrinter().pretty_print(ast)
+    pretty = CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
     advanced = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
     compact = CodeGenerator(
         options=GeneratorOptions(advanced=FormattingConfig(string_style=StringStyle.COMPACT))
@@ -292,7 +292,7 @@ def test_codegen_generators_normalize_direct_ast_string_identifiers() -> None:
     )
 
     generated = CodeGenerator().generate(ast)
-    pretty = PrettyPrinter().pretty_print(ast)
+    pretty = CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
     advanced = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
     compact = CodeGenerator(
         options=GeneratorOptions(advanced=FormattingConfig(string_style=StringStyle.COMPACT))
@@ -405,7 +405,7 @@ def test_codegen_generators_reject_unsupported_hex_tokens() -> None:
     with pytest.raises(TypeError, match="Unsupported hex token"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Unsupported hex token"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generator_rejects_invalid_direct_hex_alternative_scalar() -> None:
@@ -693,7 +693,7 @@ def test_codegen_generators_reject_non_string_string_modifier_items() -> None:
     with pytest.raises(TypeError, match="String modifiers must contain strings or StringModifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="String modifiers must contain strings or StringModifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_reject_unsupported_string_definitions() -> None:
@@ -714,7 +714,7 @@ def test_codegen_generators_reject_unsupported_string_definitions() -> None:
     with pytest.raises(TypeError, match="Unsupported string definition"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Unsupported string definition"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize("invalid_strings", [False, 0, "", None])
@@ -738,7 +738,7 @@ def test_codegen_generators_reject_invalid_rule_string_collections(
     with pytest.raises(TypeError, match="Rule strings must be a list or tuple"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Rule strings must be a list or tuple"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -769,7 +769,7 @@ def test_codegen_generators_reject_invalid_yara_file_collections(
     with pytest.raises(TypeError, match=message):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match=message):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -796,7 +796,7 @@ def test_codegen_generators_reject_invalid_rule_collections(
     with pytest.raises(TypeError, match=message):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match=message):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize("invalid_collection", [False, 0, "", None])
@@ -830,7 +830,7 @@ def test_codegen_generators_reject_invalid_leaf_collections(
         with pytest.raises(TypeError, match=message):
             CodeGenerator(options=GeneratorOptions.comment_aware()).generate(node)
         with pytest.raises(TypeError, match=message):
-            PrettyPrinter().generate(node)
+            CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(node)
 
 
 @pytest.mark.parametrize("invalid_collection", [False, 0, "", None])
@@ -856,7 +856,7 @@ def test_codegen_generators_reject_invalid_expression_collections(
         with pytest.raises(TypeError, match=message):
             CodeGenerator(options=GeneratorOptions.comment_aware()).generate(node)
         with pytest.raises(TypeError, match=message):
-            PrettyPrinter().generate(node)
+            CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(node)
 
 
 @pytest.mark.parametrize("invalid_collection", [False, 0, "", None])
@@ -898,7 +898,7 @@ def test_yarax_codegen_generators_reject_invalid_collections(
         with pytest.raises(TypeError, match=message):
             CodeGenerator(options=GeneratorOptions.comment_aware()).generate(node)
         with pytest.raises(TypeError, match=message):
-            PrettyPrinter().generate(node)
+            CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(node)
 
 
 _BAD_PLAIN_STRING_VALUE: Any = 123
@@ -939,7 +939,7 @@ def test_codegen_generators_reject_invalid_string_value_types(
     with pytest.raises(TypeError, match=message):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match=message):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_reject_duplicate_rule_tags() -> None:
@@ -960,7 +960,7 @@ def test_codegen_generators_reject_duplicate_rule_tags() -> None:
     with pytest.raises(ValueError, match="Duplicate tag identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Duplicate tag identifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize("tag_name", ["bad-tag", "for"])
@@ -982,7 +982,7 @@ def test_codegen_generators_reject_invalid_rule_tags(tag_name: str) -> None:
     with pytest.raises(ValueError, match="Invalid tag identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Invalid tag identifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_reject_non_string_rule_tags() -> None:
@@ -1003,7 +1003,7 @@ def test_codegen_generators_reject_non_string_rule_tags() -> None:
     with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_reject_expression_rule_tags() -> None:
@@ -1024,7 +1024,7 @@ def test_codegen_generators_reject_expression_rule_tags() -> None:
     with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Rule tags must contain strings or Tag nodes"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_reject_invalid_rule_pragma_nodes() -> None:
@@ -1045,7 +1045,7 @@ def test_codegen_generators_reject_invalid_rule_pragma_nodes() -> None:
     with pytest.raises(TypeError, match="Rule pragmas must contain InRulePragma nodes"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Rule pragmas must contain InRulePragma nodes"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_tag_visitors_reject_non_string_tag_names() -> None:
@@ -1058,7 +1058,7 @@ def test_codegen_tag_visitors_reject_non_string_tag_names() -> None:
     with pytest.raises(TypeError, match="Tag name must be a string"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(tag)
     with pytest.raises(TypeError, match="Tag name must be a string"):
-        PrettyPrinter().generate(tag)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(tag)
 
 
 @pytest.mark.parametrize("tag_name", ["bad-tag", "for", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)])
@@ -1072,7 +1072,7 @@ def test_codegen_tag_visitors_reject_invalid_rule_tags(tag_name: str) -> None:
     with pytest.raises(ValueError, match="Invalid tag identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(tag)
     with pytest.raises(ValueError, match="Invalid tag identifier"):
-        PrettyPrinter().generate(tag)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(tag)
 
 
 @pytest.mark.parametrize(
@@ -1109,7 +1109,7 @@ def test_codegen_generators_reject_invalid_top_level_reference_names(
     with pytest.raises(ValueError, match=message):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(node)
     with pytest.raises(ValueError, match=message):
-        PrettyPrinter().generate(node)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(node)
 
 
 @pytest.mark.parametrize(
@@ -1127,7 +1127,7 @@ def test_codegen_generators_reject_non_string_import_aliases(node: Any) -> None:
     with pytest.raises(TypeError, match="Import alias must be a string"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(node)
     with pytest.raises(TypeError, match="Import alias must be a string"):
-        PrettyPrinter().generate(node)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(node)
 
 
 @pytest.mark.parametrize(
@@ -1145,7 +1145,7 @@ def test_codegen_generators_reject_non_string_optional_namespaces(node: Any) -> 
     with pytest.raises(TypeError, match="Namespace must be a string"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(node)
     with pytest.raises(TypeError, match="Namespace must be a string"):
-        PrettyPrinter().generate(node)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(node)
 
 
 def test_codegen_generators_allow_qualified_extern_import_rule_names() -> None:
@@ -1158,7 +1158,10 @@ def test_codegen_generators_allow_qualified_extern_import_rule_names() -> None:
         == expected
     )
     assert CodeGenerator(options=GeneratorOptions.comment_aware()).generate(node) == expected
-    assert PrettyPrinter().generate(node) == expected
+    assert (
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(node)
+        == expected
+    )
 
 
 def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:
@@ -1176,7 +1179,7 @@ def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:
     with pytest.raises(ValueError, match="Duplicate rule identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Duplicate rule identifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1208,7 +1211,7 @@ def test_codegen_generators_reject_conflicting_extern_rule_identifiers(ast: Yara
     with pytest.raises(ValueError, match=r"Duplicate .*rule identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match=r"Duplicate .*rule identifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1224,7 +1227,7 @@ def test_codegen_generators_reject_invalid_rule_identifiers(rule_name: str) -> N
     with pytest.raises(ValueError, match="Invalid rule identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Invalid rule identifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_reject_non_string_rule_identifiers() -> None:
@@ -1238,7 +1241,7 @@ def test_codegen_generators_reject_non_string_rule_identifiers() -> None:
     with pytest.raises(TypeError, match="Rule identifier must be a string"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Rule identifier must be a string"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1254,7 +1257,7 @@ def test_codegen_rule_visitors_reject_invalid_rule_identifiers(rule_name: str) -
     with pytest.raises(ValueError, match="Invalid rule identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(rule)
     with pytest.raises(ValueError, match="Invalid rule identifier"):
-        PrettyPrinter().visit_rule(rule)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).visit_rule(rule)
 
 
 def test_codegen_rule_visitors_reject_non_string_rule_identifiers() -> None:
@@ -1268,7 +1271,7 @@ def test_codegen_rule_visitors_reject_non_string_rule_identifiers() -> None:
     with pytest.raises(TypeError, match="Rule identifier must be a string"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(rule)
     with pytest.raises(TypeError, match="Rule identifier must be a string"):
-        PrettyPrinter().visit_rule(rule)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).visit_rule(rule)
 
 
 def test_codegen_generators_reject_invalid_rule_modifiers() -> None:
@@ -1283,7 +1286,7 @@ def test_codegen_generators_reject_invalid_rule_modifiers() -> None:
     with pytest.raises(ValueError, match="Invalid rule modifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Invalid rule modifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1307,7 +1310,7 @@ def test_codegen_generators_reject_non_string_boolean_rule_modifiers(rule: Rule)
     with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_reject_non_string_rule_modifiers() -> None:
@@ -1332,7 +1335,7 @@ def test_codegen_generators_reject_non_string_rule_modifiers() -> None:
     with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Rule modifiers must contain strings or RuleModifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1356,7 +1359,7 @@ def test_codegen_generators_reject_invalid_meta_keys(meta_key: str) -> None:
     with pytest.raises(ValueError, match="Invalid meta identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Invalid meta identifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_reject_invalid_rule_meta_collections() -> None:
@@ -1380,7 +1383,7 @@ def test_codegen_generators_reject_invalid_rule_meta_collections() -> None:
         with pytest.raises(TypeError, match="Rule meta must contain meta entries"):
             CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
         with pytest.raises(TypeError, match="Rule meta must contain meta entries"):
-            PrettyPrinter().pretty_print(ast)
+            CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize("invalid_meta", [False, 0])
@@ -1398,7 +1401,7 @@ def test_codegen_generators_reject_mutated_invalid_rule_meta_collections(
     with pytest.raises(TypeError, match="Rule meta must be a dictionary, list, or tuple"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Rule meta must be a dictionary, list, or tuple"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_allow_mutated_none_rule_meta_collection() -> None:
@@ -1410,7 +1413,7 @@ def test_codegen_generators_allow_mutated_none_rule_meta_collection() -> None:
         CodeGenerator().generate(ast),
         CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast),
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast),
-        PrettyPrinter().pretty_print(ast),
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast),
     ):
         assert "meta:" not in output
         assert "condition:" in output
@@ -1440,7 +1443,7 @@ def test_codegen_rejects_hex_jumps_above_libyara_limit() -> None:
     with pytest.raises(ValueError, match="must not exceed"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="must not exceed"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize("meta_value", [1.5, None, ["x"]])
@@ -1462,7 +1465,7 @@ def test_codegen_generators_reject_invalid_meta_values(meta_value: Any) -> None:
     with pytest.raises(TypeError, match="Invalid meta value"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="Invalid meta value"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_escape_quoted_meta_string_values() -> None:
@@ -1481,7 +1484,7 @@ def test_codegen_generators_escape_quoted_meta_string_values() -> None:
         CodeGenerator().generate(ast),
         CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast),
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast),
-        PrettyPrinter().pretty_print(ast),
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast),
     ]
 
     for output in outputs:
@@ -1512,7 +1515,7 @@ def test_codegen_generators_reject_duplicate_string_identifiers() -> None:
     with pytest.raises(ValueError, match="Duplicate string identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Duplicate string identifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_reject_invalid_string_identifiers() -> None:
@@ -1533,7 +1536,7 @@ def test_codegen_generators_reject_invalid_string_identifiers() -> None:
     with pytest.raises(ValueError, match="Invalid string identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Invalid string identifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1554,7 +1557,7 @@ def test_codegen_string_visitors_reject_invalid_string_identifiers(
     with pytest.raises(ValueError, match="Invalid string identifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(string_def)
     with pytest.raises(ValueError, match="Invalid string identifier"):
-        PrettyPrinter().generate(string_def)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(string_def)
 
 
 @pytest.mark.parametrize(
@@ -1575,7 +1578,7 @@ def test_codegen_string_visitors_reject_non_string_string_identifiers(
     with pytest.raises(TypeError, match="String identifier must be a string"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(string_def)
     with pytest.raises(TypeError, match="String identifier must be a string"):
-        PrettyPrinter().generate(string_def)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(string_def)
 
 
 @pytest.mark.parametrize(
@@ -1605,7 +1608,7 @@ def test_codegen_generators_reject_invalid_identifier_expressions(
     with pytest.raises(ValueError, match=message):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match=message):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1630,7 +1633,9 @@ def test_codegen_generators_allow_valid_identifier_expressions(
         options=GeneratorOptions(advanced=FormattingConfig())
     ).generate(ast)
     assert expected in CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
-    assert expected in PrettyPrinter().pretty_print(ast)
+    assert expected in CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions())
+    ).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1657,7 +1662,9 @@ def test_codegen_generators_allow_for_of_placeholder_references(
         options=GeneratorOptions(advanced=FormattingConfig())
     ).generate(ast)
     assert expected in CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
-    assert expected in PrettyPrinter().pretty_print(ast)
+    assert expected in CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions())
+    ).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1690,7 +1697,7 @@ def test_codegen_generators_reject_invalid_string_references(condition: Conditio
     with pytest.raises(ValueError, match="Invalid string"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Invalid string"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1716,7 +1723,7 @@ def test_codegen_generators_reject_non_string_string_set_fields(string_set: Any)
     with pytest.raises(TypeError, match="must be a string"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(TypeError, match="must be a string"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1752,7 +1759,9 @@ def test_codegen_generators_parenthesize_single_string_set_items(
         options=GeneratorOptions(advanced=FormattingConfig())
     ).generate(ast)
     assert expected in CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
-    assert expected in PrettyPrinter().pretty_print(ast)
+    assert expected in CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions())
+    ).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1790,7 +1799,7 @@ def test_codegen_generators_reject_invalid_quantifiers(condition: Any) -> None:
     with pytest.raises(ValueError, match="Invalid quantifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Invalid quantifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_allow_external_identifier_of_quantifier() -> None:
@@ -1809,7 +1818,9 @@ def test_codegen_generators_allow_external_identifier_of_quantifier() -> None:
         options=GeneratorOptions(advanced=FormattingConfig())
     ).generate(ast)
     assert "n of them" in CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
-    assert "n of them" in PrettyPrinter().pretty_print(ast)
+    assert "n of them" in CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions())
+    ).generate(ast)
 
 
 def test_codegen_generators_reject_empty_set_expression() -> None:
@@ -1822,7 +1833,7 @@ def test_codegen_generators_reject_empty_set_expression() -> None:
     with pytest.raises(ValueError, match="Set expression must contain at least one element"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Set expression must contain at least one element"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1865,7 +1876,7 @@ def test_codegen_generators_reject_invalid_for_quantifiers(quantifier: Any) -> N
     with pytest.raises(ValueError, match="Invalid for quantifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Invalid for quantifier"):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1920,7 +1931,7 @@ def test_codegen_generators_reject_malformed_integer_literal_quantifiers(
         with pytest.raises(ValueError, match=r"Invalid .*quantifier"):
             CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
         with pytest.raises(ValueError, match=r"Invalid .*quantifier"):
-            PrettyPrinter().pretty_print(ast)
+            CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_render_fractional_quantifier_percentages() -> None:
@@ -1939,7 +1950,9 @@ def test_codegen_generators_render_fractional_quantifier_percentages() -> None:
         options=GeneratorOptions(advanced=FormattingConfig())
     ).generate(ast)
     assert "29% of them" in CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
-    assert "29% of them" in PrettyPrinter().pretty_print(ast)
+    assert "29% of them" in CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions())
+    ).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -1970,7 +1983,7 @@ def test_codegen_generators_reject_invalid_expression_operators(
     with pytest.raises(ValueError, match=message):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match=message):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_allow_matches_regex_literal() -> None:
@@ -1994,7 +2007,9 @@ def test_codegen_generators_allow_matches_regex_literal() -> None:
     assert '"abc" matches /a.c/' in CodeGenerator(
         options=GeneratorOptions.comment_aware()
     ).generate(ast)
-    assert '"abc" matches /a.c/' in PrettyPrinter().pretty_print(ast)
+    assert '"abc" matches /a.c/' in CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions())
+    ).generate(ast)
 
 
 @pytest.mark.parametrize(
@@ -2019,7 +2034,7 @@ def test_codegen_generators_reject_invalid_reference_names(
     with pytest.raises(ValueError, match=message):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match=message):
-        PrettyPrinter().pretty_print(ast)
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
 def test_codegen_generators_allow_for_of_placeholder_string_reference() -> None:
@@ -2039,7 +2054,9 @@ def test_codegen_generators_allow_for_of_placeholder_string_reference() -> None:
     assert "for any of them : ($)" in CodeGenerator(
         options=GeneratorOptions.comment_aware()
     ).generate(ast)
-    assert "for any of them : ($)" in PrettyPrinter().pretty_print(ast)
+    assert "for any of them : ($)" in CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions())
+    ).generate(ast)
 
 
 def test_codegen_generators_allow_libyara_string_identifier_forms() -> None:
@@ -2065,7 +2082,9 @@ def test_codegen_generators_allow_libyara_string_identifier_forms() -> None:
         options=GeneratorOptions(advanced=FormattingConfig())
     ).generate(ast)
     assert '$1 = "x"' in CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
-    assert '$for  = "y"' in PrettyPrinter().pretty_print(ast)
+    assert '$for  = "y"' in CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions())
+    ).generate(ast)
 
 
 def test_codegen_generators_allow_multiple_anonymous_strings() -> None:
@@ -2087,7 +2106,9 @@ def test_codegen_generators_allow_multiple_anonymous_strings() -> None:
         options=GeneratorOptions(advanced=FormattingConfig())
     ).generate(ast)
     assert '$ = "x"' in CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
-    assert '$  = "x"' in PrettyPrinter().pretty_print(ast)
+    assert '$  = "x"' in CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions())
+    ).generate(ast)
 
 
 def test_codegen_generator_expression_and_condition_paths() -> None:

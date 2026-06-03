@@ -10,7 +10,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from yaraast.codegen.generator_formatting import format_meta_key, format_meta_literal
+from yaraast.codegen.generator_formatting import (
+    format_meta_key,
+    format_meta_literal,
+    validate_yara_file_collections,
+)
 from yaraast.codegen.layouts import GeneratorLayout
 from yaraast.codegen.pretty_printer_helpers import (
     calculate_meta_alignment_column,
@@ -49,6 +53,7 @@ class PrettyLayout(GeneratorLayout):
 
         if not isinstance(node, YaraFile):
             return
+        validate_yara_file_collections(node)
         if self.options.align_string_definitions:
             self._string_alignment_column = calculate_string_alignment_column(node)
         if self.options.align_meta_values:

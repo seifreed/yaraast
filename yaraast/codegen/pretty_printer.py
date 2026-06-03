@@ -3,18 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from yaraast.ast.base import require_yara_file
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_formatting import validate_yara_file_collections
 from yaraast.codegen.options import GeneratorOptions
-from yaraast.codegen.pretty_printer_sections import (
-    write_hex_string_aligned as section_write_hex_string_aligned,
-    write_plain_string_aligned as section_write_plain_string_aligned,
-    write_regex_string_aligned as section_write_regex_string_aligned,
-    write_wrapped_condition as section_write_wrapped_condition,
-)
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -67,37 +61,6 @@ class PrettyPrintOptions:
     compact_conditions: bool = False
     verbose_conditions: bool = False
     preserve_original_style: bool = False
-
-
-class PrettyPrinter(CodeGenerator):
-    """Pretty printer (thin shell over the composed PrettyLayout).
-
-    The aligned/wrapped engine lives in
-    :class:`yaraast.codegen.pretty_layout.PrettyLayout`, selected via
-    ``GeneratorOptions.pretty``; this subclass only fixes the entry point and the
-    few aligned writers exercised directly by tests.
-    """
-
-    def __init__(self, options: PrettyPrintOptions | None = None) -> None:
-        super().__init__(options=GeneratorOptions(pretty=options or PrettyPrintOptions()))
-
-    def pretty_print(self, ast: YaraFile) -> str:
-        """Pretty print the entire YARA file."""
-        ast = require_yara_file(ast, "ast")
-        validate_yara_file_collections(ast)
-        return self.generate(ast)
-
-    def _write_plain_string_aligned(self, node: Any) -> None:
-        section_write_plain_string_aligned(self, node)
-
-    def _write_hex_string_aligned(self, node: Any) -> None:
-        section_write_hex_string_aligned(self, node)
-
-    def _write_regex_string_aligned(self, node: Any) -> None:
-        section_write_regex_string_aligned(self, node)
-
-    def _write_wrapped_condition(self, condition_str: str) -> None:
-        section_write_wrapped_condition(self, condition_str)
 
 
 class StylePresets:
@@ -164,8 +127,11 @@ class StylePresets:
 # Convenience functions
 def pretty_print(ast: YaraFile, options: PrettyPrintOptions | None = None) -> str:
     """Pretty print YARA AST with specified options."""
-    printer = PrettyPrinter(options)
-    return printer.pretty_print(ast)
+    ast = require_yara_file(ast, "ast")
+    validate_yara_file_collections(ast)
+    return CodeGenerator(options=GeneratorOptions(pretty=options or PrettyPrintOptions())).generate(
+        ast
+    )
 
 
 def pretty_print_compact(ast: YaraFile) -> str:
