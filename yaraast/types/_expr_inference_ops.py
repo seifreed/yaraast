@@ -640,11 +640,11 @@ def _validate_math_function_arguments(ctx: Any, func_name: str, arguments: list[
     elif func_name == "deviation":
         valid = _matches_math_deviation_signature(arg_types)
     elif func_name in {"count", "percentage"}:
-        valid = len(arg_types) == 3 and all(
+        valid = len(arg_types) in {1, 3} and all(
             isinstance(arg_type, IntegerType) for arg_type in arg_types
         )
     else:
-        valid = len(arg_types) == 2 and all(
+        valid = len(arg_types) in {0, 2} and all(
             isinstance(arg_type, IntegerType) for arg_type in arg_types
         )
 

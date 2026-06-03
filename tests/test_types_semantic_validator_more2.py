@@ -752,3 +752,41 @@ def test_semantic_validator_rejects_invalid_external_names(
 
     with pytest.raises(ValueError, match="SemanticValidator external names must be valid"):
         validator.validate_expression(BooleanLiteral(True), externals=externals)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        "math.in_range(2.0, 1.0, 3.0)",
+        "math.count(0x00) >= 0",
+        "math.count(0x00, 0, filesize) >= 0",
+        "math.percentage(0x00) >= 0.0",
+        "math.percentage(0x00, 0, filesize) >= 0.0",
+        "math.mode() >= 0",
+        "math.mode(0, filesize) >= 0",
+    ],
+)
+def test_semantic_validator_accepts_libyara_math_overloads(condition: str) -> None:
+    """libyara accepts these math overloads; the validator must not flag them."""
+    source = f'import "math"\nrule r {{ condition: {condition} }}'
+    ast = Parser(source).parse()
+    result = SemanticValidator().validate(ast)
+    assert result.is_valid is True, [error.message for error in result.errors]
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        "math.in_range(2, 1, 3)",
+        "math.in_range(1.0, 2.0)",
+        "math.count(0, 1) >= 0",
+        "math.percentage(0, 1) >= 0.0",
+        "math.mode(0) >= 0",
+    ],
+)
+def test_semantic_validator_rejects_invalid_math_overloads(condition: str) -> None:
+    """libyara rejects these math overloads; the validator must flag them too."""
+    source = f'import "math"\nrule r {{ condition: {condition} }}'
+    ast = Parser(source).parse()
+    result = SemanticValidator().validate(ast)
+    assert result.is_valid is False

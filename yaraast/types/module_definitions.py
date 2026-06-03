@@ -132,9 +132,10 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "deviation": ("d", [("value_or_offset", "s"), ("size_or_mean", "d"), ("mean", "d")], 2),
             "serial_correlation": ("d", [("value_or_offset", "s"), ("size", "i")], 1),
             "monte_carlo_pi": ("d", [("value_or_offset", "s"), ("size", "i")], 1),
-            "count": ("i", [("byte", "i"), ("offset", "i"), ("size", "i")]),
-            "percentage": ("d", [("byte", "i"), ("offset", "i"), ("size", "i")]),
-            "mode": ("i", [("offset", "i"), ("size", "i")]),
+            "count": ("i", [("byte", "i"), ("offset", "i"), ("size", "i")], 1),
+            "percentage": ("d", [("byte", "i"), ("offset", "i"), ("size", "i")], 1),
+            "mode": ("i", [("offset", "i"), ("size", "i")], 0),
+            "in_range": ("b", [("test", "d"), ("lower", "d"), ("upper", "d")]),
         },
     },
     "elf": {
