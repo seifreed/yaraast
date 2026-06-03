@@ -9,6 +9,7 @@ from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
     _visit_binary_operand,
+    render_function_call_callee,
     require_present_expression,
     validate_expression_collection,
     validate_function_call_arguments,
@@ -23,7 +24,6 @@ from yaraast.codegen.generator_formatting import (
     validate_rule_meta,
     validate_yara_file_collections,
     validate_yara_identifier,
-    validate_yara_identifier_path,
 )
 from yaraast.codegen.generator_helpers import validate_string_identifiers
 
@@ -238,9 +238,9 @@ class _AdvancedConditionGenerator(CodeGenerator):
 
     def visit_function_call(self, node: Any) -> str:
         separator = self._comma_separator()
-        function = validate_yara_identifier_path(node.function, "function")
+        callee = render_function_call_callee(self, node)
         validate_function_call_arguments(node)
-        return f"{function}({separator.join(self.visit(arg) for arg in node.arguments)})"
+        return f"{callee}({separator.join(self.visit(arg) for arg in node.arguments)})"
 
     def visit_with_statement(self, node: Any) -> str:
         separator = self._comma_separator()

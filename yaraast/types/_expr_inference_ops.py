@@ -384,78 +384,81 @@ def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
         _visit_function_arguments(ctx, arguments)
         return UnknownType()
 
-    if "." in function_name:
-        parts = function_name.split(".", 1)
-        if len(parts) == 2:
-            module_name, func_name = parts
-            if ctx.env.has_module(module_name):
-                actual_module = ctx.env.get_module_name(module_name)
-                if actual_module:
-                    from yaraast.types.module_loader import ModuleLoader
+    receiver = getattr(node, "receiver", None)
+    if receiver is not None:
+        _infer_function_argument(ctx, receiver)
 
-                    loader = ModuleLoader()
-                    module_def = loader.get_module(actual_module)
-                    if module_def and func_name in module_def.functions:
-                        func_def = module_def.functions[func_name]
-                        if actual_module == "pe" and func_name == "imports":
-                            _validate_pe_imports_arguments(ctx, arguments)
-                            return func_def.return_type
-                        if actual_module == "pe" and func_name == "exports":
-                            _validate_pe_exports_arguments(ctx, arguments)
-                            return func_def.return_type
-                        if actual_module == "pe" and func_name == "exports_index":
-                            _validate_pe_exports_index_arguments(ctx, arguments)
-                            return func_def.return_type
-                        if actual_module == "pe" and func_name == "section_index":
-                            _validate_pe_section_index_arguments(ctx, arguments)
-                            return func_def.return_type
-                        if actual_module == "hash" and func_name in _HASH_FUNCTIONS:
-                            _validate_hash_function_arguments(ctx, func_name, arguments)
-                            return func_def.return_type
-                        if actual_module == "math" and (
-                            func_name in _MATH_STRING_REGION_FUNCTIONS
-                            or func_name == "deviation"
-                            or func_name in _MATH_INTEGER_REGION_FUNCTIONS
-                        ):
-                            _validate_math_function_arguments(ctx, func_name, arguments)
-                            return func_def.return_type
-                        if actual_module == "console" and func_name == "log":
-                            _validate_console_log_arguments(ctx, arguments)
-                            return func_def.return_type
-                        if actual_module == "console" and func_name == "hex":
-                            _validate_console_hex_arguments(ctx, arguments)
-                            return func_def.return_type
-                        min_args = (
-                            func_def.min_parameters
-                            if func_def.min_parameters is not None
-                            else len(func_def.parameters)
-                        )
-                        max_args = len(func_def.parameters)
-                        if len(arguments) < min_args or (
-                            not func_def.variadic and len(arguments) > max_args
-                        ):
-                            expected = (
-                                f"at least {min_args}"
-                                if func_def.variadic
-                                else (
-                                    f"{min_args} to {max_args}"
-                                    if min_args != max_args
-                                    else str(max_args)
-                                )
-                            )
-                            ctx.errors.append(
-                                f"Function '{func_name}' expects {expected} arguments, got {len(arguments)}",
-                            )
-                        _validate_function_argument_types(
-                            ctx,
-                            func_name,
-                            func_def,
-                            arguments,
-                        )
+    resolved = node.module_and_function()
+    if resolved is not None:
+        module_name, func_name = resolved
+        if ctx.env.has_module(module_name):
+            actual_module = ctx.env.get_module_name(module_name)
+            if actual_module:
+                from yaraast.types.module_loader import ModuleLoader
+
+                loader = ModuleLoader()
+                module_def = loader.get_module(actual_module)
+                if module_def and func_name in module_def.functions:
+                    func_def = module_def.functions[func_name]
+                    if actual_module == "pe" and func_name == "imports":
+                        _validate_pe_imports_arguments(ctx, arguments)
                         return func_def.return_type
-                    ctx.errors.append(f"Module '{actual_module}' has no function '{func_name}'")
-                    _visit_function_arguments(ctx, arguments)
-                    return UnknownType()
+                    if actual_module == "pe" and func_name == "exports":
+                        _validate_pe_exports_arguments(ctx, arguments)
+                        return func_def.return_type
+                    if actual_module == "pe" and func_name == "exports_index":
+                        _validate_pe_exports_index_arguments(ctx, arguments)
+                        return func_def.return_type
+                    if actual_module == "pe" and func_name == "section_index":
+                        _validate_pe_section_index_arguments(ctx, arguments)
+                        return func_def.return_type
+                    if actual_module == "hash" and func_name in _HASH_FUNCTIONS:
+                        _validate_hash_function_arguments(ctx, func_name, arguments)
+                        return func_def.return_type
+                    if actual_module == "math" and (
+                        func_name in _MATH_STRING_REGION_FUNCTIONS
+                        or func_name == "deviation"
+                        or func_name in _MATH_INTEGER_REGION_FUNCTIONS
+                    ):
+                        _validate_math_function_arguments(ctx, func_name, arguments)
+                        return func_def.return_type
+                    if actual_module == "console" and func_name == "log":
+                        _validate_console_log_arguments(ctx, arguments)
+                        return func_def.return_type
+                    if actual_module == "console" and func_name == "hex":
+                        _validate_console_hex_arguments(ctx, arguments)
+                        return func_def.return_type
+                    min_args = (
+                        func_def.min_parameters
+                        if func_def.min_parameters is not None
+                        else len(func_def.parameters)
+                    )
+                    max_args = len(func_def.parameters)
+                    if len(arguments) < min_args or (
+                        not func_def.variadic and len(arguments) > max_args
+                    ):
+                        expected = (
+                            f"at least {min_args}"
+                            if func_def.variadic
+                            else (
+                                f"{min_args} to {max_args}"
+                                if min_args != max_args
+                                else str(max_args)
+                            )
+                        )
+                        ctx.errors.append(
+                            f"Function '{func_name}' expects {expected} arguments, got {len(arguments)}",
+                        )
+                    _validate_function_argument_types(
+                        ctx,
+                        func_name,
+                        func_def,
+                        arguments,
+                    )
+                    return func_def.return_type
+                ctx.errors.append(f"Module '{actual_module}' has no function '{func_name}'")
+                _visit_function_arguments(ctx, arguments)
+                return UnknownType()
 
     if function_name in BUILTIN_INT_FUNCTIONS_1ARG:
         if len(arguments) != 1:

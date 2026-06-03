@@ -233,7 +233,9 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_function_call(self, node) -> str:
         args = "|".join(self.visit(arg) for arg in node.arguments)
-        return f"Call({node.function},{args})"
+        receiver_node = getattr(node, "receiver", None)
+        receiver = self.visit(receiver_node) if receiver_node is not None else ""
+        return f"Call({receiver}:{node.function},{args})"
 
     def visit_array_access(self, node) -> str:
         return f"Array({self.visit(node.array)},{self.visit(node.index)})"

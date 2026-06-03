@@ -131,10 +131,23 @@ def visit_range_expression(generator: Any, node: Any) -> str:
     return f"{generator.visit(node.low)}..{generator.visit(node.high)}"
 
 
+def render_function_call_callee(generator: Any, node: Any) -> str:
+    """Render the callee of a function call, including an indexed receiver.
+
+    When ``receiver`` is set the callee is ``<receiver>.<method>`` (e.g.
+    ``pe.signatures[0].valid_on``); otherwise it is the dotted function name.
+    """
+    receiver = getattr(node, "receiver", None)
+    if receiver is not None:
+        method = validate_yara_identifier(node.function, "function")
+        return f"{generator.visit(receiver)}.{method}"
+    return validate_yara_identifier_path(node.function, "function")
+
+
 def visit_function_call(generator: Any, node: Any) -> str:
-    function = validate_yara_identifier_path(node.function, "function")
+    callee = render_function_call_callee(generator, node)
     validate_function_call_arguments(node)
-    return f"{function}({', '.join(generator.visit(arg) for arg in node.arguments)})"
+    return f"{callee}({', '.join(generator.visit(arg) for arg in node.arguments)})"
 
 
 def visit_array_access(generator: Any, node: Any) -> str:

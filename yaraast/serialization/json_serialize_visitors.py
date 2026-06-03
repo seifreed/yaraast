@@ -687,6 +687,11 @@ def visit_function_call(serializer, node) -> dict[str, Any]:
             node.arguments,
             "FunctionCall arguments",
         ),
+        "receiver": _serialize_optional_expression(
+            serializer,
+            node.receiver,
+            "FunctionCall receiver",
+        ),
     }
 
 

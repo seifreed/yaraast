@@ -1933,6 +1933,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return FunctionCall(
             _deserialize_nonempty_string_field(data, "function", "FunctionCall"),
             _deserialize_node_list_field(data, "arguments", "FunctionCall"),
+            receiver=_deserialize_optional_node_field(data, "receiver", "FunctionCall"),
         )
     if node_type == "ArrayAccess":
         return ArrayAccess(

@@ -150,8 +150,11 @@ class ExpressionPostfixMixin:
         if isinstance(expr, Identifier):
             node = FunctionCall(function=expr.name, arguments=args)
         elif isinstance(expr, MemberAccess):
-            function_name = self._build_function_name_from_member_access(expr)
-            node = FunctionCall(function=function_name, arguments=args)
+            if self._object_has_index(expr.object):
+                node = FunctionCall(function=expr.member, arguments=args, receiver=expr.object)
+            else:
+                function_name = self._build_function_name_from_member_access(expr)
+                node = FunctionCall(function=function_name, arguments=args)
         else:
             msg = "Invalid function call"
             raise ParserError(msg, self._peek())
@@ -201,6 +204,17 @@ class ExpressionPostfixMixin:
         if isinstance(expr.object, MemberAccess):
             return f"{self._member_access_to_string(expr.object)}.{expr.member}"
         return f"unknown.{expr.member}"
+
+    def _object_has_index(self, expr: Expression) -> bool:
+        """Whether a callee object indexes into an array or dictionary.
+
+        Such a receiver cannot be flattened to a dotted name (the index would be
+        lost), so the function call keeps it as a ``receiver`` expression instead.
+        """
+        current: Expression = expr
+        while isinstance(current, MemberAccess):
+            current = current.object
+        return isinstance(current, ArrayAccess | DictionaryAccess)
 
     def _parse_at_postfix(self, expr: Expression) -> AtExpression:
         """Parse AT postfix expression ($string at offset or N of set at offset)."""

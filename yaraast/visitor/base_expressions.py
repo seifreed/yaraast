@@ -126,6 +126,7 @@ class BaseVisitorExpressionsMixin:
         return self._noop()
 
     def visit_function_call(self: VisitorHelperProtocol[T], node: FunctionCall) -> T:
+        self._visit_if(node.receiver)
         self._visit_all(node.arguments)
         return self._noop()
 

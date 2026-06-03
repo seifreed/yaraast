@@ -185,7 +185,9 @@ class Include(_message.Message):
     path: str
     node_metadata: NodeMetadata
     def __init__(
-        self, path: str | None = ..., node_metadata: NodeMetadata | _Mapping | None = ...
+        self,
+        path: str | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class Rule(_message.Message):
@@ -261,7 +263,9 @@ class Tag(_message.Message):
     name: str
     node_metadata: NodeMetadata
     def __init__(
-        self, name: str | None = ..., node_metadata: NodeMetadata | _Mapping | None = ...
+        self,
+        name: str | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class MetaValue(_message.Message):
@@ -481,7 +485,9 @@ class RegexString(_message.Message):
     regex: str
     modifiers: _containers.RepeatedCompositeFieldContainer[StringModifier]
     def __init__(
-        self, regex: str | None = ..., modifiers: _Iterable[StringModifier | _Mapping] | None = ...
+        self,
+        regex: str | None = ...,
+        modifiers: _Iterable[StringModifier | _Mapping] | None = ...,
     ) -> None: ...
 
 class StringModifier(_message.Message):
@@ -875,17 +881,24 @@ class RangeExpression(_message.Message):
     low: Expression
     high: Expression
     def __init__(
-        self, low: Expression | _Mapping | None = ..., high: Expression | _Mapping | None = ...
+        self,
+        low: Expression | _Mapping | None = ...,
+        high: Expression | _Mapping | None = ...,
     ) -> None: ...
 
 class FunctionCall(_message.Message):
-    __slots__ = ("arguments", "function")
+    __slots__ = ("arguments", "function", "receiver")
     FUNCTION_FIELD_NUMBER: _ClassVar[int]
     ARGUMENTS_FIELD_NUMBER: _ClassVar[int]
+    RECEIVER_FIELD_NUMBER: _ClassVar[int]
     function: str
     arguments: _containers.RepeatedCompositeFieldContainer[Expression]
+    receiver: Expression
     def __init__(
-        self, function: str | None = ..., arguments: _Iterable[Expression | _Mapping] | None = ...
+        self,
+        function: str | None = ...,
+        arguments: _Iterable[Expression | _Mapping] | None = ...,
+        receiver: Expression | _Mapping | None = ...,
     ) -> None: ...
 
 class ArrayAccess(_message.Message):
@@ -895,7 +908,9 @@ class ArrayAccess(_message.Message):
     array: Expression
     index: Expression
     def __init__(
-        self, array: Expression | _Mapping | None = ..., index: Expression | _Mapping | None = ...
+        self,
+        array: Expression | _Mapping | None = ...,
+        index: Expression | _Mapping | None = ...,
     ) -> None: ...
 
 class MemberAccess(_message.Message):
@@ -1208,7 +1223,9 @@ class LambdaExpression(_message.Message):
     parameters: _containers.RepeatedScalarFieldContainer[str]
     body: Expression
     def __init__(
-        self, parameters: _Iterable[str] | None = ..., body: Expression | _Mapping | None = ...
+        self,
+        parameters: _Iterable[str] | None = ...,
+        body: Expression | _Mapping | None = ...,
     ) -> None: ...
 
 class PatternMatch(_message.Message):
@@ -1248,5 +1265,7 @@ class SpreadOperator(_message.Message):
     expression: Expression
     is_dict: bool
     def __init__(
-        self, expression: Expression | _Mapping | None = ..., is_dict: bool | None = ...
+        self,
+        expression: Expression | _Mapping | None = ...,
+        is_dict: bool | None = ...,
     ) -> None: ...

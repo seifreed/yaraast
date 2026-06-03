@@ -185,13 +185,78 @@ class RangeExpression(Expression):
 
 @dataclass
 class FunctionCall(Expression):
-    """Function call expression."""
+    """Function call expression.
+
+    ``function`` carries the callee name. For an identifier-chain callee it is
+    the full dotted path (``uint16``, ``pe.imphash``, ``pe.rich_signature.version``)
+    and ``receiver`` is ``None``. When the callee's object cannot be a pure dotted
+    path because it indexes into an array or dictionary (``pe.signatures[0].valid_on``),
+    ``receiver`` holds that object expression and ``function`` is just the method
+    name (``valid_on``).
+    """
 
     function: str
     arguments: list[Expression]
+    receiver: Expression | None = None
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_function_call(self)
+
+    def qualified_name(self) -> str:
+        """Dotted display name, with indexed receivers flattened (no indices)."""
+        if self.receiver is None:
+            return self.function
+        base = _receiver_identifier_path(self.receiver)
+        return f"{base}.{self.function}" if base else self.function
+
+    def module_and_function(self) -> tuple[str, str] | None:
+        """Resolve to ``(module_alias, function_key)`` for a module call, else None.
+
+        Builtins and unqualified calls return ``None``. The function key matches
+        the dotted keys used in module definitions (e.g. ``signatures.valid_on``).
+        """
+        if self.receiver is None:
+            if "." in self.function:
+                module_name, func_name = self.function.split(".", 1)
+                return module_name, func_name
+            return None
+        base, members = _receiver_base_and_members(self.receiver)
+        if base is None:
+            return None
+        return base, ".".join([*members, self.function])
+
+
+def _receiver_base_and_members(expr: Any) -> tuple[str | None, list[str]]:
+    """Walk a callee object expression to ``(base_identifier, member_path)``.
+
+    Array and dictionary indices are dropped so the member path matches the
+    declared (index-free) module member keys.
+    """
+    from yaraast.ast.modules import DictionaryAccess, ModuleReference
+
+    members: list[str] = []
+    current = expr
+    while True:
+        if isinstance(current, MemberAccess):
+            members.append(current.member)
+            current = current.object
+        elif isinstance(current, ArrayAccess):
+            current = current.array
+        elif isinstance(current, DictionaryAccess):
+            current = current.object
+        elif isinstance(current, Identifier):
+            return current.name, list(reversed(members))
+        elif isinstance(current, ModuleReference):
+            return current.module, list(reversed(members))
+        else:
+            return None, []
+
+
+def _receiver_identifier_path(expr: Any) -> str | None:
+    base, members = _receiver_base_and_members(expr)
+    if base is None:
+        return None
+    return ".".join([base, *members]) if members else base
 
 
 @dataclass

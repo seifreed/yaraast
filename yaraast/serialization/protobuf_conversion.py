@@ -1317,6 +1317,8 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         )
         for argument in _protobuf_node_list(expr.arguments, "FunctionCall arguments", Expression):
             convert_expression_to_protobuf(argument, pb_expr.function_call.arguments.add())
+        if expr.receiver is not None:
+            convert_expression_to_protobuf(expr.receiver, pb_expr.function_call.receiver)
     elif isinstance(expr, ArrayAccess):
         convert_expression_to_protobuf(expr.array, pb_expr.array_access.array)
         convert_expression_to_protobuf(expr.index, pb_expr.array_access.index)
@@ -2175,6 +2177,11 @@ def protobuf_to_expression(pb_expr):
                 arguments=[
                     protobuf_to_expression(argument) for argument in pb_expr.function_call.arguments
                 ],
+                receiver=(
+                    protobuf_to_expression(pb_expr.function_call.receiver)
+                    if pb_expr.function_call.HasField("receiver")
+                    else None
+                ),
             ),
         )
     if pb_expr.HasField("array_access"):

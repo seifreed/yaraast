@@ -32,12 +32,14 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
             self._visit_function_arguments(arguments, node)
             return
 
-        if "." in function_name:
-            parts = function_name.split(".", 1)
-            if len(parts) == 2:
-                module_name, func_name = parts
-                self._validate_module_function_call(node, module_name, func_name, arguments)
-        else:
+        if node.receiver is not None:
+            self._visit_required_expression(node.receiver, node, "Function call receiver")
+
+        resolved = node.module_and_function()
+        if resolved is not None:
+            module_name, func_name = resolved
+            self._validate_module_function_call(node, module_name, func_name, arguments)
+        elif node.receiver is None:
             self._validate_builtin_function_call(node, function_name, arguments)
 
         self._visit_function_arguments(arguments, node)
@@ -75,7 +77,7 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
     ) -> None:
         if not self.env.has_module(module_name):
             self.result.add_error(
-                f"Module '{module_name}' not imported, cannot call '{node.function}'",
+                f"Module '{module_name}' not imported, cannot call '{node.qualified_name()}'",
                 node.location,
                 f"Add 'import \"{module_name}\"' at the top of your file.",
             )

@@ -598,6 +598,9 @@ def _deser_function_call(self, data: dict[str, Any]):
     return FunctionCall(
         function=_deserialize_nonempty_string_field(data, "function", "FunctionCall"),
         arguments=args,
+        receiver=_deserialize_optional_expression(
+            self, data.get("receiver"), "FunctionCall receiver"
+        ),
     )
 
 

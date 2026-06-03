@@ -183,7 +183,7 @@ def test_ast_hasher_string_and_expression_helpers() -> None:
             arguments=[_AcceptNode("visit_integer_literal", value=7)],
         ),
     )
-    assert fn_repr == "Call(f,Int(7))"
+    assert fn_repr == "Call(:f,Int(7))"
 
     arr_repr = hasher.visit_array_access(
         _AcceptNode(

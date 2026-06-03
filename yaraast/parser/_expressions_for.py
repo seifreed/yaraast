@@ -343,10 +343,11 @@ class ExpressionForMixin:
                 FunctionCall(function=expr.name, arguments=args), start_token, self._previous()
             )
         if isinstance(expr, MemberAccess):
-            function_name = self._resolve_function_name(expr)
-            return self._set_node_location_from_tokens(
-                FunctionCall(function=function_name, arguments=args), start_token, self._previous()
-            )
+            if self._object_has_index(expr.object):
+                call = FunctionCall(function=expr.member, arguments=args, receiver=expr.object)
+            else:
+                call = FunctionCall(function=self._resolve_function_name(expr), arguments=args)
+            return self._set_node_location_from_tokens(call, start_token, self._previous())
         msg = "Invalid function call"
         raise ParserError(msg, self._peek())
 
