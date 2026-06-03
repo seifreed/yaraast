@@ -51,6 +51,31 @@ def test_metrics_complexity_text_output_file(tmp_path: Path) -> None:
     assert output_path.exists()
 
 
+def test_metrics_complexity_syntax_error_is_clean(tmp_path: Path) -> None:
+    runner = CliRunner()
+    yara_path = tmp_path / "broken.yar"
+    yara_path.write_text("rule Broken {\n    condition:\n}\n", encoding="utf-8")
+
+    result = runner.invoke(metrics, ["complexity", str(yara_path)])
+
+    assert result.exit_code != 0
+    assert result.exception is None or isinstance(result.exception, SystemExit)
+    assert "Traceback" not in result.output
+    assert "Failed to parse" in result.output
+
+
+def test_metrics_strings_syntax_error_is_clean(tmp_path: Path) -> None:
+    runner = CliRunner()
+    yara_path = tmp_path / "broken.yar"
+    yara_path.write_text("rule Broken {\n    condition:\n}\n", encoding="utf-8")
+
+    result = runner.invoke(metrics, ["strings", str(yara_path)])
+
+    assert result.exit_code != 0
+    assert "Traceback" not in result.output
+    assert "Failed to parse" in result.output
+
+
 def test_metrics_graph_dot(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
