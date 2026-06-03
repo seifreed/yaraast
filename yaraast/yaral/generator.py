@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from yaraast.codegen.generator_helpers import escape_regex_delimiter
-from yaraast.yaral.ast_nodes import ArithmeticExpression
+from yaraast.yaral.ast_nodes import ArithmeticExpression, StringLiteral
 from yaraast.yaral.generator_helpers import (
     format_literal,
     format_modifiers,
@@ -311,6 +311,8 @@ class YaraLGenerator(YaraLVisitor[str]):
     def _format_condition_value(self, value: Any) -> str:
         if hasattr(value, "accept"):
             return self.visit(value)
+        if isinstance(value, StringLiteral):
+            return self._format_value(value)
         if isinstance(value, str) and self._is_raw_condition_text(value):
             return value
         return self._format_value(value)

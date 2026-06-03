@@ -20,6 +20,36 @@ class RawConditionValue(str):
     """Source-preserving YARA-L condition comparison value."""
 
 
+class StringLiteral(str):
+    """YARA-L quoted string literal value.
+
+    Distinguishes a parsed quoted-string value from a bare reference token
+    (``$var`` / ``%list%``) so the generator always re-emits it quoted, even
+    when its content begins with ``$`` or ``%``.
+    """
+
+
+def _register_yaml_str_representers() -> None:
+    """Make YARA-L ``str`` marker subclasses YAML-serializable as plain strings.
+
+    ``yaml.safe_dump`` rejects unknown ``str`` subclasses, which would crash any
+    AST serialization (for example ``asdict`` output) that contains these source-
+    preserving fragments. Representing them as plain strings keeps serialization
+    lossless without leaking the internal marker types.
+    """
+    try:
+        import yaml
+    except ImportError:
+        return
+
+    representer = yaml.representer.SafeRepresenter.represent_str
+    for marker in (RawOutcomeExpression, RawConditionValue, StringLiteral):
+        yaml.SafeDumper.add_representer(marker, representer)
+
+
+_register_yaml_str_representers()
+
+
 @dataclass
 class YaraLRule(ASTNode):
     """YARA-L rule AST node."""

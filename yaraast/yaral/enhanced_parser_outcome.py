@@ -15,6 +15,7 @@ from yaraast.yaral.ast_nodes import (
     OutcomeExpression,
     OutcomeSection,
     RawOutcomeExpression,
+    StringLiteral,
     UDMFieldAccess,
 )
 from yaraast.yaral.generator_helpers import format_literal
@@ -221,7 +222,7 @@ class EnhancedYaraLParserOutcomeMixin:
             return self._advance().value
 
         if self._check(BaseTokenType.STRING):
-            return self._advance().value
+            return StringLiteral(self._advance().value)
         if self._check(BaseTokenType.BOOLEAN_TRUE):
             self._advance()
             return True

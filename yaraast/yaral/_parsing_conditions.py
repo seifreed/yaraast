@@ -17,6 +17,7 @@ from .ast_nodes import (
     RawConditionValue,
     ReferenceList,
     RegexPattern,
+    StringLiteral,
     UnaryCondition,
     VariableComparisonCondition,
 )
@@ -210,7 +211,7 @@ class YaraLConditionParsingMixin:
         if self._check(BaseTokenType.REGEX) or self._check(BaseTokenType.DIVIDE):
             return self._parse_condition_regex_pattern()
         if self._check(BaseTokenType.STRING):
-            return self._advance().value
+            return StringLiteral(self._advance().value)
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
             BaseTokenType.STRING_IDENTIFIER
         ):
@@ -418,6 +419,8 @@ class YaraLConditionParsingMixin:
             return f"%{value.name.strip('%')}%"
         if isinstance(value, bool):
             return "true" if value else "false"
+        if isinstance(value, StringLiteral):
+            return quote_string_literal(value)
         if isinstance(value, str):
             if isinstance(value, RawConditionValue) or value.startswith(("$", "%")):
                 return str(value)

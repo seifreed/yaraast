@@ -20,6 +20,7 @@ from .ast_nodes import (
     FunctionCall,
     RawOutcomeExpression,
     RegexPattern,
+    StringLiteral,
     UDMFieldAccess,
     UDMFieldPath,
 )
@@ -64,7 +65,7 @@ class OutcomeArgumentParsingMixin:
             return var_name
 
         if self._check(BaseTokenType.STRING):
-            return self._advance().value
+            return StringLiteral(self._advance().value)
 
         if self._check(BaseTokenType.BOOLEAN_TRUE):
             self._advance()
@@ -107,7 +108,7 @@ class OutcomeArgumentParsingMixin:
             return self._parse_outcome_event_var()
 
         if self._check(BaseTokenType.STRING):
-            return self._advance().value
+            return StringLiteral(self._advance().value)
 
         if self._check(BaseTokenType.BOOLEAN_TRUE):
             self._advance()
@@ -267,6 +268,8 @@ class OutcomeArgumentParsingMixin:
             return value.name
         if isinstance(value, RawOutcomeExpression):
             return str(value)
+        if isinstance(value, StringLiteral):
+            return quote_string_literal(value)
         if isinstance(value, str) and quote_strings and not value.startswith(("$", "%", "(")):
             return quote_string_literal(value)
         return str(value)

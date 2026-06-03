@@ -12,6 +12,7 @@ from yaraast.yaral.ast_nodes import (
     RawConditionValue,
     ReferenceList,
     RegexPattern,
+    StringLiteral,
     TimeWindow,
     UDMFieldAccess,
     UDMFieldPath,
@@ -142,7 +143,7 @@ class EnhancedYaraLParserHelpersMixin:
             self._advance()
             return False
         if self._check(BaseTokenType.STRING):
-            return self._advance().value
+            return StringLiteral(self._advance().value)
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return parse_numeric_token_value(self._advance().value)
         if self._check_yaral_type(YaraLTokenType.REFERENCE_LIST):

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.codegen.generator_helpers import escape_plain_string_value
-from yaraast.yaral.ast_nodes import RawConditionValue, RawOutcomeExpression
+from yaraast.yaral.ast_nodes import RawConditionValue, RawOutcomeExpression, StringLiteral
 
 
 def quote_string_literal(value: str) -> str:
@@ -17,6 +17,8 @@ def format_literal(value: Any) -> str:
         return ""
     if hasattr(value, "accept"):
         return ""
+    if isinstance(value, StringLiteral):
+        return quote_string_literal(value)
     if isinstance(value, RawConditionValue | RawOutcomeExpression):
         return str(value)
     if isinstance(value, str):
