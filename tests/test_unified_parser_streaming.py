@@ -8,6 +8,7 @@ import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.dialects import YaraDialect
+from yaraast.errors import YaraASTError
 from yaraast.unified_parser import UnifiedParser
 
 
@@ -59,6 +60,25 @@ def test_parse_file_force_streaming_real(tmp_path: Path) -> None:
     assert len(ast.imports) == 2
     assert len(ast.includes) == 1
     assert {imp.module for imp in ast.imports} == {"pe", "math"}
+
+
+def test_parse_file_force_streaming_surfaces_malformed_rule(tmp_path: Path) -> None:
+    """Streaming must not silently drop rules it fails to parse.
+
+    Regression: the traditional parser raises on this malformed rule, but the
+    streaming route discarded the streaming parser's ``parse_errors`` count and
+    returned a partial AST with the bad rule silently dropped.
+    """
+    f = tmp_path / "malformed_stream.yar"
+    f.write_text(
+        "rule good { condition: true }\n"
+        "rule bad { condition: @#! }\n"
+        "rule good2 { condition: false }\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(YaraASTError):
+        UnifiedParser.parse_file(f, force_streaming=True)
 
 
 def test_parse_file_force_streaming_preserves_extended_preamble(tmp_path: Path) -> None:

@@ -179,6 +179,23 @@ class TestErrorTolerantLexer:
         assert any("Unterminated string" in e.message for e in errors)
         assert tokens[-1].type == TokenType.EOF
 
+    def test_raw_newline_inside_string_records_error(self) -> None:
+        """A raw newline before the closing quote is an unterminated string.
+
+        Regression: the override previously consumed the newline (and the rest
+        of the line) into the string value and recorded zero errors, silently
+        accepting input that both the strict lexer and ``yara`` reject.
+        """
+        text = 'rule r { strings: $a = "abc\ndef" condition: $a }'
+        lexer = ErrorTolerantLexer(text)
+        tokens, errors = lexer.tokenize()
+
+        assert any("Unterminated string" in e.message for e in errors)
+        string_tokens = [t for t in tokens if t.type == TokenType.STRING]
+        assert string_tokens
+        # The string value must stop at the newline, not swallow it.
+        assert "\n" not in _string_value(string_tokens[0])
+
     def test_error_count_tracking(self) -> None:
         """Test that errors are tracked properly."""
         text = "rule test"

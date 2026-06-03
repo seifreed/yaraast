@@ -13,6 +13,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include
 from yaraast.config import DEFAULT_STREAMING_THRESHOLD_MB as _DEFAULT_STREAMING_THRESHOLD_MB
 from yaraast.dialects import DialectRegistry, YaraDialect, detect_dialect
+from yaraast.errors import YaraASTError
 from yaraast.parser.parser import Parser as YaraParser
 from yaraast.performance.streaming_parser import StreamingParser
 from yaraast.yaral.ast_nodes import YaraLFile
@@ -302,6 +303,17 @@ class UnifiedParser:
 
         streaming_parser = StreamingParser(dialect_parser_factory=_dialect_factory)
         rules = list(streaming_parser.parse_file(file_path_obj))
+        parse_errors = streaming_parser.get_statistics()["parse_errors"]
+        if parse_errors:
+            # The streaming parser drops rules it cannot parse and only records
+            # the count in its statistics. The traditional parser raises on the
+            # same malformed input, so surface the failure here instead of
+            # silently returning a partial AST.
+            msg = (
+                f"Failed to parse {parse_errors} malformed rule(s) while streaming "
+                f"{file_path_obj}"
+            )
+            raise YaraASTError(msg)
         preamble_ast.rules = rules
         return preamble_ast
 

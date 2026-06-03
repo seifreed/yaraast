@@ -181,6 +181,16 @@ class ErrorTolerantLexer(Lexer[tuple[list[Token], list[LexerErrorInfo]]]):
 
         char = self._current_char()
         while char is not None and char != '"':
+            if char in "\n\r":
+                # A raw newline terminates a YARA string literal; reaching one
+                # before the closing quote means the string is unterminated.
+                # Record it instead of silently swallowing the newline (and the
+                # rest of the line) into the string value.
+                self._add_error(
+                    "Unterminated string",
+                    suggestion='Add closing quote " to terminate the string',
+                )
+                return Token(TokenType.STRING, value, start_line, start_column)
             if char == "\\":
                 result, should_break = self._handle_escape_sequence()
                 value += result
