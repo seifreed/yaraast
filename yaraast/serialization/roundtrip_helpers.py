@@ -7,7 +7,8 @@ import json
 
 import yaml
 
-from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.serialization.roundtrip_models import FormattingInfo, RoundTripMetadata
 
 
@@ -91,14 +92,16 @@ def create_generator(
     metadata: RoundTripMetadata | None,
     preserve_original_formatting: bool,
     preserve_comments: bool,
-) -> CommentAwareCodeGenerator:
+) -> CodeGenerator:
     if metadata and preserve_original_formatting:
         indent_size = metadata.formatting.indent_size
         preserve_comments = metadata.comments_preserved and preserve_comments
     else:
         indent_size = 4
 
-    return CommentAwareCodeGenerator(
-        indent_size=indent_size,
-        preserve_comments=preserve_comments,
+    return CodeGenerator(
+        options=GeneratorOptions.comment_aware(
+            indent_size=indent_size,
+            preserve_comments=preserve_comments,
+        )
     )

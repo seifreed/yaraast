@@ -37,7 +37,7 @@ class GeneratorOptions:
     def comment_aware(
         cls, *, indent_size: int = 4, preserve_comments: bool = True
     ) -> GeneratorOptions:
-        """Options reproducing the former CommentAwareCodeGenerator behaviour."""
+        """Options selecting the comment-aware layout (preserved comments)."""
         return cls(
             indent_size=indent_size,
             preserve_comments=preserve_comments,

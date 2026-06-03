@@ -1,6 +1,7 @@
 """Test comment preservation in AST."""
 
-from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 
 
@@ -37,7 +38,7 @@ rule test_rule {
     assert "file header comment" in rule.leading_comments[0].text
 
     # Generate code with comments
-    generator = CommentAwareCodeGenerator()
+    generator = CodeGenerator(options=GeneratorOptions.comment_aware())
     output = generator.generate(ast)
 
     # Verify comments are preserved
@@ -77,7 +78,7 @@ rule multiline_test {
     ast = parser.parse(yara_code)
 
     # Generate code with comments
-    generator = CommentAwareCodeGenerator()
+    generator = CodeGenerator(options=GeneratorOptions.comment_aware())
     output = generator.generate(ast)
 
     # Verify multiline comments are preserved
@@ -108,7 +109,7 @@ rule no_comments {
     ast = parser.parse(yara_code)
 
     # Generate without comments
-    generator = CommentAwareCodeGenerator(preserve_comments=False)
+    generator = CodeGenerator(options=GeneratorOptions.comment_aware(preserve_comments=False))
     output = generator.generate(ast)
 
     # Verify no comments in output

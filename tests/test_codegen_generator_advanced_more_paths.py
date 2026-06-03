@@ -36,9 +36,9 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
-from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.codegen.formatting import BraceStyle, FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.codegen.pretty_printer import PrettyPrinter, PrettyPrintOptions
 from yaraast.yarax.ast_nodes import MatchCase, PatternMatch
 
@@ -146,7 +146,7 @@ def test_code_generators_reject_scoped_meta_keys_for_libyara_output() -> None:
     with pytest.raises(ValueError, match="Unsupported meta scope"):
         CodeGenerator().generate(ast)
     with pytest.raises(ValueError, match="Unsupported meta scope"):
-        CommentAwareCodeGenerator().generate(ast)
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Unsupported meta scope"):
         AdvancedCodeGenerator().generate(ast)
     with pytest.raises(ValueError, match="Unsupported meta scope"):
@@ -166,7 +166,7 @@ def test_code_generators_allow_public_meta_scope_for_libyara_output() -> None:
 
     outputs = [
         CodeGenerator().generate(ast),
-        CommentAwareCodeGenerator().generate(ast),
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast),
         AdvancedCodeGenerator().generate(ast),
         PrettyPrinter(PrettyPrintOptions(align_meta_values=False)).pretty_print(ast),
     ]
@@ -192,7 +192,7 @@ def test_code_generators_preserve_in_rule_pragmas() -> None:
 
     outputs = [
         CodeGenerator().generate(ast),
-        CommentAwareCodeGenerator().generate(ast),
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast),
         AdvancedCodeGenerator().generate(ast),
         PrettyPrinter(PrettyPrintOptions(align_meta_values=False)).pretty_print(ast),
     ]

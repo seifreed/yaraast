@@ -174,7 +174,7 @@ def calculate_meta_alignment_column(ast: Any, min_alignment_column: int) -> int:
 
 def expression_to_string(expr: Any, options: Any = None) -> str:
     """Render an expression with the comment-aware generator."""
-    from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+    from yaraast.codegen.generator import CodeGenerator
     from yaraast.codegen.generator_expression_visitors import (
         _render_binary_operator,
         _visit_binary_operand,
@@ -184,7 +184,7 @@ def expression_to_string(expr: Any, options: Any = None) -> str:
     )
     from yaraast.codegen.generator_formatting import validate_yara_identifier_path
 
-    class PrettyExpressionGenerator(CommentAwareCodeGenerator):
+    class PrettyExpressionGenerator(CodeGenerator):
         def _comma_separator(self) -> str:
             return ", " if getattr(options, "space_after_comma", True) else ","
 

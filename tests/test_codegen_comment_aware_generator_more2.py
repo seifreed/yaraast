@@ -10,7 +10,8 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, RegexString
-from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.yarax.ast_nodes import MatchCase, PatternMatch
 
 
@@ -20,7 +21,7 @@ class _FalsyBooleanLiteral(BooleanLiteral):
 
 
 def test_comment_aware_generator_write_comments_and_generate_non_file_node() -> None:
-    gen = CommentAwareCodeGenerator()
+    gen = CodeGenerator(options=GeneratorOptions.comment_aware())
     gen._write_comments([Comment("// one"), CommentGroup(comments=[Comment("// two")])])
     gen._write_comments([])
 
@@ -51,7 +52,7 @@ def test_comment_aware_generator_meta_dict_and_missing_sections() -> None:
         ],
     )
 
-    out = CommentAwareCodeGenerator().generate(file_ast)
+    out = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(file_ast)
 
     assert 'author = "alice"' in out
     assert "enabled = true" in out
@@ -71,7 +72,7 @@ def test_comment_aware_generator_writes_falsy_present_condition() -> None:
         ]
     )
 
-    out = CommentAwareCodeGenerator().generate(file_ast)
+    out = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(file_ast)
 
     assert "condition:" in out
     assert "false" in out
@@ -100,7 +101,7 @@ def test_comment_aware_generator_hex_and_regex_modifier_paths() -> None:
     )
     file_ast = YaraFile(rules=[rule])
 
-    out = CommentAwareCodeGenerator().generate(file_ast)
+    out = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(file_ast)
 
     assert "$h = { AA } private" in out
     assert "$r = /abc/" in out
@@ -117,7 +118,7 @@ def test_comment_aware_generator_import_include_without_trailing_comments() -> N
         rules=[],
     )
 
-    out = CommentAwareCodeGenerator().generate(file_ast)
+    out = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(file_ast)
 
     assert 'import "pe"' in out
     assert 'include "common.yar"\ninclude "more.yar"' in out
@@ -128,7 +129,7 @@ def test_comment_aware_generator_condition_trailing_comment_stays_on_condition_l
     condition.trailing_comment = Comment("condition tail")
     file_ast = YaraFile(rules=[Rule(name="commented_condition", condition=condition)])
 
-    out = CommentAwareCodeGenerator().generate(file_ast)
+    out = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(file_ast)
 
     assert "true  // condition tail\n}" in out
     assert "// condition tail    }" not in out
@@ -142,7 +143,7 @@ def test_comment_aware_generator_indents_multiline_match_condition() -> None:
     )
     file_ast = YaraFile(rules=[Rule(name="match_rule", condition=condition)])
 
-    out = CommentAwareCodeGenerator().generate(file_ast)
+    out = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(file_ast)
 
     assert (
         "    condition:\n"
@@ -162,7 +163,7 @@ def test_comment_aware_generator_uses_configured_indent_for_match_cases() -> Non
     )
     file_ast = YaraFile(rules=[Rule(name="match_rule", condition=condition)])
 
-    out = CommentAwareCodeGenerator(indent_size=2).generate(file_ast)
+    out = CodeGenerator(options=GeneratorOptions.comment_aware(indent_size=2)).generate(file_ast)
 
     assert (
         "  condition:\n" "    match 1 {\n" "      1 => true,\n" "      _ => false,\n" "    }\n"

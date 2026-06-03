@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import require_yara_file
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
-from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_formatting import validate_yara_file_collections
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.codegen.pretty_printer_helpers import (
     calculate_meta_alignment_column,
     calculate_string_alignment_column,
@@ -87,14 +88,16 @@ class PrettyPrintOptions:
     preserve_original_style: bool = False
 
 
-class PrettyPrinter(CommentAwareCodeGenerator):
+class PrettyPrinter(CodeGenerator):
     """Enhanced pretty printer with advanced formatting options."""
 
     def __init__(self, options: PrettyPrintOptions | None = None) -> None:
         pretty_options = options or PrettyPrintOptions()
         super().__init__(
-            indent_size=pretty_options.indent_size,
-            preserve_comments=pretty_options.preserve_comments,
+            options=GeneratorOptions.comment_aware(
+                indent_size=pretty_options.indent_size,
+                preserve_comments=pretty_options.preserve_comments,
+            )
         )
         # The pretty layout engine reads its rich config from ``self.options``;
         # set it after super().__init__ so it is not clobbered by the base.

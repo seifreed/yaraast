@@ -11,11 +11,12 @@ from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
-from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 
 
 def test_comment_aware_generator_comment_shapes_and_disable_flag() -> None:
-    gen = CommentAwareCodeGenerator()
+    gen = CodeGenerator(options=GeneratorOptions.comment_aware())
     gen._write_comment(Comment("// trimmed"))
     gen._write_comment(Comment("/* block */"), inline=True)
     gen._write_comment(Comment("line1\nline2"))
@@ -27,7 +28,7 @@ def test_comment_aware_generator_comment_shapes_and_disable_flag() -> None:
     assert "/*" in out and "* line1" in out and "* line2" in out
     assert "// g1" in out and "// g2" in out
 
-    disabled = CommentAwareCodeGenerator(preserve_comments=False)
+    disabled = CodeGenerator(options=GeneratorOptions.comment_aware(preserve_comments=False))
     disabled._write_comment(Comment("// no"))
     assert disabled.buffer.getvalue() == ""
 
@@ -82,7 +83,7 @@ def test_comment_aware_generator_full_file_paths() -> None:
     yara_file.leading_comments = [file_comment]
     yara_file.trailing_comment = tail_comment
 
-    out = CommentAwareCodeGenerator().generate(yara_file)
+    out = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(yara_file)
 
     assert "// file lead" in out and "// file tail" in out
     assert 'import "pe"  // import tail' in out
@@ -115,7 +116,7 @@ def test_comment_aware_generator_preserves_top_level_extensions() -> None:
         rules=[Rule(name="r", condition=Condition())],
     )
 
-    out = CommentAwareCodeGenerator().generate(yara_file)
+    out = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(yara_file)
 
     assert "// pragma lead" in out
     assert "#include_once" in out

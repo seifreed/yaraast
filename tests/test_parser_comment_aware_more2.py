@@ -7,7 +7,8 @@ import pytest
 from yaraast.ast.comments import CommentGroup
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.strings import RegexString
-from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
@@ -187,7 +188,7 @@ def test_comment_aware_parser_preserves_parameterized_string_modifiers() -> None
     assert string_modifiers["$b64"] == [("base64", alphabet)]
     assert string_modifiers["$b64w"] == [("base64wide", alphabet)]
 
-    generated = CommentAwareCodeGenerator().generate(ast)
+    generated = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
 
     assert "xor(1-2) private" in generated
     assert f'base64("{alphabet}")' in generated
@@ -318,7 +319,7 @@ def test_condition_trailing_comment_attaches_to_condition_not_file() -> None:
 def test_condition_trailing_comment_survives_generation_roundtrip() -> None:
     source = "rule A {\n    condition:\n        true // trailing cond comment\n}\n"
     ast = CommentAwareParser().parse(source)
-    output = CommentAwareCodeGenerator().generate(ast)
+    output = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
 
     condition_line = next(line for line in output.splitlines() if line.strip().startswith("true"))
     assert "// trailing cond comment" in condition_line
@@ -336,7 +337,7 @@ def test_comment_aware_generator_does_not_leak_indentation_between_rules() -> No
         "rule B {\n    condition:\n        false\n}\n"
     )
     ast = CommentAwareParser().parse(source)
-    output = CommentAwareCodeGenerator().generate(ast)
+    output = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
 
     lines = output.splitlines()
     closing_braces = [line for line in lines if line.strip() == "}"]
