@@ -19,7 +19,10 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
-from yaraast.metrics import string_diagrams_render as render
+from yaraast.metrics import (
+    string_diagram_primitives as primitives,
+    string_diagrams_render as render,
+)
 from yaraast.metrics.string_diagrams_render import StringDiagramRenderMixin
 
 helpers = importlib.import_module("yaraast.metrics.string_diagrams_helpers")
@@ -101,8 +104,7 @@ def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None
         HexJump(min_jump=2, max_jump=5),
         HexAlternative(alternatives=[0x01, 0x02]),
     ]
-    assert render.create_hex_diagram(jump_tokens) == "AA [0-0] [2-5] (01|02)"
-    assert helpers.create_hex_diagram(jump_tokens) == "AA [0-0] [2-5] (01|02)"
+    assert primitives.create_hex_diagram(jump_tokens) == "AA [0-0] [2-5] (01|02)"
 
     complex_tokens = [
         HexByte(value="af"),
@@ -118,25 +120,24 @@ def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None
         ),
     ]
     expected_complex = "AF ~4D ?B (41|??|C?|[0-5])"
-    assert render.create_hex_diagram(complex_tokens) == expected_complex
-    assert helpers.create_hex_diagram(complex_tokens) == expected_complex
+    assert primitives.create_hex_diagram(complex_tokens) == expected_complex
     assert expected_complex in _Renderer()._generate_hex_diagram(
         HexString(identifier="$complex", tokens=complex_tokens)
     )
 
-    groups_only = helpers.create_regex_diagram("(ab)")
+    groups_only = primitives.create_regex_diagram("(ab)")
     assert "Capture groups:" in groups_only
     assert "Quantifiers:" not in groups_only
     assert "Anchors:" not in groups_only
     assert "Character classes:" not in groups_only
 
-    quantifiers_only = helpers.create_regex_diagram("ab+")
+    quantifiers_only = primitives.create_regex_diagram("ab+")
     assert "Quantifiers:" in quantifiers_only
 
-    anchors_only = helpers.create_regex_diagram("^ab$")
+    anchors_only = primitives.create_regex_diagram("^ab$")
     assert "Anchors:" in anchors_only
 
-    classes_only = helpers.create_regex_diagram("[0-9]")
+    classes_only = primitives.create_regex_diagram("[0-9]")
     assert "Character classes:" in classes_only
 
     alphabet = "A" * 64
@@ -178,6 +179,4 @@ def test_hex_diagrams_reject_boolean_hex_values() -> None:
 
     for token in invalid_tokens:
         with pytest.raises(TypeError, match="boolean"):
-            render.create_hex_diagram([token])
-        with pytest.raises(TypeError, match="boolean"):
-            helpers.create_hex_diagram([token])
+            primitives.create_hex_diagram([token])

@@ -11,11 +11,13 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
-from yaraast.metrics.string_diagrams_render import (
-    StringDiagramRenderMixin,
+from yaraast.metrics.string_diagram_primitives import (
     analyze_string_patterns,
     create_hex_diagram,
     create_regex_diagram,
+)
+from yaraast.metrics.string_diagrams_render import (
+    StringDiagramRenderMixin,
     generate_pattern_report,
     generate_string_diagram,
 )

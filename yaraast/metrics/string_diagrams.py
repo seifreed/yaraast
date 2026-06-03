@@ -35,10 +35,12 @@ class StringDiagramGenerator(
         self._current_rule: str | None = None
 
 
-from .string_diagrams_helpers import (
+from .string_diagram_primitives import (
     analyze_string_patterns,
     create_hex_diagram,
     create_regex_diagram,
+)
+from .string_diagrams_helpers import (
     generate_pattern_report,
     generate_string_diagram,
 )
