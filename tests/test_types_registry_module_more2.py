@@ -11,7 +11,7 @@ import pytest
 
 from yaraast.types._registry_collections import ArrayType, DictionaryType, StructType
 from yaraast.types._registry_module import FunctionType, ModuleType, TypeSystem
-from yaraast.types._registry_primitives import BooleanType, IntegerType, StringType
+from yaraast.types._registry_primitives import IntegerType, StringType
 from yaraast.types.type_environment import TypeEnvironment
 
 ImportFunction = Callable[[str, Any, Any, Any, int], PythonModuleType]
@@ -29,7 +29,7 @@ def test_type_system_builtin_module_fallback_initializes_pe_and_math() -> None:
     assert pe is not None
     assert isinstance(pe.attributes["machine"], IntegerType)
     assert isinstance(pe.attributes["number_of_sections"], IntegerType)
-    assert isinstance(pe.attributes["is_pe"], BooleanType)
+    assert isinstance(pe.attributes["is_pe"], IntegerType)
     assert isinstance(pe.attributes["version_info"], DictionaryType)
     assert isinstance(pe.attributes["sections"], ArrayType)
 
@@ -43,8 +43,8 @@ def test_type_system_builtin_module_fallback_initializes_pe_and_math() -> None:
     assert len(pe.functions["section_index"].parameters) == 1
     assert len(pe.functions["imports"].parameters) == 3
     assert pe.functions["imports"].min_parameters == 1
-    assert isinstance(pe.functions["exports"].return_type, BooleanType)
-    assert isinstance(pe.functions["locale"].return_type, BooleanType)
+    assert isinstance(pe.functions["exports"].return_type, IntegerType)
+    assert isinstance(pe.functions["locale"].return_type, IntegerType)
     assert isinstance(pe.functions["rva_to_offset"].return_type, IntegerType)
 
     math = ts.get_module("math")

@@ -505,7 +505,7 @@ def test_expr_inference_accepts_known_optional_module_arguments() -> None:
 
     out = inf.infer(FunctionCall(function="pe.imports", arguments=[StringLiteral("kernel32.dll")]))
 
-    assert isinstance(out, BooleanType)
+    assert isinstance(out, IntegerType)
     assert inf.errors == []
 
 
@@ -519,7 +519,7 @@ def test_expr_inference_treats_pe_predicates_as_functions_not_attributes() -> No
     imports_attribute_out = inf.infer(MemberAccess(object=Identifier("pe"), member="imports"))
     exports_attribute_out = inf.infer(MemberAccess(object=Identifier("pe"), member="exports"))
 
-    assert isinstance(predicate_out, BooleanType)
+    assert isinstance(predicate_out, IntegerType)
     assert isinstance(predicate_attribute_out, UnknownType)
     assert isinstance(imports_attribute_out, UnknownType)
     assert isinstance(exports_attribute_out, UnknownType)

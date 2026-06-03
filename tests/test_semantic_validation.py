@@ -279,6 +279,8 @@ class TestFunctionCallValidator:
         assert result.errors == []
 
     def test_console_hex_rejects_non_integer_arguments(self) -> None:
+        # libyara declares console.hex as hex(i) or hex(s, i); a lone non-integer
+        # argument matches neither overload.
         bool_ast = Parser().parse('import "console" rule r { condition: console.hex(true) }')
         string_ast = Parser().parse('import "console" rule r { condition: console.hex("x") }')
 
@@ -286,9 +288,13 @@ class TestFunctionCallValidator:
         string_result = SemanticValidator().validate(string_ast)
 
         assert bool_result.is_valid is False
-        assert any("must be integer, got boolean" in e.message for e in bool_result.errors)
+        assert any(
+            "does not accept argument types (boolean)" in e.message for e in bool_result.errors
+        )
         assert string_result.is_valid is False
-        assert any("must be integer, got string" in e.message for e in string_result.errors)
+        assert any(
+            "does not accept argument types (string)" in e.message for e in string_result.errors
+        )
 
     def test_string_to_int_accepts_optional_integer_base(self) -> None:
         ast = Parser().parse("""

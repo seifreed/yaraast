@@ -1055,9 +1055,10 @@ class TestTypeSystem:
         assert "is_dll" in pe_module.functions
         assert "is_32bit" in pe_module.functions
         assert "is_64bit" in pe_module.functions
-        assert isinstance(pe_module.functions["is_dll"].return_type, BooleanType)
-        assert isinstance(pe_module.functions["is_32bit"].return_type, BooleanType)
-        assert isinstance(pe_module.functions["is_64bit"].return_type, BooleanType)
+        # libyara declares these predicates as integer-returning functions.
+        assert isinstance(pe_module.functions["is_dll"].return_type, IntegerType)
+        assert isinstance(pe_module.functions["is_32bit"].return_type, IntegerType)
+        assert isinstance(pe_module.functions["is_64bit"].return_type, IntegerType)
 
         # Check imphash function
         imphash_func = pe_module.functions["imphash"]

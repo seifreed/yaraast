@@ -403,6 +403,9 @@ def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
                         if actual_module == "pe" and func_name == "exports":
                             _validate_pe_exports_arguments(ctx, arguments)
                             return func_def.return_type
+                        if actual_module == "pe" and func_name == "exports_index":
+                            _validate_pe_exports_index_arguments(ctx, arguments)
+                            return func_def.return_type
                         if actual_module == "pe" and func_name == "section_index":
                             _validate_pe_section_index_arguments(ctx, arguments)
                             return func_def.return_type
@@ -418,6 +421,9 @@ def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
                             return func_def.return_type
                         if actual_module == "console" and func_name == "log":
                             _validate_console_log_arguments(ctx, arguments)
+                            return func_def.return_type
+                        if actual_module == "console" and func_name == "hex":
+                            _validate_console_hex_arguments(ctx, arguments)
                             return func_def.return_type
                         min_args = (
                             func_def.min_parameters
@@ -585,6 +591,25 @@ def _validate_console_log_arguments(ctx: Any, arguments: list[Any]) -> None:
         )
 
 
+def _validate_console_hex_arguments(ctx: Any, arguments: list[Any]) -> None:
+    arg_types = _argument_types(ctx, arguments)
+    if not 1 <= len(arg_types) <= 2:
+        ctx.errors.append(f"Function 'hex' expects 1 to 2 arguments, got {len(arg_types)}")
+        return
+    if not _all_known(arg_types):
+        return
+    valid = (len(arg_types) == 1 and isinstance(arg_types[0], IntegerType)) or (
+        len(arg_types) == 2
+        and isinstance(arg_types[0], StringType)
+        and isinstance(arg_types[1], IntegerType)
+    )
+    if not valid:
+        ctx.errors.append(
+            "Function 'hex' does not accept argument types "
+            f"({_format_argument_types(arg_types)})"
+        )
+
+
 def _validate_pe_exports_arguments(ctx: Any, arguments: list[Any]) -> None:
     arg_types = _argument_types(ctx, arguments)
     if len(arg_types) != 1:
@@ -593,6 +618,18 @@ def _validate_pe_exports_arguments(ctx: Any, arguments: list[Any]) -> None:
     if _all_known(arg_types) and not isinstance(arg_types[0], StringType | RegexType | IntegerType):
         ctx.errors.append(
             "Function 'exports' does not accept argument type "
+            f"({_format_argument_types(arg_types)})"
+        )
+
+
+def _validate_pe_exports_index_arguments(ctx: Any, arguments: list[Any]) -> None:
+    arg_types = _argument_types(ctx, arguments)
+    if len(arg_types) != 1:
+        ctx.errors.append(f"Function 'exports_index' expects 1 arguments, got {len(arg_types)}")
+        return
+    if _all_known(arg_types) and not isinstance(arg_types[0], StringType | RegexType | IntegerType):
+        ctx.errors.append(
+            "Function 'exports_index' does not accept argument type "
             f"({_format_argument_types(arg_types)})"
         )
 

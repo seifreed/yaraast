@@ -225,7 +225,6 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "number_of_delayed_imports": "i",
             "number_of_delayed_imported_functions": "i",
             "number_of_exports": "i",
-            "number_of_exported_functions": "i",
             "number_of_version_infos": "i",
             "linker_version": (
                 "struct",
@@ -314,25 +313,83 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
                     "clear_data": "s",
                     "key": "i",
                     "raw_data": "s",
+                    "version_data": "s",
                 },
             ),
             "version_info": ("dict", "s", "s"),
             "number_of_resources": "i",
             "resource_timestamp": "i",
             "number_of_signatures": "i",
+            "is_signed": "i",
+            "number_of_rva_and_sizes": "i",
+            "resource_version": (
+                "struct",
+                {"major": "i", "minor": "i"},
+            ),
+            "export_details": (
+                "array",
+                (
+                    "struct",
+                    {
+                        "offset": "i",
+                        "name": "s",
+                        "forward_name": "s",
+                        "ordinal": "i",
+                        "rva": "i",
+                    },
+                ),
+            ),
+            "import_details": (
+                "array",
+                (
+                    "struct",
+                    {
+                        "library_name": "s",
+                        "number_of_functions": "i",
+                        "functions": (
+                            "array",
+                            (
+                                "struct",
+                                {"name": "s", "ordinal": "i", "rva": "i"},
+                            ),
+                        ),
+                    },
+                ),
+            ),
+            "delayed_import_details": (
+                "array",
+                (
+                    "struct",
+                    {
+                        "library_name": "s",
+                        "number_of_functions": "i",
+                        "functions": (
+                            "array",
+                            (
+                                "struct",
+                                {"name": "s", "ordinal": "i", "rva": "i"},
+                            ),
+                        ),
+                    },
+                ),
+            ),
             "signatures": (
                 "array",
                 (
                     "struct",
                     {
+                        "thumbprint": "s",
                         "issuer": "s",
                         "subject": "s",
-                        "serial": "s",
-                        "thumbprint": "s",
                         "version": "i",
+                        "algorithm": "s",
+                        "algorithm_oid": "s",
+                        "serial": "s",
                         "not_before": "i",
                         "not_after": "i",
+                        "verified": "i",
                         "digest_alg": "s",
+                        "digest": "s",
                         "file_digest": "s",
                         "number_of_certificates": "i",
                         "certificates": (
@@ -340,27 +397,87 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
                             (
                                 "struct",
                                 {
+                                    "thumbprint": "s",
                                     "issuer": "s",
                                     "subject": "s",
-                                    "serial": "s",
-                                    "thumbprint": "s",
                                     "version": "i",
+                                    "algorithm": "s",
+                                    "algorithm_oid": "s",
+                                    "serial": "s",
                                     "not_before": "i",
                                     "not_after": "i",
+                                },
+                            ),
+                        ),
+                        "signer_info": (
+                            "struct",
+                            {
+                                "program_name": "s",
+                                "digest": "s",
+                                "digest_alg": "s",
+                                "length_of_chain": "i",
+                                "chain": (
+                                    "array",
+                                    (
+                                        "struct",
+                                        {
+                                            "thumbprint": "s",
+                                            "issuer": "s",
+                                            "subject": "s",
+                                            "version": "i",
+                                            "algorithm": "s",
+                                            "algorithm_oid": "s",
+                                            "serial": "s",
+                                            "not_before": "i",
+                                            "not_after": "i",
+                                        },
+                                    ),
+                                ),
+                            },
+                        ),
+                        "number_of_countersignatures": "i",
+                        "countersignatures": (
+                            "array",
+                            (
+                                "struct",
+                                {
+                                    "verified": "i",
+                                    "sign_time": "i",
+                                    "digest_alg": "s",
+                                    "digest": "s",
+                                    "length_of_chain": "i",
+                                    "chain": (
+                                        "array",
+                                        (
+                                            "struct",
+                                            {
+                                                "thumbprint": "s",
+                                                "issuer": "s",
+                                                "subject": "s",
+                                                "version": "i",
+                                                "algorithm": "s",
+                                                "algorithm_oid": "s",
+                                                "serial": "s",
+                                                "not_before": "i",
+                                                "not_after": "i",
+                                            },
+                                        ),
+                                    ),
                                 },
                             ),
                         ),
                     },
                 ),
             ),
-            "is_pe": "b",
+            "is_pe": "i",
         },
         "funcs": {
             "imphash": ("s", []),
             "section_index": ("i", [("name_or_offset", "scalar")]),
-            "exports": ("b", [("name_or_ordinal", "scalar")]),
+            "exports": ("i", [("name_or_ordinal", "scalar")]),
+            "exports_index": ("i", [("name_ordinal_or_regex", "scalar")]),
             "imports": (
-                "b",
+                "i",
                 [
                     ("dll_or_descriptor", "scalar"),
                     ("function_or_ordinal", "scalar"),
@@ -368,15 +485,18 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
                 ],
                 1,
             ),
-            "locale": ("b", [("locale", "i")]),
-            "language": ("b", [("lang", "i")]),
-            "is_dll": ("b", []),
-            "is_64bit": ("b", []),
-            "is_32bit": ("b", []),
+            "import_rva": ("i", [("dll", "s"), ("function_or_ordinal", "scalar")]),
+            "delayed_import_rva": ("i", [("dll", "s"), ("function_or_ordinal", "scalar")]),
+            "locale": ("i", [("locale", "i")]),
+            "language": ("i", [("lang", "i")]),
+            "is_dll": ("i", []),
+            "is_64bit": ("i", []),
+            "is_32bit": ("i", []),
             "calculate_checksum": ("i", []),
             "rva_to_offset": ("i", [("rva", "i")]),
             "rich_signature.version": ("i", [("toolid", "i"), ("version", "i")], 1),
             "rich_signature.toolid": ("i", [("toolid", "i"), ("version", "i")], 1),
+            "signatures.valid_on": ("i", [("timestamp", "i")]),
         },
     },
     "math": {
@@ -397,7 +517,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "count": ("i", [("byte", "i"), ("offset", "i"), ("size", "i")], 1),
             "percentage": ("d", [("byte", "i"), ("offset", "i"), ("size", "i")], 1),
             "mode": ("i", [("offset", "i"), ("size", "i")], 0),
-            "in_range": ("b", [("test", "d"), ("lower", "d"), ("upper", "d")]),
+            "in_range": ("i", [("test", "d"), ("lower", "d"), ("upper", "d")]),
         },
     },
     "elf": {
@@ -502,7 +622,6 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "ph_entry_size": "i",
             "number_of_sections": "i",
             "number_of_segments": "i",
-            "number_of_symbols": "i",
             "symtab_entries": "i",
             "dynsym_entries": "i",
             "dynamic_section_entries": "i",
@@ -575,6 +694,10 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
                 ),
             ),
         },
+        "funcs": {
+            "import_md5": ("s", []),
+            "telfhash": ("s", []),
+        },
     },
     "hash": {
         "funcs": {
@@ -600,14 +723,9 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "number_of_classes": "i",
             "number_of_field_offsets": "i",
             "number_of_constants": "i",
-            "number_of_memberrefs": "i",
             "field_offsets": ("array", "i"),
             "constants": ("array", "s"),
             "modulerefs": ("array", "s"),
-            "memberrefs": (
-                "array",
-                ("struct", {"name": "s"}),
-            ),
             "classes": (
                 "array",
                 (
@@ -714,8 +832,8 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
     "time": {"funcs": {"now": ("i", [])}},
     "console": {
         "funcs": {
-            "log": ("b", [("message", "scalar"), ("value", "scalar")], 1),
-            "hex": ("b", [("value", "i")]),
+            "log": ("i", [("message", "scalar"), ("value", "scalar")], 1),
+            "hex": ("i", [("message_or_value", "scalar"), ("value", "i")], 1),
         }
     },
     "string": {
@@ -732,17 +850,17 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "sync": ("struct", {}),
         },
         "funcs": {
-            "network.http_request": ("b", [("regexp", "r")]),
-            "network.http_get": ("b", [("regexp", "r")]),
-            "network.http_post": ("b", [("regexp", "r")]),
-            "network.http_user_agent": ("b", [("regexp", "r")]),
-            "network.dns_lookup": ("b", [("regexp", "r")]),
-            "network.host": ("b", [("regexp", "r")]),
-            "network.tcp": ("b", [("regexp", "r"), ("port", "i")]),
-            "network.udp": ("b", [("regexp", "r"), ("port", "i")]),
-            "registry.key_access": ("b", [("regexp", "r")]),
-            "filesystem.file_access": ("b", [("regexp", "r")]),
-            "sync.mutex": ("b", [("regexp", "r")]),
+            "network.http_request": ("i", [("regexp", "r")]),
+            "network.http_get": ("i", [("regexp", "r")]),
+            "network.http_post": ("i", [("regexp", "r")]),
+            "network.http_user_agent": ("i", [("regexp", "r")]),
+            "network.dns_lookup": ("i", [("regexp", "r")]),
+            "network.host": ("i", [("regexp", "r")]),
+            "network.tcp": ("i", [("regexp", "r"), ("port", "i")]),
+            "network.udp": ("i", [("regexp", "r"), ("port", "i")]),
+            "registry.key_access": ("i", [("regexp", "r")]),
+            "filesystem.file_access": ("i", [("regexp", "r")]),
+            "sync.mutex": ("i", [("regexp", "r")]),
         },
     },
     "vt": {"attrs": {"metadata": ("struct", {})}},
