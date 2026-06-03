@@ -11,21 +11,9 @@ from yaraast.cli.parse_reporting import (
     report_parsing_errors,
 )
 from yaraast.cli.parse_services import parse_content_by_dialect
-from yaraast.cli.utils import _require_file_path, read_text
+from yaraast.cli.utils import _validate_output_path, read_text
 
 console = Console()
-
-
-def _validate_output_path(output: str | None) -> str | None:
-    if output is None:
-        return None
-    try:
-        output_path = _require_file_path(output)
-    except (TypeError, ValueError) as exc:
-        raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
-    return output
 
 
 @click.command()

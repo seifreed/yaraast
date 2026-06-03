@@ -7,7 +7,7 @@ from typing import Any
 
 import click
 
-from yaraast.cli.utils import _require_file_path, format_json, read_text
+from yaraast.cli.utils import _validate_output_path, format_json, read_text
 from yaraast.cli.yaral_reporting import (
     display_generate_success,
     display_info,
@@ -48,18 +48,6 @@ def _format_yaral_code(code: str) -> str:
 def yaral():
     """YARA-L specific operations."""
     pass
-
-
-def _validate_output_path(output: str | None) -> str | None:
-    if output is None:
-        return None
-    try:
-        output_path = _require_file_path(output)
-    except (TypeError, ValueError) as exc:
-        raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
-    return output
 
 
 @yaral.command()

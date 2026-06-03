@@ -4,25 +4,13 @@ from __future__ import annotations
 
 import click
 
-from yaraast.cli.utils import _require_file_path, write_text
+from yaraast.cli.utils import _validate_output_path, write_text
 from yaraast.cli.workspace_reporting import print_include_tree
 from yaraast.cli.workspace_services import (
     analyze_workspace,
     format_workspace_graph,
     format_workspace_output,
 )
-
-
-def _validate_output_path(output: str | None) -> str | None:
-    if output is None:
-        return None
-    try:
-        output_path = _require_file_path(output)
-    except (TypeError, ValueError) as exc:
-        raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
-    return output
 
 
 @click.group()

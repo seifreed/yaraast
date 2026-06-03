@@ -22,7 +22,7 @@ from yaraast.cli.semantic_services import (
     _exit_with_appropriate_code,
     _process_file,
 )
-from yaraast.cli.utils import _require_file_path
+from yaraast.cli.utils import _validate_output_path
 
 
 @click.command()
@@ -115,15 +115,3 @@ def semantic(
         emit_json_results(all_results)
 
     _exit_with_appropriate_code(total_errors, total_warnings, strict)
-
-
-def _validate_output_path(output: str | None) -> str | None:
-    if output is None:
-        return None
-    try:
-        output_path = _require_file_path(output)
-    except (TypeError, ValueError) as exc:
-        raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
-    return output

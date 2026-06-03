@@ -27,25 +27,13 @@ from yaraast.cli.performance_services import (
     run_batch_processing,
     run_parallel_analysis,
 )
-from yaraast.cli.utils import _require_file_path, write_json
+from yaraast.cli.utils import _require_file_path, _validate_output_path, write_json
 from yaraast.performance import BatchProcessor, StreamingParser
 
 
 @click.group()
 def performance() -> None:
     """Performance tools for large YARA rule collections."""
-
-
-def _validate_output_path(output: str | None) -> str | None:
-    if output is None:
-        return None
-    try:
-        output_path = _require_file_path(output)
-    except (TypeError, ValueError) as exc:
-        raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
-    return output
 
 
 def _validate_output_dir_path(output_dir: str | None) -> str | None:

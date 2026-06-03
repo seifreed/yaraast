@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from yaraast.cli.utils import _require_file_path, read_text, write_text
+from yaraast.cli.utils import _validate_output_path, read_text, write_text
 from yaraast.cli.yarax_reporting import (
     display_compatibility_issues,
     display_feature_showcase,
@@ -28,18 +28,6 @@ from yaraast.cli.yarax_services import (
 def yarax():
     """YARA-X specific operations for next-gen YARA syntax."""
     pass
-
-
-def _validate_output_path(output: str | None) -> str | None:
-    if output is None:
-        return None
-    try:
-        output_path = _require_file_path(output)
-    except (TypeError, ValueError) as exc:
-        raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
-    return output
 
 
 @yarax.command()

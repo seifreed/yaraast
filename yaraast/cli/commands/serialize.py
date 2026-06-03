@@ -24,21 +24,9 @@ from yaraast.cli.serialize_reporting import (
     display_validation_result,
     write_diff_output,
 )
-from yaraast.cli.utils import _require_file_path
+from yaraast.cli.utils import _validate_output_path
 
 console = Console()
-
-
-def _validate_output_path(output: str | None) -> str | None:
-    if output is None:
-        return None
-    try:
-        output_path = _require_file_path(output)
-    except (TypeError, ValueError) as exc:
-        raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
-    return output
 
 
 @click.group()

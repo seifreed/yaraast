@@ -6,10 +6,29 @@ import json
 from os import PathLike, fspath
 from pathlib import Path
 
+import click
 from rich.console import Console
 from rich.markup import escape
 
 from yaraast.cli.parser_helpers import parse_yara_source
+
+
+def _validate_output_path(output: str | None) -> str | None:
+    """Validate an optional ``--output`` path, returning it unchanged.
+
+    Shared by the CLI commands that accept an optional output file and pass the
+    original string through; rejects directories and unusable paths with a
+    Click error.
+    """
+    if output is None:
+        return None
+    try:
+        output_path = _require_file_path(output)
+    except (TypeError, ValueError) as exc:
+        raise click.BadParameter(str(exc), param_hint="--output") from exc
+    if output_path.exists() and output_path.is_dir():
+        raise click.BadParameter("output path must not be a directory", param_hint="--output")
+    return output
 
 
 def _require_file_path(path: object) -> Path:
