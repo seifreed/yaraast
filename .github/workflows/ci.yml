@@ -94,3 +94,26 @@ jobs:
 
       - name: MyPy
         run: mypy yaraast/ --ignore-missing-imports
+
+  conformance:
+    name: Differential conformance gate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies with both reference engines
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,conformance]"
+
+      - name: Run differential conformance gate (libyara + YARA-X)
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: "1"
+        run: |
+          python -m pytest tests/test_conformance_differential.py -o "addopts=" --tb=short

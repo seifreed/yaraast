@@ -54,6 +54,10 @@ dev = [
 libyara = [
     "yara-python>=4.5.0",
 ]
+conformance = [
+    "yara-python>=4.5.0",
+    "yara-x>=1.0.0",
+]
 performance = [
     "psutil>=5.9.0",
 ]
