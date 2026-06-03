@@ -420,20 +420,17 @@ class ASTFormatter:
         return path
 
     def check_format(self, file_path: str | PathLike[str]) -> tuple[bool, list[str]]:
-        try:
-            input_file = _require_file_path(file_path, "file_path")
-            with input_file.open(encoding="utf-8") as f:
-                original = f.read()
-            formatted = self.pretty_printer.pretty_print(parse_yara_source_with_comments(original))
-            if original.strip() == formatted.strip():
-                return False, []
-            issues = []
-            for i, (orig, fmt) in enumerate(
-                zip(original.strip().split("\n"), formatted.strip().split("\n"), strict=False),
-                1,
-            ):
-                if orig != fmt:
-                    issues.append(f"Line {i}: formatting issue")
-            return len(issues) > 0, issues
-        except (TypeError, ValueError, YaraASTError, OSError) as exc:
-            return False, [f"Check error: {exc}"]
+        input_file = _require_file_path(file_path, "file_path")
+        with input_file.open(encoding="utf-8") as f:
+            original = f.read()
+        formatted = self.pretty_printer.pretty_print(parse_yara_source_with_comments(original))
+        if original.strip() == formatted.strip():
+            return False, []
+        issues = []
+        for i, (orig, fmt) in enumerate(
+            zip(original.strip().split("\n"), formatted.strip().split("\n"), strict=False),
+            1,
+        ):
+            if orig != fmt:
+                issues.append(f"Line {i}: formatting issue")
+        return len(issues) > 0, issues

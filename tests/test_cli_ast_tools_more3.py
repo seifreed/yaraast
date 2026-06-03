@@ -101,9 +101,8 @@ def test_ast_formatter_output_and_errors(tmp_path: Path) -> None:
     assert "Formatting error:" in err
 
     missing = tmp_path / "missing.yar"
-    needs_fmt, issues = formatter.check_format(missing)
-    assert needs_fmt is False
-    assert issues and issues[0].startswith("Check error:")
+    with pytest.raises(OSError):
+        formatter.check_format(missing)
 
 
 @pytest.mark.parametrize("output_path", ["", "   ", "\t"])
@@ -152,10 +151,8 @@ def test_ast_formatter_rejects_invalid_input_path_types(input_path: Any) -> None
 
 @pytest.mark.parametrize("file_path", ["", "   ", "\t"])
 def test_ast_formatter_check_format_rejects_empty_file_path(file_path: str) -> None:
-    needs_format, issues = ASTFormatter().check_format(file_path)
-
-    assert needs_format is False
-    assert issues == ["Check error: file_path must not be empty"]
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        ASTFormatter().check_format(file_path)
 
 
 def test_ast_formatter_rejects_directory_output_path(tmp_path: Path) -> None:

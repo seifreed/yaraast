@@ -47,6 +47,18 @@ rule ok {
     )
 
 
+def test_fmt_cmd_check_fails_on_unparseable_file(tmp_path: Path) -> None:
+    runner = CliRunner()
+    invalid = tmp_path / "invalid.yar"
+    _write(invalid, "rule broken { strings: $a =")
+
+    result = runner.invoke(fmt, [str(invalid), "--check"])
+
+    assert result.exit_code != 0
+    assert "already formatted" not in result.output
+    assert "Error" in result.output or "Expected" in result.output
+
+
 def test_fmt_cmd_diff_and_format_fail_on_invalid_input(tmp_path: Path) -> None:
     runner = CliRunner()
     invalid = tmp_path / "invalid.yar"
