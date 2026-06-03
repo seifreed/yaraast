@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from os import PathLike, fspath
+from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.libyara._availability import is_missing_yara_import
+from yaraast.libyara._paths import require_file_path
 
 try:
     import yara
@@ -66,20 +67,6 @@ def normalize_libyara_includes(includes: dict[str, str] | None) -> dict[str, str
             raise TypeError(msg)
         normalized[name] = content
     return normalized
-
-
-def _require_file_path(filepath: object, name: str) -> Path:
-    if isinstance(filepath, bool | bytes) or not isinstance(filepath, str | PathLike):
-        msg = f"{name} must be a string or path-like object"
-        raise TypeError(msg)
-    raw_path = fspath(filepath)
-    if not isinstance(raw_path, str):
-        msg = f"{name} must be a string or path-like object"
-        raise TypeError(msg)
-    if not raw_path.strip():
-        msg = f"{name} must not be empty"
-        raise ValueError(msg)
-    return Path(raw_path)
 
 
 @dataclass
@@ -272,7 +259,7 @@ class LibyaraCompiler:
 
         """
         try:
-            filepath = _require_file_path(filepath, "filepath")
+            filepath = require_file_path(filepath, "filepath")
         except (TypeError, ValueError) as exc:
             return CompilationResult(success=False, errors=[str(exc)])
 

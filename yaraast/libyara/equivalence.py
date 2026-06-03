@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from os import PathLike, fspath
-from pathlib import Path
+from os import PathLike
 from typing import TYPE_CHECKING
 
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.libyara._paths import require_file_path
 from yaraast.libyara.compatibility import libyara_compatibility_error
 from yaraast.parser.parser import Parser
 from yaraast.parser.source import parse_yara_source
@@ -17,20 +17,6 @@ from .scanner import LibyaraScanner, ScanResult
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
-
-
-def _require_file_path(filepath: object, name: str) -> Path:
-    if isinstance(filepath, bool | bytes) or not isinstance(filepath, str | PathLike):
-        msg = f"{name} must be a string or path-like object"
-        raise TypeError(msg)
-    raw_path = fspath(filepath)
-    if not isinstance(raw_path, str):
-        msg = f"{name} must be a string or path-like object"
-        raise TypeError(msg)
-    if not raw_path.strip():
-        msg = f"{name} must not be empty"
-        raise ValueError(msg)
-    return Path(raw_path)
 
 
 @dataclass
@@ -254,7 +240,7 @@ class EquivalenceTester:
 
         """
         try:
-            path = _require_file_path(filepath, "filepath")
+            path = require_file_path(filepath, "filepath")
             with path.open(encoding="utf-8") as f:
                 original_code = f.read()
 

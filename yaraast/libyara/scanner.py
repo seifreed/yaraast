@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from os import PathLike, fspath
-from pathlib import Path
+from os import PathLike
 import time
 from typing import Any
 
 from yaraast.libyara._availability import is_missing_yara_import
+from yaraast.libyara._paths import require_file_path
 
 try:
     import yara
@@ -74,20 +74,6 @@ class ScanResult:
     def matched_rules(self) -> list[str]:
         """Get list of matched rule names."""
         return [m.rule for m in self.matches]
-
-
-def _require_file_path(filepath: object, name: str) -> Path:
-    if isinstance(filepath, bool | bytes) or not isinstance(filepath, str | PathLike):
-        msg = f"{name} must be a string or path-like object"
-        raise TypeError(msg)
-    raw_path = fspath(filepath)
-    if not isinstance(raw_path, str):
-        msg = f"{name} must be a string or path-like object"
-        raise TypeError(msg)
-    if not raw_path.strip():
-        msg = f"{name} must not be empty"
-        raise ValueError(msg)
-    return Path(raw_path)
 
 
 class LibyaraScanner:
@@ -178,7 +164,7 @@ class LibyaraScanner:
 
         """
         try:
-            filepath = _require_file_path(filepath, "filepath")
+            filepath = require_file_path(filepath, "filepath")
         except (TypeError, ValueError) as exc:
             return ScanResult(success=False, errors=[str(exc)])
 
