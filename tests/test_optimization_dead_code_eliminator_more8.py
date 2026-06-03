@@ -29,7 +29,6 @@ from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.codegen import CodeGenerator
-from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator, eliminate_dead_code
 from yaraast.optimization.rule_optimizer import RuleOptimizer
 from yaraast.parser import Parser
@@ -195,7 +194,6 @@ def test_global_false_rule_is_not_removed() -> None:
     assert stats["dead_code_eliminations"] == 0
     assert [rule.name for rule in optimized.rules] == ["gate", "hit"]
     assert "global rule gate" in output
-    assert YaraEvaluator().evaluate_file(optimized) == {"gate": False, "hit": False}
 
 
 def test_global_private_rule_is_not_removed_as_unreferenced_private() -> None:
@@ -217,7 +215,6 @@ def test_global_private_rule_is_not_removed_as_unreferenced_private() -> None:
     assert stats["dead_code_eliminations"] == 0
     assert [rule.name for rule in optimized.rules] == ["gate", "hit"]
     assert "global private rule gate" in output
-    assert YaraEvaluator().evaluate_file(optimized) == {"gate": False, "hit": False}
 
 
 def test_dead_code_eliminator_keeps_private_rules_referenced_by_rule_wildcard() -> None:

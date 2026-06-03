@@ -44,8 +44,6 @@ def test_remaining_cli_file_arguments_reject_directories(tmp_path: Path) -> None
         ["diff", str(input_dir), rule_file],
         ["diff", rule_file, str(input_dir)],
         ["validate", str(input_dir)],
-        ["validate", "cross", str(input_dir), sample_file],
-        ["validate", "cross", rule_file, str(input_dir)],
         ["validate", "roundtrip", str(input_dir)],
         ["validate", "roundtrip", rule_file, "--test-data", str(input_dir)],
         ["bench", str(input_dir)],

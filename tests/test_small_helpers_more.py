@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import struct
-
 import pytest
 
 from yaraast.ast.modifiers import StringModifier
@@ -13,22 +11,6 @@ from yaraast.codegen.generator_helpers import (
     format_modifiers,
 )
 from yaraast.dialects import YaraDialect, detect_dialect
-from yaraast.evaluation.evaluation_helpers import (
-    BUILTIN_READERS,
-    LITTLE_ENDIAN_ALIASES,
-    YARA_UNDEFINED,
-    _read_int8,
-    _read_int16,
-    _read_int16_be,
-    _read_int32,
-    _read_int32_be,
-    _read_uint8,
-    _read_uint16,
-    _read_uint16_be,
-    _read_uint32,
-    _read_uint32_be,
-    read_struct,
-)
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.lexer_helpers import (
     _skip_block_comment,
@@ -113,31 +95,6 @@ def test_lexer_helpers_skip_whitespace_comments_and_line_continuation() -> None:
     unterminated: Lexer[object] = Lexer("/* unterminated")
     _skip_block_comment(unterminated)
     assert unterminated.position == len(unterminated.text)  # Consumes entire unterminated comment
-
-
-def test_evaluation_helpers_read_struct_and_builtin_readers() -> None:
-    data = bytes([0x7F]) + struct.pack("<H", 0x1234) + struct.pack("<I", 0x12345678)
-    data += struct.pack("b", -2) + struct.pack("<h", -1234) + struct.pack("<i", -56789)
-    data += struct.pack(">H", 0xBEEF) + struct.pack(">I", 0xA1B2C3D4)
-    data += struct.pack(">h", -2222) + struct.pack(">i", -333333)
-
-    assert read_struct(data, "B", -1, 1) is YARA_UNDEFINED
-    assert read_struct(data, "I", len(data), 4) is YARA_UNDEFINED
-
-    assert _read_uint8(data, 0) == 0x7F
-    assert _read_uint16(data, 1) == 0x1234
-    assert _read_uint32(data, 3) == 0x12345678
-    assert _read_int8(data, 7) == -2
-    assert _read_int16(data, 8) == -1234
-    assert _read_int32(data, 10) == -56789
-    assert _read_uint16_be(data, 14) == 0xBEEF
-    assert _read_uint32_be(data, 16) == 0xA1B2C3D4
-    assert _read_int16_be(data, 20) == -2222
-    assert _read_int32_be(data, 22) == -333333
-
-    assert BUILTIN_READERS["uint16"](data, 1) == 0x1234
-    assert BUILTIN_READERS[LITTLE_ENDIAN_ALIASES["uint16le"]](data, 1) == 0x1234
-    assert LITTLE_ENDIAN_ALIASES["int32le"] == "int32"
 
 
 def test_generator_helpers_escape_integer_and_modifiers() -> None:

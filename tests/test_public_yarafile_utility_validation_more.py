@@ -9,7 +9,6 @@ import pytest
 
 from yaraast.cli.serialize_services import build_ast_info
 from yaraast.codegen.pretty_printer import pretty_print
-from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.metrics.dependency_graph_utils import analyze_dependencies, build_dependency_graph
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator, eliminate_dead_code
 from yaraast.shared.ast_analysis import ASTFormatter
@@ -18,7 +17,6 @@ from yaraast.shared.ast_analysis import ASTFormatter
 @pytest.mark.parametrize(
     "function",
     [
-        YaraEvaluator().evaluate_file,
         ASTFormatter().format_ast,
         pretty_print,
         build_ast_info,

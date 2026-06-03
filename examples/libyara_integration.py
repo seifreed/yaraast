@@ -1,7 +1,6 @@
 """Example of using libyara integration for cross-validation."""
 
 from yaraast.libyara import YARA_AVAILABLE, EquivalenceTester, LibyaraCompiler, LibyaraScanner
-from yaraast.libyara.cross_validator import CrossValidator
 from yaraast.parser import Parser
 
 
@@ -111,57 +110,6 @@ def example_scanning() -> None:
             print("No match")
 
 
-def example_cross_validation() -> None:
-    """Example: Cross-validate between yaraast and libyara."""
-    print("\n=== Cross-Validation Example ===\n")
-
-    if not YARA_AVAILABLE:
-        return
-
-    # Complex rule to validate
-    rule_text = """
-    rule validate_example {
-        strings:
-            $str1 = "test"
-            $str2 = "example" nocase
-            $hex = { 41 42 43 ?? 45 }
-
-        condition:
-            #str1 > 1 and
-            $str2 and
-            $hex and
-            @str1[1] > @str1[0] and
-            filesize > 50
-    }
-    """
-
-    parser = Parser()
-    ast = parser.parse(rule_text)
-
-    # Test data
-    test_data = b"test example TEST ABC?E more test data to increase filesize beyond 50 bytes"
-
-    # Cross-validate
-    validator = CrossValidator()
-    result = validator.validate(ast, test_data)
-
-    print(f"Validation result: {'PASSED' if result.valid else 'FAILED'}")
-    print(f"Rules tested: {result.rules_tested}")
-    print(f"Match agreement: {result.match_rate:.1f}%")
-
-    print("\nResults comparison:")
-    for rule_name in result.yaraast_results:
-        yaraast = result.yaraast_results[rule_name]
-        libyara = result.libyara_results[rule_name]
-        match = "✓" if yaraast == libyara else "✗"
-        print(f"  {match} {rule_name}: yaraast={yaraast}, libyara={libyara}")
-
-    print("\nPerformance:")
-    print(f"  YaraAST: {result.yaraast_time * 1000:.1f}ms")
-    print(f"  LibYARA compile: {result.libyara_compile_time * 1000:.1f}ms")
-    print(f"  LibYARA scan: {result.libyara_scan_time * 1000:.1f}ms")
-
-
 def example_round_trip() -> None:
     """Example: Test AST round-trip equivalence."""
     print("\n=== Round-Trip Equivalence Test ===\n")
@@ -212,5 +160,4 @@ def example_round_trip() -> None:
 if __name__ == "__main__":
     example_compilation()
     example_scanning()
-    example_cross_validation()
     example_round_trip()

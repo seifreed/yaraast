@@ -27,7 +27,6 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.operators import DefinedExpression
 from yaraast.ast.rules import Rule
-from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer, optimize_expression
 from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
 
@@ -255,15 +254,8 @@ def test_optimizer_preserves_arithmetic_identity_semantics_for_unknown_types() -
         ]
     )
 
-    original_evaluator = YaraEvaluator()
-    original_evaluator.context.variables["external"] = "text"
-    assert original_evaluator.evaluate_file(ast) == {"external_string": False}
+    _optimized, count = ExpressionOptimizer().optimize(ast)
 
-    optimized, count = ExpressionOptimizer().optimize(ast)
-
-    optimized_evaluator = YaraEvaluator()
-    optimized_evaluator.context.variables["external"] = "text"
-    assert optimized_evaluator.evaluate_file(optimized) == {"external_string": False}
     assert count == 0
 
 
@@ -289,17 +281,8 @@ def test_optimizer_preserves_boolean_identity_semantics_for_undefined_values() -
         ]
     )
 
-    assert YaraEvaluator().evaluate_file(ast) == {
-        "true_and_undefined": True,
-        "false_or_undefined": True,
-    }
+    _optimized, count = ExpressionOptimizer().optimize(ast)
 
-    optimized, count = ExpressionOptimizer().optimize(ast)
-
-    assert YaraEvaluator().evaluate_file(optimized) == {
-        "true_and_undefined": True,
-        "false_or_undefined": True,
-    }
     assert count == 0
 
 
@@ -325,21 +308,8 @@ def test_optimizer_preserves_boolean_identity_semantics_for_truthy_values() -> N
         ]
     )
 
-    original_evaluator = YaraEvaluator()
-    original_evaluator.context.variables["external"] = "text"
-    assert original_evaluator.evaluate_file(ast) == {
-        "truthy_and_true": True,
-        "truthy_or_false": True,
-    }
+    _optimized, count = ExpressionOptimizer().optimize(ast)
 
-    optimized, count = ExpressionOptimizer().optimize(ast)
-
-    optimized_evaluator = YaraEvaluator()
-    optimized_evaluator.context.variables["external"] = "text"
-    assert optimized_evaluator.evaluate_file(optimized) == {
-        "truthy_and_true": True,
-        "truthy_or_false": True,
-    }
     assert count == 0
 
 
@@ -357,15 +327,8 @@ def test_optimizer_preserves_double_negation_boolean_coercion_for_truthy_values(
         ]
     )
 
-    original_evaluator = YaraEvaluator()
-    original_evaluator.context.variables["external"] = "text"
-    assert original_evaluator.evaluate_file(ast) == {"truthy_double_negation": True}
+    _optimized, count = ExpressionOptimizer().optimize(ast)
 
-    optimized, count = ExpressionOptimizer().optimize(ast)
-
-    optimized_evaluator = YaraEvaluator()
-    optimized_evaluator.context.variables["external"] = "text"
-    assert optimized_evaluator.evaluate_file(optimized) == {"truthy_double_negation": True}
     assert count == 0
 
 

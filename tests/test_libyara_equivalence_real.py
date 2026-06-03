@@ -88,12 +88,6 @@ def test_equivalence_result_recording_helpers() -> None:
     assert scan_result.scan_equivalent is False
     assert scan_result.scan_differences == ["scan"]
 
-    eval_result = EquivalenceResult(equivalent=True)
-    tester._record_eval_differences(eval_result, ["eval"])
-    assert eval_result.equivalent is False
-    assert eval_result.eval_equivalent is False
-    assert eval_result.eval_differences == ["eval"]
-
 
 def test_generate_regenerated_code_helper_records_failure() -> None:
     tester = _tester_without_libyara_init()
@@ -169,7 +163,7 @@ def test_compare_scans_reports_one_sided_differences() -> None:
     assert any("only in regenerated" in d for d in only_regenerated)
 
 
-def test_compare_scan_and_evaluation_differences_are_stably_sorted() -> None:
+def test_compare_scan_differences_are_stably_sorted() -> None:
     tester = _tester_without_libyara_init()
 
     scan_diffs = tester._compare_scans(
@@ -184,32 +178,6 @@ def test_compare_scan_and_evaluation_differences_are_stably_sorted() -> None:
         ScanResult(success=True, matches=[]),
     )
     assert scan_diffs == ["Rules matched only in original: ['a_rule', 'm_rule', 'z_rule']"]
-
-    original = Parser().parse("""
-rule z_rule { condition: true }
-rule a_rule { condition: true }
-rule m_rule { condition: true }
-""")
-    regenerated = Parser().parse("rule other_rule { condition: true }")
-
-    eval_diffs = tester._compare_evaluation(original, regenerated, b"sample")
-
-    assert eval_diffs == [
-        "Rule a_rule missing in regenerated evaluation",
-        "Rule m_rule missing in regenerated evaluation",
-        "Rule other_rule missing in original evaluation",
-        "Rule z_rule missing in regenerated evaluation",
-    ]
-
-
-def test_compare_evaluation_captures_real_failure() -> None:
-    tester = _tester_without_libyara_init()
-    ast = Parser().parse("rule ok { condition: true }")
-
-    diffs = tester._compare_evaluation(ast, cast(Any, None), b"data")
-
-    assert len(diffs) == 1
-    assert diffs[0].startswith("Evaluation comparison failed:")
 
 
 def test_file_round_trip_missing_file_returns_error_result() -> None:
@@ -299,21 +267,6 @@ def test_round_trip_handles_invalid_rule_name_codegen_failure() -> None:
     assert any("Code generation failed" in d for d in result.ast_differences)
 
 
-def test_compare_evaluation_reports_missing_and_different_rules() -> None:
-    tester = _tester_without_libyara_init()
-
-    only_a = Parser().parse("rule same { condition: true }")
-    only_b = Parser().parse("rule other { condition: true }")
-    missing_diffs = tester._compare_evaluation(only_a, only_b, b"sample")
-    assert any("missing in original evaluation" in d for d in missing_diffs)
-    assert any("missing in regenerated evaluation" in d for d in missing_diffs)
-
-    true_rule = Parser().parse("rule same { condition: true }")
-    false_rule = Parser().parse("rule same { condition: false }")
-    value_diffs = tester._compare_evaluation(true_rule, false_rule, b"sample")
-    assert any("evaluation differs" in d for d in value_diffs)
-
-
 @pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
 def test_round_trip_records_real_compilation_errors() -> None:
     tester = EquivalenceTester()
@@ -349,7 +302,7 @@ def test_round_trip_with_real_libyara_compilation_and_scanning() -> None:
     not (COMPILER_AVAILABLE and SCANNER_AVAILABLE),
     reason="yara-python not available",
 )
-def test_round_trip_records_real_evaluation_difference_for_for_of_them() -> None:
+def test_round_trip_equivalent_for_for_of_them() -> None:
     ast = Parser().parse(
         """
         rule r {
@@ -365,22 +318,20 @@ def test_round_trip_records_real_evaluation_difference_for_for_of_them() -> None
 
     result = tester.test_round_trip(ast, test_data=b"a")
 
-    # With the evaluator now handling for..of..them correctly, roundtrip is equivalent
     assert result.equivalent is True
-    assert result.eval_equivalent is True
+    assert result.scan_equivalent is True
 
 
 @pytest.mark.skipif(
     not (COMPILER_AVAILABLE and SCANNER_AVAILABLE),
     reason="yara-python not available",
 )
-def test_file_round_trip_records_real_evaluation_difference_from_example_file() -> None:
+def test_file_round_trip_equivalent_from_example_file() -> None:
     tester = EquivalenceTester()
     result = tester.test_file_round_trip(
         "examples/multi-file/common/strings.yar",
         test_data=b"CreateRemoteThread powershell -enc",
     )
 
-    # Roundtrip should be equivalent — evaluator handles all patterns correctly
     assert result.equivalent is True
-    assert result.eval_equivalent is True
+    assert result.scan_equivalent is True

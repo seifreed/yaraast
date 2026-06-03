@@ -42,37 +42,6 @@ def test_validate_group_resolve_command_empty_args() -> None:
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python is not installed")
-def test_validate_cross_handles_rule_parse_and_test_file_read_errors(tmp_path: Path) -> None:
-    runner = CliRunner()
-    invalid_rule = tmp_path / "invalid_rule.yar"
-    valid_rule = tmp_path / "valid_rule.yar"
-    sample_file = tmp_path / "sample.bin"
-    data_dir = tmp_path / "data_dir"
-
-    _write(invalid_rule, "rule broken { condition: }")
-    _write(
-        valid_rule,
-        """
-rule ok {
-    condition:
-        true
-}
-""",
-    )
-    sample_file.write_bytes(b"sample")
-    data_dir.mkdir()
-
-    parse_error = runner.invoke(validate, ["cross", str(invalid_rule), str(sample_file)])
-    assert parse_error.exit_code != 0
-    assert "Error parsing rules" in parse_error.output
-
-    read_error = runner.invoke(validate, ["cross", str(valid_rule), str(data_dir)])
-    assert read_error.exit_code == 2
-    assert "is a directory" in read_error.output
-    assert "Error reading test file" not in read_error.output
-
-
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python is not installed")
 def test_validate_roundtrip_handles_test_data_read_error(tmp_path: Path) -> None:
     runner = CliRunner()
     rule = tmp_path / "rule.yar"

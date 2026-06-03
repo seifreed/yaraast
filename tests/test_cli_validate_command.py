@@ -6,7 +6,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from yaraast.cli.commands.validate import _parse_externals, validate
+from yaraast.cli.commands.validate import validate
 
 
 def _sample_rule() -> str:
@@ -27,8 +27,3 @@ def test_validate_default_file(tmp_path: Path) -> None:
 
     result = runner.invoke(validate, [str(yara_path)])
     assert result.exit_code == 0
-
-
-def test_parse_externals() -> None:
-    externals = _parse_externals(("foo=1", "bar=baz"))
-    assert externals == {"foo": "1", "bar": "baz"}

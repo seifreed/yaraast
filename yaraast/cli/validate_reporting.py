@@ -19,38 +19,6 @@ def display_rule_file_invalid(error: Exception) -> None:
     click.echo(f"Invalid YARA file: {error}", err=True)
 
 
-def display_external_parse_error(error: ValueError) -> None:
-    click.echo(str(error), err=True)
-    click.echo("Use format: key=value", err=True)
-
-
-def display_cross_results(result: Any, verbose: bool) -> None:
-    if result.valid:
-        click.echo(click.style("✓ Validation PASSED", fg="green", bold=True))
-    else:
-        click.echo(click.style("✗ Validation FAILED", fg="red", bold=True))
-
-    click.echo(f"\nRules tested: {result.rules_tested}")
-    click.echo(f"Rules matched: {result.rules_matched} ({result.match_rate:.1f}%)")
-
-    if verbose or not result.valid:
-        if result.rules_differ:
-            click.echo("\nDifferences found:")
-            for diff in result.rules_differ:
-                click.echo(f"  - {diff}")
-
-        if result.errors:
-            click.echo("\nErrors:")
-            for error in result.errors:
-                click.echo(f"  - {error}")
-
-        click.echo("\nPerformance:")
-        click.echo(f"  YaraAST evaluation: {result.yaraast_time:.3f}s")
-        click.echo(f"  LibYARA compilation: {result.libyara_compile_time:.3f}s")
-        click.echo(f"  LibYARA scanning: {result.libyara_scan_time:.3f}s")
-        click.echo(f"  Total time: {result.total_time:.3f}s")
-
-
 def display_roundtrip_summary(result: Any) -> Callable[[bool], str]:
     if result.equivalent:
         click.echo(click.style("✓ Round-trip PASSED", fg="green", bold=True))
@@ -99,11 +67,9 @@ def display_roundtrip_details(
 ) -> None:
     if data:
         click.echo(f"{status_fn(result.scan_equivalent)} Scan results match")
-        click.echo(f"{status_fn(result.eval_equivalent)} Evaluation results match")
 
     if verbose or not result.equivalent:
         display_differences("AST differences", result.ast_differences)
         display_differences("Compilation errors", result.compilation_errors)
         display_differences("Scan differences", result.scan_differences)
-        display_differences("Evaluation differences", result.eval_differences)
         display_code_comparison(result, verbose)

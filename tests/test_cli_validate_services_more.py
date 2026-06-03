@@ -76,17 +76,6 @@ def test_yarax_check_rejects_invalid_strict_types(strict: Any) -> None:
         vs.yarax_check(ast, strict=cast(bool, strict))
 
 
-@pytest.mark.parametrize("external", [None, "name=value", (123,), object()])
-def test_parse_externals_rejects_invalid_input_types(external: Any) -> None:
-    with pytest.raises(TypeError, match="external variables must be a tuple or list of strings"):
-        vs.parse_externals(external)
-
-
-def test_parse_externals_accepts_tuple_and_list_inputs() -> None:
-    assert vs.parse_externals(("name=value",)) == {"name": "value"}
-    assert vs.parse_externals(["name=value"]) == {"name": "value"}
-
-
 def test_validate_rule_file_parses_yarax(tmp_path: Path) -> None:
     rule_path = tmp_path / "sample.yar"
     rule_path.write_text(

@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from yaraast.codegen.generator import CodeGenerator
-from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.libyara.compatibility import libyara_compatibility_error
 from yaraast.parser.parser import Parser
 from yaraast.parser.source import parse_yara_source
@@ -58,10 +57,6 @@ class EquivalenceResult:
     # Scanning results
     scan_equivalent: bool = True
     scan_differences: list[str] = field(default_factory=list)
-
-    # Evaluation results
-    eval_equivalent: bool = True
-    eval_differences: list[str] = field(default_factory=list)
 
 
 class EquivalenceTester:
@@ -139,17 +134,6 @@ class EquivalenceTester:
         result.scan_equivalent = False
         result.scan_differences.extend(differences)
 
-    @staticmethod
-    def _record_eval_differences(
-        result: EquivalenceResult,
-        differences: list[str],
-    ) -> None:
-        if not differences:
-            return
-        result.equivalent = False
-        result.eval_equivalent = False
-        result.eval_differences.extend(differences)
-
     def _generate_regenerated_code(
         self,
         reparsed_ast: YaraFile,
@@ -220,13 +204,11 @@ class EquivalenceTester:
         ast_diffs = self._compare_ast(original_ast, reparsed_ast)
         self._record_ast_differences(result, ast_diffs)
 
-        # Step 6-8: Compile, scan, and evaluate
+        # Step 6-7: Compile and scan
         self._compile_and_compare(
             result,
             original_code,
             regenerated_code,
-            original_ast,
-            reparsed_ast,
             test_data,
         )
         return result
@@ -236,11 +218,9 @@ class EquivalenceTester:
         result: EquivalenceResult,
         original_code: str,
         regenerated_code: str,
-        original_ast: YaraFile,
-        reparsed_ast: YaraFile,
         test_data: bytes | None,
     ) -> None:
-        """Compile both versions, scan test data, and compare evaluation results."""
+        """Compile both versions and compare scan results on test data."""
         orig_comp = self.compiler.compile_source(original_code)
         result.original_compiles = orig_comp.success
         if not orig_comp.success:
@@ -257,9 +237,6 @@ class EquivalenceTester:
             orig_scan = self.scanner.scan_data(orig_comp.compiled_rules, test_data)
             regen_scan = self.scanner.scan_data(regen_comp.compiled_rules, test_data)
             self._record_scan_differences(result, self._compare_scans(orig_scan, regen_scan))
-            self._record_eval_differences(
-                result, self._compare_evaluation(original_ast, reparsed_ast, test_data)
-            )
 
     def test_file_round_trip(
         self,
@@ -379,43 +356,5 @@ class EquivalenceTester:
                 differences.append(f"Rules matched only in original: {only_in_1}")
             if only_in_2:
                 differences.append(f"Rules matched only in regenerated: {only_in_2}")
-
-        return differences
-
-    def _compare_evaluation(
-        self,
-        ast1: YaraFile,
-        ast2: YaraFile,
-        test_data: bytes,
-    ) -> list[str]:
-        """Compare evaluation results."""
-        differences = []
-
-        try:
-            # Evaluate both ASTs
-            eval1 = YaraEvaluator(test_data)
-            results1 = eval1.evaluate_file(ast1)
-
-            eval2 = YaraEvaluator(test_data)
-            results2 = eval2.evaluate_file(ast2)
-
-            # Compare results
-            for rule_name in sorted(set(results1.keys()) | set(results2.keys())):
-                if rule_name not in results1:
-                    differences.append(
-                        f"Rule {rule_name} missing in original evaluation",
-                    )
-                elif rule_name not in results2:
-                    differences.append(
-                        f"Rule {rule_name} missing in regenerated evaluation",
-                    )
-                elif results1[rule_name] != results2[rule_name]:
-                    differences.append(
-                        f"Rule {rule_name} evaluation differs: "
-                        f"{results1[rule_name]} vs {results2[rule_name]}",
-                    )
-
-        except Exception as e:
-            differences.append(f"Evaluation comparison failed: {e!s}")
 
         return differences

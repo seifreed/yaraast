@@ -1,24 +1,18 @@
-"""CLI command for cross-validation with libyara."""
+"""CLI command for YARA rule validation and libyara round-trip testing."""
 
 from __future__ import annotations
 
-from pathlib import Path
 import sys
 
 import click
 
-from yaraast.cli.utils import parse_yara_file
 from yaraast.cli.validate_reporting import (
-    display_cross_results,
-    display_external_parse_error,
     display_roundtrip_details,
     display_roundtrip_summary,
     display_rule_file_invalid,
     display_rule_file_valid,
 )
 from yaraast.cli.validate_services import (
-    cross_validate_rules,
-    parse_externals,
     read_test_data,
     roundtrip_test,
     validate_rule_file,
@@ -43,7 +37,7 @@ class ValidateGroup(click.Group):
 
 @click.group(cls=ValidateGroup)
 def validate() -> None:
-    """Cross-validation commands."""
+    """YARA rule validation commands."""
 
 
 def _validate_rule_file(rule_file: str) -> int:
@@ -65,60 +59,6 @@ def _validate_file(rule_file: str) -> None:
     code = _validate_rule_file(rule_file)
     if code != 0:
         raise SystemExit(code)
-
-
-def _parse_externals(external: tuple[str, ...]) -> dict[str, str]:
-    """Parse external variables from command line."""
-    try:
-        return parse_externals(external)
-    except (ValueError, ValidationError) as exc:
-        display_external_parse_error(exc)
-        sys.exit(1)
-
-
-@validate.command()
-@click.argument("rule_file", type=click.Path(exists=True, dir_okay=False))
-@click.argument("test_file", type=click.Path(exists=True, dir_okay=False))
-@click.option("-e", "--external", multiple=True, help="External variables (key=value)")
-@click.option("-v", "--verbose", is_flag=True, help="Show detailed results")
-def cross(rule_file: str, test_file: str, external: tuple, verbose: bool) -> None:
-    """Cross-validate YARA rules between yaraast and libyara.
-
-    Example:
-        yaraast validate cross rules.yar malware.bin
-        yaraast validate cross rules.yar sample.exe -e filename=sample.exe
-
-    """
-    # Parse externals
-    externals = _parse_externals(external)
-
-    if not YARA_AVAILABLE:
-        click.echo("Error: yara-python is not installed.", err=True)
-        click.echo("Install it with: pip install yara-python", err=True)
-        sys.exit(1)
-
-    # Parse rules
-    try:
-        parse_yara_file(rule_file)
-    except Exception as e:
-        click.echo(f"Error parsing rules: {e}", err=True)
-        sys.exit(1)
-
-    # Read test data
-    try:
-        with Path(test_file).open("rb") as f:
-            test_data = f.read()
-    except Exception as e:
-        click.echo(f"Error reading test file: {e}", err=True)
-        sys.exit(1)
-
-    # Validate
-    result = cross_validate_rules(rule_file, test_data, externals)
-
-    # Display results
-    display_cross_results(result, verbose)
-
-    sys.exit(0 if result.valid else 1)
 
 
 @validate.command()

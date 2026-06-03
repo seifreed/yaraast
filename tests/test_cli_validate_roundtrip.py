@@ -13,7 +13,7 @@ from yaraast.libyara import YARA_AVAILABLE
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
-def test_validate_cross_and_roundtrip(tmp_path: Path) -> None:
+def test_validate_roundtrip(tmp_path: Path) -> None:
     rule_text = """
 rule test_rule {
     strings:
@@ -31,13 +31,6 @@ rule test_rule {
 
     runner = CliRunner()
     try:
-        cross_result = runner.invoke(
-            cli,
-            ["validate", "cross", str(rule_path), str(data_path)],
-        )
-        assert cross_result.exit_code == 0
-        assert "Validation PASSED" in cross_result.output
-
         roundtrip_result = runner.invoke(
             cli,
             ["validate", "roundtrip", str(rule_path), "-d", str(data_path)],

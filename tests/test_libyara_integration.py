@@ -18,7 +18,6 @@ if YARA_AVAILABLE:
         LibyaraScanner,
         OptimizedMatcher,
     )
-    from yaraast.libyara.cross_validator import CrossValidator
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
@@ -318,87 +317,3 @@ class TestEquivalenceTester:
 
         # AST should be equivalent
         assert result.ast_equivalent is True
-
-
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
-class TestCrossValidator:
-    """Test cross-validation between yaraast and libyara."""
-
-    def test_simple_validation(self) -> None:
-        """Test simple rule validation."""
-        rule_text = """
-        rule test_rule {
-            strings:
-                $a = "hello"
-            condition:
-                $a
-        }
-        """
-
-        parser = Parser()
-        ast = parser.parse(rule_text)
-
-        validator = CrossValidator()
-
-        # Test matching data
-        result = validator.validate(ast, b"hello world")
-
-        assert result.valid is True
-        assert result.rules_tested == 1
-        assert result.rules_matched == 1
-        assert result.yaraast_results["test_rule"] is True
-        assert result.libyara_results["test_rule"] is True
-
-    def test_validation_mismatch(self) -> None:
-        """Test when yaraast and libyara disagree."""
-        # This is a synthetic test - in practice they should agree
-        # We'll test with a complex condition to ensure both work
-        rule_text = """
-        rule test_complex {
-            strings:
-                $a = "test"
-                $b = { 41 42 43 }
-            condition:
-                #a > 1 or $b at 0
-        }
-        """
-
-        parser = Parser()
-        ast = parser.parse(rule_text)
-
-        validator = CrossValidator()
-
-        # Test with data containing multiple "test"
-        result = validator.validate(ast, b"test this test ABC")
-
-        assert result.valid is True
-        assert result.yaraast_results["test_complex"] is True
-        assert result.libyara_results["test_complex"] is True
-
-    def test_batch_validation(self) -> None:
-        """Test batch validation."""
-        rule_text = """
-        rule test_rule {
-            strings:
-                $a = "mal"
-            condition:
-                $a
-        }
-        """
-
-        parser = Parser()
-        ast = parser.parse(rule_text)
-
-        validator = CrossValidator()
-
-        test_samples = [b"malware", b"good file", b"malicious", b"benign"]
-
-        results = validator.validate_batch(ast, test_samples)
-
-        assert len(results) == 4
-        assert results[0].valid is True  # "malware" matches
-        assert results[0].yaraast_results["test_rule"] is True
-        assert results[1].valid is True  # "good file" doesn't match
-        assert results[1].yaraast_results["test_rule"] is False
-        assert results[2].valid is True  # "malicious" matches
-        assert results[2].yaraast_results["test_rule"] is True
