@@ -73,9 +73,15 @@ def create_rule_from_body(
     rule.location = Location(
         line=start_line + 1, column=name_column, end_line=end_line + 1, end_column=len(end_text) + 1
     )
+    parser._condition_parsed = False
     section = None
     for offset, body_line in enumerate(body_lines, start=1):
         section = parse_body_line(parser, rule, body_line, section, start_line + offset)
+    if not parser._condition_parsed:
+        # The rule body had no condition expression, so the placeholder
+        # condition above stands in for it. Record the error instead of
+        # silently emitting an always-true rule, which would change semantics.
+        parser._add_error(f'rule "{name}" has no condition', start_line, 0)
     return rule
 
 
@@ -91,6 +97,7 @@ def parse_body_line(
         condition_text = stripped[10:].strip()
         if condition_text:
             rule.condition = parse_condition(parser, condition_text, line_num, body_line)
+            parser._condition_parsed = True
         return "condition"
     if not stripped or stripped.startswith("}"):
         return current_section
@@ -111,6 +118,7 @@ def parse_section_content(
             rule.strings.append(string_def)
     elif section == "condition":
         rule.condition = parse_condition(parser, line, line_num, raw_line)
+        parser._condition_parsed = True
 
 
 def parse_meta_line(

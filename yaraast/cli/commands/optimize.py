@@ -66,7 +66,15 @@ def optimize(input_file: Path, output_file: str, dry_run: bool, analyze: bool) -
         # Parse the YARA file
         with console.status("[cyan]Parsing YARA file..."):
             content = input_file.read_text(encoding="utf-8")
-            ast, _, _ = parse_yara_with_tolerance(content)
+            ast, _, parse_errors = parse_yara_with_tolerance(content)
+
+        if parse_errors:
+            console.print(
+                f"[yellow]⚠ Recovered from {len(parse_errors)} parse issue(s); "
+                "the optimized rules may not faithfully represent the input.[/yellow]"
+            )
+            for error in parse_errors[:5]:
+                console.print(f"[yellow]  • {error.message}[/yellow]")
 
         # Analyze performance before optimization
         if analyze:

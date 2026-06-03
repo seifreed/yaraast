@@ -73,3 +73,31 @@ def test_error_tolerant_parser_propagates_internal_parser_errors(
 
     with pytest.raises(AttributeError, match="broken parser internals"):
         ErrorTolerantParser().parse("rule r { condition: true }")
+
+
+def test_error_tolerant_parser_reports_missing_condition() -> None:
+    # An empty condition section is a syntax error in real YARA. The recovery
+    # path substitutes a placeholder condition, but it must record an error
+    # rather than silently returning an always-true rule with no errors.
+    code = dedent("""
+        rule no_condition {
+            strings:
+                $a = "abc"
+            condition:
+        }
+        """)
+    result = ErrorTolerantParser().parse(code)
+    assert any("no condition" in error.message for error in result.errors)
+
+
+def test_error_tolerant_parser_does_not_report_missing_condition_when_present() -> None:
+    code = dedent("""
+        rule has_condition {
+            strings:
+                $a = "abc"
+            condition:
+                $a
+        }
+        """)
+    result = ErrorTolerantParser().parse(code)
+    assert not any("no condition" in error.message for error in result.errors)
