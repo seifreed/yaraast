@@ -154,7 +154,19 @@ def _render_string_set_item(gen: Any, item: Any) -> str:
     return validate_string_set_item_text(item)
 
 
-def _render_quantifier(gen: Any, quantifier: Any, *, allow_percentage: bool = False) -> str:
+def _render_quantifier(
+    gen: Any,
+    quantifier: Any,
+    *,
+    allow_percentage: bool = False,
+    context: str = "quantifier",
+) -> str:
+    """Render an of/for quantifier.
+
+    ``allow_percentage`` enables percentage quantifiers (``of`` only; ``for``
+    loops reject them). ``context`` labels error messages ("quantifier" vs
+    "for quantifier").
+    """
     from yaraast.ast.expressions import (
         BooleanLiteral,
         DoubleLiteral,
@@ -164,46 +176,62 @@ def _render_quantifier(gen: Any, quantifier: Any, *, allow_percentage: bool = Fa
     )
 
     if isinstance(quantifier, bool):
-        msg = f"Invalid quantifier '{quantifier}' for libyara output"
+        msg = f"Invalid {context} '{quantifier}' for libyara output"
         raise ValueError(msg)
     if isinstance(quantifier, int):
         if quantifier < 0:
-            msg = f"Invalid quantifier '{quantifier}' for libyara output"
+            msg = f"Invalid {context} '{quantifier}' for libyara output"
             raise ValueError(msg)
         return str(quantifier)
     if isinstance(quantifier, str):
-        return _validate_quantifier_text(quantifier, allow_percentage=allow_percentage)
-    if isinstance(quantifier, float) and allow_percentage:
-        return _format_fractional_percentage_quantifier(quantifier)
+        return _validate_quantifier_text(
+            quantifier, allow_percentage=allow_percentage, context=context
+        )
+    if isinstance(quantifier, float):
+        if allow_percentage:
+            return _format_fractional_percentage_quantifier(quantifier)
+        msg = f"Invalid {context} '{quantifier}' for libyara output"
+        raise ValueError(msg)
     if isinstance(quantifier, IntegerLiteral):
         value = quantifier.value
         if isinstance(value, bool) or not isinstance(value, int):
-            msg = f"Invalid quantifier '{value}' for libyara output"
+            msg = f"Invalid {context} '{value}' for libyara output"
             raise ValueError(msg)
-        return _validate_quantifier_text(str(value), allow_percentage=allow_percentage)
+        return _validate_quantifier_text(
+            str(value), allow_percentage=allow_percentage, context=context
+        )
     if isinstance(quantifier, BooleanLiteral):
-        msg = f"Invalid quantifier '{gen.visit(quantifier)}' for libyara output"
+        msg = f"Invalid {context} '{gen.visit(quantifier)}' for libyara output"
         raise ValueError(msg)
     if isinstance(quantifier, StringLiteral):
-        return _validate_quantifier_text(quantifier.value, allow_percentage=allow_percentage)
-    if isinstance(quantifier, DoubleLiteral) and allow_percentage:
-        return _format_fractional_percentage_quantifier(quantifier.value)
+        return _validate_quantifier_text(
+            quantifier.value, allow_percentage=allow_percentage, context=context
+        )
+    if isinstance(quantifier, DoubleLiteral):
+        if allow_percentage:
+            return _format_fractional_percentage_quantifier(quantifier.value)
+        msg = f"Invalid {context} '{gen.visit(quantifier)}' for libyara output"
+        raise ValueError(msg)
     if isinstance(quantifier, Identifier):
         # filesize and entrypoint are reserved words that libyara nonetheless
-        # accepts as integer of-quantifiers; the strict identifier validator
-        # would reject them, so emit those directly. Other identifiers still go
-        # through validation, which rejects non-count keywords such as true.
+        # accepts as integer quantifiers; the strict identifier validator would
+        # reject them, so emit those directly. Other identifiers still go through
+        # validation, which rejects non-count keywords such as true.
         if quantifier.name in {"filesize", "entrypoint"}:
             return quantifier.name
-        return _validate_quantifier_text(quantifier.name, allow_percentage=allow_percentage)
-    # Any remaining quantifier is a primary expression libyara accepts as an
-    # of-count (e.g. uint8(0), pe.number_of_sections); render it directly.
+        return _validate_quantifier_text(
+            quantifier.name, allow_percentage=allow_percentage, context=context
+        )
+    # Any remaining quantifier is a primary expression libyara accepts as a
+    # count (e.g. uint8(0), pe.number_of_sections); render it directly.
     return cast(str, gen.visit(quantifier))
 
 
-def _validate_quantifier_text(text: str, *, allow_percentage: bool) -> str:
+def _validate_quantifier_text(
+    text: str, *, allow_percentage: bool, context: str = "quantifier"
+) -> str:
     if not isinstance(text, str):
-        msg = f"Invalid quantifier '{text}' for libyara output"
+        msg = f"Invalid {context} '{text}' for libyara output"
         raise ValueError(msg)
     if text in {"all", "any", "none"}:
         return text
@@ -211,19 +239,19 @@ def _validate_quantifier_text(text: str, *, allow_percentage: bool) -> str:
     integer = _INTEGER_QUANTIFIER_RE.fullmatch(text)
     if integer is not None:
         if int(text) < 0:
-            msg = f"Invalid quantifier '{text}' for libyara output"
+            msg = f"Invalid {context} '{text}' for libyara output"
             raise ValueError(msg)
         return text
 
     percentage = _PERCENTAGE_QUANTIFIER_RE.fullmatch(text)
     if percentage is not None:
         if not allow_percentage:
-            msg = f"Invalid quantifier '{text}' for libyara output"
+            msg = f"Invalid {context} '{text}' for libyara output"
             raise ValueError(msg)
         _validate_percentage_quantifier(int(percentage.group(1)), text)
         return text
 
-    return validate_yara_identifier(text, "quantifier")
+    return validate_yara_identifier(text, context)
 
 
 def _format_fractional_percentage_quantifier(value: float) -> str:
