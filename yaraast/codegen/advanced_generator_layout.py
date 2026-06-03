@@ -9,6 +9,7 @@ from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
     _visit_binary_operand,
+    require_present_expression,
     validate_expression_collection,
     validate_function_call_arguments,
     validate_set_expression_elements,
@@ -251,20 +252,27 @@ class _AdvancedConditionGenerator(CodeGenerator):
         return f"{node.identifier} = {self.visit(node.value)}"
 
     def visit_array_comprehension(self, node: Any) -> str:
-        result = (
-            f"[{self.visit(node.expression)} for {node.variable} " f"in {self.visit(node.iterable)}"
-        )
+        expression = require_present_expression(node.expression, "ArrayComprehension expression")
+        iterable = require_present_expression(node.iterable, "ArrayComprehension iterable")
+        result = f"[{self.visit(expression)} for {node.variable} " f"in {self.visit(iterable)}"
         if node.condition is not None:
             result += f" if {self.visit(node.condition)}"
         return f"{result}]"
 
     def visit_dict_comprehension(self, node: Any) -> str:
+        key_expression = require_present_expression(
+            node.key_expression, "DictComprehension key_expression"
+        )
+        value_expression = require_present_expression(
+            node.value_expression, "DictComprehension value_expression"
+        )
+        iterable = require_present_expression(node.iterable, "DictComprehension iterable")
         variables = node.key_variable
         if node.value_variable:
             variables = f"{variables}, {node.value_variable}"
         result = (
-            f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
-            f"for {variables} in {self.visit(node.iterable)}"
+            f"{{{self.visit(key_expression)}: {self.visit(value_expression)} "
+            f"for {variables} in {self.visit(iterable)}"
         )
         if node.condition is not None:
             result += f" if {self.visit(node.condition)}"

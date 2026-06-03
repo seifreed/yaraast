@@ -120,6 +120,13 @@ def validate_expression_collection(value: Any, field_name: str) -> None:
     raise TypeError(msg)
 
 
+def require_present_expression(value: Any, field_name: str) -> Any:
+    if value is None:
+        msg = f"{field_name} is required for libyara output"
+        raise ValueError(msg)
+    return value
+
+
 def visit_range_expression(generator: Any, node: Any) -> str:
     return f"{generator.visit(node.low)}..{generator.visit(node.high)}"
 
