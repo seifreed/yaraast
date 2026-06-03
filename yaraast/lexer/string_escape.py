@@ -17,6 +17,7 @@ class EscapeResult:
     chars: list[str]  # Characters to append to the string value
     advance_count: int  # Extra positions to advance (beyond the escape char itself)
     ends_string: bool  # Whether this escape ends the string (malformed ending)
+    raw_bytes: bytes  # The exact bytes libyara matches for this escape
 
 
 class StringEscapeHandler:
@@ -48,19 +49,19 @@ class StringEscapeHandler:
             EscapeResult with the characters to append and advance count.
         """
         if next_char == "\\":
-            return EscapeResult(chars=["\\"], advance_count=0, ends_string=False)
+            return EscapeResult(chars=["\\"], advance_count=0, ends_string=False, raw_bytes=b"\\")
 
         if next_char == '"':
             return self._handle_escaped_quote()
 
         if next_char == "n":
-            return EscapeResult(chars=["\n"], advance_count=0, ends_string=False)
+            return EscapeResult(chars=["\n"], advance_count=0, ends_string=False, raw_bytes=b"\n")
 
         if next_char == "r":
-            return EscapeResult(chars=["\r"], advance_count=0, ends_string=False)
+            return EscapeResult(chars=["\r"], advance_count=0, ends_string=False, raw_bytes=b"\r")
 
         if next_char == "t":
-            return EscapeResult(chars=["\t"], advance_count=0, ends_string=False)
+            return EscapeResult(chars=["\t"], advance_count=0, ends_string=False, raw_bytes=b"\t")
 
         if next_char == "x":
             return self._handle_hex_escape()
@@ -74,7 +75,7 @@ class StringEscapeHandler:
 
     def _handle_escaped_quote(self) -> EscapeResult:
         """Handle escaped quote sequence."""
-        return EscapeResult(chars=['"'], advance_count=0, ends_string=False)
+        return EscapeResult(chars=['"'], advance_count=0, ends_string=False, raw_bytes=b'"')
 
     def _handle_hex_escape(self) -> EscapeResult:
         """Handle hex escape sequence \\xHH.
@@ -87,10 +88,12 @@ class StringEscapeHandler:
         if hex_start + 2 <= len(self._text):
             hex_digits = self._text[hex_start : hex_start + 2]
             if all(c in "0123456789abcdefABCDEF" for c in hex_digits):
+                byte_value = int(hex_digits, 16)
                 return EscapeResult(
-                    chars=[chr(int(hex_digits, 16))],
+                    chars=[chr(byte_value)],
                     advance_count=2,  # Skip both hex digits
                     ends_string=False,
+                    raw_bytes=bytes([byte_value]),
                 )
 
         msg = "Invalid hex escape sequence"

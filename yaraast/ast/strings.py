@@ -36,12 +36,19 @@ class PlainString(StringDefinition):
     """Plain text string definition."""
 
     value: str | bytes = ""
+    # Exact bytes libyara matches, preserved by the lexer so high-byte escapes
+    # (\xHH, 0x80-0xFF) survive a parse -> generate round trip. None when the
+    # node was built outside the lexer (e.g. programmatically).
+    raw_bytes: bytes | None = None
 
     def validate_structure(self) -> None:
         """Validate plain string scalar fields before direct analysis."""
         super().validate_structure()
         if not isinstance(self.value, str | bytes):
             msg = "Plain string value must be a string or bytes"
+            raise TypeError(msg)
+        if self.raw_bytes is not None and not isinstance(self.raw_bytes, bytes):
+            msg = "Plain string raw_bytes must be bytes or None"
             raise TypeError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:

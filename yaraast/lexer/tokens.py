@@ -115,3 +115,4 @@ class Token:
     line: int
     column: int
     length: int = 1
+    raw_bytes: bytes | None = None  # exact matched bytes for text STRING tokens

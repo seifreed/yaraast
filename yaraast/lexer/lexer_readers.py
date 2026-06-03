@@ -18,6 +18,7 @@ def read_string(lexer: LexerLike) -> Token:
     start_column = lexer.column
     start_position = lexer.position
     value_chars: list[str] = []
+    raw_bytes = bytearray()
     lexer._advance()
     char = lexer._current_char()
     while char is not None and char != '"':
@@ -31,12 +32,14 @@ def read_string(lexer: LexerLike) -> Token:
             except ValueError as e:
                 raise LexerError(str(e), lexer.line, lexer.column) from e
             value_chars.extend(result.chars)
+            raw_bytes.extend(result.raw_bytes)
             for _ in range(result.advance_count):
                 lexer._advance()
             if result.ends_string:
                 break
         else:
             value_chars.append(char)
+            raw_bytes.extend(char.encode("utf-8"))
         lexer._advance()
         char = lexer._current_char()
     if char is None:
@@ -48,6 +51,7 @@ def read_string(lexer: LexerLike) -> Token:
         start_line,
         start_column,
         lexer.position - start_position,
+        raw_bytes=bytes(raw_bytes),
     )
 
 

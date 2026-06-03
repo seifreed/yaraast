@@ -219,7 +219,7 @@ class CodeGenerator(ASTVisitor[str]):
         """
         self._write(format_modifiers(modifiers, self.visit))
 
-    def _escape_plain_string_value(self, value: str) -> str:
+    def _escape_plain_string_value(self, value: str | bytes) -> str:
         """Expose plain-string escaping for extracted rendering helpers."""
         return escape_plain_string_value(value)
 

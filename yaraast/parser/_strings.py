@@ -76,13 +76,19 @@ class StringParsingMixin:
 
             # Parse string value
             if self._match(TokenType.STRING):
-                value = self._previous().value
+                string_token = self._previous()
+                value = string_token.value
                 if value == "":
                     msg = f'empty string "{identifier}"'
                     raise ParserError(msg, self._previous())
                 modifiers = self._parse_string_modifiers()
                 string_def = self._set_node_location_from_tokens(
-                    PlainString(identifier=identifier, value=value, modifiers=modifiers),
+                    PlainString(
+                        identifier=identifier,
+                        value=value,
+                        raw_bytes=string_token.raw_bytes,
+                        modifiers=modifiers,
+                    ),
                     start_token,
                     self._previous(),
                 )

@@ -26,6 +26,7 @@ from yaraast.codegen.generator_helpers import (
     format_modifiers,
     format_regex_modifiers,
     output_string_identifier,
+    plain_string_render_source,
     validate_hex_alternative_token,
     validate_hex_string_tokens,
     validate_string_identifiers,
@@ -104,7 +105,7 @@ def _coerce_hex_alternative_branch(alternative: Any) -> list[HexToken | int | st
 
 
 def format_plain_string(node: PlainString, quote: str, padding: int) -> str:
-    escaped_value = escape_plain_string_value(node.value)
+    escaped_value = escape_plain_string_value(plain_string_render_source(node))
     identifier = output_string_identifier(node)
     if padding > 0:
         return f"{identifier}{' ' * padding} = {quote}{escaped_value}{quote}"

@@ -98,6 +98,20 @@ def escape_plain_string_value(value: str | bytes) -> str:
     )
 
 
+def plain_string_render_source(node: Any) -> str | bytes:
+    """Return the faithful escape source for a plain string.
+
+    The lexer records the exact matched bytes in ``raw_bytes`` so high-byte
+    escapes (\\xHH, 0x80-0xFF) round-trip without being re-encoded as UTF-8;
+    fall back to the decoded ``value`` for programmatically built nodes.
+    """
+    raw_bytes = getattr(node, "raw_bytes", None)
+    if isinstance(raw_bytes, bytes):
+        return raw_bytes
+    value: str | bytes = node.value
+    return value
+
+
 def escape_regex_delimiter(pattern: str) -> str:
     """Escape unescaped '/' characters without double-escaping existing escapes."""
     if not isinstance(pattern, str):
