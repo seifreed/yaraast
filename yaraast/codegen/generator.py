@@ -117,14 +117,6 @@ from yaraast.codegen.generator_leaf_visitors import (
     visit_string_operator_expression as render_string_operator_expression,
     visit_string_wildcard as render_string_wildcard,
 )
-from yaraast.codegen.generator_sections import (
-    write_condition_section,
-    write_hex_string,
-    write_meta_section,
-    write_plain_string,
-    write_regex_string,
-    write_strings_section,
-)
 from yaraast.codegen.generator_structure_visitors import (
     visit_import as render_import,
     visit_include as render_include,
@@ -185,6 +177,7 @@ class CodeGenerator(ASTVisitor[str]):
         """Generate code for the given AST node."""
         self.buffer = StringIO()
         self.indent_level = 0
+        self._layout.prepare(self, node)
         result = self.visit(node)
         if result:
             return result
@@ -193,6 +186,15 @@ class CodeGenerator(ASTVisitor[str]):
     def _write(self, text: str) -> None:
         """Write text to buffer."""
         self.buffer.write(text)
+
+    def _get_indent(self) -> str:
+        """Indentation prefix for the current depth (layout-aware)."""
+        return self._layout.indent_string(self)
+
+    def _write_blank_lines(self, count: int) -> None:
+        """Write ``count`` blank lines."""
+        for _ in range(count):
+            self.buffer.write("\n")
 
     def _writeline(self, text: str = "") -> None:
         """Write line with proper indentation."""
@@ -328,7 +330,7 @@ class CodeGenerator(ASTVisitor[str]):
         meta: object,
     ) -> None:
         """Write meta section if present."""
-        write_meta_section(self, meta)
+        self._layout.write_meta_section(self, meta)
 
     def _write_meta_dict(self, meta: dict[str, Any]) -> None:
         """Write meta entries from dictionary."""
@@ -349,14 +351,14 @@ class CodeGenerator(ASTVisitor[str]):
         self,
         strings: list[Any] | tuple[Any, ...],
         *,
-        has_condition: bool,
+        has_condition: bool = False,
     ) -> None:
         """Write strings section if present."""
-        write_strings_section(self, strings, has_condition=has_condition)
+        self._layout.write_strings_section(self, strings, has_condition=has_condition)
 
     def _write_condition_section(self, condition: Any) -> None:
         """Write condition section if present."""
-        write_condition_section(self, condition)
+        self._layout.write_condition_section(self, condition)
 
     def visit_tag(self, node: Tag) -> str:
         """Generate code for Tag."""
@@ -368,15 +370,15 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_plain_string(self, node: PlainString) -> str:
         """Generate code for PlainString."""
-        return write_plain_string(self, node)
+        return self._layout.plain_string(self, node)
 
     def visit_hex_string(self, node: HexString) -> str:
         """Generate code for HexString."""
-        return write_hex_string(self, node)
+        return self._layout.hex_string(self, node)
 
     def visit_regex_string(self, node: RegexString) -> str:
         """Generate code for RegexString."""
-        return write_regex_string(self, node)
+        return self._layout.regex_string(self, node)
 
     def visit_string_modifier(self, node: StringModifier) -> str:
         """Generate code for StringModifier."""

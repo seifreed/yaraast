@@ -50,7 +50,7 @@ def get_max_key_length(meta_list: list[Any]) -> int:
 def write_meta_key(gen: Any, meta: Any, max_key_len: int) -> None:
     """Write a formatted meta key."""
     key = format_meta_key(meta.key, getattr(meta, "scope", None))
-    if gen.config.string_style == StringStyle.TABULAR:
+    if gen._layout.config.string_style == StringStyle.TABULAR:
         gen._write(gen._get_indent())
         gen._write(key.ljust(max_key_len))
         gen._write(" = ")
@@ -75,7 +75,7 @@ def render_advanced_plain_string(gen: Any, node: Any) -> str:
     validate_plain_string_modifiers(node.modifiers)
     escaped = escape_plain_string_value(node.value)
     identifier = output_string_identifier(node)
-    if gen.config.string_style == StringStyle.COMPACT:
+    if gen._layout.config.string_style == StringStyle.COMPACT:
         gen._write(f'{identifier}="{escaped}"')
     else:
         gen._write(f'{identifier} = "{escaped}"')
@@ -86,9 +86,9 @@ def render_advanced_plain_string(gen: Any, node: Any) -> str:
 def render_advanced_hex_string(gen: Any, node: Any) -> str:
     """Render a hex string in advanced generator styles."""
     validate_hex_string_modifiers(node.modifiers)
-    hex_str = gen._format_hex_string(node)
+    hex_str = gen._layout.format_hex_string(node)
     identifier = output_string_identifier(node)
-    if gen.config.string_style == StringStyle.COMPACT:
+    if gen._layout.config.string_style == StringStyle.COMPACT:
         gen._write(f"{identifier}={hex_str}")
     else:
         gen._write(f"{identifier} = {hex_str}")
@@ -101,7 +101,7 @@ def render_advanced_regex_string(gen: Any, node: Any) -> str:
     validate_regex_string_modifiers(node.modifiers)
     regex = escape_regex_delimiter(node.regex)
     identifier = output_string_identifier(node)
-    if gen.config.string_style == StringStyle.COMPACT:
+    if gen._layout.config.string_style == StringStyle.COMPACT:
         gen._write(f"{identifier}=/{regex}/")
     else:
         gen._write(f"{identifier} = /{regex}/")

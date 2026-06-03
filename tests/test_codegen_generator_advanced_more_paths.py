@@ -293,7 +293,6 @@ def test_advanced_generator_direct_remaining_branches() -> None:
     adv.buffer.seek(0)
     adv.buffer.truncate(0)
     assert adv._get_max_key_length([]) == 0
-    adv._string_definitions = []
     adv._write_aligned_strings()
     assert adv.buffer.getvalue() == ""
 

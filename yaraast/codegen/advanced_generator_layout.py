@@ -40,7 +40,7 @@ def _emit_top_level_section(generator: Any, nodes: list[Any] | tuple[Any, ...]) 
         return
     for node in nodes:
         _emit_top_level_line(generator, node)
-    generator._write_blank_lines(generator.config.blank_lines_between_sections)
+    generator._write_blank_lines(generator._layout.config.blank_lines_between_sections)
 
 
 def visit_yara_file(generator: Any, node: Any) -> str:
@@ -51,7 +51,7 @@ def visit_yara_file(generator: Any, node: Any) -> str:
 
     imports = (
         sorted(node.imports, key=lambda item: item.module)
-        if generator.config.sort_imports
+        if generator._layout.config.sort_imports
         else node.imports
     )
     _emit_top_level_section(generator, imports)
@@ -61,9 +61,9 @@ def visit_yara_file(generator: Any, node: Any) -> str:
     _emit_top_level_section(generator, node.extern_rules)
 
     rules = node.rules
-    if generator.config.sort_rules:
+    if generator._layout.config.sort_rules:
         rules = sorted(rules, key=lambda item: item.name)
-    elif generator.config.sort_meta:
+    elif generator._layout.config.sort_meta:
 
         def sort_key(rule: Any) -> tuple[bool, Any]:
             has_meta = bool(rule.meta and (bool(rule.meta)))
@@ -73,7 +73,7 @@ def visit_yara_file(generator: Any, node: Any) -> str:
 
     for index, rule in enumerate(rules):
         if index > 0:
-            generator._write_blank_lines(generator.config.blank_lines_between_rules)
+            generator._write_blank_lines(generator._layout.config.blank_lines_between_rules)
         generator.visit(rule)
     return str(generator.buffer.getvalue())
 
@@ -89,14 +89,14 @@ def visit_rule(generator: Any, node: Any) -> str:
     generator._write(f"rule {rule_name}")
 
     if node.tags:
-        if generator.config.space_before_colon:
+        if generator._layout.config.space_before_colon:
             generator._write(" ")
         generator._write(":")
-        if generator.config.space_after_colon:
+        if generator._layout.config.space_after_colon:
             generator._write(" ")
         generator._write(format_rule_tags(node.tags))
 
-    if generator.config.brace_style == BraceStyle.SAME_LINE:
+    if generator._layout.config.brace_style == BraceStyle.SAME_LINE:
         generator._write(" {")
         generator._writeline()
     else:
@@ -105,22 +105,22 @@ def visit_rule(generator: Any, node: Any) -> str:
 
     generator._indent()
     sections_written = 0
-    for section in generator.config.section_order:
+    for section in generator._layout.config.section_order:
         if section == "meta" and node.meta:
             if sections_written > 0:
-                generator._write_blank_lines(generator.config.blank_lines_between_sections)
+                generator._write_blank_lines(generator._layout.config.blank_lines_between_sections)
             generator._write_meta_section(node.meta)
             sections_written += 1
         elif section == "strings" and node.strings:
             if sections_written > 0:
-                generator._write_blank_lines(generator.config.blank_lines_between_sections)
+                generator._write_blank_lines(generator._layout.config.blank_lines_between_sections)
             _write_in_rule_pragmas(generator, node, "before_strings")
             generator._write_strings_section(node.strings)
             _write_in_rule_pragmas(generator, node, "after_strings")
             sections_written += 1
         elif section == "condition" and node.condition is not None:
             if sections_written > 0:
-                generator._write_blank_lines(generator.config.blank_lines_between_sections)
+                generator._write_blank_lines(generator._layout.config.blank_lines_between_sections)
             if not node.strings:
                 _write_in_rule_pragmas(generator, node, "before_strings")
             _write_in_rule_pragmas(generator, node, "before_condition")
@@ -136,11 +136,11 @@ def write_strings_section(generator: Any, strings: list[Any]) -> None:
     validate_string_identifiers(strings)
     generator._writeline("strings:")
     generator._indent()
-    if generator.config.sort_strings:
+    if generator._layout.config.sort_strings:
         strings = sorted(strings, key=lambda item: item.identifier)
 
-    if generator.config.string_style in (StringStyle.ALIGNED, StringStyle.TABULAR):
-        generator._collect_string_definitions(strings)
+    if generator._layout.config.string_style in (StringStyle.ALIGNED, StringStyle.TABULAR):
+        generator._layout.collect_string_definitions(strings)
         write_aligned_strings(generator)
     else:
         for string_def in strings:
@@ -150,20 +150,20 @@ def write_strings_section(generator: Any, strings: list[Any]) -> None:
 
 
 def write_aligned_strings(generator: Any) -> None:
-    if not generator._string_definitions:
+    if not generator._layout._string_definitions:
         return
-    max_id_len = max(len(identifier) for identifier, _, _ in generator._string_definitions)
-    max_val_len = max(len(value) for _, value, _ in generator._string_definitions)
-    for identifier, value, modifiers in generator._string_definitions:
+    max_id_len = max(len(identifier) for identifier, _, _ in generator._layout._string_definitions)
+    max_val_len = max(len(value) for _, value, _ in generator._layout._string_definitions)
+    for identifier, value, modifiers in generator._layout._string_definitions:
         generator._write(generator._get_indent())
-        if generator.config.string_style == StringStyle.TABULAR:
+        if generator._layout.config.string_style == StringStyle.TABULAR:
             generator._write(identifier.ljust(max_id_len))
             generator._write(" = ")
             generator._write(value.ljust(max_val_len))
         else:
             generator._write(f"{identifier} = {value}")
         if modifiers:
-            generator._write("  " if generator.config.align_string_modifiers else " ")
+            generator._write("  " if generator._layout.config.align_string_modifiers else " ")
             generator._write(" ".join(modifiers))
         generator._writeline()
 
@@ -171,7 +171,7 @@ def write_aligned_strings(generator: Any) -> None:
 def write_condition_section(generator: Any, condition: Any) -> None:
     generator._writeline("condition:")
     generator._indent()
-    condition_str = generate_condition_string(condition, generator.config)
+    condition_str = generate_condition_string(condition, generator._layout.config)
     write_wrapped_condition(generator, condition_str)
     generator._dedent()
 
@@ -182,15 +182,15 @@ def write_wrapped_condition(generator: Any, condition: str) -> None:
             generator._writeline(line)
         return
 
-    base_limit = max(1, generator.config.max_line_length - len(generator._get_indent()))
+    base_limit = max(1, generator._layout.config.max_line_length - len(generator._get_indent()))
     if len(condition) <= base_limit:
         generator._writeline(condition)
         return
 
     continuation_indent = (
         "\t"
-        if generator.config.indent_style == IndentStyle.TABS
-        else " " * generator.config.indent_size
+        if generator._layout.config.indent_style == IndentStyle.TABS
+        else " " * generator._layout.config.indent_size
     )
     current_line = ""
     for word in condition.split():
