@@ -31,6 +31,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString
+from yaraast.shared.local_scope import local_name_variants
 from yaraast.visitor.base import BaseVisitor
 
 
@@ -280,7 +281,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
     def _push_local_scope(self, *names: str) -> None:
         scope: dict[str, object] = {}
         for name in names:
-            for local_name in self._local_name_variants(name):
+            for local_name in local_name_variants(name):
                 scope[local_name] = self._LOCAL_WITHOUT_VALUE
         self._local_scopes.append(scope)
 
@@ -289,7 +290,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
 
     def _define_local(self, name: str, value: object = _LOCAL_WITHOUT_VALUE) -> None:
         if self._local_scopes:
-            for local_name in self._local_name_variants(name):
+            for local_name in local_name_variants(name):
                 self._local_scopes[-1][local_name] = value
 
     def _extract_comparison(self, expression: Any) -> dict[str, Any] | None:
@@ -308,14 +309,6 @@ class OptimizationAnalyzer(BaseVisitor[None]):
         if name.startswith("#"):
             return self._is_local(f"${name[1:]}")
         return self._is_local(name)
-
-    @staticmethod
-    def _local_name_variants(name: str) -> set[str]:
-        if not isinstance(name, str):
-            msg = "Local variable name must be a string"
-            raise TypeError(msg)
-        names = [part.strip() for part in name.split(",")]
-        return {local_name for local_name in names if local_name}
 
     def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):

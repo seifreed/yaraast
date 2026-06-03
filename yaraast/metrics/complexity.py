@@ -19,6 +19,7 @@ from yaraast.ast.expressions import (
 from yaraast.metrics._visitor_base import MetricsVisitorBase
 from yaraast.metrics.complexity_analysis_helpers import analyze_rule, calculate_derived_metrics
 from yaraast.metrics.complexity_model import ComplexityMetrics
+from yaraast.shared.local_scope import local_name_variants
 from yaraast.string_references import normalize_string_reference_id
 
 if TYPE_CHECKING:
@@ -425,7 +426,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
     def _push_local_scope(self, *names: str) -> None:
         scope: dict[str, object] = {}
         for name in names:
-            for local_name in self._local_name_variants(name):
+            for local_name in local_name_variants(name):
                 scope[local_name] = self._LOCAL_WITHOUT_VALUE
         self._local_scopes.append(scope)
 
@@ -434,12 +435,5 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
     def _define_local(self, name: str, value: object = _LOCAL_WITHOUT_VALUE) -> None:
         if self._local_scopes:
-            for local_name in self._local_name_variants(name):
+            for local_name in local_name_variants(name):
                 self._local_scopes[-1][local_name] = value
-
-    @staticmethod
-    def _local_name_variants(name: str) -> set[str]:
-        if not isinstance(name, str):
-            raise TypeError("Local variable name must be a string")
-        names = [part.strip() for part in name.split(",")]
-        return {local_name for local_name in names if local_name}

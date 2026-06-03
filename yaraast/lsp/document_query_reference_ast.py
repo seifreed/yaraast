@@ -18,6 +18,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 from yaraast.lsp.utils import location_to_range
+from yaraast.shared.local_scope import local_name_variants
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
@@ -186,7 +187,7 @@ def _iter_ast_nodes_with_local_scopes(
             active_scopes = _extend_scopes(local_scopes, local_names)
             yield declaration, active_scopes
             yield from _iter_ast_value_with_local_scopes(declaration.value, active_scopes)
-            local_names.update(_local_name_variants(declaration.identifier))
+            local_names.update(local_name_variants(declaration.identifier))
         yield from _iter_ast_value_with_local_scopes(
             node.body, _extend_scopes(local_scopes, local_names)
         )
@@ -198,20 +199,20 @@ def _iter_ast_nodes_with_local_scopes(
         yield from _iter_ast_value_with_local_scopes(node.quantifier, local_scopes)
         yield from _iter_ast_value_with_local_scopes(node.iterable, local_scopes)
         yield from _iter_ast_value_with_local_scopes(
-            node.body, _extend_scopes(local_scopes, _local_name_variants(node.variable))
+            node.body, _extend_scopes(local_scopes, local_name_variants(node.variable))
         )
         return
     if isinstance(node, ArrayComprehension):
         yield from _iter_ast_value_with_local_scopes(node.iterable, local_scopes)
-        scoped = _extend_scopes(local_scopes, _local_name_variants(node.variable))
+        scoped = _extend_scopes(local_scopes, local_name_variants(node.variable))
         yield from _iter_ast_value_with_local_scopes(node.condition, scoped)
         yield from _iter_ast_value_with_local_scopes(node.expression, scoped)
         return
     if isinstance(node, DictComprehension):
         yield from _iter_ast_value_with_local_scopes(node.iterable, local_scopes)
-        dict_local_names = _local_name_variants(node.key_variable)
+        dict_local_names = local_name_variants(node.key_variable)
         if node.value_variable:
-            dict_local_names.update(_local_name_variants(node.value_variable))
+            dict_local_names.update(local_name_variants(node.value_variable))
         scoped = _extend_scopes(local_scopes, dict_local_names)
         yield from _iter_ast_value_with_local_scopes(node.condition, scoped)
         yield from _iter_ast_value_with_local_scopes(node.key_expression, scoped)
@@ -220,7 +221,7 @@ def _iter_ast_nodes_with_local_scopes(
     if isinstance(node, LambdaExpression):
         lambda_local_names: set[str] = set()
         for parameter in node.parameters:
-            lambda_local_names.update(_local_name_variants(parameter))
+            lambda_local_names.update(local_name_variants(parameter))
         yield from _iter_ast_value_with_local_scopes(
             node.body, _extend_scopes(local_scopes, lambda_local_names)
         )
@@ -251,11 +252,6 @@ def _extend_scopes(
     if not scope:
         return local_scopes
     return (*local_scopes, scope)
-
-
-def _local_name_variants(name: str) -> set[str]:
-    names = [part.strip() for part in name.split(",")]
-    return {local_name for local_name in names if local_name}
 
 
 def _normalized_local_lookup_name(name: str) -> str:

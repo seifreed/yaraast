@@ -28,6 +28,7 @@ from yaraast.metrics.dependency_graph_render import rule_cluster_label, rule_nod
 from yaraast.metrics.dependency_graph_stats import (
     get_dependency_stats as dependency_get_dependency_stats,
 )
+from yaraast.shared.local_scope import local_name_variants
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -193,7 +194,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
     def _push_local_scope(self, *names: str) -> None:
         scope: set[str] = set()
         for name in names:
-            scope.update(self._local_name_variants(name))
+            scope.update(local_name_variants(name))
         self._local_scopes.append(scope)
 
     def _pop_local_scope(self) -> None:
@@ -201,14 +202,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
     def _define_local(self, name: str) -> None:
         if self._local_scopes:
-            self._local_scopes[-1].update(self._local_name_variants(name))
-
-    @staticmethod
-    def _local_name_variants(name: str) -> set[str]:
-        if not isinstance(name, str):
-            raise TypeError("Local variable name must be a string")
-        names = [part.strip() for part in name.split(",")]
-        return {local_name for local_name in names if local_name}
+            self._local_scopes[-1].update(local_name_variants(name))
 
     def visit_with_statement(self, node) -> None:
         self._push_local_scope()

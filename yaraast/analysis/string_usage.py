@@ -16,6 +16,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     StringWildcard,
 )
+from yaraast.shared.local_scope import local_name_variants
 from yaraast.string_references import normalize_string_reference_id
 from yaraast.visitor.base import BaseVisitor
 
@@ -308,7 +309,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
     def _push_local_scope(self, *names: str) -> None:
         scope: dict[str, Any] = {}
         for name in names:
-            for local_name in self._local_name_variants(name):
+            for local_name in local_name_variants(name):
                 scope[local_name] = self._LOCAL_WITHOUT_VALUE
         self.local_scopes.append(scope)
 
@@ -317,16 +318,8 @@ class StringUsageAnalyzer(BaseVisitor[None]):
 
     def _define_local(self, name: str, value: object = _LOCAL_WITHOUT_VALUE) -> None:
         if self.local_scopes:
-            for local_name in self._local_name_variants(name):
+            for local_name in local_name_variants(name):
                 self.local_scopes[-1][local_name] = value
-
-    @staticmethod
-    def _local_name_variants(name: str) -> set[str]:
-        if not isinstance(name, str):
-            msg = "Local variable name must be a string"
-            raise TypeError(msg)
-        names = [part.strip() for part in name.split(",")]
-        return {local_name for local_name in names if local_name}
 
     def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):

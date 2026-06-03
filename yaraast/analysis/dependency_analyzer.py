@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from yaraast.ast.base import ASTNode, require_yara_file
 from yaraast.ast.expressions import Identifier, MemberAccess, StringWildcard
+from yaraast.shared.local_scope import local_name_variants
 from yaraast.visitor.base import BaseVisitor
 
 if TYPE_CHECKING:
@@ -387,7 +388,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
     def _push_local_scope(self, *names: str) -> None:
         scope: set[str] = set()
         for name in names:
-            scope.update(self._local_name_variants(name))
+            scope.update(local_name_variants(name))
         self.local_scopes.append(scope)
 
     def _pop_local_scope(self) -> None:
@@ -395,11 +396,4 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     def _define_local(self, name: str) -> None:
         if self.local_scopes:
-            self.local_scopes[-1].update(self._local_name_variants(name))
-
-    @staticmethod
-    def _local_name_variants(name: str) -> set[str]:
-        if not isinstance(name, str):
-            raise TypeError("Local variable name must be a string")
-        names = [part.strip() for part in name.split(",")]
-        return {local_name for local_name in names if local_name}
+            self.local_scopes[-1].update(local_name_variants(name))
