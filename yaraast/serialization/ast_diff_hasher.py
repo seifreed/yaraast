@@ -12,6 +12,21 @@ if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
 
 
+def _meta_value_repr(value: Any) -> str:
+    """Encode a meta value with its type so that equal string forms of
+    distinct types (e.g. the integer ``42`` and the string ``"42"``) hash
+    differently."""
+    if isinstance(value, bool):
+        return f"bool:{value}"
+    if isinstance(value, int):
+        return f"int:{value}"
+    if isinstance(value, float):
+        return f"float:{value}"
+    if isinstance(value, str):
+        return f"str:{value}"
+    return f"{type(value).__name__}:{value}"
+
+
 class AstHasher(ASTVisitor[str]):
     """Creates structural hashes of AST nodes."""
 
@@ -63,7 +78,7 @@ class AstHasher(ASTVisitor[str]):
         meta = "|".join(
             sorted(
                 f"{getattr(m, 'key', '')}:"
-                f"{getattr(m, 'value', '')}:"
+                f"{_meta_value_repr(getattr(m, 'value', ''))}:"
                 f"{getattr(getattr(m, 'scope', None), 'value', '')}"
                 for m in node.meta
             )
@@ -417,7 +432,7 @@ class AstHasher(ASTVisitor[str]):
         return pragma_type in {"custom", "include_once"}
 
     def visit_meta(self, node) -> str:
-        return f"Meta({node.key},{node.value})"
+        return f"Meta({node.key},{_meta_value_repr(node.value)})"
 
     def visit_module_reference(self, node) -> str:
         return f"ModRef({node.module})"

@@ -288,7 +288,7 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
     )
     assert of_with_plain_values == "Of(all,them)"
 
-    assert hasher.visit_meta(SimpleNamespace(key="author", value="me")) == "Meta(author,me)"
+    assert hasher.visit_meta(SimpleNamespace(key="author", value="me")) == "Meta(author,str:me)"
     assert hasher.visit_module_reference(SimpleNamespace(module="pe")) == "ModRef(pe)"
 
     dict_repr = hasher.visit_dictionary_access(

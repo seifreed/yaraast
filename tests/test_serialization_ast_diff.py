@@ -86,6 +86,39 @@ def test_ast_diff_detects_meta_scope_changes() -> None:
     assert meta_diff.new_value["secret"]["scope"] == "private"
 
 
+def test_ast_diff_detects_meta_value_type_change() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="meta_type",
+                meta=[MetaEntry.from_key_value("count", 42)],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="meta_type",
+                meta=[MetaEntry.from_key_value("count", "42")],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    hasher = AstHasher()
+    assert hasher.hash_ast(old_ast) != hasher.hash_ast(new_ast)
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert result.has_changes
+    meta_diff = next(diff for diff in result.differences if diff.path == "/rules/meta_type/meta")
+    assert meta_diff.old_value is not None
+    assert meta_diff.new_value is not None
+    assert meta_diff.old_value["count"]["value"] == 42
+    assert meta_diff.new_value["count"]["value"] == "42"
+
+
 def test_ast_diff_detects_duplicate_meta_key_changes() -> None:
     old_ast = YaraFile(
         rules=[
