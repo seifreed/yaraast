@@ -73,7 +73,7 @@ from yaraast.ast.strings import (
 from yaraast.errors import SerializationError, ValidationError, YaraASTError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.source import parse_yara_source
-from yaraast.serialization._deserialize_primitives import (
+from yaraast.serialization._serialization_primitives import (
     _HEX_CHARS,
     _deserialize_bool_field,
     _deserialize_boolean_literal_value,
@@ -94,7 +94,10 @@ from yaraast.serialization._deserialize_primitives import (
     _deserialize_required_field,
     _deserialize_string_field,
     _deserialize_string_list_field,
+    _expected_type_names,
+    _is_empty_nonempty_text,
     _is_negated_nibble_pattern,
+    _serialize_modifier_value,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -121,19 +124,6 @@ from yaraast.yarax.ast_nodes import (
     WithStatement,
 )
 from yaraast.yarax.generator import YaraXGenerator
-
-_WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS = frozenset(
-    {
-        "RegexLiteral pattern",
-        "RegexString regex",
-    }
-)
-
-
-def _is_empty_nonempty_text(text: str, context: str) -> bool:
-    return not text or (
-        not text.strip() and context not in _WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS
-    )
 
 
 def _is_empty_nonempty_field(text: str, context: str, field: str) -> bool:
@@ -284,12 +274,6 @@ def _deserialize_legacy_hex_tokens(raw_tokens: str) -> list[HexToken]:
     if hex_content.startswith("{") and hex_content.endswith("}"):
         hex_content = hex_content[1:-1]
     return HexStringParser().parse(hex_content)
-
-
-def _serialize_modifier_value(value: Any) -> Any:
-    if isinstance(value, tuple):
-        return list(value)
-    return value
 
 
 def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> None:
@@ -634,11 +618,6 @@ def _serialize_modifiers(modifiers: Any, context: str) -> list[dict[str, Any]]:
         }
         for modifier in modifiers
     ]
-
-
-def _expected_type_names(expected_type: type[Any] | tuple[type[Any], ...]) -> str:
-    expected_types = expected_type if isinstance(expected_type, tuple) else (expected_type,)
-    return " or ".join(item_type.__name__ for item_type in expected_types)
 
 
 def _validated_node_collection(

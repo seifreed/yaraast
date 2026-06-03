@@ -14,17 +14,13 @@ from yaraast.ast.modifiers import MetaEntry, RuleModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import StringDefinition
 from yaraast.errors import SerializationError
+from yaraast.serialization._serialization_primitives import _expected_type_names
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.serializer_helpers import (
     require_bool_option,
     require_input_path,
     require_positive_int_option,
 )
-
-
-def _expected_type_names(expected_type: type[Any] | tuple[type[Any], ...]) -> str:
-    expected_types = expected_type if isinstance(expected_type, tuple) else (expected_type,)
-    return " or ".join(item_type.__name__ for item_type in expected_types)
 
 
 def _validated_node_collection(

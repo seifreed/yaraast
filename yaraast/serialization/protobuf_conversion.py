@@ -8,6 +8,9 @@ import time
 from typing import Any
 
 from yaraast.errors import SerializationError
+from yaraast.serialization._serialization_primitives import (
+    _is_empty_nonempty_text,
+)
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
 from yaraast.serialization.pragma_scopes import deserialize_pragma_scope, serialize_pragma_scope
@@ -16,18 +19,6 @@ from yaraast.string_escaping import escape_string_source_value
 from . import yara_ast_pb2
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
-_WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS = frozenset(
-    {
-        "RegexLiteral pattern",
-        "RegexString regex",
-    }
-)
-
-
-def _is_empty_nonempty_text(text: str, context: str) -> bool:
-    return not text or (
-        not text.strip() and context not in _WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS
-    )
 
 
 def _finite_double_value(value, context: str) -> float:

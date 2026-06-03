@@ -8,7 +8,7 @@ from typing import Any
 from yaraast.ast.base import ASTNode
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.errors import SerializationError, ValidationError
-from yaraast.serialization._deserialize_primitives import (
+from yaraast.serialization._serialization_primitives import (
     _HEX_CHARS,
     _deserialize_bool_field,
     _deserialize_boolean_literal_value,

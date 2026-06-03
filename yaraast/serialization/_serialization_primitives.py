@@ -1,8 +1,8 @@
-"""Deserialization primitives shared by the JSON and round-trip deserializers.
+"""Serialization primitives shared across the JSON, protobuf and round-trip layers.
 
-These field-extraction, location, literal-value and hex helpers were byte-identical
-copies in ``json_serializer_deserialize`` and ``simple_roundtrip_helpers``. They are
-defined once here; both modules import them.
+These field-extraction, location, literal-value, hex, enum and empty-text helpers
+were byte-identical copies scattered across the serialization modules. They are
+defined once here and imported where needed.
 """
 
 from __future__ import annotations
@@ -16,6 +16,31 @@ from yaraast.ast.base import Location
 from yaraast.errors import SerializationError
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+
+
+_WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS = frozenset(
+    {
+        "RegexLiteral pattern",
+        "RegexString regex",
+    }
+)
+
+
+def _is_empty_nonempty_text(text: str, context: str) -> bool:
+    return not text or (
+        not text.strip() and context not in _WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS
+    )
+
+
+def _expected_type_names(expected_type: type[Any] | tuple[type[Any], ...]) -> str:
+    expected_types = expected_type if isinstance(expected_type, tuple) else (expected_type,)
+    return " or ".join(item_type.__name__ for item_type in expected_types)
+
+
+def _serialize_modifier_value(value: Any) -> Any:
+    if isinstance(value, tuple):
+        return list(value)
+    return value
 
 
 def _deserialize_object(data: Any, context: str) -> dict[str, Any]:

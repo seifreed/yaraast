@@ -7,22 +7,14 @@ import math
 from typing import Any
 
 from yaraast.errors import SerializationError
+from yaraast.serialization._serialization_primitives import (
+    _expected_type_names,
+    _is_empty_nonempty_text,
+)
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.pragma_scopes import serialize_pragma_scope
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
-_WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS = frozenset(
-    {
-        "RegexLiteral pattern",
-        "RegexString regex",
-    }
-)
-
-
-def _is_empty_nonempty_text(text: str, context: str) -> bool:
-    return not text or (
-        not text.strip() and context not in _WHITESPACE_SIGNIFICANT_NONEMPTY_CONTEXTS
-    )
 
 
 def _serialize_required_string(value, context: str) -> str:
@@ -304,12 +296,6 @@ def _serialize_string_or_expression(serializer, value, context: str):
     raise SerializationError(msg)
 
 
-def _serialize_modifier_value(value: Any) -> Any:
-    if isinstance(value, tuple):
-        return list(value)
-    return value
-
-
 def _serialize_string_modifier(serializer, modifier, context: str) -> dict[str, Any]:
     from yaraast.ast.modifiers import StringModifier
 
@@ -375,11 +361,6 @@ def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     if hasattr(meta, "accept"):
         return serializer._with_node_metadata(meta, data)
     return data
-
-
-def _expected_type_names(expected_type: type[Any] | tuple[type[Any], ...]) -> str:
-    expected_types = expected_type if isinstance(expected_type, tuple) else (expected_type,)
-    return " or ".join(item_type.__name__ for item_type in expected_types)
 
 
 def _serialize_enum_value(value, context: str) -> str:
