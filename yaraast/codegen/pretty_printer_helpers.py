@@ -130,7 +130,7 @@ def regex_modifiers_to_string(modifiers: list[Any] | tuple[Any, ...] | None) -> 
 
 
 def current_indent(printer: Any) -> str:
-    options = getattr(printer, "options", None)
+    options = getattr(printer._layout, "options", None)
     indent_level = int(printer.indent_level)
     indent_size = int(printer.indent_size)
     if getattr(options, "indent_with_tabs", False):
@@ -139,7 +139,7 @@ def current_indent(printer: Any) -> str:
 
 
 def indent_unit(printer: Any) -> str:
-    options = getattr(printer, "options", None)
+    options = getattr(printer._layout, "options", None)
     indent_size = int(printer.indent_size)
     if getattr(options, "indent_with_tabs", False):
         return "\t"

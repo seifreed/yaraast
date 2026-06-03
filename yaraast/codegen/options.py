@@ -33,6 +33,13 @@ class GeneratorOptions:
     pretty: PrettyPrintOptions | None = None
     advanced: FormattingConfig | None = None
 
+    def __post_init__(self) -> None:
+        # The pretty engine governs indentation and comment preservation through
+        # its own options.
+        if self.pretty is not None:
+            self.indent_size = self.pretty.indent_size
+            self.preserve_comments = self.pretty.preserve_comments
+
     @classmethod
     def comment_aware(
         cls, *, indent_size: int = 4, preserve_comments: bool = True

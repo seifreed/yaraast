@@ -73,24 +73,26 @@ def visit_yara_file(printer: Any, node: Any) -> str:
 
     imports = (
         sorted(node.imports, key=lambda item: item.module)
-        if printer.options.sort_imports
+        if printer._layout.options.sort_imports
         else node.imports
     )
-    _emit_top_level_section(printer, imports, max(0, printer.options.blank_lines_after_imports - 1))
+    _emit_top_level_section(
+        printer, imports, max(0, printer._layout.options.blank_lines_after_imports - 1)
+    )
     _emit_top_level_section(printer, node.extern_imports)
 
     includes = (
         sorted(node.includes, key=lambda item: item.path)
-        if printer.options.sort_includes
+        if printer._layout.options.sort_includes
         else node.includes
     )
-    _emit_top_level_section(printer, includes, printer.options.blank_lines_after_includes)
+    _emit_top_level_section(printer, includes, printer._layout.options.blank_lines_after_includes)
     _emit_top_level_section(printer, node.namespaces)
     _emit_top_level_section(printer, node.extern_rules)
 
     for index, rule in enumerate(node.rules):
         if index > 0:
-            for _ in range(printer.options.blank_lines_before_rule):
+            for _ in range(printer._layout.options.blank_lines_before_rule):
                 printer._writeline()
         printer.visit_rule(rule)
         printer._writeline()
@@ -111,7 +113,7 @@ def visit_rule(printer: Any, node: Any) -> str:
     if node.tags:
         validate_rule_tags(node.tags)
         tag_names = [tag if isinstance(tag, str) else tag.name for tag in node.tags]
-        tags = sorted(tag_names) if printer.options.sort_tags else tag_names
+        tags = sorted(tag_names) if printer._layout.options.sort_tags else tag_names
         line_parts.append(":")
         line_parts.extend(tags)
     _write_line(printer, " ".join(line_parts) + " {", getattr(node, "trailing_comment", None))
@@ -123,7 +125,7 @@ def visit_rule(printer: Any, node: Any) -> str:
         printer._write_meta_section(node.meta)
         printer._dedent()
         if node.pragmas or node.strings or node.condition is not None:
-            for _ in range(printer.options.blank_lines_between_sections):
+            for _ in range(printer._layout.options.blank_lines_between_sections):
                 printer._writeline()
 
     _write_in_rule_pragmas(printer, node, "before_strings")
@@ -134,7 +136,7 @@ def visit_rule(printer: Any, node: Any) -> str:
         printer._write_strings_section(node.strings)
         printer._dedent()
         if node.pragmas or node.condition is not None:
-            for _ in range(printer.options.blank_lines_between_sections):
+            for _ in range(printer._layout.options.blank_lines_between_sections):
                 printer._writeline()
 
     _write_in_rule_pragmas(printer, node, "after_strings")
@@ -174,8 +176,9 @@ def write_string_definition(printer: Any, string_def: Any) -> None:
         validate_plain_string_modifiers(string_def.modifiers)
         identifier = output_string_identifier(string_def)
         padding = (
-            max(0, printer._string_alignment_column - len(identifier))
-            if printer.options.align_string_definitions and printer._string_alignment_column > 0
+            max(0, printer._layout._string_alignment_column - len(identifier))
+            if printer._layout.options.align_string_definitions
+            and printer._layout._string_alignment_column > 0
             else 0
         )
         printer._write(current_indent(printer))
@@ -190,12 +193,15 @@ def write_string_definition(printer: Any, string_def: Any) -> None:
         validate_hex_string_modifiers(string_def.modifiers)
         hex_pattern = build_hex_pattern(
             string_def,
-            hex_uppercase=printer.options.hex_uppercase,
-            hex_spacing=printer.options.hex_spacing,
+            hex_uppercase=printer._layout.options.hex_uppercase,
+            hex_spacing=printer._layout.options.hex_spacing,
         )
-        if printer.options.align_string_definitions and printer._string_alignment_column > 0:
+        if (
+            printer._layout.options.align_string_definitions
+            and printer._layout._string_alignment_column > 0
+        ):
             identifier = output_string_identifier(string_def)
-            padding = max(0, printer._string_alignment_column - len(identifier))
+            padding = max(0, printer._layout._string_alignment_column - len(identifier))
             printer._write(current_indent(printer))
             printer._write(f"{identifier}{' ' * padding} = {{ {hex_pattern} }}")
         else:
@@ -211,8 +217,9 @@ def write_string_definition(printer: Any, string_def: Any) -> None:
         validate_regex_string_modifiers(string_def.modifiers)
         identifier = output_string_identifier(string_def)
         padding = (
-            max(0, printer._string_alignment_column - len(identifier))
-            if printer.options.align_string_definitions and printer._string_alignment_column > 0
+            max(0, printer._layout._string_alignment_column - len(identifier))
+            if printer._layout.options.align_string_definitions
+            and printer._layout._string_alignment_column > 0
             else 0
         )
         printer._write(current_indent(printer))
@@ -231,7 +238,7 @@ def write_string_definition(printer: Any, string_def: Any) -> None:
 
 def write_condition_section(printer: Any, condition: Any) -> None:
     printer._write_comments(getattr(condition, "leading_comments", None))
-    condition_str = expression_to_string(condition, printer.options)
+    condition_str = expression_to_string(condition, printer._layout.options)
     trailing_comment = getattr(condition, "trailing_comment", None)
     if "\n" in condition_str:
         split_lines = condition_str.splitlines()
@@ -241,13 +248,13 @@ def write_condition_section(printer: Any, condition: Any) -> None:
         return
 
     if (
-        printer.options.wrap_long_conditions
-        and len(condition_str) > printer.options.max_line_length
+        printer._layout.options.wrap_long_conditions
+        and len(condition_str) > printer._layout.options.max_line_length
     ):
         current_line = ""
         lines: list[str] = []
         for word in condition_str.split():
-            if len(current_line + " " + word) > printer.options.max_line_length:
+            if len(current_line + " " + word) > printer._layout.options.max_line_length:
                 if current_line:
                     lines.append(current_line)
                     current_line = indent_unit(printer) + word

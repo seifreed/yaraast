@@ -89,6 +89,24 @@ class GeneratorLayout:
     def write_condition_section(self, gen: CodeGenerator, condition: Any) -> None:
         _plain_write_condition_section(gen, condition)
 
+    def write_single_comment(self, gen: CodeGenerator, comment: Any, inline: bool = False) -> None:
+        """Render one comment (pretty overrides for inline alignment)."""
+        text = comment.text
+        if text.startswith("//"):
+            text = text[2:].strip()
+        elif text.startswith("/*") and text.endswith("*/"):
+            text = text[2:-2].strip()
+
+        if inline:
+            gen._write(f"  // {text}")
+        elif "\n" in text or len(text) > 80:
+            gen._writeline("/*")
+            for line in text.split("\n"):
+                gen._writeline(f" * {line.strip()}")
+            gen._writeline(" */")
+        else:
+            gen._writeline(f"// {text}")
+
     # Per-string renderers (plain defaults; advanced overrides)
     def plain_string(self, gen: CodeGenerator, node: Any) -> str:
         return _plain_write_plain_string(gen, node)
@@ -136,6 +154,10 @@ def select_layout(options: GeneratorOptions) -> GeneratorLayout:
         from yaraast.codegen.advanced_layout import AdvancedLayout
 
         return AdvancedLayout(options.advanced)
+    if options.pretty is not None:
+        from yaraast.codegen.pretty_layout import PrettyLayout
+
+        return PrettyLayout(options.pretty)
     if not options.blank_line_between_sections:
         return CommentLayout()
     return PlainLayout()

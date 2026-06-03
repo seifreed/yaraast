@@ -248,25 +248,8 @@ class CodeGenerator(ASTVisitor[str]):
             self._write_comment(comment)
 
     def _write_single_comment(self, comment: Comment, inline: bool = False) -> None:
-        """Write a single comment."""
-        text = comment.text
-
-        # Clean up comment text
-        if text.startswith("//"):
-            text = text[2:].strip()
-        elif text.startswith("/*") and text.endswith("*/"):
-            text = text[2:-2].strip()
-
-        if inline:
-            self._write(f"  // {text}")
-        # Check if it's a multi-line comment
-        elif "\n" in text or len(text) > 80:
-            self._writeline("/*")
-            for line in text.split("\n"):
-                self._writeline(f" * {line.strip()}")
-            self._writeline(" */")
-        else:
-            self._writeline(f"// {text}")
+        """Write a single comment (layout decides inline alignment)."""
+        self._layout.write_single_comment(self, comment, inline)
 
     def _write_leading_comments(self, comments: list[Comment]) -> None:
         """Write leading comments."""

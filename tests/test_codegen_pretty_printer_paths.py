@@ -530,7 +530,11 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
             sort_meta_keys=False, align_string_definitions=True, wrap_long_conditions=False
         )
     )
-    printer2._meta_alignment_column = 0
+    from yaraast.codegen.pretty_layout import PrettyLayout
+
+    layout2 = printer2._layout
+    assert isinstance(layout2, PrettyLayout)
+    layout2._meta_alignment_column = 0
     from yaraast.ast.modifiers import MetaEntry
 
     printer2._write_meta_section([MetaEntry(key="b", value=2), MetaEntry(key="a", value="x")])
@@ -540,7 +544,7 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
 
     printer2.buffer.seek(0)
     printer2.buffer.truncate(0)
-    printer2._string_alignment_column = 4
+    layout2._string_alignment_column = 4
     printer2._write_plain_string_aligned(PlainString("$a", value="x"))
     printer2._write_hex_string_aligned(HexString("$h", tokens=[HexByte(0x4D)]))
     aligned_out = printer2.buffer.getvalue()

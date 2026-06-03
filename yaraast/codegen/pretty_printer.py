@@ -3,40 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from io import StringIO
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import require_yara_file
-from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_formatting import validate_yara_file_collections
 from yaraast.codegen.options import GeneratorOptions
-from yaraast.codegen.pretty_printer_helpers import (
-    calculate_meta_alignment_column,
-    calculate_string_alignment_column,
-    current_indent,
-    expression_to_string,
-)
-from yaraast.codegen.pretty_printer_layout import (
-    visit_rule as layout_visit_rule,
-    visit_yara_file as layout_visit_yara_file,
-    write_condition_section as layout_write_condition_section,
-    write_string_definition as layout_write_string_definition,
-)
 from yaraast.codegen.pretty_printer_sections import (
     write_hex_string_aligned as section_write_hex_string_aligned,
-    write_meta_entry as section_write_meta_entry,
-    write_meta_section as section_write_meta_section,
     write_plain_string_aligned as section_write_plain_string_aligned,
     write_regex_string_aligned as section_write_regex_string_aligned,
-    write_strings_section as section_write_strings_section,
     write_wrapped_condition as section_write_wrapped_condition,
 )
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
-    from yaraast.ast.expressions import Expression
-    from yaraast.ast.rules import Rule
 
 
 @dataclass
@@ -89,104 +70,34 @@ class PrettyPrintOptions:
 
 
 class PrettyPrinter(CodeGenerator):
-    """Enhanced pretty printer with advanced formatting options."""
+    """Pretty printer (thin shell over the composed PrettyLayout).
+
+    The aligned/wrapped engine lives in
+    :class:`yaraast.codegen.pretty_layout.PrettyLayout`, selected via
+    ``GeneratorOptions.pretty``; this subclass only fixes the entry point and the
+    few aligned writers exercised directly by tests.
+    """
 
     def __init__(self, options: PrettyPrintOptions | None = None) -> None:
-        pretty_options = options or PrettyPrintOptions()
-        super().__init__(
-            options=GeneratorOptions.comment_aware(
-                indent_size=pretty_options.indent_size,
-                preserve_comments=pretty_options.preserve_comments,
-            )
-        )
-        # The pretty layout engine reads its rich config from ``self.options``;
-        # set it after super().__init__ so it is not clobbered by the base.
-        self.options = pretty_options
-        self._string_alignment_column = 0
-        self._meta_alignment_column = 0
-
-    def _get_indent(self) -> str:
-        return current_indent(self)
-
-    def _writeline(self, text: str = "") -> None:
-        if text:
-            self.buffer.write(self._get_indent())
-            self.buffer.write(text)
-        self.buffer.write("\n")
-
-    def _write_single_comment(self, comment: Any, inline: bool = False) -> None:
-        if not inline:
-            super()._write_single_comment(comment, inline)
-            return
-
-        text = comment.text
-        if text.startswith("//"):
-            text = text[2:].strip()
-        elif text.startswith("/*") and text.endswith("*/"):
-            text = text[2:-2].strip()
-
-        spacing = max(0, self.options.inline_comment_spacing)
-        if self.options.align_comments:
-            current_line = self.buffer.getvalue().rsplit("\n", 1)[-1]
-            spacing = max(spacing, self.options.comment_column - len(current_line))
-        self._write(f"{' ' * spacing}// {text}")
+        super().__init__(options=GeneratorOptions(pretty=options or PrettyPrintOptions()))
 
     def pretty_print(self, ast: YaraFile) -> str:
         """Pretty print the entire YARA file."""
         ast = require_yara_file(ast, "ast")
-        self.buffer = StringIO()
-        self.indent_level = 0
         validate_yara_file_collections(ast)
+        return self.generate(ast)
 
-        # Calculate alignment columns if needed
-        if self.options.align_string_definitions:
-            self._string_alignment_column = calculate_string_alignment_column(ast)
-        if self.options.align_meta_values:
-            self._meta_alignment_column = calculate_meta_alignment_column(
-                ast,
-                self.options.min_alignment_column,
-            )
-
-        return self.visit_yara_file(ast)
-
-    def visit_yara_file(self, node: YaraFile) -> str:
-        return layout_visit_yara_file(self, node)
-
-    def visit_rule(self, node: Rule) -> str:
-        return layout_visit_rule(self, node)
-
-    def _write_meta_section(self, meta: Any) -> None:
-        section_write_meta_section(self, meta)
-
-    def _write_meta_entry(self, key: str, value: Any) -> None:
-        section_write_meta_entry(self, key, value)
-
-    def _write_strings_section(self, strings: Any, *, has_condition: bool = False) -> None:
-        section_write_strings_section(self, strings)
-
-    def _write_string_definition(self, string_def: StringDefinition) -> None:
-        layout_write_string_definition(self, string_def)
-
-    def _write_plain_string_aligned(self, node: PlainString) -> None:
+    def _write_plain_string_aligned(self, node: Any) -> None:
         section_write_plain_string_aligned(self, node)
 
-    def _write_hex_string_aligned(self, node: HexString) -> None:
+    def _write_hex_string_aligned(self, node: Any) -> None:
         section_write_hex_string_aligned(self, node)
 
-    def _write_regex_string_aligned(self, node: RegexString) -> None:
+    def _write_regex_string_aligned(self, node: Any) -> None:
         section_write_regex_string_aligned(self, node)
-
-    def _write_condition_section(self, condition: Any) -> None:
-        layout_write_condition_section(self, condition)
 
     def _write_wrapped_condition(self, condition_str: str) -> None:
         section_write_wrapped_condition(self, condition_str)
-
-    def _expression_to_string(self, expr: Expression) -> str:
-        """Convert expression to string (simplified)."""
-        # This is a simplified implementation
-        # In practice, would use a separate visitor for expression serialization
-        return expression_to_string(expr, self.options)
 
 
 class StylePresets:
