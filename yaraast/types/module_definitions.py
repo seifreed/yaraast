@@ -354,6 +354,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "is_dll": ("b", []),
             "is_64bit": ("b", []),
             "is_32bit": ("b", []),
+            "calculate_checksum": ("i", []),
             "rva_to_offset": ("i", [("rva", "i")]),
             "rich_signature.version": ("i", [("toolid", "i"), ("version", "i")], 1),
             "rich_signature.toolid": ("i", [("toolid", "i"), ("version", "i")], 1),
