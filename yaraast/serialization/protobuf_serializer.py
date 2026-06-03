@@ -8,7 +8,7 @@ import warnings
 
 from google.protobuf.message import DecodeError
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import YaraFile, require_yara_file
 from yaraast.errors import SerializationError
 from yaraast.serialization.protobuf_conversion import (
     ast_to_protobuf,
@@ -39,16 +39,9 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
         super().__init__(default=None)
         self.include_metadata = require_bool_option(include_metadata, "include_metadata")
 
-    @staticmethod
-    def _require_yara_file(ast: object) -> YaraFile:
-        if not isinstance(ast, YaraFile):
-            msg = "ast must be a YaraFile"
-            raise TypeError(msg)
-        return ast
-
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> bytes:
         """Serialize AST to Protobuf binary format."""
-        ast = self._require_yara_file(ast)
+        ast = require_yara_file(ast, "ast")
         pb_yara_file = self._ast_to_protobuf(ast)
         binary_data = pb_yara_file.SerializeToString(deterministic=True)
 
@@ -64,7 +57,7 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
         output_path: str | Path | None = None,
     ) -> str:
         """Serialize AST to Protobuf text format (for debugging)."""
-        ast = self._require_yara_file(ast)
+        ast = require_yara_file(ast, "ast")
         pb_yara_file = self._ast_to_protobuf(ast)
         text_data = str(pb_yara_file)
 
@@ -126,7 +119,7 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
 
     def get_serialization_stats(self, ast: YaraFile) -> dict[str, Any]:
         """Get statistics about the serialization."""
-        ast = self._require_yara_file(ast)
+        ast = require_yara_file(ast, "ast")
         pb_file = self._ast_to_protobuf(ast)
         binary_size = len(pb_file.SerializeToString(deterministic=True))
         text_size = len(str(pb_file))

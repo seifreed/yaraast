@@ -10,16 +10,11 @@ from yaraast.ast.base import (
     _require_ast_node,
     _require_ast_node_sequence_type,
     _VisitorType,
+    require_optional_string,
     require_string,
 )
 from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import Expression
-
-
-def _require_optional_string(value: Any, field_name: str) -> str | None:
-    if value is None:
-        return None
-    return require_string(value, field_name)
 
 
 def _validate_child_structure(value: Any) -> None:
@@ -133,7 +128,7 @@ class DictComprehension(Expression):
                 _require_ast_node(self.value_expression, "DictComprehension.value_expression")
             )
         require_string(self.key_variable, "Local variable name")
-        _require_optional_string(self.value_variable, "Local variable name")
+        require_optional_string(self.value_variable, "Local variable name")
         if self.iterable is not None:
             _validate_child_structure(
                 _require_ast_node(self.iterable, "DictComprehension.iterable")

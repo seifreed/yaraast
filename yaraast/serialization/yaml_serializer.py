@@ -7,7 +7,7 @@ from typing import Any
 
 import yaml
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import YaraFile, require_yara_file
 from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
@@ -26,16 +26,9 @@ class YamlSerializer(JsonSerializer):
         super().__init__(include_metadata)
         self.flow_style = require_bool_option(flow_style, "flow_style")
 
-    @staticmethod
-    def _require_yara_file(ast: object) -> YaraFile:
-        if not isinstance(ast, YaraFile):
-            msg = "ast must be a YaraFile"
-            raise TypeError(msg)
-        return ast
-
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize AST to YAML format."""
-        ast = self._require_yara_file(ast)
+        ast = require_yara_file(ast, "ast")
         serialized = self._serialize_with_metadata(ast)
         return serialize_yaml(serialized, output_path, flow_style=self.flow_style)
 
@@ -75,7 +68,7 @@ class YamlSerializer(JsonSerializer):
         output_path: str | Path | None = None,
     ) -> str:
         """Serialize AST to minimal YAML format (AST only, no metadata)."""
-        ast = self._require_yara_file(ast)
+        ast = require_yara_file(ast, "ast")
         ast_data = self.visit(ast)
         return serialize_yaml(ast_data, output_path, flow_style=False)
 
@@ -85,7 +78,7 @@ class YamlSerializer(JsonSerializer):
         output_path: str | Path | None = None,
     ) -> str:
         """Serialize only the rules section to YAML (useful for rule analysis)."""
-        ast = self._require_yara_file(ast)
+        ast = require_yara_file(ast, "ast")
         if not isinstance(ast.rules, list | tuple):
             msg = "YaraFile rules must be a list of Rule nodes"
             raise SerializationError(msg)

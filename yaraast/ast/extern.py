@@ -5,18 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import ASTNode, _VisitorType, require_string
+from yaraast.ast.base import ASTNode, _VisitorType, require_optional_string, require_string
 from yaraast.ast.expressions import Expression
 from yaraast.string_escaping import escape_string_source_value
 
 if TYPE_CHECKING:
     from yaraast.ast.modifiers import RuleModifier
-
-
-def _require_optional_string(value: Any, field_name: str) -> str | None:
-    if value is None:
-        return None
-    return require_string(value, field_name)
 
 
 def _normalize_string_list(values: list[str] | None, field_name: str) -> list[str]:
@@ -168,7 +162,7 @@ def create_extern_rule(
     from yaraast.ast.modifiers import RuleModifier
 
     rule_name = require_string(name, "ExternRule name")
-    rule_namespace = _require_optional_string(namespace, "ExternRule namespace")
+    rule_namespace = require_optional_string(namespace, "ExternRule namespace")
     rule_modifiers = []
     for mod_str in _normalize_string_list(modifiers, "ExternRule modifiers"):
         rule_modifiers.append(RuleModifier.from_string(mod_str))
@@ -183,7 +177,7 @@ def create_extern_reference(
     """Create an extern rule reference."""
     return ExternRuleReference(
         rule_name=require_string(rule_name, "ExternRuleReference rule_name"),
-        namespace=_require_optional_string(namespace, "ExternRuleReference namespace"),
+        namespace=require_optional_string(namespace, "ExternRuleReference namespace"),
     )
 
 
@@ -195,6 +189,6 @@ def create_extern_import(
     """Create an extern import statement."""
     return ExternImport(
         module_path=require_string(module_path, "ExternImport module_path"),
-        alias=_require_optional_string(alias, "ExternImport alias"),
+        alias=require_optional_string(alias, "ExternImport alias"),
         rules=_normalize_string_list(rules, "ExternImport rules"),
     )

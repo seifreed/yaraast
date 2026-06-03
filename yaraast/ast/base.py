@@ -87,6 +87,13 @@ def require_string(value: Any, field_name: str) -> str:
     return value
 
 
+def require_optional_string(value: Any, field_name: str) -> str | None:
+    """Require ``None`` or a ``str`` value, raising ``TypeError`` otherwise."""
+    if value is None:
+        return None
+    return require_string(value, field_name)
+
+
 def _require_ast_node(value: Any, field_name: str) -> ASTNode:
     if not isinstance(value, ASTNode):
         msg = f"{field_name} must be an AST node"
