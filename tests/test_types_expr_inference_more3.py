@@ -45,6 +45,7 @@ from yaraast.types._registry import (
     BooleanType,
     DictionaryType,
     DoubleType,
+    FloatType,
     IntegerType,
     StringType,
     TypeEnvironment,
@@ -467,6 +468,34 @@ def test_expr_inference_rejects_non_libyara_math_functions() -> None:
 
     assert isinstance(out, UnknownType)
     assert "Module 'math' has no function 'log'" in inf.errors
+
+
+@pytest.mark.parametrize("operator", ["+", "-", "*", "/"])
+def test_expr_inference_float_arithmetic_returns_float(operator: str) -> None:
+    env = TypeEnvironment()
+    env.define("ratio", FloatType())
+
+    left_first = ExpressionTypeInference(env)
+    out_left = left_first.infer(
+        BinaryExpression(
+            left=Identifier(name="ratio"),
+            operator=operator,
+            right=IntegerLiteral(2),
+        )
+    )
+    assert isinstance(out_left, FloatType)
+    assert left_first.errors == []
+
+    right_first = ExpressionTypeInference(env)
+    out_right = right_first.infer(
+        BinaryExpression(
+            left=IntegerLiteral(2),
+            operator=operator,
+            right=Identifier(name="ratio"),
+        )
+    )
+    assert isinstance(out_right, FloatType)
+    assert right_first.errors == []
 
 
 def test_expr_inference_accepts_known_optional_module_arguments() -> None:

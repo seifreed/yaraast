@@ -326,6 +326,8 @@ def _infer_arithmetic_op(
         ctx.errors.append(f"Right operand of '{operator}' must be numeric, got {right_type}")
     if isinstance(left_type, DoubleType) or isinstance(right_type, DoubleType):
         return DoubleType()
+    if isinstance(left_type, FloatType) or isinstance(right_type, FloatType):
+        return FloatType()
     return IntegerType()
 
 
