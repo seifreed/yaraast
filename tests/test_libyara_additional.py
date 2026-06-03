@@ -57,6 +57,18 @@ def test_save_compiled_rules_invalid() -> None:
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_save_compiled_rules_unwritable_path() -> None:
+    compiler = LibyaraCompiler()
+    result = compiler.compile_source("rule test { condition: true }")
+    assert result.success is True
+    assert result.compiled_rules is not None
+
+    unwritable = Path(tempfile.gettempdir()) / "yaraast_missing_dir_xyz" / "rules.yarc"
+    assert not unwritable.parent.exists()
+    assert compiler.save_compiled_rules(result.compiled_rules, unwritable) is False
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 def test_direct_compiler_debug_mode_source() -> None:
     parser = Parser()
     ast = parser.parse("rule debug_rule { condition: true }")

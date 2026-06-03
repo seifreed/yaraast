@@ -339,5 +339,5 @@ class LibyaraCompiler:
         try:
             rules.save(str(filepath))
             return True
-        except (ValueError, TypeError, AttributeError):
+        except (ValueError, TypeError, AttributeError, OSError, yara.Error):
             return False
