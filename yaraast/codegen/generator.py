@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from io import StringIO
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
     Condition,
@@ -53,7 +54,12 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
+from yaraast.codegen.generator_comment_sections import (
+    comment_visit_rule,
+    comment_visit_yara_file,
+)
 from yaraast.codegen.generator_expression_visitors import (
+    validate_expression_collection,
     visit_array_access as render_array_access,
     visit_at_expression as render_at_expression,
     visit_binary_expression as render_binary_expression,
@@ -71,6 +77,8 @@ from yaraast.codegen.generator_expressions import (
     render_of_expression,
 )
 from yaraast.codegen.generator_formatting import (
+    format_meta_key,
+    format_meta_literal,
     format_meta_value,
     format_rule_modifiers,
     format_rule_tags,
@@ -132,6 +140,24 @@ from yaraast.codegen.generator_structure_visitors import (
 )
 from yaraast.codegen.options import GeneratorOptions
 from yaraast.visitor.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+    from yaraast.yarax.ast_nodes import (
+        ArrayComprehension,
+        DictComprehension,
+        DictExpression,
+        DictItem,
+        LambdaExpression,
+        ListExpression,
+        MatchCase,
+        PatternMatch,
+        SliceExpression,
+        SpreadOperator,
+        TupleExpression,
+        TupleIndexing,
+        WithDeclaration,
+        WithStatement,
+    )
 
 
 class CodeGenerator(ASTVisitor[str]):
@@ -199,9 +225,71 @@ class CodeGenerator(ASTVisitor[str]):
         """Expose plain-string escaping for extracted rendering helpers."""
         return escape_plain_string_value(value)
 
+    # Comment-aware primitives (active when ``preserve_comments`` is set)
+    def _write_comment(
+        self,
+        comment: Comment | CommentGroup | None,
+        inline: bool = False,
+    ) -> None:
+        """Write a single comment or comment group."""
+        if not self.preserve_comments or not comment:
+            return
+
+        if isinstance(comment, CommentGroup):
+            for c in comment.comments:
+                self._write_single_comment(c, inline)
+        else:
+            self._write_single_comment(comment, inline)
+
+    def _write_comments(self, comments: list[Comment | CommentGroup] | None) -> None:
+        """Write a list of comments."""
+        if not self.preserve_comments or not comments:
+            return
+
+        for comment in comments:
+            self._write_comment(comment)
+
+    def _write_single_comment(self, comment: Comment, inline: bool = False) -> None:
+        """Write a single comment."""
+        text = comment.text
+
+        # Clean up comment text
+        if text.startswith("//"):
+            text = text[2:].strip()
+        elif text.startswith("/*") and text.endswith("*/"):
+            text = text[2:-2].strip()
+
+        if inline:
+            self._write(f"  // {text}")
+        # Check if it's a multi-line comment
+        elif "\n" in text or len(text) > 80:
+            self._writeline("/*")
+            for line in text.split("\n"):
+                self._writeline(f" * {line.strip()}")
+            self._writeline(" */")
+        else:
+            self._writeline(f"// {text}")
+
+    def _write_leading_comments(self, comments: list[Comment]) -> None:
+        """Write leading comments."""
+        if not self.preserve_comments or not comments:
+            return
+
+        for comment in comments:
+            self._write_comment(comment, inline=False)
+
+    def _write_meta_item(self, key: str, value: Any, scope: object | None = None) -> None:
+        """Write a meta item (comment-aware mode)."""
+        indent = " " * (self.indent_level * self.indent_size)
+        self._write(indent)
+        self._write(f"{format_meta_key(key, scope)} = ")
+        self._write(format_meta_literal(value))
+
     # Visit methods
     def visit_yara_file(self, node: YaraFile) -> str:
         """Generate code for YaraFile."""
+        if not self.blank_line_between_sections:
+            return comment_visit_yara_file(self, node)
         return render_yara_file(self, node)
 
     def visit_import(self, node: Import) -> str:
@@ -216,6 +304,8 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_rule(self, node: Rule) -> str:
         """Generate code for Rule."""
+        if not self.blank_line_between_sections:
+            return comment_visit_rule(self, node)
         return render_rule(self, node)
 
     def _write_rule_header(self, node: Rule) -> None:
@@ -417,6 +507,12 @@ class CodeGenerator(ASTVisitor[str]):
         return render_of_expression(self, node)
 
     def visit_meta(self, node: Meta) -> str:
+        if not self.blank_line_between_sections:
+            indent = " " * (self.indent_level * self.indent_size)
+            self._write(indent)
+            self._write(f"{format_meta_key(node.key, getattr(node, 'scope', None))} = ")
+            self._write(format_meta_literal(node.value))
+            return ""
         return render_meta(node)
 
     def visit_module_reference(self, node: Any) -> str:
@@ -457,3 +553,116 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_pragma_block(self, node: Any) -> str:
         return render_pragma_block(self, node)
+
+    # YARA-X extended-syntax visitors
+    def visit_with_statement(self, node: WithStatement) -> str:
+        validate_expression_collection(node.declarations, "WithStatement declarations")
+        declarations = ", ".join(self.visit(declaration) for declaration in node.declarations)
+        return f"with {declarations}: {self.visit(node.body)}"
+
+    def visit_with_declaration(self, node: WithDeclaration) -> str:
+        return f"{node.identifier} = {self.visit(node.value)}"
+
+    def visit_array_comprehension(self, node: ArrayComprehension) -> str:
+        if node.expression is None or node.iterable is None:
+            msg = "Array comprehension requires expression and iterable for libyara output"
+            raise ValueError(msg)
+        result = (
+            f"[{self.visit(node.expression)} for {node.variable} " f"in {self.visit(node.iterable)}"
+        )
+        if node.condition is not None:
+            result += f" if {self.visit(node.condition)}"
+        return result + "]"
+
+    def visit_dict_comprehension(self, node: DictComprehension) -> str:
+        if node.key_expression is None or node.value_expression is None or node.iterable is None:
+            msg = "Dict comprehension requires key, value, and iterable for libyara output"
+            raise ValueError(msg)
+        variables = (
+            f"{node.key_variable}, {node.value_variable}"
+            if node.value_variable
+            else node.key_variable
+        )
+        result = (
+            f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
+            f"for {variables} in {self.visit(node.iterable)}"
+        )
+        if node.condition is not None:
+            result += f" if {self.visit(node.condition)}"
+        return result + "}"
+
+    def visit_tuple_expression(self, node: TupleExpression) -> str:
+        validate_expression_collection(node.elements, "TupleExpression elements")
+        if not node.elements:
+            return "()"
+        elements = [self.visit(element) for element in node.elements]
+        if len(elements) == 1:
+            return f"({elements[0]},)"
+        return f"({', '.join(elements)})"
+
+    def visit_tuple_indexing(self, node: TupleIndexing) -> str:
+        from yaraast.ast.expressions import FunctionCall, Identifier
+        from yaraast.yarax.ast_nodes import TupleExpression
+
+        tuple_str = self.visit(node.tuple_expr)
+        index_str = self.visit(node.index)
+        if isinstance(node.tuple_expr, FunctionCall | Identifier | TupleExpression):
+            return f"{tuple_str}[{index_str}]"
+        return f"({tuple_str})[{index_str}]"
+
+    def visit_list_expression(self, node: ListExpression) -> str:
+        validate_expression_collection(node.elements, "ListExpression elements")
+        return f"[{', '.join(self.visit(element) for element in node.elements)}]"
+
+    def visit_dict_expression(self, node: DictExpression) -> str:
+        from yaraast.yarax.ast_nodes import SpreadOperator
+
+        validate_expression_collection(node.items, "DictExpression items")
+        items = [
+            self.visit(item.value) if isinstance(item.value, SpreadOperator) else self.visit(item)
+            for item in node.items
+        ]
+        return f"{{{', '.join(items)}}}"
+
+    def visit_dict_item(self, node: DictItem) -> str:
+        return f"{self.visit(node.key)}: {self.visit(node.value)}"
+
+    def visit_slice_expression(self, node: SliceExpression) -> str:
+        parts = [
+            self.visit(node.start) if node.start is not None else "",
+            self.visit(node.stop) if node.stop is not None else "",
+        ]
+        if node.step is not None:
+            parts.append(self.visit(node.step))
+        return f"{self.visit(node.target)}[{':'.join(parts)}]"
+
+    def visit_lambda_expression(self, node: LambdaExpression) -> str:
+        validate_expression_collection(node.parameters, "LambdaExpression parameters")
+        parameters = ", ".join(node.parameters)
+        if parameters:
+            return f"lambda {parameters}: {self.visit(node.body)}"
+        return f"lambda: {self.visit(node.body)}"
+
+    def visit_pattern_match(self, node: PatternMatch) -> str:
+        validate_expression_collection(node.cases, "PatternMatch cases")
+        lines = [f"match {self.visit(node.value)} {{"]
+        case_indent = " " * self.indent_size
+        lines.extend(f"{case_indent}{self.visit(case)}," for case in node.cases)
+        default = node.default
+        if default is not None:
+            default_str = self._indent_continuation_lines(self.visit(default))
+            lines.append(f"{case_indent}_ => {default_str},")
+        lines.append("}")
+        return "\n".join(lines)
+
+    def visit_match_case(self, node: MatchCase) -> str:
+        result = self._indent_continuation_lines(self.visit(node.result))
+        return f"{self.visit(node.pattern)} => {result}"
+
+    def _indent_continuation_lines(self, text: str) -> str:
+        continuation_indent = " " * self.indent_size
+        return text.replace("\n", f"\n{continuation_indent}")
+
+    def visit_spread_operator(self, node: SpreadOperator) -> str:
+        prefix = "**" if node.is_dict else "..."
+        return f"{prefix}{self.visit(node.expression)}"
