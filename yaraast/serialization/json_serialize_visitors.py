@@ -10,6 +10,7 @@ from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
     _expected_type_names,
     _is_empty_nonempty_text,
+    _is_negated_nibble_pattern,
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.pragma_scopes import serialize_pragma_scope
@@ -145,13 +146,6 @@ def _serialize_hex_negated_value(value) -> int | str:
             return value
     msg = "HexNegatedByte value must be a byte or negated nibble"
     raise SerializationError(msg)
-
-
-def _is_negated_nibble_pattern(value: str) -> bool:
-    if len(value) != 2:
-        return False
-    first, second = value
-    return (first == "?" and second in _HEX_CHARS) or (first in _HEX_CHARS and second == "?")
 
 
 def _serialize_hex_jump_bound(value, field: str) -> int | None:

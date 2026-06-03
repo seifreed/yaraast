@@ -10,6 +10,7 @@ from typing import Any
 from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
     _is_empty_nonempty_text,
+    _is_negated_nibble_pattern,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -829,13 +830,6 @@ def _hex_negated_byte_value_to_protobuf(value: int | str) -> str:
     if isinstance(value, str) and _is_negated_nibble_pattern(value):
         return value
     return _hex_byte_like_value_to_protobuf(value, "HexNegatedByte value")
-
-
-def _is_negated_nibble_pattern(value: str) -> bool:
-    if len(value) != 2:
-        return False
-    first, second = value
-    return (first == "?" and second in _HEX_CHARS) or (first in _HEX_CHARS and second == "?")
 
 
 def _hex_byte_like_value_to_protobuf(value: int | str, context: str) -> str:
