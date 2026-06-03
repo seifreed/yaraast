@@ -90,5 +90,5 @@ def _parse_with_error_tolerant_parser(content: str) -> tuple:
         ast = parser.parse()
         return ast, [], []
     except (YaraASTError, ValueError):
-        error_parser = ErrorTolerantParser()
-        return error_parser.parse_with_errors(content)
+        result = ErrorTolerantParser().parse(content)
+        return result.ast, [], result.errors

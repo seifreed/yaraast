@@ -53,14 +53,13 @@ def test_error_tolerant_parser_invalid_lines() -> None:
     assert "ERROR:" in formatted or "error" in formatted.lower()
 
 
-def test_error_tolerant_parse_with_errors() -> None:
+def test_error_tolerant_parse_returns_result_with_errors() -> None:
     code = 'import "bad line'
     parser = ErrorTolerantParser()
-    ast, lexer_errors, parser_errors = parser.parse_with_errors(code)
+    result = parser.parse(code)
 
-    assert ast is not None
-    assert lexer_errors == []
-    assert parser_errors
+    assert result.ast is not None
+    assert result.errors
 
 
 def test_error_tolerant_parser_propagates_internal_parser_errors(

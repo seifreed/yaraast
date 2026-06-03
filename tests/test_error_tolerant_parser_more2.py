@@ -238,12 +238,11 @@ def test_recovered_condition_propagates_internal_parser_errors(
         ErrorTolerantParser()._parse_condition("$a or true")
 
 
-def test_parse_with_errors_api_and_format_errors_no_errors_branch() -> None:
+def test_parse_result_api_and_format_errors_no_errors_branch() -> None:
     p = ErrorTolerantParser()
-    ast, lexer_errors, parser_errors = p.parse_with_errors('import "broken')
-    assert ast is not None
-    assert lexer_errors == []
-    assert parser_errors
+    result = p.parse('import "broken')
+    assert result.ast is not None
+    assert result.errors
 
     clean = ErrorTolerantParser()
     clean.parse("rule x { condition: true }")

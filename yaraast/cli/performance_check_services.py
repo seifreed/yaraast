@@ -30,9 +30,7 @@ def parse_performance_file(input_file: Path) -> Any:
     content = read_text(input_file)
     if detect_dialect(content) == YaraDialect.YARA_X:
         return parse_yara_source(content)
-    parser = ErrorTolerantParser()
-    ast, _, _ = parser.parse_with_errors(content)
-    return ast
+    return ErrorTolerantParser().parse(content).ast
 
 
 def analyze_rule_issues(rule: Any) -> list[StringPerformanceIssue]:

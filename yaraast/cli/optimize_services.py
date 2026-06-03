@@ -21,8 +21,8 @@ class OptimizationAnalysis:
 def parse_yara_with_tolerance(content: str):
     if detect_dialect(content) == YaraDialect.YARA_X:
         return parse_yara_source(content), [], []
-    parser = ErrorTolerantParser()
-    return parser.parse_with_errors(content)
+    result = ErrorTolerantParser().parse(content)
+    return result.ast, [], result.errors
 
 
 def analyze_performance(ast) -> OptimizationAnalysis:

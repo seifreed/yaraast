@@ -9,21 +9,14 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.errors import YaraASTError
-from yaraast.parser.error_tolerant_flow import (
-    collect_rule_body,
-    extract_rule_header,
-    parse_rule_with_recovery,
-    parse_with_recovery,
-)
+from yaraast.parser.error_tolerant_flow import parse_with_recovery
 from yaraast.parser.error_tolerant_recovery import (
     create_rule_from_body,
     parse_condition,
     parse_import_line,
     parse_include_line,
     parse_meta_line,
-    parse_section_content,
     parse_string_line,
-    set_recovered_location,
 )
 from yaraast.parser.error_tolerant_types import ParserError, ParseResult, format_parser_errors
 from yaraast.parser.parser import Parser
@@ -52,13 +45,6 @@ class ErrorTolerantParser(Parser):
             return ParseResult(ast=ast, errors=list(self.errors), warnings=[])
         return ParseResult(ast=ast, errors=[], warnings=[])
 
-    def parse_with_errors(self, text: str) -> tuple[YaraFile, list, list]:
-        """Parse YARA text and return AST with separate error lists."""
-        result = self.parse(text)
-        lexer_errors = []  # Lexer errors would be handled separately
-        parser_errors = result.errors
-        return result.ast, lexer_errors, parser_errors
-
     def _parse_with_recovery(self, text: str) -> YaraFile:
         """Parse with error recovery strategies."""
         return parse_with_recovery(self)
@@ -71,60 +57,11 @@ class ErrorTolerantParser(Parser):
         """Parse an include statement."""
         return parse_include_line(self, line, line_num)
 
-    def _parse_rule_with_recovery(self, start_line: int) -> tuple[Rule | None, int]:
-        """Parse a rule with error recovery."""
-        return parse_rule_with_recovery(self, start_line)
-
-    def _extract_rule_header(self, line: str, line_num: int) -> tuple[str | None, list[str]]:
-        """Extract rule name and tags from rule declaration line."""
-        return extract_rule_header(self, line, line_num)
-
-    def _collect_rule_body(self, start_line: int, header_line: str) -> tuple[list[str], int]:
-        """Collect lines that form the rule body."""
-        return collect_rule_body(self, start_line, header_line)
-
     def _create_rule_from_body(
         self, name: str, tags: list[str], body_lines: list[str], start_line: int = 0
     ) -> Rule:
         """Create a Rule object from parsed body lines."""
         return create_rule_from_body(self, name, tags, body_lines, start_line)
-
-    def _parse_body_line(
-        self,
-        rule: Rule,
-        body_line: str,
-        current_section: str | None,
-        line_num: int,
-    ) -> str | None:
-        """Parse a single line from rule body. Returns updated section."""
-        stripped = body_line.strip()
-
-        if stripped.startswith("meta:"):
-            return "meta"
-        if stripped.startswith("strings:"):
-            return "strings"
-        if stripped.startswith("condition:"):
-            condition_text = stripped[10:].strip()
-            if condition_text:
-                rule.condition = self._parse_condition(condition_text, line_num, body_line)
-            return "condition"
-
-        if not stripped or stripped.startswith("}"):
-            return current_section
-
-        self._parse_section_content(rule, stripped, current_section, line_num, body_line)
-        return current_section
-
-    def _parse_section_content(
-        self,
-        rule: Rule,
-        line: str,
-        section: str | None,
-        line_num: int,
-        raw_line: str,
-    ) -> None:
-        """Parse content based on current section."""
-        parse_section_content(self, rule, line, section, line_num, raw_line)
 
     def _parse_meta_line(
         self, line: str, line_num: int | None = None, raw_line: str | None = None
@@ -151,16 +88,6 @@ class ErrorTolerantParser(Parser):
         if condition_text is None:
             return super()._parse_condition()
         return parse_condition(self, condition_text, line_num, raw_line)
-
-    def _set_recovered_location(
-        self,
-        node: Any,
-        line_num: int | None,
-        raw_line: str | None,
-        start_col: int,
-        end_col: int,
-    ) -> Any:
-        return set_recovered_location(self, node, line_num, raw_line, start_col, end_col)
 
     def _add_error(self, message: str, line: int, column: int, severity: str = "error") -> None:
         """Add a parsing error."""
