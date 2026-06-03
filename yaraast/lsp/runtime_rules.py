@@ -5,9 +5,19 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from lsprotocol.types import Location, Position, Range, TextEdit
+from lsprotocol.types import Location, Position, TextEdit
 
-from yaraast.lsp.document_types import ReferenceRecord, ResolvedSymbol, RuleLinkRecord, uri_to_path
+from yaraast.lsp.document_types import (
+    ReferenceRecord,
+    ResolvedSymbol,
+    RuleLinkRecord,
+    copy_location,
+    copy_range,
+    copy_reference_record,
+    copy_resolved_symbol,
+    copy_rule_link_record,
+    uri_to_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -15,54 +25,16 @@ if TYPE_CHECKING:
     from yaraast.lsp.runtime import LspRuntime
 
 
-def _copy_position(position: Position) -> Position:
-    return Position(line=position.line, character=position.character)
-
-
-def _copy_range(range_: Range) -> Range:
-    return Range(start=_copy_position(range_.start), end=_copy_position(range_.end))
-
-
-def _copy_location(location: Location) -> Location:
-    return Location(uri=location.uri, range=_copy_range(location.range))
-
-
 def _copy_locations(locations: list[Location]) -> list[Location]:
-    return [_copy_location(location) for location in locations]
-
-
-def _copy_resolved_symbol(symbol: ResolvedSymbol) -> ResolvedSymbol:
-    return ResolvedSymbol(
-        uri=symbol.uri,
-        name=symbol.name,
-        normalized_name=symbol.normalized_name,
-        kind=symbol.kind,
-        range=_copy_range(symbol.range),
-    )
-
-
-def _copy_reference_record(record: ReferenceRecord) -> ReferenceRecord:
-    return ReferenceRecord(
-        location=_copy_location(record.location),
-        role=record.role,
-        symbol_kind=record.symbol_kind,
-    )
+    return [copy_location(location) for location in locations]
 
 
 def _copy_reference_records(records: list[ReferenceRecord]) -> list[ReferenceRecord]:
-    return [_copy_reference_record(record) for record in records]
-
-
-def _copy_rule_link_record(record: RuleLinkRecord) -> RuleLinkRecord:
-    return RuleLinkRecord(
-        rule_name=record.rule_name,
-        location=_copy_location(record.location),
-        target_uri=record.target_uri,
-    )
+    return [copy_reference_record(record) for record in records]
 
 
 def _copy_rule_link_records(records: list[RuleLinkRecord]) -> list[RuleLinkRecord]:
-    return [_copy_rule_link_record(record) for record in records]
+    return [copy_rule_link_record(record) for record in records]
 
 
 def resolve_symbol(
@@ -79,9 +51,9 @@ def resolve_symbol(
             name=resolved.name,
             normalized_name=resolved.normalized_name,
             kind="rule",
-            range=_copy_range(resolved.range),
+            range=copy_range(resolved.range),
         )
-    return _copy_resolved_symbol(resolved) if resolved is not None else None
+    return copy_resolved_symbol(resolved) if resolved is not None else None
 
 
 def find_rule_definition(
@@ -92,7 +64,7 @@ def find_rule_definition(
     cache_key = (runtime.cache.generation, rule_name, current_uri)
     if cache_key in runtime.cache.rule_definition_cache:
         cached = runtime.cache.rule_definition_cache[cache_key]
-        return _copy_location(cached) if cached is not None else None
+        return copy_location(cached) if cached is not None else None
     ordered_docs = runtime.iter_workspace_documents()
     if current_uri:
         ordered_docs.sort(key=lambda doc: doc.uri != current_uri)
@@ -100,7 +72,7 @@ def find_rule_definition(
         location = doc.find_rule_definition(rule_name)
         if location is not None:
             runtime.cache.rule_definition_cache[cache_key] = location
-            return _copy_location(location)
+            return copy_location(location)
     runtime.cache.rule_definition_cache[cache_key] = None
     return None
 

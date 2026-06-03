@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lsprotocol.types import Location, Position, Range, TextEdit
+from lsprotocol.types import Location, Position, TextEdit
 
 from yaraast.lsp.document_query_reference_ast import (
     build_string_rename_edits_from_ast,
@@ -16,51 +16,29 @@ from yaraast.lsp.document_query_reference_text import (
     line_has_assignment,
     matches_resolved_symbol,
 )
-from yaraast.lsp.document_types import ReferenceRecord, RuleLinkRecord
+from yaraast.lsp.document_types import (
+    ReferenceRecord,
+    RuleLinkRecord,
+    copy_location,
+    copy_reference_record,
+    copy_rule_link_record,
+)
 from yaraast.lsp.structure import make_range
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
 
 
-def _copy_position(position: Position) -> Position:
-    return Position(line=position.line, character=position.character)
-
-
-def _copy_range(range_: Range) -> Range:
-    return Range(start=_copy_position(range_.start), end=_copy_position(range_.end))
-
-
-def _copy_location(location: Location) -> Location:
-    return Location(uri=location.uri, range=_copy_range(location.range))
-
-
 def _copy_locations(locations: list[Location]) -> list[Location]:
-    return [_copy_location(location) for location in locations]
-
-
-def _copy_reference_record(record: ReferenceRecord) -> ReferenceRecord:
-    return ReferenceRecord(
-        location=_copy_location(record.location),
-        role=record.role,
-        symbol_kind=record.symbol_kind,
-    )
+    return [copy_location(location) for location in locations]
 
 
 def _copy_reference_records(records: list[ReferenceRecord]) -> list[ReferenceRecord]:
-    return [_copy_reference_record(record) for record in records]
-
-
-def _copy_rule_link_record(record: RuleLinkRecord) -> RuleLinkRecord:
-    return RuleLinkRecord(
-        rule_name=record.rule_name,
-        location=_copy_location(record.location),
-        target_uri=record.target_uri,
-    )
+    return [copy_reference_record(record) for record in records]
 
 
 def _copy_rule_link_records(records: list[RuleLinkRecord]) -> list[RuleLinkRecord]:
-    return [_copy_rule_link_record(record) for record in records]
+    return [copy_rule_link_record(record) for record in records]
 
 
 def find_string_references(
@@ -192,12 +170,12 @@ def find_rule_definition(ctx: DocumentContext, rule_name: str) -> Location | Non
     cache_key = f"rule_definition:{rule_name}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return _copy_location(cached)
+        return copy_location(cached)
     for symbol in ctx._symbols_of_kind("rule"):
         if symbol.name == rule_name:
             result = Location(uri=ctx.uri, range=symbol.range)
             ctx.set_cached(cache_key, result)
-            return _copy_location(result)
+            return copy_location(result)
     return None
 
 

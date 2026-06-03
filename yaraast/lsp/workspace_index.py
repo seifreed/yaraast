@@ -9,7 +9,11 @@ from pathlib import Path
 from lsprotocol.types import SymbolInformation
 
 from yaraast.lsp.document_context import DocumentContext
-from yaraast.lsp.document_types import YARA_FILE_SUFFIXES, SymbolRecord
+from yaraast.lsp.document_types import (
+    YARA_FILE_SUFFIXES,
+    SymbolRecord,
+    require_workspace_symbol_query,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +26,6 @@ def _normalize_workspace_folders(folders: object) -> list[Path]:
         msg = "Workspace folder paths must not be empty"
         raise ValueError(msg)
     return [Path(folder) for folder in folders]
-
-
-def _require_workspace_symbol_query(query: object) -> str:
-    if not isinstance(query, str):
-        raise TypeError("Workspace symbol query must be a string")
-    return query
 
 
 def _normalize_excluded_uris(exclude_uris: object) -> set[str]:
@@ -118,7 +116,7 @@ class WorkspaceIndex:
         *,
         exclude_uris: object = None,
     ) -> list[SymbolRecord]:
-        query = _require_workspace_symbol_query(query)
+        query = require_workspace_symbol_query(query)
         query_lower = query.lower()
         excluded = _normalize_excluded_uris(exclude_uris)
         result: list[SymbolRecord] = []

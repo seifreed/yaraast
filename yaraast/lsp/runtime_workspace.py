@@ -6,20 +6,14 @@ from typing import TYPE_CHECKING
 
 from lsprotocol.types import SymbolInformation
 
-from yaraast.lsp.document_types import SymbolRecord
+from yaraast.lsp.document_types import SymbolRecord, require_workspace_symbol_query
 
 if TYPE_CHECKING:
     from yaraast.lsp.runtime import LspRuntime
 
 
-def _require_workspace_symbol_query(query: object) -> str:
-    if not isinstance(query, str):
-        raise TypeError("Workspace symbol query must be a string")
-    return query
-
-
 def workspace_symbols(runtime: LspRuntime, query: object) -> list[SymbolInformation]:
-    query = _require_workspace_symbol_query(query)
+    query = require_workspace_symbol_query(query)
     query_lower = query.lower()
     return [
         record.to_symbol_information()
@@ -29,7 +23,7 @@ def workspace_symbols(runtime: LspRuntime, query: object) -> list[SymbolInformat
 
 
 def workspace_symbol_records(runtime: LspRuntime, query: object = "") -> list[SymbolRecord]:
-    query = _require_workspace_symbol_query(query)
+    query = require_workspace_symbol_query(query)
     if not runtime.config.cache_workspace:
         return _uncached_workspace_symbol_records(runtime, query)
     cache_key = (runtime.cache.generation, query)

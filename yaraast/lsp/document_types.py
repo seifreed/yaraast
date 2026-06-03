@@ -166,3 +166,47 @@ class RuleLinkRecord:
     rule_name: str
     location: Location
     target_uri: str
+
+
+def copy_position(position: Position) -> Position:
+    return Position(line=position.line, character=position.character)
+
+
+def copy_location(location: Location) -> Location:
+    return Location(uri=location.uri, range=copy_range(location.range))
+
+
+def copy_range(range_: Range) -> Range:
+    return Range(start=copy_position(range_.start), end=copy_position(range_.end))
+
+
+def copy_reference_record(record: ReferenceRecord) -> ReferenceRecord:
+    return ReferenceRecord(
+        location=copy_location(record.location),
+        role=record.role,
+        symbol_kind=record.symbol_kind,
+    )
+
+
+def copy_rule_link_record(record: RuleLinkRecord) -> RuleLinkRecord:
+    return RuleLinkRecord(
+        rule_name=record.rule_name,
+        location=copy_location(record.location),
+        target_uri=record.target_uri,
+    )
+
+
+def copy_resolved_symbol(symbol: ResolvedSymbol) -> ResolvedSymbol:
+    return ResolvedSymbol(
+        uri=symbol.uri,
+        name=symbol.name,
+        normalized_name=symbol.normalized_name,
+        kind=symbol.kind,
+        range=copy_range(symbol.range),
+    )
+
+
+def require_workspace_symbol_query(query: object) -> str:
+    if not isinstance(query, str):
+        raise TypeError("Workspace symbol query must be a string")
+    return query
