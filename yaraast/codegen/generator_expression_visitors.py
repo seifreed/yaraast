@@ -104,10 +104,14 @@ def _is_definitely_non_numeric_expression(value: Any) -> bool:
 
 
 def _is_definitely_non_integer_expression(value: Any) -> bool:
-    from yaraast.ast.expressions import DoubleLiteral, ParenthesesExpression
+    from yaraast.ast.expressions import DoubleLiteral, ParenthesesExpression, UnaryExpression
 
     if isinstance(value, ParenthesesExpression):
         return _is_definitely_non_integer_expression(value.expression)
+    if isinstance(value, UnaryExpression):
+        operand = _unwrap_parenthesized_expression(value.operand)
+        if value.operator == "-" and isinstance(operand, DoubleLiteral | float):
+            return True
     return isinstance(value, float | DoubleLiteral) or _is_definitely_non_numeric_expression(value)
 
 
@@ -144,6 +148,7 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
         BooleanLiteral,
         DoubleLiteral,
         IntegerLiteral,
+        ParenthesesExpression,
         RegexLiteral,
         StringIdentifier,
         StringLiteral,
@@ -151,6 +156,8 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
 
     left = _unwrap_parenthesized_expression(node.left)
     right = _unwrap_parenthesized_expression(node.right)
+    left_type = _constant_comparison_operand_type(left)
+    right_type = _constant_comparison_operand_type(right)
     invalid_left = (
         bool,
         int,
@@ -161,20 +168,25 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
         RegexLiteral,
         StringIdentifier,
     )
-    if isinstance(left, invalid_left):
+    if isinstance(left, invalid_left) or left_type in {"integer", "double"}:
         msg = (
             f"Left operand of '{node.operator}' must be string-like or array " "for libyara output"
         )
         raise ValueError(msg)
     if node.operator == "matches":
+        if isinstance(node.right, ParenthesesExpression) and isinstance(right, RegexLiteral):
+            msg = "Right operand of 'matches' must be regex for libyara output"
+            raise ValueError(msg)
         if isinstance(
             right,
             StringLiteral | BooleanLiteral | IntegerLiteral | DoubleLiteral | StringIdentifier,
-        ):
+        ) or right_type in {"integer", "double"}:
             msg = "Right operand of 'matches' must be regex for libyara output"
             raise ValueError(msg)
         return
-    if isinstance(right, bool | int | float | BooleanLiteral | IntegerLiteral | DoubleLiteral):
+    if isinstance(
+        right, bool | int | float | BooleanLiteral | IntegerLiteral | DoubleLiteral
+    ) or right_type in {"integer", "double"}:
         msg = f"Right operand of '{node.operator}' must be string for libyara output"
         raise ValueError(msg)
     if isinstance(right, RegexLiteral | StringIdentifier):
@@ -224,17 +236,17 @@ def _reject_negative_shift_count(node: Any) -> None:
 
 
 def _constant_comparison_operand_type(value: Any) -> str | None:
-    from yaraast.ast.expressions import DoubleLiteral, IntegerLiteral, StringLiteral
+    from yaraast.ast.expressions import DoubleLiteral, StringLiteral, UnaryExpression
 
     value = _unwrap_parenthesized_expression(value)
     if isinstance(value, StringLiteral | str):
         return "string"
-    if isinstance(value, IntegerLiteral):
-        if isinstance(value.value, bool):
-            return None
+    if _constant_integer_value(value) is not None:
         return "integer"
-    if isinstance(value, int) and not isinstance(value, bool):
-        return "integer"
+    if isinstance(value, UnaryExpression):
+        operand = _unwrap_parenthesized_expression(value.operand)
+        if value.operator == "-" and isinstance(operand, DoubleLiteral | float):
+            return "double"
     if isinstance(value, DoubleLiteral | float):
         return "double"
     return None

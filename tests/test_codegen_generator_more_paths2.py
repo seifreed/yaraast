@@ -2025,6 +2025,46 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
             "Incompatible types for '!=': string and integer",
         ),
         (
+            BinaryExpression(
+                ParenthesesExpression(UnaryExpression("-", IntegerLiteral(1))),
+                "==",
+                StringLiteral("x"),
+            ),
+            "Incompatible types for '==': integer and string",
+        ),
+        (
+            BinaryExpression(
+                StringLiteral("x"),
+                ">=",
+                ParenthesesExpression(UnaryExpression("-", IntegerLiteral(1))),
+            ),
+            "Incompatible types for '>=': string and integer",
+        ),
+        (
+            BinaryExpression(
+                ParenthesesExpression(UnaryExpression("-", IntegerLiteral(1))),
+                "contains",
+                StringLiteral("x"),
+            ),
+            "Left operand of 'contains' must be string-like or array",
+        ),
+        (
+            BinaryExpression(
+                StringLiteral("x"),
+                "startswith",
+                ParenthesesExpression(UnaryExpression("-", IntegerLiteral(1))),
+            ),
+            "Right operand of 'startswith' must be string",
+        ),
+        (
+            BinaryExpression(
+                StringLiteral("x"),
+                "matches",
+                ParenthesesExpression(RegexLiteral("x")),
+            ),
+            "Right operand of 'matches' must be regex",
+        ),
+        (
             BinaryExpression(IntegerLiteral(1), "/", IntegerLiteral(0)),
             "Right operand of '/' cannot be zero",
         ),
@@ -2051,6 +2091,14 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
         (
             BinaryExpression(IntegerLiteral(1), "&", DoubleLiteral(1.5)),
             "Right operand of '&' must be integer",
+        ),
+        (
+            BinaryExpression(
+                ParenthesesExpression(UnaryExpression("-", DoubleLiteral(1.5))),
+                "&",
+                IntegerLiteral(1),
+            ),
+            "Left operand of '&' must be integer",
         ),
         (
             BinaryExpression(IntegerLiteral(1), "<<", UnaryExpression("-", IntegerLiteral(1))),
