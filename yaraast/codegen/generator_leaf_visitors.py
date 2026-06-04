@@ -101,6 +101,9 @@ def visit_string_offset(generator: Any, node: Any) -> str:
         allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
     )
     if node.index is not None:
+        _reject_boolean_expression(
+            node.index, "String offset index must be integer for libyara output"
+        )
         return f"@{suffix}[{generator.visit(node.index)}]"
     return f"@{suffix}"
 
@@ -111,6 +114,9 @@ def visit_string_length(generator: Any, node: Any) -> str:
         allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
     )
     if node.index is not None:
+        _reject_boolean_expression(
+            node.index, "String length index must be integer for libyara output"
+        )
         return f"!{suffix}[{generator.visit(node.index)}]"
     return f"!{suffix}"
 
@@ -143,21 +149,22 @@ def visit_module_reference(node: Any) -> str:
     return validate_yara_identifier(node.module, "module")
 
 
-def _reject_boolean_dictionary_key(value: Any) -> None:
+def _reject_boolean_expression(value: Any, message: str) -> None:
     from yaraast.ast.expressions import BooleanLiteral, ParenthesesExpression
 
     if isinstance(value, bool | BooleanLiteral):
-        msg = "Dictionary key must be string or integer for libyara output"
-        raise ValueError(msg)
+        raise ValueError(message)
     if isinstance(value, ParenthesesExpression):
-        _reject_boolean_dictionary_key(value.expression)
+        _reject_boolean_expression(value.expression, message)
 
 
 def visit_dictionary_access(generator: Any, node: Any) -> str:
     obj = generator.visit(node.object)
     if isinstance(node.key, str):
         return f'{obj}["{escape_string_literal(node.key)}"]'
-    _reject_boolean_dictionary_key(node.key)
+    _reject_boolean_expression(
+        node.key, "Dictionary key must be string or integer for libyara output"
+    )
     return f"{obj}[{generator.visit(node.key)}]"
 
 

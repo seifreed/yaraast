@@ -122,6 +122,10 @@ def test_codegen_generator_additional_visit_paths() -> None:
     )
     assert gen.visit_string_offset(StringOffset(string_id="a", index=None)) == "@a"
     assert gen.visit_string_length(StringLength(string_id="a", index=None)) == "!a"
+    with pytest.raises(ValueError, match="String offset index must be integer"):
+        gen.visit_string_offset(StringOffset("a", BooleanLiteral(True)))
+    with pytest.raises(ValueError, match="String length index must be integer"):
+        gen.visit_string_length(StringLength("a", ParenthesesExpression(BooleanLiteral(False))))
     assert gen.visit_unary_expression(UnaryExpression("-", IntegerLiteral(1))) == "-1"
     assert (
         gen.visit_in_expression(
