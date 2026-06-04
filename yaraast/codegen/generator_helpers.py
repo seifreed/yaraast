@@ -54,6 +54,28 @@ _UNSUPPORTED_SPACED_STRING_MODIFIERS = frozenset(
         "utf16be",
     }
 )
+_KNOWN_STRING_MODIFIERS = frozenset(
+    {
+        "ascii",
+        "base64",
+        "base64wide",
+        "case",
+        "dotall",
+        "fullword",
+        "i",
+        "m",
+        "multiline",
+        "nocase",
+        "private",
+        "s",
+        "utf8",
+        "utf16",
+        "utf16be",
+        "utf16le",
+        "wide",
+        "xor",
+    }
+)
 _HEX_ALLOWED_MODIFIERS = frozenset({"private"})
 _REGEX_DISALLOWED_MODIFIERS = frozenset({"base64", "base64wide", "xor"})
 _BASE64_INCOMPATIBLE_MODIFIERS = frozenset({"fullword", "nocase", "xor"})
@@ -720,7 +742,7 @@ def _format_base64_modifier_value(name: str, value: object) -> str:
 
 
 def _validate_spaced_string_modifier(name: str) -> None:
-    if name in _UNSUPPORTED_SPACED_STRING_MODIFIERS:
+    if name in _UNSUPPORTED_SPACED_STRING_MODIFIERS or name not in _KNOWN_STRING_MODIFIERS:
         msg = f"Unsupported string modifier for libyara output: {name}"
         raise ValueError(msg)
 

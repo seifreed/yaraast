@@ -670,6 +670,7 @@ def test_codegen_generator_rejects_unsupported_spaced_string_modifiers() -> None
         PlainString("$utf", value="abc", modifiers=[StringModifier.from_name_value("utf16")]),
         PlainString("$raw", value="abc", modifiers=["i"]),
         PlainString("$dotall", value="abc", modifiers=[StringModifier.from_name_value("dotall")]),
+        PlainString("$unknown", value="abc", modifiers=["unknown"]),
         RegexString("$regex", regex="abc", modifiers=[StringModifier.from_name_value("utf8")]),
     ]
 
