@@ -38,6 +38,8 @@ rule ok {
     check_fail = runner.invoke(fmt, [str(needs_format), "--check"])
     assert check_fail.exit_code != 0
     assert "needs formatting" in check_fail.output
+    assert "Error:" not in check_fail.output
+    assert "Aborted!" not in check_fail.output
 
     diff_result = runner.invoke(fmt, [str(needs_format), "--diff", "--style", "pretty"])
     assert diff_result.exit_code == 0

@@ -84,7 +84,7 @@ def _handle_format_check(formatter, input_path: Path) -> None:
     needs_format, issues = check_format(formatter, input_path)
     display_format_check(console, input_path, needs_format, issues)
     if needs_format:
-        raise click.Abort from None
+        raise SystemExit(1) from None
 
 
 def _show_format_diff(formatter, input_path: Path, style: str) -> None:
@@ -92,7 +92,7 @@ def _show_format_diff(formatter, input_path: Path, style: str) -> None:
     original, success, formatted = format_for_diff(formatter, input_path, style)
     if not success:
         display_format_error(console, formatted)
-        raise click.Abort from None
+        raise SystemExit(1) from None
     display_format_diff(console, input_path, original, formatted)
 
 
@@ -101,5 +101,5 @@ def _format_file(formatter, input_path: Path, output_path: Path, style: str) -> 
     success, result = format_file(formatter, input_path, output_path, style)
     if not success:
         display_format_error(console, result)
-        raise click.Abort from None
+        raise SystemExit(1) from None
     display_format_result(console, input_path, output_path, style)
