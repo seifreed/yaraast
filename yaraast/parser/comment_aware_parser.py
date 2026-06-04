@@ -406,7 +406,7 @@ class CommentAwareParser(Parser):
                 raise ParserError(msg, self._peek())
 
             # Parse string value
-            string_def = None
+            string_def: StringDefinition
             if self._match(TokenType.STRING):
                 string_token = self._previous()
                 value = string_token.value

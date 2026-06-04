@@ -7,6 +7,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import Location, YaraFile
+from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.extern import ExternRule
 from yaraast.ast.pragmas import IncludeOncePragma
@@ -39,6 +40,14 @@ def test_ast_node_children_and_location() -> None:
     loc = Location(line=10, column=5, file="test.yar")
     rule.location = loc
     assert rule.location.file == "test.yar"
+
+
+def test_comment_group_exposes_aggregate_text() -> None:
+    group = CommentGroup([Comment("one"), Comment("two")])
+
+    assert group.text == "one\ntwo"
+    group.text = "three\nfour"
+    assert [comment.text for comment in group.comments] == ["three", "four"]
 
 
 def test_ast_node_children_flattens_nested_ast_lists() -> None:

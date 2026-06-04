@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from yaraast.ast.comments import Comment
+    from yaraast.ast.comments import Comment, CommentGroup
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
     from yaraast.ast.pragmas import Pragma, PragmaType
     from yaraast.ast.rules import Import, Include, Rule
@@ -39,7 +39,7 @@ class ASTNode(ABC):
         init=False,
         compare=False,
     )
-    trailing_comment: Comment | None = field(default=None, init=False, compare=False)
+    trailing_comment: Comment | CommentGroup | None = field(default=None, init=False, compare=False)
 
     @abstractmethod
     def accept(self, visitor: _VisitorType) -> Any:

@@ -23,5 +23,15 @@ class CommentGroup(ASTNode):
 
     comments: list[Comment]
 
+    @property
+    def text(self) -> str:
+        """Return the group text as newline-separated comment text."""
+        return "\n".join(comment.text for comment in self.comments)
+
+    @text.setter
+    def text(self, value: str) -> None:
+        lines = value.splitlines() or [""]
+        self.comments = [Comment(line) for line in lines]
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_comment_group(self)
