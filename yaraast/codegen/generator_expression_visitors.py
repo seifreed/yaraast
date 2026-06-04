@@ -220,6 +220,23 @@ def _reject_negative_shift_count(node: Any) -> None:
         raise ValueError(msg)
 
 
+def _constant_comparison_operand_type(value: Any) -> str | None:
+    from yaraast.ast.expressions import DoubleLiteral, IntegerLiteral, StringLiteral
+
+    value = _unwrap_parenthesized_expression(value)
+    if isinstance(value, StringLiteral | str):
+        return "string"
+    if isinstance(value, IntegerLiteral):
+        if isinstance(value.value, bool):
+            return None
+        return "integer"
+    if isinstance(value, int) and not isinstance(value, bool):
+        return "integer"
+    if isinstance(value, DoubleLiteral | float):
+        return "double"
+    return None
+
+
 def _reject_invalid_comparison_operands(node: Any) -> None:
     if node.operator not in _COMPARISON_BINARY_OPERATORS:
         return
@@ -233,6 +250,16 @@ def _reject_invalid_comparison_operands(node: Any) -> None:
         raise ValueError(msg)
     if isinstance(left, RegexLiteral) or isinstance(right, RegexLiteral):
         msg = f"Regex operands cannot be used with '{node.operator}' comparisons"
+        raise ValueError(msg)
+    left_type = _constant_comparison_operand_type(left)
+    right_type = _constant_comparison_operand_type(right)
+    if (left_type == "string" and right_type in {"integer", "double"}) or (
+        right_type == "string" and left_type in {"integer", "double"}
+    ):
+        msg = (
+            f"Incompatible types for '{node.operator}': {left_type} and {right_type} "
+            "for libyara output"
+        )
         raise ValueError(msg)
 
 

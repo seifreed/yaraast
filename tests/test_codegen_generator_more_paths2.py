@@ -2009,6 +2009,22 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
             "Regex operands cannot be used with '==' comparisons",
         ),
         (
+            BinaryExpression(IntegerLiteral(1), "<", StringLiteral("x")),
+            "Incompatible types for '<': integer and string",
+        ),
+        (
+            BinaryExpression(StringLiteral("x"), ">=", DoubleLiteral(1.5)),
+            "Incompatible types for '>=': string and double",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), "==", StringLiteral("x")),
+            "Incompatible types for '==': integer and string",
+        ),
+        (
+            BinaryExpression(StringLiteral("x"), "!=", IntegerLiteral(1)),
+            "Incompatible types for '!=': string and integer",
+        ),
+        (
             BinaryExpression(IntegerLiteral(1), "/", IntegerLiteral(0)),
             "Right operand of '/' cannot be zero",
         ),
