@@ -55,6 +55,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.codegen.generator_expression_visitors import (
+    validate_condition_expression,
     validate_expression_collection,
     visit_array_access as render_array_access,
     visit_at_expression as render_at_expression,
@@ -346,6 +347,8 @@ class CodeGenerator(ASTVisitor[str]):
 
     def _write_condition_section(self, condition: Any) -> None:
         """Write condition section if present."""
+        if condition is not None:
+            validate_condition_expression(self, condition)
         self._layout.write_condition_section(self, condition)
 
     def visit_tag(self, node: Tag) -> str:

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.codegen.generator_expression_visitors import validate_condition_expression
 from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     format_rule_tags,
@@ -171,6 +172,7 @@ def _write_condition_section(gen: Any, node: Any) -> None:
     condition = node.condition
     if condition is None:
         return
+    validate_condition_expression(gen, condition)
 
     gen._writeline("condition:")
     gen._indent()

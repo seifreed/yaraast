@@ -3299,6 +3299,65 @@ def test_codegen_generators_reject_invalid_module_container_access(
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            ModuleReference("pe"),
+            "Module 'pe' cannot be used as a condition value",
+        ),
+        (
+            MemberAccess(ModuleReference("pe"), "sections"),
+            "Module expression 'pe\\.sections' cannot be used as a condition value",
+        ),
+        (
+            MemberAccess(ModuleReference("pe"), "version_info"),
+            "Module expression 'pe\\.version_info' cannot be used as a condition value",
+        ),
+        (
+            MemberAccess(ModuleReference("pe"), "rich_signature"),
+            "Module expression 'pe\\.rich_signature' cannot be used as a condition value",
+        ),
+        (
+            ArrayAccess(MemberAccess(ModuleReference("pe"), "sections"), IntegerLiteral(0)),
+            "Module expression 'pe\\.sections\\[0\\]' cannot be used as a condition value",
+        ),
+        (
+            BinaryExpression(
+                MemberAccess(ModuleReference("pe"), "sections"), "==", IntegerLiteral(0)
+            ),
+            "Module expression 'pe\\.sections' cannot be used as a condition value",
+        ),
+        (
+            ForExpression(
+                "any",
+                "item",
+                MemberAccess(ModuleReference("pe"), "rich_signature"),
+                BooleanLiteral(True),
+            ),
+            "Module expression 'pe\\.rich_signature' cannot be used as a condition value",
+        ),
+    ],
+)
+def test_codegen_generators_reject_bare_module_container_condition_values(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        imports=[Import("pe")],
+        rules=[Rule(name="bare_module_container_condition", condition=condition)],
+    )
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         MemberAccess(ModuleReference("pe"), "is_pe"),
@@ -3350,6 +3409,22 @@ def test_codegen_generators_reject_missing_module_imports(condition: Any) -> Non
             "name",
         ),
         MemberAccess(MemberAccess(ModuleReference("pe"), "rich_signature"), "offset"),
+        ForExpression(
+            "any",
+            "section",
+            MemberAccess(ModuleReference("pe"), "sections"),
+            BinaryExpression(
+                MemberAccess(Identifier("section"), "name"),
+                "==",
+                StringLiteral(".text"),
+            ),
+        ),
+        ForExpression(
+            "any",
+            "key,value",
+            MemberAccess(ModuleReference("pe"), "version_info"),
+            BinaryExpression(Identifier("key"), "==", StringLiteral("CompanyName")),
+        ),
     ],
 )
 def test_codegen_generators_allow_valid_module_function_calls(condition: Any) -> None:

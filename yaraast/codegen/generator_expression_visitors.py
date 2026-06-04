@@ -740,6 +740,123 @@ def require_present_expression(value: Any, field_name: str) -> Any:
     return value
 
 
+def validate_condition_expression(generator: Any, condition: Any) -> None:
+    _reject_bare_module_container_expression(generator, condition, allowed_as_container=False)
+
+
+def _reject_bare_module_container_expression(
+    generator: Any,
+    value: Any,
+    *,
+    allowed_as_container: bool,
+) -> None:
+    from yaraast.ast.conditions import ForExpression
+    from yaraast.ast.expressions import ArrayAccess, FunctionCall, MemberAccess
+    from yaraast.ast.modules import DictionaryAccess, ModuleReference
+    from yaraast.types._registry_collections import ArrayType, DictionaryType, StructType
+
+    if value is None:
+        return
+    if isinstance(value, ModuleReference):
+        if not allowed_as_container:
+            rendered = generator.visit(value)
+            msg = f"Module '{rendered}' cannot be used as a condition value"
+            raise ValueError(msg)
+        return
+
+    if isinstance(value, ForExpression):
+        _reject_bare_module_container_expression(
+            generator,
+            value.quantifier,
+            allowed_as_container=False,
+        )
+        iterable_type = known_builtin_module_expression_type(value.iterable)
+        _reject_bare_module_container_expression(
+            generator,
+            value.iterable,
+            allowed_as_container=isinstance(iterable_type, ArrayType | DictionaryType),
+        )
+        _reject_bare_module_container_expression(
+            generator,
+            value.body,
+            allowed_as_container=False,
+        )
+        return
+
+    if isinstance(value, MemberAccess):
+        _reject_bare_module_container_expression(
+            generator,
+            value.object,
+            allowed_as_container=True,
+        )
+    elif isinstance(value, ArrayAccess):
+        _reject_bare_module_container_expression(
+            generator,
+            value.array,
+            allowed_as_container=True,
+        )
+        _reject_bare_module_container_expression(
+            generator,
+            value.index,
+            allowed_as_container=False,
+        )
+    elif isinstance(value, DictionaryAccess):
+        _reject_bare_module_container_expression(
+            generator,
+            value.object,
+            allowed_as_container=True,
+        )
+        if not isinstance(value.key, str):
+            _reject_bare_module_container_expression(
+                generator,
+                value.key,
+                allowed_as_container=False,
+            )
+    elif isinstance(value, FunctionCall):
+        receiver = getattr(value, "receiver", None)
+        if receiver is not None:
+            _reject_bare_module_container_expression(
+                generator,
+                receiver,
+                allowed_as_container=True,
+            )
+        for argument in value.arguments:
+            _reject_bare_module_container_expression(
+                generator,
+                argument,
+                allowed_as_container=False,
+            )
+        return
+    elif isinstance(value, list | tuple | set | frozenset):
+        for item in value:
+            _reject_bare_module_container_expression(
+                generator,
+                item,
+                allowed_as_container=False,
+            )
+        return
+    elif hasattr(value, "__dict__"):
+        for field_name, field_value in vars(value).items():
+            if field_name in {"location", "leading_comments", "trailing_comment"}:
+                continue
+            _reject_bare_module_container_expression(
+                generator,
+                field_value,
+                allowed_as_container=False,
+            )
+        return
+    else:
+        return
+
+    expression_type = known_builtin_module_expression_type(value)
+    if not allowed_as_container and isinstance(
+        expression_type, ArrayType | DictionaryType | StructType
+    ):
+        rendered = generator.visit(value)
+        msg = f"Module expression '{rendered}' cannot be used as a condition value"
+        raise ValueError(msg)
+
+
 def _reject_non_integer_expression(value: Any, field_name: str) -> None:
     if _is_definitely_non_integer_expression(value):
         msg = f"{field_name} must be integer for libyara output"
