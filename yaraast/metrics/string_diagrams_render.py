@@ -97,6 +97,7 @@ def generate_string_diagram(string_def) -> str:
 def generate_pattern_report(strings: list) -> dict[str, Any]:
     """Generate comprehensive pattern analysis report."""
     analysis = analyze_string_patterns(strings)
+    details: list[dict[str, Any]] = []
 
     report = {
         "summary": {
@@ -104,7 +105,7 @@ def generate_pattern_report(strings: list) -> dict[str, Any]:
             "by_type": analysis["types"],
             "unique_patterns": len({string_pattern_identity(string_def) for string_def in strings}),
         },
-        "details": [],
+        "details": details,
     }
 
     # Add details for each string
@@ -123,6 +124,6 @@ def generate_pattern_report(strings: list) -> dict[str, Any]:
         elif isinstance(string_def, RegexString):
             detail["pattern"] = string_def.regex
 
-        report["details"].append(detail)
+        details.append(detail)
 
     return report
