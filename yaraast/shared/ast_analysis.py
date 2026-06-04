@@ -21,7 +21,7 @@ from yaraast.parser.source import parse_yara_source, parse_yara_source_with_comm
 from yaraast.visitor.base import BaseVisitor
 from yaraast.yarax.generator import YaraXGenerator
 
-StringDef = PlainString | HexString | RegexString
+type StringDef = PlainString | HexString | RegexString
 
 
 def _require_file_path(value: object, name: str) -> Path:
