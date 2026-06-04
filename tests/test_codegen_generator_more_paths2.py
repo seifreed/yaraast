@@ -1802,6 +1802,28 @@ def test_codegen_generators_reject_invalid_meta_values(meta_value: Any) -> None:
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize("meta_value", [2**63, -(2**63)])
+def test_codegen_generators_reject_out_of_range_meta_integers(meta_value: int) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_meta_integer",
+                meta=[Meta("bad", meta_value)],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generators_escape_quoted_meta_string_values() -> None:
     ast = YaraFile(
         rules=[

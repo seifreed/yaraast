@@ -13,6 +13,7 @@ from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
     format_hex_jump_bounds,
+    format_integer_literal,
 )
 from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.regex_literals import validate_regex_modifiers
@@ -275,7 +276,7 @@ def format_meta_literal(value: Any, *, preserve_quoted: bool = False) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, int):
-        return str(value)
+        return format_integer_literal(value)
     msg = f"Invalid meta value type '{type(value).__name__}' for libyara output"
     raise TypeError(msg)
 
