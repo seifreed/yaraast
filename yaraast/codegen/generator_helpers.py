@@ -129,6 +129,9 @@ def escape_regex_delimiter(pattern: str) -> str:
     if "\n" in pattern or "\r" in pattern:
         msg = "Regex pattern must not contain line breaks for libyara output"
         raise ValueError(msg)
+    if "\x00" in pattern:
+        msg = "Regex pattern must not contain NUL bytes for libyara output"
+        raise ValueError(msg)
     return _escape_regex_delimiter(pattern)
 
 
