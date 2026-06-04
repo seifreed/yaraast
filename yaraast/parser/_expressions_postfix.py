@@ -80,23 +80,27 @@ class ExpressionPostfixMixin:
         member = str(self._previous().value)
         namespace = self._dotted_expression_name(expr)
         if namespace is not None and self._is_extern_rule_reference(member, namespace):
-            node = ExternRuleReference(rule_name=member, namespace=namespace)
+            extern_reference = ExternRuleReference(rule_name=member, namespace=namespace)
             if getattr(expr, "location", None) is not None:
-                node.location = self._location_from_tokens(
+                extern_reference.location = self._location_from_tokens(
                     self._synthetic_token_from_location(expr.location),
                     self._previous(),
                 )
-                return node
-            return self._set_node_location_from_tokens(node, dot_token, self._previous())
+                return extern_reference
+            return self._set_node_location_from_tokens(
+                extern_reference,
+                dot_token,
+                self._previous(),
+            )
 
-        node = MemberAccess(object=expr, member=member)
+        member_access = MemberAccess(object=expr, member=member)
         if getattr(expr, "location", None) is not None:
-            node.location = self._location_from_tokens(
+            member_access.location = self._location_from_tokens(
                 self._synthetic_token_from_location(expr.location),
                 self._previous(),
             )
-            return node
-        return self._set_node_location_from_tokens(node, dot_token, self._previous())
+            return member_access
+        return self._set_node_location_from_tokens(member_access, dot_token, self._previous())
 
     def _dotted_expression_name(self, expr: Expression) -> str | None:
         if isinstance(expr, Identifier):
