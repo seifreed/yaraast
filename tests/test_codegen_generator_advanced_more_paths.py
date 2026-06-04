@@ -9,11 +9,13 @@ from yaraast.ast.conditions import Condition, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    DoubleLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
     RangeExpression,
+    RegexLiteral,
     SetExpression,
     StringLength,
     StringLiteral,
@@ -95,16 +97,16 @@ def test_codegen_generator_additional_visit_paths() -> None:
         gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), "CompanyName"))
         == 'pe["CompanyName"]'
     )
-    assert (
-        gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), IntegerLiteral(1)))
-        == "pe[1]"
-    )
-    with pytest.raises(ValueError, match="Dictionary key must be string or integer"):
-        gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), BooleanLiteral(True)))
-    with pytest.raises(ValueError, match="Dictionary key must be string or integer"):
-        gen.visit_dictionary_access(
-            DictionaryAccess(ModuleReference("pe"), ParenthesesExpression(BooleanLiteral(True)))
-        )
+    invalid_dictionary_keys = [
+        IntegerLiteral(1),
+        DoubleLiteral(1.5),
+        RegexLiteral("x"),
+        BooleanLiteral(True),
+        ParenthesesExpression(BooleanLiteral(True)),
+    ]
+    for key in invalid_dictionary_keys:
+        with pytest.raises(ValueError, match="Dictionary key must be string"):
+            gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), key))
     assert gen.visit_defined_expression(DefinedExpression(Identifier("$a"))) == "defined $a"
     assert (
         gen.visit_string_operator_expression(
