@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 import sys
@@ -34,7 +35,15 @@ def read_version() -> str:
     return version
 
 
-def main() -> int:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Validate the packaged VSIX contains the expected extension assets.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    _parse_args(argv)
     version = read_version()
     vsix_path = ROOT / f"yaraast-{version}.vsix"
     if not vsix_path.exists():
