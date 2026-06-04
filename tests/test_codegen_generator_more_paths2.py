@@ -2342,7 +2342,15 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
         ),
         (
             StringOperatorExpression(StringLiteral("a"), "matches", StringLiteral("b")),
-            "requires a regex literal",
+            "Right operand of 'matches' must be regex",
+        ),
+        (
+            StringOperatorExpression(IntegerLiteral(1), "contains", StringLiteral("x")),
+            "Left operand of 'contains' must be string-like or array",
+        ),
+        (
+            StringOperatorExpression(StringLiteral("x"), "contains", IntegerLiteral(1)),
+            "Right operand of 'contains' must be string",
         ),
         (
             BinaryExpression(BooleanLiteral(True), "contains", StringLiteral("x")),

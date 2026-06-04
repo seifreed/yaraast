@@ -212,7 +212,7 @@ def visit_defined_expression(generator: Any, node: Any) -> str:
 
 def visit_string_operator_expression(generator: Any, node: Any) -> str:
     operator = _render_string_operator(node.operator)
-    _validate_string_operator_operands(node, operator)
+    _validate_string_operator_operands(node)
     return f"{generator.visit(node.left)} {operator} {generator.visit(node.right)}"
 
 
@@ -223,15 +223,12 @@ def _render_string_operator(operator: str) -> str:
     raise ValueError(msg)
 
 
-def _validate_string_operator_operands(node: Any, operator: str) -> None:
-    if operator != "matches":
-        return
-    from yaraast.ast.expressions import RegexLiteral
+def _validate_string_operator_operands(node: Any) -> None:
+    from yaraast.codegen.generator_expression_visitors import (
+        _reject_invalid_string_binary_operands,
+    )
 
-    if isinstance(node.right, RegexLiteral):
-        return
-    msg = "String operator 'matches' requires a regex literal for libyara output"
-    raise ValueError(msg)
+    _reject_invalid_string_binary_operands(node)
 
 
 def visit_comment(node: Any) -> str:
