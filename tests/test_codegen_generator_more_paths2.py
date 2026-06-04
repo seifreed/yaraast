@@ -317,7 +317,7 @@ def test_codegen_generator_meta_and_string_section_variants() -> None:
             ),
             RegexString("$r", regex="ab.*", modifiers=[StringModifier.from_name_value("nocase")]),
         ],
-        condition=BooleanLiteral(True),
+        condition=OfExpression("any", Identifier("them")),
     )
 
     out = gen.generate(YaraFile(rules=[rule]))
@@ -355,7 +355,7 @@ def test_codegen_generator_formats_string_backed_negated_hex_bytes() -> None:
     rule = Rule(
         name="negated_hex",
         strings=[HexString("$h", tokens=[token])],
-        condition=BooleanLiteral(True),
+        condition=StringIdentifier("$h"),
     )
 
     out = CodeGenerator().generate(YaraFile(rules=[rule]))
@@ -1748,7 +1748,9 @@ def test_codegen_generators_parenthesize_single_string_set_items(
         rules=[
             Rule(
                 name="single_string_set",
-                strings=[PlainString(identifier="a", value="x")],
+                strings=(
+                    [] if expected == "any of (a)" else [PlainString(identifier="a", value="x")]
+                ),
                 condition=OfExpression("any", string_set),
             )
         ]
@@ -2163,6 +2165,31 @@ def test_codegen_generators_reject_undefined_string_references() -> None:
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+def test_codegen_generators_reject_unreferenced_string_definitions() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="unreferenced_string",
+                strings=[
+                    PlainString(identifier="$a", value="needle"),
+                    PlainString(identifier="$unused", value="unused"),
+                ],
+                condition=StringIdentifier("$a"),
+            )
+        ]
+    )
+
+    message = "Unreferenced string definitions in rule 'unreferenced_string': \\$unused"
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 @pytest.mark.parametrize(
     "condition",
     [
@@ -2329,7 +2356,7 @@ def test_codegen_generators_allow_multiple_anonymous_strings() -> None:
                     PlainString(identifier="$anon_1", value="x", is_anonymous=True),
                     PlainString(identifier="$anon_2", value="y", is_anonymous=True),
                 ],
-                condition=StringIdentifier("$anon_1"),
+                condition=OfExpression("any", Identifier("them")),
             )
         ]
     )

@@ -4,7 +4,8 @@ from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.conditions import Condition
+from yaraast.ast.conditions import Condition, OfExpression
+from yaraast.ast.expressions import Identifier
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier, StringModifierType
@@ -64,7 +65,7 @@ def test_comment_aware_generator_full_file_paths() -> None:
         modifiers=["i", StringModifier(StringModifierType.FULLWORD)],
     )
 
-    cond = Condition()
+    cond = OfExpression("any", Identifier("them"))
     cond.leading_comments = [Comment("cond lead")]
     cond.trailing_comment = Comment("cond tail")
 

@@ -134,6 +134,8 @@ def test_complex_regex_in_expressions() -> None:
 
         condition:
             $a and
+            $b and
+            $c and
             "user@gmail.com" matches /.*@(gmail|yahoo|hotmail)\.com/ and
             "test123" matches /test[0-9]+/
     }
@@ -166,6 +168,8 @@ def test_string_matches_dynamic_regex() -> None:
             $pattern = "malware"
 
         condition:
+            $email and
+            $pattern and
             "malware" matches /mal[a-z]+/ and
             "static_string" matches /static.*/ and
             "user@evil.com" matches /.*@evil\.com/
@@ -208,6 +212,8 @@ def test_mixed_features() -> None:
             uint32le(uint32(0x3c)) == 0x00004550 and
             pe.machine == 0x14c and
             math.entropy(0, 1024) > 6.5 and
+            $str and
+            $url and
             "malicious" matches /mal[a-z]+/ and
             "https://example.test/download/file" matches /.*\/download\//i and
             "ABCDE" matches /[A-Z]+/

@@ -5,7 +5,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import Condition, InExpression
+from yaraast.ast.conditions import Condition, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -74,7 +74,7 @@ def test_codegen_generator_additional_visit_paths() -> None:
                     HexString("$h", tokens=[HexByte(0x4D), HexNibble(high=False, value=0xA)]),
                     RegexString("$r", regex="ab.*"),
                 ],
-                condition=BooleanLiteral(True),
+                condition=OfExpression("any", Identifier("them")),
             ),
         ],
     )
@@ -211,7 +211,7 @@ def test_code_generators_preserve_in_rule_pragmas() -> None:
                     InRulePragma(UndefDirective("LIMIT"), position="before_condition"),
                 ],
                 strings=[PlainString("$a", value="x")],
-                condition=BooleanLiteral(True),
+                condition=OfExpression("any", Identifier("them")),
             )
         ]
     )
@@ -253,7 +253,7 @@ def test_advanced_generator_additional_paths() -> None:
             HexString("$h", tokens=[HexByte(0x4D)]),
             RegexString("$r", regex="re"),
         ],
-        condition=BooleanLiteral(True),
+        condition=OfExpression("any", Identifier("them")),
     )
     rule_without_meta = Rule(name="b_rule", condition=BooleanLiteral(False))
     out = adv.generate(
@@ -295,7 +295,7 @@ def test_advanced_generator_additional_formatting_paths() -> None:
             PlainString("$b", value="x", modifiers=[StringModifier.from_name_value("ascii")]),
             PlainString("$a", value="y"),
         ],
-        condition=BooleanLiteral(True),
+        condition=OfExpression("any", Identifier("them")),
     )
     out = adv.generate(YaraFile(rules=[rule]))
     assert "rule fmt" in out
@@ -349,7 +349,7 @@ def test_advanced_generator_direct_remaining_branches() -> None:
         name="styled",
         meta=[Meta("author", "me")],
         strings=[plain, hexs, regex],
-        condition=BooleanLiteral(True),
+        condition=OfExpression("any", Identifier("them")),
     )
     out = adv.generate(YaraFile(rules=[rule]))
     assert "\n\nmeta:\n" not in out
@@ -459,7 +459,7 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
             ),
             RegexString("$r", regex="abc", modifiers=[StringModifier.from_name_value("nocase")]),
         ],
-        condition=BooleanLiteral(True),
+        condition=OfExpression("any", Identifier("them")),
     )
     out = adv.generate(YaraFile(rules=[rule]))
     assert "\n\n    meta:\n" in out

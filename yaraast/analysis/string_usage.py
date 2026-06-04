@@ -196,7 +196,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self._mark_condition_string_identifier(node.name)
 
     def visit_string_wildcard(self, node: StringWildcard) -> None:
-        if self.current_rule and self.in_condition:
+        if self._is_explicit_string_wildcard(node.pattern):
             self._mark_wildcard_string_set(node.pattern)
 
     def visit_string_count(self, node: StringCount) -> None:
@@ -351,6 +351,8 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             name = self._require_string_reference(string_set.name)
             if name == "them":
                 self._mark_all_current_rule_strings()
+            elif name.startswith("$"):
+                self._mark_string_set_text(name)
             else:
                 self._visit_ast_value(string_set)
             return
@@ -361,7 +363,8 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             self._mark_string_set_text(string_set.name)
             return
         if isinstance(string_set, StringWildcard):
-            self._mark_string_set_text(string_set.pattern)
+            if self._is_explicit_string_wildcard(string_set.pattern):
+                self._mark_string_set_text(string_set.pattern)
             return
         if isinstance(string_set, ParenthesesExpression):
             self._visit_string_set_value(string_set.expression)
@@ -386,8 +389,6 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         if local_value is not self._MISSING_LOCAL:
             if local_value is not self._LOCAL_WITHOUT_VALUE:
                 self._visit_string_set_value(local_value)
-            return
-        if "*" in text and not text.startswith("$"):
             return
         if "*" in normalized:
             self._mark_wildcard_string_set(text)
@@ -467,6 +468,14 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             self.used_strings[rule_key].update(
                 self.defined_strings[rule_key],
             )
+
+    def _is_explicit_string_wildcard(self, pattern: object) -> bool:
+        if not isinstance(pattern, str):
+            msg = "String reference must be a string"
+            raise TypeError(msg)
+        if pattern.startswith(("#", "@", "!")):
+            self._normalize_string_id(pattern)
+        return bool(self.current_rule and self.in_condition and pattern.startswith("$"))
 
     def visit_set_expression(self, node: SetExpression) -> None:
         for element in node.elements:

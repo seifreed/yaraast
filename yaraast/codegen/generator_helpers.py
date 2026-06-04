@@ -241,6 +241,23 @@ def validate_rule_string_references(rule: object) -> None:
         )
         raise ValueError(msg)
 
+    if not _rule_string_definitions_are_renderable(rule.strings):
+        return
+
+    unreferenced = sorted(
+        {
+            string_id
+            for rule_unused in analyzer.get_unused_strings().values()
+            for string_id in rule_unused
+        }
+    )
+    if unreferenced:
+        msg = (
+            f"Unreferenced string definitions in rule '{rule_name}': "
+            f"{', '.join(unreferenced)} for libyara output"
+        )
+        raise ValueError(msg)
+
     invalid_comparisons = sorted(
         {
             string_id
@@ -254,6 +271,65 @@ def validate_rule_string_references(rule: object) -> None:
             f"'{rule_name}': {', '.join(invalid_comparisons)} for libyara output"
         )
         raise ValueError(msg)
+
+
+def _rule_string_definitions_are_renderable(strings: object) -> bool:
+    if not isinstance(strings, list | tuple):
+        return False
+    try:
+        for string_def in strings:
+            _validate_renderable_string_definition(string_def)
+    except (TypeError, ValueError, AttributeError):
+        return False
+    return True
+
+
+def _validate_renderable_string_definition(string_def: object) -> None:
+    if isinstance(string_def, PlainString):
+        output_string_identifier(string_def)
+        validate_plain_string_modifiers(string_def.modifiers)
+        escape_plain_string_value(plain_string_render_source(string_def))
+        return
+    if isinstance(string_def, HexString):
+        output_string_identifier(string_def)
+        validate_hex_string_modifiers(string_def.modifiers)
+        validate_hex_string_tokens(string_def.tokens)
+        for token in string_def.tokens:
+            _validate_renderable_hex_token(token)
+        return
+    if isinstance(string_def, RegexString):
+        output_string_identifier(string_def)
+        validate_regex_string_modifiers(string_def.modifiers)
+        escape_regex_delimiter(string_def.regex)
+        format_regex_modifiers(string_def.modifiers)
+        return
+    _validate_supported_string_definition(string_def)
+
+
+def _validate_renderable_hex_token(token: object) -> None:
+    if isinstance(token, HexByte):
+        format_hex_byte_value(token.value, uppercase=True)
+        return
+    if isinstance(token, HexNegatedByte):
+        format_hex_negated_value(token.value, uppercase=True)
+        return
+    if isinstance(token, HexNibble):
+        format_hex_nibble_value(token.value, uppercase=True)
+        return
+    if isinstance(token, HexJump):
+        format_hex_jump_bounds(token.min_jump, token.max_jump)
+        return
+    if isinstance(token, HexWildcard):
+        return
+    if isinstance(token, HexAlternative):
+        validate_hex_alternative_token(token)
+        for alternative in token.alternatives:
+            branch = alternative if isinstance(alternative, list) else [alternative]
+            for branch_token in branch:
+                _validate_renderable_hex_token(branch_token)
+        return
+    msg = f"Unsupported hex token '{type(token).__name__}' for libyara output"
+    raise TypeError(msg)
 
 
 def _validate_supported_string_definition(string_def: object) -> None:

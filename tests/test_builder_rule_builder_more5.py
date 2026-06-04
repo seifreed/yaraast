@@ -306,6 +306,7 @@ def test_rule_builder_raw_hex_uses_full_hex_parser() -> None:
     rule = (
         RuleBuilder("full_hex")
         .with_hex_string_raw("$hex", "4D A? ?F [2-4] (~00 | 41) // comment\n 5A")
+        .with_condition("$hex")
         .build()
     )
 

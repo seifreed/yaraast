@@ -4,7 +4,7 @@ import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment
-from yaraast.ast.conditions import Condition
+from yaraast.ast.conditions import Condition, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -59,7 +59,7 @@ def test_pretty_printer_paths_for_includes_modifiers_wrapping_and_fallback() -> 
             HexString(identifier="$h", tokens=[HexByte(0x4D), HexByte(0x5A)]),
             RegexString(identifier="$r", regex="ab.*"),
         ],
-        condition=BinaryExpression(Identifier("a"), "and", Identifier("b")),
+        condition=OfExpression("any", Identifier("them")),
     )
     yf = YaraFile(imports=[Import("pe")], includes=[Include("common.yar")], rules=[rule])
 
@@ -91,7 +91,7 @@ def test_pretty_printer_indents_string_entries_under_section() -> None:
             HexString("$h", tokens=[HexByte(0x4D)]),
             RegexString("$r", regex="ab.*"),
         ],
-        condition=BooleanLiteral(True),
+        condition=OfExpression("any", Identifier("them")),
     )
 
     out = CodeGenerator(
@@ -128,7 +128,7 @@ def test_pretty_printer_honors_tab_indentation_option() -> None:
         name="tabbed",
         meta=[Meta("a", 1)],
         strings=[PlainString("$s", value="x")],
-        condition=BooleanLiteral(True),
+        condition=OfExpression("any", Identifier("them")),
     )
 
     out = CodeGenerator(
@@ -150,7 +150,7 @@ def test_pretty_printer_honors_tab_indentation_option() -> None:
         '\t\t$s = "x"\n'
         "\n"
         "\tcondition:\n"
-        "\t\ttrue\n"
+        "\t\tany of them\n"
         "}\n"
     ) in out
 

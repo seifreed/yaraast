@@ -4,8 +4,8 @@ from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.conditions import Condition
-from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral
+from yaraast.ast.conditions import Condition, OfExpression
+from yaraast.ast.expressions import BooleanLiteral, Identifier, IntegerLiteral
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.rules import Rule
@@ -90,7 +90,7 @@ def test_comment_aware_generator_hex_and_regex_modifier_paths() -> None:
         modifiers=[],
     )
     meta = Meta("author", '"bob"')
-    cond = Condition()
+    cond = OfExpression("any", Identifier("them"))
     cond.leading_comments = [Comment("cond lead")]
 
     rule = Rule(

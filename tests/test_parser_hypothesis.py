@@ -50,13 +50,13 @@ def _rule_with_strings() -> st.SearchStrategy[str]:
 def _build_rule_with_strings(name: str, strings: list[tuple[str, str]]) -> str:
     """Build a YARA rule string with given name and string definitions."""
     string_defs = "\n        ".join(f'{ident} = "{value}"' for ident, value in strings)
-    first_id = strings[0][0]
+    condition = " and ".join(ident for ident, _ in strings)
     return (
         f"rule {name} {{\n"
         f"    strings:\n"
         f"        {string_defs}\n"
         f"    condition:\n"
-        f"        {first_id}\n"
+        f"        {condition}\n"
         f"}}"
     )
 

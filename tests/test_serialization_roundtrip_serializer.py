@@ -29,7 +29,7 @@ def _sample_rule() -> str:
                 $a = "abc" ascii
                 $b = { 01 02 03 }
             condition:
-                $a and pe.number_of_sections > 0
+                $a and $b and pe.number_of_sections > 0
         }
         """,
     )

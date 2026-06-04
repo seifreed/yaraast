@@ -5,10 +5,11 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import Condition
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    Identifier,
     IntegerLiteral,
     StringIdentifier,
 )
@@ -75,7 +76,7 @@ def test_advanced_generator_long_condition_path_and_string_styles() -> None:
     rule = Rule(
         name="long_cond",
         strings=[PlainString(identifier="$a", value="v")],
-        condition=long_condition,
+        condition=BinaryExpression(StringIdentifier("$a"), "and", long_condition),
     )
 
     cfg = FormattingConfig(string_style=StringStyle.COMPACT, max_line_length=5)
@@ -201,7 +202,7 @@ def test_advanced_generator_meta_and_tags_branches() -> None:
         tags=cast(Any, [Tag("x"), "y", "object_tag"]),
         meta=meta_list,
         strings=[PlainString(identifier="$a", value="txt", modifiers=[mod])],
-        condition=Condition(),
+        condition=OfExpression("any", Identifier("them")),
     )
 
     cfg = FormattingConfig(
