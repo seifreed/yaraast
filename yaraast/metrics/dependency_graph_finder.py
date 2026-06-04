@@ -18,7 +18,7 @@ class DependencyFinder(MetricsVisitorBase):
         super().__init__(default=None)
         self.current_rule = current_rule
         self.all_rules = all_rules
-        self.dependencies = set()
+        self.dependencies: set[str] = set()
         self.local_scopes: list[set[str]] = []
 
     def visit_identifier(self, node: Identifier) -> None:
