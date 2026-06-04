@@ -712,6 +712,7 @@ def visit_function_call(generator: Any, node: Any) -> str:
 def visit_array_access(generator: Any, node: Any) -> str:
     _reject_non_integer_expression(node.index, "Array index")
     validate_module_root_array_access(node)
+    validate_known_module_array_access(generator, node)
     return f"{generator.visit(node.array)}[{generator.visit(node.index)}]"
 
 
@@ -724,9 +725,23 @@ def validate_module_root_array_access(node: Any) -> None:
     raise ValueError(msg)
 
 
+def validate_known_module_array_access(generator: Any, node: Any) -> None:
+    from yaraast.types._registry_collections import ArrayType
+
+    array_type = known_builtin_module_expression_type(node.array)
+    if array_type is None or isinstance(array_type, ArrayType):
+        return
+    msg = (
+        f"Module expression '{generator.visit(node.array)}' cannot be indexed as an array "
+        "for libyara output"
+    )
+    raise ValueError(msg)
+
+
 def visit_member_access(generator: Any, node: Any) -> str:
     member = validate_yara_identifier(node.member, "member")
     validate_builtin_module_member_access(node, member)
+    validate_known_module_struct_member_access(generator, node, member)
     return f"{generator.visit(node.object)}.{member}"
 
 
@@ -740,6 +755,57 @@ def validate_builtin_module_member_access(node: Any, member: str) -> None:
         return
     msg = f"Module member '{node.object.module}.{member}' is not supported by libyara"
     raise ValueError(msg)
+
+
+def validate_known_module_struct_member_access(generator: Any, node: Any, member: str) -> None:
+    from yaraast.ast.modules import ModuleReference
+    from yaraast.types._registry_collections import StructType
+
+    if isinstance(node.object, ModuleReference):
+        return
+    object_type = known_builtin_module_expression_type(node.object)
+    if object_type is None:
+        return
+    rendered_object = generator.visit(node.object)
+    if not isinstance(object_type, StructType):
+        msg = (
+            f"Module expression '{rendered_object}' does not support member access "
+            "for libyara output"
+        )
+        raise ValueError(msg)
+    if member in object_type.fields:
+        return
+    msg = f"Module member '{rendered_object}.{member}' is not supported by libyara"
+    raise ValueError(msg)
+
+
+def known_builtin_module_expression_type(expression: Any) -> Any | None:
+    from yaraast.ast.expressions import ArrayAccess, MemberAccess, ParenthesesExpression
+    from yaraast.ast.modules import DictionaryAccess, ModuleReference
+    from yaraast.types._registry_collections import ArrayType, DictionaryType, StructType
+
+    if isinstance(expression, ParenthesesExpression):
+        return known_builtin_module_expression_type(expression.expression)
+    if isinstance(expression, MemberAccess):
+        if isinstance(expression.object, ModuleReference):
+            module_def = _known_builtin_module(expression.object.module)
+            if module_def is None:
+                return None
+            return module_def.attributes.get(expression.member)
+        object_type = known_builtin_module_expression_type(expression.object)
+        if isinstance(object_type, StructType):
+            return object_type.fields.get(expression.member)
+        return None
+    if isinstance(expression, ArrayAccess):
+        array_type = known_builtin_module_expression_type(expression.array)
+        if isinstance(array_type, ArrayType):
+            return array_type.element_type
+        return None
+    if isinstance(expression, DictionaryAccess):
+        dictionary_type = known_builtin_module_expression_type(expression.object)
+        if isinstance(dictionary_type, DictionaryType):
+            return dictionary_type.value_type
+    return None
 
 
 def visit_for_expression(generator: Any, node: Any) -> str:

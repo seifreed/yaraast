@@ -205,6 +205,7 @@ def visit_dictionary_access(generator: Any, node: Any) -> str:
         _reject_non_string_dictionary_key(node.key)
         key = generator.visit(node.key)
     _reject_module_root_dictionary_access(node)
+    _reject_non_dictionary_module_expression(generator, node)
     obj = generator.visit(node.object)
     return f"{obj}[{key}]"
 
@@ -215,6 +216,20 @@ def _reject_module_root_dictionary_access(node: Any) -> None:
     if not isinstance(node.object, ModuleReference):
         return
     msg = f"Module '{node.object.module}' cannot be indexed as a dictionary for libyara output"
+    raise ValueError(msg)
+
+
+def _reject_non_dictionary_module_expression(generator: Any, node: Any) -> None:
+    from yaraast.codegen.generator_expression_visitors import known_builtin_module_expression_type
+    from yaraast.types._registry_collections import DictionaryType
+
+    object_type = known_builtin_module_expression_type(node.object)
+    if object_type is None or isinstance(object_type, DictionaryType):
+        return
+    msg = (
+        f"Module expression '{generator.visit(node.object)}' cannot be indexed as a dictionary "
+        "for libyara output"
+    )
     raise ValueError(msg)
 
 

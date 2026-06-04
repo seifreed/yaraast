@@ -3130,9 +3130,28 @@ def test_codegen_generators_reject_unknown_builtin_module_members(
             ArrayAccess(ModuleReference("pe"), IntegerLiteral(0)),
             "Module 'pe' cannot be indexed as an array",
         ),
+        (
+            DictionaryAccess(MemberAccess(ModuleReference("pe"), "rich_signature"), "nope"),
+            "Module expression 'pe\\.rich_signature' cannot be indexed as a dictionary",
+        ),
+        (
+            ArrayAccess(MemberAccess(ModuleReference("pe"), "rich_signature"), IntegerLiteral(0)),
+            "Module expression 'pe\\.rich_signature' cannot be indexed as an array",
+        ),
+        (
+            MemberAccess(MemberAccess(ModuleReference("pe"), "version_info"), "nope"),
+            "Module expression 'pe\\.version_info' does not support member access",
+        ),
+        (
+            MemberAccess(
+                ArrayAccess(MemberAccess(ModuleReference("pe"), "sections"), IntegerLiteral(0)),
+                "nope",
+            ),
+            "Module member 'pe\\.sections\\[0\\]\\.nope' is not supported by libyara",
+        ),
     ],
 )
-def test_codegen_generators_reject_indexed_module_roots(
+def test_codegen_generators_reject_invalid_module_container_access(
     condition: Any,
     message: str,
 ) -> None:
@@ -3163,6 +3182,7 @@ def test_codegen_generators_reject_indexed_module_roots(
             ArrayAccess(MemberAccess(ModuleReference("pe"), "sections"), IntegerLiteral(0)),
             "name",
         ),
+        MemberAccess(MemberAccess(ModuleReference("pe"), "rich_signature"), "offset"),
     ],
 )
 def test_codegen_generators_allow_valid_module_function_calls(condition: Any) -> None:
