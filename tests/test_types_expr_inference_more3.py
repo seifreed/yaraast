@@ -35,7 +35,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
-from yaraast.ast.modules import DictionaryAccess
+from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock, PragmaType
 from yaraast.ast.rules import Rule
@@ -152,6 +152,16 @@ def test_expr_inference_rejects_invalid_function_names(function: str) -> None:
     inf = ExpressionTypeInference(TypeEnvironment())
 
     out = inf.infer(FunctionCall(function=function, arguments=[IntegerLiteral(0)]))
+
+    assert isinstance(out, UnknownType)
+    assert inf.errors
+
+
+@pytest.mark.parametrize("module", ["bad-name", "for", "", cast(Any, 123)])
+def test_expr_inference_rejects_invalid_module_references(module: Any) -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(ModuleReference(module))
 
     assert isinstance(out, UnknownType)
     assert inf.errors

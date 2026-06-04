@@ -1214,12 +1214,18 @@ def _define_for_iteration_variables(
 
 def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
     if isinstance(node, ModuleReference) or hasattr(node, "module"):
-        module_type = ctx._resolve_module_type(node.module)
+        try:
+            module_name = _normalize_identifier(node.module, "Module reference", "module")
+        except (TypeError, ValueError) as exc:
+            ctx.errors.append(str(exc))
+            return UnknownType()
+
+        module_type = ctx._resolve_module_type(module_name)
         if module_type:
             return cast(YaraType, module_type)
-        if ctx.env.has_rule(node.module):
+        if ctx.env.has_rule(module_name):
             return BooleanType()
-        ctx.errors.append(f"Module '{node.module}' not imported")
+        ctx.errors.append(f"Module '{module_name}' not imported")
         return UnknownType()
 
     if isinstance(node, AtExpression):
