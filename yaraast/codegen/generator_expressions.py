@@ -45,6 +45,7 @@ def _render_string_set(gen: Any, string_set: Any) -> str:
     if isinstance(string_set, ParenthesesExpression):
         return _render_string_set(gen, string_set.expression)
     if isinstance(string_set, SetExpression):
+        _validate_non_empty_string_set(string_set.elements)
         if _is_rule_set_items(string_set.elements):
             rendered_items = [_render_rule_set_item(item) for item in string_set.elements]
             return f"({', '.join(rendered_items)})"
@@ -54,9 +55,11 @@ def _render_string_set(gen: Any, string_set: Any) -> str:
         rendered_items = [_render_string_set_item(gen, item) for item in string_set.elements]
         return f"({', '.join(rendered_items)})"
     if isinstance(string_set, list | tuple):
+        _validate_non_empty_string_set(string_set)
         rendered_items = [_render_string_set_item(gen, item) for item in string_set]
         return f"({', '.join(rendered_items)})"
     if isinstance(string_set, set | frozenset):
+        _validate_non_empty_string_set(string_set)
         rendered_items = [
             _render_string_set_item(gen, item) for item in sorted(string_set, key=str)
         ]
@@ -68,6 +71,13 @@ def _render_string_set(gen: Any, string_set: Any) -> str:
 
 def _is_rule_set_items(items: list[Any] | tuple[Any, ...]) -> bool:
     return bool(items) and all(_is_rule_set_item(item) for item in items)
+
+
+def _validate_non_empty_string_set(items: Any) -> None:
+    if items:
+        return
+    msg = "String set must contain at least one item for libyara output"
+    raise ValueError(msg)
 
 
 def _has_mixed_rule_and_string_set_items(items: list[Any] | tuple[Any, ...]) -> bool:
@@ -217,7 +227,10 @@ def _render_quantifier(
         raise ValueError(msg)
     if isinstance(quantifier, StringLiteral):
         return _validate_quantifier_text(
-            quantifier.value, allow_percentage=allow_percentage, context=context
+            quantifier.value,
+            allow_percentage=allow_percentage,
+            context=context,
+            allow_identifier=False,
         )
     if isinstance(quantifier, DoubleLiteral):
         if allow_percentage:
@@ -243,7 +256,11 @@ def _render_quantifier(
 
 
 def _validate_quantifier_text(
-    text: str, *, allow_percentage: bool, context: str = "quantifier"
+    text: str,
+    *,
+    allow_percentage: bool,
+    context: str = "quantifier",
+    allow_identifier: bool = True,
 ) -> str:
     if not isinstance(text, str):
         msg = f"Invalid {context} '{text}' for libyara output"
@@ -265,6 +282,10 @@ def _validate_quantifier_text(
             raise ValueError(msg)
         _validate_percentage_quantifier(int(percentage.group(1)), text)
         return text
+
+    if not allow_identifier:
+        msg = f"Invalid {context} '{text}' for libyara output"
+        raise ValueError(msg)
 
     return validate_yara_identifier(text, context)
 

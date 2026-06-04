@@ -2091,6 +2091,50 @@ def test_codegen_generators_reject_non_string_string_set_fields(string_set: Any)
 
 
 @pytest.mark.parametrize(
+    "condition",
+    [
+        OfExpression("any", []),
+        OfExpression(0, ()),
+        OfExpression("any", frozenset()),
+        ForOfExpression("any", [], BooleanLiteral(True)),
+        ForOfExpression("any", (), None),
+        ForOfExpression("any", frozenset(), None),
+    ],
+)
+def test_codegen_generators_reject_empty_string_sets(condition: Condition) -> None:
+    ast = YaraFile(rules=[Rule(name="empty_string_set", condition=condition)])
+
+    with pytest.raises(ValueError, match="String set must contain at least one item"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="String set must contain at least one item"):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match="String set must contain at least one item"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match="String set must contain at least one item"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        OfExpression("any", SetExpression([])),
+        ForOfExpression("any", SetExpression([]), BooleanLiteral(True)),
+    ],
+)
+def test_codegen_generators_reject_empty_set_expression_string_sets(
+    condition: Condition,
+) -> None:
+    with pytest.raises(ValueError, match="String set must contain at least one item"):
+        CodeGenerator().generate(condition)
+    with pytest.raises(ValueError, match="String set must contain at least one item"):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(condition)
+    with pytest.raises(ValueError, match="String set must contain at least one item"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(condition)
+    with pytest.raises(ValueError, match="String set must contain at least one item"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(condition)
+
+
+@pytest.mark.parametrize(
     ("string_set", "expected"),
     [
         ("$a", "any of ($a)"),
@@ -2142,6 +2186,8 @@ def test_codegen_generators_parenthesize_single_string_set_items(
         OfExpression("101%", Identifier("them")),
         OfExpression(StringLiteral("-1"), Identifier("them")),
         OfExpression(StringLiteral("101%"), Identifier("them")),
+        OfExpression(StringLiteral("x"), Identifier("them")),
+        ForOfExpression(StringLiteral("x"), Identifier("them"), BooleanLiteral(True)),
         OfExpression("bad-key", Identifier("them")),
         OfExpression("true", Identifier("them")),
         OfExpression(StringLiteral("bad-key"), Identifier("them")),
