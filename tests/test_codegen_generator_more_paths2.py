@@ -2193,6 +2193,37 @@ def test_codegen_generators_reject_unreferenced_string_definitions() -> None:
 @pytest.mark.parametrize(
     "condition",
     [
+        StringWildcard("$a*"),
+        BinaryExpression(StringWildcard("$a*"), "and", BooleanLiteral(True)),
+    ],
+)
+def test_codegen_generators_reject_bare_string_wildcard_conditions(condition: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bare_wildcard",
+                strings=[PlainString(identifier="$a1", value="needle")],
+                condition=condition,
+            )
+        ]
+    )
+
+    message = (
+        "String wildcard expressions are only valid in string sets for " "libyara output: \\$a\\*"
+    )
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
         BinaryExpression(StringIdentifier("$a"), "<", IntegerLiteral(1)),
         BinaryExpression(IntegerLiteral(1), "==", StringIdentifier("$a")),
     ],

@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import fields
 import math
 import re
 from typing import Any, NamedTuple
 
+from yaraast.ast.base import ASTNode
+from yaraast.ast.conditions import ForOfExpression, OfExpression
+from yaraast.ast.expressions import StringWildcard
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.strings import (
     HexAlternative,
@@ -226,6 +230,14 @@ def validate_rule_string_references(rule: object) -> None:
     except (TypeError, ValueError):
         return
 
+    bare_wildcards = sorted(_collect_bare_string_wildcards(rule.condition))
+    if bare_wildcards:
+        msg = (
+            "String wildcard expressions are only valid in string sets for "
+            f"libyara output: {', '.join(bare_wildcards)}"
+        )
+        raise ValueError(msg)
+
     undefined = sorted(
         {
             string_id
@@ -271,6 +283,50 @@ def validate_rule_string_references(rule: object) -> None:
             f"'{rule_name}': {', '.join(invalid_comparisons)} for libyara output"
         )
         raise ValueError(msg)
+
+
+def _collect_bare_string_wildcards(
+    value: object,
+    *,
+    in_string_set: bool = False,
+) -> set[str]:
+    if isinstance(value, StringWildcard):
+        if in_string_set:
+            return set()
+        return {validate_string_wildcard_text(value.pattern)}
+
+    if isinstance(value, ASTNode):
+        wildcards: set[str] = set()
+        for field in fields(value):
+            if field.name in ASTNode._METADATA_FIELDS:
+                continue
+            child = getattr(value, field.name)
+            child_in_string_set = in_string_set or (
+                isinstance(value, OfExpression | ForOfExpression) and field.name == "string_set"
+            )
+            wildcards.update(
+                _collect_bare_string_wildcards(
+                    child,
+                    in_string_set=child_in_string_set,
+                )
+            )
+        return wildcards
+
+    if isinstance(value, dict):
+        dict_wildcards: set[str] = set()
+        for item in value.values():
+            dict_wildcards.update(_collect_bare_string_wildcards(item, in_string_set=in_string_set))
+        return dict_wildcards
+
+    if isinstance(value, list | tuple | set | frozenset):
+        sequence_wildcards: set[str] = set()
+        for item in value:
+            sequence_wildcards.update(
+                _collect_bare_string_wildcards(item, in_string_set=in_string_set)
+            )
+        return sequence_wildcards
+
+    return set()
 
 
 def _rule_string_definitions_are_renderable(strings: object) -> bool:
