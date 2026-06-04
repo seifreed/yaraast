@@ -36,6 +36,7 @@ from yaraast.codegen.advanced_generator_layout import (
 from yaraast.codegen.formatting import FormattingConfig, IndentStyle
 from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
+    validate_binary_expression_operands,
     validate_set_expression_elements,
 )
 from yaraast.codegen.generator_formatting import validate_rule_meta
@@ -112,6 +113,7 @@ class AdvancedLayout(GeneratorLayout):
 
     # Expression renderers (advanced style; recursion routes back through gen)
     def binary_expression(self, gen: CodeGenerator, node: Any) -> str:
+        validate_binary_expression_operands(node)
         left = gen.visit(node.left)
         right = gen.visit(node.right)
         operator = _render_binary_operator(node.operator)

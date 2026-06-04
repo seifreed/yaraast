@@ -11,6 +11,7 @@ from yaraast.codegen.generator_expression_visitors import (
     _visit_binary_operand,
     render_function_call_callee,
     require_present_expression,
+    validate_binary_expression_operands,
     validate_expression_collection,
     validate_function_call_arguments,
     validate_set_expression_elements,
@@ -225,6 +226,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
         return ", " if self.config.space_after_comma else ","
 
     def visit_binary_expression(self, node: Any) -> str:
+        validate_binary_expression_operands(node)
         left = _visit_binary_operand(self, node, node.left, is_right=False)
         right = _visit_binary_operand(self, node, node.right, is_right=True)
         operator = _render_binary_operator(node.operator)

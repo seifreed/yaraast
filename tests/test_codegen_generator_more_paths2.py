@@ -1984,6 +1984,14 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
             StringOperatorExpression(StringLiteral("a"), "matches", StringLiteral("b")),
             "requires a regex literal",
         ),
+        (
+            BinaryExpression(BooleanLiteral(True), "contains", StringLiteral("x")),
+            "Left operand of 'contains' must be string-like or array",
+        ),
+        (
+            BinaryExpression(StringLiteral("abc"), "matches", StringLiteral("a")),
+            "Right operand of 'matches' must be regex",
+        ),
         (UnaryExpression("!", IntegerLiteral(1)), "Invalid unary operator"),
     ],
 )

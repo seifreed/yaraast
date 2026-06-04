@@ -42,6 +42,18 @@ _BINARY_PRECEDENCE = {
 _UNARY_OPERATORS = frozenset({"not", "-", "~"})
 _NUMERIC_BINARY_OPERATORS = frozenset({"+", "-", "*", "/", "\\"})
 _INTEGER_BINARY_OPERATORS = frozenset({"%", "&", "|", "^", "<<", ">>"})
+_STRING_BINARY_OPERATORS = frozenset(
+    {
+        "contains",
+        "matches",
+        "startswith",
+        "endswith",
+        "icontains",
+        "istartswith",
+        "iendswith",
+        "iequals",
+    }
+)
 
 
 def _precedence(operator: str) -> int:
@@ -90,6 +102,62 @@ def _reject_boolean_binary_numeric_operands(node: Any) -> None:
         )
 
 
+def _unwrap_parenthesized_expression(value: Any) -> Any:
+    from yaraast.ast.expressions import ParenthesesExpression
+
+    if isinstance(value, ParenthesesExpression):
+        return _unwrap_parenthesized_expression(value.expression)
+    return value
+
+
+def _reject_invalid_string_binary_operands(node: Any) -> None:
+    if node.operator not in _STRING_BINARY_OPERATORS:
+        return
+
+    from yaraast.ast.expressions import (
+        BooleanLiteral,
+        DoubleLiteral,
+        IntegerLiteral,
+        RegexLiteral,
+        StringIdentifier,
+        StringLiteral,
+    )
+
+    left = _unwrap_parenthesized_expression(node.left)
+    right = _unwrap_parenthesized_expression(node.right)
+    invalid_left = (
+        bool,
+        int,
+        float,
+        BooleanLiteral,
+        IntegerLiteral,
+        DoubleLiteral,
+        RegexLiteral,
+        StringIdentifier,
+    )
+    if isinstance(left, invalid_left):
+        msg = (
+            f"Left operand of '{node.operator}' must be string-like or array " "for libyara output"
+        )
+        raise ValueError(msg)
+    if node.operator == "matches":
+        if isinstance(right, StringLiteral | BooleanLiteral | IntegerLiteral | DoubleLiteral):
+            msg = "Right operand of 'matches' must be regex for libyara output"
+            raise ValueError(msg)
+        return
+    if isinstance(right, bool | int | float | BooleanLiteral | IntegerLiteral | DoubleLiteral):
+        msg = f"Right operand of '{node.operator}' must be string for libyara output"
+        raise ValueError(msg)
+    if isinstance(right, RegexLiteral | StringIdentifier):
+        msg = f"Right operand of '{node.operator}' must be string for libyara output"
+        raise ValueError(msg)
+
+
+def validate_binary_expression_operands(node: Any) -> None:
+    _reject_boolean_binary_numeric_operands(node)
+    _reject_invalid_string_binary_operands(node)
+
+
 def _visit_binary_operand(generator: Any, parent: Any, operand: Any, *, is_right: bool) -> str:
     from yaraast.ast.expressions import BinaryExpression
 
@@ -103,7 +171,7 @@ def _visit_binary_operand(generator: Any, parent: Any, operand: Any, *, is_right
 
 
 def visit_binary_expression(generator: Any, node: Any) -> str:
-    _reject_boolean_binary_numeric_operands(node)
+    validate_binary_expression_operands(node)
     left = _visit_binary_operand(generator, node, node.left, is_right=False)
     right = _visit_binary_operand(generator, node, node.right, is_right=True)
     operator = _render_binary_operator(node.operator)

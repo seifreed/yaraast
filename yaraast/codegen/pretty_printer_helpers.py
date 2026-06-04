@@ -180,6 +180,7 @@ def expression_to_string(expr: Any, options: Any = None) -> str:
         _render_binary_operator,
         _visit_binary_operand,
         render_function_call_callee,
+        validate_binary_expression_operands,
         validate_expression_collection,
         validate_function_call_arguments,
         validate_set_expression_elements,
@@ -190,6 +191,7 @@ def expression_to_string(expr: Any, options: Any = None) -> str:
             return ", " if getattr(options, "space_after_comma", True) else ","
 
         def visit_binary_expression(self, node: Any) -> str:
+            validate_binary_expression_operands(node)
             left = _visit_binary_operand(self, node, node.left, is_right=False)
             right = _visit_binary_operand(self, node, node.right, is_right=True)
             operator = _render_binary_operator(node.operator)
