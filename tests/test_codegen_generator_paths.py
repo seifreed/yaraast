@@ -193,6 +193,10 @@ def test_codegen_in_expression_parentheses_paths() -> None:
         offset=IntegerLiteral(0),
     )
     assert gen.visit(at_of_direct_offset) == "1 of them at 0"
+    with pytest.raises(ValueError, match="At expression offset must be integer"):
+        gen.visit(AtExpression("$a", BooleanLiteral(True)))
+    with pytest.raises(ValueError, match="At expression offset must be integer"):
+        gen.visit(AtExpression("$a", ParenthesesExpression(BooleanLiteral(False))))
 
     in_single_ref = InExpression(
         subject="$a",

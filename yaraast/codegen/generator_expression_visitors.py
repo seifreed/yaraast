@@ -204,4 +204,5 @@ def visit_at_expression(generator: Any, node: Any) -> str:
             node.string_id,
             allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
         )
+    _reject_boolean_numeric_expression(node.offset, "At expression offset")
     return f"{string_id} at {generator.visit(node.offset)}"
