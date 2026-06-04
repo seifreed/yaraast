@@ -3114,6 +3114,18 @@ def test_codegen_generators_reject_invalid_integer_builtin_calls(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+def test_codegen_libyara_generators_reject_unknown_unqualified_function_calls() -> None:
+    ast = YaraFile(rules=[Rule(name="unknown_function", condition=FunctionCall("foo", []))])
+    message = "Function 'foo' is not supported by libyara output"
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 @pytest.mark.parametrize(
     ("condition", "message"),
     [

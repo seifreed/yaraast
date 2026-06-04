@@ -241,7 +241,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
     def visit_function_call(self, node: Any) -> str:
         separator = self._comma_separator()
         callee = render_function_call_callee(self, node)
-        validate_function_call_arguments(node)
+        validate_function_call_arguments(node, allow_unknown_unqualified=True)
         return f"{callee}({separator.join(self.visit(arg) for arg in node.arguments)})"
 
     def visit_with_statement(self, node: Any) -> str:

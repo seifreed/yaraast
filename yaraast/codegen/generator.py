@@ -461,6 +461,8 @@ class CodeGenerator(ASTVisitor[str]):
         return render_range_expression(self, node)
 
     def visit_function_call(self, node: FunctionCall) -> str:
+        if self._custom_expressions:
+            return self._layout.yarax_expression(self, node)
         return render_function_call(self, node)
 
     def visit_array_access(self, node: ArrayAccess) -> str:

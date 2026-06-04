@@ -209,18 +209,25 @@ def test_pretty_printer_honors_compact_symbolic_operators() -> None:
 def test_pretty_printer_honors_compact_expression_commas() -> None:
     rule = Rule(
         name="compact_commas",
-        condition=FunctionCall(
-            "foo",
-            [FunctionCall("bar", [Identifier("a"), Identifier("b")]), Identifier("c")],
+        condition=BinaryExpression(
+            FunctionCall(
+                "math.max",
+                [
+                    FunctionCall("uint8", [IntegerLiteral(0)]),
+                    FunctionCall("uint16", [IntegerLiteral(1)]),
+                ],
+            ),
+            ">",
+            IntegerLiteral(0),
         ),
     )
 
     out = CodeGenerator(
         options=GeneratorOptions(pretty=PrettyPrintOptions(space_after_comma=False))
-    ).generate(YaraFile(rules=[rule]))
+    ).generate(YaraFile(imports=[Import("math")], rules=[rule]))
 
-    assert "\n        foo(bar(a,b),c)\n" in out
-    assert "\n        foo(bar(a, b), c)\n" not in out
+    assert "\n        math.max(uint8(0),uint16(1)) > 0\n" in out
+    assert "\n        math.max(uint8(0), uint16(1)) > 0\n" not in out
 
 
 def test_pretty_printer_honors_compact_yarax_expression_commas() -> None:

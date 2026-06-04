@@ -436,9 +436,11 @@ def validate_set_expression_elements(node: Any) -> None:
         raise ValueError(msg)
 
 
-def validate_function_call_arguments(node: Any) -> None:
+def validate_function_call_arguments(node: Any, *, allow_unknown_unqualified: bool = False) -> None:
     validate_expression_collection(node.arguments, "FunctionCall arguments")
     _validate_known_module_function_call(node)
+    if node.module_and_function() is not None:
+        return
     if getattr(node, "receiver", None) is not None:
         return
     function_name = node.function
@@ -449,7 +451,10 @@ def validate_function_call_arguments(node: Any) -> None:
         )
         raise ValueError(msg)
     if function_name not in _INTEGER_READ_FUNCTIONS:
-        return
+        if allow_unknown_unqualified:
+            return
+        msg = f"Function '{function_name}' is not supported by libyara output"
+        raise ValueError(msg)
     if len(node.arguments) != 1:
         msg = f"Builtin function '{function_name}' expects exactly 1 argument " "for libyara output"
         raise ValueError(msg)

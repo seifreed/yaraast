@@ -187,6 +187,10 @@ def expression_to_string(expr: Any, options: Any = None) -> str:
     )
 
     class PrettyExpressionGenerator(CodeGenerator):
+        def __init__(self) -> None:
+            super().__init__()
+            self._allow_unknown_unqualified_functions = False
+
         def _comma_separator(self) -> str:
             return ", " if getattr(options, "space_after_comma", True) else ","
 
@@ -209,16 +213,24 @@ def expression_to_string(expr: Any, options: Any = None) -> str:
         def visit_function_call(self, node: Any) -> str:
             separator = self._comma_separator()
             callee = render_function_call_callee(self, node)
-            validate_function_call_arguments(node)
+            validate_function_call_arguments(
+                node,
+                allow_unknown_unqualified=self._allow_unknown_unqualified_functions,
+            )
             return f"{callee}({separator.join(self.visit(arg) for arg in node.arguments)})"
 
         def visit_with_statement(self, node: Any) -> str:
             separator = self._comma_separator()
             validate_expression_collection(node.declarations, "WithStatement declarations")
-            declarations = separator.join(
-                self.visit(declaration) for declaration in node.declarations
-            )
-            return f"with {declarations}: {self.visit(node.body)}"
+            previous = self._allow_unknown_unqualified_functions
+            self._allow_unknown_unqualified_functions = True
+            try:
+                declarations = separator.join(
+                    self.visit(declaration) for declaration in node.declarations
+                )
+                return f"with {declarations}: {self.visit(node.body)}"
+            finally:
+                self._allow_unknown_unqualified_functions = previous
 
         def visit_dict_comprehension(self, node: Any) -> str:
             separator = self._comma_separator()
