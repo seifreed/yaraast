@@ -42,8 +42,6 @@ BUILTIN_DOCS: dict[str, str] = {
     "uint8": "```yara\nuint8(offset) -> integer\n```\n\nReads an unsigned 8-bit integer at the given offset.",
     "uint16": "```yara\nuint16(offset) -> integer\n```\n\nReads an unsigned 16-bit integer at the given offset (little-endian).",
     "uint32": "```yara\nuint32(offset) -> integer\n```\n\nReads an unsigned 32-bit integer at the given offset (little-endian).",
-    "uint16le": "```yara\nuint16le(offset) -> integer\n```\n\nReads an unsigned 16-bit integer at the given offset (little-endian).",
-    "uint32le": "```yara\nuint32le(offset) -> integer\n```\n\nReads an unsigned 32-bit integer at the given offset (little-endian).",
     "uint16be": "```yara\nuint16be(offset) -> integer\n```\n\nReads an unsigned 16-bit integer at the given offset (big-endian).",
     "uint32be": "```yara\nuint32be(offset) -> integer\n```\n\nReads an unsigned 32-bit integer at the given offset (big-endian).",
     "int8": "```yara\nint8(offset) -> integer\n```\n\nReads a signed 8-bit integer at the given offset.",

@@ -91,10 +91,10 @@ def test_big_endian_little_endian_functions() -> None:
             uint32be(4) == 0x50450000 and
             int16be(8) < 0 and
             int32be(12) > 1000 and
-            uint16le(16) != 0x5A4D and
-            uint32le(20) == 0x00004550 and
-            int16le(24) >= -100 and
-            int32le(28) <= 2000
+            uint16(16) != 0x5A4D and
+            uint32(20) == 0x00004550 and
+            int16(24) >= -100 and
+            int32(28) <= 2000
     }
     """
 
@@ -115,10 +115,10 @@ def test_big_endian_little_endian_functions() -> None:
         "uint32be",
         "int16be",
         "int32be",
-        "uint16le",
-        "uint32le",
-        "int16le",
-        "int32le",
+        "uint16",
+        "uint32",
+        "int16",
+        "int32",
     ]:
         assert func in output
 
@@ -209,7 +209,7 @@ def test_mixed_features() -> None:
         condition:
             $mz at 0 and
             uint16be(0) == 0x4D5A and
-            uint32le(uint32(0x3c)) == 0x00004550 and
+            uint32(uint32(0x3c)) == 0x00004550 and
             pe.machine == 0x14c and
             math.entropy(0, 1024) > 6.5 and
             $str and
@@ -240,7 +240,7 @@ def test_mixed_features() -> None:
     assert 'import "pe"' in output
     assert 'import "math"' in output
     assert "uint16be(0) == 0x4D5A" in output
-    assert "uint32le(uint32(0x3c))" in output
+    assert "uint32(uint32(0x3c))" in output
     assert "pe.machine" in output
     assert "math.entropy" in output
     assert '"malicious" matches /mal[a-z]+/' in output

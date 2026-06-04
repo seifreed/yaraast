@@ -2894,6 +2894,22 @@ def test_codegen_generators_reject_invalid_reference_names(
             FunctionCall("uint32", [DoubleLiteral(1.5)]),
             "Builtin function 'uint32' argument must be integer",
         ),
+        (
+            FunctionCall("int16le", [IntegerLiteral(0)]),
+            "Builtin function 'int16le' is not supported by libyara",
+        ),
+        (
+            FunctionCall("int32le", [IntegerLiteral(0)]),
+            "Builtin function 'int32le' is not supported by libyara",
+        ),
+        (
+            FunctionCall("uint16le", [IntegerLiteral(0)]),
+            "Builtin function 'uint16le' is not supported by libyara",
+        ),
+        (
+            FunctionCall("uint32le", [IntegerLiteral(0)]),
+            "Builtin function 'uint32le' is not supported by libyara",
+        ),
     ],
 )
 def test_codegen_generators_reject_invalid_integer_builtin_calls(

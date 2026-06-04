@@ -60,21 +60,18 @@ _INTEGER_READ_FUNCTIONS = frozenset(
         "int8",
         "int16",
         "int16be",
-        "int16le",
         "int32",
         "int32be",
-        "int32le",
         "int8be",
         "uint8",
         "uint16",
         "uint16be",
-        "uint16le",
         "uint32",
         "uint32be",
-        "uint32le",
         "uint8be",
     }
 )
+_UNSUPPORTED_INTEGER_READ_ALIASES = frozenset({"int16le", "int32le", "uint16le", "uint32le"})
 
 
 def _precedence(operator: str) -> int:
@@ -420,6 +417,12 @@ def validate_function_call_arguments(node: Any) -> None:
     if getattr(node, "receiver", None) is not None:
         return
     function_name = node.function
+    if function_name in _UNSUPPORTED_INTEGER_READ_ALIASES:
+        msg = (
+            f"Builtin function '{function_name}' is not supported by libyara; "
+            "use the unsuffixed little-endian reader"
+        )
+        raise ValueError(msg)
     if function_name not in _INTEGER_READ_FUNCTIONS:
         return
     if len(node.arguments) != 1:

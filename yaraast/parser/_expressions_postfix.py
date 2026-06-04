@@ -43,10 +43,6 @@ _BUILTIN_INTEGER_READ_FUNCTIONS: frozenset[str] = frozenset(
         "int8be",
         "int16be",
         "int32be",
-        "uint16le",
-        "uint32le",
-        "int16le",
-        "int32le",
     }
 )
 

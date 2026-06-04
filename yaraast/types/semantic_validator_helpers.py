@@ -41,10 +41,6 @@ BUILTIN_FUNCTION_ARITY: dict[str, tuple[int, int]] = {
     "int8be": (1, 1),
     "int16be": (1, 1),
     "int32be": (1, 1),
-    "uint16le": (1, 1),
-    "uint32le": (1, 1),
-    "int16le": (1, 1),
-    "int32le": (1, 1),
 }
 
 
