@@ -130,7 +130,7 @@ def build_pipeline_metadata(
     return metadata
 
 
-def build_pipeline_statistics(ast) -> dict[str, Any]:
+def build_pipeline_statistics(ast: Any) -> dict[str, Any]:
     imports = _validated_node_collection(ast.imports, "YaraFile imports", Import)
     rules = _validated_node_collection(ast.rules, "YaraFile rules", Rule)
     for rule in rules:
@@ -143,11 +143,11 @@ def build_pipeline_statistics(ast) -> dict[str, Any]:
     }
 
 
-def build_rules_manifest(ast) -> dict[str, Any]:
+def build_rules_manifest(ast: Any) -> dict[str, Any]:
     imports = _validated_node_collection(ast.imports, "YaraFile imports", Import)
     includes = _validated_node_collection(ast.includes, "YaraFile includes", Include)
     rules = _validated_node_collection(ast.rules, "YaraFile rules", Rule)
-    manifest = {
+    manifest: dict[str, Any] = {
         "manifest_version": "2.0",
         "generated_at": datetime.now().isoformat(),
         "rules": [],
@@ -193,7 +193,7 @@ def build_rules_manifest(ast) -> dict[str, Any]:
     return manifest
 
 
-def _build_rule_meta(meta) -> list[dict[str, Any]]:
+def _build_rule_meta(meta: Any) -> list[dict[str, Any]]:
     if not meta:
         return []
 
@@ -215,7 +215,7 @@ def _build_rule_meta(meta) -> list[dict[str, Any]]:
     return entries
 
 
-def collect_all_tags(ast) -> list[str]:
+def collect_all_tags(ast: Any) -> list[str]:
     rules = _validated_node_collection(ast.rules, "YaraFile rules", Rule)
     tags = set()
     for rule in rules:
@@ -231,7 +231,7 @@ def _validate_string_identifiers(strings: list[Any]) -> None:
         _required_nonempty_string(string_def.identifier, context)
 
 
-def count_string_types(ast) -> dict[str, int]:
+def count_string_types(ast: Any) -> dict[str, int]:
     rules = _validated_node_collection(ast.rules, "YaraFile rules", Rule)
     counts = {"plain": 0, "hex": 0, "regex": 0}
     for rule in rules:
@@ -255,17 +255,17 @@ def dump_pipeline_yaml(
     width: object = 100,
     explicit_markers: object = False,
 ) -> str:
-    width = require_positive_int_option(width, "width")
-    explicit_markers = require_bool_option(explicit_markers, "explicit_markers")
+    yaml_width = require_positive_int_option(width, "width")
+    yaml_explicit_markers = require_bool_option(explicit_markers, "explicit_markers")
     yaml_str = yaml.safe_dump(
         data,
         default_flow_style=False,
         allow_unicode=True,
         sort_keys=False,
         indent=2,
-        width=width,
-        explicit_start=explicit_markers,
-        explicit_end=explicit_markers,
+        width=yaml_width,
+        explicit_start=yaml_explicit_markers,
+        explicit_end=yaml_explicit_markers,
     )
     if output_path is not None:
         with require_input_path(output_path, "output_path").open("w", encoding="utf-8") as handle:

@@ -229,6 +229,14 @@ module = [
 ]
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = [
+    "yaraast.serialization._serialization_primitives",
+    "yaraast.serialization.ast_diff_meta",
+    "yaraast.serialization.roundtrip_pipeline_helpers",
+]
+ignore_errors = false
+
 # Pydocstyle configuration
 [tool.pydocstyle]
 add-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202", "D203", "D212", "D213", "D401", "D402", "D403", "D406", "D407", "D412", "D413"]

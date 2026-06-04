@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 __all__ = ["emit_meta_diff", "meta_payloads"]
 
+MetaEntryPayload = dict[str, Any]
+MetaPayloadValue = MetaEntryPayload | list[MetaEntryPayload]
 
-def _meta_entry_payload(item, fallback_key: str) -> tuple[str, dict]:
+
+def _meta_entry_payload(item: Any, fallback_key: str) -> tuple[str, MetaEntryPayload]:
     scope = getattr(item, "scope", None)
     key = getattr(item, "key", fallback_key)
     entry = {"value": getattr(item, "value", item)}
@@ -14,7 +19,7 @@ def _meta_entry_payload(item, fallback_key: str) -> tuple[str, dict]:
     return key, entry
 
 
-def _sort_duplicate_entries(entries: list[dict]) -> list[dict]:
+def _sort_duplicate_entries(entries: list[MetaEntryPayload]) -> list[MetaEntryPayload]:
     return sorted(
         entries,
         key=lambda entry: (
@@ -24,9 +29,9 @@ def _sort_duplicate_entries(entries: list[dict]) -> list[dict]:
     )
 
 
-def _meta_to_dict(meta) -> dict:
+def _meta_to_dict(meta: Any) -> dict[str, MetaPayloadValue]:
     """Convert meta (list[MetaEntry]) to a comparable dict."""
-    payload = {}
+    payload: dict[str, MetaPayloadValue] = {}
     for i, item in enumerate(meta):
         key, entry = _meta_entry_payload(item, str(i))
         existing = payload.get(key)
@@ -42,18 +47,21 @@ def _meta_to_dict(meta) -> dict:
     return payload
 
 
-def meta_payloads(old_rule, new_rule) -> tuple[dict, dict]:
+def meta_payloads(
+    old_rule: Any,
+    new_rule: Any,
+) -> tuple[dict[str, MetaPayloadValue], dict[str, MetaPayloadValue]]:
     """Return comparable meta payloads."""
     return _meta_to_dict(old_rule.meta), _meta_to_dict(new_rule.meta)
 
 
 def emit_meta_diff(
     base_path: str,
-    result,
-    diff_node,
-    diff_type,
-    old_meta: dict,
-    new_meta: dict,
+    result: Any,
+    diff_node: Any,
+    diff_type: Any,
+    old_meta: dict[str, MetaPayloadValue],
+    new_meta: dict[str, MetaPayloadValue],
 ) -> None:
     """Record meta diff."""
     result.differences.append(

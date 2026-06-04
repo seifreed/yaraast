@@ -275,5 +275,6 @@ def _deserialize_meta_entry_value(data: dict[str, Any]) -> str | int | bool | fl
 def _is_negated_nibble_pattern(value: str) -> bool:
     if len(value) != 2:
         return False
-    first, second = value
+    first = value[0]
+    second = value[1]
     return (first == "?" and second in _HEX_CHARS) or (first in _HEX_CHARS and second == "?")
