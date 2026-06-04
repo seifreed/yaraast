@@ -33,11 +33,15 @@ def local_name_variants(name: str, *, allow_string_identifier: bool = False) -> 
     if not isinstance(name, str):
         msg = "Local variable name must be a string"
         raise TypeError(msg)
+    if not name.strip():
+        msg = "Local variable name must not be empty"
+        raise ValueError(msg)
     names = [part.strip() for part in name.split(",")]
+    if any(not local_name for local_name in names):
+        msg = f"Local variable declaration must not contain empty entries: {name}"
+        raise ValueError(msg)
     variants: set[str] = set()
     for local_name in names:
-        if not local_name:
-            continue
         if allow_string_identifier and local_name.startswith("$"):
             try:
                 variants.add(normalize_string_reference_id(local_name, allow_wildcard=False))

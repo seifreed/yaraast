@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, cast
 
 import pytest
@@ -484,4 +485,33 @@ def test_dependency_analyzer_rejects_malformed_local_variable_identifiers(
     ast = YaraFile(rules=[Rule(name="caller", condition=condition)])
 
     with pytest.raises(ValueError, match=f"Invalid local variable identifier: {name}"):
+        DependencyAnalyzer().analyze(ast)
+
+
+@pytest.mark.parametrize(
+    ("variable", "message"),
+    [
+        ("", "Local variable name must not be empty"),
+        ("i,,j", "Local variable declaration must not contain empty entries: i,,j"),
+    ],
+)
+def test_dependency_analyzer_rejects_empty_local_variable_declarations(
+    variable: str,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="caller",
+                condition=ForExpression(
+                    quantifier="any",
+                    variable=variable,
+                    iterable=SetExpression([IntegerLiteral(1)]),
+                    body=BooleanLiteral(True),
+                ),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match=re.escape(message)):
         DependencyAnalyzer().analyze(ast)
