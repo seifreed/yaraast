@@ -51,7 +51,7 @@ def create_regex_diagram(pattern: str) -> str:
 
 def analyze_string_patterns(strings: list) -> dict[str, Any]:
     """Analyze patterns in a list of string definitions."""
-    analysis = {
+    analysis: dict[str, Any] = {
         "total_strings": len(strings),
         "types": {
             "plain": 0,
@@ -85,7 +85,7 @@ def analyze_string_patterns(strings: list) -> dict[str, Any]:
     # Find common prefixes in plain strings
     if len(plain_values) > 1:
         # Find common prefixes
-        prefixes = Counter()
+        prefixes: Counter[str] = Counter()
         for i, s1 in enumerate(plain_values):
             for _j, s2 in enumerate(plain_values[i + 1 :], i + 1):
                 # Find common prefix
@@ -102,7 +102,7 @@ def analyze_string_patterns(strings: list) -> dict[str, Any]:
             p for p, count in prefixes.most_common(5) if count >= 2
         ]
 
-        suffixes = Counter()
+        suffixes: Counter[str] = Counter()
         for i, s1 in enumerate(plain_values):
             for _j, s2 in enumerate(plain_values[i + 1 :], i + 1):
                 suffix = ""
