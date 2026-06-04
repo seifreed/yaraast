@@ -117,6 +117,9 @@ class GeneratorLayout(ABC):
             text = text[2:-2].strip()
 
         if inline:
+            if "\n" in text or "\r" in text:
+                msg = "Inline comment text must not contain newlines for libyara output"
+                raise ValueError(msg)
             gen._write(f"  // {text}")
         elif "\n" in text or len(text) > 80:
             gen._writeline("/*")

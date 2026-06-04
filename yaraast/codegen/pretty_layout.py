@@ -101,6 +101,10 @@ class PrettyLayout(GeneratorLayout):
         elif text.startswith("/*") and text.endswith("*/"):
             text = text[2:-2].strip()
 
+        if "\n" in text or "\r" in text:
+            msg = "Inline comment text must not contain newlines for libyara output"
+            raise ValueError(msg)
+
         spacing = max(0, self.options.inline_comment_spacing)
         if self.options.align_comments:
             current_line = gen.buffer.getvalue().rsplit("\n", 1)[-1]

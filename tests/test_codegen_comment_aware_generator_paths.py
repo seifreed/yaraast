@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import Condition, OfExpression
@@ -32,6 +34,19 @@ def test_comment_aware_generator_comment_shapes_and_disable_flag() -> None:
     disabled = CodeGenerator(options=GeneratorOptions.comment_aware(preserve_comments=False))
     disabled._write_comment(Comment("// no"))
     assert disabled.buffer.getvalue() == ""
+
+
+def test_comment_aware_generator_rejects_inline_multiline_comments() -> None:
+    gen = CodeGenerator(options=GeneratorOptions.comment_aware())
+
+    with pytest.raises(ValueError, match="Inline comment text must not contain newlines"):
+        gen._write_comment(Comment("line1\nline2"), inline=True)
+
+    rule = Rule("bad_inline_comment", condition=Condition())
+    rule.trailing_comment = Comment("line1\nline2")
+
+    with pytest.raises(ValueError, match="Inline comment text must not contain newlines"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(YaraFile(rules=[rule]))
 
 
 def test_comment_aware_generator_full_file_paths() -> None:

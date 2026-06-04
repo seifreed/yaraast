@@ -356,6 +356,16 @@ def test_pretty_printer_preserves_nested_comments_when_enabled() -> None:
     assert "tail" not in suppressed
 
 
+def test_pretty_printer_rejects_inline_multiline_comments() -> None:
+    rule = Rule("bad_inline_comment", condition=BooleanLiteral(True))
+    rule.trailing_comment = Comment("line1\nline2")
+
+    with pytest.raises(ValueError, match="Inline comment text must not contain newlines"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(
+            YaraFile(rules=[rule])
+        )
+
+
 def test_pretty_printer_honors_inline_comment_spacing_options() -> None:
     meta = Meta("author", "alice")
     meta.trailing_comment = Comment("meta tail")
