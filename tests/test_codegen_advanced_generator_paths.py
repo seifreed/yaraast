@@ -176,12 +176,13 @@ def test_advanced_generator_aligned_plain_strings_escape_values() -> None:
 
 
 def test_advanced_generator_skips_missing_condition() -> None:
-    out = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(
-        YaraFile(rules=[Rule(name="partial")])
-    )
+    ast = YaraFile(rules=[Rule(name="partial")])
 
-    assert "rule partial {" in out
-    assert "condition:" not in out
+    with pytest.raises(
+        ValueError,
+        match="Rule 'partial' must have a condition for libyara output",
+    ):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
 
 
 def test_advanced_generator_generate_returns_direct_expression_output() -> None:

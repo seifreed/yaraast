@@ -253,7 +253,9 @@ def validate_string_identifiers(strings: object) -> None:
 def validate_rule_string_references(rule: object) -> None:
     """Reject condition string references that are not declared in the rule."""
     if getattr(rule, "condition", None) is None:
-        return
+        rule_name = getattr(rule, "name", "<unknown>")
+        msg = f"Rule '{rule_name}' must have a condition for libyara output"
+        raise ValueError(msg)
 
     from yaraast.analysis.string_usage import StringUsageAnalyzer
     from yaraast.ast.rules import Rule

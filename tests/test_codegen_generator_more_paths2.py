@@ -1796,7 +1796,10 @@ def test_codegen_generators_allow_valid_identifier_expressions(
     condition: Any,
     expected: str,
 ) -> None:
-    ast = YaraFile(rules=[Rule(name="valid_identifier", condition=condition)])
+    strings: list[StringDefinition] = (
+        [PlainString(identifier="$a", value="x")] if "of them" in expected else []
+    )
+    ast = YaraFile(rules=[Rule(name="valid_identifier", strings=strings, condition=condition)])
 
     assert expected in CodeGenerator().generate(ast)
     assert expected in CodeGenerator(
@@ -1958,7 +1961,15 @@ def test_codegen_generators_parenthesize_single_string_set_items(
     ],
 )
 def test_codegen_generators_reject_invalid_quantifiers(condition: Any) -> None:
-    ast = YaraFile(rules=[Rule(name="invalid_quantifier", condition=condition)])
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_quantifier",
+                strings=[PlainString(identifier="$a", value="x")],
+                condition=condition,
+            )
+        ]
+    )
 
     with pytest.raises(ValueError, match="Invalid quantifier"):
         CodeGenerator().generate(ast)
@@ -2089,7 +2100,15 @@ def test_codegen_generators_reject_malformed_quantifiers(quantifier: Any) -> Non
     ]
 
     for expression in expressions:
-        ast = YaraFile(rules=[Rule(name="invalid_quantifier", condition=expression)])
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="invalid_quantifier",
+                    strings=[PlainString(identifier="$a", value="x")],
+                    condition=BinaryExpression(StringIdentifier("$a"), "and", expression),
+                )
+            ]
+        )
         with pytest.raises(ValueError, match=r"Invalid .*quantifier"):
             CodeGenerator().generate(ast)
         with pytest.raises(ValueError, match=r"Invalid .*quantifier"):
@@ -2323,6 +2342,36 @@ def test_codegen_generators_reject_undefined_string_references() -> None:
     )
 
     message = "Undefined string references in rule 'undefined_string': \\$missing"
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+def test_codegen_generators_reject_rules_without_conditions() -> None:
+    ast = YaraFile(rules=[Rule(name="missing_condition")])
+
+    message = "Rule 'missing_condition' must have a condition for libyara output"
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+def test_codegen_generators_reject_them_without_string_definitions() -> None:
+    ast = YaraFile(
+        rules=[Rule(name="empty_them", condition=OfExpression("any", Identifier("them")))]
+    )
+
+    message = "Undefined string references in rule 'empty_them': \\$\\*"
     with pytest.raises(ValueError, match=message):
         CodeGenerator().generate(ast)
     with pytest.raises(ValueError, match=message):

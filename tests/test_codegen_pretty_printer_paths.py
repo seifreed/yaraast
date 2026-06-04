@@ -504,8 +504,17 @@ def test_pretty_printer_style_presets_and_convenience_functions() -> None:
 
 
 def test_pretty_printer_handles_partial_sections_sorting_and_wrapped_condition_lines() -> None:
-    only_meta = Rule(name="meta_only", tags=[Tag("z"), Tag("a")], meta={"b": 2, "a": "x"})
-    only_strings = Rule(name="strings_only", strings=[RegexString(identifier="$r", regex="ab.*")])
+    only_meta = Rule(
+        name="meta_only",
+        tags=[Tag("z"), Tag("a")],
+        meta={"b": 2, "a": "x"},
+        condition=BooleanLiteral(True),
+    )
+    only_strings = Rule(
+        name="strings_only",
+        strings=[RegexString(identifier="$r", regex="ab.*")],
+        condition=StringIdentifier("$r"),
+    )
     long_condition = Rule(
         name="cond_only",
         condition=BinaryExpression(

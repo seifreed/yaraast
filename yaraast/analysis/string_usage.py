@@ -469,9 +469,11 @@ class StringUsageAnalyzer(BaseVisitor[None]):
     def _mark_all_current_rule_strings(self) -> None:
         rule_key = self._active_rule_key()
         if rule_key:
-            self.used_strings[rule_key].update(
-                self.defined_strings[rule_key],
-            )
+            defined = self.defined_strings[rule_key]
+            if defined:
+                self.used_strings[rule_key].update(defined)
+            else:
+                self.used_strings[rule_key].add("$*")
 
     def _is_explicit_string_wildcard(self, pattern: object) -> bool:
         if not isinstance(pattern, str):

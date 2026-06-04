@@ -4,7 +4,7 @@ from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.conditions import Condition, OfExpression
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import BooleanLiteral, Identifier, IntegerLiteral
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier, StringModifierType
@@ -29,7 +29,7 @@ def test_comment_aware_generator_write_comments_and_generate_non_file_node() -> 
     assert "// one" in out
     assert "// two" in out
 
-    rule = Rule(name="standalone", meta=[], strings=[], condition=None)
+    rule = Rule(name="standalone", meta=[], strings=[], condition=BooleanLiteral(True))
     generated = gen.generate(cast(Any, rule))
     assert "rule standalone {" in generated
 
@@ -41,13 +41,13 @@ def test_comment_aware_generator_meta_dict_and_missing_sections() -> None:
                 name="dict_meta",
                 meta={"author": "alice", "enabled": True, "count": 3, "quoted": '"x"'},
                 strings=[],
-                condition=None,
+                condition=BooleanLiteral(True),
             ),
             Rule(
                 name="only_condition",
                 meta=[],
                 strings=[],
-                condition=Condition(),
+                condition=BooleanLiteral(True),
             ),
         ],
     )
