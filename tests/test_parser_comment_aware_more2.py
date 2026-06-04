@@ -9,6 +9,7 @@ from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.strings import RegexString
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
+from yaraast.errors import ParseError
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
@@ -31,6 +32,19 @@ def test_parse_top_level_import_include_and_unexpected_token_paths() -> None:
 
     with pytest.raises(ParserError):
         parser.parse("42")
+
+
+def test_comment_aware_parser_supports_constructor_text() -> None:
+    source = "// lead\nrule r { condition: true }\n"
+    ast = CommentAwareParser(source).parse()
+
+    assert ast.rules[0].name == "r"
+    assert ast.rules[0].leading_comments is not None
+
+
+def test_comment_aware_parser_requires_text() -> None:
+    with pytest.raises(ParseError, match="No text provided to parse"):
+        CommentAwareParser().parse()
 
 
 def test_rule_name_and_section_errors_and_recovery() -> None:

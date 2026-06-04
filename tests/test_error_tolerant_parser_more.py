@@ -6,6 +6,7 @@ from textwrap import dedent
 
 import pytest
 
+from yaraast.errors import ParseError
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.parser import Parser
 
@@ -60,6 +61,18 @@ def test_error_tolerant_parse_returns_result_with_errors() -> None:
 
     assert result.ast is not None
     assert result.errors
+
+
+def test_error_tolerant_parser_supports_constructor_text() -> None:
+    result = ErrorTolerantParser("rule r { condition: true }").parse()
+
+    assert result.errors == []
+    assert result.ast.rules[0].name == "r"
+
+
+def test_error_tolerant_parser_requires_text() -> None:
+    with pytest.raises(ParseError, match="No text provided to parse"):
+        ErrorTolerantParser().parse()
 
 
 def test_error_tolerant_parser_propagates_internal_parser_errors(

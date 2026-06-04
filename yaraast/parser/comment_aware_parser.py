@@ -9,6 +9,7 @@ from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.extern import ExternImport
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaScope, StringModifier, StringModifierType
+from yaraast.errors import ParseError
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
@@ -24,20 +25,31 @@ from yaraast.parser.parser import Parser
 
 if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
-    from yaraast.ast.rules import Rule
+    from yaraast.ast.extern import ExternNamespace, ExternRule
+    from yaraast.ast.pragmas import InRulePragma, Pragma
+    from yaraast.ast.rules import Import, Include, Rule
     from yaraast.ast.strings import StringDefinition
 
 
 class CommentAwareParser(Parser):
     """Parser that preserves and attaches comments to AST nodes."""
 
-    def __init__(self) -> None:
+    def __init__(self, text: str | None = None) -> None:
         super().__init__()
         self.pending_comments: list[Token] = []
         self.comment_tokens: list[Token] = []
+        self._source_text = text
 
-    def parse(self, text: str) -> YaraFile:
+    def parse(self, text: str | None = None) -> YaraFile:
         """Parse YARA rule text with comment preservation."""
+        if text is None:
+            text = self._source_text
+        else:
+            self._source_text = text
+        if text is None:
+            msg = "No text provided to parse"
+            raise ParseError(msg)
+
         lexer = CommentPreservingLexer(text)
         self.tokens = lexer.tokenize()
         self.current = 0
@@ -47,17 +59,17 @@ class CommentAwareParser(Parser):
         self._extract_comment_tokens()
 
         # Parse the file (same logic as base Parser.parse)
-        imports = []
-        includes = []
-        rules = []
-        extern_imports = []
-        extern_rules = []
-        namespaces = []
-        pragmas = []
-        top_level_nodes = []
-        self._extern_rule_names = set()
-        self._extern_rule_declarations = set()
-        self._rule_names = set()
+        imports: list[Import] = []
+        includes: list[Include] = []
+        rules: list[Rule] = []
+        extern_imports: list[ExternImport] = []
+        extern_rules: list[ExternRule] = []
+        namespaces: list[ExternNamespace] = []
+        pragmas: list[Pragma] = []
+        top_level_nodes: list[ASTNode] = []
+        self._extern_rule_names: set[tuple[str | None, str]] = set()
+        self._extern_rule_declarations: set[tuple[str | None, str]] = set()
+        self._rule_names: set[str] = set()
 
         while not self._is_at_end():
             if self._check_file_pragma():
@@ -148,7 +160,7 @@ class CommentAwareParser(Parser):
         tags = self._parse_rule_tags_with_comments()
 
         self._expect_lbrace()
-        self._parsed_rule_pragmas = []
+        self._parsed_rule_pragmas: list[InRulePragma] = []
         meta, strings, condition = self._parse_rule_sections_with_comments()
         pragmas = self._parsed_rule_pragmas
         if condition is None:

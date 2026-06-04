@@ -8,7 +8,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.errors import YaraASTError
+from yaraast.errors import ParseError, YaraASTError
 from yaraast.parser.error_tolerant_flow import parse_with_recovery
 from yaraast.parser.error_tolerant_recovery import (
     create_rule_from_body,
@@ -25,14 +25,23 @@ from yaraast.parser.parser import Parser
 class ErrorTolerantParser(Parser):
     """Parser that can recover from syntax errors and continue parsing."""
 
-    def __init__(self) -> None:
+    def __init__(self, text: str | None = None) -> None:
         super().__init__()
         self.errors: list[ParserError] = []
         self.recovered_rules: list[Rule] = []
         self.lines: list[str] = []
+        self._source_text = text
 
-    def parse(self, text: str) -> ParseResult:
+    def parse(self, text: str | None = None) -> ParseResult:
         """Parse YARA text with error recovery."""
+        if text is None:
+            text = self._source_text
+        else:
+            self._source_text = text
+        if text is None:
+            msg = "No text provided to parse"
+            raise ParseError(msg)
+
         self.errors = []
         self.recovered_rules = []
         self.lines = text.splitlines()
