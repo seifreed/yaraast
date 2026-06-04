@@ -768,6 +768,36 @@ def test_codegen_generators_reject_empty_regex_patterns(rule: Rule) -> None:
 
 
 @pytest.mark.parametrize(
+    "plain",
+    [
+        PlainString("$p", value=""),
+        PlainString("$p", value=b""),
+        PlainString("$p", value="placeholder", raw_bytes=b""),
+    ],
+)
+def test_codegen_generators_reject_empty_plain_strings(plain: PlainString) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="plain_string_empty",
+                strings=[plain],
+                condition=StringIdentifier("$p"),
+            )
+        ]
+    )
+    message = "Plain string value must not be empty"
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
     "pattern",
     [
         "[",

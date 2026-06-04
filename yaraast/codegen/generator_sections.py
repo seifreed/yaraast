@@ -13,6 +13,7 @@ from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_hex_string_tokens,
     validate_plain_string_modifiers,
+    validate_plain_string_value,
     validate_regex_string_modifiers,
     validate_string_identifiers,
 )
@@ -90,7 +91,9 @@ def write_plain_string(gen: Any, node: Any) -> str:
     validate_plain_string_modifiers(node.modifiers)
     indent = " " * (gen.indent_level * gen.indent_size)
     gen._write(indent)
-    escaped_value = gen._escape_plain_string_value(plain_string_render_source(node))
+    source_value = plain_string_render_source(node)
+    validate_plain_string_value(source_value)
+    escaped_value = gen._escape_plain_string_value(source_value)
     gen._write(f'{output_string_identifier(node)} = "{escaped_value}"')
     if hasattr(node, "modifiers") and node.modifiers:
         gen._write_modifiers(node.modifiers)

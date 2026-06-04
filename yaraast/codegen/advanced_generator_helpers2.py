@@ -73,10 +73,13 @@ def render_advanced_plain_string(gen: Any, node: Any) -> str:
     from yaraast.codegen.generator_helpers import (
         escape_plain_string_value,
         plain_string_render_source,
+        validate_plain_string_value,
     )
 
     validate_plain_string_modifiers(node.modifiers)
-    escaped = escape_plain_string_value(plain_string_render_source(node))
+    source_value = plain_string_render_source(node)
+    validate_plain_string_value(source_value)
+    escaped = escape_plain_string_value(source_value)
     identifier = output_string_identifier(node)
     if gen._layout.config.string_style == StringStyle.COMPACT:
         gen._write(f'{identifier}="{escaped}"')

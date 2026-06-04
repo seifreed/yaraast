@@ -163,6 +163,17 @@ def plain_string_render_source(node: Any) -> str | bytes:
     return value
 
 
+def validate_plain_string_value(value: str | bytes) -> None:
+    """Reject plain string values that libyara cannot compile."""
+    if not isinstance(value, str | bytes):
+        msg = "Plain string value must be a string or bytes for libyara output"
+        raise TypeError(msg)
+    if value:
+        return
+    msg = "Plain string value must not be empty for libyara output"
+    raise ValueError(msg)
+
+
 def escape_regex_delimiter(pattern: str) -> str:
     """Escape unescaped '/' characters without double-escaping existing escapes."""
     if not isinstance(pattern, str):
@@ -451,7 +462,9 @@ def _validate_renderable_string_definition(string_def: object) -> None:
     if isinstance(string_def, PlainString):
         output_string_identifier(string_def)
         validate_plain_string_modifiers(string_def.modifiers)
-        escape_plain_string_value(plain_string_render_source(string_def))
+        source_value = plain_string_render_source(string_def)
+        validate_plain_string_value(source_value)
+        escape_plain_string_value(source_value)
         return
     if isinstance(string_def, HexString):
         output_string_identifier(string_def)

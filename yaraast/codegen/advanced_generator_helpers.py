@@ -34,6 +34,7 @@ from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_hex_string_tokens,
     validate_plain_string_modifiers,
+    validate_plain_string_value,
     validate_regex_string_modifiers,
     validate_string_identifiers,
 )
@@ -50,7 +51,9 @@ def collect_string_definitions(
         identifier = output_string_identifier(string_def)
         if isinstance(string_def, PlainString):
             validate_plain_string_modifiers(string_def.modifiers)
-            value = f'"{escape_plain_string_value(plain_string_render_source(string_def))}"'
+            source_value = plain_string_render_source(string_def)
+            validate_plain_string_value(source_value)
+            value = f'"{escape_plain_string_value(source_value)}"'
         elif isinstance(string_def, HexString):
             validate_hex_string_modifiers(string_def.modifiers)
             value = format_hex_string(string_def, config)
