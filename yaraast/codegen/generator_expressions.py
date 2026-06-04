@@ -282,7 +282,12 @@ def _validate_percentage_quantifier(percent: int, raw_value: object) -> None:
 
 def render_for_of_expression(gen: Any, node: Any) -> str:
     """Render a for-of expression."""
-    quantifier = _render_quantifier(gen, node.quantifier, allow_percentage=True)
+    quantifier = _render_quantifier(
+        gen,
+        node.quantifier,
+        allow_percentage=node.condition is None,
+        context="for quantifier" if node.condition is not None else "quantifier",
+    )
     string_set = _render_string_set(gen, node.string_set)
     if node.condition is not None:
         previous = getattr(gen, "_allow_string_placeholder", False)

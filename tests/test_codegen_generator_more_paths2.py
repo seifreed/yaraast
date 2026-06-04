@@ -2106,13 +2106,13 @@ def test_codegen_generators_reject_invalid_quantifiers(condition: Any) -> None:
         ]
     )
 
-    with pytest.raises(ValueError, match="Invalid quantifier"):
+    with pytest.raises(ValueError, match=r"Invalid .*quantifier"):
         CodeGenerator().generate(ast)
-    with pytest.raises(ValueError, match="Invalid quantifier"):
+    with pytest.raises(ValueError, match=r"Invalid .*quantifier"):
         CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
-    with pytest.raises(ValueError, match="Invalid quantifier"):
+    with pytest.raises(ValueError, match=r"Invalid .*quantifier"):
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
-    with pytest.raises(ValueError, match="Invalid quantifier"):
+    with pytest.raises(ValueError, match=r"Invalid .*quantifier"):
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
@@ -2178,6 +2178,42 @@ def test_codegen_generators_reject_invalid_for_quantifiers(quantifier: Any) -> N
                     "i",
                     SetExpression([IntegerLiteral(1)]),
                     BooleanLiteral(True),
+                ),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Invalid for quantifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid for quantifier"):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match="Invalid for quantifier"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match="Invalid for quantifier"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    "quantifier",
+    [
+        0.5,
+        "50%",
+        StringLiteral("50%"),
+        DoubleLiteral(0.5),
+    ],
+)
+def test_codegen_generators_reject_percentage_for_of_quantifiers(
+    quantifier: Any,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_for_of_quantifier",
+                strings=[PlainString(identifier="$a", value="x")],
+                condition=ForOfExpression(
+                    quantifier=quantifier,
+                    string_set=Identifier("them"),
+                    condition=StringIdentifier("$"),
                 ),
             )
         ]
