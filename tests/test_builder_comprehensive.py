@@ -170,8 +170,26 @@ class TestConditionBuilderLiterals:
         result = builder.identifier("pe.number_of_sections")
         expr = result.build()
 
-        assert isinstance(expr, Identifier)
-        assert expr.name == "pe.number_of_sections"
+        assert isinstance(expr, MemberAccess)
+        assert expr.member == "number_of_sections"
+        assert isinstance(expr.object, Identifier)
+        assert expr.object.name == "pe"
+
+    def test_identifier_path_generates_libyara_compatible_member_access(self) -> None:
+        """Dotted identifier paths should generate as member access expressions."""
+        from yaraast import CodeGenerator, RuleBuilder, YaraFileBuilder
+
+        rule = (
+            RuleBuilder()
+            .with_name("module_path")
+            .with_condition_lambda(lambda c: c.identifier("pe.number_of_sections").gt(c.integer(3)))
+            .build()
+        )
+        ast = YaraFileBuilder().with_import("pe").with_rule(rule).build()
+
+        generated = CodeGenerator().generate(ast)
+
+        assert "pe.number_of_sections > 3" in generated
 
 
 class TestConditionBuilderRangeAndAccess:
@@ -234,6 +252,7 @@ class TestConditionBuilderRangeAndAccess:
         expr = result.build()
 
         assert isinstance(expr, ArrayAccess)
+        assert isinstance(expr.array, MemberAccess)
         assert isinstance(expr.index, IntegerLiteral)
         assert expr.index.value == 0
 
@@ -600,6 +619,8 @@ class TestConditionBuilderForLoops:
         assert isinstance(expr, ForExpression)
         assert expr.quantifier == "any"
         assert expr.variable == "section"
+        assert isinstance(expr.iterable, MemberAccess)
+        assert isinstance(expr.body, BinaryExpression)
 
     def test_for_any_with_expression_objects(self) -> None:
         """For_any should work with Expression objects."""
@@ -914,8 +935,10 @@ class TestExpressionBuilder:
         """Identifier method should create Identifier."""
         expr = ExpressionBuilder.identifier("pe.sections")
 
-        assert isinstance(expr, Identifier)
-        assert expr.name == "pe.sections"
+        assert isinstance(expr, MemberAccess)
+        assert expr.member == "sections"
+        assert isinstance(expr.object, Identifier)
+        assert expr.object.name == "pe"
 
     def test_filesize_creates_filesize_identifier(self) -> None:
         """Filesize method should create filesize identifier."""

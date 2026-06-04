@@ -29,6 +29,15 @@ from yaraast.errors import ValidationError
 _STRING_REFERENCE_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
 
+def _identifier_path_expression(name: str) -> Expression:
+    validate_identifier_path(name, "identifier")
+    parts = name.split(".")
+    expr: Expression = Identifier(name=parts[0])
+    for member in parts[1:]:
+        expr = MemberAccess(object=expr, member=member)
+    return expr
+
+
 class ExpressionBuilder:
     """Static helper methods for building expressions."""
 
@@ -105,10 +114,9 @@ class ExpressionBuilder:
         return BooleanLiteral(value=False)
 
     @staticmethod
-    def identifier(name: str) -> Identifier:
+    def identifier(name: str) -> Expression:
         """Create identifier."""
-        validate_identifier_path(name, "identifier")
-        return Identifier(name=name)
+        return _identifier_path_expression(name)
 
     @staticmethod
     def filesize() -> Identifier:

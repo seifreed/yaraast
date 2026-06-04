@@ -30,6 +30,15 @@ from yaraast.errors import ValidationError
 _STRING_REFERENCE_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
 
+def _identifier_path_expression(name: str) -> Expression:
+    validate_identifier_path(name, "identifier")
+    parts = name.split(".")
+    expr: Expression = Identifier(name=parts[0])
+    for member in parts[1:]:
+        expr = MemberAccess(object=expr, member=member)
+    return expr
+
+
 class ConditionBuilder:
     """Fluent builder for constructing conditions."""
 
@@ -98,8 +107,7 @@ class ConditionBuilder:
 
     def identifier(self, name: str) -> ConditionBuilder:
         """Generic identifier."""
-        validate_identifier_path(name, "identifier")
-        return ConditionBuilder(Identifier(name=name))
+        return ConditionBuilder(_identifier_path_expression(name))
 
     def range(self, start: int | ConditionBuilder, end: int | ConditionBuilder) -> ConditionBuilder:
         """Create a range expression."""
