@@ -80,20 +80,27 @@ def validate_required_module_imports(node: Any) -> None:
 
 
 def _collect_required_module_imports(value: Any, modules: set[str]) -> None:
-    from yaraast.ast.expressions import FunctionCall
+    from yaraast.ast.expressions import FunctionCall, Identifier, MemberAccess
     from yaraast.ast.modules import ModuleReference
     from yaraast.types.module_definitions import load_builtin_modules
 
+    builtin_modules = load_builtin_modules()
     if value is None:
         return
     if isinstance(value, ModuleReference):
         modules.add(value.module)
         return
+    if (
+        isinstance(value, MemberAccess)
+        and isinstance(value.object, Identifier)
+        and value.object.name in builtin_modules
+    ):
+        modules.add(value.object.name)
     if isinstance(value, FunctionCall):
         resolved = value.module_and_function()
         if resolved is not None:
             module_name, _function_name = resolved
-            if module_name in load_builtin_modules():
+            if module_name in builtin_modules:
                 modules.add(module_name)
         _collect_required_module_imports(getattr(value, "receiver", None), modules)
         for argument in value.arguments:

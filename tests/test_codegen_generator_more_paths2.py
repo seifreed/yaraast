@@ -3274,6 +3274,7 @@ def test_codegen_generators_reject_invalid_module_container_access(
     "condition",
     [
         MemberAccess(ModuleReference("pe"), "is_pe"),
+        MemberAccess(Identifier("pe"), "is_pe"),
         FunctionCall("math.entropy", [StringLiteral("abc")]),
         FunctionCall(
             "valid_on",
