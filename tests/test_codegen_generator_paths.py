@@ -149,12 +149,36 @@ def test_codegen_generate_returns_direct_expression_output() -> None:
             "Range high bound must be integer",
         ),
         (
+            RangeExpression(StringLiteral("0"), IntegerLiteral(3)),
+            "Range low bound must be integer",
+        ),
+        (
+            RangeExpression(DoubleLiteral(1.5), IntegerLiteral(3)),
+            "Range low bound must be integer",
+        ),
+        (
             ArrayAccess(Identifier("arr"), BooleanLiteral(True)),
             "Array index must be integer",
         ),
         (
             ArrayAccess(Identifier("arr"), ParenthesesExpression(BooleanLiteral(True))),
             "Array index must be integer",
+        ),
+        (
+            ArrayAccess(Identifier("arr"), StringLiteral("0")),
+            "Array index must be integer",
+        ),
+        (
+            ArrayAccess(Identifier("arr"), DoubleLiteral(1.5)),
+            "Array index must be integer",
+        ),
+        (
+            AtExpression("$a", StringLiteral("0")),
+            "At expression offset must be integer",
+        ),
+        (
+            AtExpression("$a", DoubleLiteral(1.5)),
+            "At expression offset must be integer",
         ),
         (
             BinaryExpression(BooleanLiteral(True), "+", IntegerLiteral(1)),

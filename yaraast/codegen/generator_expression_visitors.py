@@ -418,13 +418,15 @@ def require_present_expression(value: Any, field_name: str) -> Any:
     return value
 
 
-def _reject_boolean_numeric_expression(value: Any, field_name: str) -> None:
-    _reject_boolean_expression(value, f"{field_name} must be integer for libyara output")
+def _reject_non_integer_expression(value: Any, field_name: str) -> None:
+    if _is_definitely_non_integer_expression(value):
+        msg = f"{field_name} must be integer for libyara output"
+        raise ValueError(msg)
 
 
 def visit_range_expression(generator: Any, node: Any) -> str:
-    _reject_boolean_numeric_expression(node.low, "Range low bound")
-    _reject_boolean_numeric_expression(node.high, "Range high bound")
+    _reject_non_integer_expression(node.low, "Range low bound")
+    _reject_non_integer_expression(node.high, "Range high bound")
     return f"{generator.visit(node.low)}..{generator.visit(node.high)}"
 
 
@@ -448,7 +450,7 @@ def visit_function_call(generator: Any, node: Any) -> str:
 
 
 def visit_array_access(generator: Any, node: Any) -> str:
-    _reject_boolean_numeric_expression(node.index, "Array index")
+    _reject_non_integer_expression(node.index, "Array index")
     return f"{generator.visit(node.array)}[{generator.visit(node.index)}]"
 
 
@@ -495,5 +497,5 @@ def visit_at_expression(generator: Any, node: Any) -> str:
             node.string_id,
             allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
         )
-    _reject_boolean_numeric_expression(node.offset, "At expression offset")
+    _reject_non_integer_expression(node.offset, "At expression offset")
     return f"{string_id} at {generator.visit(node.offset)}"
