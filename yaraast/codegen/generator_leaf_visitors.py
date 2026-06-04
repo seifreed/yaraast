@@ -26,6 +26,7 @@ from yaraast.codegen.generator_helpers import (
     format_integer_literal,
     format_string_reference_suffix,
     validate_hex_alternative_token,
+    validate_no_unicode_surrogates,
     validate_string_identifier_text,
     validate_string_wildcard_text,
 )
@@ -254,6 +255,7 @@ def _require_comment_text(text: object) -> str:
     if not isinstance(text, str):
         msg = "Comment text must be a string for libyara output"
         raise TypeError(msg)
+    validate_no_unicode_surrogates(text, "Comment text")
     return text
 
 

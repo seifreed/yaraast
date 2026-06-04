@@ -277,6 +277,24 @@ def test_codegen_generator_rejects_standard_comment_newlines(comment_target: str
         CodeGenerator().generate(YaraFile(rules=[rule]))
 
 
+@pytest.mark.parametrize(
+    "comment_target",
+    ["leading", "trailing"],
+)
+def test_codegen_generator_rejects_standard_comment_surrogates(
+    comment_target: str,
+) -> None:
+    rule = Rule("bad_comment", condition=BooleanLiteral(True))
+    comment = Comment("\ud800")
+    if comment_target == "leading":
+        rule.leading_comments = [comment]
+    else:
+        rule.trailing_comment = comment
+
+    with pytest.raises(ValueError, match="Comment text must not contain Unicode surrogate"):
+        CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
 def test_codegen_generate_resets_indent_after_failed_generation() -> None:
     gen = CodeGenerator()
     with pytest.raises(RuntimeError, match="broken condition"):
