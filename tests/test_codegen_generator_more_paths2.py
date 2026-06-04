@@ -3017,6 +3017,74 @@ def test_codegen_generators_reject_invalid_integer_builtin_calls(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            FunctionCall("math.entropy", []),
+            "Module function 'math\\.entropy' expects at least 1 argument",
+        ),
+        (
+            FunctionCall("math.entropy", [IntegerLiteral(0)]),
+            "Module function 'math\\.entropy' does not accept these argument types",
+        ),
+        (
+            FunctionCall("math.entropy", [StringLiteral("x"), IntegerLiteral(1)]),
+            "Module function 'math\\.entropy' does not accept these argument types",
+        ),
+        (
+            FunctionCall("hash.md5", []),
+            "Module function 'hash\\.md5' expects at least 1 argument",
+        ),
+        (
+            FunctionCall("hash.md5", [IntegerLiteral(0)]),
+            "Module function 'hash\\.md5' does not accept these argument types",
+        ),
+        (
+            FunctionCall("hash.md5", [StringLiteral("x"), IntegerLiteral(1)]),
+            "Module function 'hash\\.md5' does not accept these argument types",
+        ),
+        (
+            FunctionCall("pe.imphash", [IntegerLiteral(0)]),
+            "Module function 'pe\\.imphash' expects at most 0 argument",
+        ),
+    ],
+)
+def test_codegen_generators_reject_invalid_module_function_calls(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_module_function", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        FunctionCall("math.entropy", [StringLiteral("abc")]),
+        FunctionCall("math.entropy", [IntegerLiteral(0), IntegerLiteral(10)]),
+        FunctionCall("hash.md5", [StringLiteral("abc")]),
+        FunctionCall("hash.md5", [IntegerLiteral(0), IntegerLiteral(10)]),
+        FunctionCall("pe.imphash", []),
+    ],
+)
+def test_codegen_generators_allow_valid_module_function_calls(condition: Any) -> None:
+    ast = YaraFile(rules=[Rule(name="valid_module_function", condition=condition)])
+
+    CodeGenerator().generate(ast)
+    CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generators_allow_for_of_placeholder_string_reference() -> None:
     ast = Parser().parse("""
         rule placeholder {

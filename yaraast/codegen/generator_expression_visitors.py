@@ -72,6 +72,11 @@ _INTEGER_READ_FUNCTIONS = frozenset(
     }
 )
 _UNSUPPORTED_INTEGER_READ_ALIASES = frozenset({"int16le", "int32le", "uint16le", "uint32le"})
+_HASH_FUNCTIONS = frozenset({"checksum32", "crc32", "md5", "sha1", "sha256"})
+_MATH_STRING_REGION_FUNCTIONS = frozenset(
+    {"entropy", "mean", "monte_carlo_pi", "serial_correlation"}
+)
+_MATH_INTEGER_REGION_FUNCTIONS = frozenset({"count", "mode", "percentage"})
 
 
 def _precedence(operator: str) -> int:
@@ -433,6 +438,7 @@ def validate_set_expression_elements(node: Any) -> None:
 
 def validate_function_call_arguments(node: Any) -> None:
     validate_expression_collection(node.arguments, "FunctionCall arguments")
+    _validate_known_module_function_call(node)
     if getattr(node, "receiver", None) is not None:
         return
     function_name = node.function
@@ -450,6 +456,207 @@ def validate_function_call_arguments(node: Any) -> None:
     if _is_definitely_non_integer_expression(node.arguments[0]):
         msg = f"Builtin function '{function_name}' argument must be integer for libyara output"
         raise ValueError(msg)
+
+
+def _validate_known_module_function_call(node: Any) -> None:
+    resolved = node.module_and_function()
+    if resolved is None:
+        return
+    module_name, function_name = resolved
+
+    from yaraast.types.module_definitions import load_builtin_modules
+
+    module_def = load_builtin_modules().get(module_name)
+    if module_def is None:
+        return
+    function_def = module_def.functions.get(function_name)
+    if function_def is None:
+        return
+
+    arguments = node.arguments
+    _validate_module_function_arity(module_name, function_name, function_def, arguments)
+
+    if module_name == "hash" and function_name in _HASH_FUNCTIONS:
+        _validate_hash_module_function_arguments(function_name, arguments)
+        return
+    if module_name == "math" and (
+        function_name in _MATH_STRING_REGION_FUNCTIONS
+        or function_name == "deviation"
+        or function_name in _MATH_INTEGER_REGION_FUNCTIONS
+    ):
+        _validate_math_module_function_arguments(function_name, arguments)
+        return
+
+    _validate_generic_module_function_argument_types(
+        module_name,
+        function_name,
+        function_def,
+        arguments,
+    )
+
+
+def _validate_module_function_arity(
+    module_name: str,
+    function_name: str,
+    function_def: Any,
+    arguments: list[Any] | tuple[Any, ...],
+) -> None:
+    max_args = len(function_def.parameters)
+    min_args = function_def.min_parameters if function_def.min_parameters is not None else max_args
+    actual_args = len(arguments)
+    qualified_name = f"{module_name}.{function_name}"
+    if actual_args < min_args:
+        msg = (
+            f"Module function '{qualified_name}' expects at least {min_args} argument(s), "
+            f"got {actual_args} for libyara output"
+        )
+        raise ValueError(msg)
+    if not function_def.variadic and actual_args > max_args:
+        msg = (
+            f"Module function '{qualified_name}' expects at most {max_args} argument(s), "
+            f"got {actual_args} for libyara output"
+        )
+        raise ValueError(msg)
+
+
+def _validate_hash_module_function_arguments(
+    function_name: str,
+    arguments: list[Any] | tuple[Any, ...],
+) -> None:
+    argument_types = [_obvious_argument_type(argument) for argument in arguments]
+    if any(argument_type is None for argument_type in argument_types):
+        return
+    valid_string_digest = len(argument_types) == 1 and argument_types[0] == "string"
+    valid_region_digest = len(argument_types) == 2 and all(
+        argument_type == "integer" for argument_type in argument_types
+    )
+    if valid_string_digest or valid_region_digest:
+        return
+    msg = f"Module function 'hash.{function_name}' does not accept these argument types"
+    raise ValueError(msg)
+
+
+def _validate_math_module_function_arguments(
+    function_name: str,
+    arguments: list[Any] | tuple[Any, ...],
+) -> None:
+    argument_types = [_obvious_argument_type(argument) for argument in arguments]
+    if any(argument_type is None for argument_type in argument_types):
+        return
+
+    if function_name in _MATH_STRING_REGION_FUNCTIONS:
+        valid = _matches_string_or_integer_region_arguments(argument_types)
+    elif function_name == "deviation":
+        valid = (
+            len(argument_types) == 2
+            and argument_types[0] == "string"
+            and argument_types[1] == "double"
+        ) or (
+            len(argument_types) == 3
+            and argument_types[0] == "integer"
+            and argument_types[1] == "integer"
+            and argument_types[2] == "double"
+        )
+    elif function_name in {"count", "percentage"}:
+        valid = len(argument_types) in {1, 3} and all(
+            argument_type == "integer" for argument_type in argument_types
+        )
+    else:
+        valid = len(argument_types) in {0, 2} and all(
+            argument_type == "integer" for argument_type in argument_types
+        )
+
+    if valid:
+        return
+    msg = f"Module function 'math.{function_name}' does not accept these argument types"
+    raise ValueError(msg)
+
+
+def _matches_string_or_integer_region_arguments(argument_types: list[str | None]) -> bool:
+    return (len(argument_types) == 1 and argument_types[0] == "string") or (
+        len(argument_types) == 2
+        and argument_types[0] == "integer"
+        and argument_types[1] == "integer"
+    )
+
+
+def _validate_generic_module_function_argument_types(
+    module_name: str,
+    function_name: str,
+    function_def: Any,
+    arguments: list[Any] | tuple[Any, ...],
+) -> None:
+    from yaraast.types._registry_primitives import (
+        BooleanType,
+        DoubleType,
+        FloatType,
+        IntegerType,
+        ScalarType,
+        StringType,
+    )
+
+    for argument, (_, parameter_type) in zip(arguments, function_def.parameters, strict=False):
+        argument_type = _obvious_argument_type(argument)
+        if argument_type is None:
+            continue
+        compatible = (
+            (isinstance(parameter_type, IntegerType) and argument_type == "integer")
+            or (isinstance(parameter_type, StringType) and argument_type == "string")
+            or (isinstance(parameter_type, BooleanType) and argument_type == "boolean")
+            or (
+                isinstance(parameter_type, DoubleType | FloatType)
+                and argument_type in {"double", "integer"}
+            )
+            or (
+                isinstance(parameter_type, ScalarType)
+                and argument_type in {"double", "integer", "string"}
+            )
+        )
+        if compatible:
+            continue
+        msg = (
+            f"Module function '{module_name}.{function_name}' does not accept "
+            "these argument types"
+        )
+        raise ValueError(msg)
+
+
+def _obvious_argument_type(argument: Any) -> str | None:
+    from yaraast.ast.expressions import (
+        BooleanLiteral,
+        DoubleLiteral,
+        FunctionCall,
+        Identifier,
+        IntegerLiteral,
+        RegexLiteral,
+        StringCount,
+        StringLength,
+        StringLiteral,
+        StringOffset,
+    )
+
+    argument = _unwrap_parenthesized_expression(argument)
+    if isinstance(argument, bool | BooleanLiteral):
+        return "boolean"
+    if isinstance(argument, int | IntegerLiteral) and not isinstance(argument, bool):
+        return "integer"
+    if isinstance(argument, float | DoubleLiteral):
+        return "double"
+    if isinstance(argument, str | StringLiteral):
+        return "string"
+    if isinstance(argument, RegexLiteral):
+        return "regex"
+    if isinstance(argument, Identifier) and argument.name in {"entrypoint", "filesize"}:
+        return "integer"
+    if isinstance(argument, StringCount | StringLength | StringOffset):
+        return "integer"
+    if (
+        isinstance(argument, FunctionCall)
+        and argument.receiver is None
+        and argument.function in _INTEGER_READ_FUNCTIONS
+    ):
+        return "integer"
+    return None
 
 
 def validate_expression_collection(value: Any, field_name: str) -> None:
