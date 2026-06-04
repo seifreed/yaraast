@@ -99,6 +99,12 @@ def test_codegen_generator_additional_visit_paths() -> None:
         gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), IntegerLiteral(1)))
         == "pe[1]"
     )
+    with pytest.raises(ValueError, match="Dictionary key must be string or integer"):
+        gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), BooleanLiteral(True)))
+    with pytest.raises(ValueError, match="Dictionary key must be string or integer"):
+        gen.visit_dictionary_access(
+            DictionaryAccess(ModuleReference("pe"), ParenthesesExpression(BooleanLiteral(True)))
+        )
     assert gen.visit_defined_expression(DefinedExpression(Identifier("$a"))) == "defined $a"
     assert (
         gen.visit_string_operator_expression(
