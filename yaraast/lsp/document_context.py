@@ -15,7 +15,9 @@ if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.yaral.ast_nodes import YaraLFile
 
-    ASTRoot = YaraFile | YaraLFile
+    type ASTRoot = YaraFile | YaraLFile
+else:
+    type ASTRoot = Any
 from yaraast.lsp.document_rule_queries import (
     get_rule_info,
     get_rule_meta_items,

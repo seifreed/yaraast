@@ -36,6 +36,7 @@ class SymbolsProvider:
         """
         started = time.perf_counter()
         doc = None
+        symbols: list[DocumentSymbol]
 
         try:
             if self.runtime and uri:
