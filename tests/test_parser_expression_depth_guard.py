@@ -43,7 +43,7 @@ def test_no_recursion_error_across_all_depths_at_default_limit() -> None:
             _parse(src)
         except ParserError:
             pass
-        except RecursionError:  # pragma: no cover - fails the test on regression
+        except RecursionError:
             pytest.fail(f"RecursionError leaked at nesting depth {depth}")
 
 
@@ -58,7 +58,7 @@ def test_no_recursion_error_at_lowered_recursion_limit() -> None:
                 _parse(src)
             except ParserError:
                 pass
-            except RecursionError:  # pragma: no cover
+            except RecursionError:
                 pytest.fail(f"RecursionError leaked at depth {depth}, limit 200")
     finally:
         sys.setrecursionlimit(original)

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import importlib.util
 
 
 @dataclass(frozen=True)
@@ -72,11 +73,7 @@ class YaraXEngine(ReferenceEngine):
 
     @property
     def available(self) -> bool:
-        try:
-            import yara_x  # noqa: F401
-        except ImportError:
-            return False
-        return True
+        return importlib.util.find_spec("yara_x") is not None
 
     def evaluate(self, source: str, data: bytes | None = None) -> EngineResult:
         import yara_x
