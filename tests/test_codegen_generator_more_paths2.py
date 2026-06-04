@@ -3042,7 +3042,10 @@ def test_codegen_generators_reject_invalid_reference_names(
     condition: Any,
     message: str,
 ) -> None:
-    ast = YaraFile(rules=[Rule(name="invalid_reference_name", condition=condition)])
+    ast = YaraFile(
+        imports=[Import("bad-mod"), Import("math"), Import("pe")],
+        rules=[Rule(name="invalid_reference_name", condition=condition)],
+    )
 
     with pytest.raises(ValueError, match=message):
         CodeGenerator().generate(ast)
@@ -3160,7 +3163,10 @@ def test_codegen_generators_reject_invalid_module_function_calls(
     condition: Any,
     message: str,
 ) -> None:
-    ast = YaraFile(rules=[Rule(name="invalid_module_function", condition=condition)])
+    ast = YaraFile(
+        imports=[Import("hash"), Import("math"), Import("pe")],
+        rules=[Rule(name="invalid_module_function", condition=condition)],
+    )
 
     with pytest.raises(ValueError, match=message):
         CodeGenerator().generate(ast)
@@ -3197,7 +3203,10 @@ def test_codegen_generators_reject_unknown_builtin_module_members(
     condition: Any,
     message: str,
 ) -> None:
-    ast = YaraFile(rules=[Rule(name="invalid_module_member", condition=condition)])
+    ast = YaraFile(
+        imports=[Import("hash"), Import("math"), Import("pe")],
+        rules=[Rule(name="invalid_module_member", condition=condition)],
+    )
 
     with pytest.raises(ValueError, match=message):
         CodeGenerator().generate(ast)
@@ -3264,6 +3273,33 @@ def test_codegen_generators_reject_invalid_module_container_access(
 @pytest.mark.parametrize(
     "condition",
     [
+        MemberAccess(ModuleReference("pe"), "is_pe"),
+        FunctionCall("math.entropy", [StringLiteral("abc")]),
+        FunctionCall(
+            "valid_on",
+            [IntegerLiteral(0)],
+            receiver=ArrayAccess(
+                MemberAccess(ModuleReference("pe"), "signatures"), IntegerLiteral(0)
+            ),
+        ),
+    ],
+)
+def test_codegen_generators_reject_missing_module_imports(condition: Any) -> None:
+    ast = YaraFile(rules=[Rule(name="missing_module_import", condition=condition)])
+
+    with pytest.raises(ValueError, match="Module imports are required"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Module imports are required"):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match="Module imports are required"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match="Module imports are required"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
         FunctionCall("math.entropy", [StringLiteral("abc")]),
         FunctionCall("math.entropy", [IntegerLiteral(0), IntegerLiteral(10)]),
         FunctionCall("hash.md5", [StringLiteral("abc")]),
@@ -3280,7 +3316,10 @@ def test_codegen_generators_reject_invalid_module_container_access(
     ],
 )
 def test_codegen_generators_allow_valid_module_function_calls(condition: Any) -> None:
-    ast = YaraFile(rules=[Rule(name="valid_module_function", condition=condition)])
+    ast = YaraFile(
+        imports=[Import("hash"), Import("math"), Import("pe")],
+        rules=[Rule(name="valid_module_function", condition=condition)],
+    )
 
     CodeGenerator().generate(ast)
     CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)

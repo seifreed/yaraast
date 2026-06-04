@@ -119,6 +119,7 @@ from yaraast.codegen.generator_leaf_visitors import (
     visit_string_wildcard as render_string_wildcard,
 )
 from yaraast.codegen.generator_structure_visitors import (
+    validate_required_module_imports,
     visit_import as render_import,
     visit_include as render_include,
     visit_string_definition as render_string_definition,
@@ -270,6 +271,7 @@ class CodeGenerator(ASTVisitor[str]):
     # Visit methods
     def visit_yara_file(self, node: YaraFile) -> str:
         """Generate code for YaraFile."""
+        validate_required_module_imports(node)
         return self._layout.visit_yara_file(self, node)
 
     def visit_import(self, node: Import) -> str:

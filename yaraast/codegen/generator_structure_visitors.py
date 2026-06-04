@@ -64,6 +64,53 @@ def visit_yara_file(generator: Any, node: Any) -> str:
     return str(generator.buffer.getvalue())
 
 
+def validate_required_module_imports(node: Any) -> None:
+    imported_modules = {getattr(import_node, "module", None) for import_node in node.imports}
+    required_modules: set[str] = set()
+    for rule in node.rules:
+        _collect_required_module_imports(getattr(rule, "condition", None), required_modules)
+    missing_modules = sorted(
+        module for module in required_modules if module not in imported_modules
+    )
+    if not missing_modules:
+        return
+    missing = ", ".join(missing_modules)
+    msg = f"Module imports are required for libyara output: {missing}"
+    raise ValueError(msg)
+
+
+def _collect_required_module_imports(value: Any, modules: set[str]) -> None:
+    from yaraast.ast.expressions import FunctionCall
+    from yaraast.ast.modules import ModuleReference
+    from yaraast.types.module_definitions import load_builtin_modules
+
+    if value is None:
+        return
+    if isinstance(value, ModuleReference):
+        modules.add(value.module)
+        return
+    if isinstance(value, FunctionCall):
+        resolved = value.module_and_function()
+        if resolved is not None:
+            module_name, _function_name = resolved
+            if module_name in load_builtin_modules():
+                modules.add(module_name)
+        _collect_required_module_imports(getattr(value, "receiver", None), modules)
+        for argument in value.arguments:
+            _collect_required_module_imports(argument, modules)
+        return
+    if isinstance(value, list | tuple | set):
+        for item in value:
+            _collect_required_module_imports(item, modules)
+        return
+    if not hasattr(value, "__dict__"):
+        return
+    for field_name, field_value in vars(value).items():
+        if field_name in {"location", "leading_comments", "trailing_comment"}:
+            continue
+        _collect_required_module_imports(field_value, modules)
+
+
 def visit_import(node: Any) -> str:
     value = f"import \"{format_nonempty_quoted_value(node.module, 'Import module')}\""
     reject_import_alias(getattr(node, "alias", None))

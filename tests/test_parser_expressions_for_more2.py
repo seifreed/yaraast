@@ -78,7 +78,7 @@ def test_parse_for_expression_success_and_error_paths() -> None:
 def test_multi_variable_for_loop_round_trips() -> None:
     from yaraast.codegen.generator import CodeGenerator
 
-    source = 'rule r { condition: for any k,v in pe.version_info : ( k == "x" ) }'
+    source = 'import "pe" rule r { condition: for any k,v in pe.version_info : ( k == "x" ) }'
     ast = Parser().parse(source)
     assert isinstance(ast.rules[0].condition, ForExpression)
     assert ast.rules[0].condition.variable == "k,v"

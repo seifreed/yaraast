@@ -53,6 +53,8 @@ rule test_iequals {
 def test_icontains_operator() -> None:
     """Test icontains operator."""
     yara_code = """
+import "pe"
+
 rule test_icontains {
     condition:
         pe.version_info["CompanyName"] icontains "microsoft"
@@ -72,6 +74,8 @@ rule test_icontains {
 def test_complex_defined() -> None:
     """Test complex defined expressions."""
     yara_code = """
+import "pe"
+
 rule test_complex_defined {
     condition:
         defined pe.sections[0].name and
@@ -92,6 +96,8 @@ rule test_complex_defined {
 def test_string_operators_with_modules() -> None:
     """Test string operators with module attributes."""
     yara_code = """
+import "pe"
+
 rule test_module_string_ops {
     condition:
         pe.sections[0].name iequals ".text" and
@@ -114,6 +120,8 @@ rule test_module_string_ops {
 def test_arrays_in_expressions() -> None:
     """Test arrays in for expressions."""
     yara_code = """
+import "pe"
+
 rule test_arrays {
     condition:
         for any section in pe.sections : (
