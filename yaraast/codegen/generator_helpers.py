@@ -233,15 +233,27 @@ def validate_rule_string_references(rule: object) -> None:
             for string_id in rule_undefined
         }
     )
-    if not undefined:
-        return
-
     rule_name = getattr(rule, "name", "<unknown>")
-    msg = (
-        f"Undefined string references in rule '{rule_name}': {', '.join(undefined)} "
-        "for libyara output"
+    if undefined:
+        msg = (
+            f"Undefined string references in rule '{rule_name}': {', '.join(undefined)} "
+            "for libyara output"
+        )
+        raise ValueError(msg)
+
+    invalid_comparisons = sorted(
+        {
+            string_id
+            for rule_invalid in analyzer.invalid_comparison_string_references.values()
+            for string_id in rule_invalid
+        }
     )
-    raise ValueError(msg)
+    if invalid_comparisons:
+        msg = (
+            f"String identifiers cannot be used with comparison operators in rule "
+            f"'{rule_name}': {', '.join(invalid_comparisons)} for libyara output"
+        )
+        raise ValueError(msg)
 
 
 def _validate_supported_string_definition(string_def: object) -> None:

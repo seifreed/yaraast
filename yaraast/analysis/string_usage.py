@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import require_yara_file
 from yaraast.ast.expressions import (
+    BinaryExpression,
     Expression,
     Identifier,
     ParenthesesExpression,
@@ -48,6 +49,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.in_condition: bool = False
         self.implicit_current_string_allowed: bool = False
         self.local_scopes: list[dict[str, Any]] = []
+        self.invalid_comparison_string_references: dict[str, set[str]] = {}
 
     def analyze(self, yara_file: YaraFile) -> dict[str, dict[str, Any]]:
         """Analyze string usage in YARA file."""
@@ -56,6 +58,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.defined_strings.clear()
         self.anonymous_strings.clear()
         self.used_strings.clear()
+        self.invalid_comparison_string_references.clear()
         self.rule_usage_keys.clear()
         self.local_scopes.clear()
         self.current_rule_key = None
@@ -142,6 +145,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.defined_strings[self.current_rule_key] = set()
         self.anonymous_strings[self.current_rule_key] = set()
         self.used_strings[self.current_rule_key] = set()
+        self.invalid_comparison_string_references[self.current_rule_key] = set()
         self.in_condition = False
         self.local_scopes.clear()
 
@@ -211,6 +215,13 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         # Additionally visit index if present for length expressions
         if hasattr(node, "index") and node.index is not None:
             self.visit(node.index)
+
+    def visit_binary_expression(self, node: BinaryExpression) -> None:
+        if node.operator in {"<", "<=", ">", ">=", "==", "!="}:
+            self._mark_invalid_comparison_string_operand(node.left)
+            self._mark_invalid_comparison_string_operand(node.right)
+        self.visit(node.left)
+        self.visit(node.right)
 
     def visit_at_expression(self, node: AtExpression) -> None:
         if isinstance(node.string_id, str):
@@ -399,6 +410,20 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         if self._is_local(normalized):
             return
         self._mark_condition_string_ref(normalized)
+
+    def _mark_invalid_comparison_string_operand(self, value: Any) -> None:
+        if isinstance(value, ParenthesesExpression):
+            self._mark_invalid_comparison_string_operand(value.expression)
+            return
+        if not isinstance(value, StringIdentifier):
+            return
+        rule_key = self._active_rule_key()
+        if not rule_key:
+            return
+        normalized = self._require_string_reference(value.name)
+        if self._is_local(normalized):
+            return
+        self.invalid_comparison_string_references[rule_key].add(normalized)
 
     @staticmethod
     def _require_string_reference(value: Any) -> str:

@@ -167,7 +167,10 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
         )
         raise ValueError(msg)
     if node.operator == "matches":
-        if isinstance(right, StringLiteral | BooleanLiteral | IntegerLiteral | DoubleLiteral):
+        if isinstance(
+            right,
+            StringLiteral | BooleanLiteral | IntegerLiteral | DoubleLiteral | StringIdentifier,
+        ):
             msg = "Right operand of 'matches' must be regex for libyara output"
             raise ValueError(msg)
         return

@@ -2115,6 +2115,62 @@ def test_codegen_generators_reject_undefined_string_references() -> None:
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize(
+    "condition",
+    [
+        BinaryExpression(StringIdentifier("$a"), "<", IntegerLiteral(1)),
+        BinaryExpression(IntegerLiteral(1), "==", StringIdentifier("$a")),
+    ],
+)
+def test_codegen_generators_reject_string_identifier_comparisons(condition: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_string_comparison",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=condition,
+            )
+        ]
+    )
+
+    message = (
+        "String identifiers cannot be used with comparison operators in rule "
+        "'invalid_string_comparison': \\$a"
+    )
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+def test_codegen_generators_reject_string_identifier_matches_operand() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_string_matches",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=BinaryExpression(
+                    StringLiteral("needle"), "matches", StringIdentifier("$a")
+                ),
+            )
+        ]
+    )
+
+    message = "Right operand of 'matches' must be regex"
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generators_allow_matches_regex_literal() -> None:
     ast = YaraFile(
         rules=[
