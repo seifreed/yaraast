@@ -98,6 +98,7 @@ class RuleParsingMixin:
         arguments = self._parse_pragma_line_arguments(start_token.line)
         end_token = self._previous()
 
+        pragma: Pragma
         if directive == "include_once":
             pragma = IncludeOncePragma()
         elif directive == "define":
