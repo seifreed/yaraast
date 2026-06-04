@@ -30,6 +30,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
 )
 from yaraast.ast.rules import Rule
+from yaraast.shared.local_scope import local_name_variants
 from yaraast.string_references import normalize_string_reference_id
 from yaraast.visitor.base import ASTTransformer
 from yaraast.yarax.ast_nodes import (
@@ -221,7 +222,11 @@ class DeadCodeEliminator(ASTTransformer):
         try:
             for declaration in expr.declarations:
                 self._collect_from_expression(declaration.value)
-                self._add_local_variables(declaration.identifier, value=declaration.value)
+                self._add_local_variables(
+                    declaration.identifier,
+                    value=declaration.value,
+                    allow_string_identifier=True,
+                )
             self._collect_from_expression(expr.body)
         finally:
             del self.local_variables[local_count:]
@@ -594,7 +599,11 @@ class DeadCodeEliminator(ASTTransformer):
         try:
             for declaration in node.declarations:
                 declaration.value = cast(Expression, self.visit(declaration.value))
-                self._add_local_variables(declaration.identifier, value=declaration.value)
+                self._add_local_variables(
+                    declaration.identifier,
+                    value=declaration.value,
+                    allow_string_identifier=True,
+                )
             node.body = cast(Expression, self.visit(node.body))
         finally:
             del self.local_variables[local_count:]
@@ -762,17 +771,18 @@ class DeadCodeEliminator(ASTTransformer):
         self.local_variable_values.clear()
         return rule
 
-    def _add_local_variables(self, *names: str, value: object = _LOCAL_WITHOUT_VALUE) -> None:
+    def _add_local_variables(
+        self,
+        *names: str,
+        value: object = _LOCAL_WITHOUT_VALUE,
+        allow_string_identifier: bool = False,
+    ) -> None:
         for name in names:
-            variants = self._local_name_variants(name)
+            variants = tuple(
+                local_name_variants(name, allow_string_identifier=allow_string_identifier)
+            )
             self.local_variables.extend(variants)
             self.local_variable_values.extend(value for _ in variants)
-
-    @staticmethod
-    def _local_name_variants(name: str) -> tuple[str, ...]:
-        if not isinstance(name, str):
-            raise TypeError("Local variable name must be a string")
-        return tuple(part.strip() for part in name.split(",") if part.strip())
 
 
 def eliminate_dead_code(ast: YaraFile) -> tuple[YaraFile, int]:

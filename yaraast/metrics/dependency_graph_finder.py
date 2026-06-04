@@ -179,7 +179,7 @@ class DependencyFinder(MetricsVisitorBase):
 
     def _define_local(self, name: str) -> None:
         if self.local_scopes:
-            self.local_scopes[-1].update(local_name_variants(name))
+            self.local_scopes[-1].update(local_name_variants(name, allow_string_identifier=True))
 
     def _visit_ast_value(self, value) -> None:
         if hasattr(value, "accept"):

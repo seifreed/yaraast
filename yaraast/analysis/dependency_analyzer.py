@@ -396,4 +396,4 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     def _define_local(self, name: str) -> None:
         if self.local_scopes:
-            self.local_scopes[-1].update(local_name_variants(name))
+            self.local_scopes[-1].update(local_name_variants(name, allow_string_identifier=True))

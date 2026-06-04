@@ -435,3 +435,53 @@ def test_dependency_analyzer_rejects_invalid_local_variable_names(condition: Any
 
     with pytest.raises(TypeError, match="Local variable name must be a string"):
         DependencyAnalyzer().analyze(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "name"),
+    [
+        (
+            ForExpression(
+                quantifier="any",
+                variable="bad-name",
+                iterable=SetExpression([IntegerLiteral(1)]),
+                body=BooleanLiteral(True),
+            ),
+            "bad-name",
+        ),
+        (
+            WithStatement(
+                declarations=[WithDeclaration("1bad", IntegerLiteral(1))],
+                body=BooleanLiteral(True),
+            ),
+            "1bad",
+        ),
+        (
+            ArrayComprehension(
+                expression=IntegerLiteral(1),
+                variable="for",
+                iterable=ListExpression([IntegerLiteral(1)]),
+            ),
+            "for",
+        ),
+        (
+            DictComprehension(
+                key_expression=Identifier("k"),
+                value_expression=Identifier("v"),
+                key_variable="ok",
+                value_variable="bad-name",
+                iterable=ListExpression([IntegerLiteral(1)]),
+            ),
+            "bad-name",
+        ),
+        (LambdaExpression(parameters=["1bad"], body=BooleanLiteral(True)), "1bad"),
+    ],
+)
+def test_dependency_analyzer_rejects_malformed_local_variable_identifiers(
+    condition: Any,
+    name: str,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="caller", condition=condition)])
+
+    with pytest.raises(ValueError, match=f"Invalid local variable identifier: {name}"):
+        DependencyAnalyzer().analyze(ast)

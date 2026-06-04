@@ -202,7 +202,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
     def _define_local(self, name: str) -> None:
         if self._local_scopes:
-            self._local_scopes[-1].update(local_name_variants(name))
+            self._local_scopes[-1].update(local_name_variants(name, allow_string_identifier=True))
 
     def visit_with_statement(self, node) -> None:
         self._push_local_scope()

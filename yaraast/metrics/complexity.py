@@ -435,5 +435,5 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
     def _define_local(self, name: str, value: object = _LOCAL_WITHOUT_VALUE) -> None:
         if self._local_scopes:
-            for local_name in local_name_variants(name):
+            for local_name in local_name_variants(name, allow_string_identifier=True):
                 self._local_scopes[-1][local_name] = value

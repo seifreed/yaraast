@@ -187,7 +187,9 @@ def _iter_ast_nodes_with_local_scopes(
             active_scopes = _extend_scopes(local_scopes, local_names)
             yield declaration, active_scopes
             yield from _iter_ast_value_with_local_scopes(declaration.value, active_scopes)
-            local_names.update(local_name_variants(declaration.identifier))
+            local_names.update(
+                local_name_variants(declaration.identifier, allow_string_identifier=True)
+            )
         yield from _iter_ast_value_with_local_scopes(
             node.body, _extend_scopes(local_scopes, local_names)
         )

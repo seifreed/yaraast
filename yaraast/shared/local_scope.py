@@ -8,11 +8,42 @@ defined once here instead of copied into each analyzer.
 
 from __future__ import annotations
 
+import re
 
-def local_name_variants(name: str) -> set[str]:
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
+from yaraast.string_references import normalize_string_reference_id
+
+_YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
+
+
+def _validate_local_identifier(name: str) -> str:
+    if (
+        len(name) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _YARA_IDENTIFIER_RE.fullmatch(name) is not None
+        and name not in _YARA_KEYWORDS
+    ):
+        return name
+    msg = f"Invalid local variable identifier: {name}"
+    raise ValueError(msg)
+
+
+def local_name_variants(name: str, *, allow_string_identifier: bool = False) -> set[str]:
     """Split a (possibly comma-joined) loop declaration into its variable names."""
     if not isinstance(name, str):
         msg = "Local variable name must be a string"
         raise TypeError(msg)
     names = [part.strip() for part in name.split(",")]
-    return {local_name for local_name in names if local_name}
+    variants: set[str] = set()
+    for local_name in names:
+        if not local_name:
+            continue
+        if allow_string_identifier and local_name.startswith("$"):
+            try:
+                variants.add(normalize_string_reference_id(local_name, allow_wildcard=False))
+            except ValueError:
+                msg = f"Invalid local variable identifier: {local_name}"
+                raise ValueError(msg) from None
+            continue
+        variants.add(_validate_local_identifier(local_name))
+    return variants
