@@ -312,7 +312,16 @@ class ASTTreeBuilder:
         return namespace_tree
 
     def visit_extern_rule(self, node: Any) -> Tree:
-        return Tree(f"extern rule {node.name if hasattr(node, 'name') else ''}")
+        from rich.markup import escape
+
+        modifiers = getattr(node, "modifiers", [])
+        modifier_prefix = ""
+        if modifiers:
+            modifier_prefix = " ".join(escape(_modifier_label(mod)) for mod in modifiers) + " "
+        rule_name = getattr(node, "name", "")
+        namespace = getattr(node, "namespace", None)
+        qualified = f"{namespace}.{rule_name}" if namespace else rule_name
+        return Tree(f"extern rule {modifier_prefix}{escape(str(qualified))}")
 
     def visit_extern_rule_reference(self, node: Any) -> Tree:
         rule_name = getattr(node, "rule_name", getattr(node, "name", ""))

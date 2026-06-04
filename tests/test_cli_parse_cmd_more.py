@@ -105,6 +105,29 @@ rule uses_external {
     assert "extern import external.rules (A, B) as er" in result.output
 
 
+def test_parse_cmd_tree_preserves_extern_rule_details(tmp_path: Path) -> None:
+    runner = CliRunner()
+    source = tmp_path / "extern_rule.yar"
+
+    _write(
+        source,
+        """
+namespace corp
+extern rule private corp.Nested
+
+rule uses_external {
+    condition:
+        corp.Nested
+}
+""",
+    )
+
+    result = runner.invoke(parse, [str(source), "--format", "tree"])
+
+    assert result.exit_code == 0
+    assert "extern rule private corp.Nested" in result.output
+
+
 def test_parse_cmd_json_reports_parse_errors_on_stderr(tmp_path: Path) -> None:
     runner = CliRunner()
     source = tmp_path / "broken.yar"
