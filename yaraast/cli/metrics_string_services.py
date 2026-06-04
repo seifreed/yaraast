@@ -48,7 +48,7 @@ def _analyze_rule_strings(
     rule: Any, analysis: dict[str, Any], lengths: list[int]
 ) -> dict[str, Any]:
     """Analyze strings in a single rule."""
-    rule_info = {
+    rule_info: dict[str, Any] = {
         "string_count": len(rule.strings),
         "types": [],
         "identifiers": [],

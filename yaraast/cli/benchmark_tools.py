@@ -253,13 +253,13 @@ class ASTBenchmarker:
         if not self.results:
             return {"message": "No benchmarks run"}
 
-        by_operation = {}
+        by_operation: dict[str, list[BenchmarkResult]] = {}
         for result in self.results:
             if result.operation not in by_operation:
                 by_operation[result.operation] = []
             by_operation[result.operation].append(result)
 
-        summary = {}
+        summary: dict[str, Any] = {}
         for operation, results in by_operation.items():
             successful = [r for r in results if r.success]
             if successful:

@@ -2,28 +2,30 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from rich.syntax import Syntax
 
 
-def display_missing_yara(console) -> None:
+def display_missing_yara(console: Any) -> None:
     """Display missing yara-python message."""
     console.print("[red]yara-python is not installed[/red]")
     console.print("Install with: pip install yara-python")
 
 
-def display_compilation_errors(console, errors: list) -> None:
+def display_compilation_errors(console: Any, errors: list[Any]) -> None:
     """Display compilation errors."""
     console.print("[red]Compilation failed[/red]")
     for error in errors:
         console.print(f"[red]  - {error}[/red]")
 
 
-def display_compilation_success(console) -> None:
+def display_compilation_success(console: Any) -> None:
     """Display compilation success message."""
     console.print("[green]Compilation successful[/green]")
 
 
-def display_optimization_stats(console, result) -> None:
+def display_optimization_stats(console: Any, result: Any) -> None:
     """Print optimization statistics."""
     console.print("[blue]Optimizations applied:[/blue]")
     if result.optimization_stats:
@@ -34,7 +36,7 @@ def display_optimization_stats(console, result) -> None:
         console.print(f"  - Constants folded: {opt_stats.constant_folded}")
 
 
-def display_compilation_stats(console, result, compiler) -> None:
+def display_compilation_stats(console: Any, result: Any, compiler: Any) -> None:
     """Print compilation statistics."""
     console.print("[blue]Compilation Stats:[/blue]")
     console.print(f"  - Compilation time: {result.compilation_time:.3f}s")
@@ -47,25 +49,29 @@ def display_compilation_stats(console, result, compiler) -> None:
     )
 
 
-def display_compiled_rules_saved(console, output: str) -> None:
+def display_compiled_rules_saved(console: Any, output: str) -> None:
     """Display saved compiled rules message."""
     console.print(f"[green]Compiled rules saved to {output}[/green]")
 
 
-def display_generated_source_preview(console, source: str) -> None:
+def display_generated_source_preview(console: Any, source: str) -> None:
     """Display generated source preview."""
     console.print("[dim]Generated source (first 200 chars):[/dim]")
     console.print(f"[dim]{source[:200]}...[/dim]")
 
 
-def display_scan_failure(console, scan_result: dict) -> None:
+def display_scan_failure(console: Any, scan_result: dict[str, Any]) -> None:
     """Display scan failure details."""
     console.print(
         f"[red]Scan failed: {scan_result.get('error', 'Unknown error')}[/red]",
     )
 
 
-def display_scan_summary(console, scan_result: dict, matches: list) -> None:
+def display_scan_summary(
+    console: Any,
+    scan_result: dict[str, Any],
+    matches: list[dict[str, Any]],
+) -> None:
     """Display scan summary information."""
     console.print("[blue]Results:[/blue]")
     console.print(f"  - Matches found: {len(matches)}")
@@ -77,7 +83,7 @@ def display_scan_summary(console, scan_result: dict, matches: list) -> None:
         console.print(f"  - Rule count: {scan_result['rule_count']}")
 
 
-def display_matches(console, matches: list) -> None:
+def display_matches(console: Any, matches: list[dict[str, Any]]) -> None:
     """Display individual match information."""
     if not matches:
         return
@@ -87,7 +93,7 @@ def display_matches(console, matches: list) -> None:
         _display_single_match(console, match)
 
 
-def _display_single_match(console, match: dict) -> None:
+def _display_single_match(console: Any, match: dict[str, Any]) -> None:
     """Display a single match with its details."""
     console.print(f"  [bold]{match['rule']}[/bold]")
 
@@ -102,7 +108,7 @@ def _display_single_match(console, match: dict) -> None:
         console.print(f"     Complexity: {ctx.get('condition_complexity', 'N/A')}")
 
 
-def display_optimization_hints(console, scan_result: dict) -> None:
+def display_optimization_hints(console: Any, scan_result: dict[str, Any]) -> None:
     """Display optimization hints if available."""
     hints = scan_result.get("optimization_hints")
     if not hints:
@@ -113,7 +119,7 @@ def display_optimization_hints(console, scan_result: dict) -> None:
         console.print(f"[dim]  - {hint}[/dim]")
 
 
-def display_scan_stats(console, matcher) -> None:
+def display_scan_stats(console: Any, matcher: Any) -> None:
     """Display scan statistics."""
     if not matcher:
         return
@@ -126,7 +132,10 @@ def display_scan_stats(console, matcher) -> None:
 
 
 def display_optimize_results(
-    console, optimizer, show_optimizations: bool, optimized_code: str
+    console: Any,
+    optimizer: Any,
+    show_optimizations: bool,
+    optimized_code: str,
 ) -> None:
     """Display optimization results."""
     console.print("[green]Optimization completed[/green]")
@@ -150,30 +159,27 @@ class LibYaraCommandError(Exception):
     """Internal error wrapper to trigger CLI abort."""
 
 
-def handle_libyara_error(console, error: Exception) -> None:
+def handle_libyara_error(console: Any, error: Exception) -> None:
     """Handle libyara command errors uniformly."""
     from rich.markup import escape
 
-    handlers = {
-        RuntimeError: _handle_runtime_error,
-        ImportError: _handle_import_error,
-    }
-
-    for exc_type, handler in handlers.items():
-        if isinstance(error, exc_type):
-            handler(console, error)
-            raise LibYaraCommandError
+    if isinstance(error, RuntimeError):
+        _handle_runtime_error(console, error)
+        raise LibYaraCommandError
+    if isinstance(error, ImportError):
+        _handle_import_error(console, error)
+        raise LibYaraCommandError
 
     console.print(f"[red]Error: {escape(str(error))}[/red]")
     raise LibYaraCommandError
 
 
-def _handle_runtime_error(console, error: RuntimeError) -> None:
+def _handle_runtime_error(console: Any, error: RuntimeError) -> None:
     if str(error) == "yara-python is not installed":
         display_missing_yara(console)
     else:
         console.print(f"[red]{error}[/red]")
 
 
-def _handle_import_error(console, error: ImportError) -> None:
+def _handle_import_error(console: Any, error: ImportError) -> None:
     console.print(f"[red]Import error: {error}[/red]")
