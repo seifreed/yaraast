@@ -1992,6 +1992,14 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
             BinaryExpression(StringLiteral("abc"), "matches", StringLiteral("a")),
             "Right operand of 'matches' must be regex",
         ),
+        (
+            BinaryExpression(BooleanLiteral(True), "==", BooleanLiteral(False)),
+            "Boolean operands cannot be used with '==' comparisons",
+        ),
+        (
+            BinaryExpression(RegexLiteral("a"), "==", RegexLiteral("b")),
+            "Regex operands cannot be used with '==' comparisons",
+        ),
         (UnaryExpression("!", IntegerLiteral(1)), "Invalid unary operator"),
     ],
 )

@@ -42,6 +42,7 @@ _BINARY_PRECEDENCE = {
 _UNARY_OPERATORS = frozenset({"not", "-", "~"})
 _NUMERIC_BINARY_OPERATORS = frozenset({"+", "-", "*", "/", "\\"})
 _INTEGER_BINARY_OPERATORS = frozenset({"%", "&", "|", "^", "<<", ">>"})
+_COMPARISON_BINARY_OPERATORS = frozenset({"<", "<=", ">", ">=", "==", "!="})
 _STRING_BINARY_OPERATORS = frozenset(
     {
         "contains",
@@ -153,7 +154,24 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
         raise ValueError(msg)
 
 
+def _reject_invalid_comparison_operands(node: Any) -> None:
+    if node.operator not in _COMPARISON_BINARY_OPERATORS:
+        return
+
+    from yaraast.ast.expressions import BooleanLiteral, RegexLiteral
+
+    left = _unwrap_parenthesized_expression(node.left)
+    right = _unwrap_parenthesized_expression(node.right)
+    if isinstance(left, BooleanLiteral | bool) and isinstance(right, BooleanLiteral | bool):
+        msg = f"Boolean operands cannot be used with '{node.operator}' comparisons"
+        raise ValueError(msg)
+    if isinstance(left, RegexLiteral) or isinstance(right, RegexLiteral):
+        msg = f"Regex operands cannot be used with '{node.operator}' comparisons"
+        raise ValueError(msg)
+
+
 def validate_binary_expression_operands(node: Any) -> None:
+    _reject_invalid_comparison_operands(node)
     _reject_boolean_binary_numeric_operands(node)
     _reject_invalid_string_binary_operands(node)
 
