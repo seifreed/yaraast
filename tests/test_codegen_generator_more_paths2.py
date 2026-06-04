@@ -41,6 +41,8 @@ from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import StringOperatorExpression
 from yaraast.ast.pragmas import (
+    ConditionalDirective,
+    CustomPragma,
     DefineDirective,
     IncludeOncePragma,
     InRulePragma,
@@ -3555,6 +3557,20 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
     assert "#pragma pragma" in gen.visit_pragma_block(
         PragmaBlock(pragmas=[Pragma(PragmaType.PRAGMA, "pragma")])
     )
+    with pytest.raises(ValueError, match="Invalid pragma identifier"):
+        gen.visit_pragma(Pragma(PragmaType.PRAGMA, 'bad"name'))
+    with pytest.raises(ValueError, match="Invalid pragma identifier"):
+        gen.visit_pragma(Pragma(PragmaType.PRAGMA, "bad\rname"))
+    with pytest.raises(ValueError, match="Pragma argument must not contain quotes"):
+        gen.visit_pragma(CustomPragma("vendor", ['bad"arg']))
+    with pytest.raises(ValueError, match="Invalid pragma macro identifier"):
+        gen.visit_pragma(DefineDirective('BAD"NAME', "1"))
+    with pytest.raises(ValueError, match="Pragma value must not contain quotes"):
+        gen.visit_pragma(DefineDirective("FEATURE", 'bad"value'))
+    with pytest.raises(ValueError, match="Invalid pragma macro identifier"):
+        gen.visit_in_rule_pragma(InRulePragma(pragma=UndefDirective('BAD"NAME')))
+    with pytest.raises(ValueError, match="Invalid pragma condition identifier"):
+        gen.visit_pragma(ConditionalDirective.ifdef('BAD"NAME'))
     assert gen.visit_string_wildcard(StringWildcard("$a*")) == "$a*"
     assert gen.visit_string_identifier(StringIdentifier("$a")) == "$a"
     assert gen.visit_module_reference(ModuleReference("pe")) == "pe"

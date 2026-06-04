@@ -338,11 +338,68 @@ def visit_extern_rule_reference(node: Any) -> str:
 
 
 def visit_in_rule_pragma(node: Any) -> str:
-    return str(node.pragma)
+    return visit_pragma(node.pragma)
 
 
 def visit_pragma(node: Any) -> str:
-    return str(node)
+    from yaraast.ast.pragmas import (
+        ConditionalDirective,
+        CustomPragma,
+        DefineDirective,
+        IncludeOncePragma,
+        PragmaType,
+        UndefDirective,
+    )
+
+    if isinstance(node, IncludeOncePragma):
+        return "#include_once"
+    if isinstance(node, DefineDirective):
+        macro_name = validate_yara_identifier(node.macro_name, "pragma macro")
+        if node.macro_value is None:
+            return f"#define {macro_name}"
+        return f"#define {macro_name} {_validate_pragma_token(node.macro_value, 'Pragma value')}"
+    if isinstance(node, UndefDirective):
+        macro_name = validate_yara_identifier(node.macro_name, "pragma macro")
+        return f"#undef {macro_name}"
+    if isinstance(node, ConditionalDirective):
+        directive = validate_yara_identifier(node.pragma_type.value, "pragma")
+        if node.condition is None:
+            return f"#{directive}"
+        condition = validate_yara_identifier(node.condition, "pragma condition")
+        return f"#{directive} {condition}"
+
+    if node.pragma_type == PragmaType.PRAGMA or isinstance(node, CustomPragma):
+        name = validate_yara_identifier(node.name, "pragma")
+        arguments = _format_pragma_arguments(getattr(node, "arguments", []))
+        return f"#pragma {name}{arguments}"
+
+    name = validate_yara_identifier(node.name, "pragma")
+    arguments = _format_pragma_arguments(getattr(node, "arguments", []))
+    return f"#{name}{arguments}"
+
+
+def _format_pragma_arguments(arguments: Any) -> str:
+    if not isinstance(arguments, list | tuple):
+        msg = "Pragma arguments must be a list or tuple for libyara output"
+        raise TypeError(msg)
+    if not arguments:
+        return ""
+    return " " + " ".join(
+        _validate_pragma_token(argument, "Pragma argument") for argument in arguments
+    )
+
+
+def _validate_pragma_token(value: Any, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string for libyara output"
+        raise TypeError(msg)
+    if not value:
+        msg = f"{field_name} must not be empty for libyara output"
+        raise ValueError(msg)
+    if '"' in value or any(ord(char) < 0x20 or ord(char) == 0x7F for char in value):
+        msg = f"{field_name} must not contain quotes or control characters for libyara output"
+        raise ValueError(msg)
+    return value
 
 
 def visit_pragma_block(generator: Any, node: Any) -> str:
