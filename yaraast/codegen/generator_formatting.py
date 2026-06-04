@@ -21,9 +21,7 @@ from yaraast.regex_literals import validate_regex_modifiers
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
 _YARA_RULE_MODIFIERS = frozenset({"global", "private"})
-_YARA_EXPRESSION_KEYWORDS = frozenset(
-    {"all", "any", "entrypoint", "false", "filesize", "none", "true"}
-)
+_YARA_EXPRESSION_KEYWORDS = frozenset({"entrypoint", "false", "filesize", "true"})
 _YARA_FILE_COLLECTION_FIELDS = (
     "imports",
     "includes",
