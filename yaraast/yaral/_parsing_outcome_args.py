@@ -394,7 +394,7 @@ class OutcomeArgumentParsingMixin:
         return field_parts
 
     def _check_any_operator(self, *, arithmetic_only: bool = False) -> bool:
-        operators = (
+        operators: tuple[BaseTokenType, ...] = (
             BaseTokenType.GT,
             BaseTokenType.LT,
             BaseTokenType.GE,
