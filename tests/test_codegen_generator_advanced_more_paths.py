@@ -38,9 +38,21 @@ from yaraast.ast.strings import (
 from yaraast.codegen.advanced_layout import AdvancedLayout
 from yaraast.codegen.formatting import BraceStyle, FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.layouts import CommentLayout, GeneratorLayout, PlainLayout, select_layout
 from yaraast.codegen.options import GeneratorOptions
 from yaraast.codegen.pretty_printer import PrettyPrintOptions
 from yaraast.yarax.ast_nodes import MatchCase, PatternMatch
+
+
+def test_generator_layout_base_is_abstract_and_selects_concrete_layouts() -> None:
+    with pytest.raises(TypeError, match="abstract class GeneratorLayout"):
+        cast(Any, GeneratorLayout)()
+
+    assert isinstance(select_layout(GeneratorOptions()), PlainLayout)
+    assert isinstance(
+        select_layout(GeneratorOptions(blank_line_between_sections=False)),
+        CommentLayout,
+    )
 
 
 def test_codegen_generator_additional_visit_paths() -> None:

@@ -7,7 +7,7 @@ from typing import Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.metrics.string_diagram_primitives import (
-    analyze_string_patterns,
+    analyze_string_patterns as analyze_string_patterns,
 )
 from yaraast.metrics.string_diagrams_common import (
     format_hex_token_for_diagram,
@@ -16,6 +16,13 @@ from yaraast.metrics.string_diagrams_common import (
     plain_value_text,
     string_pattern_identity,
 )
+
+__all__ = [
+    "StringDiagramRenderMixin",
+    "analyze_string_patterns",
+    "generate_pattern_report",
+    "generate_string_diagram",
+]
 
 
 class StringDiagramRenderMixin:

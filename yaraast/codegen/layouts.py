@@ -10,6 +10,7 @@ or a single mode-branching god-class.
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from yaraast.codegen.generator_comment_sections import (
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
     from yaraast.codegen.options import GeneratorOptions
 
 
-class GeneratorLayout:
+class GeneratorLayout(ABC):
     """Structural rendering policy for :class:`CodeGenerator`.
 
     Defaults reproduce the plain engine; subclasses override the structural
@@ -53,29 +54,47 @@ class GeneratorLayout:
     custom_expressions: bool = False
 
     def binary_expression(self, gen: CodeGenerator, node: Any) -> str:
-        raise NotImplementedError
+        from yaraast.codegen.generator_expression_visitors import (
+            visit_binary_expression as render_binary_expression,
+        )
+
+        return render_binary_expression(gen, node)
 
     def set_expression(self, gen: CodeGenerator, node: Any) -> str:
-        raise NotImplementedError
+        from yaraast.codegen.generator_expression_visitors import (
+            visit_set_expression as render_set_expression,
+        )
+
+        return render_set_expression(gen, node)
 
     def yarax_expression(self, gen: CodeGenerator, node: Any) -> str:
-        raise NotImplementedError
+        from yaraast.codegen.advanced_generator_layout import generate_condition_string
+        from yaraast.codegen.formatting import FormattingConfig
+
+        return generate_condition_string(node, FormattingConfig())
 
     def prepare(self, gen: CodeGenerator, node: Any) -> None:
         """Hook run by ``generate`` before visiting (alignment/state setup)."""
+        del gen, node
 
     def indent_string(self, gen: CodeGenerator) -> str:
         """Indentation prefix for the current depth."""
         return " " * (gen.indent_level * gen.indent_size)
 
+    @abstractmethod
     def visit_yara_file(self, gen: CodeGenerator, node: YaraFile) -> str:
-        raise NotImplementedError
+        """Render a YARA file."""
+        ...
 
+    @abstractmethod
     def visit_rule(self, gen: CodeGenerator, node: Rule) -> str:
-        raise NotImplementedError
+        """Render one rule."""
+        ...
 
+    @abstractmethod
     def visit_meta(self, gen: CodeGenerator, node: Meta) -> str:
-        raise NotImplementedError
+        """Render one meta entry."""
+        ...
 
     # Section writers (plain defaults; advanced overrides)
     def write_meta_section(self, gen: CodeGenerator, meta: Any) -> None:
