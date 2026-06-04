@@ -8,6 +8,7 @@ from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, Of
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
+    BooleanLiteral,
     DoubleLiteral,
     FunctionCall,
     Identifier,
@@ -210,6 +211,12 @@ def _infer_comparison_op(
         ctx.errors.append(f"String identifiers cannot be used with '{operator}' comparisons")
         return BooleanType()
 
+    if _is_literal_boolean_comparison_operand(left_node) or _is_literal_boolean_comparison_operand(
+        right_node
+    ):
+        ctx.errors.append(f"Boolean operands cannot be used with '{operator}' comparisons")
+        return BooleanType()
+
     if isinstance(left_type, BooleanType) and isinstance(right_type, BooleanType):
         ctx.errors.append(f"Boolean operands cannot be used with '{operator}' comparisons")
         return BooleanType()
@@ -225,6 +232,16 @@ def _infer_comparison_op(
         return BooleanType()
     ctx.errors.append(f"Incompatible types for '{operator}': {left_type} and {right_type}")
     return BooleanType()
+
+
+def _is_literal_boolean_comparison_operand(node: Any) -> bool:
+    if isinstance(node, BooleanLiteral):
+        return True
+    if isinstance(node, bool):
+        return True
+    if isinstance(node, ParenthesesExpression):
+        return _is_literal_boolean_comparison_operand(node.expression)
+    return False
 
 
 def _has_unknown_comparison_operand(

@@ -162,7 +162,7 @@ def _reject_invalid_comparison_operands(node: Any) -> None:
 
     left = _unwrap_parenthesized_expression(node.left)
     right = _unwrap_parenthesized_expression(node.right)
-    if isinstance(left, BooleanLiteral | bool) and isinstance(right, BooleanLiteral | bool):
+    if isinstance(left, BooleanLiteral | bool) or isinstance(right, BooleanLiteral | bool):
         msg = f"Boolean operands cannot be used with '{node.operator}' comparisons"
         raise ValueError(msg)
     if isinstance(left, RegexLiteral) or isinstance(right, RegexLiteral):

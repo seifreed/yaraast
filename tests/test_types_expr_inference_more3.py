@@ -455,6 +455,15 @@ def test_expr_inference_comparison_and_builtin_function_paths() -> None:
     assert isinstance(cmp_out, BooleanType)
     assert "Incompatible types for '=='" in inf.errors[0]
 
+    for bad in (
+        BinaryExpression(BooleanLiteral(value=True), "!=", IntegerLiteral(value=1)),
+        BinaryExpression(IntegerLiteral(value=1), ">", BooleanLiteral(value=False)),
+    ):
+        out = inf.infer(bad)
+        assert isinstance(out, BooleanType)
+    assert any("Boolean operands cannot be used with '!=' comparisons" in e for e in inf.errors)
+    assert any("Boolean operands cannot be used with '>' comparisons" in e for e in inf.errors)
+
     right_bad = inf.infer(
         BinaryExpression(
             left=BooleanLiteral(value=True),

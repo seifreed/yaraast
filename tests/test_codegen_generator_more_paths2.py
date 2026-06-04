@@ -1997,6 +1997,14 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
             "Boolean operands cannot be used with '==' comparisons",
         ),
         (
+            BinaryExpression(BooleanLiteral(True), "!=", IntegerLiteral(1)),
+            "Boolean operands cannot be used with '!=' comparisons",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), ">", BooleanLiteral(False)),
+            "Boolean operands cannot be used with '>' comparisons",
+        ),
+        (
             BinaryExpression(RegexLiteral("a"), "==", RegexLiteral("b")),
             "Regex operands cannot be used with '==' comparisons",
         ),

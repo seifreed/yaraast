@@ -942,13 +942,23 @@ class TestSemanticValidator:
                 condition:
                     false != true
             }
+
+            rule literal_boolean_numeric_comparison {
+                condition:
+                    true != 1
+            }
+
+            rule numeric_literal_boolean_comparison {
+                condition:
+                    1 > false
+            }
         """)
 
         result = SemanticValidator().validate(ast)
 
         assert result.is_valid is False
         messages = [error.message for error in result.errors]
-        assert sum("Boolean operands cannot be used with" in message for message in messages) == 3
+        assert sum("Boolean operands cannot be used with" in message for message in messages) == 5
 
     def test_validate_allows_module_boolean_numeric_comparisons(self) -> None:
         ast = Parser().parse("""
