@@ -2358,6 +2358,28 @@ def test_codegen_generators_reject_unreferenced_string_definitions() -> None:
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+def test_codegen_generators_reject_unreferenced_anonymous_string_definition() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="unreferenced_anonymous_string",
+                strings=[PlainString(identifier="$", value="needle", is_anonymous=True)],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    message = "Unreferenced string definitions in rule " "'unreferenced_anonymous_string': \\$"
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 @pytest.mark.parametrize(
     "condition",
     [

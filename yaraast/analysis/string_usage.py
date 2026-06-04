@@ -178,9 +178,13 @@ class StringUsageAnalyzer(BaseVisitor[None]):
     def visit_string_definition(self, node: StringDefinition) -> None:
         rule_key = self._active_rule_key()
         if rule_key:
-            normalized = self._normalize_string_id(node.identifier)
+            is_anonymous = getattr(node, "is_anonymous", False)
+            if is_anonymous and node.identifier == "$":
+                normalized = "$"
+            else:
+                normalized = self._normalize_string_id(node.identifier)
             self.defined_strings[rule_key].add(normalized)
-            if getattr(node, "is_anonymous", False):
+            if is_anonymous:
                 self.anonymous_strings[rule_key].add(normalized)
 
     def visit_plain_string(self, node: PlainString) -> None:
