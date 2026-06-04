@@ -622,7 +622,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_pragma(self, node) -> dict[str, Any]:
         from yaraast.ast.pragmas import PragmaType
 
-        data = {
+        data: dict[str, Any] = {
             "type": "Pragma",
             "pragma_type": _serialize_enum_value(node.pragma_type, "Pragma pragma_type"),
             "name": _serialize_required_nonempty_string(node.name, "Pragma name"),

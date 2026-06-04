@@ -1432,7 +1432,7 @@ def _serialize_rule_tags(tags: Any) -> list[str]:
 
 
 def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
-    data = {
+    data: dict[str, Any] = {
         "type": "Pragma",
         "pragma_type": _serialize_enum_value(pragma.pragma_type, "Pragma pragma_type"),
         "name": _serialize_required_nonempty_string(pragma.name, "Pragma name"),
