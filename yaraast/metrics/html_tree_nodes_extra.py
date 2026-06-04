@@ -69,7 +69,7 @@ class HtmlTreeNodesExtraMixin:
         }
 
     def visit_with_statement(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         self._append_section(
             children,
             self._children_section("Declarations", "with-declarations", node.declarations),
@@ -84,7 +84,7 @@ class HtmlTreeNodesExtraMixin:
         ) | {"children": children}
 
     def visit_with_declaration(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         self._append_section(
             children,
             self._single_child_section("Value", "with-value", node.value),
@@ -94,7 +94,7 @@ class HtmlTreeNodesExtraMixin:
         }
 
     def visit_array_comprehension(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         self._append_section(
             children,
             self._single_child_section("Expression", "comprehension-expression", node.expression),
@@ -112,7 +112,7 @@ class HtmlTreeNodesExtraMixin:
         }
 
     def visit_dict_comprehension(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         for label, node_class, child in (
             ("Key Expression", "comprehension-key", node.key_expression),
             ("Value Expression", "comprehension-value", node.value_expression),
@@ -135,7 +135,7 @@ class HtmlTreeNodesExtraMixin:
         ) | {"children": children}
 
     def visit_tuple_indexing(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         self._append_section(
             children,
             self._single_child_section("Tuple", "tuple-target", node.tuple_expr),
@@ -161,7 +161,7 @@ class HtmlTreeNodesExtraMixin:
         ) | {"children": children}
 
     def visit_dict_item(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         self._append_section(children, self._single_child_section("Key", "dict-key", node.key))
         self._append_section(
             children,
@@ -170,7 +170,7 @@ class HtmlTreeNodesExtraMixin:
         return self._simple_expression_node("Dict Item") | {"children": children}
 
     def visit_slice_expression(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         for label, node_class, child in (
             ("Target", "slice-target", node.target),
             ("Start", "slice-start", node.start),
@@ -181,7 +181,7 @@ class HtmlTreeNodesExtraMixin:
         return self._simple_expression_node("Slice Expression") | {"children": children}
 
     def visit_lambda_expression(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         self._append_section(
             children,
             self._single_child_section("Body", "lambda-body", node.body),
@@ -192,7 +192,7 @@ class HtmlTreeNodesExtraMixin:
         ) | {"children": children}
 
     def visit_pattern_match(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         self._append_section(
             children,
             self._single_child_section("Value", "match-value", node.value),
@@ -208,7 +208,7 @@ class HtmlTreeNodesExtraMixin:
         return self._simple_expression_node("Pattern Match") | {"children": children}
 
     def visit_match_case(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         self._append_section(
             children,
             self._single_child_section("Pattern", "match-pattern", node.pattern),
@@ -220,7 +220,7 @@ class HtmlTreeNodesExtraMixin:
         return self._simple_expression_node("Match Case") | {"children": children}
 
     def visit_spread_operator(self, node) -> dict[str, Any]:
-        children = []
+        children: list[dict[str, Any]] = []
         self._append_section(
             children,
             self._single_child_section("Expression", "spread-expression", node.expression),
