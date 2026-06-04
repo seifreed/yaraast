@@ -284,13 +284,7 @@ def render_for_of_expression(gen: Any, node: Any) -> str:
 
 def render_in_expression(gen: Any, node: Any) -> str:
     """Render an in-expression with parenthesis normalization."""
-    from yaraast.ast.expressions import (
-        ParenthesesExpression,
-        RangeExpression,
-        StringCount,
-        StringLength,
-        StringOffset,
-    )
+    from yaraast.ast.expressions import ParenthesesExpression, RangeExpression
 
     subject = (
         format_string_reference_identifier(
@@ -305,18 +299,14 @@ def render_in_expression(gen: Any, node: Any) -> str:
         range_expr = gen.visit(node.range)
         return f"{subject} in ({range_expr})"
 
-    if isinstance(node.range, ParenthesesExpression):
-        inner = node.range.expression
-        if isinstance(inner, RangeExpression):
-            range_expr = gen.visit(inner)
-            return f"{subject} in ({range_expr})"
-        if isinstance(inner, StringOffset | StringCount | StringLength):
-            range_expr = gen.visit(inner)
-            return f"{subject} in {range_expr}"
-        range_expr = gen.visit(node.range)
-        return f"{subject} in {range_expr}"
-    range_expr = gen.visit(node.range)
-    return f"{subject} in {range_expr}"
+    if isinstance(node.range, ParenthesesExpression) and isinstance(
+        node.range.expression, RangeExpression
+    ):
+        range_expr = gen.visit(node.range.expression)
+        return f"{subject} in ({range_expr})"
+
+    msg = "In expression range must be a range expression for libyara output"
+    raise ValueError(msg)
 
 
 def render_of_expression(gen: Any, node: Any) -> str:

@@ -224,16 +224,19 @@ def test_codegen_in_expression_parentheses_paths() -> None:
         subject="$a",
         range=ParenthesesExpression(StringCount("a")),
     )
-    assert gen.visit(in_single_ref) == "$a in #a"
+    with pytest.raises(ValueError, match="In expression range must be a range expression"):
+        gen.visit(in_single_ref)
 
     in_other_parenthesized = InExpression(
         subject="$a",
         range=ParenthesesExpression(Identifier("entrypoint")),
     )
-    assert gen.visit(in_other_parenthesized) == "$a in (entrypoint)"
+    with pytest.raises(ValueError, match="In expression range must be a range expression"):
+        gen.visit(in_other_parenthesized)
 
     in_plain = InExpression(subject="$a", range=Identifier("filesize"))
-    assert gen.visit(in_plain) == "$a in filesize"
+    with pytest.raises(ValueError, match="In expression range must be a range expression"):
+        gen.visit(in_plain)
 
 
 def test_codegen_comment_extern_and_pragma_visit_methods() -> None:

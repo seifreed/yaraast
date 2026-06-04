@@ -2372,6 +2372,55 @@ def test_codegen_generators_reject_bare_contextual_expressions(
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            InExpression("$a", BooleanLiteral(True)),
+            "In expression range must be a range expression",
+        ),
+        (
+            InExpression("$a", Identifier("filesize")),
+            "In expression range must be a range expression",
+        ),
+        (
+            InExpression("$a", ParenthesesExpression(StringCount("a"))),
+            "In expression range must be a range expression",
+        ),
+        (
+            ForExpression("any", "i", BooleanLiteral(True), StringIdentifier("$a")),
+            "For expression iterable must be a range, set, or iterable expression",
+        ),
+        (
+            ForExpression("any", "i", IntegerLiteral(1), StringIdentifier("$a")),
+            "For expression iterable must be a range, set, or iterable expression",
+        ),
+    ],
+)
+def test_codegen_generators_reject_invalid_in_and_for_iterables(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_iterable",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         BinaryExpression(StringIdentifier("$a"), "<", IntegerLiteral(1)),
@@ -2723,10 +2772,8 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         == "for all of them : (0)"
     )
     assert gen.visit_at_expression(AtExpression("$a", IntegerLiteral(0))) == "$a at 0"
-    assert (
+    with pytest.raises(ValueError, match="In expression range must be a range expression"):
         gen.visit_in_expression(InExpression("$a", ParenthesesExpression(StringOffset("a"))))
-        == "$a in @a"
-    )
     assert (
         gen.visit_of_expression(OfExpression(StringLiteral("all"), Identifier("them")))
         == "all of them"

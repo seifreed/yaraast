@@ -135,6 +135,35 @@ def _is_definitely_non_integer_expression(value: Any) -> bool:
     return isinstance(value, float | DoubleLiteral) or _is_definitely_non_numeric_expression(value)
 
 
+def _is_definitely_non_iterable_expression(value: Any) -> bool:
+    from yaraast.ast.expressions import (
+        BooleanLiteral,
+        DoubleLiteral,
+        IntegerLiteral,
+        ParenthesesExpression,
+        RegexLiteral,
+        StringIdentifier,
+        StringLiteral,
+    )
+
+    if isinstance(value, ParenthesesExpression):
+        return _is_definitely_non_iterable_expression(value.expression)
+    return isinstance(
+        value,
+        (
+            bool,
+            int,
+            float,
+            BooleanLiteral,
+            DoubleLiteral,
+            IntegerLiteral,
+            RegexLiteral,
+            StringIdentifier,
+            StringLiteral,
+        ),
+    )
+
+
 def _reject_invalid_binary_numeric_operands(node: Any) -> None:
     if node.operator in _NUMERIC_BINARY_OPERATORS:
         if _is_definitely_non_numeric_expression(node.left):
@@ -432,6 +461,12 @@ def visit_for_expression(generator: Any, node: Any) -> str:
     from yaraast.ast.expressions import RangeExpression
     from yaraast.codegen.generator_expressions import _render_quantifier
 
+    if _is_definitely_non_iterable_expression(node.iterable):
+        msg = (
+            "For expression iterable must be a range, set, or iterable expression "
+            "for libyara output"
+        )
+        raise ValueError(msg)
     iterable = generator.visit(node.iterable)
     if isinstance(node.iterable, RangeExpression):
         iterable = f"({iterable})"

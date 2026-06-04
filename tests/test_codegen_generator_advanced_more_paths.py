@@ -112,10 +112,8 @@ def test_codegen_generator_additional_visit_paths() -> None:
         )
         == '"a" icontains "b"'
     )
-    assert (
+    with pytest.raises(ValueError, match="In expression range must be a range expression"):
         gen.visit_in_expression(InExpression(subject="$a", range=Identifier("filesize")))
-        == "$a in filesize"
-    )
     assert (
         gen.visit_hex_alternative(HexAlternative([[HexByte(0x4D)], [HexByte(0x5A)]]))
         == "( 4D | 5A )"
