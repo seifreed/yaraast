@@ -1924,7 +1924,7 @@ def protobuf_to_string(pb_string) -> Any:
             else pb_string.plain.value
         )
         _validate_plain_string_value_for_protobuf(value)
-        s = PlainString(
+        plain_string = PlainString(
             identifier=_protobuf_required_nonempty_string(
                 pb_string.identifier,
                 "PlainString identifier",
@@ -1932,8 +1932,8 @@ def protobuf_to_string(pb_string) -> Any:
             value=value,
             is_anonymous=pb_string.is_anonymous,
         )
-        s.modifiers = modifiers
-        return _apply_node_metadata_from_protobuf(pb_string, s)
+        plain_string.modifiers = modifiers
+        return _apply_node_metadata_from_protobuf(pb_string, plain_string)
     if pb_string.HasField("hex"):
         if not pb_string.hex.tokens:
             msg = "HexString must contain at least one token"
@@ -1947,7 +1947,7 @@ def protobuf_to_string(pb_string) -> Any:
             inside_alternative=False,
         )
         modifiers = _protobuf_modifiers_to_ast(pb_string.hex.modifiers)
-        s = HexString(
+        hex_string = HexString(
             identifier=_protobuf_required_nonempty_string(
                 pb_string.identifier,
                 "HexString identifier",
@@ -1955,11 +1955,11 @@ def protobuf_to_string(pb_string) -> Any:
             tokens=tokens,
             is_anonymous=pb_string.is_anonymous,
         )
-        s.modifiers = modifiers
-        return _apply_node_metadata_from_protobuf(pb_string, s)
+        hex_string.modifiers = modifiers
+        return _apply_node_metadata_from_protobuf(pb_string, hex_string)
     if pb_string.HasField("regex"):
         modifiers = _protobuf_modifiers_to_ast(pb_string.regex.modifiers)
-        s = RegexString(
+        regex_string = RegexString(
             identifier=_protobuf_required_nonempty_string(
                 pb_string.identifier,
                 "RegexString identifier",
@@ -1970,8 +1970,8 @@ def protobuf_to_string(pb_string) -> Any:
             ),
             is_anonymous=pb_string.is_anonymous,
         )
-        s.modifiers = modifiers
-        return _apply_node_metadata_from_protobuf(pb_string, s)
+        regex_string.modifiers = modifiers
+        return _apply_node_metadata_from_protobuf(pb_string, regex_string)
     msg = "Protobuf string definition is missing a string type"
     raise SerializationError(msg)
 
