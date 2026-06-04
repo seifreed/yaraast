@@ -2393,6 +2393,14 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
             "Incompatible types for '!=': string and integer",
         ),
         (
+            BinaryExpression(StringLiteral("x"), "==", Identifier("filesize")),
+            "Incompatible types for '==': string and integer",
+        ),
+        (
+            BinaryExpression(StringLiteral("x"), "!=", Identifier("entrypoint")),
+            "Incompatible types for '!=': string and integer",
+        ),
+        (
             BinaryExpression(
                 ParenthesesExpression(UnaryExpression("-", IntegerLiteral(1))),
                 "==",
@@ -2496,6 +2504,55 @@ def test_codegen_generators_reject_invalid_expression_operators(
     message: str,
 ) -> None:
     ast = YaraFile(rules=[Rule(name="invalid_operator", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            BinaryExpression(StringLiteral("x"), "==", StringCount("$a")),
+            "Incompatible types for '==': string and integer",
+        ),
+        (
+            BinaryExpression(StringLiteral("x"), "!=", StringOffset("$a")),
+            "Incompatible types for '!=': string and integer",
+        ),
+        (
+            BinaryExpression(StringLiteral("x"), ">=", StringLength("$a")),
+            "Incompatible types for '>=': string and integer",
+        ),
+        (
+            BinaryExpression(StringLiteral("x"), "contains", StringCount("$a")),
+            "Right operand of 'contains' must be string",
+        ),
+        (
+            BinaryExpression(StringLiteral("x"), "matches", StringLength("$a")),
+            "Right operand of 'matches' must be regex",
+        ),
+    ],
+)
+def test_codegen_generators_reject_numeric_string_reference_operands(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_string_reference_operand",
+                strings=[PlainString(identifier="$a", value="x")],
+                condition=condition,
+            )
+        ]
+    )
 
     with pytest.raises(ValueError, match=message):
         CodeGenerator().generate(ast)

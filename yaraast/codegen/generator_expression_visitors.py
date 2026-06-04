@@ -308,12 +308,31 @@ def _reject_negative_shift_count(node: Any) -> None:
 
 
 def _constant_comparison_operand_type(value: Any) -> str | None:
-    from yaraast.ast.expressions import DoubleLiteral, StringLiteral, UnaryExpression
+    from yaraast.ast.expressions import (
+        DoubleLiteral,
+        FunctionCall,
+        Identifier,
+        StringCount,
+        StringLength,
+        StringLiteral,
+        StringOffset,
+        UnaryExpression,
+    )
 
     value = _unwrap_parenthesized_expression(value)
     if isinstance(value, StringLiteral | str):
         return "string"
     if _constant_integer_value(value) is not None:
+        return "integer"
+    if isinstance(value, Identifier) and value.name in {"entrypoint", "filesize"}:
+        return "integer"
+    if isinstance(value, StringCount | StringLength | StringOffset):
+        return "integer"
+    if (
+        isinstance(value, FunctionCall)
+        and value.receiver is None
+        and value.function in _INTEGER_READ_FUNCTIONS
+    ):
         return "integer"
     if isinstance(value, UnaryExpression):
         operand = _unwrap_parenthesized_expression(value.operand)
