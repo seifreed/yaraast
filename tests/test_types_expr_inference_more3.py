@@ -48,6 +48,7 @@ from yaraast.types._registry import (
     FloatType,
     IntegerType,
     StringType,
+    StructType,
     TypeEnvironment,
     UnknownType,
 )
@@ -538,6 +539,29 @@ def test_expr_inference_member_access_prefers_module_over_same_named_rule() -> N
 
     assert isinstance(out, IntegerType)
     assert inf.errors == []
+
+
+@pytest.mark.parametrize(
+    ("member", "message"),
+    [
+        ("bad-name", "Invalid member identifier: bad-name"),
+        ("1bad", "Invalid member identifier: 1bad"),
+        ("for", "Invalid member identifier: for"),
+        ("", "Member access member cannot be empty"),
+    ],
+)
+def test_expr_inference_rejects_invalid_struct_member_identifiers(
+    member: str,
+    message: str,
+) -> None:
+    env = TypeEnvironment()
+    env.define("obj", StructType(fields={member: IntegerType()}))
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(MemberAccess(object=Identifier("obj"), member=member))
+
+    assert isinstance(out, UnknownType)
+    assert message in inf.errors
 
 
 def test_expr_inference_treats_time_now_as_function_not_attribute() -> None:

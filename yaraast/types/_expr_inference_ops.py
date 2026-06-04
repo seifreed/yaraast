@@ -743,6 +743,12 @@ def _validate_pe_imports_arguments(ctx: Any, arguments: list[Any]) -> None:
 
 
 def infer_member_access(ctx: Any, node: MemberAccess) -> YaraType:
+    try:
+        _normalize_identifier(node.member, "Member access member", "member")
+    except (TypeError, ValueError) as exc:
+        ctx.errors.append(str(exc))
+        return UnknownType()
+
     obj_type = _infer_member_object_type(ctx, node.object)
 
     if isinstance(obj_type, ModuleType):
