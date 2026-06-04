@@ -164,6 +164,32 @@ def _is_definitely_non_iterable_expression(value: Any) -> bool:
     )
 
 
+def _is_invalid_for_iterable_set_item(value: Any) -> bool:
+    from yaraast.ast.expressions import (
+        BooleanLiteral,
+        DoubleLiteral,
+        ParenthesesExpression,
+        RegexLiteral,
+        StringIdentifier,
+        StringWildcard,
+    )
+
+    if isinstance(value, ParenthesesExpression):
+        return _is_invalid_for_iterable_set_item(value.expression)
+    return isinstance(
+        value,
+        (
+            bool,
+            float,
+            BooleanLiteral,
+            DoubleLiteral,
+            RegexLiteral,
+            StringIdentifier,
+            StringWildcard,
+        ),
+    )
+
+
 def _reject_invalid_binary_numeric_operands(node: Any) -> None:
     if node.operator in _NUMERIC_BINARY_OPERATORS:
         if _is_definitely_non_numeric_expression(node.left):
@@ -460,12 +486,20 @@ def visit_member_access(generator: Any, node: Any) -> str:
 
 
 def visit_for_expression(generator: Any, node: Any) -> str:
-    from yaraast.ast.expressions import RangeExpression
+    from yaraast.ast.expressions import RangeExpression, SetExpression
     from yaraast.codegen.generator_expressions import _render_quantifier
 
     if _is_definitely_non_iterable_expression(node.iterable):
         msg = (
             "For expression iterable must be a range, set, or iterable expression "
+            "for libyara output"
+        )
+        raise ValueError(msg)
+    if isinstance(node.iterable, SetExpression) and any(
+        _is_invalid_for_iterable_set_item(item) for item in node.iterable.elements
+    ):
+        msg = (
+            "For expression iterable set items must be integer or string expressions "
             "for libyara output"
         )
         raise ValueError(msg)

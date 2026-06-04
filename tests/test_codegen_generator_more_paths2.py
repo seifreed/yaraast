@@ -2392,6 +2392,26 @@ def test_codegen_generators_reject_bare_contextual_expressions(
             ForExpression("any", "i", IntegerLiteral(1), StringIdentifier("$a")),
             "For expression iterable must be a range, set, or iterable expression",
         ),
+        (
+            ForExpression(
+                "any", "i", SetExpression([BooleanLiteral(True)]), StringIdentifier("$a")
+            ),
+            "For expression iterable set items must be integer or string expressions",
+        ),
+        (
+            ForExpression("any", "i", SetExpression([DoubleLiteral(1.5)]), StringIdentifier("$a")),
+            "For expression iterable set items must be integer or string expressions",
+        ),
+        (
+            ForExpression("any", "i", SetExpression([RegexLiteral("x")]), StringIdentifier("$a")),
+            "For expression iterable set items must be integer or string expressions",
+        ),
+        (
+            ForExpression(
+                "any", "i", SetExpression([StringIdentifier("$a")]), StringIdentifier("$a")
+            ),
+            "For expression iterable set items must be integer or string expressions",
+        ),
     ],
 )
 def test_codegen_generators_reject_invalid_in_and_for_iterables(
