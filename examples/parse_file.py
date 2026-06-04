@@ -25,6 +25,7 @@ rule APT_Malware {
         $mz at 0 and
         2 of ($string*) and
         $hex_pattern and
+        $regex and
         filesize < 1MB
 }
 
@@ -51,7 +52,7 @@ print(f"Parsed {len(ast.rules)} rules:")
 for rule in ast.rules:
     print(f"  - {rule.name}")
     if rule.meta:
-        print(f"    Meta fields: {', '.join(rule.meta.keys())}")
+        print(f"    Meta fields: {', '.join(entry.key for entry in rule.meta)}")
     print(f"    Strings: {len(rule.strings)}")
     print()
 

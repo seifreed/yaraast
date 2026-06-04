@@ -68,9 +68,9 @@ def main() -> None:
         .with_plain_string("$suspicious", "cmd.exe")
         .with_condition_lambda(
             lambda c: c.string("$suspicious")
-            .and_(c.identifier("pe.machine").eq(c.integer(0x14C)))
-            .and_(c.identifier("pe.number_of_sections").gt(c.integer(3)))
-            .and_(c.member_access(c.identifier("pe"), "is_dll").eq(c.false()))
+            .and_(c.member_access(c.identifier("pe"), "machine").eq(c.integer(0x14C)))
+            .and_(c.member_access(c.identifier("pe"), "number_of_sections").gt(c.integer(3)))
+            .and_(c.member_access(c.identifier("pe"), "is_dll").not_())
         )
         .build()
     )
@@ -105,9 +105,15 @@ def main() -> None:
                 # for any i in (0..pe.number_of_sections):
                 c.for_any(
                     "i",
-                    c.range(c.integer(0), c.identifier("pe.number_of_sections")),
+                    c.range(
+                        c.integer(0),
+                        c.member_access(c.identifier("pe"), "number_of_sections"),
+                    ),
                     c.member_access(
-                        c.array_access(c.identifier("pe.sections"), c.identifier("i")),
+                        c.array_access(
+                            c.member_access(c.identifier("pe"), "sections"),
+                            c.identifier("i"),
+                        ),
                         "characteristics",
                     )
                     .bitwise_and(c.integer(0x20000000))

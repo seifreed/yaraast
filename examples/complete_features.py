@@ -4,18 +4,20 @@
 import json
 import os
 from pathlib import Path
+import tempfile
 
 from yaraast import (
     YARA_SYNTAX_VERSION,
     YARAAST_VERSION,
+    CodeGenerator,
     HexStringBuilder,
     Parser,
     RuleBuilder,
     get_version_info,
 )
 from yaraast.analysis import RuleAnalyzer
-from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
-from yaraast.codegen.formatting import FormattingConfig
+from yaraast.codegen.formatting import FormattingConfig, StringStyle
+from yaraast.codegen.options import GeneratorOptions
 from yaraast.optimization import RuleOptimizer
 from yaraast.types.module_loader import ModuleLoader
 from yaraast.yarax import YaraXCompatibilityChecker
@@ -70,32 +72,34 @@ def demo_module_loading() -> None:
         "constants": {"MAX_SIZE": "int", "VERSION": "string"},
     }
 
-    # Save to temporary file
-    with Path("demo_module.json").open("w") as f:
-        json.dump(custom_module, f, indent=2)
+    previous_spec_path = os.environ.get("YARAAST_MODULE_SPEC_PATH")
+    with tempfile.TemporaryDirectory() as temp_dir:
+        module_path = Path(temp_dir) / "demo_module.json"
+        with module_path.open("w") as f:
+            json.dump(custom_module, f, indent=2)
 
-    # Load module
-    os.environ["YARAAST_MODULE_SPEC_PATH"] = "."
-    loader = ModuleLoader()
+        os.environ["YARAAST_MODULE_SPEC_PATH"] = temp_dir
+        loader = ModuleLoader()
 
-    print("Available modules:")
-    for module_name in loader.list_modules():
-        print(f"  - {module_name}")
+        print("Available modules:")
+        for module_name in loader.list_modules():
+            print(f"  - {module_name}")
 
-    # Check if our module was loaded
-    if "demo_module" in loader.modules:
-        module = loader.get_module("demo_module")
-        if module:
-            print("\nDemo module loaded successfully!")
-            print(f"  Attributes: {list(module.attributes.keys())}")
-            print(f"  Functions: {list(module.functions.keys())}")
-            print(f"  Constants: {list(module.constants.keys())}")
-        else:
-            print("\nFailed to load demo module")
+        # Check if our module was loaded
+        if "demo_module" in loader.modules:
+            module = loader.get_module("demo_module")
+            if module:
+                print("\nDemo module loaded successfully!")
+                print(f"  Attributes: {list(module.attributes.keys())}")
+                print(f"  Functions: {list(module.functions.keys())}")
+                print(f"  Constants: {list(module.constants.keys())}")
+            else:
+                print("\nFailed to load demo module")
 
-    # Clean up
-    Path("demo_module.json").unlink()
-    del os.environ["YARAAST_MODULE_SPEC_PATH"]
+    if previous_spec_path is None:
+        del os.environ["YARAAST_MODULE_SPEC_PATH"]
+    else:
+        os.environ["YARAAST_MODULE_SPEC_PATH"] = previous_spec_path
 
 
 def demo_complete_features() -> None:
@@ -108,7 +112,7 @@ def demo_complete_features() -> None:
         .with_name("comprehensive_malware_detector")
         .private()
         .global_()
-        .with_tags(["malware", "trojan", "advanced"])
+        .with_tags("malware", "trojan", "advanced")
         .with_meta("author", "YARAAST Demo")
         .with_meta("description", "Demonstrates all YARAAST features")
         .with_meta("version", 1)
@@ -172,12 +176,12 @@ def demo_complete_features() -> None:
 
     # Compact style
     print("\nCompact Style:")
-    compact_gen = AdvancedCodeGenerator(FormattingConfig.compact())
+    compact_gen = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig.compact()))
     print(compact_gen.generate(optimized))
 
     # Expanded style
     print("\nExpanded Style:")
-    expanded_gen = AdvancedCodeGenerator(FormattingConfig.expanded())
+    expanded_gen = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig.expanded()))
     print(expanded_gen.generate(optimized))
 
     # Custom style with sorting
@@ -187,9 +191,9 @@ def demo_complete_features() -> None:
         sort_imports=True,
         sort_strings=True,
         sort_meta=True,
-        string_style=FormattingConfig.StringStyle.TABULAR,
+        string_style=StringStyle.TABULAR,
     )
-    custom_gen = AdvancedCodeGenerator(custom_config)
+    custom_gen = CodeGenerator(options=GeneratorOptions(advanced=custom_config))
     print(custom_gen.generate(optimized))
 
 
@@ -219,8 +223,8 @@ rule optimization_demo {
     ast = parser.parse(yara_code)
 
     print("Original rule:")
-    gen = AdvancedCodeGenerator()
-    print(gen.generate(ast))
+    gen = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig()))
+    print(yara_code.strip())
 
     # Optimize
     optimizer = RuleOptimizer()

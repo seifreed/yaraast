@@ -1,8 +1,10 @@
 """Example: Transforming YARA AST."""
 
-from yaraast import ASTTransformer, CodeGenerator, Parser
+from yaraast import CodeGenerator, Parser
+from yaraast.ast.modifiers import MetaEntry, StringModifier
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import PlainString, StringModifier
+from yaraast.ast.strings import PlainString
+from yaraast.visitor import ASTTransformer
 
 
 # Example transformer that adds a prefix to all rule names
@@ -18,8 +20,8 @@ class RulePrefixTransformer(ASTTransformer):
         transformed.name = f"{self.prefix}_{transformed.name}"
 
         # Add a meta field indicating transformation
-        transformed.meta["transformed"] = "true"
-        transformed.meta["prefix"] = self.prefix
+        transformed.meta.append(MetaEntry.from_key_value("transformed", True))
+        transformed.meta.append(MetaEntry.from_key_value("prefix", self.prefix))
 
         return transformed
 
@@ -34,7 +36,7 @@ class NoCaseTransformer(ASTTransformer):
 
         if not has_nocase:
             # Add nocase modifier
-            nocase_mod = StringModifier(name="nocase")
+            nocase_mod = StringModifier.from_name_value("nocase")
             transformed.modifiers.append(nocase_mod)
 
         return transformed

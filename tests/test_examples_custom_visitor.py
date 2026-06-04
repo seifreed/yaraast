@@ -23,3 +23,23 @@ def test_custom_visitor_example_runs() -> None:
     assert "global_rules: 1" in result.stdout
     assert "meta_keys: author, severity, version" in result.stdout
     assert '$a = "test"' in result.stdout
+
+
+def test_core_examples_run() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+
+    for example in (
+        "builder_demo.py",
+        "complete_features.py",
+        "parse_file.py",
+        "transform_ast.py",
+    ):
+        result = subprocess.run(
+            [sys.executable, f"examples/{example}"],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.stdout
