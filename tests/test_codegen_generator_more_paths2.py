@@ -2200,6 +2200,45 @@ def test_codegen_generators_reject_out_of_range_numeric_quantifiers(condition: A
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            ForExpression(
+                "any",
+                "i",
+                RangeExpression(IntegerLiteral(-1), IntegerLiteral(1)),
+                BooleanLiteral(True),
+            ),
+            "Range low bound cannot be negative",
+        ),
+        (
+            ForExpression(
+                "any",
+                "i",
+                RangeExpression(IntegerLiteral(3), IntegerLiteral(1)),
+                BooleanLiteral(True),
+            ),
+            "Range low bound cannot exceed high bound",
+        ),
+    ],
+)
+def test_codegen_generators_reject_invalid_constant_range_bounds(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_range_bounds", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generators_allow_external_identifier_of_quantifier() -> None:
     ast = YaraFile(
         rules=[

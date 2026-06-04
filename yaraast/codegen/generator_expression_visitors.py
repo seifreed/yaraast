@@ -687,7 +687,21 @@ def _reject_non_integer_expression(value: Any, field_name: str) -> None:
 def visit_range_expression(generator: Any, node: Any) -> str:
     _reject_non_integer_expression(node.low, "Range low bound")
     _reject_non_integer_expression(node.high, "Range high bound")
+    validate_constant_range_bounds(node)
     return f"{generator.visit(node.low)}..{generator.visit(node.high)}"
+
+
+def validate_constant_range_bounds(node: Any) -> None:
+    low = _constant_integer_value(node.low)
+    high = _constant_integer_value(node.high)
+    if low is None or high is None:
+        return
+    if low < 0:
+        msg = "Range low bound cannot be negative for libyara output"
+        raise ValueError(msg)
+    if low > high:
+        msg = "Range low bound cannot exceed high bound for libyara output"
+        raise ValueError(msg)
 
 
 def render_function_call_callee(generator: Any, node: Any) -> str:
