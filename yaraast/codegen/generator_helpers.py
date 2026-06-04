@@ -496,7 +496,7 @@ def format_integer_literal(value: object) -> str:
             raise TypeError(msg)
         _validate_integer_literal_range(_integer_literal_numeric_value(value))
         if isinstance(int_value, str):
-            return int_value
+            return _normalize_integer_literal_text(int_value)
     elif isinstance(value, int):
         int_value = value
     else:
@@ -551,6 +551,21 @@ def _integer_literal_numeric_value(value: str) -> int:
     unsigned = text.lstrip("+-")
     base = 0 if unsigned.lower().startswith(("0x", "0o")) else 10
     return int(text, base) * multiplier
+
+
+def _normalize_integer_literal_text(value: str) -> str:
+    text = value.strip()
+    sign = ""
+    if text.startswith(("+", "-")):
+        if text.startswith("-"):
+            sign = "-"
+        text = text[1:]
+
+    if text.lower().startswith("0x"):
+        return f"{sign}0x{text[2:]}"
+    if text.lower().startswith("0o"):
+        return f"{sign}0o{text[2:]}"
+    return f"{sign}{text}"
 
 
 def _validate_integer_literal_range(value: int) -> None:

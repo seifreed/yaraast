@@ -105,6 +105,13 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
     with pytest.raises(TypeError, match="Integer literal value must be an integer"):
         format_integer_literal(bad_integer_number)
     assert format_integer_literal("0x10") == "0x10"
+    assert format_integer_literal("+10") == "10"
+    assert format_integer_literal("+1KB") == "1KB"
+    assert format_integer_literal("+1MB") == "1MB"
+    assert format_integer_literal("+0x10") == "0x10"
+    assert format_integer_literal("+0o10") == "0o10"
+    assert format_integer_literal("0X10") == "0x10"
+    assert format_integer_literal("0O10") == "0o10"
     with pytest.raises(ValueError, match="Double literal value must be finite"):
         format_double_literal(float("nan"))
 
