@@ -2423,6 +2423,29 @@ def test_codegen_generators_reject_invalid_in_and_for_iterables(
 @pytest.mark.parametrize(
     "condition",
     [
+        OfExpression(IntegerLiteral(1), IntegerLiteral(1)),
+        OfExpression(IntegerLiteral(1), SetExpression([IntegerLiteral(1)])),
+        ForOfExpression("any", IntegerLiteral(1), StringIdentifier("$")),
+        ForOfExpression("any", SetExpression([IntegerLiteral(1)]), StringIdentifier("$")),
+    ],
+)
+def test_codegen_generators_reject_invalid_string_set_items(condition: Any) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_string_set", condition=condition)])
+
+    message = "String set items must be string or rule identifiers for libyara output"
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
         BinaryExpression(StringIdentifier("$a"), "<", IntegerLiteral(1)),
         BinaryExpression(IntegerLiteral(1), "==", StringIdentifier("$a")),
     ],

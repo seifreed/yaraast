@@ -52,8 +52,6 @@ def _render_string_set(gen: Any, string_set: Any) -> str:
             raise ValueError(msg)
         rendered_items = [_render_string_set_item(gen, item) for item in string_set.elements]
         return f"({', '.join(rendered_items)})"
-    if hasattr(string_set, "accept"):
-        return cast(str, gen.visit(string_set))
     if isinstance(string_set, list | tuple):
         rendered_items = [_render_string_set_item(gen, item) for item in string_set]
         return f"({', '.join(rendered_items)})"
@@ -62,6 +60,8 @@ def _render_string_set(gen: Any, string_set: Any) -> str:
             _render_string_set_item(gen, item) for item in sorted(string_set, key=str)
         ]
         return f"({', '.join(rendered_items)})"
+    if hasattr(string_set, "accept"):
+        _reject_invalid_string_set_item()
     return _render_single_string_set_text(string_set)
 
 
@@ -145,13 +145,22 @@ def _require_string_set_field(value: object, field_name: str) -> str:
 
 
 def _render_string_set_item(gen: Any, item: Any) -> str:
-    from yaraast.ast.expressions import StringLiteral
+    from yaraast.ast.expressions import Identifier, StringLiteral, StringWildcard
 
     if isinstance(item, StringLiteral):
         return validate_string_set_item_text(item.value)
+    if isinstance(item, Identifier | StringWildcard):
+        return cast(str, gen.visit(item))
+    if not _is_string_set_item(item):
+        _reject_invalid_string_set_item()
     if hasattr(item, "accept"):
         return cast(str, gen.visit(item))
     return validate_string_set_item_text(item)
+
+
+def _reject_invalid_string_set_item() -> None:
+    msg = "String set items must be string or rule identifiers for libyara output"
+    raise ValueError(msg)
 
 
 def _render_quantifier(
