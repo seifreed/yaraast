@@ -127,7 +127,19 @@ def require_present_expression(value: Any, field_name: str) -> Any:
     return value
 
 
+def _reject_boolean_numeric_expression(value: Any, field_name: str) -> None:
+    from yaraast.ast.expressions import BooleanLiteral, ParenthesesExpression
+
+    if isinstance(value, bool | BooleanLiteral):
+        msg = f"{field_name} must be integer for libyara output"
+        raise ValueError(msg)
+    if isinstance(value, ParenthesesExpression):
+        _reject_boolean_numeric_expression(value.expression, field_name)
+
+
 def visit_range_expression(generator: Any, node: Any) -> str:
+    _reject_boolean_numeric_expression(node.low, "Range low bound")
+    _reject_boolean_numeric_expression(node.high, "Range high bound")
     return f"{generator.visit(node.low)}..{generator.visit(node.high)}"
 
 
@@ -151,6 +163,7 @@ def visit_function_call(generator: Any, node: Any) -> str:
 
 
 def visit_array_access(generator: Any, node: Any) -> str:
+    _reject_boolean_numeric_expression(node.index, "Array index")
     return f"{generator.visit(node.array)}[{generator.visit(node.index)}]"
 
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from yaraast.ast.base import ASTNode
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
@@ -11,6 +12,7 @@ from yaraast.ast.conditions import (
     OfExpression,
 )
 from yaraast.ast.expressions import (
+    ArrayAccess,
     BooleanLiteral,
     DoubleLiteral,
     Identifier,
@@ -131,6 +133,32 @@ def test_codegen_generate_returns_direct_expression_output() -> None:
     assert CodeGenerator().generate(BooleanLiteral(True)) == "true"
     with pytest.raises(TypeError, match="Integer literal value must be an integer"):
         CodeGenerator().generate(IntegerLiteral(True))
+
+
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (
+            RangeExpression(BooleanLiteral(True), IntegerLiteral(3)),
+            "Range low bound must be integer",
+        ),
+        (
+            RangeExpression(IntegerLiteral(0), BooleanLiteral(False)),
+            "Range high bound must be integer",
+        ),
+        (
+            ArrayAccess(Identifier("arr"), BooleanLiteral(True)),
+            "Array index must be integer",
+        ),
+        (
+            ArrayAccess(Identifier("arr"), ParenthesesExpression(BooleanLiteral(True))),
+            "Array index must be integer",
+        ),
+    ],
+)
+def test_codegen_rejects_boolean_numeric_contexts(node: ASTNode, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(node)
 
 
 def test_codegen_in_expression_parentheses_paths() -> None:
