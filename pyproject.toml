@@ -232,6 +232,7 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = [
     "yaraast.cli.benchmark_tools",
+    "yaraast.cli.commands.performance",
     "yaraast.cli.commands.yaral",
     "yaraast.cli.libyara_reporting",
     "yaraast.cli.libyara_services",

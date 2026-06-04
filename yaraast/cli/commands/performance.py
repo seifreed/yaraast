@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import time
+from typing import Any
 
 import click
 
@@ -82,19 +83,20 @@ def batch(
     batch_size: int,
     max_workers: int | None,
     memory_limit: int,
-    operations: tuple,
+    operations: tuple[str, ...],
     recursive: bool,
     pattern: str | None,
     progress: bool,
 ) -> None:
     """Process large collections of YARA files in batches."""
     output_dir = _validate_output_dir_path(output_dir)
-    input_path = Path(input_path)
+    input_path_obj = Path(input_path)
 
     if output_dir is None:
-        output_dir = input_path.parent / f"{input_path.name}_batch_output"
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+        output_dir_path = input_path_obj.parent / f"{input_path_obj.name}_batch_output"
+    else:
+        output_dir_path = Path(output_dir)
+    output_dir_path.mkdir(parents=True, exist_ok=True)
 
     batch_operations = convert_operations(operations)
 
@@ -116,8 +118,8 @@ def batch(
 
     try:
         results, total_time = run_batch_processing(
-            input_path,
-            output_dir,
+            input_path_obj,
+            output_dir_path,
             batch_operations,
             processor,
             pattern,
@@ -133,9 +135,9 @@ def batch(
         for operation, result in results.items():
             display_operation_result(operation, result)
 
-        results_file = output_dir / "batch_results.json"
+        results_file = output_dir_path / "batch_results.json"
         write_json(results_file, build_batch_results_data(results))
-        click.echo(f"\n✅ Results saved to: {output_dir}")
+        click.echo(f"\n✅ Results saved to: {output_dir_path}")
     except Exception as e:
         click.echo(f"\n❌ Error during batch processing: {e}", err=True)
         raise click.Abort from None
@@ -180,7 +182,7 @@ def stream(
 ) -> None:
     """Stream-parse large YARA collections with minimal memory usage."""
     output = _validate_output_path(output)
-    input_path = Path(input_path)
+    input_path_obj = Path(input_path)
 
     # Progress callback
     def progress_callback(current: int, total: int, current_file: str) -> None:
@@ -205,7 +207,7 @@ def stream(
         start_time = time.time()
         result_iter = get_parse_iterator(
             parser,
-            input_path,
+            input_path_obj,
             split_rules,
             pattern,
             recursive,
@@ -231,7 +233,7 @@ def stream(
 
 
 def _display_stream_results(
-    results: list,
+    results: list[Any],
     total_time: float,
     parser: StreamingParser,
     output: str | None,
@@ -280,7 +282,7 @@ def _display_stream_results(
     help="Files per processing chunk",
 )
 def parallel(
-    input_paths: tuple,
+    input_paths: tuple[str, ...],
     output_dir: str | None,
     max_workers: int | None,
     timeout: float,
@@ -297,9 +299,10 @@ def parallel(
             return
 
         if output_dir is None:
-            output_dir = Path.cwd() / "parallel_analysis_output"
-        output_dir = Path(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
+            output_dir_path = Path.cwd() / "parallel_analysis_output"
+        else:
+            output_dir_path = Path(output_dir)
+        output_dir_path.mkdir(parents=True, exist_ok=True)
 
         click.echo(f"🚀 Starting parallel analysis of {len(file_paths)} files...")
         click.echo(f"   Max workers: {max_workers or 'auto'}")
@@ -313,7 +316,7 @@ def parallel(
             max_workers,
             chunk_size,
             analysis_type,
-            output_dir,
+            output_dir_path,
             timeout,
         )
 
@@ -329,7 +332,7 @@ def parallel(
             click.echo("❌ No files parsed successfully")
             return
 
-        report_complexity_analysis(complexity_results, output_dir)
+        report_complexity_analysis(complexity_results, output_dir_path)
 
         if dependency_graphs:
             click.echo(f"📈 Generated {len(dependency_graphs)} dependency graphs")
