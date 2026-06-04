@@ -40,9 +40,8 @@ class YaraLParserError(YaraASTError):
     """YARA-L parser error."""
 
     def __init__(self, message: str, token: YaraLToken | None = None) -> None:
+        self.token: YaraLToken | None = token
         if token:
             super().__init__(f"Parser error at {token.line}:{token.column}: {message}")
-            self.token = token
         else:
             super().__init__(f"Parser error: {message}")
-            self.token = None
