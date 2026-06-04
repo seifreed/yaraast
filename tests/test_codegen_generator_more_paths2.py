@@ -295,6 +295,30 @@ def test_codegen_generator_rejects_standard_comment_surrogates(
         CodeGenerator().generate(YaraFile(rules=[rule]))
 
 
+@pytest.mark.parametrize(
+    ("comment_target", "comment_text"),
+    [
+        ("leading", "null\x00line"),
+        ("leading", "/* null\x00block */"),
+        ("trailing", "null\x00line"),
+        ("trailing", "/* null\x00block */"),
+    ],
+)
+def test_codegen_generator_rejects_standard_comment_embedded_nul(
+    comment_target: str,
+    comment_text: str,
+) -> None:
+    rule = Rule("bad_comment", condition=BooleanLiteral(True))
+    comment = Comment(comment_text)
+    if comment_target == "leading":
+        rule.leading_comments = [comment]
+    else:
+        rule.trailing_comment = comment
+
+    with pytest.raises(ValueError, match="Comment text must not contain embedded NUL"):
+        CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
 def test_codegen_generate_resets_indent_after_failed_generation() -> None:
     gen = CodeGenerator()
     with pytest.raises(RuntimeError, match="broken condition"):

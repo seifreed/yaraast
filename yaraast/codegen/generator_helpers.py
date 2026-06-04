@@ -103,6 +103,13 @@ def validate_no_unicode_surrogates(value: str, context: str) -> None:
     raise ValueError(msg)
 
 
+def validate_no_embedded_nul(value: str, context: str) -> None:
+    if "\x00" not in value:
+        return
+    msg = f"{context} must not contain embedded NUL characters for libyara output"
+    raise ValueError(msg)
+
+
 def _escape_plain_byte(value: int) -> str:
     if value == 0x5C:
         return "\\\\"
