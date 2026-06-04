@@ -154,6 +154,38 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
         raise ValueError(msg)
 
 
+def _constant_integer_value(value: Any) -> int | None:
+    from yaraast.ast.expressions import IntegerLiteral, ParenthesesExpression, UnaryExpression
+
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if (
+        isinstance(value, IntegerLiteral)
+        and isinstance(value.value, int)
+        and not isinstance(value.value, bool)
+    ):
+        return value.value
+    if isinstance(value, ParenthesesExpression):
+        return _constant_integer_value(value.expression)
+    if isinstance(value, UnaryExpression):
+        operand = _constant_integer_value(value.operand)
+        if operand is None:
+            return None
+        if value.operator == "-":
+            return -operand
+        if value.operator == "~":
+            return ~operand
+    return None
+
+
+def _reject_zero_integer_divisor(node: Any) -> None:
+    if node.operator not in {"/", "\\", "%"}:
+        return
+    if _constant_integer_value(node.right) == 0:
+        msg = f"Right operand of '{node.operator}' cannot be zero for libyara output"
+        raise ValueError(msg)
+
+
 def _reject_invalid_comparison_operands(node: Any) -> None:
     if node.operator not in _COMPARISON_BINARY_OPERATORS:
         return
@@ -172,6 +204,7 @@ def _reject_invalid_comparison_operands(node: Any) -> None:
 
 def validate_binary_expression_operands(node: Any) -> None:
     _reject_invalid_comparison_operands(node)
+    _reject_zero_integer_divisor(node)
     _reject_boolean_binary_numeric_operands(node)
     _reject_invalid_string_binary_operands(node)
 

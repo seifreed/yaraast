@@ -2008,6 +2008,18 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
             BinaryExpression(RegexLiteral("a"), "==", RegexLiteral("b")),
             "Regex operands cannot be used with '==' comparisons",
         ),
+        (
+            BinaryExpression(IntegerLiteral(1), "/", IntegerLiteral(0)),
+            "Right operand of '/' cannot be zero",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), "\\", ParenthesesExpression(IntegerLiteral(0))),
+            "Right operand of '\\\\' cannot be zero",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), "%", UnaryExpression("-", IntegerLiteral(0))),
+            "Right operand of '%' cannot be zero",
+        ),
         (UnaryExpression("!", IntegerLiteral(1)), "Invalid unary operator"),
     ],
 )
