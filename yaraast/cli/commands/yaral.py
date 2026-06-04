@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
-from typing import Any
+from typing import Any, cast
 
 import click
 
@@ -34,9 +34,9 @@ from yaraast.yaral.validator import YaraLValidator
 
 
 def _ast_to_serializable_data(ast: Any) -> dict[str, Any]:
-    if is_dataclass(ast):
-        return asdict(ast)
-    return ast.__dict__
+    if is_dataclass(ast) and not isinstance(ast, type):
+        return asdict(cast(Any, ast))
+    return cast(dict[str, Any], ast.__dict__)
 
 
 def _format_yaral_code(code: str) -> str:
@@ -45,7 +45,7 @@ def _format_yaral_code(code: str) -> str:
 
 
 @click.group()
-def yaral():
+def yaral() -> None:
     """YARA-L specific operations."""
     pass
 
@@ -60,7 +60,7 @@ def yaral():
     default="text",
     help="Output format",
 )
-def parse(file: str, enhanced: bool, output: str | None, format: str):
+def parse(file: str, enhanced: bool, output: str | None, format: str) -> None:
     """Parse YARA-L file and display AST."""
     output = _validate_output_path(output)
     try:
@@ -100,7 +100,7 @@ def parse(file: str, enhanced: bool, output: str | None, format: str):
 @click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--strict", is_flag=True, help="Treat warnings as errors")
 @click.option("--json", "output_json", is_flag=True, help="Output results as JSON")
-def validate(file: str, strict: bool, output_json: bool):
+def validate(file: str, strict: bool, output_json: bool) -> None:
     """Validate YARA-L file for semantic correctness."""
     try:
         content = read_text(file)
@@ -126,7 +126,7 @@ def validate(file: str, strict: bool, output_json: bool):
     is_flag=True,
     help="Show what would be optimized without making changes",
 )
-def optimize(file: str, output: str | None, stats: bool, dry_run: bool):
+def optimize(file: str, output: str | None, stats: bool, dry_run: bool) -> None:
     """Optimize YARA-L rules for better performance."""
     output = _validate_output_path(output)
     try:
@@ -152,7 +152,7 @@ def optimize(file: str, output: str | None, stats: bool, dry_run: bool):
 @click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--output", "-o", type=click.Path(), help="Output generated YARA-L to file")
 @click.option("--format", is_flag=True, help="Format the output code")
-def generate(file: str, output: str | None, format: bool):
+def generate(file: str, output: str | None, format: bool) -> None:
     """Generate YARA-L code from AST or transform existing rules."""
     output = _validate_output_path(output)
     try:
@@ -173,7 +173,7 @@ def generate(file: str, output: str | None, format: bool):
 @click.argument("file1", type=click.Path(exists=True, dir_okay=False))
 @click.argument("file2", type=click.Path(exists=True, dir_okay=False))
 @click.option("--semantic", is_flag=True, help="Compare semantic meaning, not just syntax")
-def compare(file1: str, file2: str, semantic: bool):
+def compare(file1: str, file2: str, semantic: bool) -> None:
     """Compare two YARA-L files for differences."""
     try:
         ast1 = parse_yaral(read_text(file1), enhanced=False)
@@ -192,7 +192,7 @@ def compare(file1: str, file2: str, semantic: bool):
 @click.option("--examples", is_flag=True, help="Show example YARA-L rules")
 @click.option("--fields", is_flag=True, help="Show valid UDM fields")
 @click.option("--functions", is_flag=True, help="Show available aggregation functions")
-def info(examples: bool, fields: bool, functions: bool):
+def info(examples: bool, fields: bool, functions: bool) -> None:
     """Show information about YARA-L syntax and features."""
     validator = YaraLValidator()
     display_info(examples, fields, functions, validator)

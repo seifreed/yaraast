@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 from yaraast.ast.base import require_string
+from yaraast.yaral.ast_nodes import YaraLFile
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
 from yaraast.yaral.generator import YaraLGenerator
-from yaraast.yaral.optimizer import YaraLOptimizer
+from yaraast.yaral.optimizer import OptimizationStats, YaraLOptimizer
 from yaraast.yaral.parser import YaraLParser
-from yaraast.yaral.validator import YaraLValidator
+from yaraast.yaral.validator import ValidationError, YaraLValidator
 
 
-def parse_yaral(content: str, enhanced: bool):
+def parse_yaral(content: str, enhanced: bool) -> YaraLFile:
     """Parse YARA-L content using selected parser."""
     content = require_string(content, "content")
     if not isinstance(enhanced, bool):
@@ -21,24 +22,24 @@ def parse_yaral(content: str, enhanced: bool):
     return YaraLParser(content).parse()
 
 
-def parse_yaral_best_effort(content: str):
+def parse_yaral_best_effort(content: str) -> YaraLFile:
     """Parse using enhanced parser, fallback to standard."""
     return EnhancedYaraLParser(content).parse()
 
 
-def validate_yaral(ast):
+def validate_yaral(ast: YaraLFile) -> tuple[list[ValidationError], list[ValidationError]]:
     """Validate YARA-L AST and return errors/warnings."""
     validator = YaraLValidator()
     return validator.validate(ast)
 
 
-def optimize_yaral(ast):
+def optimize_yaral(ast: YaraLFile) -> tuple[YaraLFile, OptimizationStats]:
     """Optimize YARA-L AST and return (optimized_ast, stats)."""
     optimizer = YaraLOptimizer()
     return optimizer.optimize(ast)
 
 
-def generate_yaral(ast) -> str:
+def generate_yaral(ast: YaraLFile) -> str:
     """Generate YARA-L code from AST."""
     return YaraLGenerator().generate(ast)
 
@@ -68,7 +69,7 @@ def format_yaral_code(code: str) -> str:
     return "\n".join(formatted_lines)
 
 
-def _format_line(stripped: str, indent: int, section_keywords: list) -> tuple[str, int]:
+def _format_line(stripped: str, indent: int, section_keywords: list[str]) -> tuple[str, int]:
     """Format a single line and return the formatted line and new indent level."""
     if stripped.endswith("{"):
         return ("  " * indent + stripped, indent + 1)
@@ -86,13 +87,13 @@ def _format_line(stripped: str, indent: int, section_keywords: list) -> tuple[st
     return ("  " * new_indent + stripped, new_indent)
 
 
-def compare_semantic(ast1, ast2) -> bool:
+def compare_semantic(ast1: YaraLFile, ast2: YaraLFile) -> bool:
     """Return True if semantically equivalent."""
     generator = YaraLGenerator()
     return generator.generate(ast1) == generator.generate(ast2)
 
 
-def compare_structural(ast1, ast2) -> list[str]:
+def compare_structural(ast1: YaraLFile, ast2: YaraLFile) -> list[str]:
     """Return list of structural differences."""
     if len(ast1.rules) != len(ast2.rules):
         return [f"Different number of rules: {len(ast1.rules)} vs {len(ast2.rules)}"]

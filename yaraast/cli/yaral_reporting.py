@@ -37,7 +37,7 @@ def _display_json_results(file: str, errors: list[Any], warnings: list[Any], str
     click.echo(format_json(result))
 
 
-def _display_text_results(ast, errors, warnings, strict):
+def _display_text_results(ast: Any, errors: list[Any], warnings: list[Any], strict: bool) -> None:
     if errors:
         click.echo("❌ Validation Errors:", err=True)
         for error in errors:
@@ -79,7 +79,7 @@ def display_generate_success(rule_count: int) -> None:
     click.echo(f"✅ Successfully generated code for {rule_count} rules")
 
 
-def display_optimize_preview(stats) -> None:
+def display_optimize_preview(stats: Any) -> None:
     click.echo("🔍 Optimization Preview (dry run):")
     click.echo(f"  • Would optimize {stats.rules_optimized} rules")
     click.echo(f"  • Would simplify {stats.conditions_simplified} conditions")
@@ -88,7 +88,7 @@ def display_optimize_preview(stats) -> None:
     click.echo(f"  • Would suggest {stats.indexes_suggested} indexes")
 
 
-def display_optimize_stats(stats) -> None:
+def display_optimize_stats(stats: Any) -> None:
     click.echo("\n📊 Optimization Statistics:")
     click.echo(f"  • Rules optimized: {stats.rules_optimized}")
     click.echo(f"  • Conditions simplified: {stats.conditions_simplified}")
@@ -113,7 +113,7 @@ def display_structural_compare(differences: list[str]) -> None:
         click.echo("✅ Files have the same structure")
 
 
-def display_info(examples: bool, fields: bool, functions: bool, validator) -> None:
+def display_info(examples: bool, fields: bool, functions: bool, validator: Any) -> None:
     if examples:
         click.echo("📚 Example YARA-L Rules:\n")
         click.echo("""rule suspicious_login_attempts {
@@ -150,7 +150,7 @@ def display_info(examples: bool, fields: bool, functions: bool, validator) -> No
 
     if functions:
         click.echo("🔧 Available Aggregation Functions:\n")
-        functions = [
+        aggregation_functions = [
             ("count", "Count number of events"),
             ("count_distinct", "Count unique values"),
             ("sum", "Sum numeric values"),
@@ -161,7 +161,7 @@ def display_info(examples: bool, fields: bool, functions: bool, validator) -> No
             ("array_distinct", "Collect unique values into array"),
             ("string_concat", "Concatenate string values"),
         ]
-        for func, desc in functions:
+        for func, desc in aggregation_functions:
             click.echo(f"  • {func}(): {desc}")
 
     if not any([examples, fields, functions]):
