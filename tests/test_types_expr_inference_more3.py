@@ -156,6 +156,19 @@ def test_expr_inference_treats_boolean_keyword_identifiers_as_booleans(name: str
     assert inf.errors == []
 
 
+@pytest.mark.parametrize("name", ["$bad-name", "$*", "", cast(Any, 123)])
+def test_expr_inference_rejects_invalid_string_identifiers_before_lookup(name: Any) -> None:
+    env = TypeEnvironment()
+    if isinstance(name, str) and name:
+        env.define(name, StringIdentifierType())
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(StringIdentifier(name))
+
+    assert isinstance(out, UnknownType)
+    assert inf.errors
+
+
 def test_expr_inference_reports_undefined_string_variants() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)

@@ -193,12 +193,22 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         return ops.infer_identifier(self, node)
 
     def visit_string_identifier(self, node: StringIdentifier) -> YaraType:
-        scoped_type = self.env.lookup(node.name)
+        if node.name == "$":
+            scoped_type = self.env.lookup("$")
+            if scoped_type:
+                return scoped_type
+        try:
+            normalized = normalize_string_reference_id(node.name, allow_wildcard=False)
+        except (TypeError, ValueError) as exc:
+            self.errors.append(str(exc))
+            return UnknownType()
+
+        scoped_type = self.env.lookup(node.name) or self.env.lookup(normalized)
         if scoped_type:
             return scoped_type
-        if self.env.has_string(node.name) or self.env.has_string_pattern(node.name):
+        if self.env.has_string(normalized):
             return StringIdentifierType()
-        self.errors.append(f"Undefined string: {node.name}")
+        self.errors.append(f"Undefined string: {normalized}")
         return UnknownType()
 
     def visit_string_wildcard(self, node: StringWildcard) -> YaraType:
