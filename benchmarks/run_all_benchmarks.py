@@ -10,6 +10,7 @@ This script runs all benchmarking tools in sequence and generates
 a complete performance report.
 """
 
+import argparse
 from importlib import util
 from pathlib import Path
 import sys
@@ -273,12 +274,20 @@ def generate_summary_report(benchmark_dir: Path) -> None:
     print(f"Summary report saved to: {summary_file}")
 
 
-def main() -> int:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run the complete YARA AST parser benchmark suite.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
     """Main entry point for comprehensive benchmark suite.
 
     Returns:
         Exit code (0 for success, 1 for failure)
     """
+    _parse_args(argv)
     benchmark_dir = Path(__file__).parent
 
     print_section("YARA AST Parser - Comprehensive Benchmark Suite")
