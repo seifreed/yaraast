@@ -1290,6 +1290,10 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
         (FunctionCall("", []), "FunctionCall function must not be empty"),
         (FunctionCall(cast(Any, ["fn"]), []), "FunctionCall function must be a string"),
         (
+            FunctionCall("fn", [], receiver=cast(Any, "not_expression")),
+            "FunctionCall receiver must be Expression",
+        ),
+        (
             MemberAccess(Identifier("pe"), ""),
             "MemberAccess member must not be empty",
         ),
@@ -2195,6 +2199,14 @@ def test_simple_roundtrip_helpers_preserve_extended_expression_nodes() -> None:
         SetExpression([StringIdentifier("$a"), StringWildcard("$b*")]),
         RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
         FunctionCall("math.entropy", [IntegerLiteral(0), IntegerLiteral(10)]),
+        FunctionCall(
+            "valid_on",
+            [IntegerLiteral(0)],
+            receiver=ArrayAccess(
+                MemberAccess(ModuleReference("pe"), "signatures"),
+                IntegerLiteral(0),
+            ),
+        ),
         ArrayAccess(Identifier("arr"), IntegerLiteral(1)),
         MemberAccess(ModuleReference("pe"), "is_dll"),
         ForExpression(

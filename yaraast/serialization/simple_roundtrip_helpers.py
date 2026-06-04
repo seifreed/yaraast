@@ -1089,7 +1089,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "FunctionCall arguments",
             Expression,
         )
-        return {
+        data = {
             "type": "FunctionCall",
             "function": _serialize_required_nonempty_string(
                 node.function,
@@ -1097,6 +1097,12 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             ),
             "arguments": [serialize_node(argument) for argument in arguments],
         }
+        if node.receiver is not None:
+            if not isinstance(node.receiver, Expression):
+                msg = "FunctionCall receiver must be Expression"
+                raise SerializationError(msg)
+            data["receiver"] = serialize_node(node.receiver)
+        return data
     if isinstance(node, ArrayAccess):
         return {
             "type": "ArrayAccess",
