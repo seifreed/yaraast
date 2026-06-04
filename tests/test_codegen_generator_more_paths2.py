@@ -152,20 +152,6 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     assert "\n\nrule two {" in out
     assert CodeGenerator().visit_import(Import(module="elf")) == ""
 
-    escaped_ast = YaraFile(
-        imports=[Import(module='mod"\\path')],
-        includes=[Include(path='dir"\\common.yar')],
-    )
-    escaped = CodeGenerator().generate(escaped_ast)
-    advanced_escaped = CodeGenerator(
-        options=GeneratorOptions(advanced=FormattingConfig())
-    ).generate(escaped_ast)
-
-    assert 'import "mod\\"\\\\path"' in escaped
-    assert 'include "dir\\"\\\\common.yar"' in escaped
-    assert 'import "mod\\"\\\\path"' in advanced_escaped
-    assert 'include "dir\\"\\\\common.yar"' in advanced_escaped
-
 
 @pytest.mark.parametrize(
     ("ast", "message"),
@@ -203,6 +189,56 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     ],
 )
 def test_codegen_generators_reject_empty_import_and_include_paths(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    ("ast", "message"),
+    [
+        (
+            YaraFile(
+                imports=[Import('bad"module')], rules=[Rule("r", condition=BooleanLiteral(True))]
+            ),
+            "Import module must not contain quotes or control characters",
+        ),
+        (
+            YaraFile(
+                imports=[Import("bad\nmodule")], rules=[Rule("r", condition=BooleanLiteral(True))]
+            ),
+            "Import module must not contain quotes or control characters",
+        ),
+        (
+            YaraFile(
+                includes=[Include('bad"path')], rules=[Rule("r", condition=BooleanLiteral(True))]
+            ),
+            "Include path must not contain quotes or control characters",
+        ),
+        (
+            YaraFile(
+                includes=[Include("bad\npath")], rules=[Rule("r", condition=BooleanLiteral(True))]
+            ),
+            "Include path must not contain quotes or control characters",
+        ),
+        (
+            YaraFile(
+                extern_imports=[ExternImport('bad"module')],
+                rules=[Rule("r", condition=BooleanLiteral(True))],
+            ),
+            "Import module must not contain quotes or control characters",
+        ),
+    ],
+)
+def test_codegen_generators_reject_invalid_directive_quoted_values(
     ast: YaraFile,
     message: str,
 ) -> None:
@@ -2596,9 +2632,8 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         gen.visit_comment_group(CommentGroup(comments=[Comment("a"), Comment("b")])) == "// a\n// b"
     )
     assert gen.visit_extern_import(ExternImport("mods.yar")) == 'import "mods.yar"'
-    assert gen.visit_extern_import(ExternImport('mods"\\file.yar')) == (
-        'import "mods\\"\\\\file.yar"'
-    )
+    with pytest.raises(ValueError, match="Import module must not contain quotes"):
+        gen.visit_extern_import(ExternImport('mods"\\file.yar'))
     assert gen.visit_extern_import(ExternImport("mods.yar", alias="mods", rules=["R1", "R2"])) == (
         'import "mods.yar" (R1, R2) as mods'
     )

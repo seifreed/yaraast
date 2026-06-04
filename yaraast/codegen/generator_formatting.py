@@ -298,6 +298,9 @@ def format_nonempty_quoted_value(value: str, kind: str) -> str:
     if not value.strip():
         msg = f"{kind} must not be empty for libyara output"
         raise ValueError(msg)
+    if '"' in value or any(ord(char) < 0x20 or ord(char) == 0x7F for char in value):
+        msg = f"{kind} must not contain quotes or control characters for libyara output"
+        raise ValueError(msg)
     return escape_string_literal(value)
 
 
