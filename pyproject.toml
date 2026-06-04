@@ -245,6 +245,7 @@ module = [
     "yaraast.cli.yaral_services",
     "yaraast.serialization._serialization_primitives",
     "yaraast.serialization.ast_diff_meta",
+    "yaraast.serialization.roundtrip_serializer",
     "yaraast.serialization.roundtrip_pipeline_helpers",
 ]
 ignore_errors = false
