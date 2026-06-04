@@ -221,7 +221,7 @@ def test_tree_builder_remaining_paths() -> None:
         extern_imports=[ExternImport("mod.path")],
         extern_rules=[ExternRule("ExtRule")],
         pragmas=[CustomPragma("vendor")],
-        namespaces=[ExternNamespace("ns")],
+        namespaces=[ExternNamespace("ns", extern_rules=[ExternRule("Nested", namespace="ns")])],
         rules=[Rule(name="with_pragma", pragmas=[InRulePragma(CustomPragma("inside"))])],
     )
     extended_txt = _render(builder.visit_yara_file(extended))
@@ -229,6 +229,7 @@ def test_tree_builder_remaining_paths() -> None:
     assert "ExtRule" in extended_txt
     assert "vendor" in extended_txt
     assert "Namespaces" in extended_txt
+    assert "Nested" in extended_txt
     assert "inside" in extended_txt
 
     # Cover plain/regex string visitor modifier branches.

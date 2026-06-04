@@ -293,7 +293,13 @@ class ASTTreeBuilder:
         return Tree(f"extern import {module_path}")
 
     def visit_extern_namespace(self, node: Any) -> Tree:
-        return Tree(f"extern namespace {node.name if hasattr(node, 'name') else ''}")
+        namespace_tree = Tree(f"extern namespace {node.name if hasattr(node, 'name') else ''}")
+        extern_rules = getattr(node, "extern_rules", [])
+        if extern_rules:
+            rules_tree = namespace_tree.add("Extern Rules")
+            for extern_rule in extern_rules:
+                rules_tree.add(self.visit(extern_rule))
+        return namespace_tree
 
     def visit_extern_rule(self, node: Any) -> Tree:
         return Tree(f"extern rule {node.name if hasattr(node, 'name') else ''}")
