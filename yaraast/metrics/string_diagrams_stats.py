@@ -79,8 +79,8 @@ class StringDiagramStatsMixin:
         """Get modifier usage statistics."""
         return dict(self._modifier_counts())
 
-    def _modifier_counts(self) -> Counter:
-        modifier_counts = Counter()
+    def _modifier_counts(self) -> Counter[str]:
+        modifier_counts: Counter[str] = Counter()
         for pattern_info in self.string_patterns.values():
             for modifier in pattern_info.get("modifiers", []):
                 modifier_counts[modifier] += 1
