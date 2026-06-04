@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 import html as html_mod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import ASTNode
 from yaraast.metrics.dependency_graph_helpers import require_output_path
@@ -12,6 +12,12 @@ from yaraast.metrics.dependency_graph_helpers import require_output_path
 
 class HtmlTreeNodesMixin:
     """Mixin providing HTML tree node helpers."""
+
+    node_counter: int
+
+    if TYPE_CHECKING:
+
+        def visit(self, node: object) -> dict[str, Any]: ...
 
     def _write_output(self, output_path: str | None, html_content: str) -> None:
         """Write HTML content to disk if an output path is provided."""

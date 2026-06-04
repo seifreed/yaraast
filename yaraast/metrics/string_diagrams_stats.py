@@ -4,11 +4,17 @@ from __future__ import annotations
 
 from collections import Counter
 from statistics import median
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 
 class StringDiagramStatsMixin:
     """Mixin providing string diagram helpers."""
+
+    string_patterns: dict[str, dict[str, Any]]
+
+    if TYPE_CHECKING:
+
+        def _calculate_pattern_complexity(self, pattern_info: dict[str, Any]) -> int: ...
 
     def get_pattern_statistics(self) -> dict[str, Any]:
         """Get comprehensive pattern statistics."""

@@ -16,6 +16,8 @@ def _esc(value: Any) -> str:
 class HtmlTreeRenderMixin:
     """Mixin providing HTML tree render helpers."""
 
+    include_metadata: bool
+
     def _render_template(self, template_text: str, **context: Any) -> str:
         """Render HTML template with shared settings."""
         from jinja2 import Template

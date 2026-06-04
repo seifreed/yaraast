@@ -21,6 +21,11 @@ if TYPE_CHECKING:
 class StringDiagramAnalysisMixin:
     """Mixin providing string diagram helpers."""
 
+    string_patterns: dict[str, dict[str, Any]]
+    pattern_relationships: dict[str, set[str]]
+    pattern_stats: dict[str, Any]
+    _current_rule: str | None
+
     def _analyze_patterns(self, ast: YaraFile) -> None:
         """Analyze all string patterns in the AST."""
         self.string_patterns.clear()

@@ -2,11 +2,47 @@
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
 
 
 class HtmlTreeNodesExtraMixin:
     """Mixin providing additional HTML tree node helpers."""
+
+    if TYPE_CHECKING:
+
+        def visit(self, node: object) -> dict[str, Any]: ...
+
+        def _get_node_id(self) -> str: ...
+
+        def _simple_node(
+            self,
+            label: str,
+            node_class: str,
+            value: str | None = None,
+            **extra: Any,
+        ) -> dict[str, Any]: ...
+
+        def _child_nodes(self, items: Iterable[Any]) -> list[dict[str, Any]]: ...
+
+        def _children_section(
+            self,
+            label: str,
+            node_class: str,
+            items: Iterable[Any],
+        ) -> dict[str, Any] | None: ...
+
+        def _append_section(
+            self,
+            children: list[dict[str, Any]],
+            section: dict[str, Any] | None,
+        ) -> None: ...
+
+        def _simple_expression_node(
+            self,
+            label: str,
+            value: str | None = None,
+        ) -> dict[str, Any]: ...
 
     def _single_child_section(
         self,

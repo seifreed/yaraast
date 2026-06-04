@@ -2,11 +2,41 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 
 class HtmlTreeNodesTrivialMixin:
     """Mixin providing trivial HTML tree node helpers."""
+
+    if TYPE_CHECKING:
+
+        def _get_node_id(self) -> str: ...
+
+        def _simple_node(
+            self,
+            label: str,
+            node_class: str,
+            value: str | None = None,
+            **extra: Any,
+        ) -> dict[str, Any]: ...
+
+        def _simple_expression_node(
+            self,
+            label: str,
+            value: str | None = None,
+        ) -> dict[str, Any]: ...
+
+        def _simple_literal_node(
+            self,
+            label: str,
+            value: str | None = None,
+        ) -> dict[str, Any]: ...
+
+        def _simple_comment_node(self, label: str) -> dict[str, Any]: ...
+
+        def _simple_meta_node(self, label: str) -> dict[str, Any]: ...
+
+        def _simple_pragma_node(self, label: str) -> dict[str, Any]: ...
 
     def visit_string_definition(self, node) -> dict[str, Any]:
         return self._simple_node("String Definition", "string")

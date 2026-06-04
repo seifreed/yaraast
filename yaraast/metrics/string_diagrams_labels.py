@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 
 class StringDiagramLabelsMixin:
     """Mixin providing string diagram helpers."""
+
+    if TYPE_CHECKING:
+
+        def _calculate_pattern_complexity(self, pattern_info: dict[str, Any]) -> int: ...
 
     def _truncate(self, text: str, max_len: int) -> str:
         if len(text) <= max_len:
