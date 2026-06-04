@@ -458,20 +458,25 @@ def validate_function_call_arguments(node: Any) -> None:
         raise ValueError(msg)
 
 
+def _known_builtin_module(module_name: str) -> Any | None:
+    from yaraast.types.module_definitions import load_builtin_modules
+
+    return load_builtin_modules().get(module_name)
+
+
 def _validate_known_module_function_call(node: Any) -> None:
     resolved = node.module_and_function()
     if resolved is None:
         return
     module_name, function_name = resolved
 
-    from yaraast.types.module_definitions import load_builtin_modules
-
-    module_def = load_builtin_modules().get(module_name)
+    module_def = _known_builtin_module(module_name)
     if module_def is None:
         return
     function_def = module_def.functions.get(function_name)
     if function_def is None:
-        return
+        msg = f"Module function '{module_name}.{function_name}' is not supported by libyara"
+        raise ValueError(msg)
 
     arguments = node.arguments
     _validate_module_function_arity(module_name, function_name, function_def, arguments)
@@ -711,7 +716,20 @@ def visit_array_access(generator: Any, node: Any) -> str:
 
 def visit_member_access(generator: Any, node: Any) -> str:
     member = validate_yara_identifier(node.member, "member")
+    validate_builtin_module_member_access(node, member)
     return f"{generator.visit(node.object)}.{member}"
+
+
+def validate_builtin_module_member_access(node: Any, member: str) -> None:
+    from yaraast.ast.modules import ModuleReference
+
+    if not isinstance(node.object, ModuleReference):
+        return
+    module_def = _known_builtin_module(node.object.module)
+    if module_def is None or member in module_def.attributes:
+        return
+    msg = f"Module member '{node.object.module}.{member}' is not supported by libyara"
+    raise ValueError(msg)
 
 
 def visit_for_expression(generator: Any, node: Any) -> str:

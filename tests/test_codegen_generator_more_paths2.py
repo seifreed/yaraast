@@ -3048,6 +3048,18 @@ def test_codegen_generators_reject_invalid_integer_builtin_calls(
             FunctionCall("pe.imphash", [IntegerLiteral(0)]),
             "Module function 'pe\\.imphash' expects at most 0 argument",
         ),
+        (
+            FunctionCall("math.nope", []),
+            "Module function 'math\\.nope' is not supported by libyara",
+        ),
+        (
+            FunctionCall("hash.nope", []),
+            "Module function 'hash\\.nope' is not supported by libyara",
+        ),
+        (
+            FunctionCall("pe.nope", []),
+            "Module function 'pe\\.nope' is not supported by libyara",
+        ),
     ],
 )
 def test_codegen_generators_reject_invalid_module_function_calls(
@@ -3067,6 +3079,43 @@ def test_codegen_generators_reject_invalid_module_function_calls(
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            MemberAccess(ModuleReference("pe"), "no_such_field"),
+            "Module member 'pe\\.no_such_field' is not supported by libyara",
+        ),
+        (
+            MemberAccess(ModuleReference("pe"), "NO_SUCH_CONST"),
+            "Module member 'pe\\.NO_SUCH_CONST' is not supported by libyara",
+        ),
+        (
+            MemberAccess(ModuleReference("math"), "nope"),
+            "Module member 'math\\.nope' is not supported by libyara",
+        ),
+        (
+            MemberAccess(ModuleReference("hash"), "nope"),
+            "Module member 'hash\\.nope' is not supported by libyara",
+        ),
+    ],
+)
+def test_codegen_generators_reject_unknown_builtin_module_members(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_module_member", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         FunctionCall("math.entropy", [StringLiteral("abc")]),
@@ -3074,6 +3123,8 @@ def test_codegen_generators_reject_invalid_module_function_calls(
         FunctionCall("hash.md5", [StringLiteral("abc")]),
         FunctionCall("hash.md5", [IntegerLiteral(0), IntegerLiteral(10)]),
         FunctionCall("pe.imphash", []),
+        MemberAccess(ModuleReference("pe"), "is_pe"),
+        MemberAccess(ModuleReference("pe"), "MACHINE_I386"),
     ],
 )
 def test_codegen_generators_allow_valid_module_function_calls(condition: Any) -> None:
