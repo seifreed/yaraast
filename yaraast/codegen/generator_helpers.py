@@ -96,6 +96,10 @@ class _XorKey(NamedTuple):
     text: str
 
 
+def _contains_unicode_surrogate(value: str) -> bool:
+    return any(0xD800 <= ord(character) <= 0xDFFF for character in value)
+
+
 def _escape_plain_byte(value: int) -> str:
     if value == 0x5C:
         return "\\\\"
@@ -119,6 +123,9 @@ def escape_plain_string_value(value: str | bytes) -> str:
     if not isinstance(value, str):
         msg = "Plain string value must be a string or bytes for libyara output"
         raise TypeError(msg)
+    if _contains_unicode_surrogate(value):
+        msg = "String value must not contain Unicode surrogate code points for libyara output"
+        raise ValueError(msg)
 
     escaped_value = value.replace("\\", "\\\\")
     escaped_value = escaped_value.replace('"', '\\"')
@@ -152,6 +159,9 @@ def escape_regex_delimiter(pattern: str) -> str:
     if not isinstance(pattern, str):
         msg = "Regex pattern must be a string for libyara output"
         raise TypeError(msg)
+    if _contains_unicode_surrogate(pattern):
+        msg = "Regex pattern must not contain Unicode surrogate code points for libyara output"
+        raise ValueError(msg)
     if pattern == "":
         msg = "Regex pattern must not be empty for libyara output"
         raise ValueError(msg)

@@ -617,6 +617,56 @@ def test_codegen_generators_reject_regex_patterns_with_nul_bytes(rule: Rule) -> 
     "rule",
     [
         Rule(
+            name="regex_string_surrogate",
+            strings=[RegexString("$r", regex="\ud800")],
+            condition=StringIdentifier("$r"),
+        ),
+        Rule(
+            name="regex_literal_surrogate",
+            condition=RegexLiteral("\ud800"),
+        ),
+    ],
+)
+def test_codegen_generators_reject_regex_patterns_with_surrogates(rule: Rule) -> None:
+    ast = YaraFile(rules=[rule])
+    message = "Regex pattern must not contain Unicode surrogate code points"
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+def test_codegen_generators_reject_plain_strings_with_surrogates() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="plain_string_surrogate",
+                strings=[PlainString("$a", value="\ud800")],
+                condition=StringIdentifier("$a"),
+            )
+        ]
+    )
+    message = "String value must not contain Unicode surrogate code points"
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    "rule",
+    [
+        Rule(
             name="regex_string_empty",
             strings=[RegexString("$r", regex="")],
             condition=StringIdentifier("$r"),
@@ -2812,6 +2862,8 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
 
     assert gen.visit_string_literal(StringLiteral('a"b')) == '"a\\"b"'
     assert gen.visit_string_literal(StringLiteral("a\nb\t\x00")) == '"a\\nb\\t\\x00"'
+    with pytest.raises(ValueError, match="String value must not contain Unicode surrogate"):
+        gen.visit_string_literal(StringLiteral("\ud800"))
     assert gen.visit_regex_literal(RegexLiteral("ab.*", "i")) == "/ab.*/i"
     with pytest.raises(ValueError, match="Invalid regex modifier: m"):
         gen.visit_regex_literal(RegexLiteral("ab.*", "m"))
