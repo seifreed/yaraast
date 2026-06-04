@@ -35,6 +35,7 @@ from yaraast.regex_literals import (
     VALID_REGEX_MODIFIERS,
     escape_regex_delimiter as _escape_regex_delimiter,
     validate_regex_modifiers,
+    validate_regex_pattern,
 )
 from yaraast.xor_keys import parse_xor_key_text
 
@@ -177,6 +178,7 @@ def escape_regex_delimiter(pattern: str) -> str:
     if "\x00" in pattern:
         msg = "Regex pattern must not contain NUL bytes for libyara output"
         raise ValueError(msg)
+    validate_regex_pattern(pattern)
     return _escape_regex_delimiter(pattern)
 
 

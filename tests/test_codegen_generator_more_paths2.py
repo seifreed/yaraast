@@ -733,6 +733,46 @@ def test_codegen_generators_reject_empty_regex_patterns(rule: Rule) -> None:
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize(
+    "pattern",
+    [
+        "[",
+        "a**",
+        "a{2,1}",
+        "a{32768}",
+        "(?=a)",
+        r"\x",
+    ],
+)
+def test_codegen_generators_reject_libyara_invalid_regex_patterns(pattern: str) -> None:
+    rules = [
+        Rule(
+            name="regex_string_invalid",
+            strings=[RegexString("$r", regex=pattern)],
+            condition=StringIdentifier("$r"),
+        ),
+        Rule(
+            name="regex_literal_invalid",
+            condition=StringOperatorExpression(
+                StringLiteral("abc"),
+                "matches",
+                RegexLiteral(pattern),
+            ),
+        ),
+    ]
+
+    for rule in rules:
+        ast = YaraFile(rules=[rule])
+        with pytest.raises(ValueError, match="Invalid regex pattern"):
+            CodeGenerator().generate(ast)
+        with pytest.raises(ValueError, match="Invalid regex pattern"):
+            CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+        with pytest.raises(ValueError, match="Invalid regex pattern"):
+            CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+        with pytest.raises(ValueError, match="Invalid regex pattern"):
+            CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generator_rejects_duplicate_regex_suffix_modifiers() -> None:
     gen = CodeGenerator()
     rule = Rule(
