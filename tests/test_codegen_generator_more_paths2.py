@@ -2014,11 +2014,9 @@ def test_codegen_round_trips_primary_expression_for_quantifier(source: str) -> N
 
 @pytest.mark.parametrize(
     "quantifier",
-    [IntegerLiteral(cast(Any, True)), IntegerLiteral(cast(Any, "any"))],
+    [IntegerLiteral(cast(Any, True)), IntegerLiteral(cast(Any, "any")), RegexLiteral("x")],
 )
-def test_codegen_generators_reject_malformed_integer_literal_quantifiers(
-    quantifier: IntegerLiteral,
-) -> None:
+def test_codegen_generators_reject_malformed_quantifiers(quantifier: Any) -> None:
     expressions = [
         ForExpression(
             quantifier=quantifier,

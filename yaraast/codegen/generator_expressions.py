@@ -181,6 +181,7 @@ def _render_quantifier(
         DoubleLiteral,
         Identifier,
         IntegerLiteral,
+        RegexLiteral,
         StringLiteral,
     )
 
@@ -219,6 +220,9 @@ def _render_quantifier(
     if isinstance(quantifier, DoubleLiteral):
         if allow_percentage:
             return _format_fractional_percentage_quantifier(quantifier.value)
+        msg = f"Invalid {context} '{gen.visit(quantifier)}' for libyara output"
+        raise ValueError(msg)
+    if isinstance(quantifier, RegexLiteral):
         msg = f"Invalid {context} '{gen.visit(quantifier)}' for libyara output"
         raise ValueError(msg)
     if isinstance(quantifier, Identifier):
