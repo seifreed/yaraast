@@ -13,6 +13,7 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     IntegerLiteral,
+    MemberAccess,
     ParenthesesExpression,
     RangeExpression,
     RegexLiteral,
@@ -94,8 +95,10 @@ def test_codegen_generator_additional_visit_paths() -> None:
     assert gen.visit_meta(Meta("k", False)) == "k = false"
     assert gen.visit_meta(Meta("k", 7)) == "k = 7"
     assert (
-        gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), "CompanyName"))
-        == 'pe["CompanyName"]'
+        gen.visit_dictionary_access(
+            DictionaryAccess(MemberAccess(ModuleReference("pe"), "version_info"), "CompanyName")
+        )
+        == 'pe.version_info["CompanyName"]'
     )
     invalid_dictionary_keys = [
         IntegerLiteral(1),

@@ -199,11 +199,23 @@ def _reject_non_string_dictionary_key(value: Any) -> None:
 
 
 def visit_dictionary_access(generator: Any, node: Any) -> str:
-    obj = generator.visit(node.object)
     if isinstance(node.key, str):
-        return f'{obj}["{escape_string_literal(node.key)}"]'
-    _reject_non_string_dictionary_key(node.key)
-    return f"{obj}[{generator.visit(node.key)}]"
+        key = f'"{escape_string_literal(node.key)}"'
+    else:
+        _reject_non_string_dictionary_key(node.key)
+        key = generator.visit(node.key)
+    _reject_module_root_dictionary_access(node)
+    obj = generator.visit(node.object)
+    return f"{obj}[{key}]"
+
+
+def _reject_module_root_dictionary_access(node: Any) -> None:
+    from yaraast.ast.modules import ModuleReference
+
+    if not isinstance(node.object, ModuleReference):
+        return
+    msg = f"Module '{node.object.module}' cannot be indexed as a dictionary for libyara output"
+    raise ValueError(msg)
 
 
 def visit_defined_expression(generator: Any, node: Any) -> str:

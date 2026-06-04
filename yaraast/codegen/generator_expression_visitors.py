@@ -711,7 +711,17 @@ def visit_function_call(generator: Any, node: Any) -> str:
 
 def visit_array_access(generator: Any, node: Any) -> str:
     _reject_non_integer_expression(node.index, "Array index")
+    validate_module_root_array_access(node)
     return f"{generator.visit(node.array)}[{generator.visit(node.index)}]"
+
+
+def validate_module_root_array_access(node: Any) -> None:
+    from yaraast.ast.modules import ModuleReference
+
+    if not isinstance(node.array, ModuleReference):
+        return
+    msg = f"Module '{node.array.module}' cannot be indexed as an array for libyara output"
+    raise ValueError(msg)
 
 
 def visit_member_access(generator: Any, node: Any) -> str:

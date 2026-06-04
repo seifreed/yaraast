@@ -3116,6 +3116,39 @@ def test_codegen_generators_reject_unknown_builtin_module_members(
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            DictionaryAccess(ModuleReference("pe"), "Company"),
+            "Module 'pe' cannot be indexed as a dictionary",
+        ),
+        (
+            DictionaryAccess(ModuleReference("pe"), StringLiteral("Company")),
+            "Module 'pe' cannot be indexed as a dictionary",
+        ),
+        (
+            ArrayAccess(ModuleReference("pe"), IntegerLiteral(0)),
+            "Module 'pe' cannot be indexed as an array",
+        ),
+    ],
+)
+def test_codegen_generators_reject_indexed_module_roots(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(imports=[Import("pe")], rules=[Rule(name="indexed_module", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         FunctionCall("math.entropy", [StringLiteral("abc")]),
@@ -3125,6 +3158,11 @@ def test_codegen_generators_reject_unknown_builtin_module_members(
         FunctionCall("pe.imphash", []),
         MemberAccess(ModuleReference("pe"), "is_pe"),
         MemberAccess(ModuleReference("pe"), "MACHINE_I386"),
+        DictionaryAccess(MemberAccess(ModuleReference("pe"), "version_info"), "CompanyName"),
+        MemberAccess(
+            ArrayAccess(MemberAccess(ModuleReference("pe"), "sections"), IntegerLiteral(0)),
+            "name",
+        ),
     ],
 )
 def test_codegen_generators_allow_valid_module_function_calls(condition: Any) -> None:
@@ -3408,13 +3446,16 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
     assert gen.visit_module_reference(ModuleReference("pe")) == "pe"
     assert (
         gen.visit_dictionary_access(
-            DictionaryAccess(ModuleReference("pe"), StringLiteral("Company"))
+            DictionaryAccess(
+                MemberAccess(ModuleReference("pe"), "version_info"),
+                StringLiteral("Company"),
+            )
         )
-        == 'pe["Company"]'
+        == 'pe.version_info["Company"]'
     )
     assert (
-        gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), 'Company"\\Path'))
-        == 'pe["Company\\"\\\\Path"]'
+        gen.visit_dictionary_access(DictionaryAccess(Identifier("items"), 'Company"\\Path'))
+        == 'items["Company\\"\\\\Path"]'
     )
     yarax = YaraXGenerator()
     array_comp = ArrayComprehension(
