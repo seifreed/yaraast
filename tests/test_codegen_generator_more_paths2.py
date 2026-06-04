@@ -3158,6 +3158,22 @@ def test_codegen_libyara_generators_reject_unknown_unqualified_function_calls() 
             "Module function 'pe\\.imphash' expects at most 0 argument",
         ),
         (
+            FunctionCall("pe.signatures.valid_on", [IntegerLiteral(0)]),
+            "Module function 'pe\\.signatures\\.valid_on' requires an indexed receiver",
+        ),
+        (
+            FunctionCall("pe.imports", [IntegerLiteral(0)]),
+            "Module function 'pe\\.imports' does not accept these argument types",
+        ),
+        (
+            FunctionCall("pe.imports", [StringLiteral("kernel32.dll"), RegexLiteral("CreateFile")]),
+            "Module function 'pe\\.imports' does not accept these argument types",
+        ),
+        (
+            FunctionCall("pe.exports", [BooleanLiteral(True)]),
+            "Module function 'pe\\.exports' does not accept these argument types",
+        ),
+        (
             FunctionCall("math.nope", []),
             "Module function 'math\\.nope' is not supported by libyara",
         ),
@@ -3318,6 +3334,14 @@ def test_codegen_generators_reject_missing_module_imports(condition: Any) -> Non
         FunctionCall("hash.md5", [StringLiteral("abc")]),
         FunctionCall("hash.md5", [IntegerLiteral(0), IntegerLiteral(10)]),
         FunctionCall("pe.imphash", []),
+        FunctionCall("pe.imports", [RegexLiteral("kernel32"), RegexLiteral("CreateFile")]),
+        FunctionCall("pe.imports", [IntegerLiteral(1), StringLiteral("kernel32.dll")]),
+        FunctionCall(
+            "pe.imports",
+            [IntegerLiteral(1), RegexLiteral("kernel32"), RegexLiteral("CreateFile")],
+        ),
+        FunctionCall("pe.exports", [RegexLiteral("ExportedFunc")]),
+        FunctionCall("pe.exports_index", [RegexLiteral("ExportedFunc")]),
         MemberAccess(ModuleReference("pe"), "is_pe"),
         MemberAccess(ModuleReference("pe"), "MACHINE_I386"),
         DictionaryAccess(MemberAccess(ModuleReference("pe"), "version_info"), "CompanyName"),

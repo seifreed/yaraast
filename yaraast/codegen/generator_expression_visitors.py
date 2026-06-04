@@ -482,6 +482,12 @@ def _validate_known_module_function_call(node: Any) -> None:
     if function_def is None:
         msg = f"Module function '{module_name}.{function_name}' is not supported by libyara"
         raise ValueError(msg)
+    if node.receiver is None and module_name == "pe" and function_name == "signatures.valid_on":
+        msg = (
+            "Module function 'pe.signatures.valid_on' requires an indexed receiver "
+            "for libyara output"
+        )
+        raise ValueError(msg)
 
     arguments = node.arguments
     _validate_module_function_arity(module_name, function_name, function_def, arguments)
@@ -496,6 +502,13 @@ def _validate_known_module_function_call(node: Any) -> None:
     ):
         _validate_math_module_function_arguments(function_name, arguments)
         return
+    if module_name == "pe":
+        if function_name == "imports":
+            _validate_pe_imports_module_function_arguments(arguments)
+            return
+        if function_name in {"exports", "exports_index"}:
+            _validate_pe_export_module_function_arguments(function_name, arguments)
+            return
 
     _validate_generic_module_function_argument_types(
         module_name,
@@ -588,6 +601,50 @@ def _matches_string_or_integer_region_arguments(argument_types: list[str | None]
         and argument_types[0] == "integer"
         and argument_types[1] == "integer"
     )
+
+
+def _validate_pe_imports_module_function_arguments(
+    arguments: list[Any] | tuple[Any, ...],
+) -> None:
+    argument_types = [_obvious_argument_type(argument) for argument in arguments]
+    if any(argument_type is None for argument_type in argument_types):
+        return
+
+    string_or_integer = {"string", "integer"}
+    valid = (
+        argument_types == ["string"]
+        or (
+            len(argument_types) == 2
+            and argument_types[0] == "string"
+            and argument_types[1] in string_or_integer
+        )
+        or argument_types == ["regex", "regex"]
+        or argument_types == ["integer", "string"]
+        or (
+            len(argument_types) == 3
+            and argument_types[0] == "integer"
+            and argument_types[1] == "string"
+            and argument_types[2] in string_or_integer
+        )
+        or argument_types == ["integer", "regex", "regex"]
+    )
+    if valid:
+        return
+    msg = "Module function 'pe.imports' does not accept these argument types"
+    raise ValueError(msg)
+
+
+def _validate_pe_export_module_function_arguments(
+    function_name: str,
+    arguments: list[Any] | tuple[Any, ...],
+) -> None:
+    argument_types = [_obvious_argument_type(argument) for argument in arguments]
+    if any(argument_type is None for argument_type in argument_types):
+        return
+    if argument_types[0] in {"string", "integer", "regex"}:
+        return
+    msg = f"Module function 'pe.{function_name}' does not accept these argument types"
+    raise ValueError(msg)
 
 
 def _validate_generic_module_function_argument_types(
