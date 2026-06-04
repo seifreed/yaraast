@@ -2021,6 +2021,22 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
             "Right operand of '%' cannot be zero",
         ),
         (
+            BinaryExpression(StringLiteral("x"), "+", IntegerLiteral(1)),
+            "Left operand of '\\+' must be numeric",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), "+", RegexLiteral("a")),
+            "Right operand of '\\+' must be numeric",
+        ),
+        (
+            BinaryExpression(DoubleLiteral(1.5), "%", IntegerLiteral(1)),
+            "Left operand of '%' must be integer",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), "&", DoubleLiteral(1.5)),
+            "Right operand of '&' must be integer",
+        ),
+        (
             BinaryExpression(IntegerLiteral(1), "<<", UnaryExpression("-", IntegerLiteral(1))),
             "Right operand of '<<' cannot be negative",
         ),
@@ -2031,6 +2047,14 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
                 ParenthesesExpression(UnaryExpression("-", IntegerLiteral(1))),
             ),
             "Right operand of '>>' cannot be negative",
+        ),
+        (
+            UnaryExpression("-", StringLiteral("x")),
+            "Operand of '-' must be numeric",
+        ),
+        (
+            UnaryExpression("~", DoubleLiteral(1.5)),
+            "Operand of '~' must be integer",
         ),
         (UnaryExpression("!", IntegerLiteral(1)), "Invalid unary operator"),
     ],

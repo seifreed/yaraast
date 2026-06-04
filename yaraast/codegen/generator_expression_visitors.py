@@ -86,21 +86,46 @@ def _reject_boolean_expression(value: Any, message: str) -> None:
         _reject_boolean_expression(value.expression, message)
 
 
-def _reject_boolean_binary_numeric_operands(node: Any) -> None:
+def _is_definitely_non_numeric_expression(value: Any) -> bool:
+    from yaraast.ast.expressions import (
+        BooleanLiteral,
+        ParenthesesExpression,
+        RegexLiteral,
+        StringIdentifier,
+        StringLiteral,
+    )
+
+    if isinstance(value, ParenthesesExpression):
+        return _is_definitely_non_numeric_expression(value.expression)
+    return isinstance(
+        value,
+        bool | BooleanLiteral | StringLiteral | RegexLiteral | StringIdentifier,
+    )
+
+
+def _is_definitely_non_integer_expression(value: Any) -> bool:
+    from yaraast.ast.expressions import DoubleLiteral, ParenthesesExpression
+
+    if isinstance(value, ParenthesesExpression):
+        return _is_definitely_non_integer_expression(value.expression)
+    return isinstance(value, float | DoubleLiteral) or _is_definitely_non_numeric_expression(value)
+
+
+def _reject_invalid_binary_numeric_operands(node: Any) -> None:
     if node.operator in _NUMERIC_BINARY_OPERATORS:
-        _reject_boolean_expression(
-            node.left, f"Left operand of '{node.operator}' must be numeric for libyara output"
-        )
-        _reject_boolean_expression(
-            node.right, f"Right operand of '{node.operator}' must be numeric for libyara output"
-        )
+        if _is_definitely_non_numeric_expression(node.left):
+            msg = f"Left operand of '{node.operator}' must be numeric for libyara output"
+            raise ValueError(msg)
+        if _is_definitely_non_numeric_expression(node.right):
+            msg = f"Right operand of '{node.operator}' must be numeric for libyara output"
+            raise ValueError(msg)
     if node.operator in _INTEGER_BINARY_OPERATORS:
-        _reject_boolean_expression(
-            node.left, f"Left operand of '{node.operator}' must be integer for libyara output"
-        )
-        _reject_boolean_expression(
-            node.right, f"Right operand of '{node.operator}' must be integer for libyara output"
-        )
+        if _is_definitely_non_integer_expression(node.left):
+            msg = f"Left operand of '{node.operator}' must be integer for libyara output"
+            raise ValueError(msg)
+        if _is_definitely_non_integer_expression(node.right):
+            msg = f"Right operand of '{node.operator}' must be integer for libyara output"
+            raise ValueError(msg)
 
 
 def _unwrap_parenthesized_expression(value: Any) -> Any:
@@ -215,7 +240,7 @@ def validate_binary_expression_operands(node: Any) -> None:
     _reject_invalid_comparison_operands(node)
     _reject_zero_integer_divisor(node)
     _reject_negative_shift_count(node)
-    _reject_boolean_binary_numeric_operands(node)
+    _reject_invalid_binary_numeric_operands(node)
     _reject_invalid_string_binary_operands(node)
 
 
@@ -241,14 +266,12 @@ def visit_binary_expression(generator: Any, node: Any) -> str:
 
 def visit_unary_expression(generator: Any, node: Any) -> str:
     operator = _render_unary_operator(node.operator)
-    if operator == "-":
-        _reject_boolean_expression(
-            node.operand, "Operand of '-' must be numeric for libyara output"
-        )
-    if operator == "~":
-        _reject_boolean_expression(
-            node.operand, "Operand of '~' must be integer for libyara output"
-        )
+    if operator == "-" and _is_definitely_non_numeric_expression(node.operand):
+        msg = "Operand of '-' must be numeric for libyara output"
+        raise ValueError(msg)
+    if operator == "~" and _is_definitely_non_integer_expression(node.operand):
+        msg = "Operand of '~' must be integer for libyara output"
+        raise ValueError(msg)
     operand = generator.visit(node.operand)
     from yaraast.ast.expressions import BinaryExpression
 
