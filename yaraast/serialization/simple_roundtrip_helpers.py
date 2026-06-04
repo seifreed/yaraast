@@ -90,6 +90,7 @@ from yaraast.serialization._serialization_primitives import (
     _deserialize_nullable_string_field,
     _deserialize_object,
     _deserialize_optional_string_field,
+    _deserialize_plain_string_raw_bytes,
     _deserialize_plain_string_value,
     _deserialize_required_field,
     _deserialize_string_field,
@@ -282,6 +283,16 @@ def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> N
         data["value_encoding"] = "base64"
         return
     data["value"] = value
+
+
+def _serialize_plain_string_raw_bytes(data: dict[str, Any], raw_bytes: Any) -> None:
+    if raw_bytes is None:
+        return
+    if not isinstance(raw_bytes, bytes):
+        msg = "PlainString raw_bytes must be bytes or None"
+        raise SerializationError(msg)
+    data["raw_value"] = base64.b64encode(raw_bytes).decode("ascii")
+    data["raw_value_encoding"] = "base64"
 
 
 def _deserialize_legacy_string_data(data: dict[str, Any]) -> str | bytes:
@@ -1498,6 +1509,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
         if string_def.is_anonymous:
             data["is_anonymous"] = True
         _serialize_plain_string_value(data, string_def.value)
+        _serialize_plain_string_raw_bytes(data, getattr(string_def, "raw_bytes", None))
         return _with_node_metadata(string_def, data)
     if isinstance(string_def, HexString):
         data = {
@@ -2151,6 +2163,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             PlainString(
                 identifier=_deserialize_nonempty_string_field(data, "identifier", "PlainString"),
                 value=_deserialize_plain_string_value(data),
+                raw_bytes=_deserialize_plain_string_raw_bytes(data),
                 modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),
             ),

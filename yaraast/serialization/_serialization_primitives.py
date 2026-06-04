@@ -117,6 +117,23 @@ def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
         raise SerializationError(msg) from exc
 
 
+def _deserialize_plain_string_raw_bytes(data: dict[str, Any]) -> bytes | None:
+    if "raw_value" not in data:
+        return None
+    if data.get("raw_value_encoding") != "base64":
+        msg = "PlainString raw_value must use base64 encoding"
+        raise SerializationError(msg)
+    value = data["raw_value"]
+    if not isinstance(value, str):
+        msg = "PlainString raw_value must be a base64 string"
+        raise SerializationError(msg)
+    try:
+        return base64.b64decode(value.encode("ascii"), validate=True)
+    except (binascii.Error, UnicodeEncodeError) as exc:
+        msg = "Invalid base64-encoded plain string raw_value"
+        raise SerializationError(msg) from exc
+
+
 def _deserialize_is_anonymous(data: dict[str, Any]) -> bool:
     return data.get("is_anonymous") is True
 

@@ -17,6 +17,8 @@ from yaraast.codegen.formatting import FormattingConfig
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
 from yaraast.codegen.pretty_printer import PrettyPrintOptions, pretty_print
+from yaraast.serialization.json_serializer import JsonSerializer
+from yaraast.serialization.simple_roundtrip import SimpleRoundtripSerializer
 
 yara = pytest.importorskip("yara")
 
@@ -76,3 +78,27 @@ def test_render_advanced_plain_string_uses_raw_bytes_directly() -> None:
     generator = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig()))
     render_advanced_plain_string(generator, plain)
     assert generator.buffer.getvalue() == '$a = "\\xff"'
+
+
+def test_json_serialization_preserves_plain_string_raw_bytes() -> None:
+    ast = Parser(r'rule t { strings: $a = "\xe9" condition: $a }').parse()
+    serializer = JsonSerializer()
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    regenerated = CodeGenerator().generate(restored)
+
+    assert '"\\xe9"' in regenerated
+    assert bool(yara.compile(source=regenerated).match(data=b"\xe9"))
+    assert not yara.compile(source=regenerated).match(data=b"\xc3\xa9")
+
+
+def test_simple_roundtrip_preserves_plain_string_raw_bytes() -> None:
+    ast = Parser(r'rule t { strings: $a = "\xe9" condition: $a }').parse()
+    serializer = SimpleRoundtripSerializer()
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    regenerated = CodeGenerator().generate(restored)
+
+    assert '"\\xe9"' in regenerated
+    assert bool(yara.compile(source=regenerated).match(data=b"\xe9"))
+    assert not yara.compile(source=regenerated).match(data=b"\xc3\xa9")

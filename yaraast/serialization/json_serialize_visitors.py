@@ -329,6 +329,16 @@ def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> N
     data["value"] = value
 
 
+def _serialize_plain_string_raw_bytes(data: dict[str, Any], raw_bytes: Any) -> None:
+    if raw_bytes is None:
+        return
+    if not isinstance(raw_bytes, bytes):
+        msg = "PlainString raw_bytes must be bytes or None"
+        raise SerializationError(msg)
+    data["raw_value"] = base64.b64encode(raw_bytes).decode("ascii")
+    data["raw_value_encoding"] = "base64"
+
+
 def _serialize_anonymous_flag(data: dict[str, Any], value, context: str) -> None:
     if not isinstance(value, bool):
         msg = f"{context} is_anonymous must be a boolean"
@@ -505,6 +515,7 @@ def visit_plain_string(serializer, node) -> dict[str, Any]:
     }
     _serialize_anonymous_flag(data, getattr(node, "is_anonymous", False), "PlainString")
     _serialize_plain_string_value(data, node.value)
+    _serialize_plain_string_raw_bytes(data, getattr(node, "raw_bytes", None))
     return data
 
 
