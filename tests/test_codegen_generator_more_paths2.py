@@ -613,6 +613,34 @@ def test_codegen_generators_reject_regex_patterns_with_nul_bytes(rule: Rule) -> 
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize(
+    "rule",
+    [
+        Rule(
+            name="regex_string_empty",
+            strings=[RegexString("$r", regex="")],
+            condition=StringIdentifier("$r"),
+        ),
+        Rule(
+            name="regex_literal_empty",
+            condition=RegexLiteral(""),
+        ),
+    ],
+)
+def test_codegen_generators_reject_empty_regex_patterns(rule: Rule) -> None:
+    ast = YaraFile(rules=[rule])
+    message = "Regex pattern must not be empty"
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generator_rejects_duplicate_regex_suffix_modifiers() -> None:
     gen = CodeGenerator()
     rule = Rule(

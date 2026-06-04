@@ -126,6 +126,9 @@ def escape_regex_delimiter(pattern: str) -> str:
     if not isinstance(pattern, str):
         msg = "Regex pattern must be a string for libyara output"
         raise TypeError(msg)
+    if pattern == "":
+        msg = "Regex pattern must not be empty for libyara output"
+        raise ValueError(msg)
     if "\n" in pattern or "\r" in pattern:
         msg = "Regex pattern must not contain line breaks for libyara output"
         raise ValueError(msg)
