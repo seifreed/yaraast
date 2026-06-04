@@ -1309,7 +1309,7 @@ class JsonSerializerDeserializeMixin:
         data = _deserialize_object(data, "Expression")
 
         expr_type = data.get("type")
-        factory = _EXPR_DESERIALIZERS.get(expr_type)
+        factory = _EXPR_DESERIALIZERS.get(expr_type) if isinstance(expr_type, str) else None
         if factory:
             node = factory(self, data)
             if isinstance(node, ASTNode):

@@ -1100,7 +1100,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "FunctionCall arguments",
             Expression,
         )
-        data = {
+        data: dict[str, Any] = {
             "type": "FunctionCall",
             "function": _serialize_required_nonempty_string(
                 node.function,
@@ -1455,7 +1455,7 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
         data["macro_value"] = macro_value
     if hasattr(pragma, "condition"):
         if pragma.pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}:
-            condition = _serialize_required_nonempty_string(
+            condition: str | None = _serialize_required_nonempty_string(
                 pragma.condition,
                 "Pragma condition",
             )
@@ -1466,7 +1466,7 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
             )
         if condition is not None:
             data["condition"] = condition
-    parameters = None
+    parameters: dict[str, Any] | None = None
     if hasattr(pragma, "parameters"):
         parameters = _serialize_string_key_dict(pragma.parameters, "Pragma parameters")
     if parameters:
@@ -1498,7 +1498,7 @@ def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
 def serialize_string(string_def: Any) -> dict[str, Any]:
     """Serialize a string definition."""
     if isinstance(string_def, PlainString):
-        data = {
+        data: dict[str, Any] = {
             "type": "PlainString",
             "identifier": _serialize_required_nonempty_string(
                 string_def.identifier,
