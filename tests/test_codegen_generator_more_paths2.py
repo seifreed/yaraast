@@ -2091,6 +2091,30 @@ def test_codegen_generators_reject_invalid_expression_operators(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+def test_codegen_generators_reject_undefined_string_references() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="undefined_string",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=BinaryExpression(
+                    StringIdentifier("$missing"), "or", StringIdentifier("$a")
+                ),
+            )
+        ]
+    )
+
+    message = "Undefined string references in rule 'undefined_string': \\$missing"
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generators_allow_matches_regex_literal() -> None:
     ast = YaraFile(
         rules=[

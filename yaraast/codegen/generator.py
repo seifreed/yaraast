@@ -85,6 +85,7 @@ from yaraast.codegen.generator_helpers import (
     format_hex_negated_value,
     format_modifier,
     format_modifiers,
+    validate_rule_string_references,
 )
 from yaraast.codegen.generator_leaf_visitors import (
     visit_boolean_literal as render_boolean_literal,
@@ -283,6 +284,7 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_rule(self, node: Rule) -> str:
         """Generate code for Rule."""
+        validate_rule_string_references(node)
         return self._layout.visit_rule(self, node)
 
     def _write_rule_header(self, node: Rule) -> None:

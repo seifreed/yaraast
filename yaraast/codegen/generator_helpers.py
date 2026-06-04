@@ -209,6 +209,41 @@ def validate_string_identifiers(strings: object) -> None:
         seen.add(identifier)
 
 
+def validate_rule_string_references(rule: object) -> None:
+    """Reject condition string references that are not declared in the rule."""
+    if getattr(rule, "condition", None) is None:
+        return
+
+    from yaraast.analysis.string_usage import StringUsageAnalyzer
+    from yaraast.ast.rules import Rule
+
+    if not isinstance(rule, Rule):
+        return
+
+    analyzer = StringUsageAnalyzer()
+    try:
+        analyzer.visit_rule(rule)
+    except (TypeError, ValueError):
+        return
+
+    undefined = sorted(
+        {
+            string_id
+            for rule_undefined in analyzer.get_undefined_strings().values()
+            for string_id in rule_undefined
+        }
+    )
+    if not undefined:
+        return
+
+    rule_name = getattr(rule, "name", "<unknown>")
+    msg = (
+        f"Undefined string references in rule '{rule_name}': {', '.join(undefined)} "
+        "for libyara output"
+    )
+    raise ValueError(msg)
+
+
 def _validate_supported_string_definition(string_def: object) -> None:
     if isinstance(string_def, PlainString | HexString | RegexString):
         return

@@ -9,6 +9,8 @@ def test_defined_operator() -> None:
     """Test defined operator parsing and generation."""
     yara_code = """
 rule test_defined {
+    strings:
+        $string1 = "needle"
     condition:
         defined $string1
 }
