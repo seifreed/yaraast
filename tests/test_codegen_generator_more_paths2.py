@@ -2020,6 +2020,18 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
             BinaryExpression(IntegerLiteral(1), "%", UnaryExpression("-", IntegerLiteral(0))),
             "Right operand of '%' cannot be zero",
         ),
+        (
+            BinaryExpression(IntegerLiteral(1), "<<", UnaryExpression("-", IntegerLiteral(1))),
+            "Right operand of '<<' cannot be negative",
+        ),
+        (
+            BinaryExpression(
+                IntegerLiteral(1),
+                ">>",
+                ParenthesesExpression(UnaryExpression("-", IntegerLiteral(1))),
+            ),
+            "Right operand of '>>' cannot be negative",
+        ),
         (UnaryExpression("!", IntegerLiteral(1)), "Invalid unary operator"),
     ],
 )

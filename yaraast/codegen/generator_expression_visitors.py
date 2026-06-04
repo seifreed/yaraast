@@ -186,6 +186,15 @@ def _reject_zero_integer_divisor(node: Any) -> None:
         raise ValueError(msg)
 
 
+def _reject_negative_shift_count(node: Any) -> None:
+    if node.operator not in {"<<", ">>"}:
+        return
+    shift_count = _constant_integer_value(node.right)
+    if shift_count is not None and shift_count < 0:
+        msg = f"Right operand of '{node.operator}' cannot be negative for libyara output"
+        raise ValueError(msg)
+
+
 def _reject_invalid_comparison_operands(node: Any) -> None:
     if node.operator not in _COMPARISON_BINARY_OPERATORS:
         return
@@ -205,6 +214,7 @@ def _reject_invalid_comparison_operands(node: Any) -> None:
 def validate_binary_expression_operands(node: Any) -> None:
     _reject_invalid_comparison_operands(node)
     _reject_zero_integer_divisor(node)
+    _reject_negative_shift_count(node)
     _reject_boolean_binary_numeric_operands(node)
     _reject_invalid_string_binary_operands(node)
 
