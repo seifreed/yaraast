@@ -129,7 +129,7 @@ class StringDiagramAnalysisMixin:
 
     def _analyze_regex_pattern(self, pattern: str) -> dict[str, Any]:
         """Analyze regex pattern complexity."""
-        analysis = {
+        analysis: dict[str, int | float] = {
             "groups": len(re.findall(r"\([^?]", pattern)),
             "quantifiers": len(re.findall(r"[*+?{]", pattern)),
             "anchors": len(re.findall(r"[\^$]", pattern)),
