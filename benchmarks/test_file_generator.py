@@ -9,6 +9,7 @@ This module generates realistic YARA rule files of varying sizes
 and complexity levels for performance testing.
 """
 
+import argparse
 from pathlib import Path
 import random
 from typing import cast
@@ -411,7 +412,16 @@ def generate_test_files(
     return results
 
 
-if __name__ == "__main__":
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Generate realistic YARA rule files for benchmark input data.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    _parse_args(argv)
+
     # Example usage
     benchmark_dir = Path(__file__).parent / "test_data"
 
@@ -423,3 +433,8 @@ if __name__ == "__main__":
     print("\nGeneration complete!")
     print(f"Total files: {len(results)}")
     print(f"Total size: {sum(cast(float, r['actual_size_mb']) for r in results):.2f} MB")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -9,6 +9,7 @@ This module provides detailed function-level profiling
 using Python's built-in cProfile for identifying performance bottlenecks.
 """
 
+import argparse
 import cProfile
 from io import StringIO
 from pathlib import Path
@@ -297,8 +298,16 @@ class ParserProfiler:
         print("\nProfiling suite complete!")
 
 
-def main() -> None:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Profile YARA AST parser CPU usage over generated test data.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
     """Main entry point for profiling execution."""
+    _parse_args(argv)
     benchmark_dir = Path(__file__).parent
     test_data_dir = benchmark_dir / "test_data"
     results_dir = benchmark_dir / "results"

@@ -9,6 +9,7 @@ This module provides detailed memory profiling capabilities
 for analyzing parser memory consumption patterns.
 """
 
+import argparse
 from dataclasses import dataclass, field
 import gc
 from pathlib import Path
@@ -375,8 +376,16 @@ class MemoryProfiler:
         print(f"Profile saved to: {output_path}")
 
 
-def main() -> None:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Profile YARA AST parser memory usage over generated test data.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
     """Main entry point for memory profiling."""
+    _parse_args(argv)
     benchmark_dir = Path(__file__).parent
     test_data_dir = benchmark_dir / "test_data"
     results_dir = benchmark_dir / "results"

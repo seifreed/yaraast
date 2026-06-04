@@ -10,6 +10,7 @@ comparing standard Parser vs StreamingParser, and measuring
 memory usage and throughput.
 """
 
+import argparse
 from dataclasses import dataclass, field
 import gc
 import json
@@ -455,8 +456,16 @@ class ParserBenchmark:
         return output_path
 
 
-def main() -> None:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run YARA AST parser benchmarks over generated test data.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
     """Main entry point for benchmark execution."""
+    _parse_args(argv)
     benchmark_dir = Path(__file__).parent
     test_data_dir = benchmark_dir / "test_data"
     results_dir = benchmark_dir / "results"
