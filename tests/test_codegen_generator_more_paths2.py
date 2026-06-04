@@ -2478,6 +2478,47 @@ def test_codegen_generators_reject_invalid_reference_names(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            FunctionCall("uint8", []),
+            "Builtin function 'uint8' expects exactly 1 argument",
+        ),
+        (
+            FunctionCall("uint8", [IntegerLiteral(0), IntegerLiteral(1)]),
+            "Builtin function 'uint8' expects exactly 1 argument",
+        ),
+        (
+            FunctionCall("uint8", [BooleanLiteral(True)]),
+            "Builtin function 'uint8' argument must be integer",
+        ),
+        (
+            FunctionCall("uint16", [StringLiteral("0")]),
+            "Builtin function 'uint16' argument must be integer",
+        ),
+        (
+            FunctionCall("uint32", [DoubleLiteral(1.5)]),
+            "Builtin function 'uint32' argument must be integer",
+        ),
+    ],
+)
+def test_codegen_generators_reject_invalid_integer_builtin_calls(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_builtin_call", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generators_allow_for_of_placeholder_string_reference() -> None:
     ast = Parser().parse("""
         rule placeholder {

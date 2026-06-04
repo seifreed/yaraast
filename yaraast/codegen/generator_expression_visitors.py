@@ -55,6 +55,26 @@ _STRING_BINARY_OPERATORS = frozenset(
         "iequals",
     }
 )
+_INTEGER_READ_FUNCTIONS = frozenset(
+    {
+        "int8",
+        "int16",
+        "int16be",
+        "int16le",
+        "int32",
+        "int32be",
+        "int32le",
+        "int8be",
+        "uint8",
+        "uint16",
+        "uint16be",
+        "uint16le",
+        "uint32",
+        "uint32be",
+        "uint32le",
+        "uint8be",
+    }
+)
 
 
 def _precedence(operator: str) -> int:
@@ -342,6 +362,17 @@ def validate_set_expression_elements(node: Any) -> None:
 
 def validate_function_call_arguments(node: Any) -> None:
     validate_expression_collection(node.arguments, "FunctionCall arguments")
+    if getattr(node, "receiver", None) is not None:
+        return
+    function_name = node.function
+    if function_name not in _INTEGER_READ_FUNCTIONS:
+        return
+    if len(node.arguments) != 1:
+        msg = f"Builtin function '{function_name}' expects exactly 1 argument " "for libyara output"
+        raise ValueError(msg)
+    if _is_definitely_non_integer_expression(node.arguments[0]):
+        msg = f"Builtin function '{function_name}' argument must be integer for libyara output"
+        raise ValueError(msg)
 
 
 def validate_expression_collection(value: Any, field_name: str) -> None:
