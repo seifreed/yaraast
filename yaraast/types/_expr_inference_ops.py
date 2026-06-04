@@ -29,6 +29,7 @@ from yaraast.shared.integer_semantics import (
     shift_right_int64,
     truncate_integer_division,
 )
+from yaraast.string_references import normalize_string_reference_id
 from yaraast.types.module_contracts import FunctionDefinition
 from yaraast.types.type_environment import _normalize_identifier
 
@@ -52,14 +53,25 @@ from ._registry import (
     YaraType,
 )
 
+_BOOLEAN_IDENTIFIER_KEYWORDS = frozenset(("false", "true"))
+
 
 def infer_identifier(ctx: Any, node: Identifier) -> YaraType:
+    if node.name in _BOOLEAN_IDENTIFIER_KEYWORDS:
+        return BooleanType()
     if node.name in {"filesize", "entrypoint"}:
         return IntegerType()
     if node.name == "them":
         return StringSetType()
     if node.name in ("any", "all", "none"):
         return StringType()
+    if node.name.startswith("$"):
+        return _infer_string_reference_identifier(ctx, node.name)
+    try:
+        _normalize_identifier(node.name, "Identifier name", "identifier")
+    except (TypeError, ValueError) as exc:
+        ctx.errors.append(str(exc))
+        return UnknownType()
     var_type = ctx.env.lookup(node.name)
     if var_type:
         return cast(YaraType, var_type)
@@ -68,6 +80,22 @@ def infer_identifier(ctx: Any, node: Identifier) -> YaraType:
     module_type = ctx._resolve_module_type(node.name)
     if module_type:
         return cast(YaraType, module_type)
+    return UnknownType()
+
+
+def _infer_string_reference_identifier(ctx: Any, name: str) -> YaraType:
+    try:
+        normalized = normalize_string_reference_id(name, allow_wildcard=False)
+    except (TypeError, ValueError) as exc:
+        ctx.errors.append(str(exc))
+        return UnknownType()
+
+    scoped_type = ctx.env.lookup(normalized)
+    if scoped_type:
+        return cast(YaraType, scoped_type)
+    if ctx.env.has_string(normalized):
+        return StringIdentifierType()
+    ctx.errors.append(f"Undefined string: {normalized}")
     return UnknownType()
 
 

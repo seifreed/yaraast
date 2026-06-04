@@ -47,6 +47,7 @@ from yaraast.types._registry import (
     DoubleType,
     FloatType,
     IntegerType,
+    StringIdentifierType,
     StringType,
     StructType,
     TypeEnvironment,
@@ -117,6 +118,42 @@ def test_expr_inference_treats_extern_rule_references_as_boolean_conditions() ->
     result = SemanticValidator().validate(ast)
 
     assert result.errors == []
+
+
+@pytest.mark.parametrize("name", ["bad-name", "1bad", "for", ""])
+def test_expr_inference_rejects_invalid_identifier_names_before_environment_lookup(
+    name: str,
+) -> None:
+    env = TypeEnvironment()
+    if name:
+        env.define(name, IntegerType())
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(Identifier(name))
+
+    assert isinstance(out, UnknownType)
+    assert inf.errors
+
+
+def test_expr_inference_treats_identifier_string_reference_as_string_identifier() -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(Identifier("$a"))
+
+    assert isinstance(out, StringIdentifierType)
+    assert inf.errors == []
+
+
+@pytest.mark.parametrize("name", ["true", "false"])
+def test_expr_inference_treats_boolean_keyword_identifiers_as_booleans(name: str) -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(Identifier(name))
+
+    assert isinstance(out, BooleanType)
+    assert inf.errors == []
 
 
 def test_expr_inference_reports_undefined_string_variants() -> None:
