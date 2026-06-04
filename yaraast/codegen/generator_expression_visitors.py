@@ -498,6 +498,7 @@ def _validate_known_module_function_call(node: Any) -> None:
     if module_name == "math" and (
         function_name in _MATH_STRING_REGION_FUNCTIONS
         or function_name == "deviation"
+        or function_name == "in_range"
         or function_name in _MATH_INTEGER_REGION_FUNCTIONS
     ):
         _validate_math_module_function_arguments(function_name, arguments)
@@ -508,6 +509,13 @@ def _validate_known_module_function_call(node: Any) -> None:
             return
         if function_name in {"exports", "exports_index"}:
             _validate_pe_export_module_function_arguments(function_name, arguments)
+            return
+    if module_name == "console":
+        if function_name == "log":
+            _validate_console_log_module_function_arguments(arguments)
+            return
+        if function_name == "hex":
+            _validate_console_hex_module_function_arguments(arguments)
             return
 
     _validate_generic_module_function_argument_types(
@@ -580,6 +588,10 @@ def _validate_math_module_function_arguments(
             and argument_types[1] == "integer"
             and argument_types[2] == "double"
         )
+    elif function_name == "in_range":
+        valid = len(argument_types) == 3 and all(
+            argument_type == "double" for argument_type in argument_types
+        )
     elif function_name in {"count", "percentage"}:
         valid = len(argument_types) in {1, 3} and all(
             argument_type == "integer" for argument_type in argument_types
@@ -644,6 +656,41 @@ def _validate_pe_export_module_function_arguments(
     if argument_types[0] in {"string", "integer", "regex"}:
         return
     msg = f"Module function 'pe.{function_name}' does not accept these argument types"
+    raise ValueError(msg)
+
+
+def _validate_console_log_module_function_arguments(
+    arguments: list[Any] | tuple[Any, ...],
+) -> None:
+    argument_types = [_obvious_argument_type(argument) for argument in arguments]
+    if any(argument_type is None for argument_type in argument_types):
+        return
+    scalar_types = {"double", "integer", "string"}
+    valid = (len(argument_types) == 1 and argument_types[0] in scalar_types) or (
+        len(argument_types) == 2
+        and argument_types[0] == "string"
+        and argument_types[1] in scalar_types
+    )
+    if valid:
+        return
+    msg = "Module function 'console.log' does not accept these argument types"
+    raise ValueError(msg)
+
+
+def _validate_console_hex_module_function_arguments(
+    arguments: list[Any] | tuple[Any, ...],
+) -> None:
+    argument_types = [_obvious_argument_type(argument) for argument in arguments]
+    if any(argument_type is None for argument_type in argument_types):
+        return
+    valid = (len(argument_types) == 1 and argument_types[0] == "integer") or (
+        len(argument_types) == 2
+        and argument_types[0] == "string"
+        and argument_types[1] == "integer"
+    )
+    if valid:
+        return
+    msg = "Module function 'console.hex' does not accept these argument types"
     raise ValueError(msg)
 
 

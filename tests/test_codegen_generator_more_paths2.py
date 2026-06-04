@@ -3218,6 +3218,13 @@ def test_codegen_libyara_generators_reject_unknown_unqualified_function_calls() 
             "Module function 'math\\.entropy' does not accept these argument types",
         ),
         (
+            FunctionCall(
+                "math.in_range",
+                [IntegerLiteral(1), IntegerLiteral(1), IntegerLiteral(1)],
+            ),
+            "Module function 'math\\.in_range' does not accept these argument types",
+        ),
+        (
             FunctionCall("hash.md5", []),
             "Module function 'hash\\.md5' expects at least 1 argument",
         ),
@@ -3270,6 +3277,46 @@ def test_codegen_generators_reject_invalid_module_function_calls(
     ast = YaraFile(
         imports=[Import("hash"), Import("math"), Import("pe")],
         rules=[Rule(name="invalid_module_function", condition=condition)],
+    )
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            FunctionCall("console.hex", [StringLiteral("x")]),
+            "Module function 'console\\.hex' does not accept these argument types",
+        ),
+        (
+            FunctionCall("console.hex", [IntegerLiteral(0), IntegerLiteral(0)]),
+            "Module function 'console\\.hex' does not accept these argument types",
+        ),
+        (
+            FunctionCall("console.log", [IntegerLiteral(0), IntegerLiteral(0)]),
+            "Module function 'console\\.log' does not accept these argument types",
+        ),
+        (
+            FunctionCall("console.log", [BooleanLiteral(True)]),
+            "Module function 'console\\.log' does not accept these argument types",
+        ),
+    ],
+)
+def test_codegen_generators_reject_invalid_console_module_function_calls(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        imports=[Import("console")],
+        rules=[Rule(name="invalid_console_module_function", condition=condition)],
     )
 
     with pytest.raises(ValueError, match=message):
@@ -3466,6 +3513,10 @@ def test_codegen_generators_reject_missing_module_imports(condition: Any) -> Non
     [
         FunctionCall("math.entropy", [StringLiteral("abc")]),
         FunctionCall("math.entropy", [IntegerLiteral(0), IntegerLiteral(10)]),
+        FunctionCall(
+            "math.in_range",
+            [DoubleLiteral(1.0), DoubleLiteral(0.0), DoubleLiteral(2.0)],
+        ),
         FunctionCall("hash.md5", [StringLiteral("abc")]),
         FunctionCall("hash.md5", [IntegerLiteral(0), IntegerLiteral(10)]),
         FunctionCall("pe.imphash", []),
@@ -3507,6 +3558,30 @@ def test_codegen_generators_allow_valid_module_function_calls(condition: Any) ->
     ast = YaraFile(
         imports=[Import("hash"), Import("math"), Import("pe")],
         rules=[Rule(name="valid_module_function", condition=condition)],
+    )
+
+    CodeGenerator().generate(ast)
+    CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        FunctionCall("console.hex", [IntegerLiteral(0)]),
+        FunctionCall("console.hex", [StringLiteral("offset"), IntegerLiteral(0)]),
+        FunctionCall("console.log", [IntegerLiteral(0)]),
+        FunctionCall("console.log", [StringLiteral("value")]),
+        FunctionCall("console.log", [StringLiteral("value"), IntegerLiteral(0)]),
+    ],
+)
+def test_codegen_generators_allow_valid_console_module_function_calls(
+    condition: Any,
+) -> None:
+    ast = YaraFile(
+        imports=[Import("console")],
+        rules=[Rule(name="valid_console_module_function", condition=condition)],
     )
 
     CodeGenerator().generate(ast)
