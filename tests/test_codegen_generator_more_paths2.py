@@ -2835,6 +2835,18 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         gen.visit_integer_literal(IntegerLiteral(bad_integer_number))
     hex_integer_text: Any = "0x10"
     assert gen.visit_integer_literal(IntegerLiteral(hex_integer_text)) == "0x10"
+    assert gen.visit_integer_literal(IntegerLiteral(2**63 - 1)) == "9223372036854775807"
+    assert gen.visit_integer_literal(IntegerLiteral(-(2**63) + 1)) == "-9223372036854775807"
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        gen.visit_integer_literal(IntegerLiteral(2**63))
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        gen.visit_integer_literal(IntegerLiteral(-(2**63)))
+    oversized_hex_integer_text: Any = "0x8000000000000000"
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        gen.visit_integer_literal(IntegerLiteral(oversized_hex_integer_text))
+    assert gen.visit_double_literal(DoubleLiteral(1e3)) == "1000.0"
+    assert gen.visit_double_literal(DoubleLiteral(1e308)).startswith("100000")
+    assert "e" not in gen.visit_double_literal(DoubleLiteral(1e308)).lower()
     bad_boolean_value: Any = "false"
     with pytest.raises(TypeError, match="Boolean literal value must be a boolean"):
         gen.visit_boolean_literal(BooleanLiteral(bad_boolean_value))

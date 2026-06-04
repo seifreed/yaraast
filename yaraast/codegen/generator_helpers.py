@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import fields
+from decimal import Decimal
 import math
 import re
 from typing import Any, NamedTuple
@@ -86,6 +87,8 @@ _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 _STRING_IDENTIFIER_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 _YARA_INTEGER_TEXT_RE = re.compile(r"^[+-]?(?:0[xX][0-9A-Fa-f]+|0[oO][0-7]+|[0-9]+(?:KB|MB))$")
 _STRING_PLACEHOLDER_REFERENCES = frozenset({"", "$"})
+_YARA_INTEGER_MIN = -(2**63) + 1
+_YARA_INTEGER_MAX = 2**63 - 1
 
 
 class _XorKey(NamedTuple):
@@ -491,6 +494,7 @@ def format_integer_literal(value: object) -> str:
         if int_value is None:
             msg = "Integer literal value must be an integer"
             raise TypeError(msg)
+        _validate_integer_literal_range(_integer_literal_numeric_value(value))
         if isinstance(int_value, str):
             return int_value
     elif isinstance(value, int):
@@ -498,6 +502,8 @@ def format_integer_literal(value: object) -> str:
     else:
         msg = "Integer literal value must be an integer"
         raise TypeError(msg)
+
+    _validate_integer_literal_range(int_value)
 
     hex_values = {
         0x4D5A: "0x4D5A",
@@ -531,6 +537,29 @@ def _parse_integer_literal_text(value: str) -> int | str | None:
         return None
 
 
+def _integer_literal_numeric_value(value: str) -> int:
+    text = value.strip()
+    multiplier = 1
+    upper_text = text.upper()
+    if upper_text.endswith("KB"):
+        multiplier = 1024
+        text = text[:-2]
+    elif upper_text.endswith("MB"):
+        multiplier = 1024 * 1024
+        text = text[:-2]
+
+    unsigned = text.lstrip("+-")
+    base = 0 if unsigned.lower().startswith(("0x", "0o")) else 10
+    return int(text, base) * multiplier
+
+
+def _validate_integer_literal_range(value: int) -> None:
+    if _YARA_INTEGER_MIN <= value <= _YARA_INTEGER_MAX:
+        return
+    msg = "Integer literal value is outside libyara range"
+    raise ValueError(msg)
+
+
 def format_double_literal(value: int | float) -> str:
     """Format a validated numeric double literal."""
     if isinstance(value, bool) or not isinstance(value, int | float):
@@ -539,7 +568,12 @@ def format_double_literal(value: int | float) -> str:
     if not math.isfinite(value):
         msg = "Double literal value must be finite"
         raise ValueError(msg)
-    return str(value)
+    if isinstance(value, int):
+        return str(value)
+    text = format(Decimal.from_float(value), "f")
+    if "." in text:
+        return text
+    return f"{text}.0"
 
 
 def format_hex_byte_value(value: int | str, *, uppercase: bool, context: str = "HexByte") -> str:
