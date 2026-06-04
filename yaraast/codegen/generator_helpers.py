@@ -9,8 +9,13 @@ import re
 from typing import Any, NamedTuple
 
 from yaraast.ast.base import ASTNode
-from yaraast.ast.conditions import ForOfExpression, OfExpression
-from yaraast.ast.expressions import StringWildcard
+from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
+from yaraast.ast.expressions import (
+    ParenthesesExpression,
+    RangeExpression,
+    SetExpression,
+    StringWildcard,
+)
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.strings import (
     HexAlternative,
@@ -230,13 +235,9 @@ def validate_rule_string_references(rule: object) -> None:
     except (TypeError, ValueError):
         return
 
-    bare_wildcards = sorted(_collect_bare_string_wildcards(rule.condition))
-    if bare_wildcards:
-        msg = (
-            "String wildcard expressions are only valid in string sets for "
-            f"libyara output: {', '.join(bare_wildcards)}"
-        )
-        raise ValueError(msg)
+    contextual_errors = _collect_contextual_expression_errors(rule.condition)
+    if contextual_errors:
+        raise ValueError(sorted(contextual_errors)[0])
 
     undefined = sorted(
         {
@@ -285,18 +286,48 @@ def validate_rule_string_references(rule: object) -> None:
         raise ValueError(msg)
 
 
-def _collect_bare_string_wildcards(
+def _collect_contextual_expression_errors(
     value: object,
     *,
     in_string_set: bool = False,
+    in_iterable: bool = False,
+    in_range: bool = False,
 ) -> set[str]:
     if isinstance(value, StringWildcard):
         if in_string_set:
             return set()
-        return {validate_string_wildcard_text(value.pattern)}
+        wildcard = validate_string_wildcard_text(value.pattern)
+        return {
+            "String wildcard expressions are only valid in string sets for "
+            f"libyara output: {wildcard}"
+        }
+
+    if isinstance(value, SetExpression):
+        errors: set[str] = set()
+        if not value.elements:
+            errors.add("Set expression must contain at least one element for libyara output")
+        if not (in_string_set or in_iterable):
+            errors.add(
+                "Set expressions are only valid in string set or iterable contexts "
+                "for libyara output"
+            )
+        errors.update(
+            _collect_contextual_expression_errors(
+                value.elements,
+                in_string_set=in_string_set,
+            )
+        )
+        return errors
+
+    if isinstance(value, RangeExpression):
+        if in_iterable or in_range:
+            return _collect_contextual_expression_errors([value.low, value.high])
+        return {
+            "Range expressions are only valid in iterable or range contexts " "for libyara output"
+        }
 
     if isinstance(value, ASTNode):
-        wildcards: set[str] = set()
+        node_errors: set[str] = set()
         for field in fields(value):
             if field.name in ASTNode._METADATA_FIELDS:
                 continue
@@ -304,27 +335,48 @@ def _collect_bare_string_wildcards(
             child_in_string_set = in_string_set or (
                 isinstance(value, OfExpression | ForOfExpression) and field.name == "string_set"
             )
-            wildcards.update(
-                _collect_bare_string_wildcards(
+            child_in_iterable = in_iterable or (
+                isinstance(value, ForExpression) and field.name == "iterable"
+            )
+            child_in_range = in_range or (isinstance(value, InExpression) and field.name == "range")
+            if not isinstance(value, ParenthesesExpression):
+                child_in_iterable = child_in_iterable and field.name == "iterable"
+                child_in_range = child_in_range and field.name == "range"
+            node_errors.update(
+                _collect_contextual_expression_errors(
                     child,
                     in_string_set=child_in_string_set,
+                    in_iterable=child_in_iterable,
+                    in_range=child_in_range,
                 )
             )
-        return wildcards
+        return node_errors
 
     if isinstance(value, dict):
-        dict_wildcards: set[str] = set()
+        dict_errors: set[str] = set()
         for item in value.values():
-            dict_wildcards.update(_collect_bare_string_wildcards(item, in_string_set=in_string_set))
-        return dict_wildcards
+            dict_errors.update(
+                _collect_contextual_expression_errors(
+                    item,
+                    in_string_set=in_string_set,
+                    in_iterable=in_iterable,
+                    in_range=in_range,
+                )
+            )
+        return dict_errors
 
     if isinstance(value, list | tuple | set | frozenset):
-        sequence_wildcards: set[str] = set()
+        sequence_errors: set[str] = set()
         for item in value:
-            sequence_wildcards.update(
-                _collect_bare_string_wildcards(item, in_string_set=in_string_set)
+            sequence_errors.update(
+                _collect_contextual_expression_errors(
+                    item,
+                    in_string_set=in_string_set,
+                    in_iterable=in_iterable,
+                    in_range=in_range,
+                )
             )
-        return sequence_wildcards
+        return sequence_errors
 
     return set()
 

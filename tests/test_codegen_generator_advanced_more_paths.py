@@ -377,7 +377,7 @@ def test_advanced_generator_applies_expression_spacing_in_condition_sections() -
         condition=FunctionCall(
             "foo",
             [
-                SetExpression([IntegerLiteral(1), IntegerLiteral(2)]),
+                FunctionCall("bar", [IntegerLiteral(1), IntegerLiteral(2)]),
                 BinaryExpression(Identifier("a"), "==", Identifier("b")),
                 BinaryExpression(Identifier("left"), "and", Identifier("right")),
             ],
@@ -390,9 +390,9 @@ def test_advanced_generator_applies_expression_spacing_in_condition_sections() -
         )
     ).generate(YaraFile(rules=[rule]))
 
-    assert "\n        foo((1,2),a==b,left and right)\n" in out
+    assert "\n        foo(bar(1,2),a==b,left and right)\n" in out
     assert "leftandright" not in out
-    assert "\n        foo((1, 2), a == b, left and right)\n" not in out
+    assert "\n        foo(bar(1, 2), a == b, left and right)\n" not in out
 
 
 def test_advanced_generator_indents_yarax_multiline_match_condition() -> None:

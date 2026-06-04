@@ -11,7 +11,6 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     IntegerLiteral,
-    SetExpression,
     StringIdentifier,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
@@ -212,7 +211,7 @@ def test_pretty_printer_honors_compact_expression_commas() -> None:
         name="compact_commas",
         condition=FunctionCall(
             "foo",
-            [SetExpression([Identifier("a"), Identifier("b")]), Identifier("c")],
+            [FunctionCall("bar", [Identifier("a"), Identifier("b")]), Identifier("c")],
         ),
     )
 
@@ -220,8 +219,8 @@ def test_pretty_printer_honors_compact_expression_commas() -> None:
         options=GeneratorOptions(pretty=PrettyPrintOptions(space_after_comma=False))
     ).generate(YaraFile(rules=[rule]))
 
-    assert "\n        foo((a,b),c)\n" in out
-    assert "\n        foo((a, b), c)\n" not in out
+    assert "\n        foo(bar(a,b),c)\n" in out
+    assert "\n        foo(bar(a, b), c)\n" not in out
 
 
 def test_pretty_printer_honors_compact_yarax_expression_commas() -> None:

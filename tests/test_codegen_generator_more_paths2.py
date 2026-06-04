@@ -2222,6 +2222,39 @@ def test_codegen_generators_reject_bare_string_wildcard_conditions(condition: An
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            SetExpression([IntegerLiteral(1), IntegerLiteral(2)]),
+            "Set expressions are only valid in string set or iterable contexts for libyara output",
+        ),
+        (
+            RangeExpression(IntegerLiteral(1), IntegerLiteral(2)),
+            "Range expressions are only valid in iterable or range contexts for libyara output",
+        ),
+        (
+            ParenthesesExpression(RangeExpression(IntegerLiteral(1), IntegerLiteral(2))),
+            "Range expressions are only valid in iterable or range contexts for libyara output",
+        ),
+    ],
+)
+def test_codegen_generators_reject_bare_contextual_expressions(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="bare_contextual", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         BinaryExpression(StringIdentifier("$a"), "<", IntegerLiteral(1)),
