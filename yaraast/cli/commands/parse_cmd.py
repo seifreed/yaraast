@@ -14,6 +14,7 @@ from yaraast.cli.parse_services import parse_content_by_dialect
 from yaraast.cli.utils import _validate_output_path, read_text
 
 console = Console()
+error_console = Console(stderr=True)
 
 
 @click.command()
@@ -45,9 +46,9 @@ def parse(input_file: str, output: str | None, output_format: str, dialect: str)
             show_status,
             console.print,
         )
-        if show_status:
-            report_parsing_errors(lexer_errors, parser_errors, ast)
         if lexer_errors or parser_errors:
+            report_console = console if show_status else error_console
+            report_parsing_errors(lexer_errors, parser_errors, ast, report_console)
             raise SystemExit(1)
         generate_output_by_format(ast, output_format, output)
 

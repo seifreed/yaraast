@@ -6,9 +6,9 @@ from yaraast.cli.parse_output_services import _generate_output_by_format, _repor
 from yaraast.cli.utils import print_cli_error
 
 
-def report_parsing_errors(lexer_errors, parser_errors, ast) -> None:
+def report_parsing_errors(lexer_errors, parser_errors, ast, output_console=None) -> None:
     """Report parsing errors."""
-    _report_parsing_errors(lexer_errors, parser_errors, ast)
+    _report_parsing_errors(lexer_errors, parser_errors, ast, output_console)
 
 
 def generate_output_by_format(ast, output_format: str, output: str | None) -> None:

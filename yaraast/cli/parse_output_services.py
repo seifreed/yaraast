@@ -30,44 +30,50 @@ def _require_output_format(output_format: object) -> str:
     return output_format
 
 
-def _report_parsing_errors(lexer_errors: list, parser_errors: list, ast) -> None:
+def _report_parsing_errors(
+    lexer_errors: list,
+    parser_errors: list,
+    ast,
+    output_console: Console | None = None,
+) -> None:
     """Report lexer and parser errors."""
+    target_console = output_console or console
     total_errors = len(lexer_errors) + len(parser_errors)
 
     if lexer_errors or parser_errors:
-        console.print(f"\n[yellow]Found {total_errors} issue(s) in the file:[/yellow]")
+        target_console.print(f"\n[yellow]Found {total_errors} issue(s) in the file:[/yellow]")
 
         if lexer_errors:
-            _display_lexer_errors(lexer_errors)
+            _display_lexer_errors(lexer_errors, target_console)
 
         if parser_errors:
-            _display_parser_errors(parser_errors)
+            _display_parser_errors(parser_errors, target_console)
 
         if ast is None:
-            console.print("\n[red]Could not parse file due to critical errors[/red]")
+            target_console.print("\n[red]Could not parse file due to critical errors[/red]")
             raise click.Abort from None
 
-        console.print("\n[green]Partial parse successful despite errors[/green]\n")
+        target_console.print("\n[green]Partial parse successful despite errors[/green]\n")
 
 
-def _display_lexer_errors(lexer_errors: list) -> None:
+def _display_lexer_errors(lexer_errors: list, output_console: Console = console) -> None:
     """Display lexer errors."""
-    console.print(f"\n[yellow]Lexer Issues ({len(lexer_errors)}):[/yellow]")
+    output_console.print(f"\n[yellow]Lexer Issues ({len(lexer_errors)}):[/yellow]")
     for error in lexer_errors[:5]:
-        console.print(error.format_error())
+        output_console.print(error.format_error())
 
     if len(lexer_errors) > 5:
-        console.print(f"\n[dim]... and {len(lexer_errors) - 5} more lexer issues[/dim]")
+        output_console.print(f"\n[dim]... and {len(lexer_errors) - 5} more lexer issues[/dim]")
 
 
-def _display_parser_errors(parser_errors: list) -> None:
+def _display_parser_errors(parser_errors: list, output_console: Console = console) -> None:
     """Display parser errors."""
-    console.print(f"\n[yellow]Parser Issues ({len(parser_errors)}):[/yellow]")
+    output_console.print(f"\n[yellow]Parser Issues ({len(parser_errors)}):[/yellow]")
     for error in parser_errors[:5]:
-        console.print(error.format_error())
+        output_console.print(error.format_error())
 
     if len(parser_errors) > 5:
-        console.print(f"\n[dim]... and {len(parser_errors) - 5} more parser issues[/dim]")
+        output_console.print(f"\n[dim]... and {len(parser_errors) - 5} more parser issues[/dim]")
 
 
 def _generate_output_by_format(ast, output_format: object, output: str | None) -> None:

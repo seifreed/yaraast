@@ -103,3 +103,15 @@ rule uses_external {
 
     assert result.exit_code == 0
     assert "extern import external.rules (A, B) as er" in result.output
+
+
+def test_parse_cmd_json_reports_parse_errors_on_stderr(tmp_path: Path) -> None:
+    runner = CliRunner()
+    source = tmp_path / "broken.yar"
+    source.write_text("rule broken { strings: $a =\n", encoding="utf-8")
+
+    result = runner.invoke(parse, [str(source), "--format", "json"])
+
+    assert result.exit_code == 1
+    assert "Parser Issues" in result.stderr
+    assert 'rule "broken" has no condition' in result.stderr
