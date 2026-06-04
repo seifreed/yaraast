@@ -47,7 +47,7 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
     for_of_with_ast_quantifier = ForOfExpression(
         quantifier=IntegerLiteral(2),
         string_set=Identifier("them"),
-        condition=Identifier("$a"),
+        condition=StringIdentifier("$a"),
     )
     assert gen.visit(for_of_with_ast_quantifier) == "for 2 of them : ($a)"
 

@@ -1923,7 +1923,7 @@ def test_codegen_string_visitors_reject_non_string_string_identifiers(
         (Identifier("all"), "Invalid identifier"),
         (Identifier("any"), "Invalid identifier"),
         (Identifier("none"), "Invalid identifier"),
-        (Identifier("$bad-key"), "Invalid string identifier"),
+        (Identifier("$bad-key"), "String references must use StringIdentifier"),
         (
             ForExpression(
                 "any", "bad-name", SetExpression([IntegerLiteral(1)]), BooleanLiteral(True)
@@ -2940,6 +2940,7 @@ def test_codegen_generators_allow_matches_regex_literal() -> None:
     [
         (FunctionCall("bad-name", []), "Invalid function identifier"),
         (FunctionCall("math..entropy", []), "Invalid function identifier"),
+        (Identifier("$a"), "String references must use StringIdentifier"),
         (MemberAccess(ModuleReference("pe"), "bad-name"), "Invalid member identifier"),
         (ModuleReference("bad-mod"), "Invalid module identifier"),
     ],
@@ -3402,7 +3403,9 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         == "for any i in (1..2) : (i)"
     )
     assert (
-        gen.visit_for_of_expression(ForOfExpression("all", Identifier("them"), Identifier("$a")))
+        gen.visit_for_of_expression(
+            ForOfExpression("all", Identifier("them"), StringIdentifier("$a"))
+        )
         == "for all of them : ($a)"
     )
     assert (

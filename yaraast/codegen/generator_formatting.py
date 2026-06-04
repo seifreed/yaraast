@@ -13,7 +13,6 @@ from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
     format_hex_jump_bounds,
-    validate_string_identifier_text,
 )
 from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.regex_literals import validate_regex_modifiers
@@ -228,7 +227,8 @@ def validate_yara_expression_identifier(name: object) -> str:
         msg = "Identifier must be a string for libyara output"
         raise TypeError(msg)
     if name.startswith("$"):
-        return validate_string_identifier_text(name)
+        msg = "String references must use StringIdentifier for libyara output"
+        raise ValueError(msg)
     if name in _YARA_EXPRESSION_KEYWORDS:
         return name
     return validate_yara_identifier(name, "identifier")

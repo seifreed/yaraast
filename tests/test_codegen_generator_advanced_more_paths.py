@@ -18,6 +18,7 @@ from yaraast.ast.expressions import (
     RangeExpression,
     RegexLiteral,
     SetExpression,
+    StringIdentifier,
     StringLength,
     StringLiteral,
     StringOffset,
@@ -110,7 +111,7 @@ def test_codegen_generator_additional_visit_paths() -> None:
     for key in invalid_dictionary_keys:
         with pytest.raises(ValueError, match="Dictionary key must be string"):
             gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), key))
-    assert gen.visit_defined_expression(DefinedExpression(Identifier("$a"))) == "defined $a"
+    assert gen.visit_defined_expression(DefinedExpression(StringIdentifier("$a"))) == "defined $a"
     assert (
         gen.visit_string_operator_expression(
             StringOperatorExpression(StringLiteral("a"), "icontains", StringLiteral("b")),
