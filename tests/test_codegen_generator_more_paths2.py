@@ -715,6 +715,30 @@ def test_codegen_generator_rejects_invalid_string_modifier_applicability() -> No
             ),
             "not valid on hex strings",
         ),
+        (
+            PlainString(
+                "$plain_value",
+                value="abc",
+                modifiers=[StringModifier.from_name_value("wide", 1)],
+            ),
+            "does not accept a value",
+        ),
+        (
+            RegexString(
+                "$regex_value",
+                regex="abc",
+                modifiers=[StringModifier.from_name_value("dotall", 1)],
+            ),
+            "does not accept a value",
+        ),
+        (
+            HexString(
+                "$hex_value",
+                tokens=[HexByte(0x41)],
+                modifiers=[StringModifier.from_name_value("private", 1)],
+            ),
+            "does not accept a value",
+        ),
     ]
 
     for string_def, message in cases:

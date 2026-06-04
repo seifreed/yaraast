@@ -81,6 +81,7 @@ _REGEX_DISALLOWED_MODIFIERS = frozenset({"base64", "base64wide", "xor"})
 _BASE64_INCOMPATIBLE_MODIFIERS = frozenset({"fullword", "nocase", "xor"})
 _XOR_INCOMPATIBLE_MODIFIERS = frozenset({"base64", "base64wide", "nocase"})
 BASE64_MODIFIERS = frozenset({"base64", "base64wide"})
+_PARAMETERIZED_STRING_MODIFIERS = BASE64_MODIFIERS | {"xor"}
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 _STRING_IDENTIFIER_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 _YARA_INTEGER_TEXT_RE = re.compile(r"^[+-]?(?:0[xX][0-9A-Fa-f]+|0[oO][0-7]+|[0-9]+(?:KB|MB))$")
@@ -707,6 +708,7 @@ def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) ->
         name = modifier.name
         value = modifier.value
         _validate_spaced_string_modifier(name)
+        _validate_string_modifier_value(name, value)
         if value is not None:
             if name == "xor":
                 return f"{name}({_format_xor_modifier_value(value)})"
@@ -745,6 +747,13 @@ def _validate_spaced_string_modifier(name: str) -> None:
     if name in _UNSUPPORTED_SPACED_STRING_MODIFIERS or name not in _KNOWN_STRING_MODIFIERS:
         msg = f"Unsupported string modifier for libyara output: {name}"
         raise ValueError(msg)
+
+
+def _validate_string_modifier_value(name: str, value: object) -> None:
+    if value is None or name in _PARAMETERIZED_STRING_MODIFIERS:
+        return
+    msg = f"String modifier '{name}' does not accept a value for libyara output"
+    raise ValueError(msg)
 
 
 def _format_xor_modifier_value(value: object) -> str:
@@ -815,6 +824,7 @@ def format_modifiers(
 def validate_plain_string_modifiers(modifiers: object) -> None:
     """Reject plain string modifier combinations that libyara rejects."""
     _validate_string_modifier_collection(modifiers)
+    validate_string_modifier_values(modifiers)
     validate_duplicate_string_modifiers(modifiers)
     names = _modifier_names(modifiers)
     for base64_name in sorted(names & BASE64_MODIFIERS):
@@ -839,6 +849,7 @@ def validate_plain_string_modifiers(modifiers: object) -> None:
 def validate_hex_string_modifiers(modifiers: object) -> None:
     """Reject hex string modifiers that libyara rejects."""
     _validate_string_modifier_collection(modifiers)
+    validate_string_modifier_values(modifiers)
     validate_duplicate_string_modifiers(modifiers)
     for name in sorted(_modifier_names(modifiers)):
         if name in _HEX_ALLOWED_MODIFIERS:
@@ -850,6 +861,7 @@ def validate_hex_string_modifiers(modifiers: object) -> None:
 def validate_regex_string_modifiers(modifiers: object) -> None:
     """Reject regex string modifiers that libyara rejects."""
     _validate_string_modifier_collection(modifiers)
+    validate_string_modifier_values(modifiers)
     validate_duplicate_string_modifiers(modifiers)
     for name in sorted(_modifier_names(modifiers)):
         if name not in _REGEX_DISALLOWED_MODIFIERS:
@@ -887,6 +899,16 @@ def validate_duplicate_string_modifiers(modifiers: object) -> None:
             msg = f"Duplicate string modifier '{name}' for libyara output"
             raise ValueError(msg)
         seen.add(name)
+
+
+def validate_string_modifier_values(modifiers: object) -> None:
+    """Reject parameter values on modifiers that libyara treats as flags."""
+    if not isinstance(modifiers, list | tuple):
+        return
+    for modifier in modifiers:
+        if not isinstance(modifier, StringModifier):
+            continue
+        _validate_string_modifier_value(modifier.name, modifier.value)
 
 
 def split_regex_modifiers(
