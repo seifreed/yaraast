@@ -2170,6 +2170,36 @@ def test_codegen_generators_reject_invalid_quantifiers(condition: Any) -> None:
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize(
+    "condition",
+    [
+        OfExpression(2**63, Identifier("them")),
+        OfExpression(IntegerLiteral(2**63), Identifier("them")),
+        ForOfExpression(2**63, Identifier("them"), StringIdentifier("$")),
+        ForOfExpression(IntegerLiteral(2**63), Identifier("them"), StringIdentifier("$")),
+    ],
+)
+def test_codegen_generators_reject_out_of_range_numeric_quantifiers(condition: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_quantifier_range",
+                strings=[PlainString(identifier="$a", value="x")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generators_allow_external_identifier_of_quantifier() -> None:
     ast = YaraFile(
         rules=[

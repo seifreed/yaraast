@@ -7,6 +7,7 @@ from typing import Any, cast
 
 from yaraast.codegen.generator_formatting import validate_yara_identifier
 from yaraast.codegen.generator_helpers import (
+    format_integer_literal,
     format_string_reference_identifier,
     validate_string_set_item_text,
 )
@@ -192,7 +193,7 @@ def _render_quantifier(
         if quantifier < 0:
             msg = f"Invalid {context} '{quantifier}' for libyara output"
             raise ValueError(msg)
-        return str(quantifier)
+        return format_integer_literal(quantifier)
     if isinstance(quantifier, str):
         return _validate_quantifier_text(
             quantifier, allow_percentage=allow_percentage, context=context
@@ -207,9 +208,10 @@ def _render_quantifier(
         if isinstance(value, bool) or not isinstance(value, int):
             msg = f"Invalid {context} '{value}' for libyara output"
             raise ValueError(msg)
-        return _validate_quantifier_text(
-            str(value), allow_percentage=allow_percentage, context=context
-        )
+        if value < 0:
+            msg = f"Invalid {context} '{value}' for libyara output"
+            raise ValueError(msg)
+        return format_integer_literal(value)
     if isinstance(quantifier, BooleanLiteral):
         msg = f"Invalid {context} '{gen.visit(quantifier)}' for libyara output"
         raise ValueError(msg)
@@ -254,7 +256,7 @@ def _validate_quantifier_text(
         if int(text) < 0:
             msg = f"Invalid {context} '{text}' for libyara output"
             raise ValueError(msg)
-        return text
+        return format_integer_literal(text)
 
     percentage = _PERCENTAGE_QUANTIFIER_RE.fullmatch(text)
     if percentage is not None:
