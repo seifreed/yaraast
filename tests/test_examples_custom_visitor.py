@@ -33,6 +33,8 @@ def test_core_examples_run() -> None:
         "complete_features.py",
         "parse_file.py",
         "transform_ast.py",
+        "vt_livehunt_demo.py",
+        "libyara_integration.py",
     ):
         result = subprocess.run(
             [sys.executable, f"examples/{example}"],

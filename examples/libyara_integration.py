@@ -1,5 +1,8 @@
 """Example of using libyara integration for cross-validation."""
 
+from pathlib import Path
+import tempfile
+
 from yaraast.libyara import YARA_AVAILABLE, EquivalenceTester, LibyaraCompiler, LibyaraScanner
 from yaraast.parser import Parser
 
@@ -47,8 +50,10 @@ def example_compilation() -> None:
         print(f"  Warnings: {len(result.warnings)}")
 
         # Save compiled rules
-        if compiler.save_compiled_rules(result.compiled_rules, "compiled.yarc"):
-            print("✓ Saved compiled rules to 'compiled.yarc'")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            compiled_path = Path(temp_dir) / "compiled.yarc"
+            if compiler.save_compiled_rules(result.compiled_rules, str(compiled_path)):
+                print(f"✓ Saved compiled rules to '{compiled_path}'")
     else:
         print("✗ Compilation failed!")
         for error in result.errors:
@@ -124,7 +129,7 @@ def example_round_trip() -> None:
     rule round_trip_test {
         meta:
             author = "Test"
-            version = 1.0
+            version = 1
 
         strings:
             $a = "test" wide ascii

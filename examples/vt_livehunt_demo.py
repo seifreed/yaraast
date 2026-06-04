@@ -124,7 +124,7 @@ rule vt_ransomware_behavior {
 
         // Check for registry modifications
         for any reg in vt.behaviour.registry_keys_set : (
-            reg.key contains "CurrentVersion\\Run"
+            reg.key contains "CurrentVersion\\\\Run"
         )
 }
 """

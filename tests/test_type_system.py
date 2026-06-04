@@ -1569,6 +1569,35 @@ class TestTypeChecker:
         # Integer conditions are valid in YARA
         assert len(errors) == 0
 
+    def test_check_vt_livehunt_legacy_globals_without_import(self) -> None:
+        """Test VT LiveHunt legacy globals are available without importing vt."""
+        checker = TypeChecker()
+        rule = Rule(name="vt_livehunt")
+        rule.strings = [PlainString(identifier="$a", value="malware")]
+        rule.condition = BinaryExpression(
+            left=BinaryExpression(
+                left=Identifier("new_file"),
+                operator="and",
+                right=BinaryExpression(
+                    left=Identifier("positives"),
+                    operator=">",
+                    right=IntegerLiteral(5),
+                ),
+            ),
+            operator="and",
+            right=BinaryExpression(
+                left=Identifier("submissions"),
+                operator="<",
+                right=IntegerLiteral(10),
+            ),
+        )
+
+        ast = YaraFile(rules=[rule])
+
+        errors = checker.check(ast)
+
+        assert errors == []
+
     def test_check_rule_with_invalid_condition_type(self) -> None:
         """Test checking rule with invalid condition type."""
         checker = TypeChecker()

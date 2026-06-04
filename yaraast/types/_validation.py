@@ -47,9 +47,21 @@ class TypeChecker(BaseVisitor[None]):
         self.errors: list[str] = []
 
     def _fresh_environment(self) -> TypeEnvironment:
-        if self._base_env is not None:
-            return _copy_type_environment(self._base_env)
-        return TypeEnvironment()
+        env = (
+            _copy_type_environment(self._base_env)
+            if self._base_env is not None
+            else TypeEnvironment()
+        )
+        self._define_vt_livehunt_globals(env)
+        return env
+
+    def _define_vt_livehunt_globals(self, env: TypeEnvironment) -> None:
+        vt_module = ModuleLoader().get_module("vt")
+        if vt_module is None:
+            return
+        for constant_name, constant_type in vt_module.constants.items():
+            if env.lookup(constant_name) is None:
+                env.define(constant_name, constant_type)
 
     def check_compatibility(self, type1: object, type2: object) -> bool:
         """Check if two types are compatible."""
