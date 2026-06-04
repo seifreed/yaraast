@@ -116,7 +116,7 @@ class HtmlTreeGenerator(
 
     def visit_plain_string(self, node: PlainString) -> dict[str, Any]:
         """Visit plain string node."""
-        children = []
+        children: list[dict[str, Any]] = []
         self._append_section(children, self._string_modifiers_section(node.modifiers))
 
         return self._string_node(
@@ -127,7 +127,7 @@ class HtmlTreeGenerator(
 
     def visit_hex_string(self, node: HexString) -> dict[str, Any]:
         """Visit hex string node."""
-        children = []
+        children: list[dict[str, Any]] = []
 
         # Add tokens
         self._append_section(
@@ -144,7 +144,7 @@ class HtmlTreeGenerator(
 
     def visit_regex_string(self, node: RegexString) -> dict[str, Any]:
         """Visit regex string node."""
-        children = []
+        children: list[dict[str, Any]] = []
 
         self._append_section(children, self._string_modifiers_section(node.modifiers))
 
