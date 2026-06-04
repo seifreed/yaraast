@@ -11,6 +11,7 @@ from yaraast.ast.expressions import (
     Identifier,
     StringIdentifier,
 )
+from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Rule
 from yaraast.ast.strings import (
     HexByte,
@@ -18,7 +19,6 @@ from yaraast.ast.strings import (
     HexWildcard,
     PlainString,
     RegexString,
-    StringModifier,
 )
 
 
@@ -49,14 +49,14 @@ class RuleStatisticsVisitor(ASTVisitor[None]):
     def visit_rule(self, node: Rule) -> None:
         self.stats["total_rules"] += 1
 
-        if "private" in node.modifiers:
+        if node.is_private:
             self.stats["private_rules"] += 1
-        if "global" in node.modifiers:
+        if node.is_global:
             self.stats["global_rules"] += 1
 
         # Collect meta keys
-        for key in node.meta:
-            self.stats["meta_keys"].add(key)
+        for entry in node.meta:
+            self.stats["meta_keys"].add(entry.key)
 
         # Visit strings
         for string in node.strings:
@@ -84,10 +84,11 @@ class RuleStatisticsVisitor(ASTVisitor[None]):
         self.stats["string_types"]["regex"] += 1
         self._count_modifiers(node.modifiers)
 
-    def _count_modifiers(self, modifiers: list[StringModifier]) -> None:
+    def _count_modifiers(self, modifiers: list[StringModifier | str]) -> None:
         for mod in modifiers:
-            if mod.name in self.stats["string_modifiers"]:
-                self.stats["string_modifiers"][mod.name] += 1
+            name = mod.name if isinstance(mod, StringModifier) else str(mod)
+            if name in self.stats["string_modifiers"]:
+                self.stats["string_modifiers"][name] += 1
 
     def _is_simple_condition(self, condition: Expression) -> bool:
         # Simple conditions are single identifiers or simple binary expressions
@@ -99,7 +100,7 @@ class RuleStatisticsVisitor(ASTVisitor[None]):
             )
         return False
 
-    # Implement remaining visit methods with pass
+    # Define remaining visit methods as no-ops.
     def visit_include(self, node):
         """Visit include node - not needed for statistics collection."""
 
