@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
+import argparse
 from datetime import datetime
 import json
 from pathlib import Path
-import sys
 import tempfile
 from typing import Any
 
@@ -179,18 +179,37 @@ def render_history_index(history_dir: Path) -> str:
     return "\n".join(rows) + "\n"
 
 
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Benchmark the YARAAST LSP runtime on synthetic workspaces.",
+    )
+    parser.add_argument(
+        "output_path",
+        nargs="?",
+        type=Path,
+        help="Optional JSON output path; a Markdown summary is written next to it.",
+    )
+    parser.add_argument(
+        "history_dir",
+        nargs="?",
+        type=Path,
+        help="Optional directory for timestamped benchmark history files.",
+    )
+    return parser.parse_args(argv)
+
+
 def main() -> int:
+    args = _parse_args()
     payload = run_regression_suite()
-    output_path = Path(sys.argv[1]) if len(sys.argv) > 1 else None
-    history_dir = Path(sys.argv[2]) if len(sys.argv) > 2 else None
     rendered = json.dumps(payload, indent=2, sort_keys=True)
     summary = render_summary(payload)
     print(rendered)
-    if output_path is not None:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(rendered + "\n", encoding="utf-8")
-        output_path.with_suffix(".md").write_text(summary, encoding="utf-8")
-    if history_dir is not None:
+    if args.output_path is not None:
+        args.output_path.parent.mkdir(parents=True, exist_ok=True)
+        args.output_path.write_text(rendered + "\n", encoding="utf-8")
+        args.output_path.with_suffix(".md").write_text(summary, encoding="utf-8")
+    if args.history_dir is not None:
+        history_dir = args.history_dir
         history_dir.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         json_path = history_dir / f"lsp-runtime-{stamp}.json"

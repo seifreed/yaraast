@@ -59,6 +59,22 @@ def test_lsp_runtime_benchmark_script_can_write_results(tmp_path: Path) -> None:
     assert output.with_suffix(".md").exists()
 
 
+def test_lsp_runtime_benchmark_script_help_does_not_write_files(tmp_path: Path) -> None:
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT_PATH), "--help"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+        encoding="utf-8",
+    )
+
+    assert proc.returncode == 0
+    assert "Benchmark the YARAAST LSP runtime" in proc.stdout
+    assert not (tmp_path / "--help").exists()
+    assert not (tmp_path / "--help.md").exists()
+
+
 def test_lsp_runtime_benchmark_script_can_write_history(tmp_path: Path) -> None:
     output = tmp_path / "runtime-benchmark.json"
     history_dir = tmp_path / "history"
