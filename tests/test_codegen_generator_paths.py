@@ -13,6 +13,7 @@ from yaraast.ast.conditions import (
 )
 from yaraast.ast.expressions import (
     ArrayAccess,
+    BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
     Identifier,
@@ -24,6 +25,7 @@ from yaraast.ast.expressions import (
     StringIdentifier,
     StringLiteral,
     StringWildcard,
+    UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.modifiers import RuleModifier
@@ -153,6 +155,26 @@ def test_codegen_generate_returns_direct_expression_output() -> None:
         (
             ArrayAccess(Identifier("arr"), ParenthesesExpression(BooleanLiteral(True))),
             "Array index must be integer",
+        ),
+        (
+            BinaryExpression(BooleanLiteral(True), "+", IntegerLiteral(1)),
+            "Left operand of '\\+' must be numeric",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), "&", BooleanLiteral(False)),
+            "Right operand of '&' must be integer",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), "<<", ParenthesesExpression(BooleanLiteral(True))),
+            "Right operand of '<<' must be integer",
+        ),
+        (
+            UnaryExpression("-", BooleanLiteral(True)),
+            "Operand of '-' must be numeric",
+        ),
+        (
+            UnaryExpression("~", ParenthesesExpression(BooleanLiteral(False))),
+            "Operand of '~' must be integer",
         ),
     ],
 )

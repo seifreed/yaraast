@@ -40,6 +40,8 @@ _BINARY_PRECEDENCE = {
     "%": 9,
 }
 _UNARY_OPERATORS = frozenset({"not", "-", "~"})
+_NUMERIC_BINARY_OPERATORS = frozenset({"+", "-", "*", "/", "\\"})
+_INTEGER_BINARY_OPERATORS = frozenset({"%", "&", "|", "^", "<<", ">>"})
 
 
 def _precedence(operator: str) -> int:
@@ -62,6 +64,32 @@ def _render_unary_operator(operator: str) -> str:
     raise ValueError(msg)
 
 
+def _reject_boolean_expression(value: Any, message: str) -> None:
+    from yaraast.ast.expressions import BooleanLiteral, ParenthesesExpression
+
+    if isinstance(value, bool | BooleanLiteral):
+        raise ValueError(message)
+    if isinstance(value, ParenthesesExpression):
+        _reject_boolean_expression(value.expression, message)
+
+
+def _reject_boolean_binary_numeric_operands(node: Any) -> None:
+    if node.operator in _NUMERIC_BINARY_OPERATORS:
+        _reject_boolean_expression(
+            node.left, f"Left operand of '{node.operator}' must be numeric for libyara output"
+        )
+        _reject_boolean_expression(
+            node.right, f"Right operand of '{node.operator}' must be numeric for libyara output"
+        )
+    if node.operator in _INTEGER_BINARY_OPERATORS:
+        _reject_boolean_expression(
+            node.left, f"Left operand of '{node.operator}' must be integer for libyara output"
+        )
+        _reject_boolean_expression(
+            node.right, f"Right operand of '{node.operator}' must be integer for libyara output"
+        )
+
+
 def _visit_binary_operand(generator: Any, parent: Any, operand: Any, *, is_right: bool) -> str:
     from yaraast.ast.expressions import BinaryExpression
 
@@ -75,6 +103,7 @@ def _visit_binary_operand(generator: Any, parent: Any, operand: Any, *, is_right
 
 
 def visit_binary_expression(generator: Any, node: Any) -> str:
+    _reject_boolean_binary_numeric_operands(node)
     left = _visit_binary_operand(generator, node, node.left, is_right=False)
     right = _visit_binary_operand(generator, node, node.right, is_right=True)
     operator = _render_binary_operator(node.operator)
@@ -83,6 +112,14 @@ def visit_binary_expression(generator: Any, node: Any) -> str:
 
 def visit_unary_expression(generator: Any, node: Any) -> str:
     operator = _render_unary_operator(node.operator)
+    if operator == "-":
+        _reject_boolean_expression(
+            node.operand, "Operand of '-' must be numeric for libyara output"
+        )
+    if operator == "~":
+        _reject_boolean_expression(
+            node.operand, "Operand of '~' must be integer for libyara output"
+        )
     operand = generator.visit(node.operand)
     from yaraast.ast.expressions import BinaryExpression
 
@@ -128,13 +165,7 @@ def require_present_expression(value: Any, field_name: str) -> Any:
 
 
 def _reject_boolean_numeric_expression(value: Any, field_name: str) -> None:
-    from yaraast.ast.expressions import BooleanLiteral, ParenthesesExpression
-
-    if isinstance(value, bool | BooleanLiteral):
-        msg = f"{field_name} must be integer for libyara output"
-        raise ValueError(msg)
-    if isinstance(value, ParenthesesExpression):
-        _reject_boolean_numeric_expression(value.expression, field_name)
+    _reject_boolean_expression(value, f"{field_name} must be integer for libyara output")
 
 
 def visit_range_expression(generator: Any, node: Any) -> str:
