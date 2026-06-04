@@ -631,6 +631,38 @@ def test_codegen_generators_reject_regex_patterns_with_line_breaks(rule: Rule) -
     "rule",
     [
         Rule(
+            name="regex_string_carriage_return",
+            strings=[RegexString("$r", regex="line\rbreak")],
+            condition=StringIdentifier("$r"),
+        ),
+        Rule(
+            name="regex_literal_carriage_return",
+            condition=StringOperatorExpression(
+                StringLiteral("line\rbreak"),
+                "matches",
+                RegexLiteral("line\rbreak"),
+            ),
+        ),
+    ],
+)
+def test_codegen_generators_escape_regex_carriage_returns(rule: Rule) -> None:
+    ast = YaraFile(rules=[rule])
+
+    for generator in [
+        CodeGenerator(),
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())),
+        CodeGenerator(options=GeneratorOptions.comment_aware()),
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())),
+    ]:
+        out = generator.generate(ast)
+        assert "/line\\rbreak/" in out
+        assert "line\rbreak/" not in out
+
+
+@pytest.mark.parametrize(
+    "rule",
+    [
+        Rule(
             name="regex_string_nul",
             strings=[RegexString("$r", regex="nul\x00byte")],
             condition=StringIdentifier("$r"),

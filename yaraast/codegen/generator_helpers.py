@@ -172,14 +172,14 @@ def escape_regex_delimiter(pattern: str) -> str:
     if pattern == "":
         msg = "Regex pattern must not be empty for libyara output"
         raise ValueError(msg)
-    if "\n" in pattern or "\r" in pattern:
+    if "\n" in pattern:
         msg = "Regex pattern must not contain line breaks for libyara output"
         raise ValueError(msg)
     if "\x00" in pattern:
         msg = "Regex pattern must not contain NUL bytes for libyara output"
         raise ValueError(msg)
     validate_regex_pattern(pattern)
-    return _escape_regex_delimiter(pattern)
+    return _escape_regex_delimiter(pattern.replace("\r", "\\r"))
 
 
 def output_string_identifier(string_def: Any) -> str:
