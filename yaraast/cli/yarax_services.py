@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import re
 
-from yaraast.ast.base import require_string
+from yaraast.ast.base import YaraFile, require_string
 from yaraast.cli.utils import parse_yara_file
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.dialects import _strip_string_literals
 from yaraast.errors import YaraASTError
 from yaraast.parser.source import parse_yara_source
-from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
+from yaraast.yarax.compatibility_checker import CompatibilityIssue, YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
 from yaraast.yarax.generator import YaraXGenerator
 from yaraast.yarax.parser import YaraXParser
@@ -26,7 +26,7 @@ SLICE_PATTERN = r"(?:[A-Za-z_$]\w*(?:\s*\([^)]*\))?|\"\"|\])\s*\[[^\]\n]*:[^\]\n
 TUPLE_INDEXING_PATTERN = r"\([^()\n]*,[^()\n]*\)\s*\["
 
 
-def parse_yarax_content(content: str):
+def parse_yarax_content(content: str) -> tuple[YaraFile, str]:
     content = require_string(content, "content")
     parser = YaraXParser(content)
     ast = parser.parse()
@@ -34,11 +34,11 @@ def parse_yarax_content(content: str):
     return ast, generator.generate(ast)
 
 
-def parse_yara_file_ast(file_path: str):
+def parse_yara_file_ast(file_path: str) -> YaraFile:
     return parse_yara_file(file_path)
 
 
-def check_yarax_compatibility(ast, strict: bool):
+def check_yarax_compatibility(ast: YaraFile, strict: bool) -> list[CompatibilityIssue]:
     if not isinstance(strict, bool):
         msg = "strict must be a boolean"
         raise TypeError(msg)
@@ -100,7 +100,7 @@ def detect_yarax_features(content: str) -> list[str]:
         return parsed_features
 
     scan_content = _strip_string_literals(content)
-    features = []
+    features: list[str] = []
 
     if re.search(r"\bwith\s+\$?\w+\s*=", scan_content, re.IGNORECASE):
         _add_feature(features, "with statements")
@@ -154,7 +154,7 @@ def detect_playground_features(content: str) -> list[str]:
         return parsed_features
 
     scan_content = _strip_string_literals(content)
-    features = []
+    features: list[str] = []
     if re.search(r"\bwith\s+\$?\w+\s*=", scan_content, re.IGNORECASE):
         _add_feature(features, "with statements")
     if re.search(r"\[[^\]]+\bfor\s+\w+\s+in\s+[^\]]+\]", scan_content, re.IGNORECASE):

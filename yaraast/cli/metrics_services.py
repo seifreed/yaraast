@@ -12,8 +12,9 @@ from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file as _parse_yara_file
 from yaraast.errors import YaraASTError
 from yaraast.metrics import DependencyGraphGenerator, workflows as _workflows
+from yaraast.metrics.graphviz_errors import is_graphviz_error as _is_graphviz_error
+from yaraast.metrics.workflows import MetricsReportData
 
-MetricsReportData = _workflows.MetricsReportData
 _DEFAULT_FACTORY = object()
 
 
@@ -43,7 +44,7 @@ def analyze_complexity(ast: YaraFile) -> Any:
 
 
 def is_graphviz_error(error: Exception) -> bool:
-    return _workflows.is_graphviz_error(error)
+    return _is_graphviz_error(error)
 
 
 def build_complexity_payload(metrics: Any) -> dict[str, Any]:
@@ -95,7 +96,7 @@ def build_report(
     metrics = analyze_complexity(ast)
     payload = build_complexity_payload(metrics)
 
-    generated_files = []
+    generated_files: list[str] = []
     try:
         generated_files.extend(generate_dependency_graphs(ast, output_dir, base_name, image_format))
     except Exception as exc:

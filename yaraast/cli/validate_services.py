@@ -4,25 +4,27 @@ from __future__ import annotations
 
 from os import PathLike, fspath
 from pathlib import Path
+from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file
 from yaraast.errors import ValidationError
 from yaraast.libyara.equivalence import EquivalenceTester
-from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
+from yaraast.yarax.compatibility_checker import CompatibilityIssue, YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
 
 
-def validate_rule_file(rule_file: str):
+def validate_rule_file(rule_file: str) -> tuple[YaraFile, int, int, int]:
     ast = parse_yara_file(rule_file)
     return ast, len(ast.rules), len(ast.imports), sum(len(rule.strings) for rule in ast.rules)
 
 
-def roundtrip_test(rule_file: str, data: bytes | None):
+def roundtrip_test(rule_file: str, data: bytes | None) -> Any:
     tester = EquivalenceTester()
     return tester.test_file_round_trip(rule_file, data)
 
 
-def yarax_check(ast, strict: bool):
+def yarax_check(ast: YaraFile, strict: bool) -> list[CompatibilityIssue]:
     if not isinstance(strict, bool):
         msg = "strict must be a boolean"
         raise TypeError(msg)

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from yaraast import CodeGenerator
+from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file
 from yaraast.libyara.compatibility import ensure_libyara_compatible_ast
 from yaraast.shared.numeric_validation import validate_positive_int_setting
@@ -21,7 +23,7 @@ def _require_timeout(value: object) -> int | None:
     if value is None:
         return None
     validate_positive_int_setting(value, "timeout")
-    return value
+    return cast(int, value)
 
 
 def ensure_yara_available() -> None:
@@ -33,7 +35,7 @@ def ensure_yara_available() -> None:
         raise RuntimeError(msg)
 
 
-def ensure_yara_compatible_ast(ast) -> None:
+def ensure_yara_compatible_ast(ast: YaraFile) -> None:
     """Raise when an AST contains syntax libyara cannot compile."""
     ensure_libyara_compatible_ast(ast, action="use")
 
@@ -42,7 +44,7 @@ def compile_yara(
     input_file: str,
     optimize: object,
     debug: object,
-):
+) -> tuple[Any, Any, YaraFile]:
     """Parse and compile YARA rules."""
     optimize = _require_bool_option(optimize, "optimize")
     debug = _require_bool_option(debug, "debug")
@@ -62,7 +64,7 @@ def scan_yara(
     optimize: object,
     timeout: object,
     fast: object,
-):
+) -> tuple[Any | None, Any | None, Any]:
     """Compile and scan a target file."""
     optimize = _require_bool_option(optimize, "optimize")
     timeout = _require_timeout(timeout)
@@ -86,7 +88,7 @@ def scan_yara(
     return scan_result, matcher, compile_result
 
 
-def optimize_yara(input_file: str):
+def optimize_yara(input_file: str) -> tuple[Any, str]:
     """Optimize YARA rules and return optimizer + generated code."""
     from yaraast.libyara import ASTOptimizer
 

@@ -232,6 +232,11 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = [
     "yaraast.cli.commands.yaral",
+    "yaraast.cli.libyara_services",
+    "yaraast.cli.metrics_services",
+    "yaraast.cli.utils",
+    "yaraast.cli.validate_services",
+    "yaraast.cli.yarax_services",
     "yaraast.cli.yaral_reporting",
     "yaraast.cli.yaral_services",
     "yaraast.serialization._serialization_primitives",

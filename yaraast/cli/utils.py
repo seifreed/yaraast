@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import json
 from os import PathLike, fspath
 from pathlib import Path
+from typing import Any
 
 import click
 from rich.console import Console
 from rich.markup import escape
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.parser_helpers import parse_yara_source
 
 
@@ -106,26 +109,25 @@ def format_json(
     indent: int | None = 2,
     *,
     sort_keys: bool | None = None,
-    default: object | None = None,
+    default: Callable[[Any], Any] | None = None,
     ensure_ascii: bool | None = None,
 ) -> str:
     """Format data as JSON with shared defaults."""
-    kwargs: dict[str, object] = {}
-    if sort_keys is not None:
-        kwargs["sort_keys"] = sort_keys
-    if default is not None:
-        kwargs["default"] = default
-    if ensure_ascii is not None:
-        kwargs["ensure_ascii"] = ensure_ascii
-    return json.dumps(data, indent=indent, **kwargs)
+    return json.dumps(
+        data,
+        indent=indent,
+        sort_keys=False if sort_keys is None else sort_keys,
+        default=default,
+        ensure_ascii=True if ensure_ascii is None else ensure_ascii,
+    )
 
 
-def parse_yara_text(source: str) -> object:
+def parse_yara_text(source: str) -> YaraFile:
     """Parse YARA source into an AST."""
     return parse_yara_source(source)
 
 
-def parse_yara_file(path: str | Path) -> object:
+def parse_yara_file(path: str | Path) -> YaraFile:
     """Read + parse a YARA file into an AST."""
     return parse_yara_text(read_text(path))
 
