@@ -9,6 +9,7 @@ from yaraast.types.module_contracts import FunctionDefinition
 from yaraast.types.module_loader import ModuleLoader
 from yaraast.types.semantic_validator_core import ValidationResult
 from yaraast.types.semantic_validator_helpers import BUILTIN_FUNCTION_ARITY
+from yaraast.types.type_environment import _normalize_identifier
 from yaraast.types.type_system import TypeEnvironment
 from yaraast.visitor.defaults import DefaultASTVisitor
 
@@ -29,6 +30,12 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         function_name = self._function_name_or_none(node.function, node)
         arguments = self._function_arguments(node.arguments, node)
         if function_name is None:
+            self._visit_function_arguments(arguments, node)
+            return
+
+        if not self._validate_function_name(node, function_name):
+            if node.receiver is not None:
+                self._visit_required_expression(node.receiver, node, "Function call receiver")
             self._visit_function_arguments(arguments, node)
             return
 
@@ -53,6 +60,27 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
             "Use a function name such as 'uint16' or 'pe.imphash'.",
         )
         return None
+
+    def _validate_function_name(self, node: FunctionCall, function_name: str) -> bool:
+        parts = [function_name] if node.receiver is not None else function_name.split(".")
+        if not parts or any(part == "" for part in parts):
+            self.result.add_error(
+                f"Invalid function identifier: {function_name}",
+                node.location,
+                "Use a function name such as 'uint16' or 'pe.imphash'.",
+            )
+            return False
+        for part in parts:
+            try:
+                _normalize_identifier(part, "Function name", "function")
+            except ValueError as exc:
+                self.result.add_error(
+                    str(exc),
+                    node.location,
+                    "Use a function name such as 'uint16' or 'pe.imphash'.",
+                )
+                return False
+        return True
 
     def _function_arguments(self, value: Any, node: FunctionCall) -> list[Any]:
         if isinstance(value, list | tuple):

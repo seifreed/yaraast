@@ -37,6 +37,20 @@ from yaraast.types.semantic_validator_functions import FunctionCallValidator
 from yaraast.types.type_system import AnyType, FunctionDefinition, ModuleDefinition, TypeEnvironment
 
 
+def test_function_validator_rejects_invalid_function_names() -> None:
+    result = ValidationResult()
+    validator = FunctionCallValidator(result, TypeEnvironment())
+
+    for function in ["bad-name", "pe..imports", "for", ""]:
+        validator.visit(FunctionCall(function=function, arguments=[IntegerLiteral(0)]))
+
+    messages = [error.message for error in result.errors]
+    assert any("Invalid function identifier: bad-name" in message for message in messages)
+    assert any("Invalid function identifier: pe..imports" in message for message in messages)
+    assert any("Invalid function identifier: for" in message for message in messages)
+    assert any("Invalid function identifier: " in message for message in messages)
+
+
 class BrokenEnv(TypeEnvironment):
     """Environment that reports module imported but with missing canonical name."""
 

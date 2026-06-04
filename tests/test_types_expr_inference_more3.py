@@ -147,6 +147,16 @@ def test_expr_inference_treats_identifier_string_reference_as_string_identifier(
     assert inf.errors == []
 
 
+@pytest.mark.parametrize("function", ["bad-name", "pe..imports", "for", ""])
+def test_expr_inference_rejects_invalid_function_names(function: str) -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(FunctionCall(function=function, arguments=[IntegerLiteral(0)]))
+
+    assert isinstance(out, UnknownType)
+    assert inf.errors
+
+
 @pytest.mark.parametrize("name", ["true", "false"])
 def test_expr_inference_treats_boolean_keyword_identifiers_as_booleans(name: str) -> None:
     inf = ExpressionTypeInference(TypeEnvironment())

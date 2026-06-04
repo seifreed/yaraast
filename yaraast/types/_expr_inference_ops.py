@@ -413,6 +413,12 @@ def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
         return UnknownType()
 
     receiver = getattr(node, "receiver", None)
+    if not _validate_function_name(ctx, function_name, receiver=receiver):
+        if receiver is not None:
+            _infer_function_argument(ctx, receiver)
+        _visit_function_arguments(ctx, arguments)
+        return UnknownType()
+
     if receiver is not None:
         _infer_function_argument(ctx, receiver)
 
@@ -508,6 +514,20 @@ def _function_name_or_none(ctx: Any, value: Any) -> str | None:
         return value
     ctx.errors.append("Function name must be a string")
     return None
+
+
+def _validate_function_name(ctx: Any, function_name: str, *, receiver: Any) -> bool:
+    parts = [function_name] if receiver is not None else function_name.split(".")
+    if not parts or any(part == "" for part in parts):
+        ctx.errors.append(f"Invalid function identifier: {function_name}")
+        return False
+    for part in parts:
+        try:
+            _normalize_identifier(part, "Function name", "function")
+        except ValueError as exc:
+            ctx.errors.append(str(exc))
+            return False
+    return True
 
 
 def _function_arguments(ctx: Any, value: Any) -> list[Any]:
