@@ -252,6 +252,31 @@ def test_codegen_generators_reject_invalid_directive_quoted_values(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+def test_codegen_generator_formats_standard_leading_comments() -> None:
+    rule = Rule("commented", condition=BooleanLiteral(True))
+    rule.leading_comments = [Comment("plain lead")]
+
+    out = CodeGenerator().generate(YaraFile(rules=[rule]))
+
+    assert out.startswith("// plain lead\nrule commented")
+
+
+@pytest.mark.parametrize(
+    "comment_target",
+    ["leading", "trailing"],
+)
+def test_codegen_generator_rejects_standard_comment_newlines(comment_target: str) -> None:
+    rule = Rule("bad_comment", condition=BooleanLiteral(True))
+    comment = Comment("first\nsecond")
+    if comment_target == "leading":
+        rule.leading_comments = [comment]
+    else:
+        rule.trailing_comment = comment
+
+    with pytest.raises(ValueError, match="Comment text must not contain newlines"):
+        CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
 def test_codegen_generate_resets_indent_after_failed_generation() -> None:
     gen = CodeGenerator()
     with pytest.raises(RuntimeError, match="broken condition"):

@@ -197,11 +197,35 @@ def _validate_string_operator_operands(node: Any, operator: str) -> None:
 
 
 def visit_comment(node: Any) -> str:
-    return f"// {node.text}"
+    text = _require_comment_text(node.text)
+    if text.startswith("/*") and text.endswith("*/"):
+        body = text[2:-2]
+        if "*/" in body:
+            msg = "Block comment text must not contain embedded terminators for libyara output"
+            raise ValueError(msg)
+        return text
+    text = _format_line_comment_text(text)
+    if text.startswith("//"):
+        return f"// {text[2:].strip()}"
+    return f"// {text}"
 
 
 def visit_comment_group(node: Any) -> str:
-    return "\n".join(f"// {c.text}" for c in node.comments)
+    return "\n".join(visit_comment(c) for c in node.comments)
+
+
+def _require_comment_text(text: object) -> str:
+    if not isinstance(text, str):
+        msg = "Comment text must be a string for libyara output"
+        raise TypeError(msg)
+    return text
+
+
+def _format_line_comment_text(text: str) -> str:
+    if "\n" in text or "\r" in text:
+        msg = "Comment text must not contain newlines for libyara output"
+        raise ValueError(msg)
+    return text
 
 
 def visit_extern_import(node: Any) -> str:

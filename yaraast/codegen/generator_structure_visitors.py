@@ -20,13 +20,13 @@ def _emit_comments(generator: Any, node: Any) -> None:
     """Emit leading comments for an AST node."""
     if hasattr(node, "leading_comments") and node.leading_comments:
         for comment in node.leading_comments:
-            generator._writeline(comment.text)
+            generator._writeline(generator.visit(comment))
 
 
 def _emit_trailing(generator: Any, node: Any) -> None:
     """Emit trailing comment for an AST node."""
     if hasattr(node, "trailing_comment") and node.trailing_comment:
-        generator._write(f"  {node.trailing_comment.text}")
+        generator._write(f"  {generator.visit(node.trailing_comment)}")
 
 
 def _emit_top_level_line(generator: Any, node: Any) -> None:

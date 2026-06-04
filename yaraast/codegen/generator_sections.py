@@ -22,7 +22,7 @@ def _emit_comments(gen: Any, node: Any) -> None:
     """Emit leading comments for an AST node."""
     if hasattr(node, "leading_comments") and node.leading_comments:
         for comment in node.leading_comments:
-            gen._writeline(comment.text)
+            gen._writeline(gen.visit(comment))
 
 
 def write_meta_section(
