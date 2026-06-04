@@ -1770,15 +1770,11 @@ def test_codegen_generators_parenthesize_single_string_set_items(
         OfExpression(-1, Identifier("them")),
         ForOfExpression(-1, Identifier("them"), BooleanLiteral(True)),
         OfExpression(True, Identifier("them")),
-        OfExpression(0.0, Identifier("them")),
         OfExpression(1.01, Identifier("them")),
-        OfExpression(DoubleLiteral(0.0), Identifier("them")),
         OfExpression(DoubleLiteral(1.01), Identifier("them")),
         OfExpression("-1", Identifier("them")),
-        OfExpression("0%", Identifier("them")),
         OfExpression("101%", Identifier("them")),
         OfExpression(StringLiteral("-1"), Identifier("them")),
-        OfExpression(StringLiteral("0%"), Identifier("them")),
         OfExpression(StringLiteral("101%"), Identifier("them")),
         OfExpression("bad-key", Identifier("them")),
         OfExpression("true", Identifier("them")),
@@ -1953,6 +1949,27 @@ def test_codegen_generators_render_fractional_quantifier_percentages() -> None:
     assert "29% of them" in CodeGenerator(
         options=GeneratorOptions(pretty=PrettyPrintOptions())
     ).generate(ast)
+
+
+def test_codegen_generators_render_zero_percent_quantifiers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="zero_percent_quantifier",
+                strings=[PlainString(identifier="a", value="x")],
+                condition=OfExpression(0.0, Identifier("them")),
+            )
+        ]
+    )
+
+    assert "0% of them" in CodeGenerator().generate(ast)
+    assert CodeGenerator().generate(OfExpression(DoubleLiteral(0.0), Identifier("them"))) == (
+        "0% of them"
+    )
+    assert CodeGenerator().generate(OfExpression("0%", Identifier("them"))) == "0% of them"
+    assert CodeGenerator().generate(OfExpression(StringLiteral("0%"), Identifier("them"))) == (
+        "0% of them"
+    )
 
 
 @pytest.mark.parametrize(

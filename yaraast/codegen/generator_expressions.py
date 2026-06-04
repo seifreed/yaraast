@@ -13,7 +13,7 @@ from yaraast.codegen.generator_helpers import (
 
 _INTEGER_QUANTIFIER_RE = re.compile(r"^-?\d+$")
 _PERCENTAGE_QUANTIFIER_RE = re.compile(r"^(\d+)%$")
-_QUANTIFIER_PERCENT_MIN = 1
+_QUANTIFIER_PERCENT_MIN = 0
 _QUANTIFIER_PERCENT_MAX = 100
 
 

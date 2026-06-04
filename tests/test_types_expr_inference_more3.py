@@ -190,6 +190,40 @@ def test_expr_inference_rejects_wildcard_string_references_in_concrete_contexts(
     assert "Invalid string reference '$*'" in inf.errors
 
 
+@pytest.mark.parametrize(
+    "expression",
+    [
+        OfExpression(quantifier=-1, string_set=Identifier(name="them")),
+        OfExpression(quantifier="", string_set=Identifier(name="them")),
+        OfExpression(quantifier="true", string_set=Identifier(name="them")),
+        OfExpression(quantifier="bad-key", string_set=Identifier(name="them")),
+        OfExpression(quantifier=StringLiteral(value="-1"), string_set=Identifier(name="them")),
+        ForOfExpression(
+            quantifier=-1,
+            string_set=Identifier(name="them"),
+            condition=BooleanLiteral(value=True),
+        ),
+        ForOfExpression(
+            quantifier="",
+            string_set=Identifier(name="them"),
+            condition=BooleanLiteral(value=True),
+        ),
+        ForOfExpression(
+            quantifier=DoubleLiteral(value=1.01),
+            string_set=Identifier(name="them"),
+            condition=BooleanLiteral(value=True),
+        ),
+    ],
+)
+def test_expr_inference_rejects_invalid_of_quantifier_values(expression: Any) -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(expression)
+
+    assert isinstance(out, BooleanType)
+    assert inf.errors
+
+
 @pytest.mark.parametrize("name", ["true", "false"])
 def test_expr_inference_treats_boolean_keyword_identifiers_as_booleans(name: str) -> None:
     inf = ExpressionTypeInference(TypeEnvironment())
@@ -1061,7 +1095,19 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
     )
     assert percent_of.errors == []
 
-    for percentage in (0.0, 1.01):
+    zero_percent_of = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        zero_percent_of.infer(
+            OfExpression(
+                quantifier=DoubleLiteral(value=0.0),
+                string_set=Identifier(name="them"),
+            ),
+        ),
+        BooleanType,
+    )
+    assert zero_percent_of.errors == []
+
+    for percentage in (1.01,):
         bad_percent_of = ExpressionTypeInference(TypeEnvironment())
         assert isinstance(
             bad_percent_of.infer(
@@ -1073,7 +1119,7 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
             BooleanType,
         )
         assert any(
-            "'of' percentage quantifier must be between 1 and 100" in e
+            "'of' percentage quantifier must be between 0 and 100" in e
             for e in bad_percent_of.errors
         )
 
@@ -1132,7 +1178,7 @@ def test_expr_inference_rejects_raw_boolean_quantifiers() -> None:
         ),
         BooleanType,
     )
-    assert any("'for...of' quantifier must be string or integer" in e for e in for_of_inf.errors)
+    assert any("'for...of' quantifier must be" in e for e in for_of_inf.errors)
 
 
 def test_expr_inference_rejects_invalid_for_expression_variable_names() -> None:
@@ -1344,9 +1390,20 @@ def test_expr_inference_helper_and_branch_edges() -> None:
         ),
         BooleanType,
     )
-    assert any(
-        "'for...of' quantifier must be string or integer" in e for e in percent_for_of.errors
+    assert percent_for_of.errors == []
+
+    zero_percent_for_of = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        zero_percent_for_of.infer(
+            ForOfExpression(
+                quantifier=DoubleLiteral(value=0.0),
+                string_set=Identifier(name="them"),
+                condition=BooleanLiteral(value=True),
+            )
+        ),
+        BooleanType,
     )
+    assert zero_percent_for_of.errors == []
 
     bad_for_of = ExpressionTypeInference(TypeEnvironment())
     assert isinstance(
@@ -1359,7 +1416,7 @@ def test_expr_inference_helper_and_branch_edges() -> None:
         ),
         BooleanType,
     )
-    assert any("'for...of' quantifier must be string or integer" in e for e in bad_for_of.errors)
+    assert any("'for...of' quantifier must be" in e for e in bad_for_of.errors)
 
 
 def test_expr_inference_handles_yarax_with_match_collections() -> None:

@@ -935,6 +935,81 @@ def _infer_quantifier_value(ctx: Any, value: Any) -> YaraType:
     return UnknownType()
 
 
+def _validate_quantifier_value(
+    ctx: Any,
+    value: Any,
+    *,
+    context: str,
+    allow_percentage: bool,
+) -> None:
+    if isinstance(value, bool):
+        return
+    if isinstance(value, int):
+        if value < 0:
+            ctx.errors.append(f"Invalid {context} quantifier '{value}'")
+        return
+    if isinstance(value, float):
+        if allow_percentage:
+            _validate_percentage_quantifier_value(ctx, value, context)
+        return
+    if isinstance(value, IntegerLiteral):
+        if isinstance(value.value, int) and not isinstance(value.value, bool) and value.value < 0:
+            ctx.errors.append(f"Invalid {context} quantifier '{value.value}'")
+        return
+    if isinstance(value, DoubleLiteral):
+        if allow_percentage:
+            _validate_percentage_quantifier_value(ctx, value.value, context)
+        return
+    if isinstance(value, StringLiteral):
+        _validate_quantifier_text_value(
+            ctx,
+            value.value,
+            context=context,
+            allow_percentage=allow_percentage,
+        )
+        return
+    if isinstance(value, str):
+        _validate_quantifier_text_value(
+            ctx,
+            value,
+            context=context,
+            allow_percentage=allow_percentage,
+        )
+
+
+def _validate_percentage_quantifier_value(ctx: Any, value: float, context: str) -> None:
+    if not 0 <= value <= 1:
+        ctx.errors.append(f"'{context}' percentage quantifier must be between 0 and 100")
+
+
+def _validate_quantifier_text_value(
+    ctx: Any,
+    value: Any,
+    *,
+    context: str,
+    allow_percentage: bool,
+) -> None:
+    if not isinstance(value, str):
+        return
+    if value in {"all", "any", "none"}:
+        return
+    if value.isdigit():
+        return
+    if value.endswith("%"):
+        percent_text = value[:-1]
+        if not allow_percentage or not percent_text.isdigit():
+            ctx.errors.append(f"Invalid {context} quantifier '{value}'")
+            return
+        percent = int(percent_text)
+        if not 0 <= percent <= 100:
+            ctx.errors.append(f"'{context}' percentage quantifier must be between 0 and 100")
+        return
+    try:
+        _normalize_identifier(value, "Quantifier", "quantifier")
+    except ValueError as exc:
+        ctx.errors.append(str(exc))
+
+
 def _infer_string_set_value(ctx: Any, value: Any) -> YaraType:
     if isinstance(value, ParenthesesExpression):
         return _infer_string_set_value(ctx, value.expression)
@@ -1143,14 +1218,6 @@ def _validate_rule_set_refs(ctx: Any, value: Any) -> None:
         ctx.errors.append(f"Undefined rule pattern: {value.pattern}")
 
 
-def _percentage_quantifier_value(value: Any) -> float | None:
-    if isinstance(value, DoubleLiteral):
-        return value.value
-    if isinstance(value, float):
-        return value
-    return None
-
-
 def _loop_variable_names(ctx: Any, variable: Any) -> list[str]:
     if not isinstance(variable, str):
         ctx.errors.append("For-expression variable must be a string")
@@ -1273,14 +1340,17 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
         return result_type
 
     if isinstance(node, OfExpression):
+        _validate_quantifier_value(
+            ctx,
+            node.quantifier,
+            context="of",
+            allow_percentage=True,
+        )
         quant_type = _infer_quantifier_value(ctx, node.quantifier)
         if not isinstance(quant_type, StringType | IntegerType | DoubleType):
             ctx.errors.append(
                 f"'of' quantifier must be string, integer, or percentage, got {quant_type}"
             )
-        percentage = _percentage_quantifier_value(node.quantifier)
-        if percentage is not None and not 0 < percentage <= 1:
-            ctx.errors.append("'of' percentage quantifier must be between 1 and 100")
         set_kind = _classify_of_set_value(node.string_set)
         if set_kind == "string":
             _validate_string_set_refs(ctx, node.string_set)
@@ -1298,6 +1368,12 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
         return BooleanType()
 
     if isinstance(node, ForExpression):
+        _validate_quantifier_value(
+            ctx,
+            node.quantifier,
+            context="for",
+            allow_percentage=False,
+        )
         quant_type = _infer_quantifier_value(ctx, node.quantifier)
         if not isinstance(quant_type, StringType | IntegerType):
             ctx.errors.append(f"'for' quantifier must be string or integer, got {quant_type}")
@@ -1318,8 +1394,16 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
         return BooleanType()
 
     quant_type = _infer_quantifier_value(ctx, node.quantifier)
-    if not isinstance(quant_type, StringType | IntegerType):
-        ctx.errors.append(f"'for...of' quantifier must be string or integer, got {quant_type}")
+    _validate_quantifier_value(
+        ctx,
+        node.quantifier,
+        context="for...of",
+        allow_percentage=True,
+    )
+    if not isinstance(quant_type, StringType | IntegerType | DoubleType):
+        ctx.errors.append(
+            f"'for...of' quantifier must be string, integer, or percentage, got {quant_type}"
+        )
     _validate_string_set_refs(ctx, node.string_set)
     set_type = _infer_string_set_value(ctx, node.string_set)
     if not isinstance(set_type, StringSetType):
