@@ -557,6 +557,34 @@ def test_codegen_generator_rejects_unsupported_regex_multiline_modifiers() -> No
             gen.generate(YaraFile(rules=[rule]))
 
 
+@pytest.mark.parametrize(
+    "rule",
+    [
+        Rule(
+            name="regex_string_newline",
+            strings=[RegexString("$r", regex="line\nbreak")],
+            condition=StringIdentifier("$r"),
+        ),
+        Rule(
+            name="regex_literal_newline",
+            condition=RegexLiteral("line\nbreak"),
+        ),
+    ],
+)
+def test_codegen_generators_reject_regex_patterns_with_line_breaks(rule: Rule) -> None:
+    ast = YaraFile(rules=[rule])
+    message = "Regex pattern must not contain line breaks"
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generator_rejects_duplicate_regex_suffix_modifiers() -> None:
     gen = CodeGenerator()
     rule = Rule(
