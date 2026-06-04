@@ -32,6 +32,7 @@ from yaraast.ast.expressions import (
     StringLength,
     StringLiteral,
     StringOffset,
+    StringWildcard,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.modules import DictionaryAccess
@@ -164,6 +165,16 @@ def test_expr_inference_rejects_invalid_string_identifiers_before_lookup(name: A
     inf = ExpressionTypeInference(env)
 
     out = inf.infer(StringIdentifier(name))
+
+    assert isinstance(out, UnknownType)
+    assert inf.errors
+
+
+@pytest.mark.parametrize("pattern", ["$bad-name*", "$", "", cast(Any, 123)])
+def test_expr_inference_rejects_invalid_string_wildcards(pattern: Any) -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(StringWildcard(pattern))
 
     assert isinstance(out, UnknownType)
     assert inf.errors

@@ -212,6 +212,11 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         return UnknownType()
 
     def visit_string_wildcard(self, node: StringWildcard) -> YaraType:
+        try:
+            normalize_string_reference_id(node.pattern)
+        except (TypeError, ValueError) as exc:
+            self.errors.append(str(exc))
+            return UnknownType()
         return StringSetType()
 
     def visit_string_count(self, node: StringCount) -> YaraType:
