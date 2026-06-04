@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from copy import copy
 from dataclasses import fields, is_dataclass, replace
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
@@ -96,7 +96,8 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             kwargs[f.name] = self._transform_value(value)
 
         try:
-            return self._with_transformed_non_init_fields(node, replace(node, **kwargs))
+            transformed = cast(T, replace(cast(Any, node), **kwargs))
+            return self._with_transformed_non_init_fields(node, transformed)
         except TypeError as exc:
             if "unexpected keyword argument" not in str(exc):
                 raise
