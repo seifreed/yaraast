@@ -957,14 +957,18 @@ def _should_validate_raw_string_refs(ctx: Any) -> bool:
     return bool(ctx.env.strings)
 
 
-def _validate_raw_string_ref(ctx: Any, value: str) -> None:
+def _validate_raw_string_ref(ctx: Any, value: str, *, allow_wildcard: bool = True) -> None:
     if not _should_validate_raw_string_refs(ctx):
         return
     if value in {"", "$"} and ctx.env.lookup("$"):
         return
 
     try:
-        normalized = ctx._normalize_string_id(value)
+        normalized = (
+            ctx._normalize_string_id(value)
+            if allow_wildcard
+            else normalize_string_reference_id(value, allow_wildcard=False)
+        )
     except ValueError as exc:
         ctx.errors.append(str(exc))
         return
@@ -1230,7 +1234,7 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
 
     if isinstance(node, AtExpression):
         if isinstance(node.string_id, str):
-            _validate_raw_string_ref(ctx, node.string_id)
+            _validate_raw_string_ref(ctx, node.string_id, allow_wildcard=False)
         else:
             subject_type = ctx.visit(node.string_id)
             if not isinstance(subject_type, BooleanType):
@@ -1245,7 +1249,7 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
 
     if isinstance(node, InExpression):
         if isinstance(node.subject, str):
-            _validate_raw_string_ref(ctx, node.subject)
+            _validate_raw_string_ref(ctx, node.subject, allow_wildcard=False)
             result_type: YaraType = BooleanType()
         elif isinstance(node.subject, StringCount):
             subject_type = ctx.visit(node.subject)

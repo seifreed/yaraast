@@ -167,6 +167,29 @@ def test_expr_inference_rejects_invalid_module_references(module: Any) -> None:
     assert inf.errors
 
 
+@pytest.mark.parametrize(
+    "expression",
+    [
+        AtExpression(string_id="$*", offset=IntegerLiteral(value=0)),
+        InExpression(
+            subject="$*",
+            range=RangeExpression(IntegerLiteral(value=0), IntegerLiteral(value=1)),
+        ),
+    ],
+)
+def test_expr_inference_rejects_wildcard_string_references_in_concrete_contexts(
+    expression: Any,
+) -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(expression)
+
+    assert isinstance(out, BooleanType)
+    assert "Invalid string reference '$*'" in inf.errors
+
+
 @pytest.mark.parametrize("name", ["true", "false"])
 def test_expr_inference_treats_boolean_keyword_identifiers_as_booleans(name: str) -> None:
     inf = ExpressionTypeInference(TypeEnvironment())
