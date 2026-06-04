@@ -81,3 +81,25 @@ rule yarax_sample {
     json_result = runner.invoke(parse, [str(source), "--dialect", "yara-x", "--format", "json"])
     assert json_result.exit_code == 0
     assert '"type": "WithStatement"' in json_result.output
+
+
+def test_parse_cmd_tree_preserves_selective_extern_import_details(tmp_path: Path) -> None:
+    runner = CliRunner()
+    source = tmp_path / "extern_import.yar"
+
+    _write(
+        source,
+        """
+import "external.rules" (A, B) as er
+
+rule uses_external {
+    condition:
+        er.A
+}
+""",
+    )
+
+    result = runner.invoke(parse, [str(source), "--format", "tree"])
+
+    assert result.exit_code == 0
+    assert "extern import external.rules (A, B) as er" in result.output

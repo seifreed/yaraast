@@ -287,10 +287,20 @@ class ASTTreeBuilder:
         return Tree("dict[...]")
 
     def visit_extern_import(self, node: Any) -> Tree:
+        from rich.markup import escape
+
         module_path = getattr(node, "module", None)
         if module_path is None:
             module_path = getattr(node, "module_path", "")
-        return Tree(f"extern import {module_path}")
+        label = f"extern import {escape(str(module_path))}"
+        rules = getattr(node, "rules", [])
+        if rules:
+            rendered_rules = ", ".join(escape(str(rule)) for rule in rules)
+            label = f"{label} ({rendered_rules})"
+        alias = getattr(node, "alias", None)
+        if alias:
+            label = f"{label} as {escape(str(alias))}"
+        return Tree(label)
 
     def visit_extern_namespace(self, node: Any) -> Tree:
         namespace_tree = Tree(f"extern namespace {node.name if hasattr(node, 'name') else ''}")
