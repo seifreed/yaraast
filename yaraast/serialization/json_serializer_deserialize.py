@@ -10,7 +10,6 @@ from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.serialization._serialization_primitives import (
     _HEX_CHARS,
-    _deserialize_bool_field,
     _deserialize_boolean_literal_value,
     _deserialize_comment_multiline,
     _deserialize_comment_text,
@@ -880,9 +879,14 @@ def _deser_match_case(self, data: dict[str, Any]):
 def _deser_spread_operator(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import SpreadOperator
 
+    expression = _deserialize_required_expression(self, data, "expression", "SpreadOperator")
+    raw_is_dict = _deserialize_required_field(data, "is_dict", "SpreadOperator")
+    if not isinstance(raw_is_dict, bool):
+        msg = "SpreadOperator is_dict must be a boolean"
+        raise SerializationError(msg)
     return SpreadOperator(
-        expression=_deserialize_required_expression(self, data, "expression", "SpreadOperator"),
-        is_dict=_deserialize_bool_field(data, "is_dict", "SpreadOperator"),
+        expression=expression,
+        is_dict=raw_is_dict,
     )
 
 

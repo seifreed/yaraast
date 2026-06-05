@@ -74,7 +74,6 @@ from yaraast.errors import SerializationError, ValidationError, YaraASTError
 from yaraast.parser.source import parse_yara_source
 from yaraast.serialization._serialization_primitives import (
     _HEX_CHARS,
-    _deserialize_bool_field,
     _deserialize_boolean_literal_value,
     _deserialize_comment_multiline,
     _deserialize_comment_text,
@@ -2102,9 +2101,14 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             result=_deserialize_required_node(data, "result", "MatchCase"),
         )
     if node_type == "SpreadOperator":
+        expression = _deserialize_required_node(data, "expression", "SpreadOperator")
+        raw_is_dict = _deserialize_required_field(data, "is_dict", "SpreadOperator")
+        if not isinstance(raw_is_dict, bool):
+            msg = "SpreadOperator is_dict must be a boolean"
+            raise SerializationError(msg)
         return SpreadOperator(
-            expression=_deserialize_required_node(data, "expression", "SpreadOperator"),
-            is_dict=_deserialize_bool_field(data, "is_dict", "SpreadOperator"),
+            expression=expression,
+            is_dict=raw_is_dict,
         )
     msg = f"Unsupported simple AST node type: {node_type}"
     raise SerializationError(msg)

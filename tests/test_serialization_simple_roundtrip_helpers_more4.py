@@ -2108,6 +2108,9 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="SpreadOperator is_dict must be a boolean"):
         deserialize_node({"type": "SpreadOperator", "expression": true_expr, "is_dict": "yes"})
 
+    with pytest.raises(SerializationError, match="SpreadOperator is_dict is required"):
+        deserialize_node({"type": "SpreadOperator", "expression": true_expr})
+
 
 def test_simple_roundtrip_condition_fields_reject_wrong_scalar_types() -> None:
     true_expr = {"type": "BooleanLiteral", "value": True}

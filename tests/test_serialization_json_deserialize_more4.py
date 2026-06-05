@@ -1383,6 +1383,9 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
             {"type": "SpreadOperator", "expression": true_expr, "is_dict": "yes"}
         )
 
+    with pytest.raises(SerializationError, match="SpreadOperator is_dict is required"):
+        s._deserialize_expression({"type": "SpreadOperator", "expression": true_expr})
+
 
 def test_json_deserialize_condition_fields_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()
