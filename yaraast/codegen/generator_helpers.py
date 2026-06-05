@@ -86,7 +86,7 @@ BASE64_MODIFIERS = frozenset({"base64", "base64wide"})
 _PARAMETERIZED_STRING_MODIFIERS = BASE64_MODIFIERS | {"xor"}
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 _STRING_IDENTIFIER_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
-_YARA_INTEGER_TEXT_RE = re.compile(r"^[+-]?(?:0[xX][0-9A-Fa-f]+|0[oO][0-7]+|[0-9]+(?:KB|MB))$")
+_YARA_INTEGER_TEXT_RE = re.compile(r"^[+-]?(?:0x[0-9A-Fa-f]+|0o[0-7]+|[0-9]+(?:KB|MB))$")
 _STRING_PLACEHOLDER_REFERENCES = frozenset({"", "$"})
 _YARA_INTEGER_MIN = -(2**63) + 1
 _YARA_INTEGER_MAX = 2**63 - 1
@@ -558,6 +558,8 @@ def format_integer_literal(value: object) -> str:
 def _parse_integer_literal_text(value: str) -> int | str | None:
     if _YARA_INTEGER_TEXT_RE.fullmatch(value) is not None:
         return value
+    if _has_uppercase_integer_base_prefix(value):
+        return None
     try:
         return int(value)
     except ValueError:
@@ -566,6 +568,11 @@ def _parse_integer_literal_text(value: str) -> int | str | None:
         return int(value, 0)
     except ValueError:
         return None
+
+
+def _has_uppercase_integer_base_prefix(value: str) -> bool:
+    text = value.strip().lstrip("+-")
+    return text.startswith(("0X", "0O"))
 
 
 def _integer_literal_numeric_value(value: str) -> int:

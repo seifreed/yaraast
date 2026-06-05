@@ -137,12 +137,12 @@ def test_lexer_rejects_integer_literals_above_int64_maximum() -> None:
 
 
 def test_lexer_reports_malformed_prefixed_integer_literals_as_lexer_errors() -> None:
-    malformed_hex_values = ["0x", "0x_", "0x1_", "0x1__2", "0xg", "0x1g"]
+    malformed_hex_values = ["0x", "0x_", "0x1_", "0x1__2", "0xg", "0x1g", "0X10"]
     for value in malformed_hex_values:
         with pytest.raises(LexerError, match="Invalid hexadecimal integer literal"):
             _tokens(value)
 
-    malformed_octal_values = ["0o", "0o_", "0o7_", "0o7__1", "0o8", "0o78"]
+    malformed_octal_values = ["0o", "0o_", "0o7_", "0o7__1", "0o8", "0o78", "0O10"]
     for value in malformed_octal_values:
         with pytest.raises(LexerError, match="Invalid octal integer literal"):
             _tokens(value)

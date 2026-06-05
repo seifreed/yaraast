@@ -192,7 +192,10 @@ def read_number(lexer: LexerLike) -> Token:
     value = ""
     next_char = lexer._peek_char()
     # Hexadecimal: 0x1A, 0xFF_FF
-    if lexer._current_char() == "0" and next_char is not None and next_char in "xX":
+    if lexer._current_char() == "0" and next_char == "X":
+        msg = "Invalid hexadecimal integer literal"
+        raise LexerError(msg, start_line, start_column)
+    if lexer._current_char() == "0" and next_char == "x":
         value += "0"
         lexer._advance()
         value += next_char
@@ -212,7 +215,10 @@ def read_number(lexer: LexerLike) -> Token:
             raise LexerError(msg, start_line, start_column)
         return _integer_token(int(value, 16), start_line, start_column, lexer.column - start_column)
     # Octal: 0o77, 0o123
-    if lexer._current_char() == "0" and next_char is not None and next_char in "oO":
+    if lexer._current_char() == "0" and next_char == "O":
+        msg = "Invalid octal integer literal"
+        raise LexerError(msg, start_line, start_column)
+    if lexer._current_char() == "0" and next_char == "o":
         value += "0"
         lexer._advance()
         value += next_char
