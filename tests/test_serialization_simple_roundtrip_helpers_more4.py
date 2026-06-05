@@ -990,19 +990,17 @@ def test_simple_roundtrip_serialize_node_rejects_invalid_metadata_collections() 
         serialize_node(rule)
 
 
-def test_simple_roundtrip_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:
-    plain = deserialize_string(
-        {
-            "type": "PlainString",
-            "identifier": "$a",
-            "value": "abc",
-            "modifiers": [],
-            "is_anonymous": "false",
-        }
-    )
-
-    assert isinstance(plain, PlainString)
-    assert plain.is_anonymous is False
+def test_simple_roundtrip_deserialize_string_rejects_non_bool_anonymous_flag() -> None:
+    with pytest.raises(SerializationError, match="is_anonymous must be a boolean"):
+        deserialize_string(
+            {
+                "type": "PlainString",
+                "identifier": "$a",
+                "value": "abc",
+                "modifiers": [],
+                "is_anonymous": "false",
+            }
+        )
 
 
 def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> None:

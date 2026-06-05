@@ -155,7 +155,13 @@ def _deserialize_plain_string_raw_bytes(data: dict[str, Any]) -> bytes | None:
 
 
 def _deserialize_is_anonymous(data: dict[str, Any]) -> bool:
-    return data.get("is_anonymous") is True
+    if "is_anonymous" not in data:
+        return False
+    value = data["is_anonymous"]
+    if isinstance(value, bool):
+        return value
+    msg = "is_anonymous must be a boolean"
+    raise SerializationError(msg)
 
 
 def _deserialize_integer_literal_value(data: dict[str, Any]) -> int:

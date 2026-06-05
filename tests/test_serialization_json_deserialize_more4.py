@@ -650,21 +650,19 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
         )
 
 
-def test_json_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:
+def test_json_deserialize_string_rejects_non_bool_anonymous_flag() -> None:
     s = JsonSerializer()
 
-    plain = s._deserialize_string(
-        {
-            "type": "PlainString",
-            "identifier": "$a",
-            "value": "abc",
-            "modifiers": [],
-            "is_anonymous": "false",
-        }
-    )
-
-    assert isinstance(plain, PlainString)
-    assert plain.is_anonymous is False
+    with pytest.raises(SerializationError, match="is_anonymous must be a boolean"):
+        s._deserialize_string(
+            {
+                "type": "PlainString",
+                "identifier": "$a",
+                "value": "abc",
+                "modifiers": [],
+                "is_anonymous": "false",
+            }
+        )
 
 
 def test_json_deserialize_strings_reject_wrong_scalar_types() -> None:
