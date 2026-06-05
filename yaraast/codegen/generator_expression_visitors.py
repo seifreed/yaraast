@@ -1122,21 +1122,31 @@ def visit_for_expression(generator: Any, node: Any) -> str:
     iterable = generator.visit(node.iterable)
     if isinstance(node.iterable, RangeExpression):
         iterable = f"({iterable})"
-    body = generator.visit(node.body)
     quantifier = _render_quantifier(
         generator, node.quantifier, allow_percentage=False, context="for quantifier"
     )
     variable = _render_for_loop_variable(node.variable)
+    previous_locals = getattr(generator, "_contextual_local_identifiers", ())
+    local_names = frozenset(_split_for_loop_variable_names(node.variable))
+    generator._contextual_local_identifiers = (*previous_locals, local_names)
+    try:
+        body = generator.visit(node.body)
+    finally:
+        generator._contextual_local_identifiers = previous_locals
     return f"for {quantifier} {variable} in {iterable} : ({body})"
 
 
 def _render_for_loop_variable(variable: Any) -> str:
     if not isinstance(variable, str):
         return validate_yara_identifier(variable, "loop variable")
-    names = [part.strip() for part in variable.split(",")]
+    names = _split_for_loop_variable_names(variable)
     if len(names) == 1:
         return validate_yara_identifier(variable, "loop variable")
     return ", ".join(validate_yara_identifier(name, "loop variable") for name in names)
+
+
+def _split_for_loop_variable_names(variable: str) -> list[str]:
+    return [part.strip() for part in variable.split(",")]
 
 
 def visit_at_expression(generator: Any, node: Any) -> str:

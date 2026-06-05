@@ -23,6 +23,12 @@ from yaraast.lexer import TokenType
 
 from ._shared import ParserError, max_expression_depth
 
+_CONTEXTUAL_LOCAL_IDENTIFIER_TOKENS = (TokenType.IDENTIFIER, TokenType.AS, TokenType.INCLUDE)
+
+
+def _for_loop_variable_names(variable: str) -> set[str]:
+    return {part.strip() for part in variable.split(",") if part.strip()}
+
 
 class ExpressionForMixin:
     """Mixin with quantifier/for/of expression parsing."""
@@ -45,7 +51,7 @@ class ExpressionForMixin:
         if self._match(TokenType.OF):
             return self._parse_for_of_expression(quantifier, start_token)
 
-        if not self._match(TokenType.IDENTIFIER):
+        if not self._match_for_loop_identifier():
             msg = "Expected variable name"
             raise ParserError(msg, self._peek())
 
@@ -53,7 +59,7 @@ class ExpressionForMixin:
 
         # Support multi-variable for loops: for any k, v in dict : (...)
         if self._match(TokenType.COMMA):
-            if not self._match(TokenType.IDENTIFIER):
+            if not self._match_for_loop_identifier():
                 msg = "Expected second variable after ','"
                 raise ParserError(msg, self._peek())
             variable = f"{variable},{self._previous().value}"
@@ -87,7 +93,11 @@ class ExpressionForMixin:
             msg = "Expected '(' after ':'"
             raise ParserError(msg, self._peek())
 
-        body = self._parse_expression()
+        self._contextual_local_identifiers.append(_for_loop_variable_names(variable))
+        try:
+            body = self._parse_expression()
+        finally:
+            self._contextual_local_identifiers.pop()
 
         if not self._match(TokenType.RPAREN):
             msg = "Expected ')' after for body"
@@ -103,6 +113,9 @@ class ExpressionForMixin:
             start_token,
             self._previous(),
         )
+
+    def _match_for_loop_identifier(self) -> bool:
+        return self._match(*_CONTEXTUAL_LOCAL_IDENTIFIER_TOKENS)
 
     def _parse_for_quantifier_expression(self) -> QuantifierValue:
         """Parse a non-keyword 'for' quantifier as a primary expression.

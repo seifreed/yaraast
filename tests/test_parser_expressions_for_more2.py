@@ -91,6 +91,24 @@ def test_multi_variable_for_loop_round_trips() -> None:
     assert reparsed.rules[0].condition.variable == "k,v"
 
 
+@pytest.mark.parametrize("keyword", ["as", "include"])
+def test_contextual_keyword_for_loop_variable_round_trips(keyword: str) -> None:
+    from yaraast.codegen.generator import CodeGenerator
+
+    yara = pytest.importorskip("yara")
+    source = f"rule r {{ condition: for any {keyword} in (1, 2) : ({keyword} > 0) }}"
+    yara.compile(source=source)
+
+    ast = Parser().parse(source)
+    condition = ast.rules[0].condition
+    assert isinstance(condition, ForExpression)
+    assert condition.variable == keyword
+
+    generated = CodeGenerator().generate(ast)
+    assert f"for any {keyword} in" in generated
+    yara.compile(source=generated)
+
+
 def test_parse_for_of_does_not_consume_outer_boolean_expression() -> None:
     ast = Parser().parse('rule r { strings: $a = "a" condition: for any of them : ($) and true }')
     condition = ast.rules[0].condition

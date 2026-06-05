@@ -288,10 +288,12 @@ class ExpressionPrimaryMixin:
 
     def _try_parse_identifier(self) -> Expression | None:
         """Try to parse an identifier or module reference."""
-        if not self._match(TokenType.IDENTIFIER):
+        if not self._match(TokenType.IDENTIFIER) and not self._match_contextual_local_identifier():
             return None
         token = self._previous()
         name = self._previous().value
+        if token.type != TokenType.IDENTIFIER:
+            return self._set_node_location_from_token(Identifier(name=name), token)
         if self._can_use_string_wildcard_reference() and self._match(TokenType.MULTIPLY):
             return self._set_node_location_from_tokens(
                 StringWildcard(pattern=f"{name}*"), token, self._previous()
@@ -305,6 +307,17 @@ class ExpressionPrimaryMixin:
         if name in KNOWN_MODULES:
             return self._set_node_location_from_token(ModuleReference(module=name), token)
         return self._set_node_location_from_token(Identifier(name=name), token)
+
+    def _match_contextual_local_identifier(self) -> bool:
+        token = self._peek()
+        if token.type not in {TokenType.AS, TokenType.INCLUDE}:
+            return False
+        name = str(token.value)
+        local_frames = getattr(self, "_contextual_local_identifiers", [])
+        if not any(name in frame for frame in reversed(local_frames)):
+            return False
+        self._advance()
+        return True
 
     def _try_parse_for_expression(self) -> Expression | None:
         """Try to parse a for expression."""

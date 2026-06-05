@@ -79,8 +79,8 @@ def visit_hex_nibble(node: Any) -> str:
     return f"{value_str}?" if node.high else f"?{value_str}"
 
 
-def visit_identifier(node: Any) -> str:
-    return validate_yara_expression_identifier(node.name)
+def visit_identifier(node: Any, contextual_locals: set[str] | frozenset[str] | None = None) -> str:
+    return validate_yara_expression_identifier(node.name, contextual_locals=contextual_locals)
 
 
 def visit_string_identifier(node: Any, *, allow_placeholder: bool = False) -> str:

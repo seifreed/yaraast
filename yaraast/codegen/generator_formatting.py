@@ -22,7 +22,7 @@ from yaraast.regex_literals import validate_regex_modifiers
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
 _YARA_CONTEXTUAL_IDENTIFIER_KEYWORDS = frozenset({"as", "include"})
-_YARA_CONTEXTUAL_IDENTIFIER_KINDS = frozenset({"meta", "rule", "tag"})
+_YARA_CONTEXTUAL_IDENTIFIER_KINDS = frozenset({"loop variable", "meta", "rule", "tag"})
 _YARA_RULE_MODIFIERS = frozenset({"global", "private"})
 _YARA_EXPRESSION_KEYWORDS = frozenset({"entrypoint", "false", "filesize", "true"})
 _YARA_FILE_COLLECTION_FIELDS = (
@@ -237,7 +237,10 @@ def format_yarax_local_identifier(identifier: object, field_name: str) -> str:
     return validate_yara_identifier(identifier, field_name)
 
 
-def validate_yara_expression_identifier(name: object) -> str:
+def validate_yara_expression_identifier(
+    name: object,
+    contextual_locals: set[str] | frozenset[str] | None = None,
+) -> str:
     if not isinstance(name, str):
         msg = "Identifier must be a string for libyara output"
         raise TypeError(msg)
@@ -245,6 +248,12 @@ def validate_yara_expression_identifier(name: object) -> str:
         msg = "String references must use StringIdentifier for libyara output"
         raise ValueError(msg)
     if name in _YARA_EXPRESSION_KEYWORDS:
+        return name
+    if (
+        contextual_locals is not None
+        and name in contextual_locals
+        and name in _YARA_CONTEXTUAL_IDENTIFIER_KEYWORDS
+    ):
         return name
     return validate_yara_identifier(name, "identifier")
 

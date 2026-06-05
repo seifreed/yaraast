@@ -407,7 +407,9 @@ class CodeGenerator(ASTVisitor[str]):
         return ""  # Should not be called directly
 
     def visit_identifier(self, node: Identifier) -> str:
-        return render_identifier(node)
+        local_frames = getattr(self, "_contextual_local_identifiers", ())
+        contextual_locals = frozenset().union(*local_frames) if local_frames else frozenset()
+        return render_identifier(node, contextual_locals=contextual_locals)
 
     def visit_string_identifier(self, node: StringIdentifier) -> str:
         return render_string_identifier(

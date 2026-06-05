@@ -63,6 +63,7 @@ class Parser(
         self._extern_rule_names: set[tuple[str | None, str]] = set()
         self._extern_rule_declarations: set[tuple[str | None, str]] = set()
         self._rule_names: set[str] = set()
+        self._contextual_local_identifiers: list[set[str]] = []
 
         if text is not None:
             if self._injected_lexer is not None:
@@ -110,6 +111,7 @@ class Parser(
         self._extern_rule_names = set()
         self._extern_rule_declarations = set()
         self._rule_names = set()
+        self._contextual_local_identifiers = []
 
         while not self._is_at_end():
             if self._check_file_pragma():

@@ -1994,6 +1994,8 @@ def test_codegen_string_visitors_reject_non_string_string_identifiers(
     [
         (Identifier("bad-key"), "Invalid identifier"),
         (Identifier("for"), "Invalid identifier"),
+        (Identifier("as"), "Invalid identifier"),
+        (Identifier("include"), "Invalid identifier"),
         (Identifier("all"), "Invalid identifier"),
         (Identifier("any"), "Invalid identifier"),
         (Identifier("none"), "Invalid identifier"),
