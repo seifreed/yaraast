@@ -2078,6 +2078,9 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
     ):
         deserialize_node({"type": "LambdaExpression", "parameters": "xy", "body": true_expr})
 
+    with pytest.raises(SerializationError, match="LambdaExpression parameters is required"):
+        deserialize_node({"type": "LambdaExpression", "body": true_expr})
+
     with pytest.raises(
         SerializationError, match="LambdaExpression parameters must contain non-empty strings"
     ):
@@ -2085,6 +2088,9 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
 
     with pytest.raises(SerializationError, match="PatternMatch cases must be a list"):
         deserialize_node({"type": "PatternMatch", "value": true_expr, "cases": "case"})
+
+    with pytest.raises(SerializationError, match="PatternMatch cases is required"):
+        deserialize_node({"type": "PatternMatch", "value": true_expr})
 
     with pytest.raises(SerializationError, match="Serialized node must be an object"):
         deserialize_node({"type": "Rule", "name": "bad_condition", "condition": False})

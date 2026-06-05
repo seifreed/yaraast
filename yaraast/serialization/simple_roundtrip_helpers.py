@@ -2064,18 +2064,36 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             step=_deserialize_optional_node_field(data, "step", "SliceExpression step"),
         )
     if node_type == "LambdaExpression":
+        raw_parameters = _deserialize_required_field(data, "parameters", "LambdaExpression")
+        if not isinstance(raw_parameters, list) or not all(
+            isinstance(parameter, str) for parameter in raw_parameters
+        ):
+            msg = "LambdaExpression parameters must be a list of strings"
+            raise SerializationError(msg)
+        if any(
+            _is_empty_nonempty_field(parameter, "LambdaExpression", "parameters")
+            for parameter in raw_parameters
+        ):
+            msg = "LambdaExpression parameters must contain non-empty strings"
+            raise SerializationError(msg)
         return LambdaExpression(
-            parameters=_deserialize_nonempty_string_list_field(
-                data,
-                "parameters",
-                "LambdaExpression",
-            ),
+            parameters=raw_parameters,
             body=_deserialize_required_node(data, "body", "LambdaExpression"),
         )
     if node_type == "PatternMatch":
+        raw_cases = _deserialize_required_field(data, "cases", "PatternMatch")
+        if not isinstance(raw_cases, list):
+            msg = "PatternMatch cases must be a list"
+            raise SerializationError(msg)
+        cases = []
+        for match_case in raw_cases:
+            if match_case is None or match_case == {}:
+                msg = "PatternMatch cases must contain nodes"
+                raise SerializationError(msg)
+            cases.append(_deserialize_required_node_value(match_case, "PatternMatch cases"))
         return PatternMatch(
             value=_deserialize_required_node(data, "value", "PatternMatch"),
-            cases=_deserialize_node_list_field(data, "cases", "PatternMatch"),
+            cases=cases,
             default=_deserialize_optional_node_field(data, "default", "PatternMatch default"),
         )
     if node_type == "MatchCase":

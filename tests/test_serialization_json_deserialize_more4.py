@@ -1362,6 +1362,9 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
             {"type": "LambdaExpression", "parameters": "xy", "body": true_expr}
         )
 
+    with pytest.raises(SerializationError, match="LambdaExpression parameters is required"):
+        s._deserialize_expression({"type": "LambdaExpression", "body": true_expr})
+
     with pytest.raises(
         SerializationError, match="LambdaExpression parameters must contain non-empty strings"
     ):
@@ -1371,6 +1374,9 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
 
     with pytest.raises(SerializationError, match="PatternMatch cases must be a list"):
         s._deserialize_expression({"type": "PatternMatch", "value": true_expr, "cases": "case"})
+
+    with pytest.raises(SerializationError, match="PatternMatch cases is required"):
+        s._deserialize_expression({"type": "PatternMatch", "value": true_expr})
 
     with pytest.raises(SerializationError, match="SpreadOperator is_dict must be a boolean"):
         s._deserialize_expression(

@@ -829,12 +829,20 @@ def _deser_slice_expression(self, data: dict[str, Any]):
 def _deser_lambda_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import LambdaExpression
 
+    raw_parameters = _deserialize_required_field(data, "parameters", "LambdaExpression")
+    if not isinstance(raw_parameters, list) or not all(
+        isinstance(parameter, str) for parameter in raw_parameters
+    ):
+        msg = "LambdaExpression parameters must be a list of strings"
+        raise SerializationError(msg)
+    if any(
+        _is_empty_nonempty_field(parameter, "LambdaExpression", "parameters")
+        for parameter in raw_parameters
+    ):
+        msg = "LambdaExpression parameters must contain non-empty strings"
+        raise SerializationError(msg)
     return LambdaExpression(
-        parameters=_deserialize_nonempty_string_list_field(
-            data,
-            "parameters",
-            "LambdaExpression",
-        ),
+        parameters=raw_parameters,
         body=_deserialize_required_expression(self, data, "body", "LambdaExpression"),
     )
 
@@ -842,9 +850,20 @@ def _deser_lambda_expression(self, data: dict[str, Any]):
 def _deser_pattern_match(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import PatternMatch
 
+    raw_cases = _deserialize_required_field(data, "cases", "PatternMatch")
+    if not isinstance(raw_cases, list):
+        msg = "PatternMatch cases must be a list"
+        raise SerializationError(msg)
+    cases = []
+    for item in raw_cases:
+        expression = self._deserialize_expression(item)
+        if expression is None:
+            msg = "PatternMatch cases must contain expressions"
+            raise SerializationError(msg)
+        cases.append(expression)
     return PatternMatch(
         value=_deserialize_required_expression(self, data, "value", "PatternMatch"),
-        cases=_deserialize_expression_list_field(self, data, "cases", "PatternMatch"),
+        cases=cases,
         default=_deserialize_optional_expression(self, data.get("default"), "PatternMatch default"),
     )
 
