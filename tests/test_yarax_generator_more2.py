@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from yaraast.ast.expressions import (
+    ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
     MemberAccess,
@@ -60,6 +62,25 @@ def test_yarax_generator_covers_empty_single_and_optional_sections() -> None:
     assert "_ =>" not in gen.visit(no_default_match)
 
     assert gen.visit(LambdaExpression(parameters=[], body=IntegerLiteral(1))) == "lambda: 1"
+
+
+def test_yarax_generator_parenthesizes_compound_function_call_receivers() -> None:
+    compound_receiver = BinaryExpression(
+        left=Identifier(name="a"),
+        operator="+",
+        right=Identifier(name="b"),
+    )
+    call = FunctionCall(
+        function="map",
+        arguments=[],
+        receiver=compound_receiver,
+    )
+
+    assert YaraXGenerator().visit(call) == "(a + b).map()"
+    assert YaraXGenerator().visit(ArrayAccess(compound_receiver, IntegerLiteral(0))) == (
+        "(a + b)[0]"
+    )
+    assert YaraXGenerator().visit(MemberAccess(compound_receiver, "field")) == "(a + b).field"
 
 
 def test_yarax_generator_covers_tuple_indexing_slice_and_parenthesized_target() -> None:

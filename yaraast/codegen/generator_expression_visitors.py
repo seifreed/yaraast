@@ -939,8 +939,61 @@ def render_function_call_callee(generator: Any, node: Any) -> str:
     receiver = getattr(node, "receiver", None)
     if receiver is not None:
         method = validate_yara_identifier(node.function, "function")
-        return f"{generator.visit(receiver)}.{method}"
+        return f"{render_postfix_target(generator, receiver)}.{method}"
     return validate_yara_identifier_path(node.function, "function")
+
+
+def render_postfix_target(generator: Any, target: Any) -> str:
+    target_str = cast(str, generator.visit(target))
+    if _is_simple_postfix_target(target):
+        return target_str
+    return f"({target_str})"
+
+
+def _is_simple_postfix_target(target: Any) -> bool:
+    from yaraast.ast.expressions import (
+        ArrayAccess,
+        BooleanLiteral,
+        DoubleLiteral,
+        FunctionCall,
+        Identifier,
+        IntegerLiteral,
+        MemberAccess,
+        ParenthesesExpression,
+        RegexLiteral,
+        StringIdentifier,
+        StringLiteral,
+    )
+    from yaraast.ast.modules import DictionaryAccess, ModuleReference
+    from yaraast.yarax.ast_nodes import (
+        DictExpression,
+        ListExpression,
+        SliceExpression,
+        TupleExpression,
+        TupleIndexing,
+    )
+
+    return isinstance(
+        target,
+        ArrayAccess
+        | BooleanLiteral
+        | DictExpression
+        | DictionaryAccess
+        | DoubleLiteral
+        | FunctionCall
+        | Identifier
+        | IntegerLiteral
+        | ListExpression
+        | MemberAccess
+        | ModuleReference
+        | ParenthesesExpression
+        | RegexLiteral
+        | SliceExpression
+        | StringIdentifier
+        | StringLiteral
+        | TupleExpression
+        | TupleIndexing,
+    )
 
 
 def visit_function_call(generator: Any, node: Any) -> str:
@@ -953,7 +1006,7 @@ def visit_array_access(generator: Any, node: Any) -> str:
     _reject_non_integer_expression(node.index, "Array index")
     validate_module_root_array_access(node)
     validate_known_module_array_access(generator, node)
-    return f"{generator.visit(node.array)}[{generator.visit(node.index)}]"
+    return f"{render_postfix_target(generator, node.array)}[{generator.visit(node.index)}]"
 
 
 def validate_module_root_array_access(node: Any) -> None:
@@ -982,7 +1035,7 @@ def visit_member_access(generator: Any, node: Any) -> str:
     member = validate_yara_identifier(node.member, "member")
     validate_builtin_module_member_access(node, member)
     validate_known_module_struct_member_access(generator, node, member)
-    return f"{generator.visit(node.object)}.{member}"
+    return f"{render_postfix_target(generator, node.object)}.{member}"
 
 
 def validate_builtin_module_member_access(node: Any, member: str) -> None:
