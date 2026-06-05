@@ -546,6 +546,21 @@ def test_protobuf_serializer_rejects_unsupported_condition_values() -> None:
             serializer.serialize(ast)
 
 
+def test_protobuf_serializer_rejects_empty_in_expression_subject() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="empty_in_subject",
+                condition=InExpression("", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
+            )
+        ]
+    )
+
+    with pytest.raises(SerializationError, match="InExpression subject must not be empty"):
+        serializer.serialize(ast)
+
+
 def test_protobuf_serializer_rejects_unsupported_string_definitions() -> None:
     class UnsupportedStringDefinition:
         identifier = "$x"
@@ -1046,6 +1061,18 @@ def test_protobuf_deserialize_rejects_nested_empty_expression_payload() -> None:
     pb_rule.condition.binary_expression.right.boolean_literal.value = True
 
     with pytest.raises(SerializationError, match="Protobuf expression is missing"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserialize_rejects_empty_in_expression_subject() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_in_subject"
+    pb_rule.condition.in_expression.range.range_expression.low.integer_literal.value = 0
+    pb_rule.condition.in_expression.range.range_expression.high.integer_literal.value = 1
+
+    with pytest.raises(SerializationError, match="InExpression subject must not be empty"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 

@@ -1377,7 +1377,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.offset, pb_expr.at_expression.offset)
     elif isinstance(expr, InExpression):
         if isinstance(expr.subject, str):
-            pb_expr.in_expression.string_id = expr.subject
+            pb_expr.in_expression.string_id = _protobuf_required_nonempty_string(
+                expr.subject,
+                "InExpression subject",
+            )
         else:
             convert_expression_to_protobuf(expr.subject, pb_expr.in_expression.subject)
         convert_expression_to_protobuf(expr.range, pb_expr.in_expression.range)
@@ -2270,7 +2273,10 @@ def protobuf_to_expression(pb_expr):
         subject = (
             protobuf_to_expression(pb_expr.in_expression.subject)
             if pb_expr.in_expression.HasField("subject")
-            else pb_expr.in_expression.string_id
+            else _protobuf_required_nonempty_string(
+                pb_expr.in_expression.string_id,
+                "InExpression subject",
+            )
         )
         return with_metadata(
             InExpression(
