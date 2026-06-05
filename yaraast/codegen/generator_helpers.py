@@ -157,7 +157,10 @@ def plain_string_render_source(node: Any) -> str | bytes:
     fall back to the decoded ``value`` for programmatically built nodes.
     """
     raw_bytes = getattr(node, "raw_bytes", None)
-    if isinstance(raw_bytes, bytes):
+    if raw_bytes is not None:
+        if not isinstance(raw_bytes, bytes):
+            msg = "Plain string raw_bytes must be bytes or None for libyara output"
+            raise TypeError(msg)
         return raw_bytes
     value: str | bytes = node.value
     return value

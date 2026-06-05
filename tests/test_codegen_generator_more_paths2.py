@@ -818,6 +818,29 @@ def test_codegen_generators_reject_empty_plain_strings(plain: PlainString) -> No
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+def test_codegen_generators_reject_invalid_plain_string_raw_bytes() -> None:
+    plain = PlainString("$p", value="placeholder", raw_bytes=cast(Any, "placeholder"))
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="plain_string_invalid_raw_bytes",
+                strings=[plain],
+                condition=StringIdentifier("$p"),
+            )
+        ]
+    )
+    message = "Plain string raw_bytes must be bytes or None"
+
+    with pytest.raises(TypeError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match=message):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(TypeError, match=message):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(TypeError, match=message):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 @pytest.mark.parametrize(
     "pattern",
     [
