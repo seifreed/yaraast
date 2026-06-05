@@ -49,6 +49,7 @@ class DependencyFinder(MetricsVisitorBase):
 
     def visit_function_call(self, node) -> None:
         self._required_string(node.function, "Function name")
+        self._visit_ast_value(getattr(node, "receiver", None))
         for arg in self._required_ast_sequence(node.arguments, "Function arguments"):
             self.visit(arg)
 

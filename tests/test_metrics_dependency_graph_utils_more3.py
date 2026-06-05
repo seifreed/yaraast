@@ -127,6 +127,24 @@ def test_build_dependency_graph_visits_rare_expression_paths() -> None:
     assert graph.get_dependencies("h") == {"c"}
 
 
+def test_build_dependency_graph_tracks_function_call_receiver_dependencies() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="base", condition=StringLiteral("x")),
+            Rule(
+                name="caller",
+                condition=FunctionCall(
+                    function="method", arguments=[], receiver=Identifier("base")
+                ),
+            ),
+        ]
+    )
+
+    graph = build_dependency_graph(ast)
+
+    assert graph.get_dependencies("caller") == {"base"}
+
+
 def test_build_dependency_graph_tracks_rule_wildcard_sets() -> None:
     ast = YaraFile(
         rules=[
