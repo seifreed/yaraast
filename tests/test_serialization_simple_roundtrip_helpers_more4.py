@@ -301,6 +301,11 @@ def test_simple_roundtrip_unknown_node_payloads_are_rejected() -> None:
         deserialize_node({"type": "UnknownNode", "data": ["fallback"]})
 
 
+def test_simple_roundtrip_regex_literal_modifiers_are_required() -> None:
+    with pytest.raises(SerializationError, match="RegexLiteral modifiers is required"):
+        deserialize_node({"type": "RegexLiteral", "pattern": "abc"})
+
+
 def test_simple_roundtrip_serialize_rejects_unsupported_ast_nodes() -> None:
     with pytest.raises(SerializationError, match="Unsupported simple AST node type:"):
         serialize_node(UnsupportedSimpleNode())

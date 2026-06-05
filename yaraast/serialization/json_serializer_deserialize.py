@@ -505,7 +505,7 @@ def _deser_regex_literal(self, data: dict[str, Any]):
 
     return RegexLiteral(
         pattern=_deserialize_nonempty_string_field(data, "pattern", "RegexLiteral"),
-        modifiers=_deserialize_optional_string_field(data, "modifiers", "RegexLiteral"),
+        modifiers=_deserialize_string_field(data, "modifiers", "RegexLiteral"),
     )
 
 

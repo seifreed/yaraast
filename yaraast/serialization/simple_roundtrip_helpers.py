@@ -1807,7 +1807,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "RegexLiteral":
         return RegexLiteral(
             _deserialize_nonempty_string_field(data, "pattern", "RegexLiteral"),
-            _deserialize_optional_string_field(data, "modifiers", "RegexLiteral"),
+            _deserialize_string_field(data, "modifiers", "RegexLiteral"),
         )
     if node_type == "Identifier":
         return Identifier(_deserialize_nonempty_string_field(data, "name", "Identifier"))

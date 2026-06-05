@@ -1081,6 +1081,9 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="RegexLiteral pattern must not be empty"):
         s._deserialize_expression({"type": "RegexLiteral", "pattern": ""})
 
+    with pytest.raises(SerializationError, match="RegexLiteral modifiers is required"):
+        s._deserialize_expression({"type": "RegexLiteral", "pattern": "abc"})
+
     with pytest.raises(SerializationError, match="RegexLiteral modifiers must be a string"):
         s._deserialize_expression({"type": "RegexLiteral", "pattern": "abc", "modifiers": ["i"]})
 
