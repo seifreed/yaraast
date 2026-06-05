@@ -934,6 +934,9 @@ def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     assert restored.scope == MetaScope.PRIVATE
     assert isinstance(restored_float, MetaEntry)
     assert restored_float.value == 1.5
+    restored_float_node = deserialize_node(serialized_float)
+    assert isinstance(restored_float_node, MetaEntry)
+    assert restored_float_node.value == 1.5
 
     metadata_meta = Meta("classification", "restricted")
     metadata_meta.location = Location(3, 5)

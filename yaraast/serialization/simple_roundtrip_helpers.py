@@ -1777,11 +1777,8 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return Include(_deserialize_nonempty_string_field(data, "path", "Include"))
     if node_type == "Tag":
         return Tag(_deserialize_nonempty_string_field(data, "name", "Tag"))
-    if node_type == "Meta":
-        return Meta(
-            _deserialize_nonempty_string_field(data, "key", "Meta"),
-            _deserialize_meta_value(data),
-        )
+    if node_type in {"Meta", "MetaEntry"}:
+        return deserialize_meta(data)
     if node_type == "Comment":
         return Comment(
             _deserialize_comment_text(data),
