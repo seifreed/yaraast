@@ -230,18 +230,26 @@ def _deserialize_nonempty_string_list_field(
 def _deserialize_pragma_type(data: dict[str, Any]):
     from yaraast.ast.pragmas import PragmaType
 
-    if "pragma_type" in data:
-        value = data["pragma_type"]
-        field = "pragma_type"
-    elif "name" in data:
-        value = data["name"]
-        field = "name"
-    else:
-        value = PragmaType.CUSTOM.value
-        field = "pragma_type"
-    if isinstance(value, str):
-        return PragmaType.from_string(value)
-    msg = f"Pragma {field} must be a string"
+    value = _deserialize_string_field(data, "pragma_type", "Pragma")
+    try:
+        return PragmaType(value.lower())
+    except ValueError as exc:
+        msg = "Pragma pragma_type must be a valid pragma type"
+        raise SerializationError(msg) from exc
+
+
+def _deserialize_required_string_list_field(
+    data: dict[str, Any], field: str, context: str
+) -> list[str]:
+    _deserialize_required_field(data, field, context)
+    return _deserialize_string_list_field(data, field, context)
+
+
+def _deserialize_pragma_node_type(data: dict[str, Any]) -> None:
+    node_type = _deserialize_string_field(data, "type", "Pragma")
+    if node_type == "Pragma":
+        return
+    msg = "Pragma type must be Pragma"
     raise SerializationError(msg)
 
 
@@ -1350,13 +1358,14 @@ class JsonSerializerDeserializeMixin:
         )
 
         data = _deserialize_object(data, "Pragma")
+        _deserialize_pragma_node_type(data)
         pragma_type = _deserialize_pragma_type(data)
         scope = _deserialize_pragma_scope(data.get("scope"), "Pragma")
-        name = _deserialize_optional_string_field(data, "name", "Pragma", pragma_type.value)
+        name = _deserialize_string_field(data, "name", "Pragma")
         if not name:
             msg = "Pragma name must not be empty"
             raise SerializationError(msg)
-        arguments = _deserialize_string_list_field(data, "arguments", "Pragma")
+        arguments = _deserialize_required_string_list_field(data, "arguments", "Pragma")
 
         if pragma_type == PragmaType.INCLUDE_ONCE:
             pragma = IncludeOncePragma()

@@ -116,6 +116,17 @@ class UnsupportedSimpleNode(ASTNode):
         return visitor.visit_unsupported_simple_node(self)
 
 
+def _serialized_simple_pragma(**overrides: Any) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "type": "Pragma",
+        "pragma_type": "custom",
+        "name": "vendor",
+        "arguments": [],
+    }
+    data.update(overrides)
+    return data
+
+
 def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: Path) -> None:
     rule = Rule(
         name="helper_rule",
@@ -387,7 +398,7 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
         deserialize_rule(
             {
                 "name": "r1",
-                "pragmas": [{"type": "Pragma", "pragma_type": "custom", "name": "vendor"}],
+                "pragmas": [_serialized_simple_pragma()],
                 "condition": None,
             }
         )
@@ -529,67 +540,79 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="PragmaBlock scope must be a valid pragma scope"):
         serialize_node(block_with_unknown_scope)
 
+    with pytest.raises(SerializationError, match="Pragma type is required"):
+        deserialize_pragma({"pragma_type": "custom", "name": "vendor", "arguments": []})
+
+    with pytest.raises(SerializationError, match="Pragma type must be Pragma"):
+        deserialize_pragma(_serialized_simple_pragma(type="Import"))
+
+    with pytest.raises(SerializationError, match="Pragma pragma_type is required"):
+        deserialize_node({"type": "Pragma", "name": "vendor", "arguments": []})
+
+    with pytest.raises(SerializationError, match="Pragma pragma_type must be a valid pragma type"):
+        deserialize_node(_serialized_simple_pragma(pragma_type="vendor"))
+
+    with pytest.raises(SerializationError, match="Pragma name is required"):
+        deserialize_node({"type": "Pragma", "pragma_type": "custom", "arguments": []})
+
+    with pytest.raises(SerializationError, match="Pragma arguments is required"):
+        deserialize_node({"type": "Pragma", "pragma_type": "custom", "name": "vendor"})
+
     with pytest.raises(SerializationError, match="Pragma name must be a string"):
-        deserialize_node({"type": "Pragma", "pragma_type": "custom", "name": ["vendor"]})
+        deserialize_node(_serialized_simple_pragma(name=["vendor"]))
 
     with pytest.raises(SerializationError, match="Pragma name must not be empty"):
-        deserialize_node({"type": "Pragma", "pragma_type": "custom", "name": ""})
+        deserialize_node(_serialized_simple_pragma(name=""))
 
     with pytest.raises(SerializationError, match="Pragma arguments must be a list of strings"):
-        deserialize_node(
-            {"type": "Pragma", "pragma_type": "custom", "name": "vendor", "arguments": "on"}
-        )
+        deserialize_node(_serialized_simple_pragma(arguments="on"))
 
     with pytest.raises(SerializationError, match="Pragma parameters must be a dictionary"):
-        deserialize_node(
-            {
-                "type": "Pragma",
-                "pragma_type": "custom",
-                "name": "vendor",
-                "parameters": ["level", "strict"],
-            }
-        )
+        deserialize_node(_serialized_simple_pragma(parameters=["level", "strict"]))
 
     with pytest.raises(SerializationError, match="Pragma parameters value must be scalar"):
-        deserialize_node(
-            {
-                "type": "Pragma",
-                "pragma_type": "custom",
-                "name": "vendor",
-                "parameters": {"config": {"nested": "value"}},
-            }
-        )
+        deserialize_node(_serialized_simple_pragma(parameters={"config": {"nested": "value"}}))
 
     with pytest.raises(SerializationError, match="Pragma macro_name must be a string"):
-        deserialize_node({"type": "Pragma", "pragma_type": "define", "macro_name": True})
+        deserialize_node(
+            _serialized_simple_pragma(pragma_type="define", name="define", macro_name=True)
+        )
 
     with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
-        deserialize_node({"type": "Pragma", "pragma_type": "define", "macro_name": ""})
+        deserialize_node(
+            _serialized_simple_pragma(pragma_type="define", name="define", macro_name="")
+        )
 
     with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
-        deserialize_node({"type": "Pragma", "pragma_type": "undef", "macro_name": ""})
+        deserialize_node(
+            _serialized_simple_pragma(pragma_type="undef", name="undef", macro_name="")
+        )
 
     with pytest.raises(SerializationError, match="Pragma macro_value must be a string"):
         deserialize_node(
-            {
-                "type": "Pragma",
-                "pragma_type": "define",
-                "macro_name": "LIMIT",
-                "macro_value": ["10"],
-            }
+            _serialized_simple_pragma(
+                pragma_type="define",
+                name="define",
+                macro_name="LIMIT",
+                macro_value=["10"],
+            )
         )
 
     with pytest.raises(SerializationError, match="Pragma condition must be a string"):
-        deserialize_node({"type": "Pragma", "pragma_type": "ifdef", "condition": True})
+        deserialize_node(
+            _serialized_simple_pragma(pragma_type="ifdef", name="ifdef", condition=True)
+        )
 
     with pytest.raises(SerializationError, match="Pragma condition must not be empty"):
-        deserialize_node({"type": "Pragma", "pragma_type": "ifdef", "condition": ""})
+        deserialize_node(_serialized_simple_pragma(pragma_type="ifdef", name="ifdef", condition=""))
 
     with pytest.raises(SerializationError, match="Pragma condition must not be empty"):
-        deserialize_node({"type": "Pragma", "pragma_type": "ifndef", "condition": ""})
+        deserialize_node(
+            _serialized_simple_pragma(pragma_type="ifndef", name="ifndef", condition="")
+        )
 
     with pytest.raises(SerializationError, match="Pragma condition is required"):
-        deserialize_node({"type": "Pragma", "pragma_type": "ifdef"})
+        deserialize_node(_serialized_simple_pragma(pragma_type="ifdef", name="ifdef"))
 
     with pytest.raises(SerializationError, match="InRulePragma pragma is required"):
         deserialize_node({"type": "InRulePragma", "position": "before_condition"})
@@ -598,7 +621,7 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
         deserialize_node(
             {
                 "type": "InRulePragma",
-                "pragma": {"pragma_type": "custom", "name": "vendor"},
+                "pragma": _serialized_simple_pragma(),
                 "position": True,
             }
         )
@@ -607,7 +630,7 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
         deserialize_node(
             {
                 "type": "InRulePragma",
-                "pragma": {"pragma_type": "custom", "name": "vendor"},
+                "pragma": _serialized_simple_pragma(),
                 "position": "",
             }
         )
