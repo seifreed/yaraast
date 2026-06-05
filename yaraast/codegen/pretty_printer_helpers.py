@@ -32,6 +32,7 @@ from yaraast.codegen.generator_helpers import (
     output_string_identifier,
     plain_string_render_source,
     validate_hex_alternative_token,
+    validate_hex_nibble_high,
     validate_hex_string_tokens,
     validate_plain_string_value,
     validate_string_identifiers,
@@ -74,7 +75,7 @@ def _format_hex_token(token: HexToken | int | str, hex_uppercase: bool, hex_spac
         return f"~{value}"
     if isinstance(token, HexNibble):
         value = _format_hex_nibble_value(token.value, hex_uppercase)
-        return f"{value}?" if token.high else f"?{value}"
+        return f"{value}?" if validate_hex_nibble_high(token.high) else f"?{value}"
     if isinstance(token, HexAlternative):
         validate_hex_alternative_token(token)
         separator = " " if hex_spacing else ""

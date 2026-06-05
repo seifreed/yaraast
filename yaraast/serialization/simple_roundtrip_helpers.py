@@ -1606,7 +1606,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
             ),
             "modifiers": _serialize_modifiers(string_def.modifiers, "PlainString"),
         }
-        if string_def.is_anonymous:
+        if _serialize_required_bool(string_def.is_anonymous, "PlainString is_anonymous"):
             data["is_anonymous"] = True
         _serialize_plain_string_value(data, string_def.value)
         _serialize_plain_string_raw_bytes(data, getattr(string_def, "raw_bytes", None))
@@ -1633,7 +1633,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
             "tokens": [_serialize_hex_token(t) for t in string_def.tokens],
             "modifiers": _serialize_modifiers(string_def.modifiers, "HexString"),
         }
-        if string_def.is_anonymous:
+        if _serialize_required_bool(string_def.is_anonymous, "HexString is_anonymous"):
             data["is_anonymous"] = True
         return _with_node_metadata(string_def, data)
     if isinstance(string_def, RegexString):
@@ -1649,7 +1649,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
             ),
             "modifiers": _serialize_modifiers(string_def.modifiers, "RegexString"),
         }
-        if string_def.is_anonymous:
+        if _serialize_required_bool(string_def.is_anonymous, "RegexString is_anonymous"):
             data["is_anonymous"] = True
         return _with_node_metadata(string_def, data)
     if isinstance(string_def, StringDefinition):
@@ -1661,7 +1661,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
             ),
             "modifiers": _serialize_modifiers(string_def.modifiers, "StringDefinition"),
         }
-        if string_def.is_anonymous:
+        if _serialize_required_bool(string_def.is_anonymous, "StringDefinition is_anonymous"):
             data["is_anonymous"] = True
         return _with_node_metadata(string_def, data)
     data = {"type": "StringDefinition", "data": str(string_def)}

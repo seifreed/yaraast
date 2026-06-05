@@ -178,6 +178,26 @@ def test_simple_roundtrip_preserves_base_string_definition_fields() -> None:
     assert restored.is_anonymous is True
 
 
+@pytest.mark.parametrize(
+    "string_def",
+    [
+        PlainString(identifier="$a", value="abc", is_anonymous=cast(Any, [])),
+        HexString(
+            identifier="$h",
+            tokens=[HexByte(value=0x41)],
+            is_anonymous=cast(Any, 1.5),
+        ),
+        RegexString(identifier="$r", regex="abc", is_anonymous=cast(Any, "")),
+        StringDefinition(identifier="$s", is_anonymous=cast(Any, None)),
+    ],
+)
+def test_simple_roundtrip_rejects_invalid_string_anonymous_flags(
+    string_def: StringDefinition,
+) -> None:
+    with pytest.raises(SerializationError, match="is_anonymous must be a boolean"):
+        serialize_string(string_def)
+
+
 def test_simple_roundtrip_deserializes_legacy_hex_xor_modifier_values() -> None:
     key = deserialize_node(
         {

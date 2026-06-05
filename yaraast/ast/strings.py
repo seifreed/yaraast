@@ -19,6 +19,12 @@ class StringDefinition(ASTNode):
     def validate_structure(self) -> None:
         """Validate string definition scalar fields before direct analysis."""
         require_string(self.identifier, "String identifier")
+        if not isinstance(self.modifiers, list):
+            msg = f"{type(self).__name__} modifiers must be a list"
+            raise TypeError(msg)
+        if not isinstance(self.is_anonymous, bool):
+            msg = f"{type(self).__name__} is_anonymous must be a boolean"
+            raise TypeError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_definition(self)

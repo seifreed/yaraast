@@ -198,7 +198,11 @@ def escape_regex_delimiter(pattern: str) -> str:
 
 def output_string_identifier(string_def: Any) -> str:
     """Return the YARA source identifier for a string definition."""
-    if getattr(string_def, "is_anonymous", False):
+    is_anonymous = getattr(string_def, "is_anonymous", False)
+    if not isinstance(is_anonymous, bool):
+        msg = f"{type(string_def).__name__} is_anonymous must be a boolean for libyara output"
+        raise TypeError(msg)
+    if is_anonymous:
         return "$"
     return validate_string_identifier_text(getattr(string_def, "identifier", ""))
 
@@ -778,6 +782,14 @@ def _validate_hex_nibble_value(value: int | str) -> int | str:
     if isinstance(value, str) and len(value) == 1 and value in _HEX_CHARS:
         return value
     msg = "HexNibble value must be a nibble"
+    raise TypeError(msg)
+
+
+def validate_hex_nibble_high(value: Any) -> bool:
+    """Return a hex nibble side flag or reject non-boolean values."""
+    if isinstance(value, bool):
+        return value
+    msg = "HexNibble high must be a boolean for libyara output"
     raise TypeError(msg)
 
 

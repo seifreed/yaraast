@@ -275,6 +275,64 @@ def test_codegen_generators_reject_invalid_directive_quoted_values(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize(
+    "string_def",
+    [
+        PlainString(identifier="$a", value="abc", is_anonymous=cast(Any, [])),
+        HexString(identifier="$h", tokens=[HexByte(value=0x41)], is_anonymous=cast(Any, 1.5)),
+        RegexString(identifier="$r", regex="abc", is_anonymous=cast(Any, "")),
+    ],
+)
+def test_codegen_generators_reject_invalid_string_anonymous_flags(
+    string_def: PlainString | HexString | RegexString,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="r",
+                strings=[string_def],
+                condition=StringIdentifier(name=string_def.identifier),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="is_anonymous must be a boolean"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="is_anonymous must be a boolean"):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(TypeError, match="is_anonymous must be a boolean"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(TypeError, match="is_anonymous must be a boolean"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+@pytest.mark.parametrize("bad_high", [None, 0, 1.5, "", [], {}])
+def test_codegen_generators_reject_invalid_hex_nibble_high_flags(bad_high: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="r",
+                strings=[
+                    HexString(
+                        identifier="$h",
+                        tokens=[HexNibble(high=cast(bool, bad_high), value=0xA)],
+                    )
+                ],
+                condition=StringIdentifier(name="$h"),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="HexNibble high must be a boolean"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="HexNibble high must be a boolean"):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(TypeError, match="HexNibble high must be a boolean"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(TypeError, match="HexNibble high must be a boolean"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 def test_codegen_generator_formats_standard_leading_comments() -> None:
     rule = Rule("commented", condition=BooleanLiteral(True))
     rule.leading_comments = [Comment("plain lead")]

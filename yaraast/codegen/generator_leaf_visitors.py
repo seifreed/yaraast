@@ -26,6 +26,7 @@ from yaraast.codegen.generator_helpers import (
     format_integer_literal,
     format_string_reference_suffix,
     validate_hex_alternative_token,
+    validate_hex_nibble_high,
     validate_no_embedded_nul,
     validate_no_unicode_surrogates,
     validate_string_identifier_text,
@@ -76,7 +77,7 @@ def _coerce_hex_token(token: Any) -> Any:
 
 def visit_hex_nibble(node: Any) -> str:
     value_str = format_hex_nibble_value(node.value, uppercase=True)
-    return f"{value_str}?" if node.high else f"?{value_str}"
+    return f"{value_str}?" if validate_hex_nibble_high(node.high) else f"?{value_str}"
 
 
 def visit_identifier(node: Any, contextual_locals: set[str] | frozenset[str] | None = None) -> str:

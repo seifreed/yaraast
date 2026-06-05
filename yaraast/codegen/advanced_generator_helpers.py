@@ -31,6 +31,7 @@ from yaraast.codegen.generator_helpers import (
     plain_string_render_source,
     split_regex_modifiers,
     validate_hex_alternative_token,
+    validate_hex_nibble_high,
     validate_hex_string_modifiers,
     validate_hex_string_tokens,
     validate_plain_string_modifiers,
@@ -150,7 +151,7 @@ def _format_hex_nibble(token: HexNibble, config: FormattingConfig) -> str:
         token.value,
         uppercase=config.hex_style == HexStyle.UPPERCASE,
     )
-    return f"{nibble_str}?" if token.high else f"?{nibble_str}"
+    return f"{nibble_str}?" if validate_hex_nibble_high(token.high) else f"?{nibble_str}"
 
 
 def get_tag_string(tags: list[Any] | tuple[Any, ...], config: FormattingConfig) -> str:
