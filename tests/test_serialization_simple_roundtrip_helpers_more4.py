@@ -1302,7 +1302,14 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             "MemberAccess member must be a string",
         ),
         (AtExpression("", IntegerLiteral(0)), "AtExpression string_id must not be empty"),
-        (AtExpression(cast(Any, 7), IntegerLiteral(0)), "AtExpression string_id must be a string"),
+        (
+            AtExpression(cast(Any, 7), IntegerLiteral(0)),
+            "AtExpression string_id must be a string or expression",
+        ),
+        (
+            InExpression(cast(Any, 7), IntegerLiteral(0)),
+            "InExpression subject must be a string or expression",
+        ),
         (
             ForExpression("any", "", SetExpression([]), true_expr),
             "ForExpression variable must not be empty",

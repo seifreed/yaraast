@@ -454,7 +454,7 @@ def _serialize_string_or_expression(value: Any, context: str) -> str | dict[str,
         return _serialize_required_nonempty_string(value, context)
     if isinstance(value, Expression):
         return serialize_node(value)
-    msg = f"{context} must be a string"
+    msg = f"{context} must be a string or expression"
     raise SerializationError(msg)
 
 
@@ -1156,7 +1156,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, InExpression):
         return {
             "type": "InExpression",
-            "subject": _serialize_ast_value(node.subject),
+            "subject": _serialize_string_or_expression(
+                node.subject,
+                "InExpression subject",
+            ),
             "range": serialize_node(node.range),
         }
     if isinstance(node, OfExpression):
