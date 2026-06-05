@@ -179,6 +179,7 @@ def test_yarax_tuple_and_indexing() -> None:
 
     indexed = _parse_expr("foo()[1]")
     assert isinstance(indexed, TupleIndexing)
+    assert YaraXGenerator().visit(indexed) == "foo()[1]"
 
 
 def test_yarax_slice_expression() -> None:
@@ -274,3 +275,11 @@ def test_yarax_generator_tuple_indexing_parens() -> None:
     output = YaraXGenerator().generate(yarax_file)
 
     assert "foo[0]" in output
+
+
+def test_yarax_generator_preserves_function_call_indexing() -> None:
+    yarax_file = YaraXParser("rule x { condition: foo()[0] }").parse()
+
+    output = YaraXGenerator().generate(yarax_file)
+
+    assert "foo()[0]" in output

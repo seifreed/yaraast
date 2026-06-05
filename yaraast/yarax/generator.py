@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from yaraast import CodeGenerator as BaseGenerator
-from yaraast.codegen.generator_expression_visitors import validate_expression_collection
+from yaraast.codegen.generator_expression_visitors import (
+    render_function_call_callee,
+    validate_expression_collection,
+)
 
 if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
@@ -124,6 +127,13 @@ class YaraXGenerator(BaseGenerator):
 
         # Otherwise wrap in parens to be safe
         return f"({tuple_str})[{index_str}]"
+
+    def visit_function_call(self, node: Any) -> str:
+        """Generate YARA-X function calls without libyara function whitelisting."""
+        validate_expression_collection(node.arguments, "FunctionCall arguments")
+        callee = render_function_call_callee(self, node)
+        arguments = ", ".join(self.visit(argument) for argument in node.arguments)
+        return f"{callee}({arguments})"
 
     def visit_list_expression(self, node: ListExpression) -> str:
         """Generate code for list expression."""
