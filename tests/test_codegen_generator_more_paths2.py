@@ -155,6 +155,26 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     assert CodeGenerator().visit_import(Import(module="elf")) == ""
 
 
+def test_codegen_preserves_located_top_level_pragma_order() -> None:
+    ast = Parser().parse("""
+#define FEATURE 1
+#ifdef FEATURE
+rule guarded {
+    condition:
+        true
+}
+#endif
+""")
+
+    out = CodeGenerator().generate(ast)
+
+    define_index = out.index("#define FEATURE 1")
+    ifdef_index = out.index("#ifdef FEATURE")
+    rule_index = out.index("rule guarded")
+    endif_index = out.index("#endif")
+    assert define_index < ifdef_index < rule_index < endif_index
+
+
 @pytest.mark.parametrize(
     ("ast", "message"),
     [

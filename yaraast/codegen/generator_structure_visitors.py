@@ -46,10 +46,57 @@ def _emit_top_level_section(generator: Any, nodes: list[Any] | tuple[Any, ...]) 
     return True
 
 
+def _top_level_nodes_in_source_order(node: Any) -> list[Any] | None:
+    nodes = [
+        *node.pragmas,
+        *node.imports,
+        *node.extern_imports,
+        *node.includes,
+        *node.namespaces,
+        *node.extern_rules,
+        *node.rules,
+    ]
+    if not nodes:
+        return []
+    if any(getattr(item, "location", None) is None for item in nodes):
+        return None
+    return sorted(
+        nodes,
+        key=lambda item: (
+            item.location.line,
+            item.location.column,
+        ),
+    )
+
+
+def _emit_ordered_top_level_node(generator: Any, node: Any, first: bool) -> None:
+    from yaraast.ast.rules import Rule
+
+    if not first:
+        generator._writeline()
+    _emit_comments(generator, node)
+    if isinstance(node, Rule):
+        generator.visit(node)
+        return
+    rendered = generator.visit(node)
+    if rendered:
+        generator._write(rendered)
+    generator._writeline()
+
+
+def _emit_top_level_source_order(generator: Any, nodes: list[Any]) -> str:
+    for index, item in enumerate(nodes):
+        _emit_ordered_top_level_node(generator, item, index == 0)
+    return str(generator.buffer.getvalue())
+
+
 def visit_yara_file(generator: Any, node: Any) -> str:
     validate_yara_file_collections(node)
     validate_rule_identifiers(node.rules)
     validate_extern_rule_identifiers(node.rules, node.extern_rules, node.namespaces)
+    ordered_nodes = _top_level_nodes_in_source_order(node)
+    if ordered_nodes is not None:
+        return _emit_top_level_source_order(generator, ordered_nodes)
     _emit_top_level_section(generator, node.pragmas)
     _emit_top_level_section(generator, node.imports)
     _emit_top_level_section(generator, node.extern_imports)
