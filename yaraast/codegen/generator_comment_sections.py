@@ -45,14 +45,31 @@ def _write_top_level_section(gen: Any, nodes: list[Any]) -> None:
     gen._writeline()
 
 
+def _top_level_end_line(node: Any) -> int:
+    location = node.location
+    if location.end_line is not None:
+        return int(location.end_line)
+    return int(location.line)
+
+
+def _write_source_gap(gen: Any, previous_node: Any, node: Any) -> None:
+    gap_lines = node.location.line - _top_level_end_line(previous_node) - 1
+    for _ in range(max(gap_lines, 0)):
+        gen._writeline()
+
+
 def _write_ordered_top_level_nodes(gen: Any, nodes: list[Any]) -> None:
     from yaraast.ast.rules import Rule
 
+    previous_node = None
     for node in nodes:
+        if previous_node is not None:
+            _write_source_gap(gen, previous_node, node)
         if isinstance(node, Rule):
             gen.visit(node)
         else:
             _write_top_level_node(gen, node)
+        previous_node = node
 
 
 def comment_visit_yara_file(gen: Any, node: Any) -> str:

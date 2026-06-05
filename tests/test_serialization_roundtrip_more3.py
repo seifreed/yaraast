@@ -372,3 +372,20 @@ def test_roundtrip_deserialize_preserves_top_level_conditional_order() -> None:
 
     assert generated.index("#ifdef FEATURE") < generated.index("rule guarded")
     assert generated.index("rule guarded") < generated.index("#endif")
+
+
+def test_roundtrip_deserialize_preserves_top_level_blank_lines() -> None:
+    source = "\n".join(
+        [
+            "rule first { condition: true }",
+            "",
+            "rule second { condition: true }",
+            "",
+        ]
+    )
+    serializer = RoundTripSerializer()
+    _, payload = serializer.parse_and_serialize(source, format="json")
+
+    _, generated = serializer.deserialize_and_generate(payload, format="json")
+
+    assert "}\n\nrule second" in generated
