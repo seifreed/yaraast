@@ -298,6 +298,7 @@ def test_json_serializer_deserialize_validates_input_and_supports_direct_ast_and
                 "meta": {},
                 "strings": [],
                 "condition": {"type": "BooleanLiteral", "value": True},
+                "pragmas": [],
             }
         ],
     }

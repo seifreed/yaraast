@@ -606,6 +606,18 @@ def _deserialize_required_string_list_field(
     return _deserialize_string_list_field(data, field, context)
 
 
+def _deserialize_required_nonempty_string_list_field(
+    data: dict[str, Any], field: str, context: str
+) -> list[str]:
+    _deserialize_required_field(data, field, context)
+    return _deserialize_nonempty_string_list_field(data, field, context)
+
+
+def _deserialize_required_list_field(data: dict[str, Any], field: str, context: str) -> list[Any]:
+    _deserialize_required_field(data, field, context)
+    return _deserialize_list_field(data, field, context)
+
+
 def _deserialize_pragma_node_type(data: dict[str, Any]) -> None:
     node_type = _deserialize_string_field(data, "type", "Pragma")
     if node_type == "Pragma":
@@ -1477,20 +1489,16 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
     }
 
     tags = _serialize_rule_tags(rule.tags)
-    if tags:
-        data["tags"] = tags
+    data["tags"] = tags
 
     meta = _serialize_meta_entries(rule.meta)
-    if meta:
-        data["meta"] = meta
+    data["meta"] = meta
 
     strings = _serialize_string_definitions(rule.strings)
-    if strings:
-        data["strings"] = strings
+    data["strings"] = strings
 
     pragmas = _validated_node_collection(rule.pragmas, "Rule pragmas", InRulePragma)
-    if pragmas:
-        data["pragmas"] = [serialize_node(pragma) for pragma in pragmas]
+    data["pragmas"] = [serialize_node(pragma) for pragma in pragmas]
 
     return data
 
@@ -2174,34 +2182,32 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
 def deserialize_rule(data: dict[str, Any]) -> Rule:
     """Deserialize a Rule."""
     data = _deserialize_object(data, "Rule")
-    condition_data = data.get("condition")
+    condition_data = _deserialize_required_field(data, "condition", "Rule")
     condition = _deserialize_optional_node_value(condition_data, "Rule condition")
     rule = Rule(
         name=_deserialize_nonempty_string_field(data, "name", "Rule"),
         modifiers=_deserialize_rule_modifiers(
-            _deserialize_nonempty_string_list_field(data, "modifiers", "Rule")
+            _deserialize_required_nonempty_string_list_field(data, "modifiers", "Rule")
         ),
-        condition=condition if condition is not None else BooleanLiteral(True),
+        condition=condition,
     )
 
-    if "tags" in data:
-        rule.tags = [
-            _deserialize_rule_tag(tag) for tag in _deserialize_list_field(data, "tags", "Rule")
-        ]
+    rule.tags = [
+        _deserialize_rule_tag(tag) for tag in _deserialize_required_list_field(data, "tags", "Rule")
+    ]
 
-    if "meta" in data:
-        rule.meta = [deserialize_meta(m) for m in _deserialize_list_field(data, "meta", "Rule")]
+    rule.meta = [
+        deserialize_meta(m) for m in _deserialize_required_list_field(data, "meta", "Rule")
+    ]
 
-    if "strings" in data:
-        rule.strings = [
-            deserialize_string(s) for s in _deserialize_list_field(data, "strings", "Rule")
-        ]
+    rule.strings = [
+        deserialize_string(s) for s in _deserialize_required_list_field(data, "strings", "Rule")
+    ]
 
-    if "pragmas" in data:
-        rule.pragmas = [
-            cast_in_rule_pragma(deserialize_node(pragma))
-            for pragma in _deserialize_list_field(data, "pragmas", "Rule")
-        ]
+    rule.pragmas = [
+        cast_in_rule_pragma(deserialize_node(pragma))
+        for pragma in _deserialize_required_list_field(data, "pragmas", "Rule")
+    ]
 
     return rule
 

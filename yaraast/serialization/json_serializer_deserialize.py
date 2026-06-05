@@ -245,6 +245,18 @@ def _deserialize_required_string_list_field(
     return _deserialize_string_list_field(data, field, context)
 
 
+def _deserialize_required_nonempty_string_list_field(
+    data: dict[str, Any], field: str, context: str
+) -> list[str]:
+    _deserialize_required_field(data, field, context)
+    return _deserialize_nonempty_string_list_field(data, field, context)
+
+
+def _deserialize_required_list_field(data: dict[str, Any], field: str, context: str) -> list[Any]:
+    _deserialize_required_field(data, field, context)
+    return _deserialize_list_field(data, field, context)
+
+
 def _deserialize_pragma_node_type(data: dict[str, Any]) -> None:
     node_type = _deserialize_string_field(data, "type", "Pragma")
     if node_type == "Pragma":
@@ -973,7 +985,7 @@ class JsonSerializerDeserializeMixin:
         from yaraast.ast.rules import Rule
 
         data = _deserialize_object(data, "Rule")
-        meta_data = data.get("meta", [])
+        meta_data = _deserialize_required_field(data, "meta", "Rule")
         if isinstance(meta_data, dict):
             meta = [
                 self._deserialize_meta({"key": key, "value": value})
@@ -988,21 +1000,26 @@ class JsonSerializerDeserializeMixin:
             meta = []
 
         strings = [
-            self._deserialize_string(s) for s in _deserialize_list_field(data, "strings", "Rule")
+            self._deserialize_string(s)
+            for s in _deserialize_required_list_field(data, "strings", "Rule")
         ]
-        condition_data = data.get("condition")
+        condition_data = _deserialize_required_field(data, "condition", "Rule")
         condition = _deserialize_optional_expression(self, condition_data, "Rule condition")
 
-        tags = [self._deserialize_tag(t) for t in _deserialize_list_field(data, "tags", "Rule")]
+        tags = [
+            self._deserialize_tag(t) for t in _deserialize_required_list_field(data, "tags", "Rule")
+        ]
         pragmas = [
             self._deserialize_in_rule_pragma(p)
-            for p in _deserialize_list_field(data, "pragmas", "Rule")
+            for p in _deserialize_required_list_field(data, "pragmas", "Rule")
         ]
 
         return self._apply_node_metadata(
             Rule(
                 name=_deserialize_nonempty_string_field(data, "name", "Rule"),
-                modifiers=_deserialize_nonempty_string_list_field(data, "modifiers", "Rule"),
+                modifiers=_deserialize_required_nonempty_string_list_field(
+                    data, "modifiers", "Rule"
+                ),
                 tags=tags,
                 meta=meta,
                 strings=strings,

@@ -127,6 +127,21 @@ def _serialized_simple_pragma(**overrides: Any) -> dict[str, Any]:
     return data
 
 
+def _serialized_simple_rule(**overrides: Any) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "type": "Rule",
+        "name": "r1",
+        "modifiers": [],
+        "tags": [],
+        "meta": [],
+        "strings": [],
+        "condition": None,
+        "pragmas": [],
+    }
+    data.update(overrides)
+    return data
+
+
 def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: Path) -> None:
     rule = Rule(
         name="helper_rule",
@@ -258,10 +273,10 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
         deserialize_node({"type": "Include", "path": ""})
 
     with pytest.raises(SerializationError, match="Rule name must be a string"):
-        deserialize_rule({"name": ["r1"], "condition": None})
+        deserialize_rule(_serialized_simple_rule(name=["r1"]))
 
     with pytest.raises(SerializationError, match="Rule name must not be empty"):
-        deserialize_rule({"name": "", "condition": None})
+        deserialize_rule(_serialized_simple_rule(name=""))
 
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         deserialize_node({"type": "Tag", "name": 7})
@@ -289,13 +304,13 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
         deserialize_meta({"type": "MetaEntry", "key": "owner", "value": "team", "scope": "secret"})
 
     with pytest.raises(SerializationError, match="Tag name must be a string"):
-        deserialize_rule({"name": "r1", "tags": [{"name": 7}], "condition": None})
+        deserialize_rule(_serialized_simple_rule(tags=[{"name": 7}]))
 
     with pytest.raises(SerializationError, match="Tag name must not be empty"):
-        deserialize_rule({"name": "r1", "tags": [{"name": ""}], "condition": None})
+        deserialize_rule(_serialized_simple_rule(tags=[{"name": ""}]))
 
     with pytest.raises(SerializationError, match="Tag name must not be empty"):
-        deserialize_rule({"name": "r1", "tags": [""], "condition": None})
+        deserialize_rule(_serialized_simple_rule(tags=[""]))
 
 
 def test_simple_roundtrip_unknown_node_payloads_are_rejected() -> None:
@@ -333,7 +348,9 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
         deserialize_node({"type": "YaraFile", "extern_rules": "RemoteRule"})
 
     with pytest.raises(SerializationError, match="YaraFile imports must contain Import nodes"):
-        deserialize_node({"type": "YaraFile", "imports": [{"type": "Rule", "name": "not_import"}]})
+        deserialize_node(
+            {"type": "YaraFile", "imports": [_serialized_simple_rule(name="not_import")]}
+        )
 
     with pytest.raises(SerializationError, match="YaraFile includes must contain Include nodes"):
         deserialize_node({"type": "YaraFile", "includes": [{"type": "Import", "module": "pe"}]})
@@ -373,38 +390,34 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Pragma must be an object"):
         deserialize_pragma(cast(Any, "pragma"))
 
+    for field in ("modifiers", "tags", "meta", "strings", "condition", "pragmas"):
+        data = _serialized_simple_rule()
+        del data[field]
+        with pytest.raises(SerializationError, match=f"Rule {field} is required"):
+            deserialize_rule(data)
+
     with pytest.raises(SerializationError, match="Rule meta must be a list"):
-        deserialize_rule({"name": "r1", "meta": "author", "condition": None})
+        deserialize_rule(_serialized_simple_rule(meta="author"))
 
     with pytest.raises(SerializationError, match="Rule strings must be a list"):
-        deserialize_rule({"name": "r1", "strings": "$a", "condition": None})
+        deserialize_rule(_serialized_simple_rule(strings="$a"))
 
     with pytest.raises(SerializationError, match="Rule tags must be a list"):
-        deserialize_rule({"name": "r1", "tags": "tag", "condition": None})
+        deserialize_rule(_serialized_simple_rule(tags="tag"))
 
     with pytest.raises(SerializationError, match="Rule tags must contain Tag nodes"):
         deserialize_rule(
-            {
-                "name": "r1",
-                "tags": [{"type": "Import", "name": "not_tag", "module": "pe"}],
-                "condition": None,
-            }
+            _serialized_simple_rule(tags=[{"type": "Import", "name": "not_tag", "module": "pe"}])
         )
 
     with pytest.raises(SerializationError, match="Rule pragmas must be a list"):
-        deserialize_rule({"name": "r1", "pragmas": "pragma", "condition": None})
+        deserialize_rule(_serialized_simple_rule(pragmas="pragma"))
 
     with pytest.raises(SerializationError, match="Rule pragmas must contain InRulePragma nodes"):
-        deserialize_rule(
-            {
-                "name": "r1",
-                "pragmas": [_serialized_simple_pragma()],
-                "condition": None,
-            }
-        )
+        deserialize_rule(_serialized_simple_rule(pragmas=[_serialized_simple_pragma()]))
 
     with pytest.raises(SerializationError, match="Serialized node must be an object"):
-        deserialize_rule({"name": "r1", "condition": "true"})
+        deserialize_rule(_serialized_simple_rule(condition="true"))
 
     with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
         deserialize_node({"type": "PragmaBlock", "pragmas": "pragma"})
@@ -817,13 +830,13 @@ def test_simple_roundtrip_helpers_preserve_string_modifier_aliases() -> None:
 
 def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Rule modifiers must be a list"):
-        deserialize_rule({"name": "r1", "modifiers": "private", "condition": None})
+        deserialize_rule(_serialized_simple_rule(modifiers="private"))
 
     with pytest.raises(SerializationError, match="Rule modifiers must be a list of strings"):
-        deserialize_rule({"name": "r1", "modifiers": [7], "condition": None})
+        deserialize_rule(_serialized_simple_rule(modifiers=[7]))
 
     with pytest.raises(SerializationError, match="Rule modifiers must contain non-empty strings"):
-        deserialize_rule({"name": "r1", "modifiers": [""], "condition": None})
+        deserialize_rule(_serialized_simple_rule(modifiers=[""]))
 
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
         deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private"})
@@ -2180,7 +2193,7 @@ def test_simple_roundtrip_optional_expression_fields_reject_empty_objects() -> N
     true_expr = {"type": "BooleanLiteral", "value": True}
 
     with pytest.raises(SerializationError, match="Rule condition must be an expression"):
-        deserialize_rule({"name": "bad_condition", "condition": {}})
+        deserialize_rule(_serialized_simple_rule(name="bad_condition", condition={}))
 
     empty_optional_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (
@@ -2851,5 +2864,5 @@ def test_validate_roundtrip_propagates_internal_generator_errors(
             }
         )
 
-    default_condition_rule = deserialize_rule({"name": "fallback", "condition": None})
-    assert isinstance(default_condition_rule.condition, BooleanLiteral)
+    default_condition_rule = deserialize_rule(_serialized_simple_rule(name="fallback"))
+    assert default_condition_rule.condition is None

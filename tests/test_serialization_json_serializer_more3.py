@@ -1791,6 +1791,7 @@ def test_json_deserializer_parses_legacy_hex_xor_modifier_values() -> None:
                     },
                 ],
                 "condition": {"type": "BooleanLiteral", "value": True},
+                "pragmas": [],
             }
         ],
     }
@@ -1992,6 +1993,9 @@ def test_json_roundtrip_preserves_string_modifier_aliases() -> None:
                     {
                         "type": "Rule",
                         "name": "legacy_aliases",
+                        "modifiers": [],
+                        "tags": [],
+                        "meta": [],
                         "strings": [
                             {
                                 "type": "RegexString",
@@ -2001,6 +2005,7 @@ def test_json_roundtrip_preserves_string_modifier_aliases() -> None:
                             }
                         ],
                         "condition": {"type": "StringIdentifier", "name": "$r"},
+                        "pragmas": [],
                     }
                 ],
             }

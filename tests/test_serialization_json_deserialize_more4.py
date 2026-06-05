@@ -64,6 +64,21 @@ def _serialized_json_pragma(**overrides: Any) -> dict[str, Any]:
     return data
 
 
+def _serialized_json_rule(**overrides: Any) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "type": "Rule",
+        "name": "r1",
+        "modifiers": [],
+        "tags": [],
+        "meta": [],
+        "strings": [],
+        "condition": None,
+        "pragmas": [],
+    }
+    data.update(overrides)
+    return data
+
+
 def test_deserialize_import_include_meta_and_rule_meta_variants() -> None:
     s = JsonSerializer()
 
@@ -82,27 +97,20 @@ def test_deserialize_import_include_meta_and_rule_meta_variants() -> None:
     assert float_meta_entry.value == 1.5
 
     rule_dict_meta = s._deserialize_rule(
-        {
-            "name": "r1",
-            "modifiers": ["private"],
-            "tags": [{"name": "t1"}],
-            "meta": {"a": 1, "b": "x", "score": 1.5},
-            "strings": [{"type": "PlainString", "identifier": "$a", "value": "x", "modifiers": []}],
-            "condition": {"type": "Identifier", "name": "true"},
-        }
+        _serialized_json_rule(
+            modifiers=["private"],
+            tags=[{"name": "t1"}],
+            meta={"a": 1, "b": "x", "score": 1.5},
+            strings=[{"type": "PlainString", "identifier": "$a", "value": "x", "modifiers": []}],
+            condition={"type": "Identifier", "name": "true"},
+        )
     )
     assert isinstance(rule_dict_meta, Rule)
     assert len(rule_dict_meta.meta) == 3
     assert rule_dict_meta.meta[2].value == 1.5
 
     rule_list_meta = s._deserialize_rule(
-        {
-            "name": "r2",
-            "meta": [{"key": "k", "value": 1}],
-            "strings": [],
-            "tags": [],
-            "condition": None,
-        }
+        _serialized_json_rule(name="r2", meta=[{"key": "k", "value": 1}])
     )
     assert rule_list_meta.condition is None
 
@@ -139,31 +147,13 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
         s._deserialize_include({"path": "   "})
 
     with pytest.raises(SerializationError, match="Rule name must be a string"):
-        s._deserialize_rule({"name": ["r1"], "condition": None})
+        s._deserialize_rule(_serialized_json_rule(name=["r1"]))
 
     with pytest.raises(SerializationError, match="Rule name must not be empty"):
-        s._deserialize_rule(
-            {
-                "name": "",
-                "modifiers": [],
-                "tags": [],
-                "meta": [],
-                "strings": [],
-                "condition": true_expr,
-            }
-        )
+        s._deserialize_rule(_serialized_json_rule(name="", condition=true_expr))
 
     with pytest.raises(SerializationError, match="Rule name must not be empty"):
-        s._deserialize_rule(
-            {
-                "name": "   ",
-                "modifiers": [],
-                "tags": [],
-                "meta": [],
-                "strings": [],
-                "condition": true_expr,
-            }
-        )
+        s._deserialize_rule(_serialized_json_rule(name="   ", condition=true_expr))
 
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         s._deserialize_tag({"name": 7})
@@ -223,29 +213,31 @@ def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Pragma must be an object"):
         s._deserialize_pragma(cast(Any, "pragma"))
 
+    for field in ("modifiers", "tags", "meta", "strings", "condition", "pragmas"):
+        data = _serialized_json_rule()
+        del data[field]
+        with pytest.raises(SerializationError, match=f"Rule {field} is required"):
+            s._deserialize_rule(data)
+
     with pytest.raises(SerializationError, match="Rule meta must be a list or dictionary"):
-        s._deserialize_rule({"name": "r1", "meta": "author", "condition": None})
+        s._deserialize_rule(_serialized_json_rule(meta="author"))
 
     with pytest.raises(SerializationError, match="Rule strings must be a list"):
-        s._deserialize_rule({"name": "r1", "strings": "$a", "condition": None})
+        s._deserialize_rule(_serialized_json_rule(strings="$a"))
 
     with pytest.raises(SerializationError, match="Rule tags must be a list"):
-        s._deserialize_rule({"name": "r1", "tags": "tag", "condition": None})
+        s._deserialize_rule(_serialized_json_rule(tags="tag"))
 
     with pytest.raises(SerializationError, match="Rule tags must contain Tag nodes"):
         s._deserialize_rule(
-            {
-                "name": "r1",
-                "tags": [{"type": "Import", "name": "not_tag", "module": "pe"}],
-                "condition": None,
-            }
+            _serialized_json_rule(tags=[{"type": "Import", "name": "not_tag", "module": "pe"}])
         )
 
     with pytest.raises(SerializationError, match="Rule pragmas must be a list"):
-        s._deserialize_rule({"name": "r1", "pragmas": "pragma", "condition": None})
+        s._deserialize_rule(_serialized_json_rule(pragmas="pragma"))
 
     with pytest.raises(SerializationError, match="Expression must be an object"):
-        s._deserialize_rule({"name": "r1", "condition": "true"})
+        s._deserialize_rule(_serialized_json_rule(condition="true"))
 
     with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
         s._deserialize_pragma_block({"type": "PragmaBlock", "pragmas": "pragma"})
@@ -564,13 +556,13 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
     s = JsonSerializer()
 
     with pytest.raises(SerializationError, match="Rule modifiers must be a list"):
-        s._deserialize_rule({"name": "r1", "modifiers": "private", "condition": None})
+        s._deserialize_rule(_serialized_json_rule(modifiers="private"))
 
     with pytest.raises(SerializationError, match="Rule modifiers must be a list of strings"):
-        s._deserialize_rule({"name": "r1", "modifiers": [7], "condition": None})
+        s._deserialize_rule(_serialized_json_rule(modifiers=[7]))
 
     with pytest.raises(SerializationError, match="Rule modifiers must contain non-empty strings"):
-        s._deserialize_rule({"name": "r1", "modifiers": [""], "condition": None})
+        s._deserialize_rule(_serialized_json_rule(modifiers=[""]))
 
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
         s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private"})
@@ -1467,7 +1459,7 @@ def test_json_deserialize_condition_fields_reject_wrong_scalar_types() -> None:
         )
 
     with pytest.raises(SerializationError, match="Expression must be an object"):
-        s._deserialize_rule({"name": "bad_condition", "condition": False})
+        s._deserialize_rule(_serialized_json_rule(name="bad_condition", condition=False))
 
     with pytest.raises(SerializationError, match="Expression must be an object"):
         s._deserialize_expression(
@@ -1485,7 +1477,7 @@ def test_json_deserialize_optional_expression_fields_reject_empty_objects() -> N
     true_expr = {"type": "BooleanLiteral", "value": True}
 
     with pytest.raises(SerializationError, match="Rule condition must be an expression"):
-        s._deserialize_rule({"name": "bad_condition", "condition": {}})
+        s._deserialize_rule(_serialized_json_rule(name="bad_condition", condition={}))
 
     empty_optional_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (
