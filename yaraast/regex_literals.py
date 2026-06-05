@@ -130,7 +130,8 @@ def validate_regex_pattern(pattern: str) -> None:
 
         if char == "{":
             end = pattern.find("}", i + 1)
-            interval = _parse_regex_repeat_interval(pattern[i + 1 : end]) if end != -1 else None
+            repeat_text = pattern[i + 1 : end] if end != -1 else ""
+            interval = _parse_regex_repeat_interval(repeat_text) if end != -1 else None
             if interval is not None:
                 min_value, max_value = interval
                 if min_value is not None and max_value is not None and min_value > max_value:
@@ -144,6 +145,9 @@ def validate_regex_pattern(pattern: str) -> None:
                 consume_quantifier()
                 i = end + 1
                 continue
+            if repeat_text == "," and not can_repeat:
+                msg = "Invalid regex pattern: syntax error"
+                raise ValueError(msg)
 
         if char in "^$":
             mark_atom(repeatable=False)
