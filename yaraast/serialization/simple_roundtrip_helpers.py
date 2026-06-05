@@ -214,6 +214,30 @@ def _serialize_hex_token(token: Any) -> dict[str, Any]:
     raise SerializationError(msg)
 
 
+def _validate_hex_token_sequence(
+    tokens: list[Any], context: str, *, inside_alternative: bool
+) -> None:
+    if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
+        msg = f"HexJump cannot appear at the beginning or end of {context}"
+        raise SerializationError(msg)
+
+    for token in tokens:
+        if isinstance(token, HexAlternative):
+            for alternative in token.alternatives:
+                branch = _coerce_hex_alternative_branch(alternative)
+                if not branch:
+                    msg = "HexAlternative branches must not be empty"
+                    raise SerializationError(msg)
+                _validate_hex_token_sequence(
+                    branch,
+                    "hex alternative branch",
+                    inside_alternative=True,
+                )
+        elif inside_alternative and isinstance(token, HexJump) and token.max_jump is None:
+            msg = "Unbounded HexJump is not allowed inside hex alternatives"
+            raise SerializationError(msg)
+
+
 def _deserialize_hex_token(data: dict[str, Any]):
     """Deserialize a hex token from a dictionary."""
     data = _deserialize_object(data, "Hex token")
@@ -247,7 +271,13 @@ def _deserialize_hex_token(data: dict[str, Any]):
             if not branch:
                 msg = "HexAlternative branches must not be empty"
                 raise SerializationError(msg)
-            alternatives.append([_deserialize_hex_token(t) for t in branch])
+            alternative_tokens = [_deserialize_hex_token(t) for t in branch]
+            _validate_hex_token_sequence(
+                alternative_tokens,
+                "hex alternative branch",
+                inside_alternative=True,
+            )
+            alternatives.append(alternative_tokens)
         return HexAlternative(alternatives=alternatives)
     msg = f"Unknown hex token type: {hex_kind}"
     raise SerializationError(msg)
@@ -272,6 +302,7 @@ def _serialize_hex_alternative_branches(alternatives: Any) -> list[list[dict[str
         if not branch:
             msg = "HexAlternative branches must not be empty"
             raise SerializationError(msg)
+        _validate_hex_token_sequence(branch, "hex alternative branch", inside_alternative=True)
         branches.append([_serialize_hex_token(token) for token in branch])
     return branches
 
@@ -1588,6 +1619,11 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
         if not string_def.tokens:
             msg = "HexString must contain at least one token"
             raise SerializationError(msg)
+        _validate_hex_token_sequence(
+            list(string_def.tokens),
+            "hex string",
+            inside_alternative=False,
+        )
         data = {
             "type": "HexString",
             "identifier": identifier,
@@ -2252,6 +2288,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
         if not tokens:
             msg = "HexString must contain at least one token"
             raise SerializationError(msg)
+        _validate_hex_token_sequence(tokens, "hex string", inside_alternative=False)
         return _apply_node_metadata(
             HexString(
                 identifier=identifier,

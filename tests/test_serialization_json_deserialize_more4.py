@@ -487,6 +487,7 @@ def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
                 {"type": "HexByte", "value": 65},
                 {"type": "HexWildcard"},
                 {"type": "HexJump", "min_jump": 1, "max_jump": 3},
+                {"type": "HexByte", "value": 66},
             ],
             "modifiers": [],
         }
@@ -585,6 +586,38 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
             {"type": "HexString", "identifier": "$h", "tokens": [], "modifiers": []}
         )
 
+    with pytest.raises(
+        SerializationError,
+        match="HexJump cannot appear at the beginning or end of hex string",
+    ):
+        s._deserialize_string(
+            {
+                "type": "HexString",
+                "identifier": "$h",
+                "tokens": [
+                    {"type": "HexJump", "min_jump": 1, "max_jump": 2},
+                    {"type": "HexByte", "value": 65},
+                ],
+                "modifiers": [],
+            }
+        )
+
+    with pytest.raises(
+        SerializationError,
+        match="HexJump cannot appear at the beginning or end of hex string",
+    ):
+        s._deserialize_string(
+            {
+                "type": "HexString",
+                "identifier": "$h",
+                "tokens": [
+                    {"type": "HexByte", "value": 65},
+                    {"type": "HexJump", "min_jump": 1, "max_jump": 2},
+                ],
+                "modifiers": [],
+            }
+        )
+
     with pytest.raises(SerializationError, match="Hex token must be an object"):
         s._deserialize_string(
             {"type": "HexString", "identifier": "$h", "tokens": ["AA"], "modifiers": []}
@@ -598,6 +631,23 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
 
     with pytest.raises(SerializationError, match="HexAlternative branches must not be empty"):
         s._deserialize_hex_token({"type": "HexAlternative", "alternatives": [[]]})
+
+    with pytest.raises(
+        SerializationError,
+        match="Unbounded HexJump is not allowed inside hex alternatives",
+    ):
+        s._deserialize_hex_token(
+            {
+                "type": "HexAlternative",
+                "alternatives": [
+                    [
+                        {"type": "HexByte", "value": 65},
+                        {"type": "HexJump", "min_jump": 1},
+                        {"type": "HexByte", "value": 66},
+                    ]
+                ],
+            }
+        )
 
 
 def test_json_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:

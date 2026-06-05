@@ -99,7 +99,10 @@ def _sample_ast() -> YaraFile:
                 modifiers=[StringModifier.from_name_value("ascii")],
             ),
             RegexString(identifier="$b", regex="ab.*"),
-            HexString(identifier="$c", tokens=[HexJump(min_jump=1, max_jump=2)]),
+            HexString(
+                identifier="$c",
+                tokens=[HexByte(0x41), HexJump(min_jump=1, max_jump=2), HexByte(0x42)],
+            ),
         ],
         condition=BinaryExpression(
             left=Identifier(name="true"),
@@ -1441,6 +1444,30 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
             YaraFile(
                 rules=[
                     Rule(
+                        "hex_jump_at_start",
+                        strings=[HexString(identifier="$h", tokens=[HexJump(1, 2), HexByte(0x41)])],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexJump cannot appear at the beginning or end of hex string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "hex_jump_at_end",
+                        strings=[HexString(identifier="$h", tokens=[HexByte(0x41), HexJump(1, 2)])],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexJump cannot appear at the beginning or end of hex string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
                         "invalid_hex_nibble_high",
                         strings=[
                             HexString(
@@ -1506,6 +1533,27 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
                 ]
             ),
             "HexAlternative branches must not be empty",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "unbounded_hex_jump_in_alternative",
+                        strings=[
+                            HexString(
+                                identifier="$h",
+                                tokens=[
+                                    HexAlternative(
+                                        [[HexByte(0x41), HexJump(1, None), HexByte(0x42)]]
+                                    )
+                                ],
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Unbounded HexJump is not allowed inside hex alternatives",
         ),
         (
             YaraFile(

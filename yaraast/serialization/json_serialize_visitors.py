@@ -319,6 +319,7 @@ def _serialize_hex_tokens(serializer, values, context: str) -> list[dict[str, An
     if not tokens:
         msg = f"{context} must contain at least one token"
         raise SerializationError(msg)
+    _validate_hex_token_sequence(values, "hex string", inside_alternative=False)
     return tokens
 
 
@@ -571,8 +572,33 @@ def _serialize_hex_alternative_branches(serializer, alternatives) -> list[list[d
         if not branch:
             msg = "HexAlternative branches must not be empty"
             raise SerializationError(msg)
+        _validate_hex_token_sequence(branch, "hex alternative branch", inside_alternative=True)
         branches.append([serializer.visit(token) for token in branch])
     return branches
+
+
+def _validate_hex_token_sequence(tokens, context: str, *, inside_alternative: bool) -> None:
+    from yaraast.ast.strings import HexAlternative, HexJump
+
+    if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
+        msg = f"HexJump cannot appear at the beginning or end of {context}"
+        raise SerializationError(msg)
+
+    for token in tokens:
+        if isinstance(token, HexAlternative):
+            for alternative in token.alternatives:
+                branch = _coerce_hex_alternative_branch(alternative)
+                if not branch:
+                    msg = "HexAlternative branches must not be empty"
+                    raise SerializationError(msg)
+                _validate_hex_token_sequence(
+                    branch,
+                    "hex alternative branch",
+                    inside_alternative=True,
+                )
+        elif inside_alternative and isinstance(token, HexJump) and token.max_jump is None:
+            msg = "Unbounded HexJump is not allowed inside hex alternatives"
+            raise SerializationError(msg)
 
 
 def _coerce_hex_alternative_branch(alternative) -> list:

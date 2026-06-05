@@ -1009,6 +1009,7 @@ class JsonSerializerDeserializeMixin:
             if not tokens:
                 msg = "HexString must contain at least one token"
                 raise SerializationError(msg)
+            self._validate_hex_token_sequence(tokens, "hex string", inside_alternative=False)
             return self._apply_node_metadata(
                 HexString(
                     identifier=identifier,
@@ -1140,10 +1141,44 @@ class JsonSerializerDeserializeMixin:
                 if not branch:
                     msg = "HexAlternative branches must not be empty"
                     raise SerializationError(msg)
-                alternatives.append([self._deserialize_hex_token(t) for t in branch])
+                alternative_tokens = [self._deserialize_hex_token(t) for t in branch]
+                self._validate_hex_token_sequence(
+                    alternative_tokens,
+                    "hex alternative branch",
+                    inside_alternative=True,
+                )
+                alternatives.append(alternative_tokens)
             return self._apply_node_metadata(HexAlternative(alternatives=alternatives), data)
         msg = f"Unknown hex token type: {hex_kind}"
         raise SerializationError(msg)
+
+    def _validate_hex_token_sequence(
+        self,
+        tokens,
+        context: str,
+        *,
+        inside_alternative: bool,
+    ) -> None:
+        from yaraast.ast.strings import HexAlternative, HexJump
+
+        if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
+            msg = f"HexJump cannot appear at the beginning or end of {context}"
+            raise SerializationError(msg)
+
+        for token in tokens:
+            if isinstance(token, HexAlternative):
+                for alternative in token.alternatives:
+                    if not alternative:
+                        msg = "HexAlternative branches must not be empty"
+                        raise SerializationError(msg)
+                    self._validate_hex_token_sequence(
+                        alternative,
+                        "hex alternative branch",
+                        inside_alternative=True,
+                    )
+            elif inside_alternative and isinstance(token, HexJump) and token.max_jump is None:
+                msg = "Unbounded HexJump is not allowed inside hex alternatives"
+                raise SerializationError(msg)
 
     def _coerce_hex_alternative_branch(self, alternative):
         if isinstance(alternative, list):

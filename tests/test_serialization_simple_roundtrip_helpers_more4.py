@@ -843,6 +843,30 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
             }
         )
 
+    with pytest.raises(
+        SerializationError,
+        match="Unbounded HexJump is not allowed inside hex alternatives",
+    ):
+        deserialize_string(
+            {
+                "type": "HexString",
+                "identifier": "$h",
+                "tokens": [
+                    {
+                        "type": "HexAlternative",
+                        "alternatives": [
+                            [
+                                {"type": "HexByte", "value": 65},
+                                {"type": "HexJump", "min_jump": 1},
+                                {"type": "HexByte", "value": 66},
+                            ]
+                        ],
+                    }
+                ],
+                "modifiers": [],
+            }
+        )
+
     with pytest.raises(SerializationError, match="Hex token must be an object"):
         deserialize_string(
             {"type": "HexString", "identifier": "$h", "tokens": ["AA"], "modifiers": []}
@@ -1001,6 +1025,38 @@ def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> Non
 
     with pytest.raises(SerializationError, match="HexString must contain at least one token"):
         deserialize_string({"type": "HexString", "identifier": "$h", "tokens": [], "modifiers": []})
+
+    with pytest.raises(
+        SerializationError,
+        match="HexJump cannot appear at the beginning or end of hex string",
+    ):
+        deserialize_string(
+            {
+                "type": "HexString",
+                "identifier": "$h",
+                "tokens": [
+                    {"type": "HexJump", "min_jump": 1, "max_jump": 2},
+                    {"type": "HexByte", "value": 65},
+                ],
+                "modifiers": [],
+            }
+        )
+
+    with pytest.raises(
+        SerializationError,
+        match="HexJump cannot appear at the beginning or end of hex string",
+    ):
+        deserialize_string(
+            {
+                "type": "HexString",
+                "identifier": "$h",
+                "tokens": [
+                    {"type": "HexByte", "value": 65},
+                    {"type": "HexJump", "min_jump": 1, "max_jump": 2},
+                ],
+                "modifiers": [],
+            }
+        )
 
     with pytest.raises(SerializationError, match="HexString tokens must be a list"):
         deserialize_string(
@@ -1584,12 +1640,24 @@ def test_simple_roundtrip_serialize_hex_tokens_and_location_reject_wrong_types()
         (HexNegatedByte(cast(Any, True)), "HexNegatedByte value must be a byte"),
         (HexJump(cast(Any, True), 3), "HexJump min_jump must be a non-negative integer"),
         (HexJump(5, 3), "HexJump min_jump cannot exceed max_jump"),
+        (
+            HexString(identifier="$h", tokens=[HexJump(1, 2), HexByte(0x41)]),
+            "HexJump cannot appear at the beginning or end of hex string",
+        ),
+        (
+            HexString(identifier="$h", tokens=[HexByte(0x41), HexJump(1, 2)]),
+            "HexJump cannot appear at the beginning or end of hex string",
+        ),
         (HexNibble(cast(Any, "true"), 10), "HexNibble high must be a boolean"),
         (HexNibble(True, cast(Any, True)), "HexNibble value must be a nibble"),
         (HexNibble(True, 16), "HexNibble value must be a nibble"),
         (invalid_alternatives, "HexAlternative alternatives must be a list"),
         (HexAlternative([]), "HexAlternative must contain at least one branch"),
         (HexAlternative([[]]), "HexAlternative branches must not be empty"),
+        (
+            HexAlternative([[HexByte(0x41), HexJump(1, None), HexByte(0x42)]]),
+            "Unbounded HexJump is not allowed inside hex alternatives",
+        ),
         (invalid_alternative_token, "Unsupported hex token type: object"),
         (
             HexString(identifier="$h", tokens=[cast(Any, object())]),
