@@ -389,6 +389,8 @@ class ExpressionOptimizer(ASTTransformer):
     def visit_function_call(self, node: Any) -> Any:
         if hasattr(node, "arguments"):
             node.arguments = [self.visit(arg) for arg in node.arguments]
+        if getattr(node, "receiver", None) is not None:
+            node.receiver = self.visit(node.receiver)
         return node
 
     def visit_range_expression(self, node: Any) -> Any:

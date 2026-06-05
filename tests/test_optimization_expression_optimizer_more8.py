@@ -370,6 +370,16 @@ def test_visit_collection_and_access_nodes_preserves_set_duplicates() -> None:
     out_fn = opt.visit_function_call(fn)
     assert len(out_fn.arguments) == 2
 
+    receiver_opt = ExpressionOptimizer()
+    receiver = ArrayAccess(
+        array=Identifier("arr"),
+        index=BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)),
+    )
+    receiver_fn = FunctionCall(function="fn", arguments=[], receiver=receiver)
+    out_receiver_fn = receiver_opt.visit_function_call(receiver_fn)
+    assert isinstance(out_receiver_fn.receiver, ArrayAccess)
+    assert out_receiver_fn.receiver.index == IntegerLiteral(3)
+
     rng = RangeExpression(low=IntegerLiteral(1), high=IntegerLiteral(3))
     out_rng = opt.visit_range_expression(rng)
     assert out_rng.low == IntegerLiteral(1)
