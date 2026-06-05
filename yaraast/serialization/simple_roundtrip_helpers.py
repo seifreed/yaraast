@@ -2272,7 +2272,10 @@ def deserialize_string(data: dict[str, Any]) -> Any:
     """Deserialize a string definition."""
     data = _deserialize_object(data, "String")
     string_type = data.get("type")
-    if string_type is not None and not isinstance(string_type, str):
+    if string_type is None:
+        msg = "String type is required"
+        raise SerializationError(msg)
+    if not isinstance(string_type, str):
         msg = "String type must be a string"
         raise SerializationError(msg)
 
@@ -2335,16 +2338,6 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                 ),
                 modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),
-            ),
-            data,
-        )
-    if string_type in {None, "Unknown"}:
-        return _apply_node_metadata(
-            PlainString(
-                identifier=_deserialize_optional_string_field(
-                    data, "identifier", "String", "$unknown"
-                ),
-                value=_deserialize_legacy_string_data(data),
             ),
             data,
         )

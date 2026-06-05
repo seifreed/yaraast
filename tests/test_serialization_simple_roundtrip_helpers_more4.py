@@ -141,16 +141,21 @@ def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: 
     restored_rule = deserialize_rule(serialized_rule)
     assert [t.name for t in restored_rule.tags] == ["one", "two"]
     assert deserialize_meta({"key": "author", "value": "me"}).key == "author"
-    assert deserialize_string({"type": "Unknown", "identifier": "$x", "data": "raw"}).value == "raw"
 
     with pytest.raises(SerializationError, match="Unknown string type: Import"):
         deserialize_string({"type": "Import", "module": "pe"})
 
-    with pytest.raises(SerializationError, match="String identifier must be a string"):
+    with pytest.raises(SerializationError, match="Unknown string type: Unknown"):
+        deserialize_string({"type": "Unknown", "identifier": "$x", "data": "raw"})
+
+    with pytest.raises(SerializationError, match="String type is required"):
+        deserialize_string({"identifier": "$x", "data": "raw"})
+
+    with pytest.raises(SerializationError, match="Unknown string type: Unknown"):
         deserialize_string({"type": "Unknown", "identifier": ["$x"], "data": "raw"})
 
-    with pytest.raises(SerializationError, match="String data must be a string or bytes"):
-        deserialize_string({"type": "Unknown", "identifier": "$x", "data": 7})
+    with pytest.raises(SerializationError, match="String type must be a string"):
+        deserialize_string({"type": 7, "identifier": "$x", "data": "raw"})
 
     path = tmp_path / "helper.json"
     serialize_to_file(
