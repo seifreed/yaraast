@@ -69,6 +69,28 @@ def test_batch_processor_rejects_boolean_numeric_settings() -> None:
         processor.process_batch([1], None, batch_size=cast(Any, True))
 
 
+def test_batch_processor_rejects_invalid_operation_values(tmp_path: Path) -> None:
+    path = tmp_path / "single.yar"
+    path.write_text("rule single { condition: true }", encoding="utf-8")
+    processor = BatchProcessor()
+
+    with pytest.raises(TypeError, match="operation must be a BatchOperation"):
+        processor.process_batch([1], operation=cast(Any, "bad"))
+
+    with pytest.raises(TypeError, match="operations must be a BatchOperation"):
+        processor.process_files([path], operations=cast(Any, "bad"))
+
+    with pytest.raises(TypeError, match="operations must contain only BatchOperation values"):
+        processor.process_files([path], operations=cast(Any, [BatchOperation.PARSE, "bad"]))
+
+    with pytest.raises(TypeError, match="operations must contain only BatchOperation values"):
+        processor.process_large_file(
+            path,
+            operations=cast(Any, [BatchOperation.PARSE, "bad"]),
+            output_dir=tmp_path,
+        )
+
+
 @pytest.mark.parametrize("temp_dir", ["", "   ", "\t"])
 def test_batch_processor_rejects_empty_temp_dir(temp_dir: str) -> None:
     with pytest.raises(ValueError, match="temp_dir must not be empty"):

@@ -70,6 +70,24 @@ class BatchResult:
         return self.total_time / self.successful_count
 
 
+def _validate_process_batch_operation(operation: object) -> None:
+    if operation is None or callable(operation) or isinstance(operation, BatchOperation):
+        return
+    msg = "operation must be a BatchOperation, callable, or None"
+    raise TypeError(msg)
+
+
+def _validate_operation_list(operations: object) -> list[BatchOperation]:
+    if not isinstance(operations, list):
+        msg = "operations must be a BatchOperation or list of BatchOperation"
+        raise TypeError(msg)
+    for operation in operations:
+        if not isinstance(operation, BatchOperation):
+            msg = "operations must contain only BatchOperation values"
+            raise TypeError(msg)
+    return operations
+
+
 class BatchProcessor:
     """High-performance batch processor for large YARA rule collections."""
 
@@ -122,6 +140,7 @@ class BatchProcessor:
         batch_size: int | None = None,
     ) -> list[Any]:
         """Process a batch of items."""
+        _validate_process_batch_operation(operation)
         batch_size = self.batch_size if batch_size is None else batch_size
         validate_positive_int_setting(batch_size, "batch_size")
 
@@ -203,9 +222,11 @@ class BatchProcessor:
         if isinstance(operations, BatchOperation):
             return self._process_files_single(normalized_file_paths, operations, output_dir)
 
+        normalized_operations = _validate_operation_list(operations)
+
         # Process multiple operations
         results = {}
-        for operation in operations:
+        for operation in normalized_operations:
             results[operation] = self._process_files_single(
                 normalized_file_paths,
                 operation,
@@ -306,4 +327,7 @@ class BatchProcessor:
         split_rules: bool = False,
     ) -> dict[BatchOperation, BatchResult]:
         """Process a large YARA file, optionally splitting rules."""
-        return process_large_file_ops(self, file_path, operations, output_dir, split_rules)
+        normalized_operations = _validate_operation_list(operations)
+        return process_large_file_ops(
+            self, file_path, normalized_operations, output_dir, split_rules
+        )
