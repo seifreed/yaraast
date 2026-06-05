@@ -1791,7 +1791,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
                 for comment in _deserialize_required_list_field(data, "comments", "CommentGroup")
             ]
         )
-    if node_type in {"PlainString", "HexString", "RegexString"}:
+    if node_type in {"StringDefinition", "PlainString", "HexString", "RegexString"}:
         return deserialize_string(data)
     if node_type in {
         "HexByte",

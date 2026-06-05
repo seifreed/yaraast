@@ -994,6 +994,7 @@ def test_simple_roundtrip_helpers_preserve_unknown_extern_rule_modifier() -> Non
 
 
 def test_simple_roundtrip_helpers_preserve_string_modifier_aliases() -> None:
+    base_string = StringDefinition(identifier="$z")
     regex = RegexString(
         identifier="$r",
         regex="ab.*",
@@ -1005,6 +1006,7 @@ def test_simple_roundtrip_helpers_preserve_string_modifier_aliases() -> None:
         modifiers=["vendor_modifier"],
     )
 
+    restored_base = deserialize_node(serialize_node(base_string))
     restored_regex = deserialize_node(serialize_node(regex))
     restored_plain = deserialize_node(serialize_node(plain))
     escaped_plain = deserialize_string(
@@ -1016,6 +1018,8 @@ def test_simple_roundtrip_helpers_preserve_string_modifier_aliases() -> None:
         }
     )
 
+    assert isinstance(restored_base, StringDefinition)
+    assert restored_base.identifier == "$z"
     assert isinstance(restored_regex, RegexString)
     regex_modifiers = restored_regex.modifiers
     assert regex_modifiers[:2] == ["i", "s"]
