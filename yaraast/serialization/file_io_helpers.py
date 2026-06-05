@@ -32,5 +32,10 @@ def read_utf8(path: str | Path) -> str:
 
 def write_utf8(path: str | Path, text: str) -> None:
     """Write UTF-8 text to disk."""
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        msg = "text must be UTF-8 encodable"
+        raise ValueError(msg) from exc
     with _require_file_path(path).open("w", encoding="utf-8") as handle:
         handle.write(text)

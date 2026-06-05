@@ -20,6 +20,11 @@ def test_file_io_helpers_read_and_write_utf8_paths(tmp_path: Path) -> None:
     assert read_utf8(str(path)) == "hello"
 
 
+def test_file_io_helpers_reject_non_utf8_encodable_text(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="text must be UTF-8 encodable"):
+        write_utf8(tmp_path / "sample.txt", "\ud800")
+
+
 @pytest.mark.parametrize("path", [False, 0, object()])
 def test_file_io_helpers_reject_invalid_path_types(path: Any) -> None:
     with pytest.raises(TypeError, match="path must be a file path"):
