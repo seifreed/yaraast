@@ -674,10 +674,19 @@ def _deser_extern_rule_reference(self, data: dict[str, Any]):
 def _deser_with_statement(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import WithStatement
 
+    raw_declarations = _deserialize_required_field(data, "declarations", "WithStatement")
+    if not isinstance(raw_declarations, list):
+        msg = "WithStatement declarations must be a list"
+        raise SerializationError(msg)
+    declarations = []
+    for item in raw_declarations:
+        expression = self._deserialize_expression(item)
+        if expression is None:
+            msg = "WithStatement declarations must contain expressions"
+            raise SerializationError(msg)
+        declarations.append(expression)
     return WithStatement(
-        declarations=_deserialize_expression_list_field(
-            self, data, "declarations", "WithStatement"
-        ),
+        declarations=declarations,
         body=_deserialize_required_expression(self, data, "body", "WithStatement"),
     )
 

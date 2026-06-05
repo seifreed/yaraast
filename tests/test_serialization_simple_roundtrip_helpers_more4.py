@@ -2004,6 +2004,9 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="WithStatement declarations must be a list"):
         deserialize_node({"type": "WithStatement", "declarations": "x", "body": true_expr})
 
+    with pytest.raises(SerializationError, match="WithStatement declarations is required"):
+        deserialize_node({"type": "WithStatement", "body": true_expr})
+
     with pytest.raises(SerializationError, match="ArrayComprehension variable must be a string"):
         deserialize_node({"type": "ArrayComprehension", "variable": ["x"]})
 

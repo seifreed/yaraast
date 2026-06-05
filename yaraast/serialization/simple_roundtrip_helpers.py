@@ -1949,8 +1949,20 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_required_node(data, "right", "StringOperatorExpression"),
         )
     if node_type == "WithStatement":
+        raw_declarations = _deserialize_required_field(data, "declarations", "WithStatement")
+        if not isinstance(raw_declarations, list):
+            msg = "WithStatement declarations must be a list"
+            raise SerializationError(msg)
+        declarations = []
+        for declaration in raw_declarations:
+            if declaration is None or declaration == {}:
+                msg = "WithStatement declarations must contain nodes"
+                raise SerializationError(msg)
+            declarations.append(
+                _deserialize_required_node_value(declaration, "WithStatement declarations")
+            )
         return WithStatement(
-            declarations=_deserialize_node_list_field(data, "declarations", "WithStatement"),
+            declarations=declarations,
             body=_deserialize_required_node(data, "body", "WithStatement"),
         )
     if node_type == "WithDeclaration":

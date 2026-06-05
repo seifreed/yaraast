@@ -1230,6 +1230,9 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="WithStatement declarations must be a list"):
         s._deserialize_expression({"type": "WithStatement", "declarations": "x", "body": true_expr})
 
+    with pytest.raises(SerializationError, match="WithStatement declarations is required"):
+        s._deserialize_expression({"type": "WithStatement", "body": true_expr})
+
     with pytest.raises(SerializationError, match="ArrayComprehension variable must be a string"):
         s._deserialize_expression({"type": "ArrayComprehension", "variable": ["x"]})
 
