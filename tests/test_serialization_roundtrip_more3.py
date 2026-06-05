@@ -22,7 +22,7 @@ from yaraast.serialization.roundtrip_pipeline_helpers import (
     build_pipeline_statistics,
     build_rules_manifest,
 )
-from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer
+from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer, RoundTripSerializer
 from yaraast.serialization.simple_roundtrip import SimpleRoundTrip
 
 
@@ -347,11 +347,28 @@ def test_roundtrip_deserialize_without_roundtrip_metadata_uses_plain_json() -> N
     serializer = JsonSerializer(include_metadata=True)
     payload = serializer.serialize(ast)
 
-    from yaraast.serialization.roundtrip_serializer import RoundTripSerializer
-
     restored_ast, generated = RoundTripSerializer().deserialize_and_generate(
         payload,
         format="json",
     )
     assert restored_ast.rules[0].name == "r1"
     assert "rule r1" in generated
+
+
+def test_roundtrip_deserialize_preserves_top_level_conditional_order() -> None:
+    source = "\n".join(
+        [
+            "#define FEATURE 1",
+            "#ifdef FEATURE",
+            "rule guarded { condition: true }",
+            "#endif",
+            "",
+        ]
+    )
+    serializer = RoundTripSerializer()
+    _, payload = serializer.parse_and_serialize(source, format="json")
+
+    _, generated = serializer.deserialize_and_generate(payload, format="json")
+
+    assert generated.index("#ifdef FEATURE") < generated.index("rule guarded")
+    assert generated.index("rule guarded") < generated.index("#endif")

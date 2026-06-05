@@ -22,6 +22,7 @@ from yaraast.codegen.generator_formatting import (
     validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import validate_string_identifiers
+from yaraast.codegen.generator_structure_visitors import _top_level_nodes_in_source_order
 
 
 def _write_top_level_node(gen: Any, node: Any) -> None:
@@ -44,12 +45,30 @@ def _write_top_level_section(gen: Any, nodes: list[Any]) -> None:
     gen._writeline()
 
 
+def _write_ordered_top_level_nodes(gen: Any, nodes: list[Any]) -> None:
+    from yaraast.ast.rules import Rule
+
+    for node in nodes:
+        if isinstance(node, Rule):
+            gen.visit(node)
+        else:
+            _write_top_level_node(gen, node)
+
+
 def comment_visit_yara_file(gen: Any, node: Any) -> str:
     """Generate code for YaraFile with comments."""
     validate_yara_file_collections(node)
     validate_rule_identifiers(node.rules)
     validate_extern_rule_identifiers(node.rules, node.extern_rules, node.namespaces)
     gen._write_leading_comments(node.leading_comments)
+
+    ordered_nodes = _top_level_nodes_in_source_order(node)
+    if ordered_nodes is not None:
+        _write_ordered_top_level_nodes(gen, ordered_nodes)
+        if node.trailing_comment:
+            gen._writeline()
+            gen._write_comment(node.trailing_comment)
+        return str(gen.buffer.getvalue())
 
     _write_top_level_section(gen, node.pragmas)
     _write_top_level_section(gen, node.imports)
