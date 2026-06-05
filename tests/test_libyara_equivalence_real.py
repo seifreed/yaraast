@@ -56,6 +56,19 @@ def test_file_round_trip_rejects_invalid_filepath_types(filepath: Any) -> None:
     ]
 
 
+def test_file_round_trip_rejects_invalid_utf8(tmp_path: Path) -> None:
+    tester = _tester_without_libyara_init()
+    rule_file = tmp_path / "bad.yar"
+    rule_file.write_bytes(b"\xff")
+
+    result = tester.test_file_round_trip(rule_file)
+
+    assert result.equivalent is False
+    assert result.ast_differences == [
+        "Failed to parse file: YARA file must contain valid UTF-8 text"
+    ]
+
+
 def test_equivalence_result_recording_helpers() -> None:
     tester = _tester_without_libyara_init()
 

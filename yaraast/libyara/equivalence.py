@@ -19,6 +19,15 @@ if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
 
 
+def _read_yara_text_file(path: str | PathLike[str]) -> str:
+    try:
+        with require_file_path(path, "filepath").open(encoding="utf-8") as f:
+            return f.read()
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 @dataclass
 class EquivalenceResult:
     """Result of equivalence testing."""
@@ -240,10 +249,7 @@ class EquivalenceTester:
 
         """
         try:
-            path = require_file_path(filepath, "filepath")
-            with path.open(encoding="utf-8") as f:
-                original_code = f.read()
-
+            original_code = _read_yara_text_file(filepath)
             original_ast = parse_yara_source(original_code)
             return self.test_round_trip(original_ast, test_data)
         except Exception as e:
