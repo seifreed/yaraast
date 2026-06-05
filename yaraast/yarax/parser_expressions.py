@@ -131,7 +131,11 @@ class YaraXParserExpressionsMixin:
 
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
 
-        from yaraast.ast.expressions import ArrayAccess
+        from yaraast.ast.expressions import ArrayAccess, StringLiteral
+        from yaraast.ast.modules import DictionaryAccess
+
+        if isinstance(index, StringLiteral):
+            return DictionaryAccess(object=expr, key=index.value)
 
         if isinstance(expr, TupleExpression | FunctionCall):
             return TupleIndexing(tuple_expr=expr, index=index)

@@ -9,6 +9,8 @@ import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import ArrayAccess, BinaryExpression
+from yaraast.ast.modules import DictionaryAccess
+from yaraast.codegen import CodeGenerator
 from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.parser.source import parse_yara_source
 from yaraast.unified_parser import UnifiedParser
@@ -41,11 +43,12 @@ def test_auto_detects_yarax_collection_only_syntax() -> None:
     slice_condition = slice_ast.rules[0].condition
 
     assert isinstance(list_condition, ArrayAccess)
-    assert isinstance(dict_condition, ArrayAccess)
+    assert isinstance(dict_condition, DictionaryAccess)
     assert isinstance(slice_condition, BinaryExpression)
     assert isinstance(list_condition.array, ListExpression)
-    assert isinstance(dict_condition.array, DictExpression)
+    assert isinstance(dict_condition.object, DictExpression)
     assert isinstance(slice_condition.left, SliceExpression)
+    assert '{"a": true}["a"]' in CodeGenerator().generate(dict_ast)
 
 
 def test_yarax_collection_detection_does_not_match_classic_hex_jumps() -> None:
