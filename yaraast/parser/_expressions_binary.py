@@ -102,12 +102,14 @@ class ExpressionBinaryMixin:
             and self._is_valid_of_quantifier(expr)
         ):
             expr = self._parse_expression_of_postfix(expr)
+            expr = self._parse_of_restriction_postfix(expr)
         elif (
             self._check_percentage_of_postfix()
             and not getattr(self, "_suppress_of_postfix", False)
             and self._is_valid_percentage_of_quantifier(expr)
         ):
             expr = self._parse_percentage_expression_of_postfix(expr)
+            expr = self._parse_of_restriction_postfix(expr)
 
         if self._match(*RELATIONAL_TOKEN_TYPES):
             operator_token = self._previous()
@@ -155,6 +157,15 @@ class ExpressionBinaryMixin:
                 expr.right
             )
         return not isinstance(expr, RangeExpression)
+
+    def _parse_of_restriction_postfix(self, expr: Expression) -> Expression:
+        if not isinstance(expr, OfExpression):
+            return expr
+        if self._match(TokenType.AT):
+            return self._parse_at_postfix(expr)
+        if self._match(TokenType.IN):
+            return self._parse_in_postfix(expr)
+        return expr
 
     def _parse_expression_of_postfix(self, quantifier: Expression) -> Expression:
         """Wrap ``quantifier`` as the count of an of-expression."""

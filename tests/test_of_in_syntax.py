@@ -730,6 +730,50 @@ class TestExpressionQuantifierOf:
         assert isinstance(node.quantifier.left, IntegerLiteral)
         assert isinstance(node.quantifier.right, IntegerLiteral)
 
+    def test_arithmetic_count_quantifier_with_in_restriction(self) -> None:
+        from yaraast.ast.expressions import BinaryExpression
+
+        yara_code = """
+        rule test {
+            strings:
+                $a = "a"
+                $b = "b"
+            condition:
+                25 - 1 of them in (!b..1)
+        }
+        """
+
+        ast = Parser().parse(yara_code)
+        condition = ast.rules[0].condition
+
+        assert isinstance(condition, InExpression)
+        assert isinstance(condition.subject, OfExpression)
+        assert isinstance(condition.subject.quantifier, BinaryExpression)
+        assert condition.subject.quantifier.operator == "-"
+        yara.compile(source=CodeGenerator().generate(ast))
+
+    def test_arithmetic_count_quantifier_with_at_restriction(self) -> None:
+        from yaraast.ast.expressions import BinaryExpression
+
+        yara_code = """
+        rule test {
+            strings:
+                $a = "a"
+                $b = "b"
+            condition:
+                25 - 1 of them at @a
+        }
+        """
+
+        ast = Parser().parse(yara_code)
+        condition = ast.rules[0].condition
+
+        assert isinstance(condition, AtExpression)
+        assert isinstance(condition.string_id, OfExpression)
+        assert isinstance(condition.string_id.quantifier, BinaryExpression)
+        assert condition.string_id.quantifier.operator == "-"
+        yara.compile(source=CodeGenerator().generate(ast))
+
     def test_string_count_in_range_count_quantifier(self) -> None:
         from yaraast.ast.expressions import BinaryExpression, IntegerLiteral, ParenthesesExpression
 
