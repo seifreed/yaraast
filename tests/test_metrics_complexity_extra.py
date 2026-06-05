@@ -11,6 +11,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
+    ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
     Expression,
@@ -36,7 +37,7 @@ from yaraast.metrics.complexity_helpers import (
 from yaraast.metrics.complexity_reporting import analyze_file_complexity, generate_complexity_report
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
-from yaraast.yarax.ast_nodes import WithDeclaration, WithStatement
+from yaraast.yarax.ast_nodes import ListExpression, WithDeclaration, WithStatement
 
 
 @pytest.mark.parametrize(
@@ -234,6 +235,30 @@ def test_complexity_string_usage_tracks_condition_string_forms() -> None:
         "$wild_one",
         "$wild_two",
     }
+
+
+def test_complexity_string_usage_tracks_function_call_receiver() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="receiver_string_usage",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=FunctionCall(
+                    function="method",
+                    arguments=[],
+                    receiver=ArrayAccess(
+                        array=ListExpression([StringIdentifier("$a")]),
+                        index=IntegerLiteral(0),
+                    ),
+                ),
+            )
+        ]
+    )
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.unused_strings == []
+    assert metrics.string_dependencies["receiver_string_usage"] == {"$a"}
 
 
 def test_complexity_string_usage_ignores_rule_wildcard_sets() -> None:

@@ -290,6 +290,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self.visit(node.high)
 
     def visit_function_call(self, node) -> None:
+        self._visit_ast_value(getattr(node, "receiver", None))
         for arg in self._required_ast_sequence(node.arguments, "Function arguments"):
             self.visit(arg)
 
