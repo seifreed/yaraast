@@ -1379,6 +1379,9 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="FunctionCall arguments is required"):
         s._deserialize_expression({"type": "FunctionCall", "function": "fn"})
 
+    with pytest.raises(SerializationError, match="FunctionCall receiver is required"):
+        s._deserialize_expression({"type": "FunctionCall", "function": "fn", "arguments": []})
+
     with pytest.raises(
         SerializationError, match="StringOperatorExpression operator must not be empty"
     ):
@@ -1834,6 +1837,7 @@ def test_deserialize_expression_comprehensive_branches() -> None:
                 "type": "FunctionCall",
                 "function": "f",
                 "arguments": [{"type": "IntegerLiteral", "value": 1}],
+                "receiver": None,
             }
         ),
         FunctionCall,

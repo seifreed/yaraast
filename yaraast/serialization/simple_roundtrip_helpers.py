@@ -1256,6 +1256,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
                 "FunctionCall function",
             ),
             "arguments": [serialize_node(argument) for argument in arguments],
+            "receiver": None,
         }
         if node.receiver is not None:
             if not isinstance(node.receiver, Expression):
@@ -1936,7 +1937,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return FunctionCall(
             _deserialize_nonempty_string_field(data, "function", "FunctionCall"),
             arguments,
-            receiver=_deserialize_optional_node_field(data, "receiver", "FunctionCall"),
+            receiver=_deserialize_nullable_node_field(data, "receiver", "FunctionCall"),
         )
     if node_type == "ArrayAccess":
         return ArrayAccess(
