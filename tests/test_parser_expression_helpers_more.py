@@ -414,6 +414,8 @@ def test_classic_parsers_reject_condition_expression_non_logical_binary_operands
         'rule r { strings: $a = "x" condition: any of them + 1 }',
         'rule r { strings: $a = "x" condition: 1 + any of them }',
         'rule r { strings: $a = "x" condition: $a in (0..10) + 1 > 0 }',
+        'rule r { strings: $a = "x" condition: for none as in (1,2) : ($a) >= 3 }',
+        'rule r { strings: $a = "x" condition: for any of them : ($) == true }',
     ]
 
     for source in invalid_sources:
@@ -428,6 +430,7 @@ def test_classic_parsers_reject_condition_expression_non_logical_binary_operands
         'rule r { strings: $a = "x" condition: 1 == #a in (0..10) }',
         'rule r { strings: $a = "x" condition: #a in (0..10) + 1 > 0 }',
         'rule r { strings: $a = "x" condition: 1 + 1 of them }',
+        'rule r { strings: $a = "x" condition: for any of them : ($) and true }',
     ]
 
     for source in valid_sources:

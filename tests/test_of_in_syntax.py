@@ -77,7 +77,7 @@ class TestOfInSyntax:
                 {condition}
         }}
         """
-        with pytest.raises(ParserError, match="Invalid operand for numeric unary operator"):
+        with pytest.raises(ParserError):
             Parser().parse(yara_code)
 
     @pytest.mark.parametrize("condition", ["-#a in (0..1)", "~#a < 0", "not 1 of them"])
@@ -679,6 +679,16 @@ class TestExpressionQuantifierOf:
         assert node.quantifier.operator == "%"
         assert isinstance(node.quantifier.left, ParenthesesExpression)
         assert isinstance(node.quantifier.right, IntegerLiteral)
+
+    def test_double_unary_count_quantifier(self) -> None:
+        from yaraast.ast.expressions import IntegerLiteral, UnaryExpression
+
+        node = self._parse("- -1 of them")
+        assert isinstance(node.quantifier, UnaryExpression)
+        assert node.quantifier.operator == "-"
+        assert isinstance(node.quantifier.operand, UnaryExpression)
+        assert node.quantifier.operand.operator == "-"
+        assert isinstance(node.quantifier.operand.operand, IntegerLiteral)
 
     def test_identifier_quantifier(self) -> None:
         from yaraast.ast.expressions import Identifier

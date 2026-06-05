@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
     BinaryExpression,
     Expression,
@@ -291,7 +297,7 @@ class ExpressionBinaryMixin:
     def _is_non_numeric_condition_operand(self, expr: Expression) -> bool:
         while isinstance(expr, ParenthesesExpression):
             expr = expr.expression
-        if isinstance(expr, OfExpression | AtExpression):
+        if isinstance(expr, OfExpression | AtExpression | ForExpression | ForOfExpression):
             return True
         if isinstance(expr, InExpression):
             return not isinstance(expr.subject, StringCount)
@@ -363,7 +369,7 @@ class ExpressionBinaryMixin:
         if self._match(TokenType.MINUS, TokenType.BITWISE_NOT):
             start_token = self._previous()
             operator = self._previous().value
-            operand = self._parse_unary_expression()
+            operand = self._parse_without_of_postfix(self._parse_unary_expression)
             self._reject_invalid_numeric_unary_operand(operator, operand, start_token)
             return self._set_node_location_from_tokens(
                 UnaryExpression(operator=operator, operand=operand), start_token, self._previous()
