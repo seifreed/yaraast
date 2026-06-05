@@ -15,6 +15,7 @@ import pytest
 
 from yaraast import Parser
 from yaraast.parser._shared import ParserError, max_expression_depth
+from yaraast.yarax.parser import YaraXParser
 
 
 def _parse(src: str) -> object:
@@ -86,3 +87,10 @@ def test_parser_instance_recovers_depth_after_rejection() -> None:
         parser.parse(deep)
     # The shared instance must parse normal input afterwards with depth reset.
     assert parser.parse("rule y { condition: ((true)) }") is not None
+
+
+def test_yarax_parser_uses_expression_depth_guard() -> None:
+    depth = 2000
+    src = "rule x { condition: " + "(" * depth + "true" + ")" * depth + " }"
+    with pytest.raises(ParserError, match="expression nesting too deep"):
+        YaraXParser(src).parse()

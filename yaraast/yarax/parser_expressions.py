@@ -28,7 +28,7 @@ class YaraXParserExpressionsMixin:
 
     def _parse_expression(self: Any) -> Expression:
         """Parse a full expression with YARA-X primary expressions."""
-        return cast(Expression, self._parse_or_expression())
+        return cast(Expression, cast(Any, super())._parse_expression())
 
     def _parse_primary_expression(self: Any) -> Expression:
         """Parse primary expression with YARA-X extensions."""
