@@ -11,14 +11,19 @@ code-generation round trip, and both serialization paths.
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
-from yaraast.ast.expressions import ArrayAccess, Expression, FunctionCall
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import ArrayAccess, BinaryExpression, Expression, FunctionCall
 from yaraast.codegen import CodeGenerator
 from yaraast.parser.parser import Parser
-from yaraast.serialization import JsonSerializer, ProtobufSerializer
+from yaraast.parser.source import parse_source
+from yaraast.serialization import JsonSerializer, ProtobufSerializer, YamlSerializer
 from yaraast.serialization.ast_diff_hasher import AstHasher
 from yaraast.types.semantic_validator import SemanticValidator
+from yaraast.yarax.ast_nodes import ListExpression, TupleIndexing
 
 yara = pytest.importorskip("yara")
 
@@ -95,3 +100,25 @@ def test_unknown_method_on_indexed_receiver_is_reported() -> None:
     ast = Parser('import "pe"\nrule r { condition: pe.signatures[0].nope(0) }').parse()
     result = SemanticValidator().validate(ast)
     assert any("nope" in error.message for error in result.errors)
+
+
+def test_yarax_literal_receiver_method_call_round_trips() -> None:
+    source = "rule r { condition: [1].map(lambda x: x + 1)[0] == 2 }"
+    ast = cast(YaraFile, parse_source(source))
+    condition = ast.rules[0].condition
+    assert isinstance(condition, BinaryExpression)
+    access = condition.left
+    assert isinstance(access, TupleIndexing)
+    call = access.tuple_expr
+    assert isinstance(call, FunctionCall)
+    assert call.function == "map"
+    assert isinstance(call.receiver, ListExpression)
+
+    generated = CodeGenerator().generate(ast)
+    assert "unknown.map" not in generated
+    assert "[1].map(lambda x: x + 1)[0] == 2" in generated
+    assert CodeGenerator().generate(cast(YaraFile, parse_source(generated))) == generated
+
+    for serializer in (JsonSerializer(), YamlSerializer(), ProtobufSerializer()):
+        restored = serializer.deserialize(serializer.serialize(ast))
+        assert CodeGenerator().generate(restored) == generated

@@ -185,10 +185,13 @@ def test_parse_of_string_set_and_function_name_resolution_paths() -> None:
     with pytest.raises(ParserError, match="Invalid function call"):
         _expr_parser("1(2)")._parse_of_string_set()
 
-    # Exercise fallback branches for unknown object types.
+    # Exercise non-dotted object branches.
     unknown_member = MemberAccess(object=StringLiteral(value="x"), member="tail")
-    assert parser._resolve_function_name(unknown_member) == "unknown.tail"
-    assert parser._member_access_to_string(unknown_member) == "unknown.tail"
+    call = parser._build_member_function_call(unknown_member, [])
+    assert call.function == "tail"
+    assert call.receiver == unknown_member.object
 
     mod_member = MemberAccess(object=ModuleReference(module="pe"), member="section")
-    assert parser._resolve_function_name(mod_member) == "pe.section"
+    call = parser._build_member_function_call(mod_member, [])
+    assert call.function == "pe.section"
+    assert call.receiver is None

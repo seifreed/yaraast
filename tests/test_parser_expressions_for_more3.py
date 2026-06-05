@@ -15,20 +15,28 @@ def _expr_parser(text: str) -> Parser:
     return parser
 
 
-def test_member_access_to_string_module_and_nested_paths() -> None:
+def test_member_function_call_keeps_only_non_dotted_receivers() -> None:
     parser = _expr_parser("x")
 
     direct = MemberAccess(object=Identifier(name="foo"), member="bar")
-    assert parser._resolve_function_name(direct) == "foo.bar"
+    call = parser._build_member_function_call(direct, [])
+    assert call.function == "foo.bar"
+    assert call.receiver is None
 
     mod_member = MemberAccess(object=ModuleReference(module="pe"), member="section")
-    assert parser._member_access_to_string(mod_member) == "pe.section"
+    call = parser._build_member_function_call(mod_member, [])
+    assert call.function == "pe.section"
+    assert call.receiver is None
 
     nested = MemberAccess(
         object=MemberAccess(object=Identifier(name="a"), member="b"),
         member="c",
     )
-    assert parser._member_access_to_string(nested) == "a.b.c"
+    call = parser._build_member_function_call(nested, [])
+    assert call.function == "a.b.c"
+    assert call.receiver is None
 
     unknown = MemberAccess(object=StringLiteral(value="x"), member="tail")
-    assert parser._member_access_to_string(unknown) == "unknown.tail"
+    call = parser._build_member_function_call(unknown, [])
+    assert call.function == "tail"
+    assert call.receiver == unknown.object

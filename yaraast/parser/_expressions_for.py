@@ -18,7 +18,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     StringWildcard,
 )
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.ast.modules import DictionaryAccess
 from yaraast.lexer import TokenType
 
 from ._shared import ParserError, max_expression_depth
@@ -343,23 +343,10 @@ class ExpressionForMixin:
                 FunctionCall(function=expr.name, arguments=args), start_token, self._previous()
             )
         if isinstance(expr, MemberAccess):
-            if self._object_has_index(expr.object):
-                call = FunctionCall(function=expr.member, arguments=args, receiver=expr.object)
-            else:
-                call = FunctionCall(function=self._resolve_function_name(expr), arguments=args)
+            call = self._build_member_function_call(expr, args)
             return self._set_node_location_from_tokens(call, start_token, self._previous())
         msg = "Invalid function call"
         raise ParserError(msg, self._peek())
-
-    def _resolve_function_name(self, expr: MemberAccess) -> str:
-        """Resolve function name from member access expression."""
-        if isinstance(expr.object, Identifier):
-            return f"{expr.object.name}.{expr.member}"
-        if isinstance(expr.object, ModuleReference):
-            return f"{expr.object.module}.{expr.member}"
-        if isinstance(expr.object, MemberAccess):
-            return f"{self._member_access_to_string(expr.object)}.{expr.member}"
-        return f"unknown.{expr.member}"
 
     def _parse_expression(self) -> Expression:
         """Parse general expression.
@@ -379,13 +366,3 @@ class ExpressionForMixin:
             return self._parse_or_expression()
         finally:
             self._expression_depth = depth - 1
-
-    def _member_access_to_string(self, expr: MemberAccess) -> str:
-        """Convert MemberAccess to string representation."""
-        if isinstance(expr.object, Identifier):
-            return f"{expr.object.name}.{expr.member}"
-        if isinstance(expr.object, ModuleReference):
-            return f"{expr.object.module}.{expr.member}"
-        if isinstance(expr.object, MemberAccess):
-            return f"{self._member_access_to_string(expr.object)}.{expr.member}"
-        return f"unknown.{expr.member}"

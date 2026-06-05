@@ -180,26 +180,26 @@ def test_parse_postfix_helpers_cover_success_and_error_paths() -> None:
         p._parse_in_postfix(Identifier("x"))
 
     p = Parser("rule seed { condition: true }")
-    assert (
-        p._build_function_name_from_member_access(
-            MemberAccess(object=Identifier("pe"), member="sec"),
-        )
-        == "pe.sec"
+    call = p._build_member_function_call(MemberAccess(object=Identifier("pe"), member="sec"), [])
+    assert call.function == "pe.sec"
+    assert call.receiver is None
+
+    call = p._build_member_function_call(
+        MemberAccess(object=ModuleReference(module="pe"), member="sec"),
+        [],
     )
-    assert (
-        p._build_function_name_from_member_access(
-            MemberAccess(object=ModuleReference(module="pe"), member="sec"),
-        )
-        == "pe.sec"
-    )
+    assert call.function == "pe.sec"
+    assert call.receiver is None
+
     nested = MemberAccess(object=MemberAccess(object=Identifier("a"), member="b"), member="c")
-    assert p._build_function_name_from_member_access(nested) == "a.b.c"
-    assert (
-        p._build_function_name_from_member_access(
-            MemberAccess(object=StringLiteral("x"), member="c")
-        )
-        == "unknown.c"
-    )
+    call = p._build_member_function_call(nested, [])
+    assert call.function == "a.b.c"
+    assert call.receiver is None
+
+    literal_member = MemberAccess(object=StringLiteral("x"), member="c")
+    call = p._build_member_function_call(literal_member, [])
+    assert call.function == "c"
+    assert call.receiver == literal_member.object
 
 
 def test_classic_parser_rejects_trailing_commas_in_expression_lists() -> None:
