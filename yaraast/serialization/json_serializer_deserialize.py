@@ -1155,6 +1155,7 @@ class JsonSerializerDeserializeMixin:
             raise SerializationError(msg)
         if node_type == "Meta" or (
             node_type is None
+            and "scope" not in data
             and (
                 data.get("leading_comments") or data.get("trailing_comment") or data.get("location")
             )

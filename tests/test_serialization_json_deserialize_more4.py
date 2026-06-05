@@ -231,6 +231,17 @@ def test_json_deserialize_requires_and_preserves_meta_entry_scope() -> None:
     assert isinstance(restored, MetaEntry)
     assert restored.scope == MetaScope.PRIVATE
 
+    legacy_with_metadata = s._deserialize_meta(
+        {
+            "key": "classification",
+            "value": "restricted",
+            "scope": "private",
+            "location": {"line": 1, "column": 1},
+        }
+    )
+    assert isinstance(legacy_with_metadata, MetaEntry)
+    assert legacy_with_metadata.scope == MetaScope.PRIVATE
+
     with pytest.raises(SerializationError, match="MetaEntry scope is required"):
         s._deserialize_meta({"type": "MetaEntry", "key": "classification", "value": "restricted"})
 
