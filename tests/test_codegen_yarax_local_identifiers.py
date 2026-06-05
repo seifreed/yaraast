@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any, cast
 
 import pytest
 
@@ -18,6 +19,7 @@ from yaraast.yarax.ast_nodes import (
     LambdaExpression,
     WithDeclaration,
 )
+from yaraast.yarax.generator import YaraXGenerator
 
 
 def _plain_generator() -> CodeGenerator:
@@ -32,9 +34,13 @@ def _advanced_generator() -> CodeGenerator:
     return CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig()))
 
 
+def _yarax_generator() -> CodeGenerator:
+    return YaraXGenerator()
+
+
 @pytest.mark.parametrize(
     "generator_factory",
-    [_plain_generator, _pretty_generator, _advanced_generator],
+    [_plain_generator, _pretty_generator, _advanced_generator, _yarax_generator],
 )
 @pytest.mark.parametrize(
     "node",
@@ -57,7 +63,20 @@ def test_codegen_rejects_invalid_yarax_local_identifiers(
 
 @pytest.mark.parametrize(
     "generator_factory",
-    [_plain_generator, _pretty_generator, _advanced_generator],
+    [_plain_generator, _pretty_generator, _advanced_generator, _yarax_generator],
+)
+def test_codegen_rejects_non_string_yarax_with_local_identifier(
+    generator_factory: Callable[[], CodeGenerator],
+) -> None:
+    node = WithDeclaration(cast(Any, False), IntegerLiteral(1))
+
+    with pytest.raises(TypeError, match="Local variable identifier must be a string"):
+        generator_factory().visit(node)
+
+
+@pytest.mark.parametrize(
+    "generator_factory",
+    [_plain_generator, _pretty_generator, _advanced_generator, _yarax_generator],
 )
 def test_codegen_preserves_yarax_with_string_reference_local_identifier(
     generator_factory: Callable[[], CodeGenerator],

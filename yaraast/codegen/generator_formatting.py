@@ -224,7 +224,9 @@ def validate_yara_identifier(name: object, kind: str) -> str:
     raise ValueError(msg)
 
 
-def format_yarax_local_identifier(identifier: str, field_name: str) -> str:
+def format_yarax_local_identifier(identifier: object, field_name: str) -> str:
+    if not isinstance(identifier, str):
+        return validate_yara_identifier(identifier, field_name)
     if identifier.startswith("$"):
         return format_string_reference_identifier(identifier, allow_placeholder=False)
     return validate_yara_identifier(identifier, field_name)
