@@ -990,6 +990,26 @@ def _with_node_metadata(node: ASTNode, data: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+def _with_dynamic_node_metadata(node: Any, data: dict[str, Any]) -> dict[str, Any]:
+    location = getattr(node, "location", None)
+    if location is not None:
+        data["location"] = _serialize_location(location)
+    leading_comments = _validated_node_collection(
+        getattr(node, "leading_comments", []),
+        "leading_comments",
+        (Comment, CommentGroup),
+    )
+    if leading_comments:
+        data["leading_comments"] = [serialize_node(comment) for comment in leading_comments]
+    trailing_comment = getattr(node, "trailing_comment", None)
+    if trailing_comment is not None:
+        if not isinstance(trailing_comment, Comment | CommentGroup):
+            msg = "trailing_comment must be a Comment or CommentGroup node"
+            raise SerializationError(msg)
+        data["trailing_comment"] = serialize_node(trailing_comment)
+    return data
+
+
 def _apply_node_metadata(node: ASTNode, data: dict[str, Any]) -> ASTNode:
     location = data.get("location")
     if isinstance(location, dict):
@@ -1649,6 +1669,8 @@ def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
         data["scope"] = serialize_meta_scope(scope)
     if isinstance(meta, ASTNode):
         return _with_node_metadata(meta, data)
+    if any(hasattr(meta, name) for name in ("location", "leading_comments", "trailing_comment")):
+        return _with_dynamic_node_metadata(meta, data)
     return data
 
 
