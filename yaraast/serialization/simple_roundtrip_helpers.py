@@ -1852,9 +1852,19 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_required_node(data, "high", "RangeExpression"),
         )
     if node_type == "FunctionCall":
+        raw_arguments = _deserialize_required_field(data, "arguments", "FunctionCall")
+        if not isinstance(raw_arguments, list):
+            msg = "FunctionCall arguments must be a list"
+            raise SerializationError(msg)
+        arguments = []
+        for argument in raw_arguments:
+            if argument is None or argument == {}:
+                msg = "FunctionCall arguments must contain nodes"
+                raise SerializationError(msg)
+            arguments.append(_deserialize_required_node_value(argument, "FunctionCall arguments"))
         return FunctionCall(
             _deserialize_nonempty_string_field(data, "function", "FunctionCall"),
-            _deserialize_node_list_field(data, "arguments", "FunctionCall"),
+            arguments,
             receiver=_deserialize_optional_node_field(data, "receiver", "FunctionCall"),
         )
     if node_type == "ArrayAccess":

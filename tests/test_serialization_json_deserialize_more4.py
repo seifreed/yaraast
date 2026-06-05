@@ -1201,6 +1201,9 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="FunctionCall arguments must be a list"):
         s._deserialize_expression({"type": "FunctionCall", "function": "fn", "arguments": "abc"})
 
+    with pytest.raises(SerializationError, match="FunctionCall arguments is required"):
+        s._deserialize_expression({"type": "FunctionCall", "function": "fn"})
+
     with pytest.raises(
         SerializationError, match="StringOperatorExpression operator must not be empty"
     ):

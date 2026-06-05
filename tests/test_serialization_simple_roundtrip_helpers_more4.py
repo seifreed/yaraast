@@ -1977,6 +1977,9 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="FunctionCall arguments must be a list"):
         deserialize_node({"type": "FunctionCall", "function": "fn", "arguments": "abc"})
 
+    with pytest.raises(SerializationError, match="FunctionCall arguments is required"):
+        deserialize_node({"type": "FunctionCall", "function": "fn"})
+
     with pytest.raises(
         SerializationError, match="StringOperatorExpression operator must not be empty"
     ):

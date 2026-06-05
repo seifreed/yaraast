@@ -404,7 +404,17 @@ def _deser_range_expression(self, data: dict[str, Any]):
 def _deser_function_call(self, data: dict[str, Any]):
     from yaraast.ast.expressions import FunctionCall
 
-    args = _deserialize_expression_list_field(self, data, "arguments", "FunctionCall")
+    raw_arguments = _deserialize_required_field(data, "arguments", "FunctionCall")
+    if not isinstance(raw_arguments, list):
+        msg = "FunctionCall arguments must be a list"
+        raise SerializationError(msg)
+    args = []
+    for item in raw_arguments:
+        expression = self._deserialize_expression(item)
+        if expression is None:
+            msg = "FunctionCall arguments must contain expressions"
+            raise SerializationError(msg)
+        args.append(expression)
     return FunctionCall(
         function=_deserialize_nonempty_string_field(data, "function", "FunctionCall"),
         arguments=args,
