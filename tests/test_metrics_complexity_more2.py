@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import BinaryExpression, BooleanLiteral
@@ -99,3 +101,11 @@ def test_analyze_file_complexity(tmp_path: Path) -> None:
     report = analyze_file_complexity(file_path)
     assert report["file"].endswith("sample.yar")
     assert "complexity" in report
+
+
+def test_analyze_file_complexity_rejects_invalid_utf8(tmp_path: Path) -> None:
+    file_path = tmp_path / "bad.yar"
+    file_path.write_bytes(b"\xff")
+
+    with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
+        analyze_file_complexity(file_path)
