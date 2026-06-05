@@ -170,6 +170,15 @@ class YaraXGenerator(BaseGenerator):
         """Generate code for slice expression."""
         target_str = self.visit(node.target)
 
+        from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
+        from yaraast.yarax.ast_nodes import ListExpression, TupleExpression
+
+        if not isinstance(
+            node.target,
+            FunctionCall | Identifier | ListExpression | ParenthesesExpression | TupleExpression,
+        ):
+            target_str = f"({target_str})"
+
         slice_parts = [
             self.visit(node.start) if node.start is not None else "",
             self.visit(node.stop) if node.stop is not None else "",

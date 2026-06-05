@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from yaraast.ast.expressions import (
+    BinaryExpression,
     BooleanLiteral,
     Identifier,
     IntegerLiteral,
@@ -93,6 +94,17 @@ def test_yarax_generator_covers_tuple_indexing_slice_and_parenthesized_target() 
         step=IntegerLiteral(2),
     )
     assert gen.visit(no_start_but_step) == "arr[:4:2]"
+
+    compound_target = SliceExpression(
+        target=BinaryExpression(
+            left=Identifier(name="a"),
+            operator="+",
+            right=Identifier(name="b"),
+        ),
+        start=IntegerLiteral(0),
+        stop=IntegerLiteral(1),
+    )
+    assert gen.visit(compound_target) == "(a + b)[0:1]"
 
     case = MatchCase(pattern=StringLiteral("a"), result=StringLiteral("b"))
     assert gen.visit(case) == '"a" => "b"'
