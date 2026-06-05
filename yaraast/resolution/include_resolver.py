@@ -43,6 +43,14 @@ class ResolvedFile:
         return rules
 
 
+def _read_yara_include_text(file_path: Path) -> str:
+    try:
+        return file_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        msg = "YARA include file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 class IncludeResolver:
     """Resolves YARA include statements with caching and cycle detection."""
 
@@ -141,7 +149,7 @@ class IncludeResolver:
 
     def _parse_and_resolve(self, resolved_path: Path, cache_key: str) -> ResolvedFile:
         """Parse file and recursively resolve its includes."""
-        content = resolved_path.read_text(encoding="utf-8")
+        content = _read_yara_include_text(resolved_path)
         ast = parse_yara_source(content)
         checksum = self._calculate_checksum_from_content(content)
 
@@ -248,7 +256,7 @@ class IncludeResolver:
 
     def _calculate_checksum(self, file_path: Path) -> str:
         """Calculate checksum of a file."""
-        content = file_path.read_text(encoding="utf-8")
+        content = _read_yara_include_text(file_path)
         return self._calculate_checksum_from_content(content)
 
     def _calculate_checksum_from_content(self, content: str) -> str:

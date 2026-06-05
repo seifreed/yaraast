@@ -97,6 +97,16 @@ def test_workspace_add_file_error_paths_and_getters(tmp_path: Path) -> None:
     assert isinstance(workspace.get_file_dependents(str(ok)), set)
 
 
+def test_workspace_add_file_reports_invalid_utf8(tmp_path: Path) -> None:
+    rule_file = tmp_path / "invalid.yar"
+    rule_file.write_bytes(b"\xff")
+    workspace = Workspace(str(tmp_path))
+
+    result = workspace.add_file(rule_file)
+
+    assert result.errors == ["Parse error: YARA include file must contain valid UTF-8 text"]
+
+
 def test_workspace_add_file_propagates_internal_resolver_errors(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -357,6 +367,15 @@ def test_include_resolver_accepts_pathlike_file_path(tmp_path: Path) -> None:
     resolved = resolver.resolve_file(rule_file)
 
     assert resolved.path == rule_file.resolve()
+
+
+def test_include_resolver_rejects_invalid_utf8_file(tmp_path: Path) -> None:
+    rule_file = tmp_path / "invalid.yar"
+    rule_file.write_bytes(b"\xff")
+    resolver = IncludeResolver([str(tmp_path)])
+
+    with pytest.raises(ValueError, match="YARA include file must contain valid UTF-8 text"):
+        resolver.resolve_file(rule_file)
 
 
 def test_include_resolver_treats_directory_matches_as_unresolved(tmp_path: Path) -> None:
