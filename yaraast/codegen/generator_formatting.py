@@ -21,6 +21,8 @@ from yaraast.regex_literals import validate_regex_modifiers
 
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
+_YARA_CONTEXTUAL_IDENTIFIER_KEYWORDS = frozenset({"as", "include"})
+_YARA_CONTEXTUAL_IDENTIFIER_KINDS = frozenset({"meta", "rule", "tag"})
 _YARA_RULE_MODIFIERS = frozenset({"global", "private"})
 _YARA_EXPRESSION_KEYWORDS = frozenset({"entrypoint", "false", "filesize", "true"})
 _YARA_FILE_COLLECTION_FIELDS = (
@@ -213,10 +215,13 @@ def validate_yara_identifier(name: object, kind: str) -> str:
     if not isinstance(name, str):
         msg = f"{kind.capitalize()} identifier must be a string for libyara output"
         raise TypeError(msg)
+    keyword_allowed = (
+        kind in _YARA_CONTEXTUAL_IDENTIFIER_KINDS and name in _YARA_CONTEXTUAL_IDENTIFIER_KEYWORDS
+    )
     if (
         len(name) <= YARA_IDENTIFIER_MAX_LENGTH
         and _YARA_IDENTIFIER_RE.fullmatch(name) is not None
-        and name not in _YARA_KEYWORDS
+        and (name not in _YARA_KEYWORDS or keyword_allowed)
     ):
         return name
 

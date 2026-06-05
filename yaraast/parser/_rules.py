@@ -22,6 +22,8 @@ from yaraast.lexer import TokenType
 
 from ._shared import ParserError
 
+_CONTEXTUAL_IDENTIFIER_TOKENS = (TokenType.IDENTIFIER, TokenType.AS, TokenType.INCLUDE)
+
 
 class RuleParsingMixin:
     """Mixin with rule, import, include, and meta parsing."""
@@ -161,6 +163,12 @@ class RuleParsingMixin:
     def _check_identifier_value(self, value: str) -> bool:
         return self._check(TokenType.IDENTIFIER) and self._peek().value == value
 
+    def _match_contextual_identifier(self) -> bool:
+        return self._match(*_CONTEXTUAL_IDENTIFIER_TOKENS)
+
+    def _check_contextual_identifier(self) -> bool:
+        return self._check_any(*_CONTEXTUAL_IDENTIFIER_TOKENS)
+
     def _register_extern_import(self, extern_import: ExternImport) -> None:
         for rule_name in extern_import.rules:
             namespace, name = self._split_qualified_rule_name(rule_name)
@@ -296,7 +304,7 @@ class RuleParsingMixin:
             msg = "Expected 'rule' keyword"
             raise ParserError(msg, self._peek())
 
-        if not self._match(TokenType.IDENTIFIER):
+        if not self._match_contextual_identifier():
             msg = "Expected rule name"
             raise ParserError(msg, self._peek())
 
@@ -315,11 +323,11 @@ class RuleParsingMixin:
         """Parse rule tags after colon."""
         tags = []
         if self._match(TokenType.COLON):
-            if not self._check(TokenType.IDENTIFIER):
+            if not self._check_contextual_identifier():
                 msg = "Expected tag name after ':'"
                 raise ParserError(msg, self._peek())
             seen_tags: set[str] = set()
-            while self._check(TokenType.IDENTIFIER):
+            while self._check_contextual_identifier():
                 tag_token = self._advance()
                 tag_name = str(tag_token.value)
                 if tag_name in seen_tags:
@@ -421,7 +429,7 @@ class RuleParsingMixin:
             TokenType.RBRACE,
         ):
             scope = self._parse_meta_scope_prefix()
-            if not self._check(TokenType.IDENTIFIER):
+            if not self._check_contextual_identifier():
                 if scope is not None:
                     msg = "Expected meta key after scope"
                     raise ParserError(msg, self._peek())

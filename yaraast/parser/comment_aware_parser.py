@@ -23,6 +23,8 @@ from yaraast.parser.comment_aware_helpers import (
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.parser import Parser
 
+_CONTEXTUAL_IDENTIFIER_TOKENS = (TokenType.IDENTIFIER, TokenType.AS, TokenType.INCLUDE)
+
 if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
     from yaraast.ast.extern import ExternNamespace, ExternRule
@@ -200,7 +202,7 @@ class CommentAwareParser(Parser):
             msg = "Expected 'rule'"
             raise ParserError(msg, self._peek())
 
-        if not self._peek() or self._peek().type != TokenType.IDENTIFIER:
+        if not self._peek() or self._peek().type not in _CONTEXTUAL_IDENTIFIER_TOKENS:
             msg = "Expected rule name"
             raise ParserError(msg, self._peek())
 
@@ -216,11 +218,11 @@ class CommentAwareParser(Parser):
 
         tags = []
         if self._match(TokenType.COLON):
-            if not self._peek() or self._peek().type != TokenType.IDENTIFIER:
+            if not self._peek() or self._peek().type not in _CONTEXTUAL_IDENTIFIER_TOKENS:
                 msg = "Expected tag name after ':'"
                 raise ParserError(msg, self._peek())
             seen_tags: set[str] = set()
-            while self._peek() and self._peek().type == TokenType.IDENTIFIER:
+            while self._peek() and self._peek().type in _CONTEXTUAL_IDENTIFIER_TOKENS:
                 tag_token = self._peek()
                 tag_name = str(tag_token.value)
                 if tag_name in seen_tags:
@@ -565,7 +567,7 @@ class CommentAwareParser(Parser):
 
             scope = self._parse_meta_scope_prefix()
 
-            if not self._match(TokenType.IDENTIFIER):
+            if not self._match(*_CONTEXTUAL_IDENTIFIER_TOKENS):
                 msg = "Expected meta key after scope"
                 raise ParserError(msg, self._peek())
 
@@ -612,7 +614,7 @@ class CommentAwareParser(Parser):
     def _check_meta_entry_start(self) -> bool:
         from yaraast.lexer.tokens import TokenType
 
-        if self._check(TokenType.IDENTIFIER):
+        if self._check_any(*_CONTEXTUAL_IDENTIFIER_TOKENS):
             return True
         return self._check(TokenType.PRIVATE)
 

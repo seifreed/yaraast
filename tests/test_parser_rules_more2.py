@@ -159,6 +159,26 @@ def test_parse_rule_preserves_duplicate_meta_entries() -> None:
     assert "a = 2" in generated
 
 
+@pytest.mark.parametrize("keyword", ["as", "include"])
+def test_parse_and_codegen_allow_contextual_identifier_keywords(keyword: str) -> None:
+    source = f"rule {keyword} : {keyword} {{ meta: {keyword} = 1 condition: true }}"
+    yara = pytest.importorskip("yara")
+    yara.compile(source=source)
+
+    for parser_factory in (Parser, CommentAwareParser):
+        ast = parser_factory().parse(source)
+        rule = ast.rules[0]
+        assert rule.name == keyword
+        assert [tag.name for tag in rule.tags] == [keyword]
+        assert [(entry.key, entry.value) for entry in rule.meta] == [(keyword, 1)]
+
+        generated = CodeGenerator().generate(ast)
+        assert f"rule {keyword}" in generated
+        assert f": {keyword}" in generated
+        assert f"{keyword} = 1" in generated
+        yara.compile(source=generated)
+
+
 def test_parse_rule_and_sections_error_paths() -> None:
     with pytest.raises(ParserError, match="Expected 'rule' keyword"):
         _parser_with_tokens([_t(TokenType.IDENTIFIER, "x")])._parse_rule_name()
