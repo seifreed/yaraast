@@ -336,6 +336,10 @@ def test_json_serializer_rejects_invalid_string_definition_lists() -> None:
     with pytest.raises(SerializationError, match="HexString tokens item must be"):
         serializer.serialize(ast)
 
+    cast(Any, hex_string).tokens = []
+    with pytest.raises(SerializationError, match="HexString must contain at least one token"):
+        serializer.serialize(ast)
+
 
 def test_json_serializer_rejects_non_finite_numbers() -> None:
     serializer = JsonSerializer(include_metadata=False)

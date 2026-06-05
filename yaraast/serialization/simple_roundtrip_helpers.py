@@ -71,7 +71,6 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.errors import SerializationError, ValidationError, YaraASTError
-from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.source import parse_yara_source
 from yaraast.serialization._serialization_primitives import (
     _HEX_CHARS,
@@ -267,14 +266,6 @@ def _coerce_serialized_hex_alternative_branch(alternative) -> list:
     if isinstance(alternative, list):
         return alternative
     return [alternative]
-
-
-def _deserialize_legacy_hex_tokens(raw_tokens: str) -> list[HexToken]:
-    """Deserialize legacy hex tokens stored as YARA-style text."""
-    hex_content = raw_tokens.strip()
-    if hex_content.startswith("{") and hex_content.endswith("}"):
-        hex_content = hex_content[1:-1]
-    return HexStringParser().parse(hex_content)
 
 
 def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> None:
@@ -1573,12 +1564,19 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
         _serialize_plain_string_raw_bytes(data, getattr(string_def, "raw_bytes", None))
         return _with_node_metadata(string_def, data)
     if isinstance(string_def, HexString):
+        identifier = _serialize_required_nonempty_string(
+            string_def.identifier,
+            "HexString identifier",
+        )
+        if not isinstance(string_def.tokens, list | tuple):
+            msg = "HexString tokens must be a list"
+            raise SerializationError(msg)
+        if not string_def.tokens:
+            msg = "HexString must contain at least one token"
+            raise SerializationError(msg)
         data = {
             "type": "HexString",
-            "identifier": _serialize_required_nonempty_string(
-                string_def.identifier,
-                "HexString identifier",
-            ),
+            "identifier": identifier,
             "tokens": [_serialize_hex_token(t) for t in string_def.tokens],
             "modifiers": _serialize_modifiers(string_def.modifiers, "HexString"),
         }
@@ -2232,53 +2230,18 @@ def deserialize_string(data: dict[str, Any]) -> Any:
         )
     if string_type == "HexString":
         raw_tokens = data.get("tokens", [])
-        if isinstance(raw_tokens, list):
-            tokens = [_deserialize_hex_token(t) for t in raw_tokens]
-            return _apply_node_metadata(
-                HexString(
-                    identifier=_deserialize_nonempty_string_field(
-                        data,
-                        "identifier",
-                        "HexString",
-                    ),
-                    tokens=tokens,
-                    modifiers=modifiers,
-                    is_anonymous=_deserialize_is_anonymous(data),
-                ),
-                data,
-            )
-        if isinstance(raw_tokens, str):
-            try:
-                return _apply_node_metadata(
-                    HexString(
-                        identifier=_deserialize_nonempty_string_field(
-                            data,
-                            "identifier",
-                            "HexString",
-                        ),
-                        tokens=_deserialize_legacy_hex_tokens(raw_tokens),
-                        modifiers=modifiers,
-                        is_anonymous=_deserialize_is_anonymous(data),
-                    ),
-                    data,
-                )
-            except HexParseError as exc:
-                msg = f"Invalid legacy HexString tokens: {exc}"
-                raise SerializationError(msg) from exc
-
-        # Legacy format with invalid token payloads: preserve type but do not invent tokens.
-        import warnings
-
         identifier = _deserialize_nonempty_string_field(data, "identifier", "HexString")
-        warnings.warn(
-            f"HexString '{identifier}' has non-list tokens in serialized data, "
-            "tokens will be empty after deserialization",
-            stacklevel=2,
-        )
+        if not isinstance(raw_tokens, list):
+            msg = "HexString tokens must be a list"
+            raise SerializationError(msg)
+        tokens = [_deserialize_hex_token(t) for t in raw_tokens]
+        if not tokens:
+            msg = "HexString must contain at least one token"
+            raise SerializationError(msg)
         return _apply_node_metadata(
             HexString(
                 identifier=identifier,
-                tokens=[],
+                tokens=tokens,
                 modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),
             ),

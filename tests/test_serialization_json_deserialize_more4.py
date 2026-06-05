@@ -580,6 +580,11 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
             {"type": "HexString", "identifier": "$h", "tokens": "AA", "modifiers": []}
         )
 
+    with pytest.raises(SerializationError, match="HexString must contain at least one token"):
+        s._deserialize_string(
+            {"type": "HexString", "identifier": "$h", "tokens": [], "modifiers": []}
+        )
+
     with pytest.raises(SerializationError, match="Hex token must be an object"):
         s._deserialize_string(
             {"type": "HexString", "identifier": "$h", "tokens": ["AA"], "modifiers": []}

@@ -315,7 +315,11 @@ def _serialize_string_modifiers(serializer, values, context: str) -> list[dict[s
 def _serialize_hex_tokens(serializer, values, context: str) -> list[dict[str, Any]]:
     from yaraast.ast.strings import HexToken
 
-    return _serialize_node_list(serializer, values, f"{context} tokens", HexToken)
+    tokens = _serialize_node_list(serializer, values, f"{context} tokens", HexToken)
+    if not tokens:
+        msg = f"{context} must contain at least one token"
+        raise SerializationError(msg)
+    return tokens
 
 
 def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> None:
@@ -526,10 +530,10 @@ def visit_hex_string(serializer, node) -> dict[str, Any]:
             node.identifier,
             "HexString identifier",
         ),
-        "tokens": _serialize_hex_tokens(serializer, node.tokens, "HexString"),
         "modifiers": _serialize_string_modifiers(serializer, node.modifiers, "HexString"),
     }
     _serialize_anonymous_flag(data, getattr(node, "is_anonymous", False), "HexString")
+    data["tokens"] = _serialize_hex_tokens(serializer, node.tokens, "HexString")
     return data
 
 

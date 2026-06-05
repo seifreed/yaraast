@@ -979,7 +979,10 @@ def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="HexString identifier is required"):
         deserialize_string({"type": "HexString", "tokens": 7, "modifiers": []})
 
-    with pytest.raises(SerializationError, match="Invalid legacy HexString tokens"):
+    with pytest.raises(SerializationError, match="HexString must contain at least one token"):
+        deserialize_string({"type": "HexString", "identifier": "$h", "tokens": [], "modifiers": []})
+
+    with pytest.raises(SerializationError, match="HexString tokens must be a list"):
         deserialize_string(
             {"type": "HexString", "identifier": "$h", "tokens": "{ GG }", "modifiers": []}
         )
@@ -1500,6 +1503,10 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
         (
             HexString(identifier="", tokens=[]),
             "HexString identifier must not be empty",
+        ),
+        (
+            HexString(identifier="$h", tokens=[]),
+            "HexString must contain at least one token",
         ),
         (
             RegexString(identifier=cast(Any, 123), regex="abc"),
@@ -2547,9 +2554,8 @@ def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> Non
     assert valid is False
     assert "error" in diff
 
-    fallback = deserialize_string({"type": "HexString", "identifier": "$h", "tokens": "{ 41 }"})
-    assert isinstance(fallback, HexString)  # preserves type instead of converting to PlainString
-    assert fallback.tokens == [HexByte(value=0x41)]
+    with pytest.raises(SerializationError, match="HexString tokens must be a list"):
+        deserialize_string({"type": "HexString", "identifier": "$h", "tokens": "{ 41 }"})
 
 
 def test_simple_roundtrip_report_propagates_internal_parser_errors(

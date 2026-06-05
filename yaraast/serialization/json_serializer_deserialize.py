@@ -997,17 +997,21 @@ class JsonSerializerDeserializeMixin:
         if string_type == "HexString":
             from yaraast.ast.strings import HexString
 
+            identifier = _deserialize_nonempty_string_field(
+                data,
+                "identifier",
+                "HexString",
+            )
             tokens = [
                 self._deserialize_hex_token(t)
                 for t in _deserialize_list_field(data, "tokens", "HexString")
             ]
+            if not tokens:
+                msg = "HexString must contain at least one token"
+                raise SerializationError(msg)
             return self._apply_node_metadata(
                 HexString(
-                    identifier=_deserialize_nonempty_string_field(
-                        data,
-                        "identifier",
-                        "HexString",
-                    ),
+                    identifier=identifier,
                     tokens=tokens,
                     modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),
