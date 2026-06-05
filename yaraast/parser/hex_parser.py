@@ -153,11 +153,16 @@ class HexStringParser:
                 # Skip multi-line comment until */
                 cleaned_chars.append(" ")
                 i += 2
+                comment_closed = False
                 while i < len(content):
                     if i < len(content) - 1 and content[i : i + 2] == "*/":
                         i += 2
+                        comment_closed = True
                         break
                     i += 1
+                if not comment_closed:
+                    msg = "Unterminated comment in hex string"
+                    raise HexParseError(msg, i)
             else:
                 cleaned_chars.append(content[i])
                 i += 1

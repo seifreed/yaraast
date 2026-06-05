@@ -639,10 +639,13 @@ def test_hex_string_parser_covers_remaining_branches_and_errors() -> None:
 
     assert str(HexParseError("boom")) == "Hex parse error: boom"
 
-    cleaned = parser._remove_comments("AA // one\n BB /* two */ CC /* unterminated")
+    cleaned = parser._remove_comments("AA // one\n BB /* two */ CC")
     assert "one" not in cleaned
     assert "two" not in cleaned
     assert "AA" in cleaned and "BB" in cleaned and "CC" in cleaned
+
+    with pytest.raises(HexParseError, match="Unterminated comment in hex string"):
+        parser._remove_comments("AA /* unterminated")
 
     parser.content = " \t\nAA"
     parser.pos = 0

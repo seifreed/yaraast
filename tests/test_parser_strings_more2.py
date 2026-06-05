@@ -26,6 +26,13 @@ def _parser_with_tokens(tokens: list[Token]) -> Parser:
     return p
 
 
+def test_parser_rejects_unterminated_block_comment_in_hex_string_tokens() -> None:
+    parser = _parser_with_tokens([_t(TokenType.HEX_STRING, "4D /* unterminated")])
+
+    with pytest.raises(ParserError, match="Unterminated comment in hex string"):
+        parser._parse_hex_string("4D /* unterminated")
+
+
 def test_parse_strings_section_success_and_main_errors() -> None:
     p = _parser_with_tokens(
         [
