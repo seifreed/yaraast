@@ -191,6 +191,7 @@ yarax_patterns = [
     r"(?:\bcondition\s*:|[=(:,]\s*)\[[^\]\n]*(?:,|\.{3}|\b(?:true|false|lambda|match)\b|\"\")[^\]\n]*\]",
     r"(?:\bcondition\s*:|[=(:,]\s*)\{\s*(?:\"\"|\d+|true|false)\s*:",
     r"(?:\bcondition\s*:|[=(:,]\s*)\{\s*\*\*",
+    r"(?:\bcondition\s*:|[=(:,]\s*)[A-Za-z_$]\w*(?:\.[A-Za-z_]\w*)*\s*\([^()\n]*\)\s*\[",
     r"(?:[A-Za-z_$]\w*(?:\s*\([^)]*\))?|\"\"|\])\s*\[[^\]\n]*:[^\]\n]*\]",
     r"\([^()\n]*,[^()\n]*\)\s*\[",
 ]
