@@ -1919,11 +1919,8 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_dictionary_key(data),
         )
     if node_type == "DefinedExpression":
-        expression = data.get("expression")
-        if expression is None and "identifier" in data:
-            expression = {"type": "Identifier", "name": data["identifier"]}
         return DefinedExpression(
-            _deserialize_required_node_value(expression, "DefinedExpression expression")
+            _deserialize_required_node(data, "expression", "DefinedExpression")
         )
     if node_type == "StringOperatorExpression":
         return StringOperatorExpression(

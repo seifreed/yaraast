@@ -598,15 +598,12 @@ def _deser_dictionary_access(self, data: dict[str, Any]):
 def _deser_defined_expression(self, data: dict[str, Any]):
     from yaraast.ast.operators import DefinedExpression
 
-    expression = data.get("expression")
-    if expression is None and "identifier" in data:
-        expression = {"type": "Identifier", "name": data["identifier"]}
-    if expression is None:
-        msg = "DefinedExpression expression is required"
-        raise SerializationError(msg)
     return DefinedExpression(
-        expression=_deserialize_required_expression_value(
-            self, expression, "DefinedExpression expression"
+        expression=_deserialize_required_expression(
+            self,
+            data,
+            "expression",
+            "DefinedExpression",
         )
     )
 

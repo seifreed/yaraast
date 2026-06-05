@@ -2248,6 +2248,10 @@ def test_simple_roundtrip_required_expression_fields_reject_empty_objects() -> N
             "DefinedExpression expression is required",
         ),
         (
+            {"type": "DefinedExpression", "identifier": "foo"},
+            "DefinedExpression expression is required",
+        ),
+        (
             {
                 "type": "StringOperatorExpression",
                 "operator": "contains",

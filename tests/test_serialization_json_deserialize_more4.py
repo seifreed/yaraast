@@ -38,7 +38,6 @@ from yaraast.ast.expressions import (
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
-from yaraast.ast.operators import DefinedExpression
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import (
     HexByte,
@@ -1717,13 +1716,13 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
     )
     assert isinstance(dacc_expr_key.key, StringLiteral)
 
-    defined_with_identifier = s._deserialize_expression(
-        {
-            "type": "DefinedExpression",
-            "identifier": "foo",
-        }
-    )
-    assert isinstance(defined_with_identifier, DefinedExpression)
+    with pytest.raises(SerializationError, match="DefinedExpression expression is required"):
+        s._deserialize_expression(
+            {
+                "type": "DefinedExpression",
+                "identifier": "foo",
+            }
+        )
 
     with pytest.raises(SerializationError, match="DefinedExpression expression is required"):
         s._deserialize_expression({"type": "DefinedExpression"})
