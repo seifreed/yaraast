@@ -23,6 +23,14 @@ from yaraast.shared.file_patterns import iter_matching_files
 from yaraast.yarax.generator import YaraXGenerator
 
 
+def _read_yara_text_file(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 class SimpleRoundtripSerializer:
     """Simple serializer for AST roundtrip testing."""
 
@@ -102,7 +110,7 @@ class SimpleRoundTrip:
             msg = "file_path must not be empty"
             raise ValueError(msg)
         path = Path(raw_path)
-        yara_code = path.read_text(encoding="utf-8")
+        yara_code = _read_yara_text_file(path)
         return self.test(yara_code)
 
     def test_directory(self, dir_path: str | PathLike[str]) -> list[tuple[Path, bool, Any, Any]]:

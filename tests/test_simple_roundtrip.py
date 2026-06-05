@@ -151,6 +151,14 @@ def test_simple_roundtrip_file_rejects_empty_path(file_path: str) -> None:
         SimpleRoundTrip().test_file(file_path)
 
 
+def test_simple_roundtrip_file_rejects_invalid_utf8(tmp_path: Path) -> None:
+    bad = tmp_path / "bad.yar"
+    bad.write_bytes(b"\xff")
+
+    with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
+        SimpleRoundTrip().test_file(bad)
+
+
 @pytest.mark.parametrize("dir_path", [None, 123, object()])
 def test_simple_roundtrip_directory_rejects_invalid_path_types(dir_path: Any) -> None:
     with pytest.raises(TypeError, match="dir_path must be a string or path-like object"):
