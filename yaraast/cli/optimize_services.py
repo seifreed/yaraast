@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from yaraast.dialects import YaraDialect, detect_dialect
+from yaraast.errors import ParseError
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.source import parse_yara_source
 from yaraast.performance.optimizer import PerformanceOptimizer
@@ -19,7 +20,11 @@ class OptimizationAnalysis:
 
 
 def parse_yara_with_tolerance(content: str):
-    if detect_dialect(content) == YaraDialect.YARA_X:
+    dialect = detect_dialect(content)
+    if dialect == YaraDialect.YARA_L:
+        msg = "YARA-L input is not supported by optimize; use YARA-L tooling instead"
+        raise ParseError(msg)
+    if dialect == YaraDialect.YARA_X:
         return parse_yara_source(content), [], []
     result = ErrorTolerantParser().parse(content)
     return result.ast, [], result.errors

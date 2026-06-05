@@ -8,6 +8,7 @@ from typing import Any
 
 from yaraast.cli.utils import read_text
 from yaraast.dialects import YaraDialect, detect_dialect
+from yaraast.errors import ParseError
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.source import parse_yara_source
 from yaraast.performance.string_analyzer import StringPerformanceIssue, analyze_rule_performance
@@ -28,7 +29,11 @@ _FILTER_SEVERITIES = frozenset({"all", Severity.WARNING, Severity.CRITICAL})
 def parse_performance_file(input_file: Path) -> Any:
     """Parse a YARA file and return AST or None."""
     content = read_text(input_file)
-    if detect_dialect(content) == YaraDialect.YARA_X:
+    dialect = detect_dialect(content)
+    if dialect == YaraDialect.YARA_L:
+        msg = "YARA-L input is not supported by performance-check; use YARA-L tooling instead"
+        raise ParseError(msg)
+    if dialect == YaraDialect.YARA_X:
         return parse_yara_source(content)
     return ErrorTolerantParser().parse(content).ast
 

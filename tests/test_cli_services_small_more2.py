@@ -10,6 +10,7 @@ from yaraast.cli import (
     parse_output_services as pos,
     serialize_services as ssvc,
 )
+from yaraast.errors import ParseError
 from yaraast.parser import Parser
 
 
@@ -36,6 +37,19 @@ rule sample {
 
 def _yarax_rule() -> str:
     return "rule x { condition: with xs = [1]: match xs { _ => true } }"
+
+
+def _yaral_rule() -> str:
+    return """
+rule ev {
+  events:
+    $e.metadata.event_type = "X"
+  match:
+    $e over 5m
+  condition:
+    $e
+}
+"""
 
 
 def test_display_parser_errors_truncates_after_five(
@@ -68,6 +82,11 @@ def test_optimize_services_preserve_yarax_condition() -> None:
     assert ast.rules[0].condition.__class__.__name__ == "WithStatement"
     assert "with xs = [1]" in generated
     assert "match xs" in generated
+
+
+def test_optimize_services_reject_yaral_without_tolerant_classic_parse() -> None:
+    with pytest.raises(ParseError, match=r"YARA-L.*optimize"):
+        osvc.parse_yara_with_tolerance(_yaral_rule())
 
 
 def test_export_ast_yaml_non_minimal_returns_yaml_string() -> None:

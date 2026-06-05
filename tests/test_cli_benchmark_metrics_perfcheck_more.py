@@ -40,6 +40,7 @@ from yaraast.cli.metrics_reporting import (
 from yaraast.cli.metrics_services import MetricsReportData
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.cli.performance_check_services import parse_performance_file
+from yaraast.errors import ParseError
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.parser import Parser
@@ -85,6 +86,19 @@ def _sample_ast() -> YaraFile:
 
 def _yarax_rule() -> str:
     return "rule x { condition: with xs = [1]: match xs { _ => true } }"
+
+
+def _yaral_rule() -> str:
+    return """
+rule ev {
+  events:
+    $e.metadata.event_type = "X"
+  match:
+    $e over 5m
+  condition:
+    $e
+}
+"""
 
 
 def test_ast_benchmarker_success_error_and_summary(tmp_path: Path) -> None:
@@ -290,6 +304,14 @@ def test_performance_check_parser_preserves_yarax_condition(tmp_path: Path) -> N
     ast = parse_performance_file(yarax_path)
 
     assert ast.rules[0].condition.__class__.__name__ == "WithStatement"
+
+
+def test_performance_check_parser_rejects_yaral(tmp_path: Path) -> None:
+    yaral_path = tmp_path / "perf_yaral.yar"
+    yaral_path.write_text(_yaral_rule(), encoding="utf-8")
+
+    with pytest.raises(ParseError, match=r"YARA-L.*performance-check"):
+        parse_performance_file(yaral_path)
 
 
 def test_performance_check_rejects_invalid_limit(tmp_path: Path) -> None:
