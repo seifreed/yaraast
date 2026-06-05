@@ -22,6 +22,11 @@ def test_cli_utils_read_write_text_and_json(tmp_path: Path) -> None:
     assert json.loads(utils.read_text(json_path)) == {"value": 1}
 
 
+def test_cli_utils_rejects_non_utf8_encodable_text(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="content must be UTF-8 encodable"):
+        utils.write_text(tmp_path / "sample.txt", "\ud800")
+
+
 @pytest.mark.parametrize("path", [False, 0, object()])
 def test_cli_utils_reject_invalid_path_types(path: Any) -> None:
     with pytest.raises(TypeError, match="path must be a file path"):

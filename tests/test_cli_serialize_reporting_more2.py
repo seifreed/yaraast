@@ -154,6 +154,11 @@ def test_write_diff_output_and_display_info(tmp_path: Path) -> None:
     assert "hash123" in text
 
 
+def test_write_diff_output_rejects_non_utf8_json(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="content must be UTF-8 encodable"):
+        sr.write_diff_output(str(tmp_path / "diff.json"), "json", {"name": "\ud800"})
+
+
 @pytest.mark.parametrize("output_format", [None, 123])
 def test_write_diff_output_rejects_non_string_formats(
     tmp_path: Path,

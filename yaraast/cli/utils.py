@@ -96,6 +96,11 @@ def read_text(path: str | Path) -> str:
 
 def write_text(path: str | Path, content: str) -> None:
     """Write a text file with UTF-8 encoding."""
+    try:
+        content.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        msg = "content must be UTF-8 encodable"
+        raise ValueError(msg) from exc
     _require_existing_file_path(path).write_text(content, encoding="utf-8")
 
 
