@@ -1113,7 +1113,9 @@ def _copy_string_set_to_protobuf(value, pb_owner, context: str) -> None:
 
 def _copy_string_set_items_to_protobuf(items, pb_owner, context: str) -> None:
     item_texts = [_string_set_item_text(item) for item in items]
-    if all(item_text is not None for item_text in item_texts):
+    if all(item_text is not None for item_text in item_texts) and not any(
+        _string_set_item_has_metadata(item) for item in items
+    ):
         pb_owner.string_set_items.extend(item_texts)
         return
 
@@ -1126,6 +1128,8 @@ def _copy_string_set_items_to_protobuf(items, pb_owner, context: str) -> None:
 def _expression_string_set_items(value) -> list[str] | None:
     from yaraast.ast.expressions import ParenthesesExpression, SetExpression
 
+    if _node_has_metadata(value):
+        return None
     if isinstance(value, ParenthesesExpression):
         return _expression_string_set_items(value.expression)
     if not isinstance(value, SetExpression):
@@ -1137,10 +1141,14 @@ def _expression_string_set_items(value) -> list[str] | None:
         return None
     for element in elements:
         item_text = _expression_string_set_item_text(element)
-        if item_text is None:
+        if item_text is None or _string_set_item_has_metadata(element):
             return None
         items.append(item_text)
     return items
+
+
+def _string_set_item_has_metadata(item) -> bool:
+    return not isinstance(item, str) and _node_has_metadata(item)
 
 
 def _expression_string_set_item_text(item) -> str | None:

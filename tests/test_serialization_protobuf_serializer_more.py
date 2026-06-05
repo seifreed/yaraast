@@ -451,6 +451,55 @@ def test_protobuf_serializer_canonicalizes_ast_string_set_list_items() -> None:
     assert restored.rules[0].condition == OfExpression("any", ["$a", "$b*"])
 
 
+def test_protobuf_serializer_preserves_metadata_bearing_string_set_items() -> None:
+    serializer = ProtobufSerializer(include_metadata=True)
+    list_item = StringIdentifier("$a")
+    list_item.location = Location(7, 8)
+    expression_item = StringWildcard("$b*")
+    expression_item.location = Location(9, 10)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="metadata_string_set_items",
+                condition=OfExpression(IntegerLiteral(1), [list_item, "$b"]),
+            ),
+            Rule(
+                name="metadata_string_set_expression_items",
+                condition=OfExpression(
+                    "any",
+                    ParenthesesExpression(SetExpression([expression_item])),
+                ),
+            ),
+        ]
+    )
+
+    protobuf_file = serializer._ast_to_protobuf(ast)
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    list_condition = restored.rules[0].condition
+    expression_condition = restored.rules[1].condition
+
+    assert _protobuf_has_field(protobuf_file.rules[0].condition.of_expression, "string_set")
+    assert not protobuf_file.rules[0].condition.of_expression.string_set_items
+    assert isinstance(list_condition, OfExpression)
+    assert isinstance(list_condition.string_set, SetExpression)
+    restored_list_item = list_condition.string_set.elements[0]
+    assert isinstance(restored_list_item, StringIdentifier)
+    assert restored_list_item.name == "$a"
+    assert restored_list_item.location == Location(7, 8)
+    assert isinstance(list_condition.string_set.elements[1], StringIdentifier)
+    assert list_condition.string_set.elements[1].name == "$b"
+
+    assert _protobuf_has_field(protobuf_file.rules[1].condition.of_expression, "string_set")
+    assert not protobuf_file.rules[1].condition.of_expression.string_set_items
+    assert isinstance(expression_condition, OfExpression)
+    assert isinstance(expression_condition.string_set, ParenthesesExpression)
+    assert isinstance(expression_condition.string_set.expression, SetExpression)
+    restored_expression_item = expression_condition.string_set.expression.elements[0]
+    assert isinstance(restored_expression_item, StringWildcard)
+    assert restored_expression_item.pattern == "$b*"
+    assert restored_expression_item.location == Location(9, 10)
+
+
 def test_protobuf_serializer_canonicalizes_ast_string_set_expression_items() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(
