@@ -6,7 +6,7 @@ from typing import Any, cast
 
 import pytest
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
@@ -43,6 +43,33 @@ def test_yaml_serialize_deserialize_with_metadata() -> None:
     restored = serializer.deserialize(yaml_str)
     assert restored.rules[0].name == "r1"
     assert restored.imports[0].module == "pe"
+
+
+def test_yaml_roundtrip_preserves_string_modifier_metadata() -> None:
+    serializer = YamlSerializer(include_metadata=True, flow_style=False)
+    modifier = StringModifier.from_name_value("wide")
+    modifier.location = Location(13, 14)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="modifier_metadata",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="a",
+                        modifiers=[modifier],
+                    ),
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    restored_modifier = restored.rules[0].strings[0].modifiers[0]
+
+    assert isinstance(restored_modifier, StringModifier)
+    assert restored_modifier.location == Location(13, 14)
 
 
 def test_yaml_serializer_rejects_malformed_yaml() -> None:

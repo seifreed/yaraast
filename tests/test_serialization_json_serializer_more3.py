@@ -1964,6 +1964,33 @@ def test_json_roundtrip_preserves_typed_string_modifier_values() -> None:
     ]
 
 
+def test_json_roundtrip_preserves_string_modifier_metadata() -> None:
+    serializer = JsonSerializer(include_metadata=True)
+    modifier = StringModifier.from_name_value("xor", 5)
+    modifier.location = Location(11, 12)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="modifier_metadata",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="a",
+                        modifiers=[modifier],
+                    ),
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    restored_modifier = restored.rules[0].strings[0].modifiers[0]
+
+    assert isinstance(restored_modifier, StringModifier)
+    assert restored_modifier.location == Location(11, 12)
+
+
 def test_json_roundtrip_preserves_string_modifier_aliases() -> None:
     serializer = JsonSerializer(include_metadata=False)
     ast = YaraFile(

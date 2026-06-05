@@ -1297,9 +1297,12 @@ class JsonSerializerDeserializeMixin:
             msg = "StringModifier must be a string or object"
             raise SerializationError(msg)
         try:
-            return StringModifier.from_name_value(name, value)
+            modifier = StringModifier.from_name_value(name, value)
         except (ValueError, ValidationError):
             return self._format_unknown_modifier(name, value)
+        if isinstance(data, dict):
+            return self._apply_node_metadata(modifier, data)
+        return modifier
 
     def _deserialize_hex_token(self, data: dict[str, Any]):
         data = _deserialize_object(data, "Hex token")
