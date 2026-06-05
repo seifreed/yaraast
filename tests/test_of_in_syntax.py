@@ -7,6 +7,7 @@ from yaraast.ast.expressions import (
     ParenthesesExpression,
     StringCount,
     StringWildcard,
+    UnaryExpression,
 )
 from yaraast.codegen import CodeGenerator
 from yaraast.parser import Parser
@@ -680,6 +681,50 @@ class TestExpressionQuantifierOf:
         assert isinstance(node.quantifier.left, ParenthesesExpression)
         assert isinstance(node.quantifier.right, IntegerLiteral)
 
+    def test_dynamic_percentage_quantifier(self) -> None:
+        node = self._parse("#a% of them")
+        assert isinstance(node.quantifier, UnaryExpression)
+        assert node.quantifier.operator == "%"
+        assert isinstance(node.quantifier.operand, StringCount)
+
+    def test_parenthesized_dynamic_percentage_quantifier(self) -> None:
+        from yaraast.ast.expressions import BinaryExpression
+
+        node = self._parse("(25 + 25)% of them")
+        assert isinstance(node.quantifier, UnaryExpression)
+        assert node.quantifier.operator == "%"
+        assert isinstance(node.quantifier.operand, ParenthesesExpression)
+        assert isinstance(node.quantifier.operand.expression, BinaryExpression)
+
+    def test_multiplicative_dynamic_percentage_quantifier(self) -> None:
+        from yaraast.ast.expressions import BinaryExpression
+
+        node = self._parse("@a % 50% of them")
+        assert isinstance(node.quantifier, UnaryExpression)
+        assert node.quantifier.operator == "%"
+        assert isinstance(node.quantifier.operand, BinaryExpression)
+        assert node.quantifier.operand.operator == "%"
+
+    def test_signed_remainder_dynamic_percentage_quantifier(self) -> None:
+        from yaraast.ast.expressions import BinaryExpression
+
+        node = self._parse("--25 % ~100% of them")
+        assert isinstance(node.quantifier, UnaryExpression)
+        assert node.quantifier.operator == "%"
+        assert isinstance(node.quantifier.operand, BinaryExpression)
+        assert node.quantifier.operand.operator == "%"
+
+    def test_dynamic_percentage_quantifier_round_trips_to_libyara(self) -> None:
+        source = 'rule t { strings: $a = "a" condition: #a% of them }'
+        ast = Parser().parse(source)
+        generated = CodeGenerator().generate(ast)
+        reparsed = Parser().parse(generated)
+        condition = reparsed.rules[0].condition
+
+        assert isinstance(condition, OfExpression)
+        assert isinstance(condition.quantifier, UnaryExpression)
+        assert generated.count("% of them") == 1
+
     def test_double_unary_count_quantifier(self) -> None:
         from yaraast.ast.expressions import IntegerLiteral, UnaryExpression
 
@@ -724,6 +769,22 @@ class TestExpressionQuantifierOf:
             "0 - 1 of them",
             "(0 - 1) of them",
             "~1 of them",
+            "0% of them",
+            "101% of them",
+            "false% of them",
+            "false of them",
+            '"any" of them',
+            "/a/ of them",
+            "1.2 of them",
+            "1.2% of them",
+            "--1.2% of them",
+            "(#a + --1.2)% of them",
+            "(-#a >> 50 >> 101)% of them",
+            "25 + 25% of them",
+            "25 - 1% of them",
+            "25 << 1% of them",
+            "~25 * 2% of them",
+            "51 * 2% of them",
         ],
     )
     def test_invalid_quantifiers_rejected(self, condition: str) -> None:

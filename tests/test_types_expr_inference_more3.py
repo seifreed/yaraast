@@ -33,6 +33,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     StringOffset,
     StringWildcard,
+    UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
@@ -1114,7 +1115,9 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
         ),
         BooleanType,
     )
-    assert zero_percent_of.errors == []
+    assert any(
+        "'of' percentage quantifier must be between 1 and 100" in e for e in zero_percent_of.errors
+    )
 
     for percentage in (1.01,):
         bad_percent_of = ExpressionTypeInference(TypeEnvironment())
@@ -1128,7 +1131,7 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
             BooleanType,
         )
         assert any(
-            "'of' percentage quantifier must be between 0 and 100" in e
+            "'of' percentage quantifier must be between 1 and 100" in e
             for e in bad_percent_of.errors
         )
 
@@ -1188,6 +1191,116 @@ def test_expr_inference_rejects_raw_boolean_quantifiers() -> None:
         BooleanType,
     )
     assert any("'for...of' quantifier must be" in e for e in for_of_inf.errors)
+
+
+def test_expr_inference_allows_dynamic_percentage_of_quantifier() -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(
+        OfExpression(
+            quantifier=UnaryExpression("%", StringCount("a")),
+            string_set=Identifier("them"),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert not inf.errors
+
+
+def test_expr_inference_rejects_static_zero_percentage_of_quantifier() -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(
+        OfExpression(
+            quantifier=UnaryExpression("%", IntegerLiteral(0)),
+            string_set=Identifier("them"),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert any("'of' percentage quantifier must be between 1 and 100" in e for e in inf.errors)
+
+
+def test_expr_inference_rejects_static_binary_percentage_of_quantifier_overflow() -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(
+        OfExpression(
+            quantifier=UnaryExpression(
+                "%",
+                BinaryExpression(IntegerLiteral(51), "*", IntegerLiteral(2)),
+            ),
+            string_set=Identifier("them"),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert any("'of' percentage quantifier must be between 1 and 100" in e for e in inf.errors)
+
+
+def test_expr_inference_uses_signed_remainder_for_static_percentage_quantifier() -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(
+        OfExpression(
+            quantifier=UnaryExpression(
+                "%",
+                BinaryExpression(
+                    UnaryExpression("-", UnaryExpression("-", IntegerLiteral(25))),
+                    "%",
+                    UnaryExpression("~", IntegerLiteral(100)),
+                ),
+            ),
+            string_set=Identifier("them"),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert not inf.errors
+
+
+def test_expr_inference_rejects_non_integer_static_percentage_expression() -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(
+        OfExpression(
+            quantifier=UnaryExpression(
+                "%",
+                UnaryExpression("-", UnaryExpression("-", DoubleLiteral(1.2))),
+            ),
+            string_set=Identifier("them"),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert any("'of' percentage quantifier must be an integer expression" in e for e in inf.errors)
+
+
+def test_expr_inference_rejects_shifted_zero_percentage_quantifier() -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(
+        OfExpression(
+            quantifier=UnaryExpression(
+                "%",
+                BinaryExpression(
+                    BinaryExpression(
+                        UnaryExpression("-", StringCount("a")),
+                        ">>",
+                        IntegerLiteral(50),
+                    ),
+                    ">>",
+                    IntegerLiteral(101),
+                ),
+            ),
+            string_set=Identifier("them"),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert any("'of' percentage quantifier must be between 1 and 100" in e for e in inf.errors)
 
 
 def test_expr_inference_rejects_invalid_for_expression_variable_names() -> None:
@@ -1430,7 +1543,10 @@ def test_expr_inference_helper_and_branch_edges() -> None:
         ),
         BooleanType,
     )
-    assert zero_percent_for_of.errors == []
+    assert any(
+        "'for...of' percentage quantifier must be between 1 and 100" in e
+        for e in zero_percent_for_of.errors
+    )
 
     bad_for_of = ExpressionTypeInference(TypeEnvironment())
     assert isinstance(

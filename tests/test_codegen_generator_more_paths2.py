@@ -19,6 +19,7 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
+    Expression,
     FunctionCall,
     Identifier,
     IntegerLiteral,
@@ -2554,25 +2555,69 @@ def test_codegen_generators_render_fractional_quantifier_percentages() -> None:
     ).generate(ast)
 
 
-def test_codegen_generators_render_zero_percent_quantifiers() -> None:
-    ast = YaraFile(
-        rules=[
-            Rule(
-                name="zero_percent_quantifier",
-                strings=[PlainString(identifier="a", value="x")],
-                condition=OfExpression(0.0, Identifier("them")),
-            )
-        ]
+def test_codegen_generators_reject_zero_percent_quantifiers() -> None:
+    invalid_quantifiers: list[Expression | str | int | float] = [
+        0.0,
+        DoubleLiteral(0.0),
+        "0%",
+        StringLiteral("0%"),
+        UnaryExpression("%", IntegerLiteral(0)),
+        UnaryExpression("%", BinaryExpression(IntegerLiteral(51), "*", IntegerLiteral(2))),
+        UnaryExpression(
+            "%",
+            UnaryExpression("-", UnaryExpression("-", DoubleLiteral(1.2))),
+        ),
+        UnaryExpression(
+            "%",
+            BinaryExpression(
+                BinaryExpression(
+                    UnaryExpression("-", StringCount("a")),
+                    ">>",
+                    IntegerLiteral(50),
+                ),
+                ">>",
+                IntegerLiteral(101),
+            ),
+        ),
+    ]
+
+    for quantifier in invalid_quantifiers:
+        with pytest.raises(ValueError, match="Invalid quantifier"):
+            CodeGenerator().generate(OfExpression(quantifier, Identifier("them")))
+
+
+def test_codegen_generators_render_dynamic_percentage_quantifiers() -> None:
+    dynamic = OfExpression(UnaryExpression("%", StringCount("a")), Identifier("them"))
+    parenthesized = OfExpression(
+        UnaryExpression(
+            "%",
+            ParenthesesExpression(BinaryExpression(IntegerLiteral(25), "+", IntegerLiteral(25))),
+        ),
+        Identifier("them"),
+    )
+    multiplicative = OfExpression(
+        UnaryExpression(
+            "%",
+            BinaryExpression(StringOffset("a"), "%", IntegerLiteral(50)),
+        ),
+        Identifier("them"),
+    )
+    signed_remainder = OfExpression(
+        UnaryExpression(
+            "%",
+            BinaryExpression(
+                UnaryExpression("-", UnaryExpression("-", IntegerLiteral(25))),
+                "%",
+                UnaryExpression("~", IntegerLiteral(100)),
+            ),
+        ),
+        Identifier("them"),
     )
 
-    assert "0% of them" in CodeGenerator().generate(ast)
-    assert CodeGenerator().generate(OfExpression(DoubleLiteral(0.0), Identifier("them"))) == (
-        "0% of them"
-    )
-    assert CodeGenerator().generate(OfExpression("0%", Identifier("them"))) == "0% of them"
-    assert CodeGenerator().generate(OfExpression(StringLiteral("0%"), Identifier("them"))) == (
-        "0% of them"
-    )
+    assert CodeGenerator().generate(dynamic) == "#a% of them"
+    assert CodeGenerator().generate(parenthesized) == "(25 + 25)% of them"
+    assert CodeGenerator().generate(multiplicative) == "(@a % 50)% of them"
+    assert CodeGenerator().generate(signed_remainder) == "(--25 % ~100)% of them"
 
 
 @pytest.mark.parametrize(

@@ -3,8 +3,8 @@
 These cover bugs where:
 * The lexer terminated a regex at a ``/`` appearing inside a ``[...]`` character
   class, truncating valid YARA regex literals such as ``/ab[/]cd/``.
-* The parser rejected the valid ``0% of them`` percentage quantifier, which YARA
-  treats as an always-true condition.
+* The parser accepts percentage quantifiers in the same ``1..100`` range as
+  libyara.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ def test_comment_preserving_lexer_keeps_class_slash() -> None:
     assert regex_tokens == ["ab[/]cd"]
 
 
-@pytest.mark.parametrize("percentage", [0, 1, 50, 100])
+@pytest.mark.parametrize("percentage", [1, 50, 100])
 def test_valid_percentage_quantifiers_are_accepted(percentage: int) -> None:
     source = f'rule t {{ strings: $a = "x" condition: {percentage}% of them }}'
     yara_file = Parser(source).parse()
@@ -56,8 +56,8 @@ def test_valid_percentage_quantifiers_are_accepted(percentage: int) -> None:
     assert isinstance(condition, OfExpression)
 
 
-@pytest.mark.parametrize("percentage", [101, 200])
+@pytest.mark.parametrize("percentage", [0, 101, 200])
 def test_out_of_range_percentage_quantifiers_are_rejected(percentage: int) -> None:
     source = f'rule t {{ strings: $a = "x" condition: {percentage}% of them }}'
-    with pytest.raises(Exception, match="between 0 and 100"):
+    with pytest.raises(Exception, match="between 1 and 100"):
         Parser(source).parse()

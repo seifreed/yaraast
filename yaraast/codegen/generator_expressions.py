@@ -15,7 +15,7 @@ from yaraast.codegen.generator_helpers import (
 
 _INTEGER_QUANTIFIER_RE = re.compile(r"^-?\d+$")
 _PERCENTAGE_QUANTIFIER_RE = re.compile(r"^(\d+)%$")
-_QUANTIFIER_PERCENT_MIN = 0
+_QUANTIFIER_PERCENT_MIN = 1
 _QUANTIFIER_PERCENT_MAX = 100
 
 
@@ -195,6 +195,7 @@ def _render_quantifier(
         IntegerLiteral,
         RegexLiteral,
         StringLiteral,
+        UnaryExpression,
     )
 
     if isinstance(quantifier, bool):
@@ -241,6 +242,15 @@ def _render_quantifier(
     if isinstance(quantifier, RegexLiteral):
         msg = f"Invalid {context} '{gen.visit(quantifier)}' for libyara output"
         raise ValueError(msg)
+    if isinstance(quantifier, UnaryExpression) and quantifier.operator == "%":
+        if not allow_percentage:
+            msg = f"Invalid {context} '{gen.visit(quantifier.operand)}%' for libyara output"
+            raise ValueError(msg)
+        _validate_static_percentage_expression_quantifier(quantifier)
+        operand = gen.visit(quantifier.operand)
+        if _needs_percentage_quantifier_parentheses(quantifier.operand):
+            operand = f"({operand})"
+        return f"{operand}%"
     if isinstance(quantifier, Identifier):
         # filesize and entrypoint are reserved words that libyara nonetheless
         # accepts as integer quantifiers; the strict identifier validator would
@@ -305,6 +315,134 @@ def _validate_percentage_quantifier(percent: int, raw_value: object) -> None:
         return
     msg = f"Invalid quantifier '{raw_value}' for libyara output"
     raise ValueError(msg)
+
+
+def _validate_static_percentage_expression_quantifier(quantifier: Any) -> None:
+    if _has_invalid_static_percentage_operand(quantifier.operand):
+        msg = f"Invalid quantifier '{quantifier.operand}' for libyara output"
+        raise ValueError(msg)
+    value = _static_integer_quantifier_value(quantifier.operand)
+    if value is not None:
+        _validate_percentage_quantifier(value, f"{value}%")
+
+
+def _has_invalid_static_percentage_operand(value: Any) -> bool:
+    from yaraast.ast.expressions import (
+        BinaryExpression,
+        BooleanLiteral,
+        DoubleLiteral,
+        ParenthesesExpression,
+        RegexLiteral,
+        StringIdentifier,
+        StringLiteral,
+        UnaryExpression,
+    )
+
+    if isinstance(
+        value,
+        bool | float | BooleanLiteral | DoubleLiteral | RegexLiteral | StringIdentifier | str,
+    ):
+        return True
+    if isinstance(value, StringLiteral):
+        return True
+    if isinstance(value, ParenthesesExpression):
+        return _has_invalid_static_percentage_operand(value.expression)
+    if isinstance(value, UnaryExpression):
+        return _has_invalid_static_percentage_operand(value.operand)
+    if isinstance(value, BinaryExpression):
+        return _has_invalid_static_percentage_operand(
+            value.left
+        ) or _has_invalid_static_percentage_operand(value.right)
+    return False
+
+
+def _static_integer_quantifier_value(value: Any) -> int | None:
+    from yaraast.ast.expressions import (
+        BinaryExpression,
+        IntegerLiteral,
+        ParenthesesExpression,
+        UnaryExpression,
+    )
+
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if (
+        isinstance(value, IntegerLiteral)
+        and isinstance(value.value, int)
+        and not isinstance(value.value, bool)
+    ):
+        return value.value
+    if isinstance(value, ParenthesesExpression):
+        return _static_integer_quantifier_value(value.expression)
+    if isinstance(value, UnaryExpression):
+        operand = _static_integer_quantifier_value(value.operand)
+        if operand is None:
+            return None
+        if value.operator == "-":
+            return -operand
+        if value.operator == "~":
+            return ~operand
+    if isinstance(value, BinaryExpression) and value.operator in {
+        "+",
+        "-",
+        "*",
+        "%",
+        "<<",
+        ">>",
+        "&",
+        "|",
+        "^",
+    }:
+        right = _static_integer_quantifier_value(value.right)
+        if right is not None and value.operator in {"<<", ">>"}:
+            if right < 0:
+                return None
+            if right >= _INT64_BITS:
+                return 0
+        left = _static_integer_quantifier_value(value.left)
+        if left is None or right is None:
+            return None
+        if value.operator == "+":
+            return left + right
+        if value.operator == "-":
+            return left - right
+        if value.operator == "*":
+            return left * right
+        if value.operator == "%":
+            if right == 0:
+                return None
+            return _integer_remainder(left, right)
+        if value.operator == "<<":
+            if right < 0:
+                return None
+            return left << right
+        if value.operator == ">>":
+            if right < 0:
+                return None
+            return left >> right
+        if value.operator == "&":
+            return left & right
+        if value.operator == "|":
+            return left | right
+        if value.operator == "^":
+            return left ^ right
+    return None
+
+
+def _needs_percentage_quantifier_parentheses(value: Any) -> bool:
+    from yaraast.ast.expressions import BinaryExpression
+
+    return isinstance(value, BinaryExpression)
+
+
+def _integer_remainder(left: int, right: int) -> int:
+    quotient = abs(left) // abs(right)
+    if (left < 0) != (right < 0):
+        quotient = -quotient
+    return left - quotient * right
+
+
+_INT64_BITS = 64
 
 
 def render_for_of_expression(gen: Any, node: Any) -> str:

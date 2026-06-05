@@ -15,6 +15,7 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     MemberAccess,
     ParenthesesExpression,
+    RegexLiteral,
     SetExpression,
     StringCount,
     StringIdentifier,
@@ -947,6 +948,9 @@ def _is_condition_type(value_type: YaraType) -> bool:
 
 
 def _infer_quantifier_value(ctx: Any, value: Any) -> YaraType:
+    if isinstance(value, UnaryExpression) and value.operator == "%":
+        ctx.visit(value.operand)
+        return DoubleType()
     if hasattr(value, "accept"):
         return cast(YaraType, ctx.visit(value))
     if isinstance(value, bool):
@@ -985,6 +989,12 @@ def _validate_quantifier_value(
         if allow_percentage:
             _validate_percentage_quantifier_value(ctx, value.value, context)
         return
+    if isinstance(value, UnaryExpression) and value.operator == "%":
+        if not allow_percentage:
+            ctx.errors.append(f"Invalid {context} quantifier '{value.operator}'")
+            return
+        _validate_static_percentage_expression_quantifier(ctx, value, context)
+        return
     if isinstance(value, StringLiteral):
         _validate_quantifier_text_value(
             ctx,
@@ -1003,8 +1013,106 @@ def _validate_quantifier_value(
 
 
 def _validate_percentage_quantifier_value(ctx: Any, value: float, context: str) -> None:
-    if not 0 <= value <= 1:
-        ctx.errors.append(f"'{context}' percentage quantifier must be between 0 and 100")
+    if not 0 < value <= 1:
+        ctx.errors.append(f"'{context}' percentage quantifier must be between 1 and 100")
+
+
+def _validate_static_percentage_expression_quantifier(
+    ctx: Any,
+    value: UnaryExpression,
+    context: str,
+) -> None:
+    if _has_invalid_static_percentage_operand(value.operand):
+        ctx.errors.append(f"'{context}' percentage quantifier must be an integer expression")
+        return
+    percent = _static_integer_value(value.operand)
+    if percent is not None and not 1 <= percent <= 100:
+        ctx.errors.append(f"'{context}' percentage quantifier must be between 1 and 100")
+
+
+def _has_invalid_static_percentage_operand(value: Any) -> bool:
+    if isinstance(
+        value,
+        bool | float | BooleanLiteral | DoubleLiteral | RegexLiteral | StringIdentifier | str,
+    ):
+        return True
+    if isinstance(value, StringLiteral):
+        return True
+    if isinstance(value, ParenthesesExpression):
+        return _has_invalid_static_percentage_operand(value.expression)
+    if isinstance(value, UnaryExpression):
+        return _has_invalid_static_percentage_operand(value.operand)
+    if isinstance(value, BinaryExpression):
+        return _has_invalid_static_percentage_operand(
+            value.left
+        ) or _has_invalid_static_percentage_operand(value.right)
+    return False
+
+
+def _static_integer_value(value: Any) -> int | None:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if (
+        isinstance(value, IntegerLiteral)
+        and isinstance(value.value, int)
+        and not isinstance(value.value, bool)
+    ):
+        return value.value
+    if isinstance(value, ParenthesesExpression):
+        return _static_integer_value(value.expression)
+    if isinstance(value, UnaryExpression):
+        operand = _static_integer_value(value.operand)
+        if operand is None:
+            return None
+        if value.operator == "-":
+            return -operand
+        if value.operator == "~":
+            return ~operand
+    if isinstance(value, BinaryExpression) and value.operator in {
+        "+",
+        "-",
+        "*",
+        "%",
+        "<<",
+        ">>",
+        "&",
+        "|",
+        "^",
+    }:
+        right = _static_integer_value(value.right)
+        if right is not None and value.operator in {"<<", ">>"}:
+            if right < 0:
+                return None
+            if right >= 64:
+                return 0
+        left = _static_integer_value(value.left)
+        if left is None or right is None:
+            return None
+        if value.operator == "+":
+            return left + right
+        if value.operator == "-":
+            return left - right
+        if value.operator == "*":
+            return left * right
+        if value.operator == "%":
+            if right == 0:
+                return None
+            return integer_remainder(left, right)
+        if value.operator == "<<":
+            if right < 0:
+                return None
+            return left << right
+        if value.operator == ">>":
+            if right < 0:
+                return None
+            return left >> right
+        if value.operator == "&":
+            return left & right
+        if value.operator == "|":
+            return left | right
+        if value.operator == "^":
+            return left ^ right
+    return None
 
 
 def _validate_quantifier_text_value(
@@ -1026,8 +1134,8 @@ def _validate_quantifier_text_value(
             ctx.errors.append(f"Invalid {context} quantifier '{value}'")
             return
         percent = int(percent_text)
-        if not 0 <= percent <= 100:
-            ctx.errors.append(f"'{context}' percentage quantifier must be between 0 and 100")
+        if not 1 <= percent <= 100:
+            ctx.errors.append(f"'{context}' percentage quantifier must be between 1 and 100")
         return
     try:
         _normalize_identifier(value, "Quantifier", "quantifier")

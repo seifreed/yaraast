@@ -13,12 +13,16 @@ from yaraast.ast.conditions import (
 )
 from yaraast.ast.expressions import (
     BinaryExpression,
+    BooleanLiteral,
+    DoubleLiteral,
     Expression,
     IntegerLiteral,
     ParenthesesExpression,
     RangeExpression,
+    RegexLiteral,
     StringCount,
     StringIdentifier,
+    StringLiteral,
     UnaryExpression,
 )
 from yaraast.ast.operators import DefinedExpression
@@ -98,6 +102,12 @@ class ExpressionBinaryMixin:
             and self._is_valid_of_quantifier(expr)
         ):
             expr = self._parse_expression_of_postfix(expr)
+        elif (
+            self._check_percentage_of_postfix()
+            and not getattr(self, "_suppress_of_postfix", False)
+            and self._is_valid_percentage_of_quantifier(expr)
+        ):
+            expr = self._parse_percentage_expression_of_postfix(expr)
 
         if self._match(*RELATIONAL_TOKEN_TYPES):
             operator_token = self._previous()
@@ -123,12 +133,27 @@ class ExpressionBinaryMixin:
         ``#a + 1 of them``.  String identifiers, wildcards, and boolean results
         such as nested of/at/in expressions are syntax errors as quantifiers.
         """
-        while isinstance(expr, ParenthesesExpression):
-            expr = expr.expression
-        if isinstance(expr, StringIdentifier | OfExpression | AtExpression | InExpression):
+        expr = self._unwrap_parenthesized_expression(expr)
+        if isinstance(
+            expr,
+            StringIdentifier
+            | StringLiteral
+            | RegexLiteral
+            | BooleanLiteral
+            | DoubleLiteral
+            | OfExpression
+            | AtExpression
+            | InExpression,
+        ):
             if isinstance(expr, InExpression):
                 return self._is_string_count_in_expression(expr)
             return False
+        if isinstance(expr, UnaryExpression):
+            return expr.operator in {"-", "~"} and self._is_valid_of_quantifier(expr.operand)
+        if isinstance(expr, BinaryExpression):
+            return self._is_valid_of_quantifier(expr.left) and self._is_valid_of_quantifier(
+                expr.right
+            )
         return not isinstance(expr, RangeExpression)
 
     def _parse_expression_of_postfix(self, quantifier: Expression) -> Expression:
@@ -138,6 +163,46 @@ class ExpressionBinaryMixin:
         self._validate_static_of_quantifier(quantifier, start_token)
         string_set = self._parse_of_string_set()
         node = OfExpression(quantifier=quantifier, string_set=string_set)
+        if getattr(quantifier, "location", None) is not None:
+            node.location = self._location_from_tokens(
+                self._synthetic_token_from_location(quantifier.location),
+                self._previous(),
+            )
+            return node
+        return self._set_node_location_from_tokens(node, start_token, self._previous())
+
+    def _check_percentage_of_postfix(self) -> bool:
+        return (
+            self._check(TokenType.MODULO)
+            and self.current + 1 < len(self.tokens)
+            and self.tokens[self.current + 1].type == TokenType.OF
+        )
+
+    def _is_valid_percentage_of_quantifier(self, expr: Expression) -> bool:
+        if isinstance(expr, ParenthesesExpression):
+            return self._is_valid_of_quantifier(expr.expression)
+        if isinstance(expr, BinaryExpression):
+            return (
+                expr.operator in {"*", "%"}
+                and self._is_valid_of_quantifier(expr.left)
+                and self._is_valid_of_quantifier(expr.right)
+            )
+        return self._is_valid_of_quantifier(expr)
+
+    def _parse_percentage_expression_of_postfix(self, quantifier: Expression) -> Expression:
+        self._match(TokenType.MODULO)
+        start_token = self._previous()
+        percentage = self._set_node_location_from_nodes(
+            UnaryExpression(operator="%", operand=quantifier),
+            quantifier,
+            start_token,
+        )
+        self._validate_static_percentage_quantifier(percentage, start_token)
+        if not self._match(TokenType.OF):
+            msg = "Expected 'of' after percentage quantifier"
+            raise ParserError(msg, self._peek())
+        string_set = self._parse_of_string_set()
+        node = OfExpression(quantifier=percentage, string_set=string_set)
         if getattr(quantifier, "location", None) is not None:
             node.location = self._location_from_tokens(
                 self._synthetic_token_from_location(quantifier.location),
@@ -251,7 +316,11 @@ class ExpressionBinaryMixin:
         """Parse multiplicative expression."""
         expr = self._parse_unary_expression()
 
-        while self._match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO):
+        while True:
+            if self._check_percentage_of_postfix():
+                break
+            if not self._match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO):
+                break
             operator_token = self._previous()
             operator = operator_token.value
             right = self._parse_without_of_postfix(self._parse_unary_expression)
@@ -290,18 +359,21 @@ class ExpressionBinaryMixin:
             self._suppress_of_postfix = previous_suppress_of
 
     def _is_string_identifier_operand(self, expr: Expression) -> bool:
-        while isinstance(expr, ParenthesesExpression):
-            expr = expr.expression
+        expr = self._unwrap_parenthesized_expression(expr)
         return isinstance(expr, StringIdentifier)
 
     def _is_non_numeric_condition_operand(self, expr: Expression) -> bool:
-        while isinstance(expr, ParenthesesExpression):
-            expr = expr.expression
+        expr = self._unwrap_parenthesized_expression(expr)
         if isinstance(expr, OfExpression | AtExpression | ForExpression | ForOfExpression):
             return True
         if isinstance(expr, InExpression):
             return not isinstance(expr.subject, StringCount)
         return False
+
+    def _unwrap_parenthesized_expression(self, expr: Expression) -> Expression:
+        while isinstance(expr, ParenthesesExpression):
+            expr = expr.expression
+        return expr
 
     def _reject_invalid_numeric_unary_operand(
         self,
@@ -311,8 +383,7 @@ class ExpressionBinaryMixin:
     ) -> None:
         if operator not in {"-", "~"}:
             return
-        while isinstance(operand, ParenthesesExpression):
-            operand = operand.expression
+        operand = self._unwrap_parenthesized_expression(operand)
         if isinstance(operand, StringIdentifier | OfExpression | AtExpression):
             msg = "Invalid operand for numeric unary operator"
             raise ParserError(msg, token)
@@ -341,9 +412,16 @@ class ExpressionBinaryMixin:
             msg = "Of-expression quantifier can not be negative"
             raise ParserError(msg, token)
 
+    def _validate_static_percentage_quantifier(self, quantifier: Expression, token) -> None:
+        if not isinstance(quantifier, UnaryExpression) or quantifier.operator != "%":
+            return
+        value = self._static_integer_value(quantifier.operand)
+        if value is not None and not 1 <= value <= 100:
+            msg = "Percentage quantifier must be between 1 and 100"
+            raise ParserError(msg, token)
+
     def _static_integer_value(self, expr: Expression) -> int | None:
-        while isinstance(expr, ParenthesesExpression):
-            expr = expr.expression
+        expr = self._unwrap_parenthesized_expression(expr)
         if isinstance(expr, IntegerLiteral):
             return expr.value
         if isinstance(expr, UnaryExpression):
@@ -354,14 +432,50 @@ class ExpressionBinaryMixin:
                 return -value
             if expr.operator == "~":
                 return ~value
-        if isinstance(expr, BinaryExpression) and expr.operator in {"+", "-"}:
-            left = self._static_integer_value(expr.left)
+        if isinstance(expr, BinaryExpression) and expr.operator in {
+            "+",
+            "-",
+            "*",
+            "%",
+            "<<",
+            ">>",
+            "&",
+            "|",
+            "^",
+        }:
             right = self._static_integer_value(expr.right)
+            if right is not None and expr.operator in {"<<", ">>"}:
+                if right < 0:
+                    return None
+                if right >= _INT64_BITS:
+                    return 0
+            left = self._static_integer_value(expr.left)
             if left is None or right is None:
                 return None
             if expr.operator == "+":
                 return left + right
-            return left - right
+            if expr.operator == "-":
+                return left - right
+            if expr.operator == "*":
+                return left * right
+            if expr.operator == "%":
+                if right == 0:
+                    return None
+                return _integer_remainder(left, right)
+            if expr.operator == "<<":
+                if right < 0:
+                    return None
+                return left << right
+            if expr.operator == ">>":
+                if right < 0:
+                    return None
+                return left >> right
+            if expr.operator == "&":
+                return left & right
+            if expr.operator == "|":
+                return left | right
+            if expr.operator == "^":
+                return left ^ right
         return None
 
     def _parse_unary_expression(self) -> Expression:
@@ -383,3 +497,13 @@ class ExpressionBinaryMixin:
             )
 
         return self._parse_postfix_expression()
+
+
+def _integer_remainder(left: int, right: int) -> int:
+    quotient = abs(left) // abs(right)
+    if (left < 0) != (right < 0):
+        quotient = -quotient
+    return left - quotient * right
+
+
+_INT64_BITS = 64

@@ -177,8 +177,8 @@ class ExpressionPrimaryMixin:
             # Handle percentage quantifier: 50% of them
             if self._match(TokenType.MODULO):
                 if self._match(TokenType.OF):
-                    if not 0 <= quantifier_value <= 100:
-                        msg = "Percentage quantifier must be between 0 and 100"
+                    if not 1 <= quantifier_value <= 100:
+                        msg = "Percentage quantifier must be between 1 and 100"
                         raise ParserError(msg, start_token)
                     string_set = self._parse_of_string_set()
                     quantifier = self._set_node_location_from_token(
