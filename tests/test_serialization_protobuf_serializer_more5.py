@@ -241,7 +241,7 @@ def test_protobuf_serializer_rejects_unknown_modifier_tuple_items() -> None:
 
     with pytest.raises(
         SerializationError,
-        match="String modifier value must be a string, number, tuple, or null",
+        match="String modifier tuple value must contain two integers",
     ):
         serializer.serialize(ast)
 
@@ -279,7 +279,10 @@ def test_protobuf_deserializer_rejects_empty_typed_modifier_value() -> None:
         protobuf_to_string(pb_string)
 
 
-def test_protobuf_serializer_does_not_coerce_invalid_xor_range_values_to_ints() -> None:
+@pytest.mark.parametrize("modifier_value", [cast(Any, (True, 3)), cast(Any, (1.5, 3))])
+def test_protobuf_serializer_rejects_invalid_xor_range_values(
+    modifier_value: Any,
+) -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(
         rules=[
@@ -287,27 +290,21 @@ def test_protobuf_serializer_does_not_coerce_invalid_xor_range_values_to_ints() 
                 name="invalid_xor_ranges",
                 strings=[
                     PlainString(
-                        "$bool_range",
+                        "$range",
                         value="a",
-                        modifiers=[StringModifier.from_name_value("xor", cast(Any, (True, 3)))],
-                    ),
-                    PlainString(
-                        "$float_range",
-                        value="b",
-                        modifiers=[StringModifier.from_name_value("xor", cast(Any, (1.5, 3)))],
+                        modifiers=[StringModifier.from_name_value("xor", modifier_value)],
                     ),
                 ],
-                condition=BooleanLiteral(value=True),
+                condition=StringIdentifier("$range"),
             ),
         ],
     )
 
-    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
-
-    assert [string.modifiers[0].value for string in restored.rules[0].strings] == [
-        "True-3",
-        "1.5-3",
-    ]
+    with pytest.raises(
+        SerializationError,
+        match="String modifier tuple value must contain two integers",
+    ):
+        serializer.serialize(ast)
 
 
 def test_protobuf_conversion_parses_legacy_hex_xor_modifier_values() -> None:

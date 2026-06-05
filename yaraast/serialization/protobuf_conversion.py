@@ -673,14 +673,6 @@ def _is_protobuf_int(value) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
-def _is_legacy_modifier_tuple(value) -> bool:
-    return (
-        isinstance(value, tuple)
-        and len(value) == 2
-        and all(isinstance(item, str | int | float | bool) for item in value)
-    )
-
-
 def _format_unknown_modifier(name: str, value) -> str:
     if value is None:
         return name
@@ -706,8 +698,9 @@ def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
         and _is_protobuf_int(value[1])
     ):
         pb_mod.tuple_value.extend([int(value[0]), int(value[1])])
-    elif _is_legacy_modifier_tuple(value):
-        return
+    elif isinstance(value, tuple):
+        msg = "String modifier tuple value must contain two integers"
+        raise SerializationError(msg)
     elif isinstance(value, bool):
         _raise_invalid_modifier_value()
     elif isinstance(value, int):
