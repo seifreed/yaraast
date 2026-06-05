@@ -762,6 +762,7 @@ def test_protobuf_serializer_preserves_extended_expression_roundtrips() -> None:
             condition=StringIdentifier("$a"),
         ),
         AtExpression("$a", IntegerLiteral(0)),
+        AtExpression(OfExpression(IntegerLiteral(1), Identifier("them")), IntegerLiteral(0)),
         InExpression("$a", RangeExpression(IntegerLiteral(0), IntegerLiteral(10))),
         InExpression(
             OfExpression(IntegerLiteral(1), Identifier("them")),

@@ -396,6 +396,7 @@ message ForOfExpression {
 message AtExpression {
     string string_id = 1;
     Expression offset = 2;
+    Expression subject = 3;
 }
 
 message InExpression {

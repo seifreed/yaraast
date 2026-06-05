@@ -1364,13 +1364,16 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         if expr.condition is not None:
             convert_expression_to_protobuf(expr.condition, pb_expr.for_of_expression.condition)
     elif isinstance(expr, AtExpression):
-        if not isinstance(expr.string_id, str):
-            msg = "AtExpression string_id must be a string for protobuf serialization"
+        if isinstance(expr.string_id, str):
+            pb_expr.at_expression.string_id = _protobuf_required_nonempty_string(
+                expr.string_id,
+                "AtExpression string_id",
+            )
+        elif isinstance(expr.string_id, Expression):
+            convert_expression_to_protobuf(expr.string_id, pb_expr.at_expression.subject)
+        else:
+            msg = "AtExpression string_id must be a string or expression"
             raise SerializationError(msg)
-        pb_expr.at_expression.string_id = _protobuf_required_nonempty_string(
-            expr.string_id,
-            "AtExpression string_id",
-        )
         convert_expression_to_protobuf(expr.offset, pb_expr.at_expression.offset)
     elif isinstance(expr, InExpression):
         if isinstance(expr.subject, str):
@@ -2249,12 +2252,17 @@ def protobuf_to_expression(pb_expr):
             ),
         )
     if pb_expr.HasField("at_expression"):
+        subject = (
+            protobuf_to_expression(pb_expr.at_expression.subject)
+            if pb_expr.at_expression.HasField("subject")
+            else _protobuf_required_nonempty_string(
+                pb_expr.at_expression.string_id,
+                "AtExpression string_id",
+            )
+        )
         return with_metadata(
             AtExpression(
-                string_id=_protobuf_required_nonempty_string(
-                    pb_expr.at_expression.string_id,
-                    "AtExpression string_id",
-                ),
+                string_id=subject,
                 offset=protobuf_to_expression(pb_expr.at_expression.offset),
             ),
         )

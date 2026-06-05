@@ -1736,7 +1736,7 @@ def test_protobuf_deserializer_rejects_empty_rule_modifier_names(
         ),
         (
             AtExpression(cast(Any, 123), IntegerLiteral(0)),
-            "AtExpression string_id must be a string",
+            "AtExpression string_id must be a string or expression",
         ),
         (
             AtExpression("", IntegerLiteral(0)),
