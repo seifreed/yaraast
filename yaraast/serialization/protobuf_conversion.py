@@ -663,6 +663,12 @@ def _validate_plain_string_value_for_protobuf(value) -> None:
         raise SerializationError(msg)
 
 
+def _validate_plain_string_raw_bytes_for_protobuf(raw_bytes) -> None:
+    if raw_bytes is not None and not isinstance(raw_bytes, bytes):
+        msg = "PlainString raw_bytes must be bytes or None"
+        raise SerializationError(msg)
+
+
 def _is_protobuf_int(value) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
@@ -726,10 +732,14 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
     )
     if isinstance(string_def, PlainString):
         _validate_plain_string_value_for_protobuf(string_def.value)
+        raw_bytes = getattr(string_def, "raw_bytes", None)
+        _validate_plain_string_raw_bytes_for_protobuf(raw_bytes)
         if isinstance(string_def.value, bytes):
             pb_string.plain.raw_value = string_def.value
         else:
             pb_string.plain.value = string_def.value
+            if raw_bytes is not None:
+                pb_string.plain.raw_value = raw_bytes
         for mod in _protobuf_string_modifier_list(
             string_def.modifiers,
             "PlainString modifiers",
@@ -1927,18 +1937,27 @@ def protobuf_to_string(pb_string) -> Any:
 
     if pb_string.HasField("plain"):
         modifiers = _protobuf_modifiers_to_ast(pb_string.plain.modifiers)
-        value = (
-            pb_string.plain.raw_value
-            if _protobuf_has_field(pb_string.plain, "raw_value")
-            else pb_string.plain.value
+        raw_value = (
+            pb_string.plain.raw_value if _protobuf_has_field(pb_string.plain, "raw_value") else None
         )
+        if raw_value is not None and pb_string.plain.value:
+            value = pb_string.plain.value
+            raw_bytes = raw_value
+        elif raw_value is not None:
+            value = raw_value
+            raw_bytes = None
+        else:
+            value = pb_string.plain.value
+            raw_bytes = None
         _validate_plain_string_value_for_protobuf(value)
+        _validate_plain_string_raw_bytes_for_protobuf(raw_bytes)
         plain_string = PlainString(
             identifier=_protobuf_required_nonempty_string(
                 pb_string.identifier,
                 "PlainString identifier",
             ),
             value=value,
+            raw_bytes=raw_bytes,
             is_anonymous=pb_string.is_anonymous,
         )
         plain_string.modifiers = modifiers
