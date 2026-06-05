@@ -453,6 +453,17 @@ def test_process_files_parse_failures_and_recursive_directory(tmp_path: Path) ->
     assert rec.successful_count >= 2
 
 
+def test_process_files_reports_invalid_utf8(tmp_path: Path) -> None:
+    bad = tmp_path / "bad_utf8.yar"
+    bad.write_bytes(b"\xff")
+
+    result = BatchProcessor().process_files([bad], BatchOperation.COMPLEXITY)
+
+    assert result.successful_count == 0
+    assert result.failed_count == 1
+    assert result.errors == [f"Error processing {bad}: YARA file must contain valid UTF-8 text"]
+
+
 def test_process_files_propagates_internal_operation_errors(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -528,6 +539,25 @@ def test_process_large_file_non_split_and_invalid_content(tmp_path: Path) -> Non
     )
     assert invalid_res[BatchOperation.PARSE].failed_count == 1
     assert invalid_res[BatchOperation.COMPLEXITY].failed_count == 1
+
+
+def test_process_large_file_reports_invalid_utf8(tmp_path: Path) -> None:
+    bad = tmp_path / "bad_utf8.yar"
+    bad.write_bytes(b"\xff")
+
+    result = BatchProcessor().process_large_file(
+        bad,
+        operations=[BatchOperation.PARSE, BatchOperation.COMPLEXITY],
+        output_dir=tmp_path / "out",
+    )
+
+    for operation in (BatchOperation.PARSE, BatchOperation.COMPLEXITY):
+        operation_result = result[operation]
+        assert operation_result.successful_count == 0
+        assert operation_result.failed_count == 1
+        assert operation_result.errors == [
+            f"Error processing {bad}: YARA file must contain valid UTF-8 text"
+        ]
 
 
 def test_process_large_file_propagates_internal_operation_errors(

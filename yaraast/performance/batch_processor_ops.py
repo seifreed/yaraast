@@ -24,15 +24,20 @@ _EXPECTED_BATCH_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
 OUTPUT_DIR_TYPE_ERROR = "output_dir must be a directory path"
 
 
+def _read_yara_text_file(file_path: Path) -> str:
+    try:
+        with open(file_path, encoding="utf-8") as handle:
+            return handle.read()
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 def parse_item(item: object) -> YaraFile | None:
     if not isinstance(item, (str, Path)):
         return None
     try:
-        if isinstance(item, Path):
-            with open(item, encoding="utf-8") as handle:
-                content = handle.read()
-        else:
-            content = item
+        content = _read_yara_text_file(item) if isinstance(item, Path) else item
         return parse_yara_source(content)
     except _EXPECTED_BATCH_ERRORS:
         return None
@@ -228,8 +233,7 @@ def process_files_single(
 
     for index, file_path in enumerate(file_paths):
         try:
-            with open(file_path, encoding="utf-8") as handle:
-                content = handle.read()
+            content = _read_yara_text_file(file_path)
             parsed = _require_parsed_item(parse_item(content), file_path)
             if operation == BatchOperation.COMPLEXITY:
                 _add_complexity_summaries(result.summary, parsed.rules)
@@ -283,8 +287,7 @@ def process_large_file(
     results: dict[BatchOperation, BatchResult] = {}
     try:
         output_path.mkdir(parents=True, exist_ok=True)
-        with open(file_path, encoding="utf-8") as handle:
-            content = handle.read()
+        content = _read_yara_text_file(file_path)
         parsed = _require_parsed_item(parse_item(content), file_path)
         input_count = len(parsed.rules) if split_rules else 1
         for index, operation in enumerate(operations, 1):
