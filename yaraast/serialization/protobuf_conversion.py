@@ -760,6 +760,9 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
         raw_bytes = getattr(string_def, "raw_bytes", None)
         _validate_plain_string_raw_bytes_for_protobuf(raw_bytes)
         if isinstance(string_def.value, bytes):
+            if raw_bytes is not None and raw_bytes != string_def.value:
+                msg = "PlainString raw_bytes must match bytes value"
+                raise SerializationError(msg)
             pb_string.plain.raw_value = string_def.value
         else:
             pb_string.plain.value = string_def.value
@@ -2009,7 +2012,7 @@ def protobuf_to_string(pb_string) -> Any:
             raw_bytes = raw_value
         elif raw_value is not None:
             value = raw_value
-            raw_bytes = None
+            raw_bytes = raw_value
         else:
             value = pb_string.plain.value
             raw_bytes = None

@@ -621,6 +621,10 @@ def test_protobuf_serializer_rejects_non_string_file_and_rule_fields(
             "PlainString raw_bytes must be bytes or None",
         ),
         (
+            PlainString(identifier="$a", value=b"abc", raw_bytes=b"def"),
+            "PlainString raw_bytes must match bytes value",
+        ),
+        (
             HexString(identifier=cast(Any, 123), tokens=[HexByte(0x90)]),
             "HexString identifier must be a string",
         ),
