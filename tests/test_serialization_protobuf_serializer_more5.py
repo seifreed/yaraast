@@ -1333,6 +1333,24 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
         serializer.serialize(YaraFile(pragmas=[pragma]))
 
 
+def test_protobuf_serializer_rejects_empty_pragma_type() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pragma = CustomPragma("vendor")
+    cast(Any, pragma).pragma_type = ""
+
+    with pytest.raises(SerializationError, match="Pragma pragma_type must not be empty"):
+        serializer.serialize(YaraFile(pragmas=[pragma]))
+
+
+def test_protobuf_serializer_rejects_unknown_pragma_type() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pragma = CustomPragma("vendor")
+    cast(Any, pragma).pragma_type = "vendor"
+
+    with pytest.raises(SerializationError, match="Pragma pragma_type must be a valid pragma type"):
+        serializer.serialize(YaraFile(pragmas=[pragma]))
+
+
 @pytest.mark.parametrize(
     ("ast", "message"),
     [
@@ -1594,6 +1612,27 @@ def test_protobuf_deserializer_rejects_empty_pragma_names(pragma_type: str) -> N
     pb_pragma.pragma_type = pragma_type
 
     with pytest.raises(SerializationError, match="Pragma name must not be empty"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserializer_rejects_empty_pragma_type() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_pragma = pb_file.pragmas.add()
+    pb_pragma.name = "vendor"
+
+    with pytest.raises(SerializationError, match="Pragma pragma_type must not be empty"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserializer_rejects_unknown_pragma_type() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_pragma = pb_file.pragmas.add()
+    pb_pragma.pragma_type = "vendor"
+    pb_pragma.name = "vendor"
+
+    with pytest.raises(SerializationError, match="Pragma pragma_type must be a valid pragma type"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 

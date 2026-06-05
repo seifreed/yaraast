@@ -400,12 +400,22 @@ def _protobuf_required_int(value, context: str) -> int:
 
 
 def _protobuf_pragma_type(pragma) -> str:
+    from yaraast.ast.pragmas import PragmaType
+
     pragma_type = getattr(pragma, "pragma_type", None)
     value = getattr(pragma_type, "value", pragma_type)
-    if isinstance(value, str):
-        return value
-    msg = "Pragma pragma_type must be a string"
-    raise SerializationError(msg)
+    if not isinstance(value, str):
+        msg = "Pragma pragma_type must be a string"
+        raise SerializationError(msg)
+    if not value:
+        msg = "Pragma pragma_type must not be empty"
+        raise SerializationError(msg)
+    try:
+        PragmaType(value.lower())
+    except ValueError as exc:
+        msg = "Pragma pragma_type must be a valid pragma type"
+        raise SerializationError(msg) from exc
+    return value
 
 
 def _protobuf_required_string_key(value, message: str) -> str:
@@ -1750,9 +1760,15 @@ def protobuf_to_pragma(pb_pragma):
         UndefDirective,
     )
 
-    pragma_type = PragmaType.from_string(
-        pb_pragma.pragma_type or pb_pragma.name or PragmaType.CUSTOM.value
+    pragma_type_text = _protobuf_required_nonempty_string(
+        pb_pragma.pragma_type,
+        "Pragma pragma_type",
     )
+    try:
+        pragma_type = PragmaType(pragma_type_text.lower())
+    except ValueError as exc:
+        msg = "Pragma pragma_type must be a valid pragma type"
+        raise SerializationError(msg) from exc
     scope = _protobuf_pragma_scope(pb_pragma.scope)
     parameters = {
         key: _meta_value_to_python(value) for key, value in sorted(pb_pragma.parameters.items())
