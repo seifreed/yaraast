@@ -190,7 +190,7 @@ def _parse_regex_repeat_interval(content: str) -> tuple[int | None, int | None] 
 
     min_text, max_text = parts
     if not min_text and not max_text:
-        return None
+        return None, None
     if min_text and not min_text.isdigit():
         return None
     if max_text and not max_text.isdigit():

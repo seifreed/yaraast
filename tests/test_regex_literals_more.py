@@ -22,9 +22,15 @@ def test_validate_regex_pattern_rejects_empty_repeat_without_atom(pattern: str) 
         validate_regex_pattern(pattern)
 
 
-@pytest.mark.parametrize("pattern", ["a{,}", ".{,}", "[a]{,}", r"\{,\}"])
-def test_validate_regex_pattern_allows_literal_empty_repeat_text(pattern: str) -> None:
+@pytest.mark.parametrize("pattern", ["a{,}", ".{,}", "[a]{,}", ".{,}?", r"\{,\}"])
+def test_validate_regex_pattern_allows_empty_repeat_quantifier(pattern: str) -> None:
     validate_regex_pattern(pattern)
+
+
+@pytest.mark.parametrize("pattern", ["a{,}*", ".{,}+", ".{,}{1}", "c.{,}*$22"])
+def test_validate_regex_pattern_rejects_repeated_empty_repeat_quantifier(pattern: str) -> None:
+    with pytest.raises(ValueError, match="Invalid regex pattern: syntax error"):
+        validate_regex_pattern(pattern)
 
 
 @pytest.mark.parametrize(
