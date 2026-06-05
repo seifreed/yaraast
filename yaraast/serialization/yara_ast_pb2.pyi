@@ -1005,13 +1005,18 @@ class ForOfExpression(_message.Message):
     ) -> None: ...
 
 class AtExpression(_message.Message):
-    __slots__ = ("offset", "string_id")
+    __slots__ = ("offset", "string_id", "subject")
     STRING_ID_FIELD_NUMBER: _ClassVar[int]
     OFFSET_FIELD_NUMBER: _ClassVar[int]
+    SUBJECT_FIELD_NUMBER: _ClassVar[int]
     string_id: str
     offset: Expression
+    subject: Expression
     def __init__(
-        self, string_id: str | None = ..., offset: Expression | _Mapping | None = ...
+        self,
+        string_id: str | None = ...,
+        offset: Expression | _Mapping | None = ...,
+        subject: Expression | _Mapping | None = ...,
     ) -> None: ...
 
 class InExpression(_message.Message):
