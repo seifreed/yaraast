@@ -1177,7 +1177,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "DictionaryAccess",
             "object": serialize_node(node.object),
-            "key": _serialize_ast_value(node.key),
+            "key": _serialize_string_or_expression(
+                node.key,
+                "DictionaryAccess key",
+            ),
         }
     if isinstance(node, DefinedExpression):
         return {"type": "DefinedExpression", "expression": serialize_node(node.expression)}

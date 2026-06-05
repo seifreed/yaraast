@@ -1301,6 +1301,10 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             MemberAccess(Identifier("pe"), cast(Any, ["machine"])),
             "MemberAccess member must be a string",
         ),
+        (
+            DictionaryAccess(Identifier("pe"), cast(Any, ["machine"])),
+            "DictionaryAccess key must be a string or expression",
+        ),
         (AtExpression("", IntegerLiteral(0)), "AtExpression string_id must not be empty"),
         (
             AtExpression(cast(Any, 7), IntegerLiteral(0)),
