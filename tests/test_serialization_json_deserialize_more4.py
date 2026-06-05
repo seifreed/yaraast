@@ -1731,15 +1731,24 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
     with pytest.raises(SerializationError, match="DefinedExpression expression is required"):
         s._deserialize_expression({"type": "DefinedExpression", "expression": {}})
 
-    sop_subject_pattern = s._deserialize_expression(
-        {
-            "type": "StringOperatorExpression",
-            "subject": {"type": "Identifier", "name": "x"},
-            "operator": "contains",
-            "pattern": "abc",
-        }
-    )
-    assert sop_subject_pattern.operator == "contains"
+    with pytest.raises(SerializationError, match="StringOperatorExpression left is required"):
+        s._deserialize_expression(
+            {
+                "type": "StringOperatorExpression",
+                "subject": {"type": "Identifier", "name": "x"},
+                "operator": "contains",
+                "pattern": "abc",
+            }
+        )
+
+    with pytest.raises(SerializationError, match="StringOperatorExpression left is required"):
+        s._deserialize_expression(
+            {
+                "type": "StringOperatorExpression",
+                "operator": "contains",
+                "right": {"type": "StringLiteral", "value": "abc"},
+            }
+        )
 
     with pytest.raises(SerializationError, match="StringOperatorExpression left is required"):
         s._deserialize_expression(
@@ -1761,14 +1770,22 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
             }
         )
 
-    sop_defaults = s._deserialize_expression(
-        {
-            "type": "StringOperatorExpression",
-            "operator": "matches",
-        }
-    )
-    assert sop_defaults.left == Identifier("true")
-    assert sop_defaults.right == Identifier("true")
+    with pytest.raises(SerializationError, match="StringOperatorExpression right is required"):
+        s._deserialize_expression(
+            {
+                "type": "StringOperatorExpression",
+                "left": {"type": "StringLiteral", "value": "abc"},
+                "operator": "contains",
+            }
+        )
+
+    with pytest.raises(SerializationError, match="StringOperatorExpression left is required"):
+        s._deserialize_expression(
+            {
+                "type": "StringOperatorExpression",
+                "operator": "matches",
+            }
+        )
 
     with pytest.raises(SerializationError, match="Unknown expression type"):
         s._deserialize_expression({"type": "Nope"})

@@ -614,20 +614,20 @@ def _deser_defined_expression(self, data: dict[str, Any]):
 def _deser_string_operator_expression(self, data: dict[str, Any]):
     from yaraast.ast.operators import StringOperatorExpression
 
-    left = data.get("left")
-    right = data.get("right")
-    if left is None and "subject" in data:
-        left = data.get("subject")
-    if right is None and "pattern" in data:
-        right = {"type": "StringLiteral", "value": data.get("pattern", "")}
-    if left is None:
-        left = {"type": "Identifier", "name": "true"}
-    if right is None:
-        right = {"type": "Identifier", "name": "true"}
     return StringOperatorExpression(
-        left=_deserialize_required_expression_value(self, left, "StringOperatorExpression left"),
+        left=_deserialize_required_expression(
+            self,
+            data,
+            "left",
+            "StringOperatorExpression",
+        ),
         operator=_deserialize_nonempty_string_field(data, "operator", "StringOperatorExpression"),
-        right=_deserialize_required_expression_value(self, right, "StringOperatorExpression right"),
+        right=_deserialize_required_expression(
+            self,
+            data,
+            "right",
+            "StringOperatorExpression",
+        ),
     )
 
 

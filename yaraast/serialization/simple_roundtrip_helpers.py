@@ -1926,20 +1926,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_required_node_value(expression, "DefinedExpression expression")
         )
     if node_type == "StringOperatorExpression":
-        left = data.get("left")
-        right = data.get("right")
-        if left is None and "subject" in data:
-            left = data["subject"]
-        if right is None and "pattern" in data:
-            right = {"type": "StringLiteral", "value": data.get("pattern", "")}
-        if left is None:
-            left = {"type": "Identifier", "name": "true"}
-        if right is None:
-            right = {"type": "Identifier", "name": "true"}
         return StringOperatorExpression(
-            _deserialize_required_node_value(left, "StringOperatorExpression left"),
+            _deserialize_required_node(data, "left", "StringOperatorExpression"),
             _deserialize_nonempty_string_field(data, "operator", "StringOperatorExpression"),
-            _deserialize_required_node_value(right, "StringOperatorExpression right"),
+            _deserialize_required_node(data, "right", "StringOperatorExpression"),
         )
     if node_type == "WithStatement":
         return WithStatement(
