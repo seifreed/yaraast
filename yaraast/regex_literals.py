@@ -58,12 +58,24 @@ def validate_regex_pattern(pattern: str) -> None:
     scope_has_content = [False]
     can_repeat = False
     last_was_quantifier = False
+    quantifier_style: str | None = None
 
     def mark_atom(repeatable: bool = True) -> None:
         nonlocal can_repeat, last_was_quantifier
+        if last_was_quantifier:
+            record_quantifier_style("greedy")
         scope_has_content[-1] = True
         can_repeat = repeatable
         last_was_quantifier = False
+
+    def record_quantifier_style(style: str) -> None:
+        nonlocal quantifier_style
+        if quantifier_style is None:
+            quantifier_style = style
+            return
+        if quantifier_style != style:
+            msg = "Invalid regex pattern: greedy and ungreedy quantifiers can't be mixed"
+            raise ValueError(msg)
 
     def consume_quantifier() -> None:
         nonlocal can_repeat, last_was_quantifier
@@ -78,10 +90,13 @@ def validate_regex_pattern(pattern: str) -> None:
         char = pattern[i]
 
         if last_was_quantifier and char == "?":
+            record_quantifier_style("ungreedy")
             last_was_quantifier = False
             can_repeat = False
             i += 1
             continue
+        if last_was_quantifier:
+            record_quantifier_style("greedy")
 
         if char == "\\":
             i, _, repeatable = _validate_regex_escape(pattern, i, in_character_class=False)
@@ -158,6 +173,8 @@ def validate_regex_pattern(pattern: str) -> None:
     if len(scope_has_content) > 1:
         msg = "Invalid regex pattern: unterminated group"
         raise ValueError(msg)
+    if last_was_quantifier:
+        record_quantifier_style("greedy")
 
 
 def _parse_regex_repeat_interval(content: str) -> tuple[int | None, int | None] | None:
