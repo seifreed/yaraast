@@ -2197,6 +2197,70 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
         ),
         ({"type": "DictItem", "value": true_expr}, "DictItem key is required"),
         ({"type": "DictItem", "key": true_expr}, "DictItem value is required"),
+        (
+            {"type": "ArrayComprehension", "variable": "x"},
+            "ArrayComprehension expression is required",
+        ),
+        (
+            {"type": "ArrayComprehension", "expression": true_expr, "variable": "x"},
+            "ArrayComprehension iterable is required",
+        ),
+        (
+            {
+                "type": "ArrayComprehension",
+                "expression": true_expr,
+                "variable": "x",
+                "iterable": true_expr,
+            },
+            "ArrayComprehension condition is required",
+        ),
+        (
+            {
+                "type": "DictComprehension",
+                "key_variable": "k",
+                "value_variable": None,
+            },
+            "DictComprehension key_expression is required",
+        ),
+        (
+            {
+                "type": "DictComprehension",
+                "key_expression": true_expr,
+                "key_variable": "k",
+                "value_variable": None,
+            },
+            "DictComprehension value_expression is required",
+        ),
+        (
+            {
+                "type": "DictComprehension",
+                "key_expression": true_expr,
+                "value_expression": true_expr,
+                "key_variable": "k",
+            },
+            "DictComprehension value_variable is required",
+        ),
+        (
+            {
+                "type": "DictComprehension",
+                "key_expression": true_expr,
+                "value_expression": true_expr,
+                "key_variable": "k",
+                "value_variable": None,
+            },
+            "DictComprehension iterable is required",
+        ),
+        (
+            {
+                "type": "DictComprehension",
+                "key_expression": true_expr,
+                "value_expression": true_expr,
+                "key_variable": "k",
+                "value_variable": None,
+                "iterable": true_expr,
+            },
+            "DictComprehension condition is required",
+        ),
         ({"type": "SliceExpression"}, "SliceExpression target is required"),
         ({"type": "LambdaExpression", "parameters": ["x"]}, "LambdaExpression body is required"),
         ({"type": "PatternMatch", "cases": []}, "PatternMatch value is required"),

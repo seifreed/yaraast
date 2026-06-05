@@ -390,6 +390,21 @@ def _deserialize_nullable_nonempty_string_field(
     return text
 
 
+def _deserialize_required_nullable_nonempty_string_field(
+    data: dict[str, Any], field: str, context: str
+) -> str | None:
+    text = _deserialize_required_field(data, field, context)
+    if text is None:
+        return None
+    if not isinstance(text, str):
+        msg = f"{context} {field} must be a string"
+        raise SerializationError(msg)
+    if _is_empty_nonempty_field(text, context, field):
+        msg = f"{context} {field} must not be empty"
+        raise SerializationError(msg)
+    return text
+
+
 def _deserialize_optional_node_value(value: Any, context: str) -> ASTNode | None:
     if value is None:
         return None
@@ -404,6 +419,13 @@ def _deserialize_optional_node_field(
 ) -> ASTNode | None:
     value = data.get(field)
     return _deserialize_optional_node_value(value, context)
+
+
+def _deserialize_nullable_node_field(
+    data: dict[str, Any], field: str, context: str
+) -> ASTNode | None:
+    value = _deserialize_required_field(data, field, context)
+    return _deserialize_optional_node_value(value, f"{context} {field}")
 
 
 def _deserialize_required_node_value(value: Any, context: str) -> ASTNode:
@@ -1997,44 +2019,90 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             value=_deserialize_required_node(data, "value", "WithDeclaration"),
         )
     if node_type == "ArrayComprehension":
+        expression = None
+        expression_present = "expression" in data
+        if expression_present:
+            expression = _deserialize_nullable_node_field(data, "expression", "ArrayComprehension")
+
+        iterable = None
+        iterable_present = "iterable" in data
+        if iterable_present:
+            iterable = _deserialize_nullable_node_field(data, "iterable", "ArrayComprehension")
+
+        condition = None
+        condition_present = "condition" in data
+        if condition_present:
+            condition = _deserialize_nullable_node_field(data, "condition", "ArrayComprehension")
+
+        variable = _deserialize_nonempty_string_field(data, "variable", "ArrayComprehension")
+        if not expression_present:
+            expression = _deserialize_nullable_node_field(data, "expression", "ArrayComprehension")
+        if not iterable_present:
+            iterable = _deserialize_nullable_node_field(data, "iterable", "ArrayComprehension")
+        if not condition_present:
+            condition = _deserialize_nullable_node_field(data, "condition", "ArrayComprehension")
+
         return ArrayComprehension(
-            expression=_deserialize_optional_node_field(
-                data, "expression", "ArrayComprehension expression"
-            ),
-            variable=_deserialize_nonempty_string_field(data, "variable", "ArrayComprehension"),
-            iterable=_deserialize_optional_node_field(
-                data, "iterable", "ArrayComprehension iterable"
-            ),
-            condition=_deserialize_optional_node_field(
-                data, "condition", "ArrayComprehension condition"
-            ),
+            expression=expression,
+            variable=variable,
+            iterable=iterable,
+            condition=condition,
         )
     if node_type == "DictComprehension":
+        key_expression = None
+        key_expression_present = "key_expression" in data
+        if key_expression_present:
+            key_expression = _deserialize_nullable_node_field(
+                data, "key_expression", "DictComprehension"
+            )
+
+        value_expression = None
+        value_expression_present = "value_expression" in data
+        if value_expression_present:
+            value_expression = _deserialize_nullable_node_field(
+                data, "value_expression", "DictComprehension"
+            )
+
+        iterable = None
+        iterable_present = "iterable" in data
+        if iterable_present:
+            iterable = _deserialize_nullable_node_field(data, "iterable", "DictComprehension")
+
+        condition = None
+        condition_present = "condition" in data
+        if condition_present:
+            condition = _deserialize_nullable_node_field(data, "condition", "DictComprehension")
+
         key_variable = _deserialize_nonempty_string_field(
             data,
             "key_variable",
             "DictComprehension",
         )
-        value_variable = _deserialize_nullable_nonempty_string_field(
+        value_variable = _deserialize_required_nullable_nonempty_string_field(
             data,
             "value_variable",
             "DictComprehension",
         )
+        if not key_expression_present:
+            key_expression = _deserialize_nullable_node_field(
+                data, "key_expression", "DictComprehension"
+            )
+        if not value_expression_present:
+            value_expression = _deserialize_nullable_node_field(
+                data, "value_expression", "DictComprehension"
+            )
+        if not iterable_present:
+            iterable = _deserialize_nullable_node_field(data, "iterable", "DictComprehension")
+        if not condition_present:
+            condition = _deserialize_nullable_node_field(data, "condition", "DictComprehension")
+
         return DictComprehension(
-            key_expression=_deserialize_optional_node_field(
-                data, "key_expression", "DictComprehension key_expression"
-            ),
-            value_expression=_deserialize_optional_node_field(
-                data, "value_expression", "DictComprehension value_expression"
-            ),
+            key_expression=key_expression,
+            value_expression=value_expression,
             key_variable=key_variable,
             value_variable=value_variable,
-            iterable=_deserialize_optional_node_field(
-                data, "iterable", "DictComprehension iterable"
-            ),
-            condition=_deserialize_optional_node_field(
-                data, "condition", "DictComprehension condition"
-            ),
+            iterable=iterable,
+            condition=condition,
         )
     if node_type == "TupleExpression":
         raw_elements = _deserialize_required_field(data, "elements", "TupleExpression")
