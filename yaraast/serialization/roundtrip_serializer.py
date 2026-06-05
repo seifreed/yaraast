@@ -120,7 +120,11 @@ class RoundTripSerializer:
         self.parser = CommentAwareParser() if preserve_comments else Parser()
 
     def _parse_source(self, yara_source: str) -> YaraFile:
-        if detect_dialect(yara_source) == YaraDialect.YARA_X:
+        dialect = detect_dialect(yara_source)
+        if dialect == YaraDialect.YARA_L:
+            msg = "YARA-L input is not supported by round-trip serialization"
+            raise SerializationError(msg)
+        if dialect == YaraDialect.YARA_X:
             return YaraXParser(yara_source).parse()
         return self.parser.parse(yara_source)
 

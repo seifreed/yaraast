@@ -53,6 +53,23 @@ def test_roundtrip_parse_and_serialize_yaml() -> None:
     assert data["roundtrip_metadata"]["serializer_version"] == "1.0.0"
 
 
+def test_roundtrip_parse_and_serialize_rejects_yaral_with_clear_error() -> None:
+    source = """
+    rule detect_login {
+        events:
+            $e.metadata.event_type = "USER_LOGIN"
+        match:
+            $e over 5m
+        condition:
+            #e > 5
+    }
+    """
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(SerializationError, match=r"YARA-L.*round-trip serialization"):
+        serializer.parse_and_serialize(source, format="json")
+
+
 @pytest.mark.parametrize("preserve_comments", [None, 1, "yes", object()])
 def test_roundtrip_serializer_rejects_invalid_preserve_comments_types(
     preserve_comments: Any,
