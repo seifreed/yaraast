@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from yaraast.ast.base import YaraFile
 from yaraast.dialects import YaraDialect, detect_dialect
+from yaraast.errors import ParseError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
 from yaraast.yarax.parser import YaraXParser
@@ -32,13 +33,24 @@ def parse_source(content: str) -> YaraFile | YaraLFile:
 
 def parse_yara_source(content: str) -> YaraFile:
     """Parse standard YARA or YARA-X source."""
-    if detect_dialect(content) == YaraDialect.YARA_X:
+    dialect = detect_dialect(content)
+    if dialect == YaraDialect.YARA_L:
+        msg = "YARA-L input is not supported by parse_yara_source; use parse_source instead"
+        raise ParseError(msg)
+    if dialect == YaraDialect.YARA_X:
         return YaraXParser(content).parse()
     return Parser().parse(content)
 
 
 def parse_yara_source_with_comments(content: str) -> YaraFile:
     """Parse standard YARA with comments or YARA-X source."""
-    if detect_dialect(content) == YaraDialect.YARA_X:
+    dialect = detect_dialect(content)
+    if dialect == YaraDialect.YARA_L:
+        msg = (
+            "YARA-L input is not supported by parse_yara_source_with_comments; "
+            "use parse_source instead"
+        )
+        raise ParseError(msg)
+    if dialect == YaraDialect.YARA_X:
         return YaraXParser(content).parse()
     return CommentAwareParser().parse(content)
