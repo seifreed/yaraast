@@ -6,7 +6,9 @@ from pathlib import Path
 
 from lsprotocol.types import Position
 
+from yaraast.ast.expressions import StringCount, StringLength, StringOffset
 from yaraast.lsp.definition import DefinitionProvider
+from yaraast.lsp.document_query_reference_ast import string_reference_name
 from yaraast.lsp.document_query_reference_text import section_for_occurrence
 from yaraast.lsp.references import ReferencesProvider
 from yaraast.lsp.rename import RenameProvider
@@ -88,6 +90,12 @@ rule a {
 """.lstrip()
     locations = provider.get_references(text, _pos(4, 5), "file://test.yar")
     assert len(locations) >= 4
+
+
+def test_ast_string_reference_names_do_not_double_prefix_dollar() -> None:
+    assert string_reference_name(StringCount("$a")) == "$a"
+    assert string_reference_name(StringOffset("$a")) == "$a"
+    assert string_reference_name(StringLength("$a")) == "$a"
 
 
 def test_references_ignore_comment_positions() -> None:

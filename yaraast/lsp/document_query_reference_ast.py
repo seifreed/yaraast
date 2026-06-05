@@ -262,17 +262,21 @@ def _normalized_local_lookup_name(name: str) -> str:
     return name
 
 
+def _normalized_string_reference_name(name: str) -> str:
+    return name if name.startswith("$") else f"${name}"
+
+
 def string_reference_name(node: ASTNode) -> str | None:
     if isinstance(node, StringIdentifier):
         return node.name
     if isinstance(node, AtExpression) and isinstance(node.string_id, str):
-        return node.string_id if node.string_id.startswith("$") else f"${node.string_id}"
+        return _normalized_string_reference_name(node.string_id)
     if isinstance(node, StringCount):
-        return f"${node.string_id}"
+        return _normalized_string_reference_name(node.string_id)
     if isinstance(node, StringOffset):
-        return f"${node.string_id}"
+        return _normalized_string_reference_name(node.string_id)
     if isinstance(node, StringLength):
-        return f"${node.string_id}"
+        return _normalized_string_reference_name(node.string_id)
     return None
 
 
