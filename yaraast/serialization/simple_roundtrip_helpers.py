@@ -719,6 +719,23 @@ def _serialize_ast_value(value: Any) -> Any:
     return value
 
 
+def _serialize_quantifier(value: Any, context: str) -> Any:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, bool | list | dict | set | tuple) or value is None:
+        msg = f"{context} must be a string, number, or expression"
+        raise SerializationError(msg)
+    if isinstance(value, int | float):
+        if isinstance(value, float) and not math.isfinite(value):
+            msg = f"{context} must be finite"
+            raise SerializationError(msg)
+        return value
+    if isinstance(value, Expression):
+        return serialize_node(value)
+    msg = f"{context} must be a string, number, or expression"
+    raise SerializationError(msg)
+
+
 def _deserialize_ast_value(value: Any, context: str = "AST value") -> Any:
     if value is None or value == {}:
         msg = f"{context} is required"
@@ -1129,7 +1146,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, ForExpression):
         return {
             "type": "ForExpression",
-            "quantifier": _serialize_ast_value(node.quantifier),
+            "quantifier": _serialize_quantifier(
+                node.quantifier,
+                "ForExpression quantifier",
+            ),
             "variable": _serialize_required_nonempty_string(
                 node.variable,
                 "ForExpression variable",
@@ -1140,7 +1160,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, ForOfExpression):
         return {
             "type": "ForOfExpression",
-            "quantifier": _serialize_ast_value(node.quantifier),
+            "quantifier": _serialize_quantifier(
+                node.quantifier,
+                "ForOfExpression quantifier",
+            ),
             "string_set": _serialize_ast_value(node.string_set),
             "condition": serialize_node(node.condition) if node.condition is not None else None,
         }
@@ -1165,7 +1188,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, OfExpression):
         return {
             "type": "OfExpression",
-            "quantifier": _serialize_ast_value(node.quantifier),
+            "quantifier": _serialize_quantifier(
+                node.quantifier,
+                "OfExpression quantifier",
+            ),
             "string_set": _serialize_ast_value(node.string_set),
         }
     if isinstance(node, ModuleReference):

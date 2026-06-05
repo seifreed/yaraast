@@ -1723,6 +1723,54 @@ def test_simple_roundtrip_quantifiers_reject_invalid_raw_values() -> None:
             deserialize_node(payload)
 
 
+def test_simple_roundtrip_serialize_quantifiers_reject_invalid_values() -> None:
+    true_expr = BooleanLiteral(True)
+    string_set = SetExpression([StringIdentifier("$a")])
+
+    invalid_quantifier_cases: tuple[tuple[ASTNode, str], ...] = (
+        (
+            ForExpression(cast(Any, ["any"]), "i", string_set, true_expr),
+            "ForExpression quantifier must be a string, number, or expression",
+        ),
+        (
+            ForOfExpression(cast(Any, ["any"]), ["$a"], true_expr),
+            "ForOfExpression quantifier must be a string, number, or expression",
+        ),
+        (
+            OfExpression(cast(Any, ["any"]), ["$a"]),
+            "OfExpression quantifier must be a string, number, or expression",
+        ),
+        (
+            ForExpression(cast(Any, True), "i", string_set, true_expr),
+            "ForExpression quantifier must be a string, number, or expression",
+        ),
+        (
+            ForOfExpression(cast(Any, False), ["$a"], true_expr),
+            "ForOfExpression quantifier must be a string, number, or expression",
+        ),
+        (
+            OfExpression(cast(Any, True), ["$a"]),
+            "OfExpression quantifier must be a string, number, or expression",
+        ),
+        (
+            ForExpression(float("nan"), "i", string_set, true_expr),
+            "ForExpression quantifier must be finite",
+        ),
+        (
+            ForOfExpression(float("inf"), ["$a"], true_expr),
+            "ForOfExpression quantifier must be finite",
+        ),
+        (
+            OfExpression(float("-inf"), ["$a"]),
+            "OfExpression quantifier must be finite",
+        ),
+    )
+
+    for node, message in invalid_quantifier_cases:
+        with pytest.raises(SerializationError, match=message):
+            serialize_node(node)
+
+
 def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types() -> None:
     true_expr = {"type": "BooleanLiteral", "value": True}
 
