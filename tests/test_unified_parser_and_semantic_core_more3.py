@@ -53,6 +53,25 @@ def test_unified_parser_detect_file_dialect_rejects_directory_path(tmp_path: Pat
         UnifiedParser.detect_file_dialect(tmp_path)
 
 
+@pytest.mark.parametrize(
+    "parser_call",
+    [
+        lambda path: UnifiedParser.parse_file(path),
+        lambda path: UnifiedParser.parse_file(path, force_streaming=True),
+        lambda path: UnifiedParser.detect_file_dialect(path),
+    ],
+)
+def test_unified_parser_file_apis_reject_invalid_utf8(
+    tmp_path: Path,
+    parser_call: Any,
+) -> None:
+    rule_file = tmp_path / "invalid.yar"
+    rule_file.write_bytes(b"\xff")
+
+    with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
+        parser_call(rule_file)
+
+
 @pytest.mark.parametrize("force_streaming", [None, 1, "true", object()])
 def test_unified_parser_parse_file_rejects_invalid_force_streaming_types(
     tmp_path: Path, force_streaming: Any

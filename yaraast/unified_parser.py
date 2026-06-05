@@ -29,6 +29,15 @@ def _require_text_file_path(file_path: object) -> Path:
     return Path(file_path) if isinstance(file_path, str) else file_path
 
 
+def _read_yara_file_text(file_path: Path) -> str:
+    try:
+        with open(file_path, encoding="utf-8") as f:
+            return f.read()
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 class UnifiedParser:
     """Multi-dialect YARA parser with automatic dialect detection.
 
@@ -267,8 +276,7 @@ class UnifiedParser:
 
         # Use traditional parser for smaller files (below threshold)
         # This is faster for small files as it avoids streaming overhead
-        with open(file_path_obj, encoding="utf-8") as f:
-            content = f.read()
+        content = _read_yara_file_text(file_path_obj)
 
         parser = cls(content, dialect)
         return parser.parse()
@@ -290,8 +298,7 @@ class UnifiedParser:
             if detected in (YaraDialect.YARA_L, YaraDialect.YARA_X):
                 # Streaming parser only supports standard YARA;
                 # fall through to traditional parser for other dialects
-                with open(file_path_obj, encoding="utf-8") as f:
-                    content = f.read()
+                content = _read_yara_file_text(file_path_obj)
                 parser = cls(content, detected)
                 return parser.parse()
 
@@ -332,7 +339,6 @@ class UnifiedParser:
         if stat_module.S_ISDIR(file_path_obj.stat().st_mode):
             msg = "YARA file path must not be a directory"
             raise IsADirectoryError(msg)
-        with open(file_path_obj, encoding="utf-8") as f:
-            content = f.read()
+        content = _read_yara_file_text(file_path_obj)
 
         return detect_dialect(content)
