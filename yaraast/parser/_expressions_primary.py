@@ -24,7 +24,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.extern import ExternRuleReference
 from yaraast.ast.modules import ModuleReference
-from yaraast.lexer import TokenType
+from yaraast.lexer import Token, TokenType
 
 from ._shared import (
     KNOWN_MODULES,
@@ -93,16 +93,16 @@ class ExpressionPrimaryMixin:
 
         if self._match(TokenType.STRING_COUNT):
             token = self._previous()
-            string_id = token.value[1:]
-            if not string_id and not self._can_use_anonymous_string_reference():
+            string_id = self._parse_string_reference_suffix(token)
+            if string_id is None:
                 msg = "wrong use of anonymous string"
                 raise ParserError(msg, token)
             return self._set_node_location_from_token(StringCount(string_id=string_id), token)
 
         if self._match(TokenType.STRING_OFFSET):
             start_token = self._previous()
-            string_id = start_token.value[1:]
-            if not string_id and not self._can_use_anonymous_string_reference():
+            string_id = self._parse_string_reference_suffix(start_token)
+            if string_id is None:
                 msg = "wrong use of anonymous string"
                 raise ParserError(msg, start_token)
             index = None
@@ -118,8 +118,8 @@ class ExpressionPrimaryMixin:
 
         if self._match(TokenType.STRING_LENGTH):
             start_token = self._previous()
-            string_id = start_token.value[1:]
-            if not string_id and not self._can_use_anonymous_string_reference():
+            string_id = self._parse_string_reference_suffix(start_token)
+            if string_id is None:
                 msg = "wrong use of anonymous string"
                 raise ParserError(msg, start_token)
             index = None
@@ -133,6 +133,14 @@ class ExpressionPrimaryMixin:
                 StringLength(string_id=string_id, index=index), start_token, end_token
             )
 
+        return None
+
+    def _parse_string_reference_suffix(self, token: Token) -> str | None:
+        string_id = token.value[1:]
+        if string_id:
+            return string_id
+        if self._can_use_anonymous_string_reference():
+            return "$"
         return None
 
     def _can_use_anonymous_string_reference(self) -> bool:

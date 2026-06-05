@@ -389,3 +389,25 @@ def test_roundtrip_deserialize_preserves_top_level_blank_lines() -> None:
     _, generated = serializer.deserialize_and_generate(payload, format="json")
 
     assert "}\n\nrule second" in generated
+
+
+def test_roundtrip_serializes_for_of_placeholder_references() -> None:
+    source = "\n".join(
+        [
+            "rule placeholders {",
+            "    strings:",
+            '        $a = "alpha"',
+            "    condition:",
+            "        for any of them : ( # > 0 and @ >= 0 and ! > 0 )",
+            "}",
+            "",
+        ]
+    )
+    serializer = RoundTripSerializer()
+
+    _, payload = serializer.parse_and_serialize(source, format="json")
+    _, generated = serializer.deserialize_and_generate(payload, format="json")
+
+    assert "# > 0" in generated
+    assert "@ >= 0" in generated
+    assert "! > 0" in generated
