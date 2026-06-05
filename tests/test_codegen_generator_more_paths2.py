@@ -342,6 +342,42 @@ def test_codegen_generator_rejects_standard_comment_embedded_nul(
         CodeGenerator().generate(YaraFile(rules=[rule]))
 
 
+@pytest.mark.parametrize("comment_target", ["leading", "trailing"])
+@pytest.mark.parametrize("is_multiline", [cast(Any, "yes"), cast(Any, 1), cast(Any, None)])
+def test_codegen_generator_rejects_invalid_comment_multiline_flags(
+    comment_target: str,
+    is_multiline: Any,
+) -> None:
+    rule = Rule("bad_comment", condition=BooleanLiteral(True))
+    comment = Comment("note", is_multiline=is_multiline)
+    if comment_target == "leading":
+        rule.leading_comments = [comment]
+    else:
+        rule.trailing_comment = comment
+
+    with pytest.raises(TypeError, match="Comment is_multiline must be a boolean"):
+        CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
+@pytest.mark.parametrize(
+    ("comments", "message"),
+    [
+        (cast(Any, ""), "CommentGroup comments must be a list"),
+        (cast(Any, {}), "CommentGroup comments must be a list"),
+        (cast(Any, [object()]), "CommentGroup comments must contain Comment nodes"),
+    ],
+)
+def test_codegen_generator_rejects_invalid_comment_group_containers(
+    comments: Any,
+    message: str,
+) -> None:
+    rule = Rule("bad_comment_group", condition=BooleanLiteral(True))
+    cast(Any, rule).leading_comments = [CommentGroup(comments)]
+
+    with pytest.raises(TypeError, match=message):
+        CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
 def test_codegen_generate_resets_indent_after_failed_generation() -> None:
     gen = CodeGenerator()
     with pytest.raises(RuntimeError, match="broken condition"):

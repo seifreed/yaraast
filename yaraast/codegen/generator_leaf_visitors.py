@@ -260,6 +260,7 @@ def _validate_string_operator_operands(node: Any) -> None:
 
 def visit_comment(node: Any) -> str:
     text = _require_comment_text(node.text)
+    _require_comment_multiline_flag(getattr(node, "is_multiline", False))
     if text.startswith("/*") and text.endswith("*/"):
         body = text[2:-2]
         if "*/" in body:
@@ -273,7 +274,25 @@ def visit_comment(node: Any) -> str:
 
 
 def visit_comment_group(node: Any) -> str:
-    return "\n".join(visit_comment(c) for c in node.comments)
+    comments = _require_comment_group_comments(node.comments)
+    return "\n".join(visit_comment(comment) for comment in comments)
+
+
+def _require_comment_group_comments(value: object) -> list[Any] | tuple[Any, ...]:
+    if isinstance(value, list | tuple):
+        if not all(hasattr(comment, "text") for comment in value):
+            msg = "CommentGroup comments must contain Comment nodes for libyara output"
+            raise TypeError(msg)
+        return value
+    msg = "CommentGroup comments must be a list for libyara output"
+    raise TypeError(msg)
+
+
+def _require_comment_multiline_flag(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    msg = "Comment is_multiline must be a boolean for libyara output"
+    raise TypeError(msg)
 
 
 def _require_comment_text(text: object) -> str:
