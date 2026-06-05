@@ -63,6 +63,15 @@ def test_auto_detects_yarax_leading_dict_spread_syntax() -> None:
     assert '{**base}["a"]' in CodeGenerator().generate(ast)
 
 
+def test_auto_detects_yarax_match_with_dict_literal_value() -> None:
+    source = "rule x { condition: match {x: y}[x] { y => true, _ => false } }"
+
+    assert detect_dialect(source) == YaraDialect.YARA_X
+    ast = parse_yara_source(source)
+
+    assert "match {x: y}[x]" in CodeGenerator().generate(ast)
+
+
 @pytest.mark.parametrize(
     "source, expected",
     [

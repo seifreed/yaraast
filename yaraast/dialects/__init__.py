@@ -175,6 +175,7 @@ yarax_patterns = [
     r"\bwith\s+\$?\w+\s*=",
     r"\blambda(?:\s+\w+(?:\s*,\s*\w+)*)?\s*:",
     r"\bmatch\s+[^{}]+\{[^{}]*=>",
+    r"\bcondition\s*:\s*match\b[^\n]*=>",
     r"\[[^\]]+\bfor\s+\w+\s+in\s+[^\]]+\]",
     r"\{[^{}:]+:[^{}]+\bfor\s+\w+(?:\s*,\s*\w+)?\s+in\s+[^{}]+\}",
     r"\bcondition\s*:\s*\[[^\]\n]*\]",
