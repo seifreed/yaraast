@@ -935,6 +935,14 @@ def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     assert isinstance(restored_float, MetaEntry)
     assert restored_float.value == 1.5
 
+    metadata_meta = Meta("classification", "restricted")
+    metadata_meta.location = Location(3, 5)
+    cast(Any, metadata_meta).scope = MetaScope.PRIVATE
+    restored_metadata_meta = deserialize_meta(serialize_meta(metadata_meta))
+    assert isinstance(restored_metadata_meta, MetaEntry)
+    assert restored_metadata_meta.scope == MetaScope.PRIVATE
+    assert getattr(restored_metadata_meta, "location", None) == Location(3, 5)
+
     invalid_meta = MetaEntry("owner", "team")
     cast(Any, invalid_meta).scope = "secret"
     with pytest.raises(
