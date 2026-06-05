@@ -50,3 +50,18 @@ def test_validate_regex_pattern_rejects_mixed_greedy_and_ungreedy_quantifiers(
 @pytest.mark.parametrize("pattern", ["a*b+", "a*?b+?", "a??b??", "a{1}?b*?"])
 def test_validate_regex_pattern_allows_consistent_quantifier_greediness(pattern: str) -> None:
     validate_regex_pattern(pattern)
+
+
+@pytest.mark.parametrize(
+    "pattern",
+    ["[]-2]", "[]--]", "[]-[]", r"[]-\x41]", "[]-[{|b]]"],
+)
+def test_validate_regex_pattern_allows_initial_closing_bracket_literal_ranges(
+    pattern: str,
+) -> None:
+    validate_regex_pattern(pattern)
+
+
+def test_validate_regex_pattern_still_rejects_descending_character_range() -> None:
+    with pytest.raises(ValueError, match="Invalid regex pattern: bad character range"):
+        validate_regex_pattern("[a-2]")

@@ -239,11 +239,13 @@ def _validate_regex_character_class(pattern: str, start: int) -> int:
         if _is_regex_character_class_closer(pattern, i, content_start):
             return i + 1
 
+        left_start = i
         left_value, i = _read_regex_character_class_item(pattern, i)
         range_start = i + 1
         if (
             i < len(pattern)
             and pattern[i] == "-"
+            and not _is_initial_closing_bracket_literal(pattern, left_start, content_start)
             and range_start < len(pattern)
             and not _is_regex_character_class_closer(pattern, range_start, content_start)
         ):
@@ -258,6 +260,10 @@ def _validate_regex_character_class(pattern: str, start: int) -> int:
 
 def _is_regex_character_class_closer(pattern: str, index: int, content_start: int) -> bool:
     return pattern[index] == "]" and index != content_start
+
+
+def _is_initial_closing_bracket_literal(pattern: str, index: int, content_start: int) -> bool:
+    return index == content_start and pattern[index] == "]"
 
 
 def _read_regex_character_class_item(pattern: str, index: int) -> tuple[int, int]:
