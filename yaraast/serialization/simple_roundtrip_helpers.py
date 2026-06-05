@@ -1467,15 +1467,11 @@ def serialize_yarafile(yf: YaraFile) -> dict[str, Any]:
         "imports": [serialize_node(imp) for imp in imports],
         "includes": [serialize_node(inc) for inc in includes],
         "rules": [serialize_node(rule) for rule in rules],
+        "extern_rules": [serialize_extern_rule(rule) for rule in extern_rules],
+        "extern_imports": [serialize_node(imp) for imp in extern_imports],
+        "pragmas": [serialize_pragma(pragma) for pragma in pragmas],
+        "namespaces": [serialize_node(namespace) for namespace in namespaces],
     }
-    if extern_rules:
-        data["extern_rules"] = [serialize_extern_rule(rule) for rule in extern_rules]
-    if extern_imports:
-        data["extern_imports"] = [serialize_node(imp) for imp in extern_imports]
-    if pragmas:
-        data["pragmas"] = [serialize_pragma(pragma) for pragma in pragmas]
-    if namespaces:
-        data["namespaces"] = [serialize_node(namespace) for namespace in namespaces]
     return data
 
 
@@ -2157,15 +2153,15 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
     ]
     yf.extern_rules = [
         _deserialize_extern_rule_item(rule, "YaraFile extern_rules")
-        for rule in _deserialize_list_field(data, "extern_rules", "YaraFile")
+        for rule in _deserialize_required_list_field(data, "extern_rules", "YaraFile")
     ]
     yf.extern_imports = [
         _deserialize_expected_node(imp, ExternImport, "YaraFile extern_imports", "ExternImport")
-        for imp in _deserialize_list_field(data, "extern_imports", "YaraFile")
+        for imp in _deserialize_required_list_field(data, "extern_imports", "YaraFile")
     ]
     yf.pragmas = [
         _deserialize_pragma_item(pragma, "YaraFile pragmas")
-        for pragma in _deserialize_list_field(data, "pragmas", "YaraFile")
+        for pragma in _deserialize_required_list_field(data, "pragmas", "YaraFile")
     ]
     yf.namespaces = [
         _deserialize_expected_node(
@@ -2174,7 +2170,7 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
             "YaraFile namespaces",
             "ExternNamespace",
         )
-        for namespace in _deserialize_list_field(data, "namespaces", "YaraFile")
+        for namespace in _deserialize_required_list_field(data, "namespaces", "YaraFile")
     ]
     return yf
 

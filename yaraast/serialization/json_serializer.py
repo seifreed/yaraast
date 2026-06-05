@@ -74,7 +74,6 @@ from yaraast.serialization.json_serialize_visitors import (
 )
 from yaraast.serialization.json_serializer_deserialize import (
     JsonSerializerDeserializeMixin,
-    _deserialize_list_field,
     _deserialize_object,
     _deserialize_required_list_field,
 )
@@ -269,26 +268,22 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         ]
 
         kwargs: dict = {"imports": imports, "includes": includes, "rules": rules}
-        if "extern_rules" in ast_data:
-            kwargs["extern_rules"] = [
-                self._deserialize_extern_rule(rule)
-                for rule in _deserialize_list_field(ast_data, "extern_rules", "YaraFile")
-            ]
-        if "extern_imports" in ast_data:
-            kwargs["extern_imports"] = [
-                self._deserialize_extern_import(imp)
-                for imp in _deserialize_list_field(ast_data, "extern_imports", "YaraFile")
-            ]
-        if "pragmas" in ast_data:
-            kwargs["pragmas"] = [
-                self._deserialize_pragma(pragma)
-                for pragma in _deserialize_list_field(ast_data, "pragmas", "YaraFile")
-            ]
-        if "namespaces" in ast_data:
-            kwargs["namespaces"] = [
-                self._deserialize_extern_namespace(namespace)
-                for namespace in _deserialize_list_field(ast_data, "namespaces", "YaraFile")
-            ]
+        kwargs["extern_rules"] = [
+            self._deserialize_extern_rule(rule)
+            for rule in _deserialize_required_list_field(ast_data, "extern_rules", "YaraFile")
+        ]
+        kwargs["extern_imports"] = [
+            self._deserialize_extern_import(imp)
+            for imp in _deserialize_required_list_field(ast_data, "extern_imports", "YaraFile")
+        ]
+        kwargs["pragmas"] = [
+            self._deserialize_pragma(pragma)
+            for pragma in _deserialize_required_list_field(ast_data, "pragmas", "YaraFile")
+        ]
+        kwargs["namespaces"] = [
+            self._deserialize_extern_namespace(namespace)
+            for namespace in _deserialize_required_list_field(ast_data, "namespaces", "YaraFile")
+        ]
         return self._apply_node_metadata(YaraFile(**kwargs), ast_data)
 
     def _simple_node(self, type_name: str, **fields: Any) -> dict[str, Any]:

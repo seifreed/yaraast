@@ -1794,6 +1794,10 @@ def test_json_deserializer_parses_legacy_hex_xor_modifier_values() -> None:
                 "pragmas": [],
             }
         ],
+        "extern_rules": [],
+        "extern_imports": [],
+        "pragmas": [],
+        "namespaces": [],
     }
 
     restored = JsonSerializer(include_metadata=False).deserialize(json.dumps(payload))
@@ -2010,6 +2014,10 @@ def test_json_roundtrip_preserves_string_modifier_aliases() -> None:
                         "pragmas": [],
                     }
                 ],
+                "extern_rules": [],
+                "extern_imports": [],
+                "pragmas": [],
+                "namespaces": [],
             }
         )
     )

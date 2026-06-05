@@ -301,6 +301,10 @@ def test_json_serializer_deserialize_validates_input_and_supports_direct_ast_and
                 "pragmas": [],
             }
         ],
+        "extern_rules": [],
+        "extern_imports": [],
+        "pragmas": [],
+        "namespaces": [],
     }
     ast = serializer.deserialize(json.dumps(direct_ast))
     assert isinstance(ast, YaraFile)
@@ -356,4 +360,15 @@ def test_json_serializer_visit_include_and_roundtrip_without_metadata(tmp_path: 
     ast = YaraFile(imports=[], includes=[], rules=[])
     rendered = serializer.serialize(ast, tmp_path / "empty.json")
     loaded = json.loads(rendered)
-    assert loaded == {"ast": {"type": "YaraFile", "imports": [], "includes": [], "rules": []}}
+    assert loaded == {
+        "ast": {
+            "type": "YaraFile",
+            "imports": [],
+            "includes": [],
+            "rules": [],
+            "extern_rules": [],
+            "extern_imports": [],
+            "pragmas": [],
+            "namespaces": [],
+        }
+    }

@@ -470,15 +470,11 @@ def visit_yara_file(serializer, node) -> dict[str, Any]:
         "imports": imports,
         "includes": includes,
         "rules": rules,
+        "extern_rules": extern_rules,
+        "extern_imports": extern_imports,
+        "pragmas": pragmas,
+        "namespaces": namespaces,
     }
-    if extern_rules:
-        result["extern_rules"] = extern_rules
-    if extern_imports:
-        result["extern_imports"] = extern_imports
-    if pragmas:
-        result["pragmas"] = pragmas
-    if namespaces:
-        result["namespaces"] = namespaces
     return result
 
 

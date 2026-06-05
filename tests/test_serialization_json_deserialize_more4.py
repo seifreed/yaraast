@@ -85,6 +85,10 @@ def _serialized_json_yarafile(**overrides: Any) -> dict[str, Any]:
         "imports": [],
         "includes": [],
         "rules": [],
+        "extern_rules": [],
+        "extern_imports": [],
+        "pragmas": [],
+        "namespaces": [],
     }
     data.update(overrides)
     return data
@@ -203,7 +207,15 @@ def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="YaraFile must be an object"):
         s._deserialize_ast(cast(Any, "rule r"))
 
-    for field in ("imports", "includes", "rules"):
+    for field in (
+        "imports",
+        "includes",
+        "rules",
+        "extern_rules",
+        "extern_imports",
+        "pragmas",
+        "namespaces",
+    ):
         data = _serialized_json_yarafile()
         del data[field]
         with pytest.raises(SerializationError, match=f"YaraFile {field} is required"):

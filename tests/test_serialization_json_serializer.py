@@ -178,6 +178,10 @@ def test_json_serializer_unknown_string_and_token_types() -> None:
                     "pragmas": [],
                 }
             ],
+            "extern_rules": [],
+            "extern_imports": [],
+            "pragmas": [],
+            "namespaces": [],
         }
     }
     with pytest.raises(SerializationError, match="Unknown string type"):
@@ -207,6 +211,10 @@ def test_json_serializer_unknown_string_and_token_types() -> None:
                     "pragmas": [],
                 }
             ],
+            "extern_rules": [],
+            "extern_imports": [],
+            "pragmas": [],
+            "namespaces": [],
         }
     }
     with pytest.raises(SerializationError, match="Unknown hex token type"):
@@ -232,6 +240,10 @@ def test_json_serializer_unknown_expression_type() -> None:
                     "pragmas": [],
                 }
             ],
+            "extern_rules": [],
+            "extern_imports": [],
+            "pragmas": [],
+            "namespaces": [],
         }
     }
     with pytest.raises(SerializationError, match="Unknown expression type"):

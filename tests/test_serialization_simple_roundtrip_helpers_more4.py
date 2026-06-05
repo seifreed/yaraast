@@ -148,6 +148,10 @@ def _serialized_simple_yarafile(**overrides: Any) -> dict[str, Any]:
         "imports": [],
         "includes": [],
         "rules": [],
+        "extern_rules": [],
+        "extern_imports": [],
+        "pragmas": [],
+        "namespaces": [],
     }
     data.update(overrides)
     return data
@@ -349,7 +353,15 @@ def test_simple_roundtrip_serialize_rejects_unsupported_ast_nodes() -> None:
 
 
 def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
-    for field in ("imports", "includes", "rules"):
+    for field in (
+        "imports",
+        "includes",
+        "rules",
+        "extern_rules",
+        "extern_imports",
+        "pragmas",
+        "namespaces",
+    ):
         data = _serialized_simple_yarafile()
         del data[field]
         with pytest.raises(SerializationError, match=f"YaraFile {field} is required"):
