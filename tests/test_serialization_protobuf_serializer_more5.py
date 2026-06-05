@@ -1931,6 +1931,8 @@ def test_protobuf_serializer_rejects_invalid_expression_scalar_fields(
         (StringLength(""), "StringLength string_id must not be empty"),
         (IntegerLiteral(cast(Any, True)), "IntegerLiteral value must be an integer"),
         (IntegerLiteral(cast(Any, "1")), "IntegerLiteral value must be an integer"),
+        (IntegerLiteral(2**63), "IntegerLiteral value must fit in protobuf int64"),
+        (IntegerLiteral(-(2**63) - 1), "IntegerLiteral value must fit in protobuf int64"),
         (StringLiteral(cast(Any, True)), "StringLiteral value must be a string"),
         (RegexLiteral(cast(Any, 123)), "RegexLiteral pattern must be a string"),
         (RegexLiteral(""), "RegexLiteral pattern must not be empty"),
@@ -1944,6 +1946,69 @@ def test_protobuf_serializer_rejects_invalid_expression_leaf_fields(
 ) -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(rules=[Rule(name="invalid_expression_leaf", condition=condition)])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("ast", "message"),
+    [
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "oversized_meta_int",
+                        meta=[Meta("score", 2**63)],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Meta value must fit in protobuf int64",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "oversized_modifier_int",
+                        strings=[
+                            PlainString(
+                                identifier="$a",
+                                value="x",
+                                modifiers=[StringModifier.from_name_value("xor", 2**63)],
+                            )
+                        ],
+                        condition=StringIdentifier("$a"),
+                    )
+                ]
+            ),
+            "String modifier value must fit in protobuf int64",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "oversized_modifier_tuple_int",
+                        strings=[
+                            PlainString(
+                                identifier="$a",
+                                value="x",
+                                modifiers=[StringModifier.from_name_value("xor", (1, 2**63))],
+                            )
+                        ],
+                        condition=StringIdentifier("$a"),
+                    )
+                ]
+            ),
+            "String modifier tuple value must fit in protobuf int64",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_out_of_range_int64_fields(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
 
     with pytest.raises(SerializationError, match=message):
         serializer.serialize(ast)

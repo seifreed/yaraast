@@ -20,6 +20,8 @@ from yaraast.string_escaping import escape_string_source_value
 from . import yara_ast_pb2
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+_PROTOBUF_INT64_MIN = -(2**63)
+_PROTOBUF_INT64_MAX = 2**63 - 1
 
 
 def _finite_double_value(value, context: str) -> float:
@@ -318,7 +320,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         elif isinstance(value, bool):
             meta_val.bool_value = value
         elif isinstance(value, int):
-            meta_val.int_value = value
+            meta_val.int_value = _protobuf_int64_value(value, "Meta value")
         elif isinstance(value, float) and (isinstance(entry, MetaEntry) or scope is not None):
             meta_val.double_value = _finite_double_value(value, "Meta")
 
@@ -344,7 +346,7 @@ def _copy_python_value_to_meta_value(value, pb_meta_value, context: str) -> None
     elif isinstance(value, bool):
         pb_meta_value.bool_value = value
     elif isinstance(value, int):
-        pb_meta_value.int_value = value
+        pb_meta_value.int_value = _protobuf_int64_value(value, f"{context} value")
     elif isinstance(value, float):
         pb_meta_value.double_value = _finite_double_value(value, context)
     else:
@@ -358,7 +360,7 @@ def _copy_python_value_to_legacy_meta_value(value, pb_meta_value) -> None:
     elif isinstance(value, bool):
         pb_meta_value.bool_value = value
     elif isinstance(value, int):
-        pb_meta_value.int_value = value
+        pb_meta_value.int_value = _protobuf_int64_value(value, "Meta value")
     else:
         msg = "Meta value must be a string, integer, or boolean"
         raise SerializationError(msg)
@@ -397,6 +399,14 @@ def _protobuf_required_int(value, context: str) -> int:
         msg = f"{context} must be an integer"
         raise SerializationError(msg)
     return value
+
+
+def _protobuf_int64_value(value, context: str) -> int:
+    int_value = _protobuf_required_int(value, context)
+    if _PROTOBUF_INT64_MIN <= int_value <= _PROTOBUF_INT64_MAX:
+        return int_value
+    msg = f"{context} must fit in protobuf int64"
+    raise SerializationError(msg)
 
 
 def _protobuf_pragma_type(pragma) -> str:
@@ -701,8 +711,13 @@ def _validate_plain_string_raw_bytes_for_protobuf(raw_bytes) -> None:
         raise SerializationError(msg)
 
 
-def _is_protobuf_int(value) -> bool:
-    return isinstance(value, int) and not isinstance(value, bool)
+def _is_int_pair(left, right) -> bool:
+    return (
+        isinstance(left, int)
+        and not isinstance(left, bool)
+        and isinstance(right, int)
+        and not isinstance(right, bool)
+    )
 
 
 def _format_unknown_modifier(name: str, value) -> str:
@@ -723,20 +738,20 @@ def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
         return
 
     pb_mod.value = _modifier_value_text(value)
-    if (
-        isinstance(value, tuple)
-        and len(value) == 2
-        and _is_protobuf_int(value[0])
-        and _is_protobuf_int(value[1])
-    ):
-        pb_mod.tuple_value.extend([int(value[0]), int(value[1])])
+    if isinstance(value, tuple) and len(value) == 2 and _is_int_pair(value[0], value[1]):
+        pb_mod.tuple_value.extend(
+            [
+                _protobuf_int64_value(value[0], "String modifier tuple value"),
+                _protobuf_int64_value(value[1], "String modifier tuple value"),
+            ]
+        )
     elif isinstance(value, tuple):
         msg = "String modifier tuple value must contain two integers"
         raise SerializationError(msg)
     elif isinstance(value, bool):
         _raise_invalid_modifier_value()
     elif isinstance(value, int):
-        pb_mod.typed_value.int_value = value
+        pb_mod.typed_value.int_value = _protobuf_int64_value(value, "String modifier value")
     elif isinstance(value, float):
         pb_mod.typed_value.double_value = _finite_double_value(value, "String modifier")
     elif isinstance(value, str):
@@ -1316,7 +1331,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         if expr.index is not None:
             convert_expression_to_protobuf(expr.index, pb_expr.string_length.index)
     elif isinstance(expr, IntegerLiteral):
-        pb_expr.integer_literal.value = _protobuf_required_int(
+        pb_expr.integer_literal.value = _protobuf_int64_value(
             expr.value,
             "IntegerLiteral value",
         )
