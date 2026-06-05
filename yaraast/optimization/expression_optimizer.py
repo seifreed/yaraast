@@ -449,6 +449,8 @@ class ExpressionOptimizer(ASTTransformer):
         return value
 
     def visit_at_expression(self, node: Any) -> Any:
+        if hasattr(node, "string_id"):
+            node.string_id = self._optimize_ast_value(node.string_id)
         if hasattr(node, "offset"):
             node.offset = self.visit(node.offset)
         return node

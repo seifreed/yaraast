@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
+from yaraast.ast.conditions import AtExpression, ForExpression, ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
@@ -457,6 +457,13 @@ def test_visit_for_of_at_in_and_passthrough_methods() -> None:
         quantifier="any",
         string_set=(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)), "$a"),
     )
+    at_of_node = AtExpression(
+        string_id=OfExpression(
+            quantifier=BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)),
+            string_set=Identifier("them"),
+        ),
+        offset=IntegerLiteral(0),
+    )
     at_node = SimpleNamespace(offset=IntegerLiteral(4))
     in_node = SimpleNamespace(range=Identifier("r"))
     in_node_with_subject = SimpleNamespace(
@@ -471,6 +478,9 @@ def test_visit_for_of_at_in_and_passthrough_methods() -> None:
     assert opt.visit_for_of_expression(raw_for_of_node).string_set == ["$a", "$b"]
     assert opt.visit_for_of_expression(falsy_for_of_node).condition == IntegerLiteral(3)
     assert opt.visit_of_expression(tuple_of_node).string_set == (IntegerLiteral(3), "$a")
+    optimized_at_of = opt.visit_at_expression(at_of_node)
+    assert isinstance(optimized_at_of.string_id, OfExpression)
+    assert optimized_at_of.string_id.quantifier == IntegerLiteral(3)
     assert opt.visit_at_expression(at_node).offset == IntegerLiteral(4)
     assert opt.visit_in_expression(in_node).range == Identifier("r")
     assert opt.visit_in_expression(in_node_with_subject).subject == IntegerLiteral(3)
