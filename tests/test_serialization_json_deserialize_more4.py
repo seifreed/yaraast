@@ -36,7 +36,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.modifiers import MetaEntry, MetaScope, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import (
@@ -108,9 +108,13 @@ def test_deserialize_import_include_meta_and_rule_meta_variants() -> None:
     assert meta.key == "author"
     typed_meta = s._deserialize_meta({"type": "Meta", "key": "author", "value": "me"})
     assert isinstance(typed_meta, Meta)
-    typed_meta_entry = s._deserialize_meta({"type": "MetaEntry", "key": "owner", "value": "team"})
+    typed_meta_entry = s._deserialize_meta(
+        {"type": "MetaEntry", "key": "owner", "value": "team", "scope": "public"}
+    )
     assert not isinstance(typed_meta_entry, Meta)
-    float_meta_entry = s._deserialize_meta({"type": "MetaEntry", "key": "score", "value": 1.5})
+    float_meta_entry = s._deserialize_meta(
+        {"type": "MetaEntry", "key": "score", "value": 1.5, "scope": "public"}
+    )
     assert float_meta_entry.value == 1.5
 
     rule_dict_meta = s._deserialize_rule(
@@ -203,6 +207,36 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     ):
         s._deserialize_meta(
             {"type": "MetaEntry", "key": "owner", "value": "team", "scope": "secret"}
+        )
+
+    with pytest.raises(SerializationError, match="MetaEntry scope is required"):
+        s._deserialize_meta({"type": "MetaEntry", "key": "owner", "value": "team"})
+
+    with pytest.raises(SerializationError, match="Meta scope is only valid for MetaEntry"):
+        s._deserialize_meta({"type": "Meta", "key": "owner", "value": "team", "scope": "public"})
+
+
+def test_json_deserialize_requires_and_preserves_meta_entry_scope() -> None:
+    s = JsonSerializer()
+    serialized = s.visit_meta(MetaEntry.from_key_value("classification", "restricted", "private"))
+
+    assert serialized == {
+        "type": "MetaEntry",
+        "key": "classification",
+        "value": "restricted",
+        "scope": "private",
+    }
+
+    restored = s._deserialize_meta(serialized)
+    assert isinstance(restored, MetaEntry)
+    assert restored.scope == MetaScope.PRIVATE
+
+    with pytest.raises(SerializationError, match="MetaEntry scope is required"):
+        s._deserialize_meta({"type": "MetaEntry", "key": "classification", "value": "restricted"})
+
+    with pytest.raises(SerializationError, match="Meta scope is only valid for MetaEntry"):
+        s._deserialize_meta(
+            {"type": "Meta", "key": "classification", "value": "restricted", "scope": "private"}
         )
 
 

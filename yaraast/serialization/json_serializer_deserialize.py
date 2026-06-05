@@ -1150,11 +1150,14 @@ class JsonSerializerDeserializeMixin:
         if node_type is not None and node_type not in {"Meta", "MetaEntry"}:
             msg = "Meta type must be Meta or MetaEntry"
             raise SerializationError(msg)
-        if (
-            node_type == "Meta"
-            or data.get("leading_comments")
-            or data.get("trailing_comment")
-            or data.get("location")
+        if node_type == "Meta" and "scope" in data:
+            msg = "Meta scope is only valid for MetaEntry"
+            raise SerializationError(msg)
+        if node_type == "Meta" or (
+            node_type is None
+            and (
+                data.get("leading_comments") or data.get("trailing_comment") or data.get("location")
+            )
         ):
             from yaraast.ast.meta import Meta
 
@@ -1165,10 +1168,14 @@ class JsonSerializerDeserializeMixin:
                 ),
                 data,
             )
+        if node_type == "MetaEntry":
+            scope = _deserialize_required_field(data, "scope", "MetaEntry")
+        else:
+            scope = _deserialize_nullable_string_field(data, "scope", "Meta")
         return MetaEntry.from_key_value(
             _deserialize_nonempty_string_field(data, "key", "Meta"),
             _deserialize_meta_entry_value(data),
-            deserialize_meta_scope(_deserialize_nullable_string_field(data, "scope", "Meta")),
+            deserialize_meta_scope(scope),
         )
 
     def _deserialize_string(self, data: dict[str, Any]):

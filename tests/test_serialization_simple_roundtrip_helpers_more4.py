@@ -323,6 +323,12 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     ):
         deserialize_meta({"type": "MetaEntry", "key": "owner", "value": "team", "scope": "secret"})
 
+    with pytest.raises(SerializationError, match="MetaEntry scope is required"):
+        deserialize_meta({"type": "MetaEntry", "key": "owner", "value": "team"})
+
+    with pytest.raises(SerializationError, match="Meta scope is only valid for MetaEntry"):
+        deserialize_meta({"type": "Meta", "key": "owner", "value": "team", "scope": "public"})
+
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         deserialize_rule(_serialized_simple_rule(tags=[{"name": 7}]))
 
@@ -935,6 +941,14 @@ def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
         SerializationError, match="Meta scope must be public, private, or protected"
     ):
         serialize_meta(invalid_meta)
+
+    with pytest.raises(SerializationError, match="MetaEntry scope is required"):
+        deserialize_meta({"type": "MetaEntry", "key": "classification", "value": "restricted"})
+
+    with pytest.raises(SerializationError, match="Meta scope is only valid for MetaEntry"):
+        deserialize_meta(
+            {"type": "Meta", "key": "classification", "value": "restricted", "scope": "private"}
+        )
 
 
 def test_simple_roundtrip_helpers_preserve_unknown_extern_rule_modifier() -> None:

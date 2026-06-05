@@ -2423,12 +2423,18 @@ def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
     if node_type is not None and node_type not in {"Meta", "MetaEntry"}:
         msg = "Meta type must be Meta or MetaEntry"
         raise SerializationError(msg)
-    scope = data.get("scope")
-    if data.get("type") == "MetaEntry" or scope is not None:
+    if node_type == "Meta" and "scope" in data:
+        msg = "Meta scope is only valid for MetaEntry"
+        raise SerializationError(msg)
+    if data.get("type") == "MetaEntry" or "scope" in data:
+        if data.get("type") == "MetaEntry":
+            scope = _deserialize_required_field(data, "scope", "MetaEntry")
+        else:
+            scope = _deserialize_nullable_string_field(data, "scope", "Meta")
         return MetaEntry.from_key_value(
             _deserialize_nonempty_string_field(data, "key", "Meta"),
             _deserialize_meta_entry_value(data),
-            deserialize_meta_scope(_deserialize_nullable_string_field(data, "scope", "Meta")),
+            deserialize_meta_scope(scope),
         )
     return _apply_node_metadata(
         Meta(

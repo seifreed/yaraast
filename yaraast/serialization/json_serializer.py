@@ -17,6 +17,7 @@ from yaraast.serialization.json_serialize_visitors import (
     _serialize_hex_negated_value,
     _serialize_hex_nibble_high,
     _serialize_hex_nibble_value,
+    _serialize_meta_entry_value,
     _serialize_meta_value,
     _serialize_node_list,
     _serialize_nonempty_string_list,
@@ -501,12 +502,18 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return visit_of_expression(self, node)
 
     def visit_meta(self, node) -> dict[str, Any]:
-        data = self._simple_node(
-            "Meta",
-            key=_serialize_required_nonempty_string(node.key, "Meta key"),
-            value=_serialize_meta_value(node.value),
-        )
         scope = getattr(node, "scope", None)
+        node_type = "MetaEntry" if scope is not None else "Meta"
+        value = (
+            _serialize_meta_entry_value(node.value)
+            if scope is not None
+            else _serialize_meta_value(node.value)
+        )
+        data = self._simple_node(
+            node_type,
+            key=_serialize_required_nonempty_string(node.key, "Meta key"),
+            value=value,
+        )
         if scope is not None:
             data["scope"] = serialize_meta_scope(scope)
         return data

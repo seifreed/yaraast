@@ -40,7 +40,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.modifiers import MetaEntry, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock, PragmaType
@@ -183,6 +183,12 @@ def test_json_serializer_visit_methods_cover_remaining_nodes() -> None:
     )
 
     assert s.visit_meta(Meta("k", "v"))["type"] == "Meta"
+    assert s.visit_meta(MetaEntry.from_key_value("k", "v", "private")) == {
+        "type": "MetaEntry",
+        "key": "k",
+        "value": "v",
+        "scope": "private",
+    }
     assert s.visit_module_reference(ModuleReference("pe"))["type"] == "ModuleReference"
     assert (
         s.visit_dictionary_access(
