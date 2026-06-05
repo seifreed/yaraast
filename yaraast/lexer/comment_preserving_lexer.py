@@ -136,7 +136,6 @@ class CommentPreservingLexer(Lexer[list[Token]]):
         regex_text = "/"
         i += 1
         col += 1
-        in_class = False
 
         while i < len(self.text):
             char = self.text[i]
@@ -159,12 +158,7 @@ class CommentPreservingLexer(Lexer[list[Token]]):
                 col += 1
                 continue
 
-            if char == "[":
-                in_class = True
-            elif char == "]":
-                in_class = False
-
-            if char == "/" and not in_class:
+            if char == "/":
                 while i < len(self.text) and self.text[i] in "is":
                     regex_text += self.text[i]
                     i += 1
