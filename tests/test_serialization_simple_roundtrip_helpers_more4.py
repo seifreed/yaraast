@@ -122,6 +122,7 @@ def _serialized_simple_pragma(**overrides: Any) -> dict[str, Any]:
         "pragma_type": "custom",
         "name": "vendor",
         "arguments": [],
+        "scope": "file",
         "parameters": {},
     }
     data.update(overrides)
@@ -608,14 +609,47 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
         deserialize_node(_serialized_simple_pragma(pragma_type="vendor"))
 
     with pytest.raises(SerializationError, match="Pragma name is required"):
-        deserialize_node({"type": "Pragma", "pragma_type": "custom", "arguments": []})
+        deserialize_node(
+            {
+                "type": "Pragma",
+                "pragma_type": "custom",
+                "arguments": [],
+                "scope": "file",
+                "parameters": {},
+            }
+        )
 
     with pytest.raises(SerializationError, match="Pragma arguments is required"):
-        deserialize_node({"type": "Pragma", "pragma_type": "custom", "name": "vendor"})
+        deserialize_node(
+            {
+                "type": "Pragma",
+                "pragma_type": "custom",
+                "name": "vendor",
+                "scope": "file",
+                "parameters": {},
+            }
+        )
+
+    with pytest.raises(SerializationError, match="Pragma scope is required"):
+        deserialize_node(
+            {
+                "type": "Pragma",
+                "pragma_type": "custom",
+                "name": "vendor",
+                "arguments": [],
+                "parameters": {},
+            }
+        )
 
     with pytest.raises(SerializationError, match="Pragma parameters is required"):
         deserialize_node(
-            {"type": "Pragma", "pragma_type": "custom", "name": "vendor", "arguments": []}
+            {
+                "type": "Pragma",
+                "pragma_type": "custom",
+                "name": "vendor",
+                "arguments": [],
+                "scope": "file",
+            }
         )
 
     with pytest.raises(SerializationError, match="Pragma name must be a string"):

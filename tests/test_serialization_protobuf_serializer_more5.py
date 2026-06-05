@@ -1610,6 +1610,7 @@ def test_protobuf_deserializer_rejects_empty_pragma_names(pragma_type: str) -> N
     pb_file = yara_ast_pb2.YaraFile()
     pb_pragma = pb_file.pragmas.add()
     pb_pragma.pragma_type = pragma_type
+    pb_pragma.scope = "file"
 
     with pytest.raises(SerializationError, match="Pragma name must not be empty"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
@@ -1620,6 +1621,7 @@ def test_protobuf_deserializer_rejects_empty_pragma_type() -> None:
     pb_file = yara_ast_pb2.YaraFile()
     pb_pragma = pb_file.pragmas.add()
     pb_pragma.name = "vendor"
+    pb_pragma.scope = "file"
 
     with pytest.raises(SerializationError, match="Pragma pragma_type must not be empty"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
@@ -1631,8 +1633,20 @@ def test_protobuf_deserializer_rejects_unknown_pragma_type() -> None:
     pb_pragma = pb_file.pragmas.add()
     pb_pragma.pragma_type = "vendor"
     pb_pragma.name = "vendor"
+    pb_pragma.scope = "file"
 
     with pytest.raises(SerializationError, match="Pragma pragma_type must be a valid pragma type"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserializer_rejects_empty_pragma_scope() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_pragma = pb_file.pragmas.add()
+    pb_pragma.pragma_type = "custom"
+    pb_pragma.name = "vendor"
+
+    with pytest.raises(SerializationError, match="Pragma scope must not be empty"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
@@ -1680,6 +1694,7 @@ def test_protobuf_deserializer_rejects_empty_required_pragma_operands(
     pb_pragma = pb_file.pragmas.add()
     pb_pragma.pragma_type = pragma_type
     pb_pragma.name = pragma_type
+    pb_pragma.scope = "file"
     setattr(pb_pragma, field_name, "")
 
     with pytest.raises(SerializationError, match=message):
@@ -1712,6 +1727,7 @@ def test_protobuf_deserializer_rejects_empty_in_rule_pragma_positions() -> None:
     pb_in_rule_pragma.position = ""
     pb_in_rule_pragma.pragma.pragma_type = "custom"
     pb_in_rule_pragma.pragma.name = "vendor"
+    pb_in_rule_pragma.pragma.scope = "file"
 
     with pytest.raises(SerializationError, match="InRulePragma position must not be empty"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
@@ -2143,6 +2159,7 @@ def test_protobuf_deserializes_pragma_parameters_in_stable_key_order() -> None:
     pb_pragma = pb_file.pragmas.add()
     pb_pragma.pragma_type = "custom"
     pb_pragma.name = "vendor"
+    pb_pragma.scope = "file"
     for key in ("k9", "k1", "k5", "k2", "k8", "k3", "k7", "k4"):
         pb_pragma.parameters[key].string_value = key
 

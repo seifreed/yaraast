@@ -1746,6 +1746,9 @@ def protobuf_to_extern_namespace(pb_namespace):
 
 
 def _protobuf_pragma_scope(scope_text):
+    if scope_text == "":
+        msg = "Pragma scope must not be empty"
+        raise SerializationError(msg)
     return deserialize_pragma_scope(scope_text or None)
 
 
