@@ -273,7 +273,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
         )
         iterable = require_present_expression(node.iterable, "DictComprehension iterable")
         variables = validate_yara_identifier(node.key_variable, "local variable")
-        if node.value_variable:
+        if node.value_variable is not None:
             value_variable = validate_yara_identifier(node.value_variable, "local variable")
             variables = f"{variables}, {value_variable}"
         result = (

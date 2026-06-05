@@ -75,6 +75,35 @@ def test_codegen_rejects_non_string_yarax_with_local_identifier(
 
 
 @pytest.mark.parametrize(
+    ("value_variable", "error_type", "message"),
+    [
+        ("", ValueError, r"Invalid local variable identifier"),
+        (cast(Any, False), TypeError, "Local variable identifier must be a string"),
+    ],
+)
+@pytest.mark.parametrize(
+    "generator_factory",
+    [_plain_generator, _pretty_generator, _advanced_generator, _yarax_generator],
+)
+def test_codegen_rejects_falsy_invalid_yarax_dict_value_variable(
+    generator_factory: Callable[[], CodeGenerator],
+    value_variable: object,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    node = DictComprehension(
+        Identifier("k"),
+        Identifier("v"),
+        "k",
+        cast(Any, value_variable),
+        Identifier("items"),
+    )
+
+    with pytest.raises(error_type, match=message):
+        generator_factory().visit(node)
+
+
+@pytest.mark.parametrize(
     "generator_factory",
     [_plain_generator, _pretty_generator, _advanced_generator, _yarax_generator],
 )

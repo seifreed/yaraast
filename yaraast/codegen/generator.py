@@ -572,7 +572,7 @@ class CodeGenerator(ASTVisitor[str]):
             msg = "Dict comprehension requires key, value, and iterable for libyara output"
             raise ValueError(msg)
         key_variable = validate_yara_identifier(node.key_variable, "local variable")
-        if node.value_variable:
+        if node.value_variable is not None:
             value_variable = validate_yara_identifier(node.value_variable, "local variable")
             variables = f"{key_variable}, {value_variable}"
         else:

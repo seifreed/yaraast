@@ -259,7 +259,7 @@ def expression_to_string(expr: Any, options: Any = None) -> str:
             separator = self._comma_separator()
             key_variable = validate_yara_identifier(node.key_variable, "local variable")
             variables = key_variable
-            if node.value_variable:
+            if node.value_variable is not None:
                 value_variable = validate_yara_identifier(node.value_variable, "local variable")
                 variables = separator.join([key_variable, value_variable])
             key_expression = require_present_expression(

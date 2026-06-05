@@ -94,7 +94,7 @@ class YaraXGenerator(BaseGenerator):
         iter_str = self._visit_required_expression(node.iterable, "Dict comprehension iterable")
 
         key_variable = validate_yara_identifier(node.key_variable, "local variable")
-        if node.value_variable:
+        if node.value_variable is not None:
             # Two variables (k, v pattern)
             value_variable = validate_yara_identifier(node.value_variable, "local variable")
             var_str = f"{key_variable}, {value_variable}"
