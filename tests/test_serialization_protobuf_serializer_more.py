@@ -263,7 +263,10 @@ def test_protobuf_serializer_normalizes_scalar_hex_alternatives() -> None:
                 strings=[
                     HexString(
                         identifier="$h",
-                        tokens=[HexAlternative([0x90, "91"])],
+                        tokens=[
+                            HexAlternative([0x90, "91"]),
+                            HexAlternative([HexByte(0x92), HexByte("93")]),
+                        ],
                     )
                 ],
                 condition=BooleanLiteral(value=True),
@@ -275,7 +278,10 @@ def test_protobuf_serializer_normalizes_scalar_hex_alternatives() -> None:
     string_def = restored.rules[0].strings[0]
 
     assert isinstance(string_def, HexString)
-    assert string_def.tokens == [HexAlternative([[HexByte(0x90)], [HexByte("91")]])]
+    assert string_def.tokens == [
+        HexAlternative([[HexByte(0x90)], [HexByte("91")]]),
+        HexAlternative([[HexByte(0x92)], [HexByte("93")]]),
+    ]
 
 
 def test_protobuf_serializer_preserves_hex_negated_bytes() -> None:

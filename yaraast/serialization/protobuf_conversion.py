@@ -993,10 +993,12 @@ def _protobuf_hex_jump_bounds(pb_jump) -> tuple[int | None, int | None]:
 
 
 def _coerce_hex_alternative_branch(alternative) -> list:
-    from yaraast.ast.strings import HexByte
+    from yaraast.ast.strings import HexByte, HexToken
 
     if isinstance(alternative, list):
         return alternative
+    if isinstance(alternative, HexToken):
+        return [alternative]
     return [HexByte(alternative)]
 
 
