@@ -1323,7 +1323,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         if isinstance(expr.key, Expression):
             convert_expression_to_protobuf(expr.key, pb_expr.dictionary_access.key_expr)
         elif isinstance(expr.key, str):
-            pb_expr.dictionary_access.key = expr.key
+            pb_expr.dictionary_access.key = _protobuf_required_nonempty_string(
+                expr.key,
+                "DictionaryAccess key",
+            )
         else:
             msg = "DictionaryAccess key must be a string or expression"
             raise SerializationError(msg)
@@ -2208,7 +2211,10 @@ def protobuf_to_expression(pb_expr):
                 key=(
                     protobuf_to_expression(pb_expr.dictionary_access.key_expr)
                     if pb_expr.dictionary_access.HasField("key_expr")
-                    else pb_expr.dictionary_access.key
+                    else _protobuf_required_nonempty_string(
+                        pb_expr.dictionary_access.key,
+                        "DictionaryAccess key",
+                    )
                 ),
             ),
         )
