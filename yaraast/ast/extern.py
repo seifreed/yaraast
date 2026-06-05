@@ -40,16 +40,12 @@ class ExternRule(ASTNode):
     @property
     def is_private(self) -> bool:
         """Check if extern rule is private."""
-        from yaraast.ast.modifiers import RuleModifierType
-
-        return any(mod.modifier_type == RuleModifierType.PRIVATE for mod in self.modifiers)
+        return any(str(modifier) == "private" for modifier in self.modifiers)
 
     @property
     def is_global(self) -> bool:
         """Check if extern rule is global."""
-        from yaraast.ast.modifiers import RuleModifierType
-
-        return any(mod.modifier_type == RuleModifierType.GLOBAL for mod in self.modifiers)
+        return any(str(modifier) == "global" for modifier in self.modifiers)
 
     def __str__(self) -> str:
         """String representation of extern rule."""

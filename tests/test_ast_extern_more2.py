@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from yaraast.ast.extern import (
     ExternImport,
     ExternNamespace,
@@ -27,6 +29,16 @@ def test_extern_rule_flags_and_str() -> None:
     assert extern_rule.is_global is True
     assert "extern rule" in str(extern_rule)
     assert "ext.RuleA" in str(extern_rule)
+
+
+def test_extern_rule_flags_accept_string_modifiers() -> None:
+    extern_rule = ExternRule(
+        name="RuleA",
+        modifiers=cast(list[RuleModifier], ["private", "global"]),
+    )
+
+    assert extern_rule.is_private is True
+    assert extern_rule.is_global is True
 
 
 def test_extern_rule_reference_and_helpers() -> None:
