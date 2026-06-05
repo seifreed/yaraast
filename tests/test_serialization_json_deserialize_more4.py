@@ -268,6 +268,9 @@ def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Expression must be an object"):
         s._deserialize_rule(_serialized_json_rule(condition="true"))
 
+    with pytest.raises(SerializationError, match="PragmaBlock pragmas is required"):
+        s._deserialize_pragma_block({"type": "PragmaBlock"})
+
     with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
         s._deserialize_pragma_block({"type": "PragmaBlock", "pragmas": "pragma"})
 
@@ -461,6 +464,14 @@ def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="trailing_comment must be an object"):
         s._deserialize_import({"module": "pe", "trailing_comment": "bad"})
+
+    with pytest.raises(SerializationError, match="CommentGroup comments is required"):
+        s._deserialize_import(
+            {
+                "module": "pe",
+                "trailing_comment": {"type": "CommentGroup"},
+            }
+        )
 
     with pytest.raises(SerializationError, match="CommentGroup comments must be a list"):
         s._deserialize_import(

@@ -926,7 +926,9 @@ def _deserialize_comment_node(data: Any) -> ASTNode:
             CommentGroup(
                 [
                     cast_comment(_deserialize_comment_node(comment))
-                    for comment in _deserialize_list_field(data, "comments", "CommentGroup")
+                    for comment in _deserialize_required_list_field(
+                        data, "comments", "CommentGroup"
+                    )
                 ]
             ),
             data,
@@ -1731,7 +1733,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return CommentGroup(
             [
                 cast_comment(_deserialize_comment_node(comment))
-                for comment in _deserialize_list_field(data, "comments", "CommentGroup")
+                for comment in _deserialize_required_list_field(data, "comments", "CommentGroup")
             ]
         )
     if node_type in {"PlainString", "HexString", "RegexString"}:
@@ -1811,7 +1813,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return PragmaBlock(
             pragmas=[
                 deserialize_pragma(pragma)
-                for pragma in _deserialize_list_field(data, "pragmas", "PragmaBlock")
+                for pragma in _deserialize_required_list_field(data, "pragmas", "PragmaBlock")
             ],
             scope=_deserialize_pragma_scope(data.get("scope"), "PragmaBlock"),
         )

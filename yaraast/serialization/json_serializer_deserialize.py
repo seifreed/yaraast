@@ -190,7 +190,7 @@ def _deserialize_comment_node(self, data: dict[str, Any]) -> Any:
             CommentGroup(
                 [
                     _cast_comment(_deserialize_comment_node(self, c))
-                    for c in _deserialize_list_field(data, "comments", "CommentGroup")
+                    for c in _deserialize_required_list_field(data, "comments", "CommentGroup")
                 ]
             ),
             data,
@@ -1454,7 +1454,7 @@ class JsonSerializerDeserializeMixin:
             PragmaBlock(
                 pragmas=[
                     self._deserialize_pragma(pragma)
-                    for pragma in _deserialize_list_field(data, "pragmas", "PragmaBlock")
+                    for pragma in _deserialize_required_list_field(data, "pragmas", "PragmaBlock")
                 ],
                 scope=_deserialize_pragma_scope(data.get("scope"), "PragmaBlock"),
             ),

@@ -454,8 +454,14 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Serialized node must be an object"):
         deserialize_rule(_serialized_simple_rule(condition="true"))
 
+    with pytest.raises(SerializationError, match="PragmaBlock pragmas is required"):
+        deserialize_node({"type": "PragmaBlock"})
+
     with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
         deserialize_node({"type": "PragmaBlock", "pragmas": "pragma"})
+
+    with pytest.raises(SerializationError, match="CommentGroup comments is required"):
+        deserialize_node({"type": "CommentGroup"})
 
 
 def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
@@ -714,6 +720,15 @@ def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="trailing_comment must be an object"):
         deserialize_node({"type": "Import", "module": "pe", "trailing_comment": "bad"})
+
+    with pytest.raises(SerializationError, match="CommentGroup comments is required"):
+        deserialize_node(
+            {
+                "type": "Import",
+                "module": "pe",
+                "trailing_comment": {"type": "CommentGroup"},
+            }
+        )
 
     with pytest.raises(SerializationError, match="CommentGroup comments must be a list"):
         deserialize_node(
