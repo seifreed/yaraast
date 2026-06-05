@@ -318,6 +318,9 @@ def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> N
         data["value"] = base64.b64encode(value).decode("ascii")
         data["value_encoding"] = "base64"
         return
+    if not isinstance(value, str):
+        msg = "PlainString value must be a string or bytes"
+        raise SerializationError(msg)
     data["value"] = value
 
 

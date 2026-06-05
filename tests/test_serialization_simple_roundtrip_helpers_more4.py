@@ -1556,6 +1556,10 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
 
 
 def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_types() -> None:
+    invalid_tuple_modifier = StringModifier.from_name_value("xor", (1, 2))
+    cast(Any, invalid_tuple_modifier).value = (1, object())
+    invalid_float_modifier = StringModifier.from_name_value("xor", 1)
+    cast(Any, invalid_float_modifier).value = float("nan")
     invalid_cases = (
         (Meta("", "value"), "Meta key must not be empty"),
         (Meta(cast(Any, 123), "value"), "Meta key must be a string"),
@@ -1571,6 +1575,18 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
         (
             PlainString(identifier=cast(Any, 123), value="abc"),
             "PlainString identifier must be a string",
+        ),
+        (
+            PlainString(identifier="$a", value=cast(Any, True)),
+            "PlainString value must be a string or bytes",
+        ),
+        (
+            PlainString(identifier="$a", value="abc", modifiers=[invalid_tuple_modifier]),
+            "StringModifier tuple value must contain two integers",
+        ),
+        (
+            PlainString(identifier="$a", value="abc", modifiers=[invalid_float_modifier]),
+            "StringModifier value must be finite",
         ),
         (
             HexString(identifier=cast(Any, 123), tokens=[]),
