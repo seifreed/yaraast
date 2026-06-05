@@ -21,8 +21,11 @@ dependencies = [
     "attrs>=23.0.0",
     "PyYAML>=6.0.0",
     # Transitive security pins
-    "cryptography>=46.0.6",
+    "cryptography>=48.0.0",
+    "idna>=3.18",
+    "Pygments>=2.20.0",
     "requests>=2.33.0",
+    "urllib3>=2.7.0",
 ]
 
 [project.optional-dependencies]
@@ -31,7 +34,7 @@ lsp = [
     "lsprotocol>=2023.0.0",
 ]
 dev = [
-    "pytest>=7.4.0",
+    "pytest>=9.0.3",
     "pytest-cov>=4.1.0",
     "pytest-xdist>=3.0.0",
     "hypothesis>=6.0.0",
