@@ -1173,10 +1173,13 @@ class JsonSerializerDeserializeMixin:
             scope = _deserialize_required_field(data, "scope", "MetaEntry")
         else:
             scope = _deserialize_nullable_string_field(data, "scope", "Meta")
-        return MetaEntry.from_key_value(
-            _deserialize_nonempty_string_field(data, "key", "Meta"),
-            _deserialize_meta_entry_value(data),
-            deserialize_meta_scope(scope),
+        return self._apply_node_metadata(
+            MetaEntry.from_key_value(
+                _deserialize_nonempty_string_field(data, "key", "Meta"),
+                _deserialize_meta_entry_value(data),
+                deserialize_meta_scope(scope),
+            ),
+            data,
         )
 
     def _deserialize_string(self, data: dict[str, Any]):

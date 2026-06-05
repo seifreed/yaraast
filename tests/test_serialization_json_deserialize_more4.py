@@ -6,6 +6,7 @@ from typing import Any, cast
 
 import pytest
 
+from yaraast.ast.base import Location
 from yaraast.ast.comments import CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
@@ -230,6 +231,19 @@ def test_json_deserialize_requires_and_preserves_meta_entry_scope() -> None:
     restored = s._deserialize_meta(serialized)
     assert isinstance(restored, MetaEntry)
     assert restored.scope == MetaScope.PRIVATE
+
+    typed_with_metadata = s._deserialize_meta(
+        {
+            "type": "MetaEntry",
+            "key": "classification",
+            "value": "restricted",
+            "scope": "private",
+            "location": {"line": 3, "column": 5},
+        }
+    )
+    assert isinstance(typed_with_metadata, MetaEntry)
+    assert typed_with_metadata.scope == MetaScope.PRIVATE
+    assert getattr(typed_with_metadata, "location", None) == Location(3, 5)
 
     legacy_with_metadata = s._deserialize_meta(
         {
