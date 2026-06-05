@@ -258,6 +258,20 @@ def test_ast_differ_diff_files_error_and_style_detection_paths(tmp_path: Path) -
     assert style_result.style_only_changes == []
 
 
+def test_ast_differ_diff_files_reports_invalid_utf8(tmp_path: Path) -> None:
+    bad = tmp_path / "bad.yar"
+    good = tmp_path / "good.yar"
+    bad.write_bytes(b"\xff")
+    good.write_text("rule ok { condition: true }", encoding="utf-8")
+
+    result = ASTDiffer().diff_files(bad, good)
+
+    assert result.has_changes is True
+    assert result.logical_changes == [
+        "Error comparing files: YARA file must contain valid UTF-8 text"
+    ]
+
+
 def test_ast_differ_diff_files_accepts_yarax(tmp_path: Path) -> None:
     file1 = tmp_path / "old.yar"
     file2 = tmp_path / "new.yar"

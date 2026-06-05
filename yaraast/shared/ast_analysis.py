@@ -42,6 +42,15 @@ def _require_file_path(value: object, name: str) -> Path:
     return path
 
 
+def _read_yara_text_file(path: Path) -> str:
+    try:
+        with path.open(encoding="utf-8") as f:
+            return f.read()
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 @dataclass
 class ASTDiffResult:
     """Result of AST-based diff analysis."""
@@ -241,12 +250,10 @@ class ASTDiffer:
         try:
             file1 = _require_file_path(file1_path, "file1_path")
             file2 = _require_file_path(file2_path, "file2_path")
-            with file1.open(encoding="utf-8") as f:
-                content1 = f.read()
-                ast1 = parse_yara_source(content1)
-            with file2.open(encoding="utf-8") as f:
-                content2 = f.read()
-                ast2 = parse_yara_source(content2)
+            content1 = _read_yara_text_file(file1)
+            ast1 = parse_yara_source(content1)
+            content2 = _read_yara_text_file(file2)
+            ast2 = parse_yara_source(content2)
             result = self.diff_asts(ast1, ast2)
             return self._detect_style_changes_from_text(content1, content2, result)
         except (TypeError, ValueError, YaraASTError, OSError) as exc:
@@ -370,8 +377,12 @@ class ASTFormatter:
             return False, f"Formatting error: {exc}"
 
         try:
-            with input_file.open(encoding="utf-8") as f:
-                ast = parse_yara_source_with_comments(f.read())
+            content = _read_yara_text_file(input_file)
+        except ValueError as exc:
+            return False, f"Formatting error: {exc}"
+
+        try:
+            ast = parse_yara_source_with_comments(content)
             formatted = self.format_ast(ast, style)
             if output_file is not None:
                 with output_file.open("w", encoding="utf-8") as f:
@@ -417,8 +428,7 @@ class ASTFormatter:
 
     def check_format(self, file_path: str | PathLike[str]) -> tuple[bool, list[str]]:
         input_file = _require_file_path(file_path, "file_path")
-        with input_file.open(encoding="utf-8") as f:
-            original = f.read()
+        original = _read_yara_text_file(input_file)
         formatted = pretty_print(parse_yara_source_with_comments(original))
         if original.strip() == formatted.strip():
             return False, []

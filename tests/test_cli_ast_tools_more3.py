@@ -155,6 +155,24 @@ def test_ast_formatter_check_format_rejects_empty_file_path(file_path: str) -> N
         ASTFormatter().check_format(file_path)
 
 
+def test_ast_formatter_rejects_invalid_utf8_input(tmp_path: Path) -> None:
+    bad = tmp_path / "bad.yar"
+    bad.write_bytes(b"\xff")
+
+    ok, err = ASTFormatter().format_file(bad)
+
+    assert ok is False
+    assert err == "Formatting error: YARA file must contain valid UTF-8 text"
+
+
+def test_ast_formatter_check_format_rejects_invalid_utf8(tmp_path: Path) -> None:
+    bad = tmp_path / "bad.yar"
+    bad.write_bytes(b"\xff")
+
+    with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
+        ASTFormatter().check_format(bad)
+
+
 def test_ast_formatter_rejects_directory_output_path(tmp_path: Path) -> None:
     good = tmp_path / "ok.yar"
     good.write_text("rule a { condition: true }", encoding="utf-8")
