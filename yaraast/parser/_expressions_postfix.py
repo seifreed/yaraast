@@ -208,7 +208,7 @@ class ExpressionPostfixMixin:
             start_token = self._previous()
             if isinstance(expr, OfExpression):
                 self._reject_percentage_of_postfix(expr, start_token)
-            offset = self._parse_additive_expression()
+            offset = self._parse_bitwise_or_expression()
             self._validate_integer_context_expression(
                 offset,
                 "AT offset must be an integer expression",

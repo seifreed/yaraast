@@ -399,7 +399,7 @@ class ExpressionBinaryMixin:
     def _validate_static_range_bounds(self, range_expr: RangeExpression, token) -> None:
         low = self._static_integer_value(range_expr.low)
         high = self._static_integer_value(range_expr.high)
-        if low is not None and low < 0:
+        if low is not None and high is not None and low < 0:
             msg = "Range lower bound can not be negative"
             raise ParserError(msg, token)
         if low is not None and high is not None and high < low:

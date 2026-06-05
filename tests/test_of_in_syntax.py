@@ -1,6 +1,7 @@
 """Tests for 'of ... in (range)' and 'of ... at offset' syntax support."""
 
 import pytest
+import yara
 
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
@@ -48,6 +49,63 @@ class TestOfInSyntax:
         assert len(ast.rules) == 1
         assert isinstance(ast.rules[0].condition, InExpression)
         assert isinstance(ast.rules[0].condition.subject, StringCount)
+
+    def test_string_count_in_range_allows_negative_dynamic_range_bound(self) -> None:
+        """libyara allows negative static bounds when the full range is dynamic."""
+        yara_code = """
+        rule test {
+            strings:
+                $a = "a"
+                $b = "b"
+            condition:
+                #a in (-10..#b)
+        }
+        """
+
+        ast = Parser().parse(yara_code)
+        condition = ast.rules[0].condition
+
+        assert isinstance(condition, InExpression)
+        assert isinstance(condition.subject, StringCount)
+        yara.compile(source=CodeGenerator().generate(ast))
+
+    def test_string_count_in_range_rejects_negative_static_range_bound(self) -> None:
+        yara_code = """
+        rule test {
+            strings:
+                $a = "a"
+            condition:
+                #a in (-10..10)
+        }
+        """
+
+        with pytest.raises(ParserError, match="Range lower bound can not be negative"):
+            Parser().parse(yara_code)
+
+    def test_at_offset_accepts_bitwise_string_count_in_expression(self) -> None:
+        """libyara accepts bitwise offsets containing string count range checks."""
+        from yaraast.ast.expressions import BinaryExpression
+
+        yara_code = """
+        rule test {
+            strings:
+                $a = "a"
+                $b = "b"
+            condition:
+                $b at ~ 50 | #a in (@a..25)
+        }
+        """
+
+        ast = Parser().parse(yara_code)
+        condition = ast.rules[0].condition
+
+        assert isinstance(condition, AtExpression)
+        assert isinstance(condition.offset, BinaryExpression)
+        assert condition.offset.operator == "|"
+        assert isinstance(condition.offset.right, InExpression)
+
+        generated = CodeGenerator().generate(ast)
+        yara.compile(source=generated)
 
     @pytest.mark.parametrize(
         "condition",
