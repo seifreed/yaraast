@@ -437,14 +437,25 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
             _serialized_json_pragma(pragma_type="define", name="define", macro_name=True)
         )
 
+    with pytest.raises(SerializationError, match="Pragma macro_name is required"):
+        s._deserialize_pragma(_serialized_json_pragma(pragma_type="define", name="define"))
+
     with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
         s._deserialize_pragma(
             _serialized_json_pragma(pragma_type="define", name="define", macro_name="")
         )
 
+    with pytest.raises(SerializationError, match="Pragma macro_name is required"):
+        s._deserialize_pragma(_serialized_json_pragma(pragma_type="undef", name="undef"))
+
     with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
         s._deserialize_pragma(
             _serialized_json_pragma(pragma_type="undef", name="undef", macro_name="")
+        )
+
+    with pytest.raises(SerializationError, match="Pragma macro_value is required"):
+        s._deserialize_pragma(
+            _serialized_json_pragma(pragma_type="define", name="define", macro_name="LIMIT")
         )
 
     with pytest.raises(SerializationError, match="Pragma macro_value must be a string"):

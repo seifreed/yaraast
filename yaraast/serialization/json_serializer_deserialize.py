@@ -230,6 +230,16 @@ def _deserialize_nullable_nonempty_string_field(
     return text
 
 
+def _deserialize_required_nullable_string_field(
+    data: dict[str, Any], field: str, context: str
+) -> str | None:
+    text = _deserialize_required_field(data, field, context)
+    if text is None or isinstance(text, str):
+        return text
+    msg = f"{context} {field} must be a string"
+    raise SerializationError(msg)
+
+
 def _deserialize_required_nullable_nonempty_string_field(
     data: dict[str, Any], field: str, context: str
 ) -> str | None:
@@ -1484,12 +1494,14 @@ class JsonSerializerDeserializeMixin:
 
         if pragma_type == PragmaType.INCLUDE_ONCE:
             pragma = IncludeOncePragma()
-        elif pragma_type == PragmaType.DEFINE and "macro_name" in data:
+        elif pragma_type == PragmaType.DEFINE:
             pragma = DefineDirective(
                 macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma"),
-                macro_value=_deserialize_nullable_string_field(data, "macro_value", "Pragma"),
+                macro_value=_deserialize_required_nullable_string_field(
+                    data, "macro_value", "Pragma"
+                ),
             )
-        elif pragma_type == PragmaType.UNDEF and "macro_name" in data:
+        elif pragma_type == PragmaType.UNDEF:
             pragma = UndefDirective(
                 macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma")
             )

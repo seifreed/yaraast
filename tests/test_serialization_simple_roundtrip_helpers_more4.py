@@ -704,14 +704,25 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
             _serialized_simple_pragma(pragma_type="define", name="define", macro_name=True)
         )
 
+    with pytest.raises(SerializationError, match="Pragma macro_name is required"):
+        deserialize_node(_serialized_simple_pragma(pragma_type="define", name="define"))
+
     with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
         deserialize_node(
             _serialized_simple_pragma(pragma_type="define", name="define", macro_name="")
         )
 
+    with pytest.raises(SerializationError, match="Pragma macro_name is required"):
+        deserialize_node(_serialized_simple_pragma(pragma_type="undef", name="undef"))
+
     with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
         deserialize_node(
             _serialized_simple_pragma(pragma_type="undef", name="undef", macro_name="")
+        )
+
+    with pytest.raises(SerializationError, match="Pragma macro_value is required"):
+        deserialize_node(
+            _serialized_simple_pragma(pragma_type="define", name="define", macro_name="LIMIT")
         )
 
     with pytest.raises(SerializationError, match="Pragma macro_value must be a string"):

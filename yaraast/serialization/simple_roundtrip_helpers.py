@@ -390,6 +390,16 @@ def _deserialize_nullable_nonempty_string_field(
     return text
 
 
+def _deserialize_required_nullable_string_field(
+    data: dict[str, Any], field: str, context: str
+) -> str | None:
+    text = _deserialize_required_field(data, field, context)
+    if text is None or isinstance(text, str):
+        return text
+    msg = f"{context} {field} must be a string"
+    raise SerializationError(msg)
+
+
 def _deserialize_required_nullable_nonempty_string_field(
     data: dict[str, Any], field: str, context: str
 ) -> str | None:
@@ -1594,11 +1604,11 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
         macro_name = ""
     if macro_name:
         data["macro_name"] = macro_name
-    macro_value = _serialize_nullable_string(
-        getattr(pragma, "macro_value", None), "Pragma macro_value"
-    )
-    if macro_value is not None:
-        data["macro_value"] = macro_value
+    if hasattr(pragma, "macro_value"):
+        data["macro_value"] = _serialize_nullable_string(
+            pragma.macro_value,
+            "Pragma macro_value",
+        )
     if hasattr(pragma, "condition"):
         if pragma.pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}:
             condition: str | None = _serialize_required_nonempty_string(
@@ -2339,12 +2349,12 @@ def deserialize_pragma(data: dict[str, Any]) -> Pragma:
 
     if pragma_type == PragmaType.INCLUDE_ONCE:
         pragma = IncludeOncePragma()
-    elif pragma_type == PragmaType.DEFINE and "macro_name" in data:
+    elif pragma_type == PragmaType.DEFINE:
         pragma = DefineDirective(
             macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma"),
-            macro_value=_deserialize_nullable_string_field(data, "macro_value", "Pragma"),
+            macro_value=_deserialize_required_nullable_string_field(data, "macro_value", "Pragma"),
         )
-    elif pragma_type == PragmaType.UNDEF and "macro_name" in data:
+    elif pragma_type == PragmaType.UNDEF:
         pragma = UndefDirective(
             macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma")
         )
