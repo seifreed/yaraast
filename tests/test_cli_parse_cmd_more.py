@@ -128,6 +128,32 @@ rule uses_external {
     assert "extern rule private corp.Nested" in result.output
 
 
+def test_parse_cmd_tree_preserves_pragma_details(tmp_path: Path) -> None:
+    runner = CliRunner()
+    source = tmp_path / "pragmas.yar"
+
+    _write(
+        source,
+        """
+#define FOO 1
+#pragma optimize fast
+#ifdef FOO
+rule guarded {
+    condition:
+        true
+}
+#endif
+""",
+    )
+
+    result = runner.invoke(parse, [str(source), "--format", "tree"])
+
+    assert result.exit_code == 0
+    assert "#define FOO 1" in result.output
+    assert "#pragma optimize fast" in result.output
+    assert "#ifdef FOO" in result.output
+
+
 def test_parse_cmd_json_reports_parse_errors_on_stderr(tmp_path: Path) -> None:
     runner = CliRunner()
     source = tmp_path / "broken.yar"

@@ -19,6 +19,14 @@ def _modifier_label(modifier: Any) -> str:
     return str(modifier)
 
 
+def _pragma_label(pragma: Any, fallback: str) -> str:
+    if pragma is None:
+        return f"pragma {fallback}".rstrip()
+    if hasattr(pragma, "pragma_type") and hasattr(pragma, "name"):
+        return str(pragma)
+    return f"pragma {getattr(pragma, 'name', fallback)}".rstrip()
+
+
 class ASTTreeBuilder:
     """Build Rich tree visualization of AST."""
 
@@ -333,10 +341,12 @@ class ASTTreeBuilder:
         return Tree("~")
 
     def visit_in_rule_pragma(self, node: Any) -> Tree:
+        from rich.markup import escape
+
         pragma = getattr(node, "pragma", None)
-        name = getattr(pragma, "name", getattr(node, "directive", ""))
+        name = _pragma_label(pragma, getattr(node, "directive", ""))
         position = getattr(node, "position", "")
-        label = f"pragma {name}".rstrip()
+        label = escape(name)
         if position:
             label = f"{label} ({position})"
         return Tree(label)
@@ -346,7 +356,9 @@ class ASTTreeBuilder:
         return Tree(f"module {module_name}")
 
     def visit_pragma(self, node: Any) -> Tree:
-        return Tree(f"pragma {node.name if hasattr(node, 'name') else ''}")
+        from rich.markup import escape
+
+        return Tree(escape(_pragma_label(node, "")))
 
     def visit_pragma_block(self, node: Any) -> Tree:
         count = len(getattr(node, "pragmas", []))
