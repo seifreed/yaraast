@@ -203,8 +203,18 @@ class RuleTransformer:
         """Set version metadata."""
         return self.add_meta("version", validate_version_value(version))
 
+    def _validate_string_rename_mapping(self, mapping: object) -> dict[str, str]:
+        if not isinstance(mapping, dict):
+            msg = "String rename mapping must be a dict"
+            raise TypeError(msg)
+        for source, target in mapping.items():
+            self._require_text(source, "String rename source")
+            self._require_text(target, "String rename target")
+        return cast(dict[str, str], mapping)
+
     def rename_strings(self, mapping: dict[str, str]) -> RuleTransformer:
         """Rename string identifiers based on mapping."""
+        mapping = self._validate_string_rename_mapping(mapping)
         renamed_strings = deepcopy(self.rule.strings)
         for string_def in renamed_strings:
             string_def.identifier = self._rename_string_reference(string_def.identifier, mapping)

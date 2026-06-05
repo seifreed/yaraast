@@ -374,6 +374,29 @@ def test_rule_transformer_rejects_invalid_string_renames_without_partial_update(
     assert transformed.condition.name == "$a"
 
 
+@pytest.mark.parametrize(
+    ("mapping", "message"),
+    [
+        ([("a", "b")], "String rename mapping must be a dict"),
+        ({True: "$b"}, "String rename source must be a string"),
+        ({"$a": True}, "String rename target must be a string"),
+    ],
+)
+def test_rule_transformer_rejects_non_string_rename_mapping_without_partial_update(
+    mapping: object,
+    message: str,
+) -> None:
+    transformer = RuleTransformer(_sample_rule("invalid_mapping"))
+
+    with pytest.raises(TypeError, match=message):
+        transformer.rename_strings(cast(Any, mapping))
+
+    transformed = transformer.build()
+    assert [string.identifier for string in transformed.strings] == ["$a"]
+    assert isinstance(transformed.condition, StringIdentifier)
+    assert transformed.condition.name == "$a"
+
+
 def test_yara_file_transformer_operations_and_filters() -> None:
     original = YaraFile(
         imports=[Import(module="pe")],
