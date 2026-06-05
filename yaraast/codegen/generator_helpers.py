@@ -556,6 +556,8 @@ def format_integer_literal(value: object) -> str:
 
 
 def _parse_integer_literal_text(value: str) -> int | str | None:
+    if "_" in value:
+        return None
     if _YARA_INTEGER_TEXT_RE.fullmatch(value) is not None:
         return value
     if _has_uppercase_integer_base_prefix(value):

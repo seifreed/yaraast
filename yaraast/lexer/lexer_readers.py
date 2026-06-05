@@ -208,6 +208,9 @@ def read_number(lexer: LexerLike) -> Token:
                 value += char
             lexer._advance()
             char = lexer._current_char()
+        if "_" in raw_digits:
+            msg = "Invalid hexadecimal integer literal"
+            raise LexerError(msg, start_line, start_column)
         _validate_digit_separators(raw_digits, "hexadecimal", start_line, start_column)
         char = lexer._current_char()
         if char is not None and char.isalnum():
@@ -231,6 +234,9 @@ def read_number(lexer: LexerLike) -> Token:
                 value += char
             lexer._advance()
             char = lexer._current_char()
+        if "_" in raw_digits:
+            msg = "Invalid octal integer literal"
+            raise LexerError(msg, start_line, start_column)
         _validate_digit_separators(raw_digits, "octal", start_line, start_column)
         char = lexer._current_char()
         if char is not None and char.isalnum():
@@ -246,8 +252,11 @@ def read_number(lexer: LexerLike) -> Token:
             value += char
         lexer._advance()
         char = lexer._current_char()
+    if "_" in raw_digits:
+        msg = "Invalid decimal integer literal"
+        raise LexerError(msg, start_line, start_column)
     _validate_digit_separators(raw_digits, "decimal", start_line, start_column)
-    # Float: 3.14, 1_000.5
+    # Float: 3.14
     next_char = lexer._peek_char()
     if char == "." and next_char is not None and next_char.isdigit():
         value += char
@@ -260,6 +269,9 @@ def read_number(lexer: LexerLike) -> Token:
                 value += char
             lexer._advance()
             char = lexer._current_char()
+        if "_" in raw_fraction:
+            msg = "Invalid decimal floating-point literal"
+            raise LexerError(msg, start_line, start_column)
         if raw_fraction.endswith("_") or "__" in raw_fraction:
             msg = "Invalid decimal floating-point literal"
             raise LexerError(msg, start_line, start_column)
