@@ -59,6 +59,7 @@ def _serialized_json_pragma(**overrides: Any) -> dict[str, Any]:
         "pragma_type": "custom",
         "name": "vendor",
         "arguments": [],
+        "parameters": {},
     }
     data.update(overrides)
     return data
@@ -359,6 +360,11 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="Pragma arguments is required"):
         s._deserialize_pragma({"type": "Pragma", "pragma_type": "custom", "name": "vendor"})
+
+    with pytest.raises(SerializationError, match="Pragma parameters is required"):
+        s._deserialize_pragma(
+            {"type": "Pragma", "pragma_type": "custom", "name": "vendor", "arguments": []}
+        )
 
     with pytest.raises(SerializationError, match="Pragma name must be a string"):
         s._deserialize_pragma(_serialized_json_pragma(name=["vendor"]))

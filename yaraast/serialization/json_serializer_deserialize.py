@@ -1406,6 +1406,7 @@ class JsonSerializerDeserializeMixin:
                 condition=condition,
             )
         elif pragma_type == PragmaType.CUSTOM:
+            _deserialize_required_field(data, "parameters", "Pragma")
             pragma = CustomPragma(
                 name=name,
                 arguments=arguments,

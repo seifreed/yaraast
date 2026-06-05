@@ -122,6 +122,7 @@ def _serialized_simple_pragma(**overrides: Any) -> dict[str, Any]:
         "pragma_type": "custom",
         "name": "vendor",
         "arguments": [],
+        "parameters": {},
     }
     data.update(overrides)
     return data
@@ -611,6 +612,11 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="Pragma arguments is required"):
         deserialize_node({"type": "Pragma", "pragma_type": "custom", "name": "vendor"})
+
+    with pytest.raises(SerializationError, match="Pragma parameters is required"):
+        deserialize_node(
+            {"type": "Pragma", "pragma_type": "custom", "name": "vendor", "arguments": []}
+        )
 
     with pytest.raises(SerializationError, match="Pragma name must be a string"):
         deserialize_node(_serialized_simple_pragma(name=["vendor"]))

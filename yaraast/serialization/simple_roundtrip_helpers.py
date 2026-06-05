@@ -1590,7 +1590,7 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
     parameters: dict[str, Any] | None = None
     if hasattr(pragma, "parameters"):
         parameters = _serialize_string_key_dict(pragma.parameters, "Pragma parameters")
-    if parameters:
+    if parameters is not None:
         data["parameters"] = parameters
     return data
 
@@ -2283,6 +2283,7 @@ def deserialize_pragma(data: dict[str, Any]) -> Pragma:
             condition=condition,
         )
     elif pragma_type == PragmaType.CUSTOM:
+        _deserialize_required_field(data, "parameters", "Pragma")
         pragma = CustomPragma(
             name=name,
             arguments=arguments,
