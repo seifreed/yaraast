@@ -640,6 +640,8 @@ def format_double_literal(value: int | float) -> str:
         raise ValueError(msg)
     if isinstance(value, int):
         _validate_integer_literal_range(value)
+        if value == _YARA_INTEGER_MIN:
+            return _YARA_INTEGER_MIN_EXPRESSION
         return str(value)
     text = format(Decimal.from_float(value), "f")
     if "." in text:
