@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -9,6 +11,7 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     ParenthesesExpression,
     RangeExpression,
+    StringCount,
     StringIdentifier,
     UnaryExpression,
 )
@@ -93,7 +96,7 @@ class ExpressionBinaryMixin:
         if self._match(*RELATIONAL_TOKEN_TYPES):
             operator_token = self._previous()
             operator = operator_token.value.lower()
-            right = self._parse_range_expression()
+            right = self._parse_without_of_postfix(self._parse_range_expression)
             self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
@@ -117,6 +120,8 @@ class ExpressionBinaryMixin:
         while isinstance(expr, ParenthesesExpression):
             expr = expr.expression
         if isinstance(expr, StringIdentifier | OfExpression | AtExpression | InExpression):
+            if isinstance(expr, InExpression):
+                return self._is_string_count_in_expression(expr)
             return False
         return not isinstance(expr, RangeExpression)
 
@@ -124,6 +129,7 @@ class ExpressionBinaryMixin:
         """Wrap ``quantifier`` as the count of an of-expression."""
         self._match(TokenType.OF)
         start_token = self._previous()
+        self._validate_static_of_quantifier(quantifier, start_token)
         string_set = self._parse_of_string_set()
         node = OfExpression(quantifier=quantifier, string_set=string_set)
         if getattr(quantifier, "location", None) is not None:
@@ -157,7 +163,7 @@ class ExpressionBinaryMixin:
         while self._match(TokenType.BITWISE_OR):
             operator_token = self._previous()
             operator = operator_token.value
-            right = self._parse_bitwise_xor_expression()
+            right = self._parse_without_of_postfix(self._parse_bitwise_xor_expression)
             self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
@@ -174,7 +180,7 @@ class ExpressionBinaryMixin:
         while self._match(TokenType.XOR):
             operator_token = self._previous()
             operator = operator_token.value
-            right = self._parse_bitwise_and_expression()
+            right = self._parse_without_of_postfix(self._parse_bitwise_and_expression)
             self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
@@ -191,7 +197,7 @@ class ExpressionBinaryMixin:
         while self._match(TokenType.BITWISE_AND):
             operator_token = self._previous()
             operator = operator_token.value
-            right = self._parse_shift_expression()
+            right = self._parse_without_of_postfix(self._parse_shift_expression)
             self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
@@ -208,7 +214,7 @@ class ExpressionBinaryMixin:
         while self._match(TokenType.SHIFT_LEFT, TokenType.SHIFT_RIGHT):
             operator_token = self._previous()
             operator = operator_token.value
-            right = self._parse_additive_expression()
+            right = self._parse_without_of_postfix(self._parse_additive_expression)
             self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
@@ -225,7 +231,7 @@ class ExpressionBinaryMixin:
         while self._match(TokenType.PLUS, TokenType.MINUS):
             operator_token = self._previous()
             operator = operator_token.value
-            right = self._parse_multiplicative_expression()
+            right = self._parse_without_of_postfix(self._parse_multiplicative_expression)
             self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
@@ -242,7 +248,7 @@ class ExpressionBinaryMixin:
         while self._match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO):
             operator_token = self._previous()
             operator = operator_token.value
-            right = self._parse_unary_expression()
+            right = self._parse_without_of_postfix(self._parse_unary_expression)
             self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
@@ -263,11 +269,33 @@ class ExpressionBinaryMixin:
         if self._is_string_identifier_operand(left) or self._is_string_identifier_operand(right):
             msg = "String identifiers can only be used as boolean operands or with at/in"
             raise ParserError(msg, token)
+        if self._is_non_numeric_condition_operand(left) or self._is_non_numeric_condition_operand(
+            right
+        ):
+            msg = "Condition expressions can only be used as boolean operands"
+            raise ParserError(msg, token)
+
+    def _parse_without_of_postfix(self, parser: Callable[[], Expression]) -> Expression:
+        previous_suppress_of = getattr(self, "_suppress_of_postfix", False)
+        self._suppress_of_postfix = True
+        try:
+            return parser()
+        finally:
+            self._suppress_of_postfix = previous_suppress_of
 
     def _is_string_identifier_operand(self, expr: Expression) -> bool:
         while isinstance(expr, ParenthesesExpression):
             expr = expr.expression
         return isinstance(expr, StringIdentifier)
+
+    def _is_non_numeric_condition_operand(self, expr: Expression) -> bool:
+        while isinstance(expr, ParenthesesExpression):
+            expr = expr.expression
+        if isinstance(expr, OfExpression | AtExpression):
+            return True
+        if isinstance(expr, InExpression):
+            return not isinstance(expr.subject, StringCount)
+        return False
 
     def _reject_invalid_numeric_unary_operand(
         self,
@@ -299,6 +327,12 @@ class ExpressionBinaryMixin:
             raise ParserError(msg, token)
         if low is not None and high is not None and high < low:
             msg = "Range lower bound must be less than upper bound"
+            raise ParserError(msg, token)
+
+    def _validate_static_of_quantifier(self, quantifier: Expression, token) -> None:
+        value = self._static_integer_value(quantifier)
+        if value is not None and value < 0:
+            msg = "Of-expression quantifier can not be negative"
             raise ParserError(msg, token)
 
     def _static_integer_value(self, expr: Expression) -> int | None:

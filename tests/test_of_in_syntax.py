@@ -662,6 +662,24 @@ class TestExpressionQuantifierOf:
         assert isinstance(node.quantifier.left, StringCount)
         assert isinstance(node.quantifier.right, StringCount)
 
+    def test_integer_arithmetic_count_quantifier(self) -> None:
+        from yaraast.ast.expressions import BinaryExpression, IntegerLiteral
+
+        node = self._parse("1 + 1 of them")
+        assert isinstance(node.quantifier, BinaryExpression)
+        assert node.quantifier.operator == "+"
+        assert isinstance(node.quantifier.left, IntegerLiteral)
+        assert isinstance(node.quantifier.right, IntegerLiteral)
+
+    def test_string_count_in_range_count_quantifier(self) -> None:
+        from yaraast.ast.expressions import BinaryExpression, IntegerLiteral, ParenthesesExpression
+
+        node = self._parse("(#a in (0..10)) % 1 of ($a, $b)")
+        assert isinstance(node.quantifier, BinaryExpression)
+        assert node.quantifier.operator == "%"
+        assert isinstance(node.quantifier.left, ParenthesesExpression)
+        assert isinstance(node.quantifier.right, IntegerLiteral)
+
     def test_identifier_quantifier(self) -> None:
         from yaraast.ast.expressions import Identifier
 
@@ -693,6 +711,9 @@ class TestExpressionQuantifierOf:
             "$a of ($a, $b)",
             "1 of them of ($a, $b)",
             "(0..10) of ($a, $b)",
+            "0 - 1 of them",
+            "(0 - 1) of them",
+            "~1 of them",
         ],
     )
     def test_invalid_quantifiers_rejected(self, condition: str) -> None:

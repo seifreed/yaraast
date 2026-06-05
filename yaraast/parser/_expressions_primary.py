@@ -253,6 +253,7 @@ class ExpressionPrimaryMixin:
 
         if self._match(TokenType.OF):
             string_set = self._parse_of_string_set()
+            self._validate_static_of_quantifier(exprs[0], start_token)
             return self._set_node_location_from_tokens(
                 OfExpression(quantifier=exprs[0], string_set=string_set),
                 start_token,

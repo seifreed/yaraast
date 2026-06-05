@@ -403,6 +403,38 @@ def test_classic_parsers_reject_string_identifier_non_logical_binary_operators()
             parser_factory().parse(source)
 
 
+def test_classic_parsers_reject_condition_expression_non_logical_binary_operands() -> None:
+    invalid_sources = [
+        'rule r { strings: $a = "x" condition: 1 == any of them }',
+        'rule r { strings: $a = "x" condition: #a > none of them }',
+        'rule r { strings: $a = "x" condition: 1 == $a at 0 }',
+        'rule r { strings: $a = "x" condition: $a at 0 == true }',
+        'rule r { strings: $a = "x" condition: 1 == $a in (0..10) }',
+        'rule r { strings: $a = "x" condition: $a in (0..10) == true }',
+        'rule r { strings: $a = "x" condition: any of them + 1 }',
+        'rule r { strings: $a = "x" condition: 1 + any of them }',
+        'rule r { strings: $a = "x" condition: $a in (0..10) + 1 > 0 }',
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError):
+                parser_factory().parse(source)
+
+    valid_sources = [
+        'rule r { strings: $a = "x" condition: any of them and true }',
+        'rule r { strings: $a = "x" condition: true or $a at 0 }',
+        'rule r { strings: $a = "x" condition: not $a in (0..10) }',
+        'rule r { strings: $a = "x" condition: 1 == #a in (0..10) }',
+        'rule r { strings: $a = "x" condition: #a in (0..10) + 1 > 0 }',
+        'rule r { strings: $a = "x" condition: 1 + 1 of them }',
+    ]
+
+    for source in valid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            parser_factory().parse(source)
+
+
 def test_classic_parsers_reject_string_wildcards_outside_of_sets() -> None:
     invalid_sources = [
         'rule r { strings: $a = "x" condition: $a* }',
