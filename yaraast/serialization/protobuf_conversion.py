@@ -318,7 +318,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         if hasattr(entry, "location") or hasattr(entry, "leading_comments"):
             pb_meta_entry.ast_node = True
         if isinstance(value, str):
-            meta_val.string_value = value
+            meta_val.string_value = _protobuf_required_string(value, "Meta value")
         elif isinstance(value, bool):
             meta_val.bool_value = value
         elif isinstance(value, int):
@@ -344,7 +344,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
 
 def _copy_python_value_to_meta_value(value, pb_meta_value, context: str) -> None:
     if isinstance(value, str):
-        pb_meta_value.string_value = value
+        pb_meta_value.string_value = _protobuf_required_string(value, f"{context} value")
     elif isinstance(value, bool):
         pb_meta_value.bool_value = value
     elif isinstance(value, int):
@@ -358,7 +358,7 @@ def _copy_python_value_to_meta_value(value, pb_meta_value, context: str) -> None
 
 def _copy_python_value_to_legacy_meta_value(value, pb_meta_value) -> None:
     if isinstance(value, str):
-        pb_meta_value.string_value = value
+        pb_meta_value.string_value = _protobuf_required_string(value, "Meta value")
     elif isinstance(value, bool):
         pb_meta_value.bool_value = value
     elif isinstance(value, int):
@@ -370,6 +370,11 @@ def _copy_python_value_to_legacy_meta_value(value, pb_meta_value) -> None:
 
 def _protobuf_required_string(value, context: str) -> str:
     if isinstance(value, str):
+        try:
+            value.encode("utf-8")
+        except UnicodeEncodeError as exc:
+            msg = f"{context} must be UTF-8 encodable"
+            raise SerializationError(msg) from exc
         return value
     msg = f"{context} must be a string"
     raise SerializationError(msg)
@@ -440,13 +445,13 @@ def _protobuf_pragma_type(pragma) -> str:
 
 def _protobuf_required_string_key(value, message: str) -> str:
     if isinstance(value, str):
-        return value
+        return _protobuf_required_string(value, "Pragma parameters key")
     raise SerializationError(message)
 
 
 def _protobuf_string_list(values, context: str) -> list[str]:
     if isinstance(values, list | tuple) and all(isinstance(item, str) for item in values):
-        return list(values)
+        return [_protobuf_required_string(item, f"{context} item") for item in values]
     msg = f"{context} must be a list of strings"
     raise SerializationError(msg)
 
@@ -747,7 +752,10 @@ def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
     if value is None:
         return
 
-    pb_mod.value = _modifier_value_text(value)
+    pb_mod.value = _protobuf_required_string(
+        _modifier_value_text(value),
+        "String modifier value text",
+    )
     if isinstance(value, tuple) and len(value) == 2 and _is_int_pair(value[0], value[1]):
         pb_mod.tuple_value.extend(
             [
@@ -765,7 +773,10 @@ def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
     elif isinstance(value, float):
         pb_mod.typed_value.double_value = _finite_double_value(value, "String modifier")
     elif isinstance(value, str):
-        pb_mod.typed_value.string_value = value
+        pb_mod.typed_value.string_value = _protobuf_required_string(
+            value,
+            "String modifier value",
+        )
     else:
         _raise_invalid_modifier_value()
 
@@ -790,7 +801,10 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
                 raise SerializationError(msg)
             pb_string.plain.raw_value = string_def.value
         else:
-            pb_string.plain.value = string_def.value
+            pb_string.plain.value = _protobuf_required_string(
+                string_def.value,
+                "PlainString value",
+            )
             if raw_bytes is not None:
                 pb_string.plain.raw_value = raw_bytes
         for mod in _protobuf_string_modifier_list(
@@ -1135,7 +1149,7 @@ def _copy_string_set_to_protobuf(value, pb_owner, context: str) -> None:
 
     field_context = f"{context} string_set"
     if isinstance(value, str):
-        pb_owner.string_set_text = value
+        pb_owner.string_set_text = _protobuf_required_string(value, field_context)
         return
 
     if isinstance(value, list | tuple):
@@ -1215,7 +1229,7 @@ def _expression_string_set_item_text(item) -> str | None:
 
 def _string_set_item_text(item) -> str | None:
     if isinstance(item, str):
-        return item
+        return _protobuf_required_string(item, "string_set item")
     return _expression_string_set_item_text(item)
 
 

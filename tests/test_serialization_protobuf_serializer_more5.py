@@ -606,6 +606,76 @@ def test_protobuf_serializer_rejects_non_string_file_and_rule_fields(
 
 
 @pytest.mark.parametrize(
+    ("ast", "message"),
+    [
+        (
+            YaraFile(rules=[Rule("\ud800", condition=BooleanLiteral(True))]),
+            "Rule name must be UTF-8 encodable",
+        ),
+        (
+            YaraFile(
+                rules=[Rule("bad_meta", meta=[Meta("k", "\ud800")], condition=BooleanLiteral(True))]
+            ),
+            "Meta value must be UTF-8 encodable",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_plain_string",
+                        strings=[PlainString("$a", value="\ud800")],
+                        condition=BooleanLiteral(True),
+                    ),
+                ],
+            ),
+            "PlainString value must be UTF-8 encodable",
+        ),
+        (
+            YaraFile(rules=[Rule("bad_string_literal", condition=StringLiteral("\ud800"))]),
+            "StringLiteral value must be UTF-8 encodable",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_modifier_value",
+                        strings=[
+                            PlainString(
+                                "$a",
+                                value="abc",
+                                modifiers=[StringModifier.from_name_value("xor", "\ud800")],
+                            ),
+                        ],
+                        condition=BooleanLiteral(True),
+                    ),
+                ],
+            ),
+            "String modifier value text must be UTF-8 encodable",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_string_set",
+                        condition=OfExpression("any", "\ud800"),
+                    ),
+                ],
+            ),
+            "OfExpression string_set must be UTF-8 encodable",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_non_utf8_encodable_strings(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
     ("string_def", "message"),
     [
         (
