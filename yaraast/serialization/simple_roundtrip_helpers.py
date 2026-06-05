@@ -1735,7 +1735,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "Import":
         return Import(
             _deserialize_nonempty_string_field(data, "module", "Import"),
-            alias=_deserialize_nullable_nonempty_string_field(data, "alias", "Import"),
+            alias=_deserialize_required_nullable_nonempty_string_field(data, "alias", "Import"),
         )
     if node_type == "Include":
         return Include(_deserialize_nonempty_string_field(data, "path", "Include"))
@@ -1780,7 +1780,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
                 "rule_name",
                 "ExternRuleReference",
             ),
-            namespace=_deserialize_nullable_nonempty_string_field(
+            namespace=_deserialize_required_nullable_nonempty_string_field(
                 data,
                 "namespace",
                 "ExternRuleReference",
@@ -1795,7 +1795,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         if not module_path.strip():
             msg = "ExternImport module_path must not be empty"
             raise SerializationError(msg)
-        alias = _deserialize_nullable_nonempty_string_field(data, "alias", "ExternImport")
+        alias = _deserialize_required_nullable_nonempty_string_field(data, "alias", "ExternImport")
         if alias is not None and not alias.strip():
             msg = "ExternImport alias must not be empty"
             raise SerializationError(msg)
@@ -2300,7 +2300,9 @@ def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
         modifiers=_deserialize_rule_modifiers(
             _deserialize_nonempty_string_list_field(data, "modifiers", "ExternRule")
         ),
-        namespace=_deserialize_nullable_nonempty_string_field(data, "namespace", "ExternRule"),
+        namespace=_deserialize_required_nullable_nonempty_string_field(
+            data, "namespace", "ExternRule"
+        ),
     )
 
 

@@ -148,6 +148,9 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Import alias must be a string"):
         s._deserialize_import({"module": "pe", "alias": True})
 
+    with pytest.raises(SerializationError, match="Import alias is required"):
+        s._deserialize_import({"module": "pe"})
+
     with pytest.raises(SerializationError, match="Import alias must not be empty"):
         s._deserialize_import({"module": "pe", "alias": ""})
 
@@ -293,21 +296,26 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternImport alias must be a string"):
         s._deserialize_extern_import({"module_path": "external", "alias": True})
 
+    with pytest.raises(SerializationError, match="ExternImport alias is required"):
+        s._deserialize_extern_import({"module_path": "external"})
+
     for alias in ("", "   ", "\t"):
         with pytest.raises(SerializationError, match="ExternImport alias must not be empty"):
             s._deserialize_extern_import({"module_path": "external", "alias": alias})
 
     with pytest.raises(SerializationError, match="ExternImport rules must be a list of strings"):
-        s._deserialize_extern_import({"module_path": "external", "rules": "RuleA"})
+        s._deserialize_extern_import({"module_path": "external", "alias": None, "rules": "RuleA"})
 
     with pytest.raises(SerializationError, match="ExternImport rules is required"):
-        s._deserialize_extern_import({"module_path": "external"})
+        s._deserialize_extern_import({"module_path": "external", "alias": None})
 
     with pytest.raises(
         SerializationError, match="ExternImport rules must contain non-empty strings"
     ):
         for rule_name in ("", "   ", "\t"):
-            s._deserialize_extern_import({"module_path": "external", "rules": [rule_name]})
+            s._deserialize_extern_import(
+                {"module_path": "external", "alias": None, "rules": [rule_name]}
+            )
 
     with pytest.raises(SerializationError, match="ExternRule name must be a string"):
         s._deserialize_extern_rule({"name": ["RuleA"]})
@@ -317,6 +325,9 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="ExternRule namespace must be a string"):
         s._deserialize_extern_rule({"name": "RuleA", "namespace": True})
+
+    with pytest.raises(SerializationError, match="ExternRule namespace is required"):
+        s._deserialize_extern_rule({"name": "RuleA"})
 
     with pytest.raises(SerializationError, match="ExternRule namespace must not be empty"):
         s._deserialize_extern_rule({"name": "RuleA", "namespace": ""})
@@ -337,6 +348,9 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
         s._deserialize_expression(
             {"type": "ExternRuleReference", "rule_name": "RuleA", "namespace": True}
         )
+
+    with pytest.raises(SerializationError, match="ExternRuleReference namespace is required"):
+        s._deserialize_expression({"type": "ExternRuleReference", "rule_name": "RuleA"})
 
     with pytest.raises(SerializationError, match="ExternRuleReference namespace must not be empty"):
         s._deserialize_expression(
@@ -485,33 +499,40 @@ def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
     s = JsonSerializer()
 
     with pytest.raises(SerializationError, match="Location line is required"):
-        s._deserialize_import({"module": "pe", "location": {"column": 1}})
+        s._deserialize_import({"module": "pe", "alias": None, "location": {"column": 1}})
 
     with pytest.raises(SerializationError, match="Location column is required"):
-        s._deserialize_import({"module": "pe", "location": {"line": 1}})
+        s._deserialize_import({"module": "pe", "alias": None, "location": {"line": 1}})
 
     with pytest.raises(SerializationError, match="Location line must be an integer"):
-        s._deserialize_import({"module": "pe", "location": {"line": True, "column": 1}})
+        s._deserialize_import(
+            {"module": "pe", "alias": None, "location": {"line": True, "column": 1}}
+        )
 
     with pytest.raises(SerializationError, match="Location file must be a string"):
-        s._deserialize_import({"module": "pe", "location": {"line": 1, "column": 1, "file": []}})
+        s._deserialize_import(
+            {"module": "pe", "alias": None, "location": {"line": 1, "column": 1, "file": []}}
+        )
 
     with pytest.raises(SerializationError, match="location must be an object"):
-        s._deserialize_import({"module": "pe", "location": "1:1"})
+        s._deserialize_import({"module": "pe", "alias": None, "location": "1:1"})
 
     with pytest.raises(SerializationError, match="leading_comments must be a list"):
-        s._deserialize_import({"module": "pe", "leading_comments": {}})
+        s._deserialize_import({"module": "pe", "alias": None, "leading_comments": {}})
 
     with pytest.raises(SerializationError, match="leading_comments must be a list"):
-        s._deserialize_import({"module": "pe", "leading_comments": {"type": "Comment"}})
+        s._deserialize_import(
+            {"module": "pe", "alias": None, "leading_comments": {"type": "Comment"}}
+        )
 
     with pytest.raises(SerializationError, match="trailing_comment must be an object"):
-        s._deserialize_import({"module": "pe", "trailing_comment": "bad"})
+        s._deserialize_import({"module": "pe", "alias": None, "trailing_comment": "bad"})
 
     with pytest.raises(SerializationError, match="CommentGroup comments is required"):
         s._deserialize_import(
             {
                 "module": "pe",
+                "alias": None,
                 "trailing_comment": {"type": "CommentGroup"},
             }
         )
@@ -520,6 +541,7 @@ def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
         s._deserialize_import(
             {
                 "module": "pe",
+                "alias": None,
                 "trailing_comment": {"type": "CommentGroup", "comments": "bad"},
             }
         )
@@ -528,19 +550,25 @@ def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
         s._deserialize_import(
             {
                 "module": "pe",
+                "alias": None,
                 "leading_comments": [{"type": "UnknownComment", "text": "bad"}],
             }
         )
 
     with pytest.raises(SerializationError, match="Comment text must be a string"):
         s._deserialize_import(
-            {"module": "pe", "leading_comments": [{"type": "Comment", "text": ["bad"]}]}
+            {
+                "module": "pe",
+                "alias": None,
+                "leading_comments": [{"type": "Comment", "text": ["bad"]}],
+            }
         )
 
     with pytest.raises(SerializationError, match="Comment is_multiline must be a boolean"):
         s._deserialize_import(
             {
                 "module": "pe",
+                "alias": None,
                 "leading_comments": [{"type": "Comment", "text": "bad", "is_multiline": "yes"}],
             }
         )
@@ -551,6 +579,7 @@ def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
         s._deserialize_import(
             {
                 "module": "pe",
+                "alias": None,
                 "trailing_comment": {
                     "type": "CommentGroup",
                     "comments": [
@@ -566,6 +595,7 @@ def test_json_deserialize_node_metadata_preserves_leading_comment_groups() -> No
     node = s._deserialize_import(
         {
             "module": "pe",
+            "alias": None,
             "leading_comments": [
                 {"type": "CommentGroup", "comments": [{"type": "Comment", "text": "lead"}]}
             ],
@@ -648,15 +678,17 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
         s._deserialize_rule(_serialized_json_rule(modifiers=[""]))
 
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
-        s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private"})
+        s._deserialize_extern_rule(
+            {"name": "RemoteRule", "modifiers": "private", "namespace": None}
+        )
 
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list of strings"):
-        s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": [7]})
+        s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": [7], "namespace": None})
 
     with pytest.raises(
         SerializationError, match="ExternRule modifiers must contain non-empty strings"
     ):
-        s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": [""]})
+        s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": [""], "namespace": None})
 
     with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
         s._deserialize_extern_namespace({"name": "remote", "extern_rules": "RemoteRule"})

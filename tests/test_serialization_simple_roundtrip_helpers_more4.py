@@ -280,6 +280,9 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Import alias must be a string"):
         deserialize_node({"type": "Import", "module": "pe", "alias": True})
 
+    with pytest.raises(SerializationError, match="Import alias is required"):
+        deserialize_node({"type": "Import", "module": "pe"})
+
     with pytest.raises(SerializationError, match="Import alias must not be empty"):
         deserialize_node({"type": "Import", "module": "pe", "alias": ""})
 
@@ -384,10 +387,16 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
         )
 
     with pytest.raises(SerializationError, match="YaraFile includes must contain Include nodes"):
-        deserialize_node(_serialized_simple_yarafile(includes=[{"type": "Import", "module": "pe"}]))
+        deserialize_node(
+            _serialized_simple_yarafile(
+                includes=[{"type": "Import", "module": "pe", "alias": None}]
+            )
+        )
 
     with pytest.raises(SerializationError, match="YaraFile rules must contain Rule nodes"):
-        deserialize_node(_serialized_simple_yarafile(rules=[{"type": "Import", "module": "pe"}]))
+        deserialize_node(
+            _serialized_simple_yarafile(rules=[{"type": "Import", "module": "pe", "alias": None}])
+        )
 
     with pytest.raises(
         SerializationError, match="YaraFile extern_rules must contain ExternRule nodes"
@@ -400,7 +409,9 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
         SerializationError, match="YaraFile extern_imports must contain ExternImport nodes"
     ):
         deserialize_node(
-            _serialized_simple_yarafile(extern_imports=[{"type": "Import", "module": "pe"}])
+            _serialized_simple_yarafile(
+                extern_imports=[{"type": "Import", "module": "pe", "alias": None}]
+            )
         )
 
     with pytest.raises(SerializationError, match="YaraFile pragmas must contain Pragma nodes"):
@@ -412,7 +423,9 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
         SerializationError, match="YaraFile namespaces must contain ExternNamespace nodes"
     ):
         deserialize_node(
-            _serialized_simple_yarafile(namespaces=[{"type": "Import", "module": "pe"}])
+            _serialized_simple_yarafile(
+                namespaces=[{"type": "Import", "module": "pe", "alias": None}]
+            )
         )
 
     with pytest.raises(SerializationError, match="Rule must be an object"):
@@ -482,22 +495,32 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternImport alias must be a string"):
         deserialize_node({"type": "ExternImport", "module_path": "external", "alias": True})
 
+    with pytest.raises(SerializationError, match="ExternImport alias is required"):
+        deserialize_node({"type": "ExternImport", "module_path": "external"})
+
     for alias in ("", "   ", "\t"):
         with pytest.raises(SerializationError, match="ExternImport alias must not be empty"):
             deserialize_node({"type": "ExternImport", "module_path": "external", "alias": alias})
 
     with pytest.raises(SerializationError, match="ExternImport rules must be a list of strings"):
-        deserialize_node({"type": "ExternImport", "module_path": "external", "rules": "RuleA"})
+        deserialize_node(
+            {"type": "ExternImport", "module_path": "external", "alias": None, "rules": "RuleA"}
+        )
 
     with pytest.raises(SerializationError, match="ExternImport rules is required"):
-        deserialize_node({"type": "ExternImport", "module_path": "external"})
+        deserialize_node({"type": "ExternImport", "module_path": "external", "alias": None})
 
     with pytest.raises(
         SerializationError, match="ExternImport rules must contain non-empty strings"
     ):
         for rule_name in ("", "   ", "\t"):
             deserialize_node(
-                {"type": "ExternImport", "module_path": "external", "rules": [rule_name]}
+                {
+                    "type": "ExternImport",
+                    "module_path": "external",
+                    "alias": None,
+                    "rules": [rule_name],
+                }
             )
 
     with pytest.raises(SerializationError, match="ExternRule name must be a string"):
@@ -508,6 +531,9 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="ExternRule namespace must be a string"):
         deserialize_extern_rule({"name": "RuleA", "namespace": True})
+
+    with pytest.raises(SerializationError, match="ExternRule namespace is required"):
+        deserialize_extern_rule({"name": "RuleA"})
 
     with pytest.raises(SerializationError, match="ExternRule namespace must not be empty"):
         deserialize_extern_rule({"name": "RuleA", "namespace": ""})
@@ -526,6 +552,9 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="ExternRuleReference namespace must be a string"):
         deserialize_node({"type": "ExternRuleReference", "rule_name": "RuleA", "namespace": True})
+
+    with pytest.raises(SerializationError, match="ExternRuleReference namespace is required"):
+        deserialize_node({"type": "ExternRuleReference", "rule_name": "RuleA"})
 
     with pytest.raises(SerializationError, match="ExternRuleReference namespace must not be empty"):
         deserialize_node({"type": "ExternRuleReference", "rule_name": "RuleA", "namespace": ""})
@@ -735,40 +764,60 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
 
 def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Location line is required"):
-        deserialize_node({"type": "Import", "module": "pe", "location": {"column": 1}})
+        deserialize_node(
+            {"type": "Import", "module": "pe", "alias": None, "location": {"column": 1}}
+        )
 
     with pytest.raises(SerializationError, match="Location column is required"):
-        deserialize_node({"type": "Import", "module": "pe", "location": {"line": 1}})
+        deserialize_node({"type": "Import", "module": "pe", "alias": None, "location": {"line": 1}})
 
     with pytest.raises(SerializationError, match="Location line must be an integer"):
         deserialize_node(
-            {"type": "Import", "module": "pe", "location": {"line": True, "column": 1}}
+            {
+                "type": "Import",
+                "module": "pe",
+                "alias": None,
+                "location": {"line": True, "column": 1},
+            }
         )
 
     with pytest.raises(SerializationError, match="Location file must be a string"):
         deserialize_node(
-            {"type": "Import", "module": "pe", "location": {"line": 1, "column": 1, "file": []}}
+            {
+                "type": "Import",
+                "module": "pe",
+                "alias": None,
+                "location": {"line": 1, "column": 1, "file": []},
+            }
         )
 
     with pytest.raises(SerializationError, match="location must be an object"):
-        deserialize_node({"type": "Import", "module": "pe", "location": "1:1"})
+        deserialize_node({"type": "Import", "module": "pe", "alias": None, "location": "1:1"})
 
     with pytest.raises(SerializationError, match="leading_comments must be a list"):
-        deserialize_node({"type": "Import", "module": "pe", "leading_comments": {}})
+        deserialize_node({"type": "Import", "module": "pe", "alias": None, "leading_comments": {}})
 
     with pytest.raises(SerializationError, match="leading_comments must be a list"):
         deserialize_node(
-            {"type": "Import", "module": "pe", "leading_comments": {"type": "Comment"}}
+            {
+                "type": "Import",
+                "module": "pe",
+                "alias": None,
+                "leading_comments": {"type": "Comment"},
+            }
         )
 
     with pytest.raises(SerializationError, match="trailing_comment must be an object"):
-        deserialize_node({"type": "Import", "module": "pe", "trailing_comment": "bad"})
+        deserialize_node(
+            {"type": "Import", "module": "pe", "alias": None, "trailing_comment": "bad"}
+        )
 
     with pytest.raises(SerializationError, match="CommentGroup comments is required"):
         deserialize_node(
             {
                 "type": "Import",
                 "module": "pe",
+                "alias": None,
                 "trailing_comment": {"type": "CommentGroup"},
             }
         )
@@ -778,6 +827,7 @@ def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
             {
                 "type": "Import",
                 "module": "pe",
+                "alias": None,
                 "trailing_comment": {"type": "CommentGroup", "comments": "bad"},
             }
         )
@@ -787,6 +837,7 @@ def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
             {
                 "type": "Import",
                 "module": "pe",
+                "alias": None,
                 "leading_comments": [{"type": "UnknownComment", "text": "bad"}],
             }
         )
@@ -796,6 +847,7 @@ def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
             {
                 "type": "Import",
                 "module": "pe",
+                "alias": None,
                 "leading_comments": [{"type": "Comment", "text": ["bad"]}],
             }
         )
@@ -805,6 +857,7 @@ def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
             {
                 "type": "Import",
                 "module": "pe",
+                "alias": None,
                 "leading_comments": [{"type": "Comment", "text": "bad", "is_multiline": "yes"}],
             }
         )
@@ -816,6 +869,7 @@ def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
             {
                 "type": "Import",
                 "module": "pe",
+                "alias": None,
                 "trailing_comment": {
                     "type": "CommentGroup",
                     "comments": [
@@ -831,6 +885,7 @@ def test_simple_roundtrip_node_metadata_preserves_leading_comment_groups() -> No
         {
             "type": "Import",
             "module": "pe",
+            "alias": None,
             "leading_comments": [
                 {"type": "CommentGroup", "comments": [{"type": "Comment", "text": "lead"}]}
             ],
@@ -877,6 +932,7 @@ def test_simple_roundtrip_helpers_preserve_unknown_extern_rule_modifier() -> Non
             "type": "ExternRule",
             "name": "RemoteRule",
             "modifiers": ["private", "vendor_modifier"],
+            "namespace": None,
         }
     )
 
@@ -932,15 +988,15 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
         deserialize_rule(_serialized_simple_rule(modifiers=[""]))
 
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
-        deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private"})
+        deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private", "namespace": None})
 
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list of strings"):
-        deserialize_extern_rule({"name": "RemoteRule", "modifiers": [7]})
+        deserialize_extern_rule({"name": "RemoteRule", "modifiers": [7], "namespace": None})
 
     with pytest.raises(
         SerializationError, match="ExternRule modifiers must contain non-empty strings"
     ):
-        deserialize_extern_rule({"name": "RemoteRule", "modifiers": [""]})
+        deserialize_extern_rule({"name": "RemoteRule", "modifiers": [""], "namespace": None})
 
     with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
         deserialize_node(

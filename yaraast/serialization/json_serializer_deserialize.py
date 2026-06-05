@@ -709,7 +709,7 @@ def _deser_extern_rule_reference(self, data: dict[str, Any]):
         raise SerializationError(msg)
     return ExternRuleReference(
         rule_name=rule_name,
-        namespace=_deserialize_nullable_nonempty_string_field(
+        namespace=_deserialize_required_nullable_nonempty_string_field(
             data,
             "namespace",
             "ExternRuleReference",
@@ -1062,7 +1062,7 @@ class JsonSerializerDeserializeMixin:
         return self._apply_node_metadata(
             Import(
                 module=_deserialize_nonempty_string_field(data, "module", "Import"),
-                alias=_deserialize_nullable_nonempty_string_field(data, "alias", "Import"),
+                alias=_deserialize_required_nullable_nonempty_string_field(data, "alias", "Import"),
             ),
             data,
         )
@@ -1392,7 +1392,7 @@ class JsonSerializerDeserializeMixin:
         if not module_path.strip():
             msg = "ExternImport module_path must not be empty"
             raise SerializationError(msg)
-        alias = _deserialize_nullable_nonempty_string_field(
+        alias = _deserialize_required_nullable_nonempty_string_field(
             data,
             "alias",
             "ExternImport",
@@ -1427,7 +1427,7 @@ class JsonSerializerDeserializeMixin:
                 modifiers=Rule._normalize_modifiers(
                     _deserialize_nonempty_string_list_field(data, "modifiers", "ExternRule")
                 ),
-                namespace=_deserialize_nullable_nonempty_string_field(
+                namespace=_deserialize_required_nullable_nonempty_string_field(
                     data,
                     "namespace",
                     "ExternRule",
