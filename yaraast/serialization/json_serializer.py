@@ -126,6 +126,15 @@ def _serialize_enum_value(value: Any, context: str) -> str:
     return _serialize_required_string(getattr(value, "value", None), context)
 
 
+def _require_utf8_json_text(text: str) -> str:
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        msg = "JSON output must be UTF-8 encodable"
+        raise SerializationError(msg) from exc
+    return text
+
+
 def _serialize_comment_node(serializer, value, context: str) -> dict[str, Any]:
     from yaraast.ast.comments import Comment, CommentGroup
 
@@ -205,7 +214,9 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         """Serialize AST to JSON format."""
         ast = self._require_yara_file(ast)
         serialized = self._serialize_with_metadata(ast)
-        json_str = json.dumps(serialized, indent=JSON_DEFAULT_INDENT, ensure_ascii=False)
+        json_str = _require_utf8_json_text(
+            json.dumps(serialized, indent=JSON_DEFAULT_INDENT, ensure_ascii=False)
+        )
 
         if output_path is not None:
             write_text(require_input_path(output_path, "output_path"), json_str)

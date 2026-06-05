@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import json
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
@@ -83,6 +86,16 @@ def test_json_serializer_rejects_empty_output_path() -> None:
     ast = _parse_yara("rule sample { condition: true }")
     with pytest.raises(ValueError, match="output_path must not be empty"):
         serializer.serialize(ast, output_path="")
+
+
+def test_json_serializer_rejects_non_utf8_encodable_output(tmp_path: Path) -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule("\ud800", condition=BooleanLiteral(True))])
+
+    with pytest.raises(SerializationError, match="JSON output must be UTF-8 encodable"):
+        serializer.serialize(ast)
+    with pytest.raises(SerializationError, match="JSON output must be UTF-8 encodable"):
+        serializer.serialize(ast, output_path=tmp_path / "out.json")
 
 
 @pytest.mark.parametrize("ast", [None, False, 0, {}, object()])
