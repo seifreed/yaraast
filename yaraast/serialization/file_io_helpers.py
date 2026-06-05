@@ -26,8 +26,12 @@ def _require_file_path(path: object) -> Path:
 
 def read_utf8(path: str | Path) -> str:
     """Read UTF-8 text from disk."""
-    with _require_file_path(path).open(encoding="utf-8") as handle:
-        return handle.read()
+    try:
+        with _require_file_path(path).open(encoding="utf-8") as handle:
+            return handle.read()
+    except UnicodeDecodeError as exc:
+        msg = "file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
 
 
 def write_utf8(path: str | Path, text: str) -> None:

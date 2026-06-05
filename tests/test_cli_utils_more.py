@@ -27,6 +27,14 @@ def test_cli_utils_rejects_non_utf8_encodable_text(tmp_path: Path) -> None:
         utils.write_text(tmp_path / "sample.txt", "\ud800")
 
 
+def test_cli_utils_rejects_non_utf8_file_contents(tmp_path: Path) -> None:
+    path = tmp_path / "sample.txt"
+    path.write_bytes(b"\xff")
+
+    with pytest.raises(ValueError, match="file must contain valid UTF-8 text"):
+        utils.read_text(path)
+
+
 @pytest.mark.parametrize("path", [False, 0, object()])
 def test_cli_utils_reject_invalid_path_types(path: Any) -> None:
     with pytest.raises(TypeError, match="path must be a file path"):

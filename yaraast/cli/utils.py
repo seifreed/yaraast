@@ -91,7 +91,11 @@ def _require_existing_file_path(path: str | Path) -> Path:
 
 def read_text(path: str | Path) -> str:
     """Read a text file with UTF-8 encoding."""
-    return _require_existing_file_path(path).read_text(encoding="utf-8")
+    try:
+        return _require_existing_file_path(path).read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        msg = "file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
 
 
 def write_text(path: str | Path, content: str) -> None:
