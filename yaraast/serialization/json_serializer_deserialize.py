@@ -1459,7 +1459,10 @@ class JsonSerializerDeserializeMixin:
                     self._deserialize_pragma(pragma)
                     for pragma in _deserialize_required_list_field(data, "pragmas", "PragmaBlock")
                 ],
-                scope=_deserialize_pragma_scope(data.get("scope"), "PragmaBlock"),
+                scope=_deserialize_pragma_scope(
+                    _deserialize_required_field(data, "scope", "PragmaBlock"),
+                    "PragmaBlock",
+                ),
             ),
             data,
         )

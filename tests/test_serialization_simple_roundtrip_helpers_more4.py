@@ -462,6 +462,9 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
         deserialize_node({"type": "PragmaBlock", "pragmas": "pragma"})
 
+    with pytest.raises(SerializationError, match="PragmaBlock scope is required"):
+        deserialize_node({"type": "PragmaBlock", "pragmas": [_serialized_simple_pragma()]})
+
     with pytest.raises(SerializationError, match="CommentGroup comments is required"):
         deserialize_node({"type": "CommentGroup"})
 

@@ -1815,7 +1815,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
                 deserialize_pragma(pragma)
                 for pragma in _deserialize_required_list_field(data, "pragmas", "PragmaBlock")
             ],
-            scope=_deserialize_pragma_scope(data.get("scope"), "PragmaBlock"),
+            scope=_deserialize_pragma_scope(
+                _deserialize_required_field(data, "scope", "PragmaBlock"),
+                "PragmaBlock",
+            ),
         )
     if node_type == "Pragma":
         return deserialize_pragma(data)
