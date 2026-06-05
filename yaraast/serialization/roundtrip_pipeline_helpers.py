@@ -202,7 +202,7 @@ def _build_rule_meta(meta: Any) -> list[dict[str, Any]]:
         scope = getattr(entry, "scope", None)
         value = (
             _serialized_meta_entry_value(entry.value)
-            if isinstance(entry, MetaEntry)
+            if isinstance(entry, MetaEntry) or scope is not None
             else _serialized_meta_value(entry.value)
         )
         entry_data = {
