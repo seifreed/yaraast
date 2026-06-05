@@ -1225,6 +1225,24 @@ def test_expr_inference_rejects_invalid_for_expression_variable_identifiers(
     assert f"Invalid loop variable identifier: {variable}" in inf.errors
 
 
+@pytest.mark.parametrize("variable", ["as", "include"])
+def test_expr_inference_allows_contextual_keyword_for_expression_variables(variable: str) -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(
+        ForExpression(
+            quantifier="any",
+            variable=variable,
+            iterable=SetExpression([IntegerLiteral(value=1)]),
+            body=BinaryExpression(Identifier(variable), ">", IntegerLiteral(value=0)),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert f"Invalid loop variable identifier: {variable}" not in inf.errors
+    assert f"Invalid identifier identifier: {variable}" not in inf.errors
+
+
 def test_expr_inference_for_variable_shadows_same_named_rule() -> None:
     env = TypeEnvironment()
     env.add_rule("item")

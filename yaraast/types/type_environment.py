@@ -13,6 +13,7 @@ from ._registry_base import YaraType
 
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
+_YARA_CONTEXTUAL_LOCAL_KEYWORDS = frozenset({"as", "include"})
 
 
 def _require_nonempty_string(value: Any, field_name: str) -> str:
@@ -38,10 +39,11 @@ def _normalize_concrete_string_id(
 
 def _normalize_identifier(value: str, field_name: str, kind: str) -> str:
     value = _require_nonempty_string(value, field_name)
+    keyword_allowed = kind == "loop variable" and value in _YARA_CONTEXTUAL_LOCAL_KEYWORDS
     if (
         len(value) <= YARA_IDENTIFIER_MAX_LENGTH
         and _YARA_IDENTIFIER_RE.fullmatch(value) is not None
-        and value not in _YARA_KEYWORDS
+        and (value not in _YARA_KEYWORDS or keyword_allowed)
     ):
         return value
     msg = f"Invalid {kind} identifier: {value}"

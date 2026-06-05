@@ -622,6 +622,26 @@ def test_validate_expression_rejects_invalid_for_expression_variable_identifiers
     assert any(f"Invalid loop variable identifier: {variable}" in message for message in messages)
 
 
+@pytest.mark.parametrize("variable", ["as", "include"])
+def test_validate_expression_allows_contextual_keyword_for_expression_variables(
+    variable: str,
+) -> None:
+    expr = ForExpression(
+        quantifier="any",
+        variable=variable,
+        iterable=SetExpression([IntegerLiteral(value=1)]),
+        body=BinaryExpression(Identifier(variable), ">", IntegerLiteral(value=0)),
+    )
+
+    result = SemanticValidator().validate_expression(expr)
+    messages = [error.message for error in result.errors]
+
+    assert not any(
+        f"Invalid loop variable identifier: {variable}" in message for message in messages
+    )
+    assert not any(f"Invalid identifier identifier: {variable}" in message for message in messages)
+
+
 @pytest.mark.parametrize(
     ("expr", "variable"),
     [
