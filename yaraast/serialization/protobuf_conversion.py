@@ -537,6 +537,13 @@ def protobuf_to_rule_meta_entry(pb_meta_entry):
 
     key = _protobuf_required_nonempty_string(pb_meta_entry.key, "Meta key")
     value = _meta_value_to_python(pb_meta_entry.value)
+    if pb_meta_entry.scope:
+        meta_entry = MetaEntry.from_key_value(
+            key,
+            value,
+            deserialize_meta_scope(pb_meta_entry.scope),
+        )
+        return _apply_node_metadata_from_protobuf(pb_meta_entry, meta_entry)
     if pb_meta_entry.ast_node or _protobuf_has_field(pb_meta_entry, "node_metadata"):
         meta = Meta(key, value)
         return _apply_node_metadata_from_protobuf(pb_meta_entry, meta)

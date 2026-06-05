@@ -7,7 +7,7 @@ from typing import Any, cast
 
 import pytest
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -37,6 +37,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
     UnaryExpression,
 )
+from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaEntry, MetaScope, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
@@ -700,6 +701,29 @@ def test_protobuf_serializer_preserves_meta_entry_scope() -> None:
 
     assert scopes_by_key == {"secret": MetaScope.PRIVATE, "owner": MetaScope.PUBLIC}
     assert [entry.key for entry in restored.rules[0].get_private_meta()] == ["secret"]
+
+
+def test_protobuf_serializer_preserves_scoped_meta_metadata() -> None:
+    serializer = ProtobufSerializer(include_metadata=True)
+    scoped_meta = Meta("classification", "restricted")
+    scoped_meta.location = Location(3, 5)
+    cast(Any, scoped_meta).scope = MetaScope.PRIVATE
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="scoped_meta_metadata",
+                meta=[scoped_meta],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    restored_meta = restored.rules[0].meta[0]
+
+    assert isinstance(restored_meta, MetaEntry)
+    assert restored_meta.scope == MetaScope.PRIVATE
+    assert getattr(restored_meta, "location", None) == Location(3, 5)
 
 
 def test_protobuf_deserialize_rejects_invalid_meta_entry_scope() -> None:
