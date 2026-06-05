@@ -125,6 +125,29 @@ def test_simple_ast_differ_diff_directories_includes_yara_files(tmp_path: Path) 
     assert added.summary["added"] > 0
 
 
+def test_simple_ast_differ_diff_files_rejects_invalid_utf8(tmp_path: Path) -> None:
+    bad = tmp_path / "bad.yar"
+    good = tmp_path / "good.yar"
+    bad.write_bytes(b"\xff")
+    good.write_text("rule good { condition: true }", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
+        SimpleASTDiffer().diff_files(bad, good)
+
+
+def test_simple_ast_differ_diff_directories_rejects_invalid_utf8_added_file(
+    tmp_path: Path,
+) -> None:
+    dir1 = tmp_path / "dir1"
+    dir2 = tmp_path / "dir2"
+    dir1.mkdir()
+    dir2.mkdir()
+    (dir2 / "bad.yar").write_bytes(b"\xff")
+
+    with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
+        SimpleASTDiffer().diff_directories(dir1, dir2)
+
+
 @pytest.mark.parametrize("directory", ["", "   ", "\t"])
 def test_simple_ast_differ_diff_directories_rejects_empty_directory(
     tmp_path: Path,

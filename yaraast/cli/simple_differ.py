@@ -79,6 +79,14 @@ def _require_line_list(value: object, name: str) -> list[str]:
     return value
 
 
+def _read_yara_text_file(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 class SimpleDiffer:
     """Simple differ for YARA files."""
 
@@ -305,8 +313,8 @@ class SimpleASTDiffer(SimpleDiffer):
         super().__init__(parser=parser, generator=generator)
 
     def diff_files(self, file1: Path, file2: Path) -> ASTDiffResult:
-        content1 = file1.read_text(encoding="utf-8")
-        content2 = file2.read_text(encoding="utf-8")
+        content1 = _read_yara_text_file(file1)
+        content2 = _read_yara_text_file(file2)
 
         if self._parser_provided:
             ast1 = self.parser.parse(content1)
@@ -405,8 +413,7 @@ class SimpleASTDiffer(SimpleDiffer):
 
 def _diff_result_for_removed_file(file_path: Path) -> DiffResult:
     """Create a DiffResult showing all lines of a file as removed."""
-    with open(file_path, encoding="utf-8") as f:
-        content = f.read()
+    content = _read_yara_text_file(file_path)
     lines = content.splitlines()
     diff_lines = [
         DiffLine(
@@ -431,8 +438,7 @@ def _diff_result_for_removed_file(file_path: Path) -> DiffResult:
 
 def _diff_result_for_added_file(file_path: Path) -> DiffResult:
     """Create a DiffResult showing all lines of a file as added."""
-    with open(file_path, encoding="utf-8") as f:
-        content = f.read()
+    content = _read_yara_text_file(file_path)
     lines = content.splitlines()
     diff_lines = [
         DiffLine(
