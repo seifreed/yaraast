@@ -20,6 +20,8 @@ from yaraast.string_escaping import escape_string_source_value
 from . import yara_ast_pb2
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+_PROTOBUF_INT32_MIN = -(2**31)
+_PROTOBUF_INT32_MAX = 2**31 - 1
 _PROTOBUF_INT64_MIN = -(2**63)
 _PROTOBUF_INT64_MAX = 2**63 - 1
 
@@ -58,14 +60,14 @@ def _node_has_metadata(node) -> bool:
 
 
 def _copy_location_to_protobuf(location, pb_location) -> None:
-    pb_location.line = _protobuf_required_int(location.line, "Location line")
-    pb_location.column = _protobuf_required_int(location.column, "Location column")
+    pb_location.line = _protobuf_int32_value(location.line, "Location line")
+    pb_location.column = _protobuf_int32_value(location.column, "Location column")
     if location.file is not None:
         pb_location.file = _protobuf_required_string(location.file, "Location file")
     if location.end_line is not None:
-        pb_location.end_line = _protobuf_required_int(location.end_line, "Location end_line")
+        pb_location.end_line = _protobuf_int32_value(location.end_line, "Location end_line")
     if location.end_column is not None:
-        pb_location.end_column = _protobuf_required_int(
+        pb_location.end_column = _protobuf_int32_value(
             location.end_column,
             "Location end_column",
         )
@@ -399,6 +401,14 @@ def _protobuf_required_int(value, context: str) -> int:
         msg = f"{context} must be an integer"
         raise SerializationError(msg)
     return value
+
+
+def _protobuf_int32_value(value, context: str) -> int:
+    int_value = _protobuf_required_int(value, context)
+    if _PROTOBUF_INT32_MIN <= int_value <= _PROTOBUF_INT32_MAX:
+        return int_value
+    msg = f"{context} must fit in protobuf int32"
+    raise SerializationError(msg)
 
 
 def _protobuf_int64_value(value, context: str) -> int:
@@ -922,7 +932,7 @@ def _hex_jump_bound_to_protobuf(value: int | None, field: str) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         msg = f"HexJump {field} must be a non-negative integer"
         raise SerializationError(msg)
-    return value
+    return _protobuf_int32_value(value, f"HexJump {field}")
 
 
 def _hex_nibble_high_to_protobuf(value: bool) -> bool:

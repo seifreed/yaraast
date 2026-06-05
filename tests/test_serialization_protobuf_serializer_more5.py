@@ -2388,10 +2388,17 @@ def test_protobuf_serializer_rejects_invalid_comment_metadata(
     ("location", "message"),
     [
         (Location(cast(Any, True), 1), "Location line must be an integer"),
+        (Location(2**31, 1), "Location line must fit in protobuf int32"),
         (Location(1, cast(Any, "2")), "Location column must be an integer"),
+        (Location(1, -(2**31) - 1), "Location column must fit in protobuf int32"),
         (Location(1, 1, file=cast(Any, [])), "Location file must be a string"),
         (Location(1, 1, end_line=cast(Any, False)), "Location end_line must be an integer"),
+        (Location(1, 1, end_line=2**31), "Location end_line must fit in protobuf int32"),
         (Location(1, 1, end_column=cast(Any, "3")), "Location end_column must be an integer"),
+        (
+            Location(1, 1, end_column=-(2**31) - 1),
+            "Location end_column must fit in protobuf int32",
+        ),
     ],
 )
 def test_protobuf_serializer_rejects_invalid_location_metadata(
