@@ -1686,7 +1686,10 @@ def deserialize_node(data: dict[str, Any]) -> ASTNode:
 def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     """Deserialize a dictionary to an AST node."""
     node_type = data.get("type")
-    if node_type is not None and not isinstance(node_type, str):
+    if node_type is None:
+        msg = "Serialized node type is required"
+        raise SerializationError(msg)
+    if not isinstance(node_type, str):
         msg = "Serialized node type must be a string"
         raise SerializationError(msg)
 
@@ -2049,9 +2052,8 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             expression=_deserialize_required_node(data, "expression", "SpreadOperator"),
             is_dict=_deserialize_bool_field(data, "is_dict", "SpreadOperator"),
         )
-    return Identifier(
-        _deserialize_optional_string_field(data, "data", "Serialized node", "unknown")
-    )
+    msg = f"Unsupported simple AST node type: {node_type}"
+    raise SerializationError(msg)
 
 
 def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:

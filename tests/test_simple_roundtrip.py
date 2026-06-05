@@ -17,6 +17,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     UnaryExpression,
 )
+from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
 from yaraast.serialization.simple_roundtrip import (
@@ -195,9 +196,8 @@ def test_simple_roundtrip_serialize_primitives() -> None:
         restored = serializer.deserialize(data)
         assert restored is not None
 
-    # Unknown type fallback should return an Identifier
-    restored = serializer.deserialize({"type": "UnknownNode", "data": "fallback"})
-    assert isinstance(restored, Identifier)
+    with pytest.raises(SerializationError, match="Unsupported simple AST node type: UnknownNode"):
+        serializer.deserialize({"type": "UnknownNode", "data": "fallback"})
 
 
 def test_simple_roundtrip_error_path() -> None:
