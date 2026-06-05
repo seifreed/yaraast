@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from lsprotocol.types import Location, Position, Range, TextEdit
 
 from yaraast.ast.base import ASTNode
-from yaraast.ast.conditions import ForExpression
+from yaraast.ast.conditions import AtExpression, ForExpression
 from yaraast.ast.expressions import (
     Identifier,
     StringCount,
@@ -265,6 +265,8 @@ def _normalized_local_lookup_name(name: str) -> str:
 def string_reference_name(node: ASTNode) -> str | None:
     if isinstance(node, StringIdentifier):
         return node.name
+    if isinstance(node, AtExpression) and isinstance(node.string_id, str):
+        return node.string_id if node.string_id.startswith("$") else f"${node.string_id}"
     if isinstance(node, StringCount):
         return f"${node.string_id}"
     if isinstance(node, StringOffset):
@@ -276,6 +278,8 @@ def string_reference_name(node: ASTNode) -> str | None:
 
 def string_reference_replacement(node: ASTNode, replacement: str) -> str:
     if isinstance(node, StringIdentifier):
+        return replacement
+    if isinstance(node, AtExpression) and isinstance(node.string_id, str):
         return replacement
     suffix = replacement[1:] if replacement.startswith("$") else replacement
     if isinstance(node, StringCount):
@@ -306,8 +310,11 @@ def string_reference_range(node: ASTNode, source_text: str) -> Range:
             start_character,
             start_character + 1 + len(suffix),
         )
-    if isinstance(node, StringCount | StringOffset | StringLength):
-        suffix = node.string_id[1:] if node.string_id.startswith("$") else node.string_id
+    if isinstance(node, AtExpression | StringCount | StringOffset | StringLength):
+        string_id = node.string_id
+        if not isinstance(string_id, str):
+            return full_range
+        suffix = string_id[1:] if string_id.startswith("$") else string_id
         start_character = _prefixed_reference_start_character(
             source_text,
             full_range.start.line,

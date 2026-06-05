@@ -32,6 +32,24 @@ rule a {
     assert len(locations) >= 4
 
 
+def test_references_include_at_expression_string_subject() -> None:
+    text = """
+rule a {
+  strings:
+    $a = "x"
+  condition:
+    $a at 0
+}
+""".lstrip()
+
+    locations = ReferencesProvider().get_references(text, _pos(4, 6), "file://test.yar")
+
+    assert [(loc.range.start.line, loc.range.start.character) for loc in locations] == [
+        (2, 4),
+        (4, 4),
+    ]
+
+
 def test_references_rule_name() -> None:
     text = """
 rule a { condition: true }
