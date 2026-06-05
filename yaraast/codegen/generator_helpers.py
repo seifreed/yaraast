@@ -533,7 +533,10 @@ def format_integer_literal(value: object) -> str:
         if int_value is None:
             msg = "Integer literal value must be an integer"
             raise TypeError(msg)
-        _validate_integer_literal_range(_integer_literal_numeric_value(value))
+        numeric_value = _integer_literal_numeric_value(value)
+        _validate_integer_literal_range(numeric_value)
+        if numeric_value == _YARA_INTEGER_MIN:
+            return _YARA_INTEGER_MIN_EXPRESSION
         if isinstance(int_value, str):
             return _normalize_integer_literal_text(int_value)
     elif isinstance(value, int):

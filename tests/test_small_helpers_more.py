@@ -111,6 +111,8 @@ def test_generator_helpers_escape_integer_and_modifiers() -> None:
     assert format_integer_literal(255) == "255"
     assert format_integer_literal(INT64_MIN) == "(-9223372036854775807 - 1)"
     assert format_integer_literal(str(INT64_MIN)) == "(-9223372036854775807 - 1)"
+    assert format_integer_literal("-0x8000000000000000") == "(-9223372036854775807 - 1)"
+    assert format_integer_literal("-0o1000000000000000000000") == ("(-9223372036854775807 - 1)")
     with pytest.raises(TypeError, match="Integer literal value must be an integer"):
         format_integer_literal(True)
 

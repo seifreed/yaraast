@@ -4083,6 +4083,10 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
     assert gen.visit_integer_literal(IntegerLiteral(2**63 - 1)) == "9223372036854775807"
     assert gen.visit_integer_literal(IntegerLiteral(-(2**63) + 1)) == "-9223372036854775807"
     assert gen.visit_integer_literal(IntegerLiteral(INT64_MIN)) == "(-9223372036854775807 - 1)"
+    min_hex_integer_text: Any = "-0x8000000000000000"
+    assert gen.visit_integer_literal(IntegerLiteral(min_hex_integer_text)) == (
+        "(-9223372036854775807 - 1)"
+    )
     with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
         gen.visit_integer_literal(IntegerLiteral(2**63))
     oversized_hex_integer_text: Any = "0x8000000000000000"
