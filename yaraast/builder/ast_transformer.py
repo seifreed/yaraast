@@ -225,6 +225,7 @@ class RuleTransformer:
 
     def prefix_strings(self, prefix: str) -> RuleTransformer:
         """Add prefix to all string identifiers."""
+        prefix = self._require_text(prefix, "String prefix")
         mapping = {}
         for string_def in self.rule.strings:
             old_id = string_def.identifier
@@ -236,6 +237,7 @@ class RuleTransformer:
 
     def suffix_strings(self, suffix: str) -> RuleTransformer:
         """Add suffix to all string identifiers."""
+        suffix = self._require_text(suffix, "String suffix")
         mapping = {}
         for string_def in self.rule.strings:
             old_id = string_def.identifier

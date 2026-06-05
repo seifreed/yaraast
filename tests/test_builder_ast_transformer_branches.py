@@ -651,6 +651,8 @@ def test_rule_transformer_rejects_invalid_rule_names_without_partial_update(
         ("add_modifier", True, "Rule modifier must be a string"),
         ("set_author", True, "Rule author must be a string"),
         ("set_description", 123, "Rule description must be a string"),
+        ("prefix_strings", True, "String prefix must be a string"),
+        ("suffix_strings", True, "String suffix must be a string"),
     ],
 )
 def test_rule_transformer_rejects_non_string_text_inputs_without_partial_update(
@@ -666,6 +668,7 @@ def test_rule_transformer_rejects_non_string_text_inputs_without_partial_update(
     transformed = transformer.build()
     assert transformed.name == "valid_name"
     assert [str(modifier) for modifier in transformed.modifiers] == ["global"]
+    assert [string.identifier for string in transformed.strings] == ["$a"]
     assert transformed.get_meta_value("author") == "me"
     assert transformed.get_meta_value("description") is None
 
