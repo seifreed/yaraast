@@ -899,6 +899,9 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="SetExpression elements must be a list"):
         s._deserialize_expression({"type": "SetExpression", "elements": "x"})
 
+    with pytest.raises(SerializationError, match="SetExpression elements is required"):
+        s._deserialize_expression({"type": "SetExpression"})
+
     with pytest.raises(SerializationError, match="SetExpression elements must contain expressions"):
         s._deserialize_expression({"type": "SetExpression", "elements": [None]})
 

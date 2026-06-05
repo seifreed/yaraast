@@ -389,7 +389,17 @@ def _deser_parentheses_expression(self, data: dict[str, Any]):
 def _deser_set_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import SetExpression
 
-    elements = _deserialize_expression_list_field(self, data, "elements", "SetExpression")
+    raw_elements = _deserialize_required_field(data, "elements", "SetExpression")
+    if not isinstance(raw_elements, list):
+        msg = "SetExpression elements must be a list"
+        raise SerializationError(msg)
+    elements = []
+    for item in raw_elements:
+        expression = self._deserialize_expression(item)
+        if expression is None:
+            msg = "SetExpression elements must contain expressions"
+            raise SerializationError(msg)
+        elements.append(expression)
     return SetExpression(elements=elements)
 
 

@@ -1247,6 +1247,9 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="SetExpression elements must be a list"):
         deserialize_node({"type": "SetExpression", "elements": "x"})
 
+    with pytest.raises(SerializationError, match="SetExpression elements is required"):
+        deserialize_node({"type": "SetExpression"})
+
     with pytest.raises(SerializationError, match="MemberAccess member must be a string"):
         deserialize_node(
             {"type": "MemberAccess", "object": {"type": "Identifier", "name": "pe"}, "member": []}

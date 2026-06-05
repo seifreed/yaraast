@@ -1845,7 +1845,17 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_required_node(data, "expression", "ParenthesesExpression")
         )
     if node_type == "SetExpression":
-        return SetExpression(_deserialize_node_list_field(data, "elements", "SetExpression"))
+        raw_elements = _deserialize_required_field(data, "elements", "SetExpression")
+        if not isinstance(raw_elements, list):
+            msg = "SetExpression elements must be a list"
+            raise SerializationError(msg)
+        elements = []
+        for element in raw_elements:
+            if element is None or element == {}:
+                msg = "SetExpression elements must contain nodes"
+                raise SerializationError(msg)
+            elements.append(_deserialize_required_node_value(element, "SetExpression elements"))
+        return SetExpression(elements)
     if node_type == "RangeExpression":
         return RangeExpression(
             _deserialize_required_node(data, "low", "RangeExpression"),
