@@ -48,6 +48,9 @@ def test_parse_yara_source_routes_empty_tuple_condition_to_yarax() -> None:
     [
         "rule nested_empty_tuple_first { condition: ((), 1) }",
         "rule nested_empty_tuple_last { condition: (1, ()) }",
+        "rule deep_nested_empty_tuple_first { condition: (((), 1), 2) }",
+        "rule deep_nested_empty_tuple_last { condition: ((1, ()), 2) }",
+        "rule deep_nested_empty_tuple_right { condition: (1, ((), 2)) }",
     ],
 )
 def test_parse_yara_source_routes_nested_empty_tuple_conditions_to_yarax(

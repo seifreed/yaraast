@@ -143,6 +143,9 @@ rule login_event {
     plain_yara = 'rule classic { strings: $a = "events:" condition: $a }'
     assert detect_dialect(plain_yara) == YaraDialect.YARA
 
+    empty_function_call = "rule classic { condition: foo() }"
+    assert detect_dialect(empty_function_call) == YaraDialect.YARA
+
 
 def test_detect_dialect_yarax_signals() -> None:
     yarax_lambda = "rule x { condition: lambda x, y: x + y }"
@@ -165,6 +168,9 @@ def test_detect_dialect_yarax_signals() -> None:
 
     yarax_nested_empty_tuple = "rule x { condition: ((), 1) }"
     assert detect_dialect(yarax_nested_empty_tuple) == YaraDialect.YARA_X
+
+    yarax_deep_empty_tuple = "rule x { condition: (((), 1), 2) }"
+    assert detect_dialect(yarax_deep_empty_tuple) == YaraDialect.YARA_X
 
 
 def test_detect_dialect_ignores_yarax_signals_inside_regex_literals() -> None:

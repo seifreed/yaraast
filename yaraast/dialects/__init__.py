@@ -183,6 +183,7 @@ yarax_patterns = [
     r"\bcondition\s*:\s*\{[^{}\n]*:[^{}\n]*\}",
     r"\bcondition\s*:\s*\([^()\n]*,\s*[^()\n]*\)",
     r"\bcondition\s*:\s*\(\s*\)",
+    r"(?:\bcondition\s*:|[,(]\s*)\(\s*\)(?=\s*[,)])",
     r"\bcondition\s*:\s*\(\s*\(\s*\)\s*,",
     r"\bcondition\s*:\s*\([^()\n]*,\s*\(\s*\)\s*\)",
     r"\bcondition\s*:\s*\(\s*\([^()\n]*,[^()\n]*\)\s*,",
