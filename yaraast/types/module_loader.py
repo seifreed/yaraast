@@ -98,6 +98,9 @@ class ModuleLoader:
         try:
             with Path(path).open(encoding="utf-8") as f:
                 data = json.load(f)
+        except UnicodeDecodeError as exc:
+            msg = f"Module specification '{path}' must contain valid UTF-8 text"
+            raise ModuleSpecError(msg) from exc
         except json.JSONDecodeError as exc:
             msg = f"Invalid JSON in module specification '{path}': {exc.msg}"
             raise ModuleSpecError(msg) from exc

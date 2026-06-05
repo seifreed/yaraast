@@ -43,6 +43,15 @@ def test_module_loader_rejects_invalid_json_specs(tmp_path: Path) -> None:
         del os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"]
 
 
+def test_module_loader_rejects_invalid_utf8_specs(tmp_path: Path) -> None:
+    invalid_utf8 = tmp_path / "invalid_utf8.json"
+    invalid_utf8.write_bytes(b"\xff")
+    loader = ModuleLoader()
+
+    with pytest.raises(ModuleSpecError, match="must contain valid UTF-8 text"):
+        loader._load_module_file(invalid_utf8)
+
+
 def test_module_loader_rejects_malformed_module_sections(tmp_path: Path) -> None:
     bad_module = tmp_path / "bad_module.json"
     bad_module.write_text(
