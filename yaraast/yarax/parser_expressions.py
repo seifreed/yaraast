@@ -24,11 +24,17 @@ class YaraXParserExpressionsMixin:
 
     def parse_expression(self: Any) -> Expression:
         """Parse expression with YARA-X extensions."""
-        return cast(Expression, self._parse_expression())
+        expression = cast(Expression, self._parse_expression())
+        self._require_expression_end("expression")
+        return expression
 
     def _parse_expression(self: Any) -> Expression:
         """Parse a full expression with YARA-X primary expressions."""
         return cast(Expression, cast(Any, super())._parse_expression())
+
+    def _require_expression_end(self: Any, context: str) -> None:
+        if not self._is_at_end():
+            raise ParserError(f"Unexpected token after {context}", self._peek())
 
     def _parse_primary_expression(self: Any) -> Expression:
         """Parse primary expression with YARA-X extensions."""
@@ -79,14 +85,14 @@ class YaraXParserExpressionsMixin:
 
         self._consume(TokenType.COLON, "Expected ':' after lambda parameters")
 
-        body = self.parse_expression()
+        body = self._parse_expression()
         return LambdaExpression(parameters=parameters, body=body)
 
     def _parse_pattern_match(self: Any) -> PatternMatch:
         """Parse pattern match expression."""
         self._consume_keyword("match")
 
-        value = self.parse_expression()
+        value = self._parse_expression()
 
         self._consume(TokenType.LBRACE, "Expected '{' after match value")
 
@@ -97,14 +103,14 @@ class YaraXParserExpressionsMixin:
             if self._check(TokenType.IDENTIFIER) and self._peek().value == "_":
                 self._advance()
                 self._consume_arrow()
-                default = self.parse_expression()
+                default = self._parse_expression()
                 self._consume_match_case_separator()
                 if not self._check(TokenType.RBRACE):
                     raise ParserError("Default match case must be last", self._peek())
             else:
-                pattern = self.parse_expression()
+                pattern = self._parse_expression()
                 self._consume_arrow()
-                result = self.parse_expression()
+                result = self._parse_expression()
                 cases.append(MatchCase(pattern=pattern, result=result))
                 self._consume_match_case_separator()
 
@@ -124,7 +130,7 @@ class YaraXParserExpressionsMixin:
         if self._check(TokenType.COLON):
             return cast(Expression, self._parse_slice_expression(expr, None))
 
-        index = self.parse_expression()
+        index = self._parse_expression()
 
         if self._check(TokenType.COLON):
             return cast(Expression, self._parse_slice_expression(expr, index))

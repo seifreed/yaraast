@@ -18,11 +18,13 @@ class YaraXParserConditionsMixin:
         """Parse condition with YARA-X extensions."""
         if self._check_keyword("with"):
             return cast(Condition, self._parse_with_statement())
-        return cast(Condition, self.parse_expression())
+        return cast(Condition, self._parse_expression())
 
     def parse_condition(self: Any) -> Condition:
         """Parse condition with YARA-X extensions."""
-        return cast(Condition, self._parse_condition())
+        condition = cast(Condition, self._parse_condition())
+        self._require_expression_end("condition")
+        return condition
 
     def _parse_with_statement(self: Any) -> WithStatement:
         """Parse 'with' statement."""
@@ -46,5 +48,5 @@ class YaraXParserConditionsMixin:
         else:
             raise ParserError(ERROR_EXPECTED_VARIABLE, self._peek())
         self._consume(TokenType.ASSIGN, "Expected '=' in with declaration")
-        value = self.parse_expression()
+        value = self._parse_expression()
         return WithDeclaration(identifier=identifier, value=value)

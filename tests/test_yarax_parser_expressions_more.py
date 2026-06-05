@@ -95,6 +95,14 @@ def test_parse_pattern_match_requires_default_case_last() -> None:
         YaraXParser("match x { _ => 0, 1 => 1 }").parse_expression()
 
 
+def test_parse_expression_rejects_trailing_tokens() -> None:
+    with pytest.raises(ParserError, match="Unexpected token after expression"):
+        YaraXParser("1 trailing").parse_expression()
+
+    with pytest.raises(ParserError, match="Unexpected token after expression"):
+        YaraXParser("[1] trailing").parse_expression()
+
+
 def test_parse_bracket_access_supports_slice_tuple_indexing_and_array_access() -> None:
     parser = _manual_parser(
         [

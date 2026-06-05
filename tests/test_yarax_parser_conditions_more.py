@@ -4,6 +4,7 @@ import pytest
 
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.lexer.tokens import Token, TokenType
+from yaraast.parser._shared import ParserError
 from yaraast.yarax.ast_nodes import WithStatement
 from yaraast.yarax.parser import YaraXParser
 
@@ -26,6 +27,14 @@ def test_parse_condition_supports_with_and_fallback_condition() -> None:
     plain = YaraXParser("true").parse_condition()
     assert isinstance(plain, BooleanLiteral)
     assert plain.value is True
+
+
+def test_parse_condition_rejects_trailing_tokens() -> None:
+    with pytest.raises(ParserError, match="Unexpected token after condition"):
+        YaraXParser("true trailing").parse_condition()
+
+    with pytest.raises(ParserError, match="Unexpected token after condition"):
+        YaraXParser("with local = 1: true trailing").parse_condition()
 
 
 def test_parse_with_declaration_rejects_invalid_variable_token() -> None:
