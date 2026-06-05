@@ -88,8 +88,9 @@ _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 _STRING_IDENTIFIER_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 _YARA_INTEGER_TEXT_RE = re.compile(r"^-?(?:0x[0-9A-Fa-f]+|0o[0-7]+|[0-9]+(?:KB|MB))$")
 _STRING_PLACEHOLDER_REFERENCES = frozenset({"", "$"})
-_YARA_INTEGER_MIN = -(2**63) + 1
+_YARA_INTEGER_MIN = -(2**63)
 _YARA_INTEGER_MAX = 2**63 - 1
+_YARA_INTEGER_MIN_EXPRESSION = "(-9223372036854775807 - 1)"
 
 
 class _XorKey(NamedTuple):
@@ -542,6 +543,8 @@ def format_integer_literal(value: object) -> str:
         raise TypeError(msg)
 
     _validate_integer_literal_range(int_value)
+    if int_value == _YARA_INTEGER_MIN:
+        return _YARA_INTEGER_MIN_EXPRESSION
 
     hex_values = {
         0x4D5A: "0x4D5A",

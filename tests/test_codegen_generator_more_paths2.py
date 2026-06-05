@@ -73,6 +73,7 @@ from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
+from yaraast.shared.integer_semantics import INT64_MIN
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictExpression,
@@ -2023,6 +2024,24 @@ def test_codegen_generators_reject_out_of_range_meta_integers(meta_value: int) -
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+def test_codegen_generator_renders_int64_min_condition_as_expression() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="int64_min_condition",
+                condition=IntegerLiteral(INT64_MIN),
+            )
+        ]
+    )
+
+    assert (
+        CodeGenerator().generate(ast) == "rule int64_min_condition {\n"
+        "    condition:\n"
+        "        (-9223372036854775807 - 1)\n"
+        "}\n"
+    )
 
 
 def test_codegen_generators_escape_quoted_meta_string_values() -> None:
@@ -4063,10 +4082,9 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
     assert gen.visit_integer_literal(IntegerLiteral(hex_integer_text)) == "0x10"
     assert gen.visit_integer_literal(IntegerLiteral(2**63 - 1)) == "9223372036854775807"
     assert gen.visit_integer_literal(IntegerLiteral(-(2**63) + 1)) == "-9223372036854775807"
+    assert gen.visit_integer_literal(IntegerLiteral(INT64_MIN)) == "(-9223372036854775807 - 1)"
     with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
         gen.visit_integer_literal(IntegerLiteral(2**63))
-    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
-        gen.visit_integer_literal(IntegerLiteral(-(2**63)))
     oversized_hex_integer_text: Any = "0x8000000000000000"
     with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
         gen.visit_integer_literal(IntegerLiteral(oversized_hex_integer_text))

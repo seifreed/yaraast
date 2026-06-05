@@ -19,6 +19,7 @@ from yaraast.lexer.lexer_helpers import (
     skip_whitespace_and_comments,
 )
 from yaraast.lsp.provider_call_helpers import call_range_with_optional_uri, call_with_optional_uri
+from yaraast.shared.integer_semantics import INT64_MIN
 
 
 def test_provider_call_helpers_do_not_mask_internal_type_errors() -> None:
@@ -108,6 +109,8 @@ def test_generator_helpers_escape_integer_and_modifiers() -> None:
     assert format_integer_literal(0x30) == "48"
     assert format_integer_literal(0x200) == "0x200"
     assert format_integer_literal(255) == "255"
+    assert format_integer_literal(INT64_MIN) == "(-9223372036854775807 - 1)"
+    assert format_integer_literal(str(INT64_MIN)) == "(-9223372036854775807 - 1)"
     with pytest.raises(TypeError, match="Integer literal value must be an integer"):
         format_integer_literal(True)
 

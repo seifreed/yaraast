@@ -21,6 +21,7 @@ from yaraast.regex_literals import validate_regex_modifiers
 
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
+_YARA_META_INTEGER_MIN = -(2**63)
 _YARA_CONTEXTUAL_IDENTIFIER_KEYWORDS = frozenset({"as", "include"})
 _YARA_CONTEXTUAL_IDENTIFIER_KINDS = frozenset({"loop variable", "meta", "rule", "tag"})
 _YARA_RULE_MODIFIERS = frozenset({"global", "private"})
@@ -299,6 +300,9 @@ def format_meta_literal(value: Any, *, preserve_quoted: bool = False) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, int):
+        if value == _YARA_META_INTEGER_MIN:
+            msg = "Integer literal value is outside libyara range"
+            raise ValueError(msg)
         return format_integer_literal(value)
     msg = f"Invalid meta value type '{type(value).__name__}' for libyara output"
     raise TypeError(msg)
