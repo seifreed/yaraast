@@ -260,7 +260,7 @@ class AstHasher(ASTVisitor[str]):
         )
 
     def visit_at_expression(self, node) -> str:
-        return f"At({node.string_id},{self.visit(node.offset)})"
+        return f"At({self._hash_value(node.string_id)},{self.visit(node.offset)})"
 
     def visit_in_expression(self, node) -> str:
         subject = getattr(node, "subject", getattr(node, "string_id", None))

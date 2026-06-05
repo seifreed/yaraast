@@ -9,7 +9,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.ast.conditions import ForOfExpression, InExpression, OfExpression
+from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -265,6 +265,15 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
             ),
         )
         == "At($a,Int(10))"
+    )
+    assert (
+        hasher.visit_at_expression(
+            AtExpression(
+                string_id=OfExpression(IntegerLiteral(1), Identifier("them")),
+                offset=IntegerLiteral(10),
+            )
+        )
+        == "At(Of(Int(1),Id(them)),Int(10))"
     )
 
     in_expr = InExpression(subject="$a", range=IntegerLiteral(value=5))
