@@ -1870,12 +1870,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "StringOffset":
         return StringOffset(
             _deserialize_nonempty_string_field(data, "string_id", "StringOffset"),
-            _deserialize_optional_node_field(data, "index", "StringOffset index"),
+            _deserialize_nullable_node_field(data, "index", "StringOffset"),
         )
     if node_type == "StringLength":
         return StringLength(
             _deserialize_nonempty_string_field(data, "string_id", "StringLength"),
-            _deserialize_optional_node_field(data, "index", "StringLength index"),
+            _deserialize_nullable_node_field(data, "index", "StringLength"),
         )
     if node_type == "BinaryExpression":
         return BinaryExpression(
@@ -1946,7 +1946,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return ForOfExpression(
             _deserialize_required_quantifier(data, "quantifier", "ForOfExpression"),
             _deserialize_required_string_set(data, "string_set", "ForOfExpression"),
-            _deserialize_optional_node_field(data, "condition", "ForOfExpression condition"),
+            _deserialize_nullable_node_field(data, "condition", "ForOfExpression"),
         )
     if node_type == "AtExpression":
         raw_subject = data.get("string_id")
@@ -2153,9 +2153,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "SliceExpression":
         return SliceExpression(
             target=_deserialize_required_node(data, "target", "SliceExpression"),
-            start=_deserialize_optional_node_field(data, "start", "SliceExpression start"),
-            stop=_deserialize_optional_node_field(data, "stop", "SliceExpression stop"),
-            step=_deserialize_optional_node_field(data, "step", "SliceExpression step"),
+            start=_deserialize_nullable_node_field(data, "start", "SliceExpression"),
+            stop=_deserialize_nullable_node_field(data, "stop", "SliceExpression"),
+            step=_deserialize_nullable_node_field(data, "step", "SliceExpression"),
         )
     if node_type == "LambdaExpression":
         raw_parameters = _deserialize_required_field(data, "parameters", "LambdaExpression")
@@ -2188,7 +2188,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return PatternMatch(
             value=_deserialize_required_node(data, "value", "PatternMatch"),
             cases=cases,
-            default=_deserialize_optional_node_field(data, "default", "PatternMatch default"),
+            default=_deserialize_nullable_node_field(data, "default", "PatternMatch"),
         )
     if node_type == "MatchCase":
         return MatchCase(

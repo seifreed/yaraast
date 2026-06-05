@@ -2197,6 +2197,12 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
         ),
         ({"type": "DictItem", "value": true_expr}, "DictItem key is required"),
         ({"type": "DictItem", "key": true_expr}, "DictItem value is required"),
+        ({"type": "StringOffset", "string_id": "$a"}, "StringOffset index is required"),
+        ({"type": "StringLength", "string_id": "$a"}, "StringLength index is required"),
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": "them"},
+            "ForOfExpression condition is required",
+        ),
         (
             {"type": "ArrayComprehension", "variable": "x"},
             "ArrayComprehension expression is required",
@@ -2262,8 +2268,21 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
             "DictComprehension condition is required",
         ),
         ({"type": "SliceExpression"}, "SliceExpression target is required"),
+        ({"type": "SliceExpression", "target": true_expr}, "SliceExpression start is required"),
+        (
+            {"type": "SliceExpression", "target": true_expr, "start": None},
+            "SliceExpression stop is required",
+        ),
+        (
+            {"type": "SliceExpression", "target": true_expr, "start": None, "stop": None},
+            "SliceExpression step is required",
+        ),
         ({"type": "LambdaExpression", "parameters": ["x"]}, "LambdaExpression body is required"),
         ({"type": "PatternMatch", "cases": []}, "PatternMatch value is required"),
+        (
+            {"type": "PatternMatch", "value": true_expr, "cases": []},
+            "PatternMatch default is required",
+        ),
         ({"type": "MatchCase", "result": true_expr}, "MatchCase pattern is required"),
         ({"type": "MatchCase", "pattern": true_expr}, "MatchCase result is required"),
         ({"type": "SpreadOperator"}, "SpreadOperator expression is required"),
@@ -2403,11 +2422,17 @@ def test_simple_roundtrip_optional_expression_fields_reject_empty_objects() -> N
             "SliceExpression start must be an expression",
         ),
         (
-            {"type": "SliceExpression", "target": true_expr, "stop": {}},
+            {"type": "SliceExpression", "target": true_expr, "start": None, "stop": {}},
             "SliceExpression stop must be an expression",
         ),
         (
-            {"type": "SliceExpression", "target": true_expr, "step": {}},
+            {
+                "type": "SliceExpression",
+                "target": true_expr,
+                "start": None,
+                "stop": None,
+                "step": {},
+            },
             "SliceExpression step must be an expression",
         ),
         (

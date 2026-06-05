@@ -532,20 +532,18 @@ def _deser_string_count(self, data: dict[str, Any]):
 def _deser_string_offset(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringOffset
 
-    index = data.get("index")
     return StringOffset(
         string_id=_deserialize_nonempty_string_field(data, "string_id", "StringOffset"),
-        index=_deserialize_optional_expression(self, index, "StringOffset index"),
+        index=_deserialize_nullable_expression_field(self, data, "index", "StringOffset"),
     )
 
 
 def _deser_string_length(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringLength
 
-    index = data.get("index")
     return StringLength(
         string_id=_deserialize_nonempty_string_field(data, "string_id", "StringLength"),
-        index=_deserialize_optional_expression(self, index, "StringLength index"),
+        index=_deserialize_nullable_expression_field(self, data, "index", "StringLength"),
     )
 
 
@@ -596,11 +594,12 @@ def _deser_for_expression(self, data: dict[str, Any]):
 def _deser_for_of_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import ForOfExpression
 
-    condition = data.get("condition")
     return ForOfExpression(
         quantifier=_deserialize_required_quantifier(self, data, "quantifier", "ForOfExpression"),
         string_set=_deserialize_required_string_set(self, data, "string_set", "ForOfExpression"),
-        condition=_deserialize_optional_expression(self, condition, "ForOfExpression condition"),
+        condition=_deserialize_nullable_expression_field(
+            self, data, "condition", "ForOfExpression"
+        ),
     )
 
 
@@ -933,9 +932,9 @@ def _deser_slice_expression(self, data: dict[str, Any]):
 
     return SliceExpression(
         target=_deserialize_required_expression(self, data, "target", "SliceExpression"),
-        start=_deserialize_optional_expression(self, data.get("start"), "SliceExpression start"),
-        stop=_deserialize_optional_expression(self, data.get("stop"), "SliceExpression stop"),
-        step=_deserialize_optional_expression(self, data.get("step"), "SliceExpression step"),
+        start=_deserialize_nullable_expression_field(self, data, "start", "SliceExpression"),
+        stop=_deserialize_nullable_expression_field(self, data, "stop", "SliceExpression"),
+        step=_deserialize_nullable_expression_field(self, data, "step", "SliceExpression"),
     )
 
 
@@ -977,7 +976,7 @@ def _deser_pattern_match(self, data: dict[str, Any]):
     return PatternMatch(
         value=_deserialize_required_expression(self, data, "value", "PatternMatch"),
         cases=cases,
-        default=_deserialize_optional_expression(self, data.get("default"), "PatternMatch default"),
+        default=_deserialize_nullable_expression_field(self, data, "default", "PatternMatch"),
     )
 
 
