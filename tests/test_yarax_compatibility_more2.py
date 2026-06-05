@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from yaraast.ast.base import Location, YaraFile
-from yaraast.ast.conditions import OfExpression
+from yaraast.ast.conditions import AtExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -177,6 +177,29 @@ def test_checker_reports_yarax_boolean_of_expressions_in_raw_lists() -> None:
         OfExpression(
             quantifier=IntegerLiteral(1),
             string_set=[BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False))],
+        )
+    )
+
+    assert any(
+        issue.issue_type == "yarax_feature"
+        and "boolean expressions in 'of' statement" in issue.message
+        for issue in checker.issues
+    )
+
+
+def test_checker_visits_at_expression_of_subject_for_yarax_features() -> None:
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
+    checker.features.allow_tuple_of_expressions = True
+
+    checker.visit_at_expression(
+        AtExpression(
+            string_id=OfExpression(
+                quantifier=IntegerLiteral(1),
+                string_set=SetExpression(
+                    elements=[BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False))]
+                ),
+            ),
+            offset=IntegerLiteral(0),
         )
     )
 

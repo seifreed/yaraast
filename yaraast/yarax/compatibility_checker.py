@@ -423,6 +423,7 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
         self._visit_ast_value(node.condition)
 
     def visit_at_expression(self, node: Any) -> None:
+        self._visit_ast_value(node.string_id)
         self._visit_ast_value(node.offset)
 
     def visit_in_expression(self, node: Any) -> None:
