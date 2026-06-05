@@ -1989,6 +1989,8 @@ def test_json_roundtrip_preserves_string_modifier_aliases() -> None:
         json.dumps(
             {
                 "type": "YaraFile",
+                "imports": [],
+                "includes": [],
                 "rules": [
                     {
                         "type": "Rule",

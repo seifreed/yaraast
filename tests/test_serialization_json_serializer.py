@@ -175,6 +175,7 @@ def test_json_serializer_unknown_string_and_token_types() -> None:
                     "meta": [],
                     "strings": [{"type": "UnknownString", "identifier": "$a"}],
                     "condition": None,
+                    "pragmas": [],
                 }
             ],
         }
@@ -203,6 +204,7 @@ def test_json_serializer_unknown_string_and_token_types() -> None:
                         }
                     ],
                     "condition": None,
+                    "pragmas": [],
                 }
             ],
         }
@@ -227,6 +229,7 @@ def test_json_serializer_unknown_expression_type() -> None:
                     "meta": [],
                     "strings": [],
                     "condition": {"type": "UnknownExpr"},
+                    "pragmas": [],
                 }
             ],
         }

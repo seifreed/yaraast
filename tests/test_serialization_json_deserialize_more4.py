@@ -79,6 +79,17 @@ def _serialized_json_rule(**overrides: Any) -> dict[str, Any]:
     return data
 
 
+def _serialized_json_yarafile(**overrides: Any) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "type": "YaraFile",
+        "imports": [],
+        "includes": [],
+        "rules": [],
+    }
+    data.update(overrides)
+    return data
+
+
 def test_deserialize_import_include_meta_and_rule_meta_variants() -> None:
     s = JsonSerializer()
 
@@ -192,14 +203,20 @@ def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="YaraFile must be an object"):
         s._deserialize_ast(cast(Any, "rule r"))
 
+    for field in ("imports", "includes", "rules"):
+        data = _serialized_json_yarafile()
+        del data[field]
+        with pytest.raises(SerializationError, match=f"YaraFile {field} is required"):
+            s._deserialize_ast(data)
+
     with pytest.raises(SerializationError, match="YaraFile imports must be a list"):
-        s._deserialize_ast({"type": "YaraFile", "imports": "pe"})
+        s._deserialize_ast(_serialized_json_yarafile(imports="pe"))
 
     with pytest.raises(SerializationError, match="Import must be an object"):
-        s._deserialize_ast({"type": "YaraFile", "imports": ["pe"]})
+        s._deserialize_ast(_serialized_json_yarafile(imports=["pe"]))
 
     with pytest.raises(SerializationError, match="YaraFile extern_rules must be a list"):
-        s._deserialize_ast({"type": "YaraFile", "extern_rules": "RemoteRule"})
+        s._deserialize_ast(_serialized_json_yarafile(extern_rules="RemoteRule"))
 
     with pytest.raises(SerializationError, match="Rule must be an object"):
         s._deserialize_rule(cast(Any, "rule"))

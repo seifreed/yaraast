@@ -76,6 +76,7 @@ from yaraast.serialization.json_serializer_deserialize import (
     JsonSerializerDeserializeMixin,
     _deserialize_list_field,
     _deserialize_object,
+    _deserialize_required_list_field,
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.pragma_scopes import serialize_pragma_scope
@@ -256,15 +257,15 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
 
         imports = [
             self._deserialize_import(imp)
-            for imp in _deserialize_list_field(ast_data, "imports", "YaraFile")
+            for imp in _deserialize_required_list_field(ast_data, "imports", "YaraFile")
         ]
         includes = [
             self._deserialize_include(inc)
-            for inc in _deserialize_list_field(ast_data, "includes", "YaraFile")
+            for inc in _deserialize_required_list_field(ast_data, "includes", "YaraFile")
         ]
         rules = [
             self._deserialize_rule(rule)
-            for rule in _deserialize_list_field(ast_data, "rules", "YaraFile")
+            for rule in _deserialize_required_list_field(ast_data, "rules", "YaraFile")
         ]
 
         kwargs: dict = {"imports": imports, "includes": includes, "rules": rules}

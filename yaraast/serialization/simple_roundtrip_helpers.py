@@ -2145,15 +2145,15 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
     yf = YaraFile()
     yf.imports = [
         _deserialize_expected_node(imp, Import, "YaraFile imports", "Import")
-        for imp in _deserialize_list_field(data, "imports", "YaraFile")
+        for imp in _deserialize_required_list_field(data, "imports", "YaraFile")
     ]
     yf.includes = [
         _deserialize_expected_node(inc, Include, "YaraFile includes", "Include")
-        for inc in _deserialize_list_field(data, "includes", "YaraFile")
+        for inc in _deserialize_required_list_field(data, "includes", "YaraFile")
     ]
     yf.rules = [
         _deserialize_expected_node(rule, Rule, "YaraFile rules", "Rule")
-        for rule in _deserialize_list_field(data, "rules", "YaraFile")
+        for rule in _deserialize_required_list_field(data, "rules", "YaraFile")
     ]
     yf.extern_rules = [
         _deserialize_extern_rule_item(rule, "YaraFile extern_rules")
