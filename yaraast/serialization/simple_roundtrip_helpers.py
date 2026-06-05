@@ -1588,7 +1588,7 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
 
 
 def serialize_extern_rule(extern_rule: ExternRule) -> dict[str, Any]:
-    return {
+    data = {
         "type": "ExternRule",
         "name": _serialize_required_nonempty_string(extern_rule.name, "ExternRule name"),
         "modifiers": _serialize_rule_modifiers(extern_rule.modifiers, "ExternRule"),
@@ -1597,6 +1597,7 @@ def serialize_extern_rule(extern_rule: ExternRule) -> dict[str, Any]:
             "ExternRule namespace",
         ),
     }
+    return _with_node_metadata(extern_rule, data)
 
 
 def _serialize_rule_modifiers(modifiers: Any, context: str) -> list[str]:
@@ -1685,7 +1686,7 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
         parameters = _serialize_string_key_dict(pragma.parameters, "Pragma parameters")
     if parameters is not None:
         data["parameters"] = parameters
-    return data
+    return _with_node_metadata(pragma, data)
 
 
 def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
@@ -2365,14 +2366,17 @@ def _deserialize_rule_modifiers(modifiers: list[Any]) -> list[Any]:
 
 
 def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
-    return ExternRule(
-        name=_deserialize_nonempty_string_field(data, "name", "ExternRule"),
-        modifiers=_deserialize_rule_modifiers(
-            _deserialize_nonempty_string_list_field(data, "modifiers", "ExternRule")
+    return _apply_node_metadata(
+        ExternRule(
+            name=_deserialize_nonempty_string_field(data, "name", "ExternRule"),
+            modifiers=_deserialize_rule_modifiers(
+                _deserialize_nonempty_string_list_field(data, "modifiers", "ExternRule")
+            ),
+            namespace=_deserialize_required_nullable_nonempty_string_field(
+                data, "namespace", "ExternRule"
+            ),
         ),
-        namespace=_deserialize_required_nullable_nonempty_string_field(
-            data, "namespace", "ExternRule"
-        ),
+        data,
     )
 
 
@@ -2441,7 +2445,7 @@ def deserialize_pragma(data: dict[str, Any]) -> Pragma:
             scope=scope,
         )
     pragma.scope = scope
-    return pragma
+    return _apply_node_metadata(pragma, data)
 
 
 def cast_in_rule_pragma(node: ASTNode) -> InRulePragma:

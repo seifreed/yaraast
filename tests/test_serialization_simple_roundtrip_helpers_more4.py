@@ -3117,6 +3117,43 @@ def test_simple_roundtrip_helpers_preserve_nested_node_metadata() -> None:
     assert restored_tokens[1].alternatives[0][0].location == Location(10, 11)
 
 
+def test_simple_roundtrip_helpers_preserve_nested_extern_and_pragma_metadata() -> None:
+    file_pragma = CustomPragma("file_vendor", ["on"])
+    file_pragma.location = Location(12, 13)
+    inner_pragma = CustomPragma("rule_vendor", ["x"])
+    inner_pragma.location = Location(14, 15)
+    in_rule_pragma = InRulePragma(inner_pragma, "before_condition")
+    in_rule_pragma.location = Location(16, 17)
+    extern_rule = ExternRule("external_rule")
+    extern_rule.location = Location(18, 19)
+    namespace_rule = ExternRule("namespace_rule")
+    namespace_rule.location = Location(20, 21)
+    namespace = ExternNamespace("ns", [namespace_rule])
+    namespace.location = Location(22, 23)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="nested_externs",
+                pragmas=[in_rule_pragma],
+                condition=BooleanLiteral(True),
+            )
+        ],
+        extern_rules=[extern_rule],
+        pragmas=[file_pragma],
+        namespaces=[namespace],
+    )
+
+    restored = deserialize_node(serialize_node(ast))
+
+    assert isinstance(restored, YaraFile)
+    assert restored.pragmas[0].location == Location(12, 13)
+    assert restored.rules[0].pragmas[0].location == Location(16, 17)
+    assert restored.rules[0].pragmas[0].pragma.location == Location(14, 15)
+    assert restored.extern_rules[0].location == Location(18, 19)
+    assert restored.namespaces[0].location == Location(22, 23)
+    assert restored.namespaces[0].extern_rules[0].location == Location(20, 21)
+
+
 def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> None:
     ok, differences = _compare_normalized("a\nb\nc", "a\nb\nc")
     assert ok is True
