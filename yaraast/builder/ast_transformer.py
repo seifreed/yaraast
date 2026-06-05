@@ -124,11 +124,13 @@ class RuleTransformer:
 
     def remove_tag(self, tag: str) -> RuleTransformer:
         """Remove a tag from the rule."""
+        tag = self._require_text(tag, "Tag")
         self.rule.tags = [t for t in self.rule.tags if t.name != tag]
         return self
 
     def replace_tag(self, old_tag: str, new_tag: str) -> RuleTransformer:
         """Replace a tag."""
+        old_tag = self._require_text(old_tag, "Old tag")
         validate_identifier(new_tag, "tag")
         if old_tag != new_tag and any(t.name == new_tag for t in self.rule.tags):
             msg = f"Duplicate tag identifier: {new_tag}"
@@ -152,6 +154,7 @@ class RuleTransformer:
 
     def remove_modifier(self, modifier: str) -> RuleTransformer:
         """Remove a modifier from the rule."""
+        modifier = self._require_text(modifier, "Rule modifier")
         self.rule.modifiers = [m for m in self.rule.modifiers if str(m) != modifier]
         return self
 
@@ -265,6 +268,7 @@ class RuleTransformer:
 
     def remove_string(self, identifier: str) -> RuleTransformer:
         """Remove a string definition by identifier."""
+        identifier = self._require_text(identifier, "String identifier")
         self.rule.strings = [s for s in self.rule.strings if s.identifier != identifier]
         return self
 
@@ -501,6 +505,7 @@ class YaraFileTransformer:
 
     def remove_import(self, module: str) -> YaraFileTransformer:
         """Remove an import statement."""
+        module = RuleTransformer._require_text(module, "Import module")
         self.yara_file.imports = [imp for imp in self.yara_file.imports if imp.module != module]
         return self
 
@@ -514,6 +519,7 @@ class YaraFileTransformer:
 
     def remove_include(self, path: str) -> YaraFileTransformer:
         """Remove an include statement."""
+        path = RuleTransformer._require_text(path, "Include path")
         self.yara_file.includes = [inc for inc in self.yara_file.includes if inc.path != path]
         return self
 
@@ -529,6 +535,7 @@ class YaraFileTransformer:
 
     def remove_rule(self, rule_name: str) -> YaraFileTransformer:
         """Remove a rule by name."""
+        rule_name = RuleTransformer._require_text(rule_name, "Rule name")
         self.yara_file.rules = [rule for rule in self.yara_file.rules if rule.name != rule_name]
         return self
 
@@ -538,6 +545,7 @@ class YaraFileTransformer:
         transformer_func: Callable[[Rule], Rule],
     ) -> YaraFileTransformer:
         """Transform a specific rule."""
+        rule_name = RuleTransformer._require_text(rule_name, "Rule name")
         RuleTransformer._require_callable(transformer_func, "Rule transformer")
         for i, rule in enumerate(self.yara_file.rules):
             if rule.name == rule_name:
@@ -611,10 +619,12 @@ class YaraFileTransformer:
 
     def filter_by_tag(self, tag: str) -> YaraFileTransformer:
         """Filter rules that have a specific tag."""
+        tag = RuleTransformer._require_text(tag, "Tag")
         return self.filter_rules(lambda rule: any(t.name == tag for t in rule.tags))
 
     def filter_by_modifier(self, modifier: str) -> YaraFileTransformer:
         """Filter rules that have a specific modifier."""
+        modifier = RuleTransformer._require_text(modifier, "Rule modifier")
         return self.filter_rules(lambda rule: any(str(m) == modifier for m in rule.modifiers))
 
     def build(self) -> YaraFile:

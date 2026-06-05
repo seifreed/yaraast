@@ -431,6 +431,38 @@ def test_yara_file_transformer_operations_and_filters() -> None:
     assert all(r.get_meta_value("author") == "team" for r in transformed.rules)
 
 
+@pytest.mark.parametrize(
+    ("operation", "args", "message"),
+    [
+        ("remove_import", (True,), "Import module must be a string"),
+        ("remove_include", (True,), "Include path must be a string"),
+        ("remove_rule", (True,), "Rule name must be a string"),
+        ("transform_rule", (True, lambda rule: rule), "Rule name must be a string"),
+        ("filter_by_tag", (True,), "Tag must be a string"),
+        ("filter_by_modifier", (True,), "Rule modifier must be a string"),
+    ],
+)
+def test_yara_file_transformer_rejects_non_string_selectors_without_partial_update(
+    operation: str,
+    args: tuple[object, ...],
+    message: str,
+) -> None:
+    original = YaraFile(
+        imports=[Import(module="pe")],
+        includes=[Include(path="a.yar")],
+        rules=[_sample_rule("one")],
+    )
+    transformer = YaraFileTransformer(original)
+
+    with pytest.raises(TypeError, match=message):
+        getattr(transformer, operation)(*cast(Any, args))
+
+    transformed = transformer.build()
+    assert [imp.module for imp in transformed.imports] == ["pe"]
+    assert [inc.path for inc in transformed.includes] == ["a.yar"]
+    assert [rule.name for rule in transformed.rules] == ["one"]
+
+
 def test_convenience_transform_functions_and_variant_collection_merge_paths() -> None:
     base = _sample_rule("base")
 
@@ -676,6 +708,9 @@ def test_rule_transformer_rejects_invalid_rule_names_without_partial_update(
         ("set_description", 123, "Rule description must be a string"),
         ("prefix_strings", True, "String prefix must be a string"),
         ("suffix_strings", True, "String suffix must be a string"),
+        ("remove_tag", True, "Tag must be a string"),
+        ("remove_modifier", True, "Rule modifier must be a string"),
+        ("remove_string", True, "String identifier must be a string"),
     ],
 )
 def test_rule_transformer_rejects_non_string_text_inputs_without_partial_update(
@@ -694,6 +729,15 @@ def test_rule_transformer_rejects_non_string_text_inputs_without_partial_update(
     assert [string.identifier for string in transformed.strings] == ["$a"]
     assert transformed.get_meta_value("author") == "me"
     assert transformed.get_meta_value("description") is None
+
+
+def test_rule_transformer_rejects_non_string_old_replacement_tag_without_partial_update() -> None:
+    transformer = RuleTransformer(_sample_rule("tagged"))
+
+    with pytest.raises(TypeError, match="Old tag must be a string"):
+        transformer.replace_tag(cast(Any, True), "newtag")
+
+    assert [rule_tag.name for rule_tag in transformer.build().tags] == ["t1"]
 
 
 @pytest.mark.parametrize("tag", ["bad tag", "bad-tag", "for", "1bad", ""])
