@@ -12,6 +12,7 @@ from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serialize_visitors import (
     _serialize_anonymous_flag,
+    _serialize_dynamic_node_metadata,
     _serialize_hex_byte_value,
     _serialize_hex_jump_bounds,
     _serialize_hex_negated_value,
@@ -516,6 +517,12 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         )
         if scope is not None:
             data["scope"] = serialize_meta_scope(scope)
+        if isinstance(node, ASTNode):
+            return self._with_node_metadata(node, data)
+        if any(
+            hasattr(node, name) for name in ("location", "leading_comments", "trailing_comment")
+        ):
+            return _serialize_dynamic_node_metadata(self, node, data)
         return data
 
     def visit_module_reference(self, node) -> dict[str, Any]:

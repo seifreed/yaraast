@@ -183,12 +183,19 @@ def test_json_serializer_visit_methods_cover_remaining_nodes() -> None:
     )
 
     assert s.visit_meta(Meta("k", "v"))["type"] == "Meta"
+    meta_with_location = Meta("k", "v")
+    meta_with_location.location = Location(3, 5)
+    assert s.visit_meta(meta_with_location)["location"] == {"line": 3, "column": 5}
+
     assert s.visit_meta(MetaEntry.from_key_value("k", "v", "private")) == {
         "type": "MetaEntry",
         "key": "k",
         "value": "v",
         "scope": "private",
     }
+    meta_entry_with_location = MetaEntry.from_key_value("k", "v", "private")
+    cast(Any, meta_entry_with_location).location = Location(7, 9)
+    assert s.visit_meta(meta_entry_with_location)["location"] == {"line": 7, "column": 9}
     assert s.visit_module_reference(ModuleReference("pe"))["type"] == "ModuleReference"
     assert (
         s.visit_dictionary_access(
