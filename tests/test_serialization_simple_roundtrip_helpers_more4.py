@@ -1104,6 +1104,7 @@ def test_simple_roundtrip_hex_tokens_reject_invalid_scalar_fields() -> None:
         {"type": "HexNegatedByte", "value": True},
         {"type": "HexJump", "min_jump": True, "max_jump": 3},
         {"type": "HexJump", "min_jump": 5, "max_jump": 3},
+        {"type": "HexNibble", "value": 10},
         {"type": "HexNibble", "high": "true", "value": 10},
         {"type": "HexNibble", "high": True, "value": True},
         {"type": "HexNibble", "high": True, "value": 16},

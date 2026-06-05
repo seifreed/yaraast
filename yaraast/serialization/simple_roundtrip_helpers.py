@@ -351,7 +351,7 @@ def _deserialize_hex_nibble_value(data: dict[str, Any]) -> int | str:
 
 
 def _deserialize_hex_nibble_high(data: dict[str, Any]) -> bool:
-    return _validate_hex_nibble_high(data.get("high", True))
+    return _validate_hex_nibble_high(_deserialize_required_field(data, "high", "HexNibble"))
 
 
 def _deserialize_hex_jump_bound(data: dict[str, Any], field: str) -> int | None:

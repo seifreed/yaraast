@@ -284,7 +284,7 @@ def _deserialize_hex_nibble_value(data: dict[str, Any]) -> int | str:
 
 
 def _deserialize_hex_nibble_high(data: dict[str, Any]) -> bool:
-    value = data.get("high", True)
+    value = _deserialize_required_field(data, "high", "HexNibble")
     if isinstance(value, bool):
         return value
     msg = "HexNibble high must be a boolean"
