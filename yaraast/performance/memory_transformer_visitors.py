@@ -177,6 +177,8 @@ def visit_function_call(transformer: Any, node: FunctionCall) -> FunctionCall:
     node = _shallow(node)
     node.function = pooled_value(transformer.string_pool, node.function)
     node.arguments = [transformer.visit(argument) for argument in node.arguments]
+    if node.receiver is not None:
+        node.receiver = transformer.visit(node.receiver)
     return node
 
 

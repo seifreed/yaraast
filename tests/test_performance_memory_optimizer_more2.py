@@ -8,6 +8,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment
 from yaraast.ast.conditions import ForOfExpression
 from yaraast.ast.expressions import (
+    ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
@@ -340,6 +341,23 @@ def test_memory_optimizer_pools_generic_expression_strings() -> None:
     optimized_regex = optimized_call.arguments[0]
     assert isinstance(optimized_regex, RegexLiteral)
     assert optimized_call.function is optimized_regex.pattern
+
+    receiver_array = _fresh_text("receiver_array")
+    receiver_function = _fresh_text("receiver_function")
+    receiver = ArrayAccess(Identifier(receiver_array), IntegerLiteral(0))
+    optimized_receiver_call = transformer.visit_function_call(
+        FunctionCall(
+            receiver_function,
+            [],
+            receiver=receiver,
+        )
+    )
+    assert optimized_receiver_call.receiver is not None
+    assert isinstance(optimized_receiver_call.receiver, ArrayAccess)
+    assert optimized_receiver_call.receiver is not receiver
+    optimized_receiver_identifier = optimized_receiver_call.receiver.array
+    assert isinstance(optimized_receiver_identifier, Identifier)
+    assert optimized_receiver_identifier.name is transformer.string_pool[receiver_array]
 
     set_item = _fresh_text("$shared")
     identifier_name = _fresh_text("$shared")
