@@ -77,6 +77,8 @@ def test_auto_detects_yarax_leading_dict_spread_syntax() -> None:
         ("rule x { condition: {foo.bar: baz} }", "{foo.bar: baz}"),
         ("rule x { condition: (1, 2) }", "(1, 2)"),
         ("rule x { condition: (1,) }", "(1,)"),
+        ("rule x { condition: ((x, y), z) }", "((x, y), z)"),
+        ("rule x { condition: (x, (y, z)) }", "(x, (y, z))"),
     ],
 )
 def test_auto_detects_yarax_standalone_collection_and_tuple_literals(
@@ -100,6 +102,18 @@ rule classic_hex_jump {
 }
 """
 
+    assert detect_dialect(source) == YaraDialect.YARA
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "rule x { condition: (true and false) }",
+        "rule x { condition: (uint16(0) == 0) }",
+        'rule x { strings: $a = "a" $b = "b" condition: any of ($a, $b) }',
+    ],
+)
+def test_yarax_tuple_detection_does_not_match_classic_parentheses(source: str) -> None:
     assert detect_dialect(source) == YaraDialect.YARA
 
 
