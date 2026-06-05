@@ -3077,6 +3077,46 @@ def test_simple_roundtrip_helpers_preserve_node_comment_metadata(tmp_path: Path)
     assert restored_condition.trailing_comment.text == "condition tail"
 
 
+def test_simple_roundtrip_helpers_preserve_nested_node_metadata() -> None:
+    tag = Tag("packed")
+    tag.location = Location(2, 3)
+    modifier = StringModifier.from_name_value("xor", 5)
+    modifier.location = Location(4, 5)
+    first_byte = HexByte(0x41)
+    first_byte.location = Location(6, 7)
+    alternative = HexAlternative([[HexByte(0x42)], [HexByte(0x43)]])
+    alternative.location = Location(8, 9)
+    alternative.alternatives[0][0].location = Location(10, 11)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="nested_metadata",
+                tags=[tag],
+                strings=[
+                    PlainString("$a", value="a", modifiers=[modifier]),
+                    HexString("$h", tokens=[first_byte, alternative]),
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    restored = deserialize_node(serialize_node(ast))
+
+    assert isinstance(restored, YaraFile)
+    assert restored.rules[0].tags[0].location == Location(2, 3)
+    restored_modifier = restored.rules[0].strings[0].modifiers[0]
+    assert isinstance(restored_modifier, StringModifier)
+    assert restored_modifier.location == Location(4, 5)
+    restored_hex_string = restored.rules[0].strings[1]
+    assert isinstance(restored_hex_string, HexString)
+    restored_tokens = restored_hex_string.tokens
+    assert restored_tokens[0].location == Location(6, 7)
+    assert restored_tokens[1].location == Location(8, 9)
+    assert isinstance(restored_tokens[1], HexAlternative)
+    assert restored_tokens[1].alternatives[0][0].location == Location(10, 11)
+
+
 def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> None:
     ok, differences = _compare_normalized("a\nb\nc", "a\nb\nc")
     assert ok is True

@@ -187,30 +187,32 @@ def _validate_hex_jump_bounds(min_value: Any, max_value: Any) -> tuple[int | Non
 def _serialize_hex_token(token: Any) -> dict[str, Any]:
     """Serialize a single hex token to a dictionary."""
     if isinstance(token, HexByte):
-        return {"type": "HexByte", "value": _validate_hex_byte_value(token.value, "HexByte")}
-    if isinstance(token, HexWildcard):
-        return {"type": "HexWildcard"}
-    if isinstance(token, HexJump):
+        data = {"type": "HexByte", "value": _validate_hex_byte_value(token.value, "HexByte")}
+    elif isinstance(token, HexWildcard):
+        data = {"type": "HexWildcard"}
+    elif isinstance(token, HexJump):
         min_jump, max_jump = _validate_hex_jump_bounds(token.min_jump, token.max_jump)
-        return {"type": "HexJump", "min_jump": min_jump, "max_jump": max_jump}
-    if isinstance(token, HexNibble):
-        return {
+        data = {"type": "HexJump", "min_jump": min_jump, "max_jump": max_jump}
+    elif isinstance(token, HexNibble):
+        data = {
             "type": "HexNibble",
             "high": _validate_hex_nibble_high(token.high),
             "value": _validate_hex_nibble_value(token.value),
         }
-    if isinstance(token, HexNegatedByte):
-        return {
+    elif isinstance(token, HexNegatedByte):
+        data = {
             "type": "HexNegatedByte",
             "value": _validate_hex_negated_value(token.value),
         }
-    if isinstance(token, HexAlternative):
-        return {
+    elif isinstance(token, HexAlternative):
+        data = {
             "type": "HexAlternative",
             "alternatives": _serialize_hex_alternative_branches(token.alternatives),
         }
-    msg = f"Unsupported hex token type: {type(token).__name__}"
-    raise SerializationError(msg)
+    else:
+        msg = f"Unsupported hex token type: {type(token).__name__}"
+        raise SerializationError(msg)
+    return _with_node_metadata(token, data)
 
 
 def _validate_hex_token_sequence(
@@ -242,22 +244,31 @@ def _deserialize_hex_token(data: dict[str, Any]):
     data = _deserialize_object(data, "Hex token")
     hex_kind = data.get("type")
     if hex_kind == "HexByte":
-        return HexByte(value=_deserialize_hex_byte_value(data, "HexByte"))
+        return _apply_node_metadata(
+            HexByte(value=_deserialize_hex_byte_value(data, "HexByte")),
+            data,
+        )
     if hex_kind == "HexWildcard":
-        return HexWildcard()
+        return _apply_node_metadata(HexWildcard(), data)
     if hex_kind == "HexJump":
         min_jump, max_jump = _deserialize_hex_jump_bounds(data)
-        return HexJump(min_jump=min_jump, max_jump=max_jump)
+        return _apply_node_metadata(HexJump(min_jump=min_jump, max_jump=max_jump), data)
     if hex_kind == "HexNibble":
-        return HexNibble(
-            high=_deserialize_hex_nibble_high(data),
-            value=_deserialize_hex_nibble_value(data),
+        return _apply_node_metadata(
+            HexNibble(
+                high=_deserialize_hex_nibble_high(data),
+                value=_deserialize_hex_nibble_value(data),
+            ),
+            data,
         )
     if hex_kind == "HexNegatedByte":
-        return HexNegatedByte(
-            value=_validate_hex_negated_value(
-                _deserialize_required_field(data, "value", "HexNegatedByte")
-            )
+        return _apply_node_metadata(
+            HexNegatedByte(
+                value=_validate_hex_negated_value(
+                    _deserialize_required_field(data, "value", "HexNegatedByte")
+                )
+            ),
+            data,
         )
     if hex_kind == "HexAlternative":
         raw_alternatives = _deserialize_list_field(data, "alternatives", "HexAlternative")
@@ -277,7 +288,7 @@ def _deserialize_hex_token(data: dict[str, Any]):
                 inside_alternative=True,
             )
             alternatives.append(alternative_tokens)
-        return HexAlternative(alternatives=alternatives)
+        return _apply_node_metadata(HexAlternative(alternatives=alternatives), data)
     msg = f"Unknown hex token type: {hex_kind}"
     raise SerializationError(msg)
 
@@ -694,7 +705,10 @@ def _deserialize_rule_tag(value: Any) -> Tag:
         if node_type is not None and node_type != "Tag":
             msg = "Rule tags must contain Tag nodes"
             raise SerializationError(msg)
-        return Tag(name=_deserialize_nonempty_string_field(value, "name", "Tag"))
+        return _apply_node_metadata(
+            Tag(name=_deserialize_nonempty_string_field(value, "name", "Tag")),
+            value,
+        )
     msg = "Tag name must be a string"
     raise SerializationError(msg)
 
@@ -722,13 +736,16 @@ def _serialize_modifiers(modifiers: Any, context: str) -> list[dict[str, Any]]:
     if not isinstance(modifiers, list | tuple):
         msg = f"{context} modifiers must be a list"
         raise SerializationError(msg)
-    return [
-        {
+    serialized = []
+    for modifier in modifiers:
+        data = {
             "name": _serialize_string_modifier_name(modifier),
             "value": _serialize_modifier_value(getattr(modifier, "value", None)),
         }
-        for modifier in modifiers
-    ]
+        if isinstance(modifier, StringModifier):
+            data = _with_node_metadata(modifier, data)
+        serialized.append(data)
+    return serialized
 
 
 def _validated_node_collection(
@@ -803,9 +820,12 @@ def _deserialize_modifier(modifier: Any) -> Any:
         raise SerializationError(msg)
 
     try:
-        return StringModifier.from_name_value(name, value)
+        deserialized_modifier = StringModifier.from_name_value(name, value)
     except (ValueError, ValidationError):
         return _format_unknown_modifier(name, value)
+    if isinstance(modifier, dict):
+        return _apply_node_metadata(deserialized_modifier, modifier)
+    return deserialized_modifier
 
 
 def _deserialize_modifiers(modifiers: list[Any]) -> list[Any]:
@@ -1010,6 +1030,14 @@ def _with_dynamic_node_metadata(node: Any, data: dict[str, Any]) -> dict[str, An
             raise SerializationError(msg)
         data["trailing_comment"] = serialize_node(trailing_comment)
     return data
+
+
+def _node_has_roundtrip_metadata(node: ASTNode) -> bool:
+    return (
+        node.location is not None
+        or bool(node.leading_comments)
+        or node.trailing_comment is not None
+    )
 
 
 def _apply_node_metadata(node: ASTNode, data: dict[str, Any]) -> ASTNode:
@@ -1592,7 +1620,7 @@ def _serialize_rule_modifiers(modifiers: Any, context: str) -> list[str]:
     return serialized
 
 
-def _serialize_rule_tags(tags: Any) -> list[str]:
+def _serialize_rule_tags(tags: Any) -> list[Any]:
     if not isinstance(tags, list | tuple):
         msg = "Rule tags must be a list"
         raise SerializationError(msg)
@@ -1600,7 +1628,14 @@ def _serialize_rule_tags(tags: Any) -> list[str]:
     serialized = []
     for tag in tags:
         if isinstance(tag, Tag):
-            serialized.append(_serialize_required_nonempty_string(tag.name, "Tag name"))
+            data = {
+                "type": "Tag",
+                "name": _serialize_required_nonempty_string(tag.name, "Tag name"),
+            }
+            if _node_has_roundtrip_metadata(tag):
+                serialized.append(_with_node_metadata(tag, data))
+            else:
+                serialized.append(data["name"])
             continue
         if isinstance(tag, str):
             serialized.append(_serialize_required_nonempty_string(tag, "Tag name"))
