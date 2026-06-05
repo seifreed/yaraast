@@ -108,17 +108,80 @@ def _reject_boolean_expression(value: Any, message: str) -> None:
         _reject_boolean_expression(value.expression, message)
 
 
-def _is_definitely_non_numeric_expression(value: Any) -> bool:
+def _is_definitely_boolean_expression(value: Any) -> bool:
+    from yaraast.ast.conditions import (
+        AtExpression,
+        ForExpression,
+        ForOfExpression,
+        InExpression,
+        OfExpression,
+    )
     from yaraast.ast.expressions import (
+        BinaryExpression,
+        BooleanLiteral,
+        StringCount,
+        UnaryExpression,
+    )
+
+    value = _unwrap_parenthesized_expression(value)
+    if isinstance(value, BooleanLiteral | bool):
+        return True
+    if isinstance(value, AtExpression | ForExpression | ForOfExpression | OfExpression):
+        return True
+    if isinstance(value, InExpression):
+        return not isinstance(value.subject, StringCount)
+    if isinstance(value, UnaryExpression):
+        return value.operator == "not"
+    if isinstance(value, BinaryExpression):
+        return value.operator in (
+            _COMPARISON_BINARY_OPERATORS | _STRING_BINARY_OPERATORS | {"and", "or"}
+        )
+    return False
+
+
+def _is_definitely_non_numeric_expression(value: Any) -> bool:
+    from yaraast.ast.conditions import (
+        AtExpression,
+        ForExpression,
+        ForOfExpression,
+        InExpression,
+        OfExpression,
+    )
+    from yaraast.ast.expressions import (
+        BinaryExpression,
         BooleanLiteral,
         ParenthesesExpression,
         RegexLiteral,
+        StringCount,
         StringIdentifier,
         StringLiteral,
+        UnaryExpression,
     )
 
     if isinstance(value, ParenthesesExpression):
         return _is_definitely_non_numeric_expression(value.expression)
+    if isinstance(value, AtExpression | ForExpression | ForOfExpression | OfExpression):
+        return True
+    if isinstance(value, InExpression):
+        return not isinstance(value.subject, StringCount)
+    if isinstance(value, UnaryExpression):
+        if value.operator in {"not", "%"}:
+            return True
+        return _is_definitely_non_numeric_expression(value.operand)
+    if isinstance(value, BinaryExpression):
+        if value.operator in (
+            _COMPARISON_BINARY_OPERATORS | _STRING_BINARY_OPERATORS | {"and", "or"}
+        ):
+            return True
+        if value.operator in _INTEGER_BINARY_OPERATORS:
+            return _is_definitely_non_integer_expression(
+                value.left
+            ) or _is_definitely_non_integer_expression(value.right)
+        if value.operator in _NUMERIC_BINARY_OPERATORS:
+            return _is_definitely_non_numeric_expression(
+                value.left
+            ) or _is_definitely_non_numeric_expression(value.right)
+        return True
     return isinstance(
         value,
         bool | BooleanLiteral | StringLiteral | RegexLiteral | StringIdentifier,
@@ -126,14 +189,35 @@ def _is_definitely_non_numeric_expression(value: Any) -> bool:
 
 
 def _is_definitely_non_integer_expression(value: Any) -> bool:
-    from yaraast.ast.expressions import DoubleLiteral, ParenthesesExpression, UnaryExpression
+    from yaraast.ast.expressions import (
+        BinaryExpression,
+        DoubleLiteral,
+        ParenthesesExpression,
+        UnaryExpression,
+    )
 
     if isinstance(value, ParenthesesExpression):
         return _is_definitely_non_integer_expression(value.expression)
+    if isinstance(value, BinaryExpression):
+        if value.operator in (
+            _COMPARISON_BINARY_OPERATORS | _STRING_BINARY_OPERATORS | {"and", "or"}
+        ):
+            return True
+        if value.operator in _INTEGER_BINARY_OPERATORS | _NUMERIC_BINARY_OPERATORS:
+            return _is_definitely_non_integer_expression(
+                value.left
+            ) or _is_definitely_non_integer_expression(value.right)
+        return True
     if isinstance(value, UnaryExpression):
+        if value.operator in {"not", "%"}:
+            return True
+        if value.operator == "~":
+            return _is_definitely_non_integer_expression(value.operand)
         operand = _unwrap_parenthesized_expression(value.operand)
         if value.operator == "-" and isinstance(operand, DoubleLiteral | float):
             return True
+        if value.operator == "-":
+            return _is_definitely_non_numeric_expression(value.operand)
     return isinstance(value, float | DoubleLiteral) or _is_definitely_non_numeric_expression(value)
 
 
@@ -245,7 +329,11 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
         RegexLiteral,
         StringIdentifier,
     )
-    if isinstance(left, invalid_left) or left_type in {"integer", "double"}:
+    if (
+        isinstance(left, invalid_left)
+        or _is_definitely_boolean_expression(left)
+        or left_type in {"integer", "double"}
+    ):
         msg = (
             f"Left operand of '{node.operator}' must be string-like or array " "for libyara output"
         )
@@ -254,16 +342,22 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
         if isinstance(node.right, ParenthesesExpression) and isinstance(right, RegexLiteral):
             msg = "Right operand of 'matches' must be regex for libyara output"
             raise ValueError(msg)
-        if isinstance(
-            right,
-            StringLiteral | BooleanLiteral | IntegerLiteral | DoubleLiteral | StringIdentifier,
-        ) or right_type in {"integer", "double"}:
+        if (
+            isinstance(
+                right,
+                StringLiteral | BooleanLiteral | IntegerLiteral | DoubleLiteral | StringIdentifier,
+            )
+            or _is_definitely_boolean_expression(right)
+            or right_type in {"integer", "double"}
+        ):
             msg = "Right operand of 'matches' must be regex for libyara output"
             raise ValueError(msg)
         return
-    if isinstance(
-        right, bool | int | float | BooleanLiteral | IntegerLiteral | DoubleLiteral
-    ) or right_type in {"integer", "double"}:
+    if (
+        isinstance(right, bool | int | float | BooleanLiteral | IntegerLiteral | DoubleLiteral)
+        or _is_definitely_boolean_expression(right)
+        or right_type in {"integer", "double"}
+    ):
         msg = f"Right operand of '{node.operator}' must be string for libyara output"
         raise ValueError(msg)
     if isinstance(right, RegexLiteral | StringIdentifier):
@@ -272,7 +366,12 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
 
 
 def _constant_integer_value(value: Any) -> int | None:
-    from yaraast.ast.expressions import IntegerLiteral, ParenthesesExpression, UnaryExpression
+    from yaraast.ast.expressions import (
+        BinaryExpression,
+        IntegerLiteral,
+        ParenthesesExpression,
+        UnaryExpression,
+    )
 
     if isinstance(value, int) and not isinstance(value, bool):
         return value
@@ -292,7 +391,51 @@ def _constant_integer_value(value: Any) -> int | None:
             return -operand
         if value.operator == "~":
             return ~operand
+    if isinstance(value, BinaryExpression) and value.operator in {
+        "+",
+        "-",
+        "*",
+        "%",
+        "&",
+        "|",
+        "^",
+        "<<",
+        ">>",
+    }:
+        left = _constant_integer_value(value.left)
+        right = _constant_integer_value(value.right)
+        if left is None or right is None:
+            return None
+        if value.operator == "+":
+            return left + right
+        if value.operator == "-":
+            return left - right
+        if value.operator == "*":
+            return left * right
+        if value.operator == "%":
+            if right == 0:
+                return None
+            return _integer_remainder(left, right)
+        if value.operator == "&":
+            return left & right
+        if value.operator == "|":
+            return left | right
+        if value.operator == "^":
+            return left ^ right
+        if right < 0:
+            return None
+        if value.operator == "<<":
+            return left << right
+        if value.operator == ">>":
+            return left >> right
     return None
+
+
+def _integer_remainder(left: int, right: int) -> int:
+    quotient = abs(left) // abs(right)
+    if (left < 0) != (right < 0):
+        quotient = -quotient
+    return left - quotient * right
 
 
 def _reject_zero_integer_divisor(node: Any) -> None:
@@ -314,6 +457,7 @@ def _reject_negative_shift_count(node: Any) -> None:
 
 def _constant_comparison_operand_type(value: Any) -> str | None:
     from yaraast.ast.expressions import (
+        BinaryExpression,
         DoubleLiteral,
         FunctionCall,
         Identifier,
@@ -325,6 +469,16 @@ def _constant_comparison_operand_type(value: Any) -> str | None:
     )
 
     value = _unwrap_parenthesized_expression(value)
+    if isinstance(value, BinaryExpression):
+        if (
+            value.operator in _INTEGER_BINARY_OPERATORS
+            and not _is_definitely_non_integer_expression(value)
+        ):
+            return "integer"
+        if value.operator in _NUMERIC_BINARY_OPERATORS:
+            if _is_definitely_non_integer_expression(value):
+                return "double"
+            return "integer"
     if isinstance(value, StringLiteral | str):
         return "string"
     if _constant_integer_value(value) is not None:
@@ -352,11 +506,11 @@ def _reject_invalid_comparison_operands(node: Any) -> None:
     if node.operator not in _COMPARISON_BINARY_OPERATORS:
         return
 
-    from yaraast.ast.expressions import BooleanLiteral, RegexLiteral
+    from yaraast.ast.expressions import RegexLiteral
 
     left = _unwrap_parenthesized_expression(node.left)
     right = _unwrap_parenthesized_expression(node.right)
-    if isinstance(left, BooleanLiteral | bool) or isinstance(right, BooleanLiteral | bool):
+    if _is_definitely_boolean_expression(left) or _is_definitely_boolean_expression(right):
         msg = f"Boolean operands cannot be used with '{node.operator}' comparisons"
         raise ValueError(msg)
     if isinstance(left, RegexLiteral) or isinstance(right, RegexLiteral):

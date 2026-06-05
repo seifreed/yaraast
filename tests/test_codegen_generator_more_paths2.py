@@ -2663,8 +2663,24 @@ def test_codegen_rejects_malformed_fractional_percentage_quantifiers(
             "Left operand of 'contains' must be string-like or array",
         ),
         (
+            BinaryExpression(
+                OfExpression("all", Identifier("other_rule")),
+                "contains",
+                StringLiteral("x"),
+            ),
+            "Left operand of 'contains' must be string-like or array",
+        ),
+        (
             BinaryExpression(StringLiteral("abc"), "matches", StringLiteral("a")),
             "Right operand of 'matches' must be regex",
+        ),
+        (
+            BinaryExpression(
+                StringLiteral("abc"),
+                "contains",
+                BinaryExpression(IntegerLiteral(-1), "^", Identifier("filesize")),
+            ),
+            "Right operand of 'contains' must be string",
         ),
         (
             BinaryExpression(BooleanLiteral(True), "==", BooleanLiteral(False)),
@@ -2677,6 +2693,22 @@ def test_codegen_rejects_malformed_fractional_percentage_quantifiers(
         (
             BinaryExpression(IntegerLiteral(1), ">", BooleanLiteral(False)),
             "Boolean operands cannot be used with '>' comparisons",
+        ),
+        (
+            BinaryExpression(
+                Identifier("filesize"),
+                "==",
+                ParenthesesExpression(BinaryExpression(IntegerLiteral(1), "==", IntegerLiteral(1))),
+            ),
+            "Boolean operands cannot be used with '==' comparisons",
+        ),
+        (
+            BinaryExpression(
+                Identifier("filesize"),
+                "==",
+                OfExpression(IntegerLiteral(1), Identifier("other_rule")),
+            ),
+            "Boolean operands cannot be used with '==' comparisons",
         ),
         (
             BinaryExpression(RegexLiteral("a"), "==", RegexLiteral("b")),
@@ -2767,6 +2799,12 @@ def test_codegen_rejects_malformed_fractional_percentage_quantifiers(
             "Right operand of '\\+' must be numeric",
         ),
         (
+            BinaryExpression(
+                IntegerLiteral(1), "+", OfExpression(IntegerLiteral(1), Identifier("other_rule"))
+            ),
+            "Right operand of '\\+' must be numeric",
+        ),
+        (
             BinaryExpression(DoubleLiteral(1.5), "%", IntegerLiteral(1)),
             "Left operand of '%' must be integer",
         ),
@@ -2802,6 +2840,16 @@ def test_codegen_rejects_malformed_fractional_percentage_quantifiers(
             UnaryExpression("~", DoubleLiteral(1.5)),
             "Operand of '~' must be integer",
         ),
+        (
+            UnaryExpression(
+                "~",
+                AtExpression(
+                    OfExpression(IntegerLiteral(1), Identifier("other_rule")),
+                    ParenthesesExpression(IntegerLiteral(10)),
+                ),
+            ),
+            "Operand of '~' must be integer",
+        ),
         (UnaryExpression("!", IntegerLiteral(1)), "Invalid unary operator"),
     ],
 )
@@ -2819,6 +2867,70 @@ def test_codegen_generators_reject_invalid_expression_operators(
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match=message):
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+def test_codegen_generators_allow_string_count_in_as_integer_operand() -> None:
+    condition = BinaryExpression(
+        InExpression(
+            StringCount("a"),
+            RangeExpression(IntegerLiteral(0), Identifier("filesize")),
+        ),
+        "+",
+        IntegerLiteral(1),
+    )
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="string_count_in_integer_operand",
+                strings=[PlainString(identifier="a", value="a")],
+                condition=condition,
+            )
+        ]
+    )
+
+    assert "#a in (0..filesize) + 1" in CodeGenerator().generate(ast)
+
+
+def test_codegen_rejects_non_integer_at_expression_offset_directly() -> None:
+    with pytest.raises(ValueError, match="At expression offset must be integer"):
+        CodeGenerator().generate(AtExpression("$a", UnaryExpression("not", BooleanLiteral(True))))
+
+
+def test_codegen_rejects_unary_not_as_numeric_binary_operand_directly() -> None:
+    condition = BinaryExpression(
+        UnaryExpression("not", BooleanLiteral(True)),
+        "+",
+        IntegerLiteral(1),
+    )
+
+    with pytest.raises(ValueError, match="Left operand of '\\+' must be numeric"):
+        CodeGenerator().generate(condition)
+
+
+def test_codegen_rejects_non_integer_binary_range_bound_directly() -> None:
+    condition = InExpression(
+        "$a",
+        RangeExpression(
+            BinaryExpression(StringIdentifier("$a"), "or", IntegerLiteral(10)),
+            IntegerLiteral(10),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Range low bound must be integer"):
+        CodeGenerator().generate(condition)
+
+
+def test_codegen_rejects_computed_static_range_bounds_out_of_order_directly() -> None:
+    condition = InExpression(
+        StringCount("a"),
+        RangeExpression(
+            IntegerLiteral(10),
+            BinaryExpression(IntegerLiteral(0), "-", IntegerLiteral(0)),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Range low bound cannot exceed high bound"):
+        CodeGenerator().generate(condition)
 
 
 @pytest.mark.parametrize(
