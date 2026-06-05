@@ -242,6 +242,23 @@ def test_ast_benchmarker_reports_invalid_file_paths(tmp_path: Path) -> None:
     assert roundtrip_invalid_type.error == "file_path must be a string or path-like object"
 
 
+def test_ast_benchmarker_reports_invalid_utf8_inputs(tmp_path: Path) -> None:
+    bad = tmp_path / "bad.yar"
+    bad.write_bytes(b"\xff")
+    benchmarker = ASTBenchmarker()
+
+    parsing = benchmarker.benchmark_parsing(bad, iterations=1)
+    codegen = benchmarker.benchmark_codegen(bad, iterations=1)
+    roundtrip = benchmarker.benchmark_roundtrip(bad, iterations=1)[0]
+
+    assert parsing.success is False
+    assert parsing.error == "YARA file must contain valid UTF-8 text"
+    assert codegen.success is False
+    assert codegen.error == "YARA file must contain valid UTF-8 text"
+    assert roundtrip.success is False
+    assert roundtrip.error == "YARA file must contain valid UTF-8 text"
+
+
 def test_performance_check_no_issues_and_abort_paths(tmp_path: Path) -> None:
     runner = CliRunner()
 

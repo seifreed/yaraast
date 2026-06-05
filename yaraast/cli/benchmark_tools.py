@@ -33,6 +33,15 @@ def _require_benchmark_file_path(file_path: object) -> Path:
     return path
 
 
+def _read_benchmark_yara_text(file_path: object) -> str:
+    try:
+        with _require_benchmark_file_path(file_path).open(encoding="utf-8") as f:
+            return f.read()
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 @dataclass
 class BenchmarkResult:
     """Result of performance benchmark."""
@@ -67,8 +76,7 @@ class ASTBenchmarker:
         self._validate_iterations(iterations)
         try:
             # Read file once
-            with _require_benchmark_file_path(file_path).open(encoding="utf-8") as f:
-                content = f.read()
+            content = _read_benchmark_yara_text(file_path)
 
             file_size = len(content.encode())
             # Warm up
@@ -123,8 +131,7 @@ class ASTBenchmarker:
         self._validate_iterations(iterations)
         try:
             # Parse file once
-            with _require_benchmark_file_path(file_path).open(encoding="utf-8") as f:
-                content = f.read()
+            content = _read_benchmark_yara_text(file_path)
 
             file_size = len(content.encode())
             ast = parse_yara_source(content)
@@ -181,8 +188,7 @@ class ASTBenchmarker:
         results = []
 
         try:
-            with _require_benchmark_file_path(file_path).open(encoding="utf-8") as f:
-                content = f.read()
+            content = _read_benchmark_yara_text(file_path)
 
             file_size = len(content.encode())
             avg_time = self._time_roundtrip(content, iterations)
