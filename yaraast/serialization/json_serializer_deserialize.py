@@ -291,6 +291,14 @@ def _deserialize_hex_nibble_high(data: dict[str, Any]) -> bool:
     raise SerializationError(msg)
 
 
+def _deserialize_string_modifiers(serializer: Any, data: dict[str, Any], context: str) -> list[Any]:
+    raw_modifiers = _deserialize_required_field(data, "modifiers", context)
+    if not isinstance(raw_modifiers, list):
+        msg = f"{context} modifiers must be a list"
+        raise SerializationError(msg)
+    return [serializer._deserialize_modifier(modifier) for modifier in raw_modifiers]
+
+
 def _deserialize_hex_jump_bound(data: dict[str, Any], field: str) -> int | None:
     value = data.get(field)
     if value is None:
@@ -971,15 +979,11 @@ class JsonSerializerDeserializeMixin:
     def _deserialize_string(self, data: dict[str, Any]):
         data = _deserialize_object(data, "String")
         string_type = data.get("type")
-        context = string_type if isinstance(string_type, str) else "String"
-        modifiers = [
-            self._deserialize_modifier(m)
-            for m in _deserialize_list_field(data, "modifiers", context)
-        ]
 
         if string_type == "PlainString":
             from yaraast.ast.strings import PlainString
 
+            modifiers = _deserialize_string_modifiers(self, data, "PlainString")
             return self._apply_node_metadata(
                 PlainString(
                     identifier=_deserialize_nonempty_string_field(
@@ -997,6 +1001,7 @@ class JsonSerializerDeserializeMixin:
         if string_type == "HexString":
             from yaraast.ast.strings import HexString
 
+            modifiers = _deserialize_string_modifiers(self, data, "HexString")
             identifier = _deserialize_nonempty_string_field(
                 data,
                 "identifier",
@@ -1022,6 +1027,7 @@ class JsonSerializerDeserializeMixin:
         if string_type == "RegexString":
             from yaraast.ast.strings import RegexString
 
+            modifiers = _deserialize_string_modifiers(self, data, "RegexString")
             return self._apply_node_metadata(
                 RegexString(
                     identifier=_deserialize_nonempty_string_field(
@@ -1038,6 +1044,7 @@ class JsonSerializerDeserializeMixin:
         if string_type == "StringDefinition":
             from yaraast.ast.strings import StringDefinition
 
+            modifiers = _deserialize_string_modifiers(self, data, "StringDefinition")
             return self._apply_node_metadata(
                 StringDefinition(
                     identifier=_deserialize_nonempty_string_field(

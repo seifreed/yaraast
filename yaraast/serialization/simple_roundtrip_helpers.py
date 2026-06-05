@@ -354,6 +354,14 @@ def _deserialize_hex_nibble_high(data: dict[str, Any]) -> bool:
     return _validate_hex_nibble_high(_deserialize_required_field(data, "high", "HexNibble"))
 
 
+def _deserialize_string_modifiers(data: dict[str, Any], context: str) -> list[Any]:
+    raw_modifiers = _deserialize_required_field(data, "modifiers", context)
+    if not isinstance(raw_modifiers, list):
+        msg = f"{context} modifiers must be a list"
+        raise SerializationError(msg)
+    return _deserialize_modifiers(raw_modifiers)
+
+
 def _deserialize_hex_jump_bound(data: dict[str, Any], field: str) -> int | None:
     return _validate_hex_jump_bound(data.get(field), field)
 
@@ -2267,10 +2275,9 @@ def deserialize_string(data: dict[str, Any]) -> Any:
     if string_type is not None and not isinstance(string_type, str):
         msg = "String type must be a string"
         raise SerializationError(msg)
-    context = string_type if string_type is not None else "String"
-    modifiers = _deserialize_modifiers(_deserialize_list_field(data, "modifiers", context))
 
     if string_type == "PlainString":
+        modifiers = _deserialize_string_modifiers(data, "PlainString")
         return _apply_node_metadata(
             PlainString(
                 identifier=_deserialize_nonempty_string_field(data, "identifier", "PlainString"),
@@ -2282,6 +2289,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             data,
         )
     if string_type == "HexString":
+        modifiers = _deserialize_string_modifiers(data, "HexString")
         raw_tokens = data.get("tokens", [])
         identifier = _deserialize_nonempty_string_field(data, "identifier", "HexString")
         if not isinstance(raw_tokens, list):
@@ -2302,6 +2310,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             data,
         )
     if string_type == "RegexString":
+        modifiers = _deserialize_string_modifiers(data, "RegexString")
         return _apply_node_metadata(
             RegexString(
                 identifier=_deserialize_nonempty_string_field(
@@ -2316,6 +2325,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             data,
         )
     if string_type == "StringDefinition":
+        modifiers = _deserialize_string_modifiers(data, "StringDefinition")
         return _apply_node_metadata(
             StringDefinition(
                 identifier=_deserialize_nonempty_string_field(

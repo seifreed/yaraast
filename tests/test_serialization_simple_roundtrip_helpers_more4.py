@@ -1004,6 +1004,15 @@ def test_simple_roundtrip_deserialize_string_rejects_non_bool_anonymous_flag() -
 
 
 def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> None:
+    for string_data in (
+        {"type": "PlainString", "identifier": "$a", "value": "abc"},
+        {"type": "HexString", "identifier": "$h", "tokens": [{"type": "HexByte", "value": 65}]},
+        {"type": "RegexString", "identifier": "$r", "regex": "abc"},
+        {"type": "StringDefinition", "identifier": "$s"},
+    ):
+        with pytest.raises(SerializationError, match="modifiers is required"):
+            deserialize_string(string_data)
+
     with pytest.raises(SerializationError, match="PlainString identifier must be a string"):
         deserialize_string(
             {"type": "PlainString", "identifier": ["$a"], "value": "abc", "modifiers": []}
@@ -2680,7 +2689,9 @@ def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> Non
     assert "error" in diff
 
     with pytest.raises(SerializationError, match="HexString tokens must be a list"):
-        deserialize_string({"type": "HexString", "identifier": "$h", "tokens": "{ 41 }"})
+        deserialize_string(
+            {"type": "HexString", "identifier": "$h", "tokens": "{ 41 }", "modifiers": []}
+        )
 
 
 def test_simple_roundtrip_report_propagates_internal_parser_errors(
@@ -2711,6 +2722,7 @@ def test_validate_roundtrip_propagates_internal_generator_errors(
             "type": "HexString",
             "identifier": "$negated",
             "tokens": [{"type": "HexNegatedByte", "value": 0x4D}],
+            "modifiers": [],
         }
     )
     assert isinstance(negated_hex, HexString)
@@ -2721,6 +2733,7 @@ def test_validate_roundtrip_propagates_internal_generator_errors(
             "type": "HexString",
             "identifier": "$negated_nibble",
             "tokens": [{"type": "HexNegatedByte", "value": "?0"}],
+            "modifiers": [],
         }
     )
     assert isinstance(negated_nibble_hex, HexString)
@@ -2735,6 +2748,7 @@ def test_validate_roundtrip_propagates_internal_generator_errors(
                 "type": "HexString",
                 "identifier": "$bad_hex",
                 "tokens": [{"type": "Unknown", "data": "literal"}],
+                "modifiers": [],
             }
         )
 

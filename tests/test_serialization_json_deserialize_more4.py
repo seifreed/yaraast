@@ -551,6 +551,15 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
             {"type": "PlainString", "identifier": "$a", "value": "abc", "modifiers": "ascii"}
         )
 
+    for string_data in (
+        {"type": "PlainString", "identifier": "$a", "value": "abc"},
+        {"type": "HexString", "identifier": "$h", "tokens": [{"type": "HexByte", "value": 65}]},
+        {"type": "RegexString", "identifier": "$r", "regex": "abc"},
+        {"type": "StringDefinition", "identifier": "$s"},
+    ):
+        with pytest.raises(SerializationError, match="modifiers is required"):
+            s._deserialize_string(string_data)
+
     with pytest.raises(SerializationError, match="StringModifier name must be a string"):
         s._deserialize_string(
             {
