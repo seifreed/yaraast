@@ -271,6 +271,11 @@ class LibyaraCompiler:
 
         try:
             source = filepath.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            return CompilationResult(
+                success=False,
+                errors=["YARA file must contain valid UTF-8 text"],
+            )
         except Exception as e:
             return CompilationResult(
                 success=False,

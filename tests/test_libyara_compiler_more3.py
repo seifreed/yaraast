@@ -53,3 +53,14 @@ def test_libyara_compiler_compile_file_rejects_invalid_filepath_types(filepath: 
 
     assert result.success is False
     assert result.errors == ["filepath must be a string or path-like object"]
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_libyara_compiler_compile_file_rejects_invalid_utf8(tmp_path: Path) -> None:
+    rule_path = tmp_path / "invalid.yar"
+    rule_path.write_bytes(b"\xff")
+
+    result = LibyaraCompiler().compile_file(rule_path)
+
+    assert result.success is False
+    assert result.errors == ["YARA file must contain valid UTF-8 text"]
