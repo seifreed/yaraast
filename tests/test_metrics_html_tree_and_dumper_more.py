@@ -92,6 +92,9 @@ def test_ast_dumper_direct_visitors_for_remaining_nodes() -> None:
         )["arguments"][0]["value"]
         == 0
     )
+    assert dumper.visit_function_call(
+        FunctionCall(function="method", arguments=[], receiver=Identifier(name="obj"))
+    )["receiver"] == {"type": "Identifier", "name": "obj"}
     assert (
         dumper.visit_array_access(
             ArrayAccess(array=Identifier(name="arr"), index=IntegerLiteral(value=2))

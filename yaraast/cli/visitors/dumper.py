@@ -285,11 +285,14 @@ class ASTDumper(ASTVisitor[dict]):
         }
 
     def visit_function_call(self, node: FunctionCall) -> dict:
-        return {
+        result = {
             "type": "FunctionCall",
             "function": node.function,
             "arguments": [self.visit(arg) for arg in node.arguments],
         }
+        if node.receiver is not None:
+            result["receiver"] = self.visit(node.receiver)
+        return result
 
     def visit_array_access(self, node: ArrayAccess) -> dict:
         return {
