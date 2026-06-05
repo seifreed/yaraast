@@ -1282,6 +1282,10 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
             "ForExpression quantifier is required",
         ),
         (
+            {"type": "ForExpression", "quantifier": "any", "iterable": int_expr, "body": int_expr},
+            "ForExpression variable is required",
+        ),
+        (
             {"type": "ForExpression", "quantifier": "any", "variable": "i", "body": int_expr},
             "ForExpression iterable is required",
         ),
@@ -2217,6 +2221,7 @@ def test_simple_roundtrip_required_expression_fields_reject_empty_objects() -> N
             {
                 "type": "ForExpression",
                 "quantifier": "any",
+                "variable": "i",
                 "iterable": {},
                 "body": true_expr,
             },

@@ -1868,13 +1868,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_nonempty_string_field(data, "member", "MemberAccess"),
         )
     if node_type == "ForExpression":
-        variable = _deserialize_optional_string_field(data, "variable", "ForExpression", "i")
-        if not variable:
-            msg = "ForExpression variable must not be empty"
-            raise SerializationError(msg)
         return ForExpression(
             _deserialize_required_quantifier(data, "quantifier", "ForExpression"),
-            variable,
+            _deserialize_nonempty_string_field(data, "variable", "ForExpression"),
             _deserialize_required_node(data, "iterable", "ForExpression"),
             _deserialize_required_node(data, "body", "ForExpression"),
         )

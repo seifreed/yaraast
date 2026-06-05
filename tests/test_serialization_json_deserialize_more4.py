@@ -941,6 +941,10 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             "ForExpression quantifier is required",
         ),
         (
+            {"type": "ForExpression", "quantifier": "any", "iterable": int_expr, "body": int_expr},
+            "ForExpression variable is required",
+        ),
+        (
             {"type": "ForExpression", "quantifier": "any", "variable": "i", "body": int_expr},
             "ForExpression iterable is required",
         ),

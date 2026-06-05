@@ -518,13 +518,9 @@ def _deser_boolean_literal(self, data: dict[str, Any]):
 def _deser_for_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import ForExpression
 
-    variable = _deserialize_optional_string_field(data, "variable", "ForExpression", "i")
-    if not variable:
-        msg = "ForExpression variable must not be empty"
-        raise SerializationError(msg)
     return ForExpression(
         quantifier=_deserialize_required_quantifier(self, data, "quantifier", "ForExpression"),
-        variable=variable,
+        variable=_deserialize_nonempty_string_field(data, "variable", "ForExpression"),
         iterable=_deserialize_required_expression(self, data, "iterable", "ForExpression"),
         body=_deserialize_required_expression(self, data, "body", "ForExpression"),
     )
