@@ -263,6 +263,8 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         if module_name in self.imports and not self._is_local(module_name):
             self._add_module_reference(module_name)
 
+        if getattr(node, "receiver", None) is not None:
+            self.visit(node.receiver)
         for arg in self._required_ast_sequence(node.arguments, "Function arguments"):
             self.visit(arg)
 

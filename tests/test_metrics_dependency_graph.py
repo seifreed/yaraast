@@ -112,6 +112,15 @@ def test_dependency_graph_generator_does_not_treat_module_member_root_as_rule_de
     assert generator.module_references["check"] == {"pe"}
 
 
+def test_dependency_graph_tracks_module_reference_in_function_call_receiver() -> None:
+    ast = parse_yara_source('import "pe"\nrule check { condition: pe.signatures[0].valid_on(0) }')
+
+    generator = DependencyGraphGenerator()
+    generator.visit(ast)
+
+    assert generator.module_references["check"] == {"pe"}
+
+
 def test_dependency_graph_variant_generators_reset_between_inputs() -> None:
     first_ast = _parse_yara("""
     import "pe"
