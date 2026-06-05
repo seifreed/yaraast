@@ -5,6 +5,7 @@ from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
     SetExpression,
@@ -13,6 +14,7 @@ from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexJump, HexString, PlainString, RegexString
 from yaraast.limits import LIBYARA_HEX_JUMP_MAX
+from yaraast.yarax.ast_nodes import ListExpression
 from yaraast.yarax.compatibility_checker import CompatibilityIssue, YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
 from yaraast.yarax.parser import YaraXParser
@@ -253,6 +255,29 @@ rule collection_features {
         "tuple expressions",
         "tuple indexing",
     }.issubset(features)
+
+
+def test_checker_reports_yarax_features_in_function_call_receivers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="receiver_feature",
+                condition=FunctionCall(
+                    function="method",
+                    arguments=[],
+                    receiver=ListExpression([BooleanLiteral(True)]),
+                ),
+            )
+        ]
+    )
+
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
+    issues = checker.check(ast)
+
+    assert any(
+        issue.issue_type == "yarax_feature" and "list expressions" in issue.message
+        for issue in issues
+    )
 
 
 def test_checker_assesses_migration_difficulty_levels() -> None:

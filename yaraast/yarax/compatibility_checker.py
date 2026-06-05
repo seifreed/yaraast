@@ -391,6 +391,7 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
         self._visit_ast_value(node.high)
 
     def visit_function_call(self, node: Any) -> None:
+        self._visit_ast_value(getattr(node, "receiver", None))
         self._visit_ast_value(node.arguments)
 
     def visit_array_access(self, node: Any) -> None:
