@@ -792,9 +792,18 @@ def _deser_list_expression(self, data: dict[str, Any]):
 def _deser_dict_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import DictExpression
 
-    return DictExpression(
-        items=_deserialize_expression_list_field(self, data, "items", "DictExpression")
-    )
+    raw_items = _deserialize_required_field(data, "items", "DictExpression")
+    if not isinstance(raw_items, list):
+        msg = "DictExpression items must be a list"
+        raise SerializationError(msg)
+    items = []
+    for item in raw_items:
+        expression = self._deserialize_expression(item)
+        if expression is None:
+            msg = "DictExpression items must contain expressions"
+            raise SerializationError(msg)
+        items.append(expression)
+    return DictExpression(items=items)
 
 
 def _deser_dict_item(self, data: dict[str, Any]):

@@ -1276,6 +1276,9 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="ListExpression elements is required"):
         s._deserialize_expression({"type": "ListExpression"})
 
+    with pytest.raises(SerializationError, match="DictExpression items is required"):
+        s._deserialize_expression({"type": "DictExpression"})
+
     null_list_item_cases = (
         (
             {"type": "WithStatement", "declarations": [None], "body": true_expr},

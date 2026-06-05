@@ -2040,9 +2040,17 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             elements.append(_deserialize_required_node_value(element, "ListExpression elements"))
         return ListExpression(elements=elements)
     if node_type == "DictExpression":
-        return DictExpression(
-            items=_deserialize_node_list_field(data, "items", "DictExpression"),
-        )
+        raw_items = _deserialize_required_field(data, "items", "DictExpression")
+        if not isinstance(raw_items, list):
+            msg = "DictExpression items must be a list"
+            raise SerializationError(msg)
+        items = []
+        for item in raw_items:
+            if item is None or item == {}:
+                msg = "DictExpression items must contain nodes"
+                raise SerializationError(msg)
+            items.append(_deserialize_required_node_value(item, "DictExpression items"))
+        return DictExpression(items=items)
     if node_type == "DictItem":
         return DictItem(
             key=_deserialize_required_node(data, "key", "DictItem"),
