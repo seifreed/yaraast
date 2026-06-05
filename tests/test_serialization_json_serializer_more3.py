@@ -2043,7 +2043,10 @@ def test_json_roundtrip_preserves_meta_entry_scope() -> None:
     serialized = json.loads(serializer.serialize(ast))
     restored = serializer.deserialize(json.dumps(serialized))
 
+    assert serialized["ast"]["rules"][0]["meta"][0]["type"] == "MetaEntry"
     assert serialized["ast"]["rules"][0]["meta"][0]["scope"] == "private"
+    assert serialized["ast"]["rules"][0]["meta"][1]["type"] == "MetaEntry"
+    assert serialized["ast"]["rules"][0]["meta"][2]["type"] == "MetaEntry"
     assert [entry.scope for entry in restored.rules[0].meta] == [
         MetaScope.PRIVATE,
         MetaScope.PUBLIC,

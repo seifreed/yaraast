@@ -355,16 +355,17 @@ def _serialize_anonymous_flag(data: dict[str, Any], value, context: str) -> None
 def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     from yaraast.ast.modifiers import MetaEntry
 
+    scope = getattr(meta, "scope", None)
     value = (
         _serialize_meta_entry_value(getattr(meta, "value", ""))
-        if isinstance(meta, MetaEntry)
+        if isinstance(meta, MetaEntry) or scope is not None
         else _serialize_meta_value(getattr(meta, "value", ""))
     )
     data = {
+        "type": "MetaEntry" if scope is not None else "Meta",
         "key": _serialize_required_nonempty_string(getattr(meta, "key", ""), "Meta key"),
         "value": value,
     }
-    scope = getattr(meta, "scope", None)
     if scope is not None:
         data["scope"] = serialize_meta_scope(scope)
     if hasattr(meta, "accept"):
