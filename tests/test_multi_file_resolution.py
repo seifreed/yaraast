@@ -7,6 +7,8 @@ import tempfile
 
 import pytest
 
+from yaraast import Parser
+from yaraast.codegen.generator import CodeGenerator
 from yaraast.resolution import DependencyGraph, IncludeResolver, Workspace
 
 
@@ -15,6 +17,14 @@ def create_temp_file(directory: Path, name: str, content: str) -> Path:
     file_path = directory / name
     file_path.write_text(content, encoding="utf-8")
     return file_path
+
+
+def test_multi_file_utils_example_codegen_has_required_module_imports() -> None:
+    source = Path("examples/multi-file/common/utils.yar").read_text(encoding="utf-8")
+
+    generated = CodeGenerator().generate(Parser(source).parse())
+
+    assert 'import "pe"' in generated
 
 
 class TestIncludeResolver:
