@@ -81,6 +81,9 @@ def _validate_operation_list(operations: object) -> list[BatchOperation]:
     if not isinstance(operations, list):
         msg = "operations must be a BatchOperation or list of BatchOperation"
         raise TypeError(msg)
+    if not operations:
+        msg = "operations must not be empty"
+        raise ValueError(msg)
     for operation in operations:
         if not isinstance(operation, BatchOperation):
             msg = "operations must contain only BatchOperation values"

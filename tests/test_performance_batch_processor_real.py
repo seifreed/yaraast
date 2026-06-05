@@ -91,6 +91,21 @@ def test_batch_processor_rejects_invalid_operation_values(tmp_path: Path) -> Non
         )
 
 
+def test_batch_processor_rejects_empty_operation_lists(tmp_path: Path) -> None:
+    path = tmp_path / "single.yar"
+    path.write_text("rule single { condition: true }", encoding="utf-8")
+    processor = BatchProcessor()
+
+    with pytest.raises(ValueError, match="operations must not be empty"):
+        processor.process_files([path], operations=[])
+
+    with pytest.raises(ValueError, match="operations must not be empty"):
+        processor.process_directory(tmp_path, operations=[])
+
+    with pytest.raises(ValueError, match="operations must not be empty"):
+        processor.process_large_file(path, operations=[], output_dir=tmp_path)
+
+
 @pytest.mark.parametrize("temp_dir", ["", "   ", "\t"])
 def test_batch_processor_rejects_empty_temp_dir(temp_dir: str) -> None:
     with pytest.raises(ValueError, match="temp_dir must not be empty"):
