@@ -736,6 +736,35 @@ def _serialize_quantifier(value: Any, context: str) -> Any:
     raise SerializationError(msg)
 
 
+def _serialize_string_set_item(value: Any, context: str) -> str | dict[str, Any]:
+    if value is None or value == {}:
+        msg = f"{context} must contain values"
+        raise SerializationError(msg)
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Expression):
+        return serialize_node(value)
+    msg = f"{context} must contain strings or expressions"
+    raise SerializationError(msg)
+
+
+def _serialize_string_set(value: Any, context: str) -> str | dict[str, Any] | list[Any]:
+    field_context = f"{context} string_set"
+    if value is None or value == {}:
+        msg = f"{field_context} is required"
+        raise SerializationError(msg)
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Expression):
+        return serialize_node(value)
+    if isinstance(value, list | tuple):
+        return [_serialize_string_set_item(item, field_context) for item in value]
+    if isinstance(value, set | frozenset):
+        return [_serialize_string_set_item(item, field_context) for item in sorted(value, key=str)]
+    msg = f"{field_context} must be a string, expression, or list of strings/expressions"
+    raise SerializationError(msg)
+
+
 def _deserialize_ast_value(value: Any, context: str = "AST value") -> Any:
     if value is None or value == {}:
         msg = f"{context} is required"
@@ -1164,7 +1193,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
                 node.quantifier,
                 "ForOfExpression quantifier",
             ),
-            "string_set": _serialize_ast_value(node.string_set),
+            "string_set": _serialize_string_set(node.string_set, "ForOfExpression"),
             "condition": serialize_node(node.condition) if node.condition is not None else None,
         }
     if isinstance(node, AtExpression):
@@ -1192,7 +1221,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
                 node.quantifier,
                 "OfExpression quantifier",
             ),
-            "string_set": _serialize_ast_value(node.string_set),
+            "string_set": _serialize_string_set(node.string_set, "OfExpression"),
         }
     if isinstance(node, ModuleReference):
         return {

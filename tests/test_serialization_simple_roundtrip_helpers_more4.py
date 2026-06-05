@@ -1647,6 +1647,49 @@ def test_simple_roundtrip_string_sets_reject_invalid_raw_values() -> None:
             deserialize_node(payload)
 
 
+def test_simple_roundtrip_serialize_string_sets_reject_invalid_values() -> None:
+    true_expr = BooleanLiteral(True)
+
+    invalid_string_set_cases: tuple[tuple[ASTNode, str], ...] = (
+        (
+            ForOfExpression("any", cast(Any, None), true_expr),
+            "ForOfExpression string_set is required",
+        ),
+        (
+            OfExpression("any", cast(Any, {})),
+            "OfExpression string_set is required",
+        ),
+        (
+            ForOfExpression("any", cast(Any, 7), true_expr),
+            "ForOfExpression string_set must be",
+        ),
+        (
+            OfExpression("any", cast(Any, {"bad": "value"})),
+            "OfExpression string_set must be",
+        ),
+        (
+            ForOfExpression("any", cast(Any, [7]), true_expr),
+            "ForOfExpression string_set must contain strings or expressions",
+        ),
+        (
+            OfExpression("any", cast(Any, ["$a", 7])),
+            "OfExpression string_set must contain strings or expressions",
+        ),
+        (
+            ForOfExpression("any", cast(Any, [None]), true_expr),
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            OfExpression("any", cast(Any, [{}])),
+            "OfExpression string_set must contain values",
+        ),
+    )
+
+    for node, message in invalid_string_set_cases:
+        with pytest.raises(SerializationError, match=message):
+            serialize_node(node)
+
+
 def test_simple_roundtrip_quantifiers_reject_invalid_raw_values() -> None:
     int_expr = {"type": "IntegerLiteral", "value": 1}
 
