@@ -285,6 +285,8 @@ def _deserialize_hex_token(data: dict[str, Any]):
 def _coerce_hex_alternative_branch(alternative) -> list:
     if isinstance(alternative, list):
         return alternative
+    if isinstance(alternative, HexToken):
+        return [alternative]
     return [HexByte(alternative)]
 
 

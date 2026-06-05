@@ -3005,6 +3005,8 @@ def test_simple_roundtrip_helpers_preserve_extended_expression_nodes() -> None:
 
     scalar_alt = deserialize_node(serialize_node(HexAlternative([0x90, "91"])))
     assert scalar_alt == HexAlternative([[HexByte(0x90)], [HexByte("91")]])
+    token_alt = deserialize_node(serialize_node(HexAlternative([HexByte(0x92), HexByte("93")])))
+    assert token_alt == HexAlternative([[HexByte(0x92)], [HexByte("93")]])
 
 
 def test_simple_roundtrip_helpers_preserve_direct_misc_ast_nodes() -> None:
