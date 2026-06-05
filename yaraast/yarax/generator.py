@@ -9,6 +9,8 @@ from yaraast.codegen.generator_expression_visitors import (
     render_function_call_callee,
     validate_expression_collection,
 )
+from yaraast.codegen.generator_formatting import validate_yara_identifier
+from yaraast.codegen.generator_helpers import format_string_reference_identifier
 
 if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
@@ -33,6 +35,11 @@ if TYPE_CHECKING:
 class YaraXGenerator(BaseGenerator):
     """Code generator for YARA-X with support for new syntax features."""
 
+    def _render_local_identifier(self, identifier: str, field_name: str) -> str:
+        if identifier.startswith("$"):
+            return format_string_reference_identifier(identifier, allow_placeholder=False)
+        return validate_yara_identifier(identifier, field_name)
+
     def _visit_required_expression(self, expression: Expression | None, field_name: str) -> str:
         if expression is None:
             msg = f"{field_name} is required for YARA-X code generation"
@@ -56,8 +63,9 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_with_declaration(self, node: WithDeclaration) -> str:
         """Generate code for with declaration."""
+        identifier = self._render_local_identifier(node.identifier, "local variable")
         value_str = self.visit(node.value)
-        return f"{node.identifier} = {value_str}"
+        return f"{identifier} = {value_str}"
 
     def visit_array_comprehension(self, node: ArrayComprehension) -> str:
         """Generate code for array comprehension."""
@@ -66,7 +74,9 @@ class YaraXGenerator(BaseGenerator):
         )
         iter_str = self._visit_required_expression(node.iterable, "Array comprehension iterable")
 
-        result = f"[{expr_str} for {node.variable} in {iter_str}"
+        variable = validate_yara_identifier(node.variable, "local variable")
+
+        result = f"[{expr_str} for {variable} in {iter_str}"
 
         if node.condition is not None:
             cond_str = self.visit(node.condition)
@@ -83,12 +93,14 @@ class YaraXGenerator(BaseGenerator):
         )
         iter_str = self._visit_required_expression(node.iterable, "Dict comprehension iterable")
 
+        key_variable = validate_yara_identifier(node.key_variable, "local variable")
         if node.value_variable:
             # Two variables (k, v pattern)
-            var_str = f"{node.key_variable}, {node.value_variable}"
+            value_variable = validate_yara_identifier(node.value_variable, "local variable")
+            var_str = f"{key_variable}, {value_variable}"
         else:
             # Single variable
-            var_str = node.key_variable
+            var_str = key_variable
 
         result = f"{{{key_str}: {value_str} for {var_str} in {iter_str}"
 
@@ -194,7 +206,9 @@ class YaraXGenerator(BaseGenerator):
     def visit_lambda_expression(self, node: LambdaExpression) -> str:
         """Generate code for lambda expression."""
         validate_expression_collection(node.parameters, "LambdaExpression parameters")
-        params = ", ".join(node.parameters)
+        params = ", ".join(
+            validate_yara_identifier(parameter, "local variable") for parameter in node.parameters
+        )
         body_str = self.visit(node.body)
 
         if params:

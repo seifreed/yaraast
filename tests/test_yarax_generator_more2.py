@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+
+from yaraast.ast.base import ASTNode
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
@@ -19,6 +22,8 @@ from yaraast.yarax.ast_nodes import (
     SliceExpression,
     TupleExpression,
     TupleIndexing,
+    WithDeclaration,
+    WithStatement,
 )
 from yaraast.yarax.generator import YaraXGenerator
 
@@ -81,6 +86,40 @@ def test_yarax_generator_parenthesizes_compound_function_call_receivers() -> Non
         "(a + b)[0]"
     )
     assert YaraXGenerator().visit(MemberAccess(compound_receiver, "field")) == "(a + b).field"
+
+
+@pytest.mark.parametrize(
+    "node",
+    [
+        WithDeclaration(identifier="bad-name", value=IntegerLiteral(1)),
+        WithStatement(
+            declarations=[WithDeclaration(identifier="bad-name", value=IntegerLiteral(1))],
+            body=BooleanLiteral(True),
+        ),
+        LambdaExpression(parameters=["bad-name"], body=IntegerLiteral(1)),
+        ArrayComprehension(
+            expression=Identifier("x"),
+            variable="bad-name",
+            iterable=Identifier("items"),
+        ),
+        DictComprehension(
+            key_expression=Identifier("k"),
+            value_expression=Identifier("v"),
+            key_variable="bad-key",
+            iterable=Identifier("items"),
+        ),
+        DictComprehension(
+            key_expression=Identifier("k"),
+            value_expression=Identifier("v"),
+            key_variable="k",
+            value_variable="bad-value",
+            iterable=Identifier("items"),
+        ),
+    ],
+)
+def test_yarax_generator_rejects_invalid_local_identifiers(node: ASTNode) -> None:
+    with pytest.raises(ValueError, match=r"Invalid .* identifier"):
+        YaraXGenerator().visit(node)
 
 
 def test_yarax_generator_covers_tuple_indexing_slice_and_parenthesized_target() -> None:
