@@ -1763,7 +1763,11 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         if alias is not None and not alias.strip():
             msg = "ExternImport alias must not be empty"
             raise SerializationError(msg)
-        rules = _deserialize_nonempty_string_list_field(data, "rules", "ExternImport")
+        raw_rules = _deserialize_required_field(data, "rules", "ExternImport")
+        if not isinstance(raw_rules, list) or not all(isinstance(rule, str) for rule in raw_rules):
+            msg = "ExternImport rules must be a list of strings"
+            raise SerializationError(msg)
+        rules = raw_rules
         if any(not rule.strip() for rule in rules):
             msg = "ExternImport rules must contain non-empty strings"
             raise SerializationError(msg)
@@ -1773,12 +1777,18 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             rules=rules,
         )
     if node_type == "ExternNamespace":
+        name = _deserialize_nonempty_string_field(data, "name", "ExternNamespace")
+        raw_extern_rules = _deserialize_required_field(
+            data,
+            "extern_rules",
+            "ExternNamespace",
+        )
+        if not isinstance(raw_extern_rules, list):
+            msg = "ExternNamespace extern_rules must be a list"
+            raise SerializationError(msg)
         return ExternNamespace(
-            name=_deserialize_nonempty_string_field(data, "name", "ExternNamespace"),
-            extern_rules=[
-                deserialize_extern_rule(rule)
-                for rule in _deserialize_list_field(data, "extern_rules", "ExternNamespace")
-            ],
+            name=name,
+            extern_rules=[deserialize_extern_rule(rule) for rule in raw_extern_rules],
         )
     if node_type == "InRulePragma":
         return InRulePragma(

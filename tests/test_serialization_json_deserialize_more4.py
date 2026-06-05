@@ -260,6 +260,9 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternImport rules must be a list of strings"):
         s._deserialize_extern_import({"module_path": "external", "rules": "RuleA"})
 
+    with pytest.raises(SerializationError, match="ExternImport rules is required"):
+        s._deserialize_extern_import({"module_path": "external"})
+
     with pytest.raises(
         SerializationError, match="ExternImport rules must contain non-empty strings"
     ):
@@ -544,6 +547,9 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
 
     with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
         s._deserialize_extern_namespace({"name": "remote", "extern_rules": "RemoteRule"})
+
+    with pytest.raises(SerializationError, match="ExternNamespace extern_rules is required"):
+        s._deserialize_extern_namespace({"name": "remote"})
 
     with pytest.raises(SerializationError, match="PlainString modifiers must be a list"):
         s._deserialize_string(

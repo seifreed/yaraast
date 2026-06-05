@@ -419,6 +419,9 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternImport rules must be a list of strings"):
         deserialize_node({"type": "ExternImport", "module_path": "external", "rules": "RuleA"})
 
+    with pytest.raises(SerializationError, match="ExternImport rules is required"):
+        deserialize_node({"type": "ExternImport", "module_path": "external"})
+
     with pytest.raises(
         SerializationError, match="ExternImport rules must contain non-empty strings"
     ):
@@ -814,6 +817,9 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
         deserialize_node(
             {"type": "ExternNamespace", "name": "remote", "extern_rules": "RemoteRule"}
         )
+
+    with pytest.raises(SerializationError, match="ExternNamespace extern_rules is required"):
+        deserialize_node({"type": "ExternNamespace", "name": "remote"})
 
     with pytest.raises(SerializationError, match="PlainString modifiers must be a list"):
         deserialize_string(
