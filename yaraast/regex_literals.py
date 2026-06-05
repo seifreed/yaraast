@@ -51,6 +51,10 @@ def validate_regex_modifiers(modifiers: str) -> None:
 
 def validate_regex_pattern(pattern: str) -> None:
     """Reject regex structure that libyara rejects before codegen or parsing."""
+    if not pattern:
+        msg = "Invalid regex pattern: empty pattern"
+        raise ValueError(msg)
+
     scope_has_content = [False]
     can_repeat = False
     last_was_quantifier = False
