@@ -30,7 +30,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import RuleModifier, StringModifier
+from yaraast.ast.modifiers import MetaEntry, RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import StringOperatorExpression
 from yaraast.ast.pragmas import (
@@ -397,11 +397,13 @@ def test_protobuf_serializer_rejects_non_finite_double_literals() -> None:
 
 def test_protobuf_serializer_rejects_non_finite_meta_values() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
+    non_finite_meta_entry = MetaEntry.from_key_value("score", 1.0)
+    cast(Any, non_finite_meta_entry).value = float("nan")
     ast = YaraFile(
         rules=[
             Rule(
                 name="bad_meta",
-                meta=[Meta("score", cast(Any, float("nan")))],
+                meta=[non_finite_meta_entry],
                 condition=BooleanLiteral(value=True),
             ),
         ],
@@ -429,6 +431,42 @@ def test_protobuf_serializer_rejects_non_finite_meta_values() -> None:
 
     with pytest.raises(SerializationError, match="Meta value must be finite"):
         serializer.deserialize(binary_data=legacy_pb_file.SerializeToString())
+
+
+def test_protobuf_serializer_rejects_legacy_meta_float_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_meta_float",
+                meta=[Meta("score", cast(Any, 1.5))],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    with pytest.raises(
+        SerializationError,
+        match="Meta value must be a string, integer, or boolean",
+    ):
+        serializer.serialize(ast)
+
+
+def test_protobuf_serializer_preserves_meta_entry_float_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="meta_entry_float",
+                meta=[MetaEntry.from_key_value("score", 1.5)],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert restored.rules[0].meta[0].value == 1.5
 
 
 def test_protobuf_deserializer_rejects_empty_meta_values() -> None:
@@ -469,7 +507,7 @@ def test_protobuf_serializer_rejects_unsupported_meta_and_pragma_parameter_value
 
     with pytest.raises(
         SerializationError,
-        match="Meta value must be a string, integer, boolean, or finite float",
+        match="Meta value must be a string, integer, or boolean",
     ):
         serializer.serialize(ast)
 

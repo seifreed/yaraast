@@ -302,7 +302,10 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         meta_val = pb_rule.meta[key]
         pb_meta_entry = pb_rule.meta_entries.add()
         pb_meta_entry.key = key
-        _copy_python_value_to_meta_value(value, pb_meta_entry.value, "Meta")
+        if isinstance(entry, Meta):
+            _copy_python_value_to_legacy_meta_value(value, pb_meta_entry.value)
+        else:
+            _copy_python_value_to_meta_value(value, pb_meta_entry.value, "Meta")
         _copy_node_metadata_to_protobuf(entry, pb_meta_entry)
         if scope is not None:
             scope_text = serialize_meta_scope(scope)
@@ -316,7 +319,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
             meta_val.bool_value = value
         elif isinstance(value, int):
             meta_val.int_value = value
-        elif isinstance(value, float):
+        elif isinstance(value, float) and not isinstance(entry, Meta):
             meta_val.double_value = _finite_double_value(value, "Meta")
 
     for string_def in _protobuf_string_definition_list(rule.strings, "Rule strings"):
@@ -346,6 +349,18 @@ def _copy_python_value_to_meta_value(value, pb_meta_value, context: str) -> None
         pb_meta_value.double_value = _finite_double_value(value, context)
     else:
         msg = f"{context} value must be a string, integer, boolean, or finite float"
+        raise SerializationError(msg)
+
+
+def _copy_python_value_to_legacy_meta_value(value, pb_meta_value) -> None:
+    if isinstance(value, str):
+        pb_meta_value.string_value = value
+    elif isinstance(value, bool):
+        pb_meta_value.bool_value = value
+    elif isinstance(value, int):
+        pb_meta_value.int_value = value
+    else:
+        msg = "Meta value must be a string, integer, or boolean"
         raise SerializationError(msg)
 
 
