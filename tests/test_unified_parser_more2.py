@@ -63,6 +63,27 @@ def test_auto_detects_yarax_leading_dict_spread_syntax() -> None:
     assert '{**base}["a"]' in CodeGenerator().generate(ast)
 
 
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        ("rule x { condition: [] }", "[]"),
+        ("rule x { condition: [1] }", "[1]"),
+        ("rule x { condition: {} }", "{}"),
+        ("rule x { condition: (1, 2) }", "(1, 2)"),
+        ("rule x { condition: (1,) }", "(1,)"),
+    ],
+)
+def test_auto_detects_yarax_standalone_collection_and_tuple_literals(
+    source: str,
+    expected: str,
+) -> None:
+    assert detect_dialect(source) == YaraDialect.YARA_X
+
+    ast = parse_yara_source(source)
+
+    assert expected in CodeGenerator().generate(ast)
+
+
 def test_yarax_collection_detection_does_not_match_classic_hex_jumps() -> None:
     source = """
 rule classic_hex_jump {
