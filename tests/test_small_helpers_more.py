@@ -163,6 +163,9 @@ def test_detect_dialect_yarax_signals() -> None:
     yarax_empty_tuple = "rule x { condition: () }"
     assert detect_dialect(yarax_empty_tuple) == YaraDialect.YARA_X
 
+    yarax_nested_empty_tuple = "rule x { condition: ((), 1) }"
+    assert detect_dialect(yarax_nested_empty_tuple) == YaraDialect.YARA_X
+
 
 def test_detect_dialect_ignores_yarax_signals_inside_regex_literals() -> None:
     regex_string = r"rule classic { strings: $r = /with xs = [1]/ condition: $r }"

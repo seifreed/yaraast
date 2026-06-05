@@ -43,6 +43,21 @@ def test_parse_yara_source_routes_empty_tuple_condition_to_yarax() -> None:
     assert isinstance(result.rules[0].condition, TupleExpression)
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        "rule nested_empty_tuple_first { condition: ((), 1) }",
+        "rule nested_empty_tuple_last { condition: (1, ()) }",
+    ],
+)
+def test_parse_yara_source_routes_nested_empty_tuple_conditions_to_yarax(
+    source: str,
+) -> None:
+    result = parse_yara_source(source)
+
+    assert isinstance(result.rules[0].condition, TupleExpression)
+
+
 @pytest.mark.parametrize("parser", [parse_yara_source, parse_yara_source_with_comments])
 def test_yara_file_parsers_reject_yara_l_with_clear_error(
     parser: Callable[[str], YaraFile],
