@@ -108,12 +108,22 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
     with pytest.raises(TypeError, match="Integer literal value must be an integer"):
         format_integer_literal(bad_integer_number)
     assert format_integer_literal("0x10") == "0x10"
-    assert format_integer_literal("+10") == "10"
-    assert format_integer_literal("+1KB") == "1KB"
-    assert format_integer_literal("+1MB") == "1MB"
-    assert format_integer_literal("+0x10") == "0x10"
-    assert format_integer_literal("+0o10") == "0o10"
-    for invalid_prefixed_integer in ("0X10", "0O10", "+0X10", "+0O10"):
+    assert format_integer_literal("-10") == "-10"
+    assert format_integer_literal("-1KB") == "-1KB"
+    assert format_integer_literal("-1MB") == "-1MB"
+    assert format_integer_literal("-0x10") == "-0x10"
+    assert format_integer_literal("-0o10") == "-0o10"
+    for invalid_prefixed_integer in (
+        "+10",
+        "+1KB",
+        "+1MB",
+        "+0x10",
+        "+0o10",
+        "0X10",
+        "0O10",
+        "+0X10",
+        "+0O10",
+    ):
         with pytest.raises(TypeError, match="Integer literal value must be an integer"):
             format_integer_literal(invalid_prefixed_integer)
     with pytest.raises(ValueError, match="Double literal value must be finite"):

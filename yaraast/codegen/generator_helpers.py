@@ -86,7 +86,7 @@ BASE64_MODIFIERS = frozenset({"base64", "base64wide"})
 _PARAMETERIZED_STRING_MODIFIERS = BASE64_MODIFIERS | {"xor"}
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 _STRING_IDENTIFIER_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
-_YARA_INTEGER_TEXT_RE = re.compile(r"^[+-]?(?:0x[0-9A-Fa-f]+|0o[0-7]+|[0-9]+(?:KB|MB))$")
+_YARA_INTEGER_TEXT_RE = re.compile(r"^-?(?:0x[0-9A-Fa-f]+|0o[0-7]+|[0-9]+(?:KB|MB))$")
 _STRING_PLACEHOLDER_REFERENCES = frozenset({"", "$"})
 _YARA_INTEGER_MIN = -(2**63) + 1
 _YARA_INTEGER_MAX = 2**63 - 1
@@ -557,6 +557,8 @@ def format_integer_literal(value: object) -> str:
 
 def _parse_integer_literal_text(value: str) -> int | str | None:
     if "_" in value:
+        return None
+    if value.strip().startswith("+"):
         return None
     if _YARA_INTEGER_TEXT_RE.fullmatch(value) is not None:
         return value
