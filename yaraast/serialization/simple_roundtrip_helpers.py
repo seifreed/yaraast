@@ -776,7 +776,10 @@ def _format_unknown_modifier(name: str, value: Any) -> str:
 def _deserialize_modifier(modifier: Any) -> Any:
     if isinstance(modifier, dict):
         name = _deserialize_nonempty_string_field(modifier, "name", "StringModifier")
-        value = _deserialize_modifier_value(name, modifier.get("value"))
+        value = _deserialize_modifier_value(
+            name,
+            _deserialize_required_field(modifier, "value", "StringModifier"),
+        )
     elif isinstance(modifier, str):
         if not modifier:
             msg = "StringModifier name must not be empty"

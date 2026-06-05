@@ -1264,7 +1264,10 @@ class JsonSerializerDeserializeMixin:
 
         if isinstance(data, dict):
             name = _deserialize_nonempty_string_field(data, "name", "StringModifier")
-            value = self._deserialize_modifier_value(name, data.get("value"))
+            value = self._deserialize_modifier_value(
+                name,
+                _deserialize_required_field(data, "value", "StringModifier"),
+            )
         elif isinstance(data, str):
             if not data:
                 msg = "StringModifier name must not be empty"

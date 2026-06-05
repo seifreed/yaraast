@@ -619,7 +619,7 @@ def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
             "type": "PlainString",
             "identifier": "$a",
             "value": "abc",
-            "modifiers": [{"name": "ascii"}],
+            "modifiers": [{"name": "ascii", "value": None}],
         }
     )
     assert isinstance(plain, PlainString)
@@ -727,6 +727,16 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
                 "identifier": "$a",
                 "value": "abc",
                 "modifiers": [{"name": ""}],
+            }
+        )
+
+    with pytest.raises(SerializationError, match="StringModifier value is required"):
+        s._deserialize_string(
+            {
+                "type": "PlainString",
+                "identifier": "$a",
+                "value": "abc",
+                "modifiers": [{"name": "xor"}],
             }
         )
 
