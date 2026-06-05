@@ -2024,6 +2024,26 @@ def test_codegen_generators_reject_invalid_identifier_expressions(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+def test_codegen_rejects_unreferenced_strings_with_contextual_keyword_loop_variable() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="contextual_loop",
+                strings=[PlainString(identifier="$a", value="a")],
+                condition=ForExpression(
+                    "any",
+                    "as",
+                    SetExpression([IntegerLiteral(1)]),
+                    BinaryExpression(Identifier("as"), ">", IntegerLiteral(0)),
+                ),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match=r"Unreferenced string definitions.*\$a"):
+        CodeGenerator().generate(ast)
+
+
 @pytest.mark.parametrize(
     ("condition", "expected"),
     [

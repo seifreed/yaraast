@@ -15,13 +15,14 @@ from yaraast.string_references import normalize_string_reference_id
 
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
+_YARA_CONTEXTUAL_LOCAL_KEYWORDS = frozenset({"as", "include"})
 
 
 def _validate_local_identifier(name: str) -> str:
     if (
         len(name) <= YARA_IDENTIFIER_MAX_LENGTH
         and _YARA_IDENTIFIER_RE.fullmatch(name) is not None
-        and name not in _YARA_KEYWORDS
+        and (name not in _YARA_KEYWORDS or name in _YARA_CONTEXTUAL_LOCAL_KEYWORDS)
     ):
         return name
     msg = f"Invalid local variable identifier: {name}"

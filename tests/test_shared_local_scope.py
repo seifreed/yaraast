@@ -13,6 +13,10 @@ def test_local_name_variants_splits_valid_loop_variables() -> None:
     assert local_name_variants("i, j") == {"i", "j"}
 
 
+def test_local_name_variants_allows_contextual_keyword_loop_variables() -> None:
+    assert local_name_variants("as, include") == {"as", "include"}
+
+
 @pytest.mark.parametrize("name", ["", "   "])
 def test_local_name_variants_rejects_empty_declaration(name: str) -> None:
     with pytest.raises(ValueError, match="Local variable name must not be empty"):
