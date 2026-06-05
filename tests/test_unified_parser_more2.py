@@ -68,7 +68,13 @@ def test_auto_detects_yarax_leading_dict_spread_syntax() -> None:
     [
         ("rule x { condition: [] }", "[]"),
         ("rule x { condition: [1] }", "[1]"),
+        ("rule x { condition: [x] }", "[x]"),
+        ("rule x { condition: [x + 1] }", "[x + 1]"),
+        ("rule x { condition: [foo.bar] }", "[foo.bar]"),
         ("rule x { condition: {} }", "{}"),
+        ("rule x { condition: {x: y} }", "{x: y}"),
+        ("rule x { condition: {x + 1: y} }", "{x + 1: y}"),
+        ("rule x { condition: {foo.bar: baz} }", "{foo.bar: baz}"),
         ("rule x { condition: (1, 2) }", "(1, 2)"),
         ("rule x { condition: (1,) }", "(1,)"),
     ],
