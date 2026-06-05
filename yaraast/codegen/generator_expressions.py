@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from typing import Any, cast
 
@@ -291,6 +292,9 @@ def _validate_quantifier_text(
 
 
 def _format_fractional_percentage_quantifier(value: float) -> str:
+    if isinstance(value, bool) or not isinstance(value, int | float) or not math.isfinite(value):
+        msg = f"Invalid quantifier '{value}' for libyara output"
+        raise ValueError(msg)
     percent = round(value * 100)
     _validate_percentage_quantifier(percent, value)
     return f"{percent}%"

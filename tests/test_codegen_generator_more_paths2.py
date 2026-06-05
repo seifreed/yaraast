@@ -2554,6 +2554,24 @@ def test_codegen_generators_render_zero_percent_quantifiers() -> None:
 
 
 @pytest.mark.parametrize(
+    "quantifier",
+    [
+        DoubleLiteral(cast(Any, True)),
+        DoubleLiteral(cast(Any, "0.5")),
+        DoubleLiteral(float("nan")),
+        DoubleLiteral(float("inf")),
+    ],
+)
+def test_codegen_rejects_malformed_fractional_percentage_quantifiers(
+    quantifier: DoubleLiteral,
+) -> None:
+    with pytest.raises(ValueError, match=r"Invalid quantifier"):
+        CodeGenerator().generate(OfExpression(quantifier, Identifier("them")))
+    with pytest.raises(ValueError, match=r"Invalid quantifier"):
+        CodeGenerator().generate(ForOfExpression(quantifier, Identifier("them")))
+
+
+@pytest.mark.parametrize(
     ("condition", "message"),
     [
         (BinaryExpression(IntegerLiteral(1), "???", IntegerLiteral(2)), "Invalid binary operator"),
