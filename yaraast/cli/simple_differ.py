@@ -65,6 +65,20 @@ def _require_directory_path(value: object, name: str) -> Path:
     return path
 
 
+def _require_text(value: object, name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
+def _require_line_list(value: object, name: str) -> list[str]:
+    if not isinstance(value, list) or any(not isinstance(line, str) for line in value):
+        msg = f"{name} must be a list of strings"
+        raise TypeError(msg)
+    return value
+
+
 class SimpleDiffer:
     """Simple differ for YARA files."""
 
@@ -80,6 +94,8 @@ class SimpleDiffer:
 
     def diff(self, content1: str, content2: str) -> DiffResult:
         """Diff two YARA file contents using LCS-based sequence matching."""
+        content1 = _require_text(content1, "content1")
+        content2 = _require_text(content2, "content2")
         lines1 = content1.splitlines()
         lines2 = content2.splitlines()
 
@@ -441,6 +457,8 @@ def _diff_result_for_added_file(file_path: Path) -> DiffResult:
 
 def diff_lines(lines1: list[str], lines2: list[str]) -> list[DiffLine]:
     """Diff two lists of lines."""
+    lines1 = _require_line_list(lines1, "lines1")
+    lines2 = _require_line_list(lines2, "lines2")
     differ = SimpleDiffer()
     content1 = "\n".join(lines1)
     content2 = "\n".join(lines2)
@@ -450,6 +468,8 @@ def diff_lines(lines1: list[str], lines2: list[str]) -> list[DiffLine]:
 
 def diff_tokens(content1: str, content2: str) -> list[str]:
     """Diff tokens in two contents, accounting for frequency."""
+    content1 = _require_text(content1, "content1")
+    content2 = _require_text(content2, "content2")
     counts1 = Counter(content1.split())
     counts2 = Counter(content2.split())
 

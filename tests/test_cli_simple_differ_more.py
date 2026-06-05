@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
+from typing import Any, cast
+
+import pytest
 
 from yaraast.cli.simple_differ import (
     SimpleASTDiffer,
@@ -74,3 +77,53 @@ def test_diff_lines_and_tokens() -> None:
     tokens = diff_tokens("a b c", "a b d")
     assert "- c" in tokens
     assert "+ d" in tokens
+
+
+@pytest.mark.parametrize(
+    ("content1", "content2", "message"),
+    [
+        (cast(Any, True), "abc", "content1 must be a string"),
+        ("abc", cast(Any, True), "content2 must be a string"),
+    ],
+)
+def test_simple_differ_rejects_non_string_contents(
+    content1: str,
+    content2: str,
+    message: str,
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        SimpleDiffer().diff(content1, content2)
+
+
+@pytest.mark.parametrize(
+    ("content1", "content2", "message"),
+    [
+        (cast(Any, True), "abc", "content1 must be a string"),
+        ("abc", cast(Any, True), "content2 must be a string"),
+    ],
+)
+def test_diff_tokens_rejects_non_string_contents(
+    content1: str,
+    content2: str,
+    message: str,
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        diff_tokens(content1, content2)
+
+
+@pytest.mark.parametrize(
+    ("lines1", "lines2", "message"),
+    [
+        (cast(Any, "abc"), ["abc"], "lines1 must be a list of strings"),
+        (["abc"], cast(Any, "abc"), "lines2 must be a list of strings"),
+        ([cast(Any, True)], ["abc"], "lines1 must be a list of strings"),
+        (["abc"], [cast(Any, True)], "lines2 must be a list of strings"),
+    ],
+)
+def test_diff_lines_rejects_non_string_line_lists(
+    lines1: list[str],
+    lines2: list[str],
+    message: str,
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        diff_lines(lines1, lines2)
