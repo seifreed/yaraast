@@ -851,7 +851,10 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
                 convert_hex_token_to_protobuf(alternative_token, pb_alternative.tokens.add())
     elif isinstance(token, HexNibble):
         pb_token.nibble.high = _hex_nibble_high_to_protobuf(token.high)
-        pb_token.nibble.value = _hex_nibble_value_to_protobuf(token.value)
+        nibble_value = _hex_nibble_value_to_protobuf(token.value)
+        pb_token.nibble.value = nibble_value
+        if isinstance(token.value, str):
+            pb_token.nibble.raw_value = _hex_nibble_raw_value_to_protobuf(token.value)
     else:
         msg = f"Unsupported protobuf hex token type: {type(token).__name__}"
         raise SerializationError(msg)
@@ -966,11 +969,28 @@ def _hex_nibble_value_to_protobuf(value: int | str) -> int:
     raise SerializationError(msg)
 
 
+def _hex_nibble_raw_value_to_protobuf(value: str) -> str:
+    if len(value) == 1 and value in _HEX_CHARS:
+        return value
+    msg = "HexNibble value must be a nibble"
+    raise SerializationError(msg)
+
+
 def _protobuf_hex_nibble_value(value: int) -> int:
     if 0 <= value <= 0xF:
         return value
     msg = "HexNibble value must be a nibble"
     raise SerializationError(msg)
+
+
+def _protobuf_hex_nibble_ast_value(pb_nibble) -> int | str:
+    if _protobuf_has_field(pb_nibble, "raw_value"):
+        raw_value = pb_nibble.raw_value
+        if len(raw_value) == 1 and raw_value in _HEX_CHARS:
+            return raw_value
+        msg = "HexNibble value must be a nibble"
+        raise SerializationError(msg)
+    return _protobuf_hex_nibble_value(pb_nibble.value)
 
 
 def _protobuf_hex_jump_bound(pb_jump, field: str) -> int | None:
@@ -1912,7 +1932,7 @@ def _protobuf_to_hex_token(pb_token):
             pb_token,
             HexNibble(
                 high=pb_token.nibble.high,
-                value=_protobuf_hex_nibble_value(pb_token.nibble.value),
+                value=_protobuf_hex_nibble_ast_value(pb_token.nibble),
             ),
         )
     msg = "Protobuf hex token is missing a token type"

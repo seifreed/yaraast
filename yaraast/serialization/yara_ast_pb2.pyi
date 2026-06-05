@@ -583,12 +583,19 @@ class HexTokenList(_message.Message):
     def __init__(self, tokens: _Iterable[HexToken | _Mapping] | None = ...) -> None: ...
 
 class HexNibble(_message.Message):
-    __slots__ = ("high", "value")
+    __slots__ = ("high", "raw_value", "value")
     HIGH_FIELD_NUMBER: _ClassVar[int]
+    RAW_VALUE_FIELD_NUMBER: _ClassVar[int]
     VALUE_FIELD_NUMBER: _ClassVar[int]
     high: bool
+    raw_value: str
     value: int
-    def __init__(self, high: bool | None = ..., value: int | None = ...) -> None: ...
+    def __init__(
+        self,
+        high: bool | None = ...,
+        raw_value: str | None = ...,
+        value: int | None = ...,
+    ) -> None: ...
 
 class Expression(_message.Message):
     __slots__ = (

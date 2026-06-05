@@ -225,6 +225,7 @@ message HexTokenList {
 message HexNibble {
     bool high = 1;
     int32 value = 2;
+    optional string raw_value = 3;
 }
 
 // Expressions

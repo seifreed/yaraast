@@ -349,7 +349,7 @@ def test_protobuf_serializer_accepts_string_hex_nibble_values() -> None:
     string_def = restored.rules[0].strings[0]
 
     assert isinstance(string_def, HexString)
-    assert string_def.tokens == [HexNibble(high=False, value=0xB)]
+    assert string_def.tokens == [HexNibble(high=False, value="B")]
 
 
 def test_protobuf_serializer_preserves_module_dictionary_and_wildcard_expressions() -> None:

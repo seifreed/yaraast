@@ -333,6 +333,7 @@ def test_protobuf_conversion_parses_legacy_hex_xor_modifier_values() -> None:
         ("negated_byte", "value", "999", "HexNegatedByte value must be a byte"),
         ("nibble", "value", 16, "HexNibble value must be a nibble"),
         ("nibble", "value", -1, "HexNibble value must be a nibble"),
+        ("nibble", "raw_value", "GG", "HexNibble value must be a nibble"),
         ("jump", "min_jump", -1, "HexJump min_jump must be a non-negative integer"),
     ],
 )
