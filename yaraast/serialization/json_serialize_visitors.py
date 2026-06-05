@@ -562,10 +562,17 @@ def _serialize_hex_alternative_branches(serializer, alternatives) -> list[list[d
     if not isinstance(alternatives, list | tuple):
         msg = "HexAlternative alternatives must be a list"
         raise SerializationError(msg)
-    return [
-        [serializer.visit(token) for token in _coerce_hex_alternative_branch(alternative)]
-        for alternative in alternatives
-    ]
+    if not alternatives:
+        msg = "HexAlternative must contain at least one branch"
+        raise SerializationError(msg)
+    branches = []
+    for alternative in alternatives:
+        branch = _coerce_hex_alternative_branch(alternative)
+        if not branch:
+            msg = "HexAlternative branches must not be empty"
+            raise SerializationError(msg)
+        branches.append([serializer.visit(token) for token in branch])
+    return branches
 
 
 def _coerce_hex_alternative_branch(alternative) -> list:

@@ -1130,10 +1130,17 @@ class JsonSerializerDeserializeMixin:
         if hex_kind == "HexAlternative":
             from yaraast.ast.strings import HexAlternative
 
-            alternatives = [
-                [self._deserialize_hex_token(t) for t in self._coerce_hex_alternative_branch(alt)]
-                for alt in _deserialize_list_field(data, "alternatives", "HexAlternative")
-            ]
+            raw_alternatives = _deserialize_list_field(data, "alternatives", "HexAlternative")
+            if not raw_alternatives:
+                msg = "HexAlternative must contain at least one branch"
+                raise SerializationError(msg)
+            alternatives = []
+            for alt in raw_alternatives:
+                branch = self._coerce_hex_alternative_branch(alt)
+                if not branch:
+                    msg = "HexAlternative branches must not be empty"
+                    raise SerializationError(msg)
+                alternatives.append([self._deserialize_hex_token(t) for t in branch])
             return self._apply_node_metadata(HexAlternative(alternatives=alternatives), data)
         msg = f"Unknown hex token type: {hex_kind}"
         raise SerializationError(msg)

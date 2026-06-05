@@ -823,6 +823,26 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
             }
         )
 
+    with pytest.raises(SerializationError, match="HexAlternative must contain at least one branch"):
+        deserialize_string(
+            {
+                "type": "HexString",
+                "identifier": "$h",
+                "tokens": [{"type": "HexAlternative", "alternatives": []}],
+                "modifiers": [],
+            }
+        )
+
+    with pytest.raises(SerializationError, match="HexAlternative branches must not be empty"):
+        deserialize_string(
+            {
+                "type": "HexString",
+                "identifier": "$h",
+                "tokens": [{"type": "HexAlternative", "alternatives": [[]]}],
+                "modifiers": [],
+            }
+        )
+
     with pytest.raises(SerializationError, match="Hex token must be an object"):
         deserialize_string(
             {"type": "HexString", "identifier": "$h", "tokens": ["AA"], "modifiers": []}
@@ -1568,6 +1588,8 @@ def test_simple_roundtrip_serialize_hex_tokens_and_location_reject_wrong_types()
         (HexNibble(True, cast(Any, True)), "HexNibble value must be a nibble"),
         (HexNibble(True, 16), "HexNibble value must be a nibble"),
         (invalid_alternatives, "HexAlternative alternatives must be a list"),
+        (HexAlternative([]), "HexAlternative must contain at least one branch"),
+        (HexAlternative([[]]), "HexAlternative branches must not be empty"),
         (invalid_alternative_token, "Unsupported hex token type: object"),
         (
             HexString(identifier="$h", tokens=[cast(Any, object())]),

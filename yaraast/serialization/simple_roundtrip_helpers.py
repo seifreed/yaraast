@@ -237,10 +237,17 @@ def _deserialize_hex_token(data: dict[str, Any]):
             )
         )
     if hex_kind == "HexAlternative":
-        alternatives = [
-            [_deserialize_hex_token(t) for t in _coerce_serialized_hex_alternative_branch(alt)]
-            for alt in _deserialize_list_field(data, "alternatives", "HexAlternative")
-        ]
+        raw_alternatives = _deserialize_list_field(data, "alternatives", "HexAlternative")
+        if not raw_alternatives:
+            msg = "HexAlternative must contain at least one branch"
+            raise SerializationError(msg)
+        alternatives = []
+        for alt in raw_alternatives:
+            branch = _coerce_serialized_hex_alternative_branch(alt)
+            if not branch:
+                msg = "HexAlternative branches must not be empty"
+                raise SerializationError(msg)
+            alternatives.append([_deserialize_hex_token(t) for t in branch])
         return HexAlternative(alternatives=alternatives)
     msg = f"Unknown hex token type: {hex_kind}"
     raise SerializationError(msg)
@@ -256,10 +263,17 @@ def _serialize_hex_alternative_branches(alternatives: Any) -> list[list[dict[str
     if not isinstance(alternatives, list):
         msg = "HexAlternative alternatives must be a list"
         raise SerializationError(msg)
-    return [
-        [_serialize_hex_token(token) for token in _coerce_hex_alternative_branch(alternative)]
-        for alternative in alternatives
-    ]
+    if not alternatives:
+        msg = "HexAlternative must contain at least one branch"
+        raise SerializationError(msg)
+    branches = []
+    for alternative in alternatives:
+        branch = _coerce_hex_alternative_branch(alternative)
+        if not branch:
+            msg = "HexAlternative branches must not be empty"
+            raise SerializationError(msg)
+        branches.append([_serialize_hex_token(token) for token in branch])
+    return branches
 
 
 def _coerce_serialized_hex_alternative_branch(alternative) -> list:

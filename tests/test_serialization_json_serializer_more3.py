@@ -1291,6 +1291,8 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
     cast(Any, invalid_modifier_float).value = float("nan")
     invalid_hex_alternatives = HexAlternative([[HexByte(0x90)]])
     cast(Any, invalid_hex_alternatives).alternatives = False
+    empty_hex_alternatives = HexAlternative([])
+    empty_hex_alternative_branch = HexAlternative([[]])
     invalid_hex_alternative_token = HexAlternative([[object()]])
 
     invalid_cases: list[tuple[YaraFile, str]] = [
@@ -1480,6 +1482,30 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
                 ]
             ),
             "HexAlternative alternatives must be a list",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "empty_hex_alternatives",
+                        strings=[HexString(identifier="$h", tokens=[empty_hex_alternatives])],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexAlternative must contain at least one branch",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "empty_hex_alternative_branch",
+                        strings=[HexString(identifier="$h", tokens=[empty_hex_alternative_branch])],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexAlternative branches must not be empty",
         ),
         (
             YaraFile(
