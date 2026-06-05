@@ -1270,6 +1270,12 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="TupleExpression elements must be a list"):
         s._deserialize_expression({"type": "TupleExpression", "elements": "abc"})
 
+    with pytest.raises(SerializationError, match="TupleExpression elements is required"):
+        s._deserialize_expression({"type": "TupleExpression"})
+
+    with pytest.raises(SerializationError, match="ListExpression elements is required"):
+        s._deserialize_expression({"type": "ListExpression"})
+
     null_list_item_cases = (
         (
             {"type": "WithStatement", "declarations": [None], "body": true_expr},

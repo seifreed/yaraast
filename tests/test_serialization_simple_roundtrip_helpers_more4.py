@@ -2040,6 +2040,12 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="TupleExpression elements must be a list"):
         deserialize_node({"type": "TupleExpression", "elements": "abc"})
 
+    with pytest.raises(SerializationError, match="TupleExpression elements is required"):
+        deserialize_node({"type": "TupleExpression"})
+
+    with pytest.raises(SerializationError, match="ListExpression elements is required"):
+        deserialize_node({"type": "ListExpression"})
+
     missing_extended_cases = (
         ({"type": "WithStatement", "declarations": []}, "WithStatement body is required"),
         ({"type": "WithDeclaration", "identifier": "x"}, "WithDeclaration value is required"),

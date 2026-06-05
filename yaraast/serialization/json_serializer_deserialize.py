@@ -749,9 +749,18 @@ def _deser_dict_comprehension(self, data: dict[str, Any]):
 def _deser_tuple_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import TupleExpression
 
-    return TupleExpression(
-        elements=_deserialize_expression_list_field(self, data, "elements", "TupleExpression")
-    )
+    raw_elements = _deserialize_required_field(data, "elements", "TupleExpression")
+    if not isinstance(raw_elements, list):
+        msg = "TupleExpression elements must be a list"
+        raise SerializationError(msg)
+    elements = []
+    for item in raw_elements:
+        expression = self._deserialize_expression(item)
+        if expression is None:
+            msg = "TupleExpression elements must contain expressions"
+            raise SerializationError(msg)
+        elements.append(expression)
+    return TupleExpression(elements=elements)
 
 
 def _deser_tuple_indexing(self, data: dict[str, Any]):
@@ -766,9 +775,18 @@ def _deser_tuple_indexing(self, data: dict[str, Any]):
 def _deser_list_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import ListExpression
 
-    return ListExpression(
-        elements=_deserialize_expression_list_field(self, data, "elements", "ListExpression")
-    )
+    raw_elements = _deserialize_required_field(data, "elements", "ListExpression")
+    if not isinstance(raw_elements, list):
+        msg = "ListExpression elements must be a list"
+        raise SerializationError(msg)
+    elements = []
+    for item in raw_elements:
+        expression = self._deserialize_expression(item)
+        if expression is None:
+            msg = "ListExpression elements must contain expressions"
+            raise SerializationError(msg)
+        elements.append(expression)
+    return ListExpression(elements=elements)
 
 
 def _deser_dict_expression(self, data: dict[str, Any]):

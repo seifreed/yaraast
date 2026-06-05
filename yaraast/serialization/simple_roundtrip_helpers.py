@@ -2011,18 +2011,34 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             ),
         )
     if node_type == "TupleExpression":
-        return TupleExpression(
-            elements=_deserialize_node_list_field(data, "elements", "TupleExpression"),
-        )
+        raw_elements = _deserialize_required_field(data, "elements", "TupleExpression")
+        if not isinstance(raw_elements, list):
+            msg = "TupleExpression elements must be a list"
+            raise SerializationError(msg)
+        elements = []
+        for element in raw_elements:
+            if element is None or element == {}:
+                msg = "TupleExpression elements must contain nodes"
+                raise SerializationError(msg)
+            elements.append(_deserialize_required_node_value(element, "TupleExpression elements"))
+        return TupleExpression(elements=elements)
     if node_type == "TupleIndexing":
         return TupleIndexing(
             tuple_expr=_deserialize_required_node(data, "tuple_expr", "TupleIndexing"),
             index=_deserialize_required_node(data, "index", "TupleIndexing"),
         )
     if node_type == "ListExpression":
-        return ListExpression(
-            elements=_deserialize_node_list_field(data, "elements", "ListExpression"),
-        )
+        raw_elements = _deserialize_required_field(data, "elements", "ListExpression")
+        if not isinstance(raw_elements, list):
+            msg = "ListExpression elements must be a list"
+            raise SerializationError(msg)
+        elements = []
+        for element in raw_elements:
+            if element is None or element == {}:
+                msg = "ListExpression elements must contain nodes"
+                raise SerializationError(msg)
+            elements.append(_deserialize_required_node_value(element, "ListExpression elements"))
+        return ListExpression(elements=elements)
     if node_type == "DictExpression":
         return DictExpression(
             items=_deserialize_node_list_field(data, "items", "DictExpression"),
