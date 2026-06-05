@@ -674,15 +674,11 @@ def _deser_with_declaration(self, data: dict[str, Any]):
 def _deser_array_comprehension(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import ArrayComprehension
 
-    variable = _deserialize_optional_string_field(data, "variable", "ArrayComprehension")
-    if "variable" in data and not variable:
-        msg = "ArrayComprehension variable must not be empty"
-        raise SerializationError(msg)
     return ArrayComprehension(
         expression=_deserialize_optional_expression(
             self, data.get("expression"), "ArrayComprehension expression"
         ),
-        variable=variable,
+        variable=_deserialize_nonempty_string_field(data, "variable", "ArrayComprehension"),
         iterable=_deserialize_optional_expression(
             self, data.get("iterable"), "ArrayComprehension iterable"
         ),
@@ -695,10 +691,11 @@ def _deser_array_comprehension(self, data: dict[str, Any]):
 def _deser_dict_comprehension(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import DictComprehension
 
-    key_variable = _deserialize_optional_string_field(data, "key_variable", "DictComprehension")
-    if "key_variable" in data and not key_variable:
-        msg = "DictComprehension key_variable must not be empty"
-        raise SerializationError(msg)
+    key_variable = _deserialize_nonempty_string_field(
+        data,
+        "key_variable",
+        "DictComprehension",
+    )
     value_variable = _deserialize_nullable_nonempty_string_field(
         data, "value_variable", "DictComprehension"
     )

@@ -2001,6 +2001,9 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="ArrayComprehension variable must be a string"):
         deserialize_node({"type": "ArrayComprehension", "variable": ["x"]})
 
+    with pytest.raises(SerializationError, match="ArrayComprehension variable is required"):
+        deserialize_node({"type": "ArrayComprehension"})
+
     with pytest.raises(SerializationError, match="ArrayComprehension variable must not be empty"):
         deserialize_node({"type": "ArrayComprehension", "variable": ""})
 
@@ -2016,6 +2019,9 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
         SerializationError, match="DictComprehension key_variable must not be empty"
     ):
         deserialize_node({"type": "DictComprehension", "key_variable": ""})
+
+    with pytest.raises(SerializationError, match="DictComprehension key_variable is required"):
+        deserialize_node({"type": "DictComprehension"})
 
     with pytest.raises(
         SerializationError, match="DictComprehension value_variable must not be empty"
@@ -2139,31 +2145,31 @@ def test_simple_roundtrip_optional_expression_fields_reject_empty_objects() -> N
             "ForOfExpression condition must be an expression",
         ),
         (
-            {"type": "ArrayComprehension", "expression": {}},
+            {"type": "ArrayComprehension", "expression": {}, "variable": "x"},
             "ArrayComprehension expression must be an expression",
         ),
         (
-            {"type": "ArrayComprehension", "iterable": {}},
+            {"type": "ArrayComprehension", "variable": "x", "iterable": {}},
             "ArrayComprehension iterable must be an expression",
         ),
         (
-            {"type": "ArrayComprehension", "condition": {}},
+            {"type": "ArrayComprehension", "variable": "x", "condition": {}},
             "ArrayComprehension condition must be an expression",
         ),
         (
-            {"type": "DictComprehension", "key_expression": {}},
+            {"type": "DictComprehension", "key_expression": {}, "key_variable": "k"},
             "DictComprehension key_expression must be an expression",
         ),
         (
-            {"type": "DictComprehension", "value_expression": {}},
+            {"type": "DictComprehension", "value_expression": {}, "key_variable": "k"},
             "DictComprehension value_expression must be an expression",
         ),
         (
-            {"type": "DictComprehension", "iterable": {}},
+            {"type": "DictComprehension", "key_variable": "k", "iterable": {}},
             "DictComprehension iterable must be an expression",
         ),
         (
-            {"type": "DictComprehension", "condition": {}},
+            {"type": "DictComprehension", "key_variable": "k", "condition": {}},
             "DictComprehension condition must be an expression",
         ),
         (

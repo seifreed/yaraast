@@ -1939,15 +1939,11 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             value=_deserialize_required_node(data, "value", "WithDeclaration"),
         )
     if node_type == "ArrayComprehension":
-        variable = _deserialize_optional_string_field(data, "variable", "ArrayComprehension")
-        if "variable" in data and not variable:
-            msg = "ArrayComprehension variable must not be empty"
-            raise SerializationError(msg)
         return ArrayComprehension(
             expression=_deserialize_optional_node_field(
                 data, "expression", "ArrayComprehension expression"
             ),
-            variable=variable,
+            variable=_deserialize_nonempty_string_field(data, "variable", "ArrayComprehension"),
             iterable=_deserialize_optional_node_field(
                 data, "iterable", "ArrayComprehension iterable"
             ),
@@ -1956,10 +1952,11 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             ),
         )
     if node_type == "DictComprehension":
-        key_variable = _deserialize_optional_string_field(data, "key_variable", "DictComprehension")
-        if "key_variable" in data and not key_variable:
-            msg = "DictComprehension key_variable must not be empty"
-            raise SerializationError(msg)
+        key_variable = _deserialize_nonempty_string_field(
+            data,
+            "key_variable",
+            "DictComprehension",
+        )
         value_variable = _deserialize_nullable_nonempty_string_field(
             data,
             "value_variable",
