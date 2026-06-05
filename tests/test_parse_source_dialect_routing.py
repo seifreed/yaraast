@@ -10,6 +10,7 @@ from yaraast import YaraLFile, parse_source
 from yaraast.ast.base import YaraFile
 from yaraast.errors import ParseError
 from yaraast.parser.source import parse_yara_source, parse_yara_source_with_comments
+from yaraast.yarax.ast_nodes import TupleExpression
 
 _CLASSIC = 'rule classic { strings: $a = "x" condition: $a }'
 _YARA_X = "rule x { condition: for any i in (0..10) : (i == 1) }"
@@ -34,6 +35,12 @@ def test_parse_source_routes_classic_to_yara_file() -> None:
 def test_parse_source_routes_yara_l_to_yaral_file() -> None:
     result = parse_source(_YARA_L)
     assert isinstance(result, YaraLFile)
+
+
+def test_parse_yara_source_routes_empty_tuple_condition_to_yarax() -> None:
+    result = parse_yara_source("rule empty_tuple { condition: () }")
+
+    assert isinstance(result.rules[0].condition, TupleExpression)
 
 
 @pytest.mark.parametrize("parser", [parse_yara_source, parse_yara_source_with_comments])
