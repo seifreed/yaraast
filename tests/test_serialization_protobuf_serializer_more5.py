@@ -30,7 +30,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import MetaEntry, RuleModifier, StringModifier
+from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import StringOperatorExpression
 from yaraast.ast.pragmas import (
@@ -467,6 +467,28 @@ def test_protobuf_serializer_preserves_meta_entry_float_values() -> None:
     restored = serializer.deserialize(binary_data=serializer.serialize(ast))
 
     assert restored.rules[0].meta[0].value == 1.5
+
+
+def test_protobuf_serializer_preserves_scoped_meta_float_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    scoped_meta = Meta("score", cast(Any, 1.5))
+    cast(Any, scoped_meta).scope = MetaScope.PRIVATE
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="scoped_meta_float",
+                meta=[scoped_meta],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    restored_meta = restored.rules[0].meta[0]
+
+    assert isinstance(restored_meta, MetaEntry)
+    assert restored_meta.scope == MetaScope.PRIVATE
+    assert restored_meta.value == 1.5
 
 
 def test_protobuf_deserializer_rejects_empty_meta_values() -> None:

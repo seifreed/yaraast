@@ -302,10 +302,10 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         meta_val = pb_rule.meta[key]
         pb_meta_entry = pb_rule.meta_entries.add()
         pb_meta_entry.key = key
-        if isinstance(entry, Meta):
-            _copy_python_value_to_legacy_meta_value(value, pb_meta_entry.value)
-        else:
+        if isinstance(entry, MetaEntry) or scope is not None:
             _copy_python_value_to_meta_value(value, pb_meta_entry.value, "Meta")
+        else:
+            _copy_python_value_to_legacy_meta_value(value, pb_meta_entry.value)
         _copy_node_metadata_to_protobuf(entry, pb_meta_entry)
         if scope is not None:
             scope_text = serialize_meta_scope(scope)
@@ -319,7 +319,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
             meta_val.bool_value = value
         elif isinstance(value, int):
             meta_val.int_value = value
-        elif isinstance(value, float) and not isinstance(entry, Meta):
+        elif isinstance(value, float) and (isinstance(entry, MetaEntry) or scope is not None):
             meta_val.double_value = _finite_double_value(value, "Meta")
 
     for string_def in _protobuf_string_definition_list(rule.strings, "Rule strings"):

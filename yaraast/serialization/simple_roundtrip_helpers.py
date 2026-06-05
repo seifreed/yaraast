@@ -1653,9 +1653,10 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
 
 def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
     """Serialize a Meta item."""
+    scope = getattr(meta, "scope", None)
     value = (
         _serialize_meta_entry_value(meta.value)
-        if isinstance(meta, MetaEntry)
+        if isinstance(meta, MetaEntry) or scope is not None
         else _serialize_meta_value(meta.value)
     )
     data = {
@@ -1663,7 +1664,6 @@ def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
         "key": _serialize_required_nonempty_string(meta.key, "Meta key"),
         "value": value,
     }
-    scope = getattr(meta, "scope", None)
     if scope is not None:
         data["type"] = "MetaEntry"
         data["scope"] = serialize_meta_scope(scope)
