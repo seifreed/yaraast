@@ -286,7 +286,7 @@ def test_protobuf_serializer_normalizes_scalar_hex_alternatives() -> None:
 
 def test_protobuf_serializer_preserves_hex_negated_bytes() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
-    tokens = [HexNegatedByte(value=0x4D), HexNegatedByte(value="?0")]
+    tokens = [HexNegatedByte(value=0x4D), HexNegatedByte(value="4D"), HexNegatedByte(value="?0")]
     ast = YaraFile(
         rules=[
             Rule(

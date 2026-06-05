@@ -937,7 +937,7 @@ def _hex_int_value_from_protobuf(value: str) -> int | str:
     if value.startswith("hex:"):
         raw_value = value.removeprefix("hex:")
         if len(raw_value) == 2 and all(char in _HEX_CHARS for char in raw_value):
-            return int(raw_value, 16)
+            return raw_value
         msg = "HexNegatedByte value must be a byte"
         raise SerializationError(msg)
     try:
