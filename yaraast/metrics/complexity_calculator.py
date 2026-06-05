@@ -89,6 +89,8 @@ class ComplexityCalculator(MetricsVisitorBase):
     # Function calls
     def visit_function_call(self, node) -> int:
         complexity = 2  # Base function call
+        if getattr(node, "receiver", None) is not None:
+            complexity += self.calculate(node.receiver)
         for arg in node.arguments:
             complexity += self.calculate(arg)
         return complexity

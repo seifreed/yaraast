@@ -83,6 +83,12 @@ def test_complexity_calculator_core_and_branches() -> None:
         arguments=[IntegerLiteral(value=1), IntegerLiteral(value=2)],
     )
     assert calc.calculate(fcall) == 4
+    receiver_call = FunctionCall(
+        function="f",
+        arguments=[],
+        receiver=ArrayAccess(array=Identifier(name="arr"), index=IntegerLiteral(value=0)),
+    )
+    assert calc.calculate(receiver_call) == 5
 
     assert calc.calculate(StringCount(string_id="a")) == 2
     assert calc.calculate(StringOffset(string_id="a")) == 2
