@@ -2056,6 +2056,13 @@ def test_json_roundtrip_preserves_meta_entry_scope() -> None:
     assert restored.rules[0].meta[2].value == 1.5
     assert [entry.key for entry in restored.rules[0].get_private_meta()] == ["secret"]
 
+    restored.rules[0].meta[0].location = Location(3, 5)
+    reserialized = json.loads(serializer.serialize(restored))
+    assert reserialized["ast"]["rules"][0]["meta"][0]["location"] == {
+        "line": 3,
+        "column": 5,
+    }
+
 
 def test_json_roundtrip_preserves_externs_and_pragmas() -> None:
     serializer = JsonSerializer(include_metadata=True)

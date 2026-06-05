@@ -352,6 +352,34 @@ def _serialize_anonymous_flag(data: dict[str, Any], value, context: str) -> None
         data["is_anonymous"] = True
 
 
+def _serialize_dynamic_node_metadata(serializer, node, data: dict[str, Any]) -> dict[str, Any]:
+    from yaraast.ast.comments import Comment, CommentGroup
+
+    location = getattr(node, "location", None)
+    if location is not None:
+        data["location"] = serializer._serialize_location(location)
+
+    leading_comments = getattr(node, "leading_comments", [])
+    if not isinstance(leading_comments, list | tuple):
+        msg = "leading_comments must be a list of Comment or CommentGroup nodes"
+        raise SerializationError(msg)
+    if leading_comments:
+        data["leading_comments"] = _serialize_node_list(
+            serializer,
+            leading_comments,
+            "leading_comments",
+            (Comment, CommentGroup),
+        )
+
+    trailing_comment = getattr(node, "trailing_comment", None)
+    if trailing_comment is not None:
+        if not isinstance(trailing_comment, Comment | CommentGroup):
+            msg = "trailing_comment must be a Comment or CommentGroup node"
+            raise SerializationError(msg)
+        data["trailing_comment"] = serializer.visit(trailing_comment)
+    return data
+
+
 def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     from yaraast.ast.modifiers import MetaEntry
 
@@ -370,6 +398,8 @@ def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
         data["scope"] = serialize_meta_scope(scope)
     if hasattr(meta, "accept"):
         return serializer._with_node_metadata(meta, data)
+    if any(hasattr(meta, name) for name in ("location", "leading_comments", "trailing_comment")):
+        return _serialize_dynamic_node_metadata(serializer, meta, data)
     return data
 
 
