@@ -128,6 +128,8 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
             format_integer_literal(invalid_prefixed_integer)
     with pytest.raises(ValueError, match="Double literal value must be finite"):
         format_double_literal(float("nan"))
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        format_double_literal(2**63)
 
     assert format_hex_jump(None, None) == "[-]"
     assert format_hex_jump(0, 0) == "[0-0]"

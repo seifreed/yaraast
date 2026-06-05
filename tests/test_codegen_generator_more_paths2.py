@@ -3706,6 +3706,8 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         gen.visit_double_literal(DoubleLiteral(float("nan")))
     with pytest.raises(ValueError, match="Double literal value must be finite"):
         gen.visit_double_literal(DoubleLiteral(float("inf")))
+    with pytest.raises(ValueError, match="Integer literal value is outside libyara range"):
+        gen.visit_double_literal(DoubleLiteral(2**63))
     bad_integer_text: Any = "abc"
     with pytest.raises(TypeError, match="Integer literal value must be an integer"):
         gen.visit_integer_literal(IntegerLiteral(bad_integer_text))

@@ -626,6 +626,7 @@ def format_double_literal(value: int | float) -> str:
         msg = "Double literal value must be finite"
         raise ValueError(msg)
     if isinstance(value, int):
+        _validate_integer_literal_range(value)
         return str(value)
     text = format(Decimal.from_float(value), "f")
     if "." in text:
