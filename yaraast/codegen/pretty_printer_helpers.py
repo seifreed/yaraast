@@ -16,6 +16,10 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
+from yaraast.codegen.generator_formatting import (
+    format_yarax_local_identifier,
+    validate_yara_identifier,
+)
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
@@ -183,6 +187,7 @@ def expression_to_string(expr: Any, options: Any = None) -> str:
         _render_binary_operator,
         _visit_binary_operand,
         render_function_call_callee,
+        require_present_expression,
         validate_binary_expression_operands,
         validate_expression_collection,
         validate_function_call_arguments,
@@ -235,16 +240,38 @@ def expression_to_string(expr: Any, options: Any = None) -> str:
             finally:
                 self._allow_unknown_unqualified_functions = previous
 
+        def visit_with_declaration(self, node: Any) -> str:
+            identifier = format_yarax_local_identifier(node.identifier, "local variable")
+            return f"{identifier} = {self.visit(node.value)}"
+
+        def visit_array_comprehension(self, node: Any) -> str:
+            expression = require_present_expression(
+                node.expression, "ArrayComprehension expression"
+            )
+            iterable = require_present_expression(node.iterable, "ArrayComprehension iterable")
+            variable = validate_yara_identifier(node.variable, "local variable")
+            result = f"[{self.visit(expression)} for {variable} in {self.visit(iterable)}"
+            if node.condition is not None:
+                result += f" if {self.visit(node.condition)}"
+            return result + "]"
+
         def visit_dict_comprehension(self, node: Any) -> str:
             separator = self._comma_separator()
-            variables = (
-                separator.join([node.key_variable, node.value_variable])
-                if node.value_variable
-                else node.key_variable
+            key_variable = validate_yara_identifier(node.key_variable, "local variable")
+            variables = key_variable
+            if node.value_variable:
+                value_variable = validate_yara_identifier(node.value_variable, "local variable")
+                variables = separator.join([key_variable, value_variable])
+            key_expression = require_present_expression(
+                node.key_expression, "DictComprehension key_expression"
             )
+            value_expression = require_present_expression(
+                node.value_expression, "DictComprehension value_expression"
+            )
+            iterable = require_present_expression(node.iterable, "DictComprehension iterable")
             result = (
-                f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
-                f"for {variables} in {self.visit(node.iterable)}"
+                f"{{{self.visit(key_expression)}: {self.visit(value_expression)} "
+                f"for {variables} in {self.visit(iterable)}"
             )
             if node.condition is not None:
                 result += f" if {self.visit(node.condition)}"
@@ -282,7 +309,10 @@ def expression_to_string(expr: Any, options: Any = None) -> str:
 
         def visit_lambda_expression(self, node: Any) -> str:
             validate_expression_collection(node.parameters, "LambdaExpression parameters")
-            parameters = self._comma_separator().join(node.parameters)
+            parameters = self._comma_separator().join(
+                validate_yara_identifier(parameter, "local variable")
+                for parameter in node.parameters
+            )
             if parameters:
                 return f"lambda {parameters}: {self.visit(node.body)}"
             return f"lambda: {self.visit(node.body)}"

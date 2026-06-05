@@ -9,8 +9,10 @@ from yaraast.codegen.generator_expression_visitors import (
     render_function_call_callee,
     validate_expression_collection,
 )
-from yaraast.codegen.generator_formatting import validate_yara_identifier
-from yaraast.codegen.generator_helpers import format_string_reference_identifier
+from yaraast.codegen.generator_formatting import (
+    format_yarax_local_identifier,
+    validate_yara_identifier,
+)
 
 if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
@@ -36,9 +38,7 @@ class YaraXGenerator(BaseGenerator):
     """Code generator for YARA-X with support for new syntax features."""
 
     def _render_local_identifier(self, identifier: str, field_name: str) -> str:
-        if identifier.startswith("$"):
-            return format_string_reference_identifier(identifier, allow_placeholder=False)
-        return validate_yara_identifier(identifier, field_name)
+        return format_yarax_local_identifier(identifier, field_name)
 
     def _visit_required_expression(self, expression: Expression | None, field_name: str) -> str:
         if expression is None:

@@ -14,6 +14,7 @@ from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_hex_jump_bounds,
     format_integer_literal,
+    format_string_reference_identifier,
 )
 from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.regex_literals import validate_regex_modifiers
@@ -221,6 +222,12 @@ def validate_yara_identifier(name: object, kind: str) -> str:
 
     msg = f"Invalid {kind} identifier '{name}' for libyara output"
     raise ValueError(msg)
+
+
+def format_yarax_local_identifier(identifier: str, field_name: str) -> str:
+    if identifier.startswith("$"):
+        return format_string_reference_identifier(identifier, allow_placeholder=False)
+    return validate_yara_identifier(identifier, field_name)
 
 
 def validate_yara_expression_identifier(name: object) -> str:

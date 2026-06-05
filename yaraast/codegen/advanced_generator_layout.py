@@ -19,6 +19,7 @@ from yaraast.codegen.generator_expression_visitors import (
 from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     format_rule_tags,
+    format_yarax_local_identifier,
     validate_extern_rule_identifiers,
     validate_rule_collections,
     validate_rule_identifiers,
@@ -251,12 +252,14 @@ class _AdvancedConditionGenerator(CodeGenerator):
         return f"with {declarations}: {self.visit(node.body)}"
 
     def visit_with_declaration(self, node: Any) -> str:
-        return f"{node.identifier} = {self.visit(node.value)}"
+        identifier = format_yarax_local_identifier(node.identifier, "local variable")
+        return f"{identifier} = {self.visit(node.value)}"
 
     def visit_array_comprehension(self, node: Any) -> str:
         expression = require_present_expression(node.expression, "ArrayComprehension expression")
         iterable = require_present_expression(node.iterable, "ArrayComprehension iterable")
-        result = f"[{self.visit(expression)} for {node.variable} " f"in {self.visit(iterable)}"
+        variable = validate_yara_identifier(node.variable, "local variable")
+        result = f"[{self.visit(expression)} for {variable} in {self.visit(iterable)}"
         if node.condition is not None:
             result += f" if {self.visit(node.condition)}"
         return f"{result}]"
@@ -269,9 +272,10 @@ class _AdvancedConditionGenerator(CodeGenerator):
             node.value_expression, "DictComprehension value_expression"
         )
         iterable = require_present_expression(node.iterable, "DictComprehension iterable")
-        variables = node.key_variable
+        variables = validate_yara_identifier(node.key_variable, "local variable")
         if node.value_variable:
-            variables = f"{variables}, {node.value_variable}"
+            value_variable = validate_yara_identifier(node.value_variable, "local variable")
+            variables = f"{variables}, {value_variable}"
         result = (
             f"{{{self.visit(key_expression)}: {self.visit(value_expression)} "
             f"for {variables} in {self.visit(iterable)}"
@@ -330,7 +334,9 @@ class _AdvancedConditionGenerator(CodeGenerator):
 
     def visit_lambda_expression(self, node: Any) -> str:
         validate_expression_collection(node.parameters, "LambdaExpression parameters")
-        parameters = ", ".join(node.parameters)
+        parameters = ", ".join(
+            validate_yara_identifier(parameter, "local variable") for parameter in node.parameters
+        )
         if parameters:
             return f"lambda {parameters}: {self.visit(node.body)}"
         return f"lambda: {self.visit(node.body)}"

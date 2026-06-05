@@ -79,6 +79,7 @@ from yaraast.codegen.generator_formatting import (
     format_meta_value,
     format_rule_modifiers,
     format_rule_tags,
+    format_yarax_local_identifier,
     validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import (
@@ -549,7 +550,8 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_with_declaration(self, node: WithDeclaration) -> str:
         if self._custom_expressions:
             return self._layout.yarax_expression(self, node)
-        return f"{node.identifier} = {self.visit(node.value)}"
+        identifier = format_yarax_local_identifier(node.identifier, "local variable")
+        return f"{identifier} = {self.visit(node.value)}"
 
     def visit_array_comprehension(self, node: ArrayComprehension) -> str:
         if self._custom_expressions:
@@ -557,9 +559,8 @@ class CodeGenerator(ASTVisitor[str]):
         if node.expression is None or node.iterable is None:
             msg = "Array comprehension requires expression and iterable for libyara output"
             raise ValueError(msg)
-        result = (
-            f"[{self.visit(node.expression)} for {node.variable} " f"in {self.visit(node.iterable)}"
-        )
+        variable = validate_yara_identifier(node.variable, "local variable")
+        result = f"[{self.visit(node.expression)} for {variable} in {self.visit(node.iterable)}"
         if node.condition is not None:
             result += f" if {self.visit(node.condition)}"
         return result + "]"
@@ -570,11 +571,12 @@ class CodeGenerator(ASTVisitor[str]):
         if node.key_expression is None or node.value_expression is None or node.iterable is None:
             msg = "Dict comprehension requires key, value, and iterable for libyara output"
             raise ValueError(msg)
-        variables = (
-            f"{node.key_variable}, {node.value_variable}"
-            if node.value_variable
-            else node.key_variable
-        )
+        key_variable = validate_yara_identifier(node.key_variable, "local variable")
+        if node.value_variable:
+            value_variable = validate_yara_identifier(node.value_variable, "local variable")
+            variables = f"{key_variable}, {value_variable}"
+        else:
+            variables = key_variable
         result = (
             f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
             f"for {variables} in {self.visit(node.iterable)}"
@@ -644,7 +646,9 @@ class CodeGenerator(ASTVisitor[str]):
         if self._custom_expressions:
             return self._layout.yarax_expression(self, node)
         validate_expression_collection(node.parameters, "LambdaExpression parameters")
-        parameters = ", ".join(node.parameters)
+        parameters = ", ".join(
+            validate_yara_identifier(parameter, "local variable") for parameter in node.parameters
+        )
         if parameters:
             return f"lambda {parameters}: {self.visit(node.body)}"
         return f"lambda: {self.visit(node.body)}"
