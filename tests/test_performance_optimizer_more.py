@@ -122,6 +122,14 @@ def test_optimize_yara_file_rejects_directory_paths(tmp_path: Path) -> None:
         optimize_yara_file(path, output_path=output_dir)
 
 
+def test_optimize_yara_file_rejects_invalid_utf8(tmp_path: Path) -> None:
+    path = tmp_path / "bad.yar"
+    path.write_bytes(b"\xff")
+
+    with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
+        optimize_yara_file(path)
+
+
 @pytest.mark.parametrize("value", [False, 0, object()])
 def test_optimize_yara_file_rejects_invalid_path_types(value: Any, tmp_path: Path) -> None:
     path = tmp_path / "perf.yar"

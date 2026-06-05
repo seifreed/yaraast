@@ -46,6 +46,15 @@ def _require_file_path(value: object, name: str) -> Path:
     return path
 
 
+def _read_yara_text_file(path: Path) -> str:
+    try:
+        with path.open(encoding="utf-8") as f:
+            return f.read()
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 class PerformanceOptimizer:
     """Optimizes YARA rules for better runtime performance."""
 
@@ -250,8 +259,7 @@ def optimize_yara_file(
     )
 
     # Parse the file
-    with input_file.open(encoding="utf-8") as f:
-        content = f.read()
+    content = _read_yara_text_file(input_file)
     ast = parse_yara_source(content)
 
     # Optimize
