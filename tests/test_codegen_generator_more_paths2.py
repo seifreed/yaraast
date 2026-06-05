@@ -306,6 +306,37 @@ def test_codegen_generators_reject_invalid_string_anonymous_flags(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize(
+    "string_def",
+    [
+        PlainString(identifier="$a", value="abc", modifiers=cast(Any, None)),
+        HexString(identifier="$h", tokens=[HexByte(value=0x41)], modifiers=cast(Any, None)),
+        RegexString(identifier="$r", regex="abc", modifiers=cast(Any, None)),
+    ],
+)
+def test_codegen_generators_reject_missing_string_modifier_collections(
+    string_def: PlainString | HexString | RegexString,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="r",
+                strings=[string_def],
+                condition=StringIdentifier(name=string_def.identifier),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="String modifiers must be a list or tuple"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="String modifiers must be a list or tuple"):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(ast)
+    with pytest.raises(TypeError, match="String modifiers must be a list or tuple"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    with pytest.raises(TypeError, match="String modifiers must be a list or tuple"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
 @pytest.mark.parametrize("bad_high", [None, 0, 1.5, "", [], {}])
 def test_codegen_generators_reject_invalid_hex_nibble_high_flags(bad_high: Any) -> None:
     ast = YaraFile(

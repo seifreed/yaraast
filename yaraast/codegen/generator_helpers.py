@@ -986,8 +986,6 @@ def _modifier_names(modifiers: object) -> set[str]:
 
 
 def _validate_string_modifier_collection(modifiers: object) -> None:
-    if modifiers is None:
-        return
     if isinstance(modifiers, list | tuple):
         return
     msg = "String modifiers must be a list or tuple for libyara output"

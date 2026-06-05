@@ -116,8 +116,7 @@ def test_generator_helpers_escape_integer_and_modifiers() -> None:
     with pytest.raises(TypeError, match="String modifiers must contain strings or StringModifier"):
         format_modifiers(["wide", 7], lambda node: f"<{node.name}>")
     assert format_modifiers(("nocase",), lambda node: "") == " nocase"
-    assert format_modifiers(None, lambda node: "") == ""
-    invalid_modifier_containers = ("private", {"x"}, 123, "", 0, False)
+    invalid_modifier_containers = (None, "private", {"x"}, 123, "", 0, False)
     for invalid_modifiers in invalid_modifier_containers:
         with pytest.raises(TypeError, match="String modifiers must be a list or tuple"):
             format_modifiers(invalid_modifiers, lambda node: "")
