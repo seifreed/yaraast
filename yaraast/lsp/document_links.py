@@ -37,6 +37,10 @@ class DocumentLinksProvider:
 
     def get_document_links(self, text: str, document_uri: str) -> list[DocumentLink]:
         """Get all document links in the file."""
+        if not isinstance(text, str):
+            msg = "Document links text must be a string"
+            raise TypeError(msg)
+
         links = []
 
         try:

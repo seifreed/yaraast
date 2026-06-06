@@ -4,11 +4,22 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
+from typing import Any, cast
+
+import pytest
 
 from yaraast.lsp.document_links import DocumentLinksProvider
 from yaraast.lsp.document_types import path_to_uri
 from yaraast.lsp.runtime import DocumentContext
 from yaraast.lsp.utf16 import utf8_col_to_utf16
+
+
+@pytest.mark.parametrize("text", [None, 1, b'import "pe"', object()])
+def test_document_links_rejects_non_string_text(text: Any) -> None:
+    provider = DocumentLinksProvider()
+
+    with pytest.raises(TypeError, match="Document links text must be a string"):
+        provider.get_document_links(cast(str, text), "file://test.yar")
 
 
 def test_document_links_import_and_include(tmp_path: Path) -> None:
