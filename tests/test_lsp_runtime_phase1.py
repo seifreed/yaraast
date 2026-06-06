@@ -348,6 +348,56 @@ def test_workspace_index_skips_cached_symbols_with_inverted_ranges(tmp_path: Pat
     assert [symbol.name for symbol in index.search_records("")] == ["good"]
 
 
+def test_workspace_index_skips_cached_symbols_with_mismatched_uri(
+    tmp_path: Path,
+) -> None:
+    open_file = tmp_path / "open.yar"
+    other_file = tmp_path / "other.yar"
+    open_file.write_text("rule disk { condition: true }\n", encoding="utf-8")
+    other_file.write_text("rule other { condition: true }\n", encoding="utf-8")
+    open_uri = path_to_uri(open_file)
+    other_uri = path_to_uri(other_file)
+    cache_dir = tmp_path / ".yaraast"
+    cache_dir.mkdir()
+    cache_file = cache_dir / "lsp-workspace-index.json"
+    cache_file.write_text(
+        f"""
+{{
+  "symbols": {{
+    "{other_uri}": [
+      {{
+        "name": "stale_open",
+        "kind": "rule",
+        "uri": "{open_uri}",
+        "range": {{
+          "start": {{"line": 0, "character": 0}},
+          "end": {{"line": 0, "character": 10}}
+        }}
+      }}
+    ],
+    "{open_uri}": [
+      {{
+        "name": "good_open",
+        "kind": "rule",
+        "uri": "{open_uri}",
+        "range": {{
+          "start": {{"line": 0, "character": 0}},
+          "end": {{"line": 0, "character": 9}}
+        }}
+      }}
+    ]
+  }}
+}}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
+
+    assert index.search_records("", exclude_uris={open_uri}) == []
+
+
 def test_workspace_index_ignores_non_object_cache_payload(tmp_path: Path) -> None:
     cache_dir = tmp_path / ".yaraast"
     cache_dir.mkdir()
