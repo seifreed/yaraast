@@ -60,7 +60,11 @@ class Workspace:
         if not raw_path.strip():
             msg = "root_path must not be empty"
             raise ValueError(msg)
-        return Path(raw_path)
+        path = Path(raw_path)
+        if path.exists() and not path.is_dir():
+            msg = "root_path must be a directory"
+            raise ValueError(msg)
+        return path
 
     def add_file(self, file_path: str | PathLike[str]) -> FileAnalysisResult:
         """Add a single file to the workspace."""

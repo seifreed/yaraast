@@ -45,6 +45,14 @@ def test_workspace_accepts_pathlike_root_path(tmp_path: Path) -> None:
     assert workspace.root_path == tmp_path
 
 
+def test_workspace_rejects_file_root_path(tmp_path: Path) -> None:
+    root_file = tmp_path / "not_a_directory"
+    root_file.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="root_path must be a directory"):
+        Workspace(root_file)
+
+
 @pytest.mark.parametrize("file_path", ["", "   ", "\t"])
 def test_workspace_add_file_rejects_empty_file_path(
     tmp_path: Path,
