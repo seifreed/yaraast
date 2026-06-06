@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 from lsprotocol.types import Diagnostic, DiagnosticSeverity
+import pytest
 
 from yaraast.ast.base import Location
 from yaraast.lsp.diagnostics import DiagnosticData, DiagnosticsProvider
@@ -32,6 +33,13 @@ def _diagnostic_patches(diagnostic: Diagnostic) -> list[dict[str, Any]]:
     patches = _diagnostic_data(diagnostic)["patches"]
     assert isinstance(patches, list)
     return patches
+
+
+def test_diagnostics_rejects_invalid_uri() -> None:
+    provider = DiagnosticsProvider()
+
+    with pytest.raises(TypeError, match="Diagnostics URI must be a string or None"):
+        provider.get_diagnostics("rule sample { condition: true }", cast(str, object()))
 
 
 def test_diagnostics_parser_error() -> None:
