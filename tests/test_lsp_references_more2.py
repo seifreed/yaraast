@@ -38,6 +38,41 @@ def test_references_rejects_non_position_inputs() -> None:
         )
 
 
+@pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
+def test_rename_rejects_non_string_text(text: Any) -> None:
+    provider = RenameProvider()
+
+    with pytest.raises(TypeError, match="Rename text must be a string"):
+        provider.prepare_rename(cast(str, text), _pos(0, 0), "file://test.yar")
+
+    with pytest.raises(TypeError, match="Rename text must be a string"):
+        provider.rename(cast(str, text), _pos(0, 0), "b", "file://test.yar")
+
+
+def test_rename_rejects_non_position_inputs() -> None:
+    provider = RenameProvider()
+
+    with pytest.raises(TypeError, match="position must be an LSP Position"):
+        provider.prepare_rename("rule a { condition: true }", cast(Any, object()))
+
+    with pytest.raises(TypeError, match="position must be an LSP Position"):
+        provider.rename(
+            "rule a { condition: true }",
+            cast(Any, object()),
+            "b",
+            "file://test.yar",
+        )
+
+
+def test_rename_rejects_non_string_new_name() -> None:
+    provider = RenameProvider()
+
+    with pytest.raises(TypeError, match="Rename new_name must be a string"):
+        provider.rename(
+            "rule a { condition: true }", _pos(0, 5), cast(str, object()), "file://test.yar"
+        )
+
+
 def test_references_string_variants() -> None:
     text = """
 rule a {

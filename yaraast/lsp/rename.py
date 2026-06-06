@@ -24,6 +24,7 @@ class RenameProvider:
         Returns:
             Range of the symbol to rename or None if not renameable
         """
+        self._validate_symbol_request(text, position)
         resolved = (
             self.runtime.resolve_symbol(uri, text, position)
             if self.runtime and uri
@@ -52,6 +53,11 @@ class RenameProvider:
         Returns:
             WorkspaceEdit with all the changes
         """
+        self._validate_symbol_request(text, position)
+        if not isinstance(new_name, str):
+            msg = "Rename new_name must be a string"
+            raise TypeError(msg)
+
         doc = (
             self.runtime.ensure_document(uri, text)
             if self.runtime and uri
@@ -85,6 +91,14 @@ class RenameProvider:
                 return WorkspaceEdit(changes={uri: edits})
 
         return None
+
+    def _validate_symbol_request(self, text: str, position: Position) -> None:
+        if not isinstance(text, str):
+            msg = "Rename text must be a string"
+            raise TypeError(msg)
+        if not isinstance(position, Position):
+            msg = "position must be an LSP Position"
+            raise TypeError(msg)
 
     def _is_rule_name(self, text: str, position: Position) -> bool:
         """Check if position is at a rule name."""
