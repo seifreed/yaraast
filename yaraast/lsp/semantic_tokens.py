@@ -77,6 +77,13 @@ def _require_text(value: object) -> str:
     return value
 
 
+def _require_uri(value: object) -> str | None:
+    if value is not None and not isinstance(value, str):
+        msg = "Semantic token URI must be a string or None"
+        raise TypeError(msg)
+    return value
+
+
 class SemanticTokensProvider:
     """Provides semantic tokens for advanced syntax highlighting."""
 
@@ -102,6 +109,7 @@ class SemanticTokensProvider:
             SemanticTokens with token information
         """
         text = _require_text(text)
+        uri = _require_uri(uri)
         ctx = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
         if ctx is not None:
             cached = ctx.get_cached("semantic_tokens:full")
@@ -136,6 +144,7 @@ class SemanticTokensProvider:
         """Get semantic tokens for a specific range."""
         text = _require_text(text)
         range_ = _require_range(range_)
+        uri = _require_uri(uri)
         ctx = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
         cache_key = None
         if ctx is not None:

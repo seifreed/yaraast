@@ -55,6 +55,21 @@ def test_semantic_tokens_range_rejects_non_range_inputs() -> None:
         )
 
 
+def test_semantic_tokens_reject_invalid_uri() -> None:
+    provider = SemanticTokensProvider()
+    range_ = Range(start=Position(line=0, character=0), end=Position(line=0, character=1))
+
+    with pytest.raises(TypeError, match="Semantic token URI must be a string or None"):
+        provider.get_semantic_tokens("rule sample { condition: true }", cast(str, object()))
+
+    with pytest.raises(TypeError, match="Semantic token URI must be a string or None"):
+        provider.get_semantic_tokens_range(
+            "rule sample { condition: true }",
+            range_,
+            cast(str, object()),
+        )
+
+
 @pytest.mark.parametrize("text", [None, 1, b"rule r { condition: true }"])
 def test_semantic_tokens_reject_non_string_text(text: Any) -> None:
     provider = SemanticTokensProvider()
