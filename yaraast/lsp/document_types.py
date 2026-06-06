@@ -35,7 +35,7 @@ def _required_position_int(data: dict[str, Any], key: str) -> int:
 def uri_to_path(uri: object) -> Path | None:
     if not isinstance(uri, str) or not uri:
         return None
-    if uri.startswith("file://"):
+    if uri.lower().startswith("file://"):
         parsed = urlparse(uri)
         if parsed.netloc and parsed.netloc.lower() != "localhost":
             return None
