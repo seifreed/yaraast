@@ -32,8 +32,8 @@ def _required_position_int(data: dict[str, Any], key: str) -> int:
     raise ValueError(msg)
 
 
-def uri_to_path(uri: str) -> Path | None:
-    if not uri:
+def uri_to_path(uri: object) -> Path | None:
+    if not isinstance(uri, str) or not uri:
         return None
     if uri.startswith("file://"):
         parsed = urlparse(uri)
