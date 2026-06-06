@@ -14,6 +14,17 @@ from yaraast.config import DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
 from yaraast.dialects import YaraDialect, detect_dialect
 
 YARA_FILE_SUFFIXES = frozenset({".yar", ".yara", ".yaral", ".yarax"})
+SYMBOL_KIND_MAP = {
+    "import": SymbolKind.Namespace,
+    "include": SymbolKind.File,
+    "rule": SymbolKind.Class,
+    "rule_block": SymbolKind.Variable,
+    "section": SymbolKind.Variable,
+    "section_header": SymbolKind.Variable,
+    "string": SymbolKind.Variable,
+    "meta": SymbolKind.Property,
+    "condition": SymbolKind.Function,
+}
 
 
 def _required_symbol_string(data: dict[str, Any], key: str) -> str:
@@ -22,6 +33,14 @@ def _required_symbol_string(data: dict[str, Any], key: str) -> str:
         msg = f"SymbolRecord {key} must be a non-empty string"
         raise ValueError(msg)
     return value
+
+
+def _required_symbol_kind(data: dict[str, Any]) -> str:
+    value = _required_symbol_string(data, "kind")
+    if value in SYMBOL_KIND_MAP:
+        return value
+    msg = "SymbolRecord kind is not supported"
+    raise ValueError(msg)
 
 
 def _required_position_int(data: dict[str, Any], key: str) -> int:
@@ -135,24 +154,16 @@ class SymbolRecord:
         _validate_range_order(start_position, end_position)
         return cls(
             name=_required_symbol_string(data, "name"),
-            kind=_required_symbol_string(data, "kind"),
+            kind=_required_symbol_kind(data),
             uri=_required_symbol_string(data, "uri"),
             range=Range(start=start_position, end=end_position),
             container_name=container_name if isinstance(container_name, str) else None,
         )
 
     def to_symbol_information(self) -> SymbolInformation:
-        kind_map = {
-            "import": SymbolKind.Namespace,
-            "include": SymbolKind.File,
-            "rule": SymbolKind.Class,
-            "string": SymbolKind.Variable,
-            "meta": SymbolKind.Property,
-            "condition": SymbolKind.Function,
-        }
         return SymbolInformation(
             name=self.name,
-            kind=kind_map.get(self.kind, SymbolKind.Variable),
+            kind=SYMBOL_KIND_MAP[self.kind],
             location=Location(uri=self.uri, range=self.range),
             container_name=self.container_name,
         )
