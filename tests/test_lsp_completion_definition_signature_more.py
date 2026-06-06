@@ -86,6 +86,23 @@ rule a {
     assert provider._find_rule_definition(broken, "a", uri) is None
 
 
+@pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
+def test_definition_rejects_non_string_text(text: Any) -> None:
+    provider = DefinitionProvider()
+
+    with pytest.raises(TypeError, match="Definition text must be a string"):
+        provider.get_definition(cast(str, text), _pos(0, 0), "file://test.yar")
+
+
+def test_definition_rejects_non_position_inputs() -> None:
+    provider = DefinitionProvider()
+
+    with pytest.raises(TypeError, match="position must be an LSP Position"):
+        provider.get_definition(
+            "rule a { condition: true }", cast(Any, object()), "file://test.yar"
+        )
+
+
 def test_signature_help_edge_cases_and_parameter_counting() -> None:
     provider = SignatureHelpProvider()
 
