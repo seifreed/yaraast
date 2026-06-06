@@ -63,6 +63,14 @@ def _require_file_path(value: object, name: str = "file_path") -> Path:
     return path
 
 
+def _read_yara_text_file(path: str | Path) -> str:
+    try:
+        return Path(path).read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 def _require_directory_path(value: object, name: str = "dir_path") -> Path:
     path = _require_pathlike(value, name)
     if path.exists() and not path.is_dir():
@@ -255,7 +263,7 @@ class StreamingParser:
 
             try:
                 start_time = timed_now()
-                content = Path(file_path).read_text(encoding="utf-8")
+                content = _read_yara_text_file(file_path)
                 ast = self._parse_content(content)
                 parse_time = timed_now() - start_time
 

@@ -212,6 +212,22 @@ def test_streaming_parser_parse_files_supports_yarax(tmp_path: Path) -> None:
     assert rows[0].ast.rules[0].condition.__class__.__name__ == "WithStatement"
 
 
+def test_streaming_parser_rejects_invalid_utf8_file_inputs(tmp_path: Path) -> None:
+    path = tmp_path / "bad_utf8.yar"
+    path.write_bytes(b"\xff")
+    parser = StreamingParser()
+
+    file_results = list(parser.parse_files([path]))
+    rule_results = list(parser.parse_rules_from_file(path))
+
+    assert len(file_results) == 1
+    assert file_results[0].status.name == "ERROR"
+    assert file_results[0].error == "YARA file must contain valid UTF-8 text"
+    assert len(rule_results) == 1
+    assert rule_results[0].status.name == "ERROR"
+    assert rule_results[0].error == "YARA file must contain valid UTF-8 text"
+
+
 def test_streaming_parser_rejects_single_string_file_paths(tmp_path: Path) -> None:
     path = tmp_path / "single.yar"
     path.write_text("rule single { condition: true }", encoding="utf-8")

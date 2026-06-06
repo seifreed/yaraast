@@ -91,7 +91,11 @@ def iter_rule_text_byte_spans_from_mmap(
     mmapped_file: mmap.mmap,
 ) -> Iterator[tuple[str, int, int]]:
     """Yield complete rule texts and their byte spans from a memory-mapped YARA file."""
-    content = mmapped_file.read().decode("utf-8", errors="replace")
+    try:
+        content = mmapped_file.read().decode("utf-8")
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
     mmapped_file.seek(0)
     current_char_pos = 0
     current_byte_pos = 0
