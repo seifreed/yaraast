@@ -38,6 +38,18 @@ def test_normalize_file_patterns_rejects_non_string_entries(tmp_path: Path) -> N
         list(iter_matching_files(tmp_path, cast(Any, b"*.yar")))
 
 
+@pytest.mark.parametrize("patterns", ["", "   ", ["*.yar", ""], ["\t"]])
+def test_normalize_file_patterns_rejects_empty_patterns(
+    tmp_path: Path,
+    patterns: Any,
+) -> None:
+    with pytest.raises(ValueError, match="File patterns must not contain empty patterns"):
+        normalize_file_patterns(cast(Any, patterns))
+
+    with pytest.raises(ValueError, match="File patterns must not contain empty patterns"):
+        list(iter_matching_files(tmp_path, cast(Any, patterns)))
+
+
 @pytest.mark.parametrize("recursive", [None, 1, "yes", object()])
 def test_iter_matching_files_rejects_invalid_recursive_types(
     tmp_path: Path,

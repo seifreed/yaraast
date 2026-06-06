@@ -9,6 +9,7 @@ from pathlib import Path
 DEFAULT_CLASSIC_YARA_FILE_PATTERNS = ("*.yar", "*.yara")
 FilePatterns = str | Iterable[str] | None
 FILE_PATTERNS_TYPE_ERROR = "File patterns must be a string or iterable of strings"
+FILE_PATTERNS_EMPTY_ERROR = "File patterns must not contain empty patterns"
 DIRECTORY_TYPE_ERROR = "directory must be a directory path"
 
 
@@ -20,12 +21,16 @@ def normalize_file_patterns(
     if patterns is None:
         return default
     if isinstance(patterns, str):
+        if not patterns.strip():
+            raise ValueError(FILE_PATTERNS_EMPTY_ERROR)
         return (patterns,)
     if not isinstance(patterns, Iterable):
         raise TypeError(FILE_PATTERNS_TYPE_ERROR)
     normalized = tuple(patterns)
     if not all(isinstance(pattern, str) for pattern in normalized):
         raise TypeError(FILE_PATTERNS_TYPE_ERROR)
+    if any(not pattern.strip() for pattern in normalized):
+        raise ValueError(FILE_PATTERNS_EMPTY_ERROR)
     return normalized
 
 
