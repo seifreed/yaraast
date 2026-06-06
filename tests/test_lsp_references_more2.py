@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from lsprotocol.types import Position
+import pytest
 
 from yaraast.ast.expressions import StringCount, StringLength, StringOffset
 from yaraast.lsp.definition import DefinitionProvider
@@ -17,6 +19,23 @@ from yaraast.lsp.runtime import LspRuntime, path_to_uri
 
 def _pos(line: int, char: int) -> Position:
     return Position(line=line, character=char)
+
+
+@pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
+def test_references_rejects_non_string_text(text: Any) -> None:
+    provider = ReferencesProvider()
+
+    with pytest.raises(TypeError, match="References text must be a string"):
+        provider.get_references(cast(str, text), _pos(0, 0), "file://test.yar")
+
+
+def test_references_rejects_non_position_inputs() -> None:
+    provider = ReferencesProvider()
+
+    with pytest.raises(TypeError, match="position must be an LSP Position"):
+        provider.get_references(
+            "rule a { condition: true }", cast(Any, object()), "file://test.yar"
+        )
 
 
 def test_references_string_variants() -> None:
