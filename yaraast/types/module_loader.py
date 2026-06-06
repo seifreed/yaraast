@@ -58,6 +58,19 @@ def _normalize_variadic(value: object) -> bool:
     return value if isinstance(value, bool) else False
 
 
+def _validate_function_arity_metadata(
+    func_name: str,
+    min_parameters: int | None,
+    parameter_count: int,
+    *,
+    variadic: bool,
+) -> None:
+    if min_parameters is None or variadic or min_parameters <= parameter_count:
+        return
+    msg = f"Module function '{func_name}' min_parameters cannot exceed parameter count"
+    raise ValueError(msg)
+
+
 def _module_spec_path_entries(env_name: str) -> list[str]:
     raw_value = os.environ.get(env_name)
     if not raw_value:
@@ -174,16 +187,23 @@ class ModuleLoader:
                 func_name = _normalize_function_name(func_name)
                 if not isinstance(func_data, dict):
                     raise TypeError(f"Module function '{func_name}' must be an object")
+                parameters = self._parse_parameters(func_data.get("parameters", []))
+                min_parameters = _normalize_min_parameters(func_data.get("min_parameters"))
+                variadic = _normalize_variadic(func_data.get("variadic"))
+                _validate_function_arity_metadata(
+                    func_name,
+                    min_parameters,
+                    len(parameters),
+                    variadic=variadic,
+                )
                 func_def = FunctionDefinition(
                     name=func_name,
                     return_type=self._parse_type(
                         func_data.get("return", "any"),
                     ),
-                    parameters=self._parse_parameters(
-                        func_data.get("parameters", []),
-                    ),
-                    min_parameters=_normalize_min_parameters(func_data.get("min_parameters")),
-                    variadic=_normalize_variadic(func_data.get("variadic")),
+                    parameters=parameters,
+                    min_parameters=min_parameters,
+                    variadic=variadic,
                 )
                 module.functions[func_name] = func_def
 

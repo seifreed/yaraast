@@ -292,6 +292,28 @@ def test_module_loader_normalizes_invalid_function_arity_metadata() -> None:
     assert func.variadic is False
 
 
+def test_module_loader_rejects_non_variadic_min_parameters_above_parameter_count() -> None:
+    loader = ModuleLoader()
+
+    with pytest.raises(
+        ValueError,
+        match="Module function 'f' min_parameters cannot exceed parameter count",
+    ):
+        loader._parse_module(
+            "manual",
+            {
+                "name": "manual",
+                "functions": {
+                    "f": {
+                        "return": "int",
+                        "parameters": ["x"],
+                        "min_parameters": 2,
+                    }
+                },
+            },
+        )
+
+
 def test_module_loader_degrades_malformed_complex_type_without_aborting_module() -> None:
     loader = ModuleLoader()
 
