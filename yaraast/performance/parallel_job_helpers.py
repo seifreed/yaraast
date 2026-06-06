@@ -100,13 +100,19 @@ def require_output_dir_path(output_dir: object) -> Path:
     return path
 
 
+def _read_yara_text_file(path: str | Path) -> str:
+    try:
+        return Path(path).read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        msg = "YARA file must contain valid UTF-8 text"
+        raise ValueError(msg) from exc
+
+
 def analyze_file_path(path: str, analyzer: Any) -> dict[str, Any]:
     """Parse and analyze a file path using a provided analyzer instance."""
     from yaraast.parser.source import parse_yara_source
 
-    with open(path, encoding="utf-8") as f:
-        content = f.read()
-
+    content = _read_yara_text_file(path)
     yara_file = parse_yara_source(content)
     analysis: dict[str, Any] = dict(analyzer.analyze_file(yara_file))
     analysis["file"] = path
@@ -171,7 +177,7 @@ def parse_file_chunks(file_paths: Sequence[str | Path], chunk_size: int = 10) ->
         try:
             for file_path in chunk:
                 try:
-                    content = Path(file_path).read_text(encoding="utf-8")
+                    content = _read_yara_text_file(file_path)
                     ast = parse_yara_source(content)
                     results.append(ast)
                 except _EXPECTED_PARSE_ERRORS as e:

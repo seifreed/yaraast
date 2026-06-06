@@ -111,6 +111,24 @@ def test_parallel_analyzer_accepts_yarax_files(tmp_path: Path) -> None:
     assert jobs[0].result[0].rules[0].name == "x"
 
 
+def test_parallel_analyzer_rejects_invalid_utf8_file(tmp_path: Path) -> None:
+    file_path = tmp_path / "bad_utf8.yar"
+    file_path.write_bytes(b"\xff")
+    analyzer = ParallelAnalyzer(max_workers=1)
+
+    with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
+        analyzer._analyze_file_path(str(file_path))
+
+    jobs = analyzer.parse_files_parallel([str(file_path)], chunk_size=1)
+
+    assert len(jobs) == 1
+    assert jobs[0].status.value == "failed"
+    assert jobs[0].error == f"{file_path}: YARA file must contain valid UTF-8 text"
+    assert jobs[0].result is not None
+    assert getattr(jobs[0].result[0], "_parse_error", False) is True
+    assert jobs[0].result[0].error == "YARA file must contain valid UTF-8 text"
+
+
 def test_parallel_analyzer_batch_analyze_files_preserves_input_order(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
