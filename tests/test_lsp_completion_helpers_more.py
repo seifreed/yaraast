@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any, cast
 
 from lsprotocol.types import Position
+import pytest
 from pytest import MonkeyPatch
 
 from yaraast.ast.base import YaraFile
@@ -23,6 +25,16 @@ from yaraast.lsp.language_services import parse_source
 
 def _pos(line: int, char: int) -> Position:
     return Position(line=line, character=char)
+
+
+@pytest.mark.parametrize("source", [None, 1, b"rule a", object()])
+def test_lsp_parse_source_rejects_non_string_text(source: Any) -> None:
+    with pytest.raises(TypeError, match="LSP parse source text must be a string"):
+        parse_source(cast(str, source))
+
+
+def test_lsp_parse_source_returns_none_for_malformed_string() -> None:
+    assert parse_source("rule bad { condition: ") is None
 
 
 @dataclass
