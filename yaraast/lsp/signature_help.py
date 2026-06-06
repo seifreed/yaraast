@@ -197,6 +197,13 @@ class SignatureHelpProvider:
 
     def get_signature_help(self, text: str, position: Position) -> SignatureHelp | None:
         """Get signature help at position."""
+        if not isinstance(text, str):
+            msg = "Signature help text must be a string"
+            raise TypeError(msg)
+        if not isinstance(position, Position):
+            msg = "position must be an LSP Position"
+            raise TypeError(msg)
+
         call_context = self._find_call_context_at_position(text, position)
         if call_context is None:
             return None

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from lsprotocol.types import Position
+import pytest
 
 from yaraast.lsp.completion import CompletionProvider
 from yaraast.lsp.definition import DefinitionProvider
@@ -130,6 +133,21 @@ def test_signature_help_edge_cases_and_parameter_counting() -> None:
     assert rich_signature_sig is not None
     assert rich_signature_sig.active_parameter == 1
     assert "version" in rich_signature_sig.signatures[0].label
+
+
+@pytest.mark.parametrize("text", [None, 1, b"uint32(", object()])
+def test_signature_help_rejects_non_string_text(text: Any) -> None:
+    provider = SignatureHelpProvider()
+
+    with pytest.raises(TypeError, match="Signature help text must be a string"):
+        provider.get_signature_help(cast(str, text), _pos(0, 0))
+
+
+def test_signature_help_rejects_non_position_inputs() -> None:
+    provider = SignatureHelpProvider()
+
+    with pytest.raises(TypeError, match="position must be an LSP Position"):
+        provider.get_signature_help("uint32(", cast(Any, object()))
 
 
 def test_signature_help_uses_utf16_cursor_for_active_parameter() -> None:
