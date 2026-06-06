@@ -137,6 +137,7 @@ class ExternNamespace(ASTNode):
 
     def get_rule_by_name(self, name: str) -> ExternRule | None:
         """Get extern rule by name within this namespace."""
+        name = require_string(name, "ExternNamespace rule name")
         for rule in self.extern_rules:
             if rule.name == name:
                 return rule

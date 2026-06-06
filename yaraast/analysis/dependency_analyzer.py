@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from yaraast.ast.base import ASTNode, require_yara_file
+from yaraast.ast.base import ASTNode, require_string, require_yara_file
 from yaraast.ast.expressions import Identifier, MemberAccess, StringWildcard
 from yaraast.shared.local_scope import local_name_variants
 from yaraast.visitor.base import BaseVisitor
@@ -105,10 +105,12 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     def get_dependencies(self, rule_name: str) -> list[str]:
         """Get direct dependencies of a rule."""
+        rule_name = require_string(rule_name, "DependencyAnalyzer rule name")
         return sorted(self.dependencies.get(rule_name, set()))
 
     def get_dependents(self, rule_name: str) -> list[str]:
         """Get rules that depend on the given rule."""
+        rule_name = require_string(rule_name, "DependencyAnalyzer rule name")
         dependents = []
         for rule, deps in self.dependencies.items():
             if rule_name in deps:
@@ -117,6 +119,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     def get_transitive_dependencies(self, rule_name: str) -> set[str]:
         """Get all transitive dependencies of a rule."""
+        rule_name = require_string(rule_name, "DependencyAnalyzer rule name")
         visited = set()
         to_visit = [rule_name]
 

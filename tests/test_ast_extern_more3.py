@@ -60,6 +60,14 @@ def test_extern_namespace_negative_lookup_and_factory_without_modifiers() -> Non
     assert helper_rule.namespace is None
 
 
+@pytest.mark.parametrize("name", [None, 1, b"R1", object()])
+def test_extern_namespace_rejects_non_string_rule_lookup_names(name: Any) -> None:
+    ns = ExternNamespace(name="ext")
+
+    with pytest.raises(TypeError, match="ExternNamespace rule name must be a string"):
+        ns.get_rule_by_name(cast(str, name))
+
+
 def test_extern_namespace_rejects_invalid_rule_inputs_without_partial_update() -> None:
     ns = ExternNamespace(name="ext")
     rule = ExternRule(name="R1")

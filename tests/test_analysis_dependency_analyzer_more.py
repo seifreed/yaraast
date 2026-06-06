@@ -75,6 +75,20 @@ def test_dependency_analyzer_cycle_dedup_transitive_and_topological_none() -> No
     assert analyzer._topological_sort() is None
 
 
+@pytest.mark.parametrize("rule_name", [None, 1, b"caller", object()])
+def test_dependency_analyzer_rejects_non_string_rule_lookup_names(
+    rule_name: Any,
+) -> None:
+    analyzer = DependencyAnalyzer()
+
+    with pytest.raises(TypeError, match="DependencyAnalyzer rule name must be a string"):
+        analyzer.get_dependencies(cast(str, rule_name))
+    with pytest.raises(TypeError, match="DependencyAnalyzer rule name must be a string"):
+        analyzer.get_dependents(cast(str, rule_name))
+    with pytest.raises(TypeError, match="DependencyAnalyzer rule name must be a string"):
+        analyzer.get_transitive_dependencies(cast(str, rule_name))
+
+
 def test_dependency_analyzer_visit_rule_and_analyze_full_file() -> None:
     ast = Parser().parse("""
 import "pe"
