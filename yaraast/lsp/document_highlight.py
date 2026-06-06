@@ -19,6 +19,13 @@ class DocumentHighlightProvider:
 
     def get_highlights(self, text: str, position: Position) -> list[DocumentHighlight]:
         """Get all highlights for symbol at position."""
+        if not isinstance(text, str):
+            msg = "Document highlight text must be a string"
+            raise TypeError(msg)
+        if not isinstance(position, Position):
+            msg = "position must be an LSP Position"
+            raise TypeError(msg)
+
         word, _word_range = get_word_at_position(text, position)
         if not word:
             return []

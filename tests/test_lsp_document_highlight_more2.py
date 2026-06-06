@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from lsprotocol.types import DocumentHighlightKind, Position
+import pytest
 
 from yaraast.lsp.document_highlight import DocumentHighlightProvider
 
@@ -16,6 +19,21 @@ def test_document_highlight_string_identifier_fallback() -> None:
     provider = DocumentHighlightProvider()
     highlights = provider.get_highlights(text, _pos(0, text.find("$a")))
     assert len(highlights) == 3
+
+
+@pytest.mark.parametrize("text", [None, 1, b"rule r { condition: true }", object()])
+def test_document_highlight_rejects_non_string_text(text: Any) -> None:
+    provider = DocumentHighlightProvider()
+
+    with pytest.raises(TypeError, match="Document highlight text must be a string"):
+        provider.get_highlights(cast(str, text), _pos(0, 0))
+
+
+def test_document_highlight_rejects_non_position_inputs() -> None:
+    provider = DocumentHighlightProvider()
+
+    with pytest.raises(TypeError, match="position must be an LSP Position"):
+        provider.get_highlights("rule r { condition: true }", cast(Any, object()))
 
 
 def test_document_highlight_identifier_word_boundaries() -> None:
