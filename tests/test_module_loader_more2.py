@@ -31,6 +31,20 @@ def test_module_loader_rejects_empty_env_path_entries(
         ModuleLoader()
 
 
+@pytest.mark.parametrize(
+    "env_name",
+    ["YARAAST_MODULE_SPEC_PATH", "YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"],
+)
+def test_module_loader_rejects_whitespace_only_env_path_entries(
+    monkeypatch: pytest.MonkeyPatch,
+    env_name: str,
+) -> None:
+    monkeypatch.setenv(env_name, "   ")
+
+    with pytest.raises(ModuleSpecError, match=f"{env_name} must not contain empty path entries"):
+        ModuleLoader()
+
+
 def test_module_loader_rejects_invalid_json_specs(tmp_path: Path) -> None:
     invalid_json = tmp_path / "invalid.json"
     invalid_json.write_text("{ not valid json", encoding="utf-8")

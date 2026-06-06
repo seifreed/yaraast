@@ -43,7 +43,7 @@ def _module_spec_path_entries(env_name: str) -> list[str]:
     if not raw_value:
         return []
     entries = raw_value.split(os.pathsep)
-    if any(not entry for entry in entries):
+    if any(not entry.strip() for entry in entries):
         msg = f"{env_name} must not contain empty path entries"
         raise ModuleSpecError(msg)
     return entries
