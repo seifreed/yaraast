@@ -32,6 +32,8 @@ def _highlight_range(line: str, line_num: int, start: int, end: int) -> Range:
 
 
 def simple_highlight(text: str, word: str) -> list[DocumentHighlight]:
+    if not word:
+        return []
     highlights = []
     lines = text.split("\n")
     ctx = SimpleNamespace(lines=lines)
@@ -55,6 +57,8 @@ def simple_highlight(text: str, word: str) -> list[DocumentHighlight]:
 
 
 def highlight_identifier(text: str, identifier: str) -> list[DocumentHighlight]:
+    if not identifier:
+        return []
     highlights = []
     lines = text.split("\n")
     ctx = SimpleNamespace(lines=lines)
@@ -82,10 +86,14 @@ def highlight_identifier(text: str, identifier: str) -> list[DocumentHighlight]:
 
 
 def highlight_string_identifier(text: str, identifier: str) -> list[DocumentHighlight]:
+    if not identifier:
+        return []
     highlights = []
     lines = text.split("\n")
     ctx = SimpleNamespace(lines=lines)
     base_id = identifier[1:] if identifier.startswith("$") else identifier
+    if not base_id:
+        return []
     patterns = [f"${base_id}", f"#{base_id}", f"@{base_id}", f"!{base_id}"]
 
     for line_num, line in enumerate(lines):
