@@ -48,7 +48,7 @@ def _range_contains_position(range_: Range, position: Position) -> bool:
         return False
     if position.line == range_.start.line and position.character < range_.start.character:
         return False
-    return not (position.line == range_.end.line and position.character > range_.end.character)
+    return not (position.line == range_.end.line and position.character >= range_.end.character)
 
 
 class _SymbolIndex:

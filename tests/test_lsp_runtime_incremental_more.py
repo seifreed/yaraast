@@ -288,6 +288,15 @@ def test_document_context_rejects_invalid_text_inputs() -> None:
         doc.update(cast(Any, object()))
 
 
+def test_document_context_rule_scope_excludes_range_end_position() -> None:
+    text = "rule sample { condition: true }\nrule other { condition: true }\n"
+    doc = DocumentContext("file://sample.yar", text)
+
+    assert doc.rule_name_at_position(Position(line=0, character=30)) == "sample"
+    assert doc.rule_name_at_position(Position(line=0, character=31)) is None
+    assert doc.rule_name_at_position(Position(line=1, character=0)) == "other"
+
+
 def test_runtime_indexes_yaral_sections_as_section_symbols(tmp_path: Path) -> None:
     rule_file = tmp_path / "login.yar"
     text = """
