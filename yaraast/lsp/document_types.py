@@ -37,6 +37,8 @@ def uri_to_path(uri: str) -> Path | None:
         return None
     if uri.startswith("file://"):
         parsed = urlparse(uri)
+        if parsed.netloc and parsed.netloc != "localhost":
+            return None
         decoded = unquote(parsed.path)
         if not decoded:
             return None

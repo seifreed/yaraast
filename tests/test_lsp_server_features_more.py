@@ -355,6 +355,8 @@ def test_register_server_features_and_initialize_handlers() -> None:
 def test_lsp_path_helpers_reject_empty_workspace_paths() -> None:
     assert uri_to_path("") is None
     assert uri_to_path("file://") is None
+    assert uri_to_path("file://example.com/tmp/ws") is None
+    assert str(uri_to_path("file://localhost/tmp/ws")) == "/tmp/ws"
     params = SimpleNamespace(
         root_uri=None,
         root_path="",
