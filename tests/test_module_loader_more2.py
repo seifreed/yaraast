@@ -66,6 +66,38 @@ def test_module_loader_rejects_invalid_utf8_specs(tmp_path: Path) -> None:
         loader._load_module_file(invalid_utf8)
 
 
+@pytest.mark.parametrize(
+    "env_name",
+    ["YARAAST_MODULE_SPEC_PATH", "YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"],
+)
+def test_module_loader_rejects_missing_env_spec_paths(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    env_name: str,
+) -> None:
+    monkeypatch.setenv(env_name, str(tmp_path / "missing"))
+
+    with pytest.raises(ModuleSpecError, match="must be an existing JSON file or directory"):
+        ModuleLoader()
+
+
+@pytest.mark.parametrize(
+    "env_name",
+    ["YARAAST_MODULE_SPEC_PATH", "YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"],
+)
+def test_module_loader_rejects_non_json_env_spec_files(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    env_name: str,
+) -> None:
+    spec_path = tmp_path / "module.txt"
+    spec_path.write_text(json.dumps({"name": "custom"}), encoding="utf-8")
+    monkeypatch.setenv(env_name, str(spec_path))
+
+    with pytest.raises(ModuleSpecError, match="must be an existing JSON file or directory"):
+        ModuleLoader()
+
+
 def test_module_loader_rejects_malformed_module_sections(tmp_path: Path) -> None:
     bad_module = tmp_path / "bad_module.json"
     bad_module.write_text(

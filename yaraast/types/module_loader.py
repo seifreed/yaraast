@@ -125,6 +125,11 @@ class ModuleLoader:
             elif path.is_dir():
                 for json_file in path.glob("*.json"):
                     self._load_module_file(json_file)
+            else:
+                msg = (
+                    f"Module specification path '{path}' must be an existing JSON file or directory"
+                )
+                raise ModuleSpecError(msg)
 
     def _load_module_file(self, path: Path) -> None:
         """Load a single module definition from JSON file."""
