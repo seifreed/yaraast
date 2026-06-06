@@ -331,6 +331,22 @@ rule sample {
     assert "Replace with uint32()" in titles
 
 
+def test_code_action_ignores_empty_unknown_function_metadata() -> None:
+    provider = CodeActionsProvider()
+    diag = Diagnostic(
+        range=_range(0, 0, 1),
+        message="Unknown function",
+        data=DiagnosticData(
+            code="semantic.unknown_function",
+            severity="error",
+            error_type="semantic",
+            metadata={"function": "", "suggested_functions": ["uint32"]},
+        ).to_dict(),
+    )
+
+    assert provider._create_semantic_actions("uint8(0)", diag, "file://test.yar") == []
+
+
 def test_code_action_replace_builtin_targets_diagnostic_occurrence() -> None:
     provider = CodeActionsProvider()
     text = """

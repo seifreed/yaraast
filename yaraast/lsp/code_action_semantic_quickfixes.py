@@ -98,6 +98,8 @@ def _find_diagnostic_call(
 
 
 def _find_diagnostic_occurrence(line: str, needle: str, diagnostic: Diagnostic) -> int:
+    if not needle:
+        return -1
     range_start, range_end = _diagnostic_python_range(line, diagnostic)
     fallback = line.find(needle)
     if fallback < 0:
