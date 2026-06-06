@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from yaraast.lsp.folding_ranges import FoldingRangesProvider
-from yaraast.lsp.structure import find_rule_end, find_rule_line, find_section_header_position
+from yaraast.lsp.structure import (
+    find_rule_end,
+    find_rule_line,
+    find_section_header_position,
+    find_string_line,
+)
 from yaraast.parser.parser import Parser
 
 
@@ -73,6 +78,12 @@ rule foo {
 
     assert find_rule_line(lines, "foo") == 4
     assert any(range_.start_line == 4 and range_.end_line == 7 for range_ in ranges)
+
+
+def test_structure_find_string_line_rejects_empty_identifier() -> None:
+    lines = ['rule a { strings: $a = "x" condition: $a }']
+
+    assert find_string_line(lines, "") == -1
 
 
 def test_folding_ranges_fallback_on_invalid() -> None:

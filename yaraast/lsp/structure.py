@@ -267,6 +267,8 @@ def find_section_line(lines: list[str], section_header: str, start_line: int) ->
 
 
 def find_string_line(lines: list[str], string_id: str, start: int = 0) -> int:
+    if not string_id:
+        return -1
     for idx in range(max(0, start), len(lines)):
         line = lines[idx]
         if f"{string_id} =" in line or f"{string_id}=" in line:
