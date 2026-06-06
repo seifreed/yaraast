@@ -140,7 +140,7 @@ def _get_location_line_text(location: Location, source_text: str | None) -> str 
         if path.exists() and path.is_file():
             try:
                 lines = path.read_text(encoding="utf-8").split("\n")
-            except OSError:
+            except (OSError, UnicodeDecodeError):
                 return None
             line_index = location.line - 1
             if 0 <= line_index < len(lines):

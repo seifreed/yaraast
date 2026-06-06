@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from lsprotocol.types import Position
 
 from yaraast.ast.base import Location, YaraFile
@@ -62,6 +64,17 @@ def test_token_and_location_to_range() -> None:
         emoji_line,
         sample_start + len("sample"),
     )
+
+
+def test_location_to_range_ignores_invalid_utf8_location_file(tmp_path: Path) -> None:
+    source_path = tmp_path / "bad.yar"
+    source_path.write_bytes(b"\xff")
+    loc = Location(line=1, column=3, file=str(source_path))
+
+    loc_range = location_to_range(loc)
+
+    assert loc_range.start.character == 2
+    assert loc_range.end.character == 3
 
 
 def test_position_offset_roundtrip() -> None:
