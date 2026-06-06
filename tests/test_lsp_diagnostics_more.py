@@ -142,6 +142,24 @@ def test_validation_error_diagnostic_range_uses_utf16_columns(tmp_path: Path) ->
     assert diag.range.end.character == utf8_col_to_utf16(source, source_start + 10)
 
 
+def test_validation_error_diagnostic_ignores_invalid_utf8_location_file(
+    tmp_path: Path,
+) -> None:
+    provider = DiagnosticsProvider()
+    source_path = tmp_path / "bad.yar"
+    source_path.write_bytes(b"\xff")
+    error = ValidationError(
+        "warn",
+        location=Location(line=1, column=3, file=str(source_path)),
+        severity="warning",
+    )
+
+    diag = provider._validation_error_to_diagnostic(error, DiagnosticSeverity.Warning)
+
+    assert diag.range.start.character == 2
+    assert diag.range.end.character == 12
+
+
 def test_diagnostics_unknown_function_warning() -> None:
     provider = DiagnosticsProvider()
     text = """

@@ -366,7 +366,7 @@ def _location_source_line(location: Any, line: int) -> str:
         return ""
     try:
         lines = path.read_text(encoding="utf-8").split("\n")
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return ""
     if 0 <= line < len(lines):
         return lines[line]
