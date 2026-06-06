@@ -1,5 +1,9 @@
 """Test AST-based analysis features."""
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.analysis import (
     AnalysisReport,
     BestPracticesAnalyzer,
@@ -11,6 +15,16 @@ from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.parser import Parser
+
+
+@pytest.mark.parametrize("value", [None, 1, b"warning", object()])
+def test_analysis_report_rejects_non_string_filter_values(value: Any) -> None:
+    report = AnalysisReport()
+
+    with pytest.raises(TypeError, match="AnalysisReport severity must be a string"):
+        report.get_by_severity(cast(str, value))
+    with pytest.raises(TypeError, match="AnalysisReport category must be a string"):
+        report.get_by_category(cast(str, value))
 
 
 class TestBestPracticesAnalyzer:

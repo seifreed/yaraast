@@ -207,6 +207,7 @@ class Rule(ASTNode):
 
     def get_meta_value(self, key: str, default: Any = None) -> Any:
         """Get the value of a meta entry by key."""
+        key = require_string(key, "Rule meta key")
         for entry in reversed(self.meta):
             if hasattr(entry, "key") and entry.key == key:
                 return entry.value
@@ -233,4 +234,5 @@ class Rule(ASTNode):
 
     def get_pragmas_by_position(self, position: str) -> list[InRulePragma]:
         """Get pragmas by their position in the rule."""
+        position = require_string(position, "Rule pragma position")
         return [p for p in self.pragmas if p.position == position]

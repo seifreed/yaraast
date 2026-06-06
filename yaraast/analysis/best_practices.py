@@ -18,7 +18,7 @@ from yaraast.analysis.best_practices_helpers import (
     get_hex_prefix,
     levenshtein_distance,
 )
-from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.base import ASTNode, YaraFile, require_string
 from yaraast.ast.expressions import (
     Identifier,
     ParenthesesExpression,
@@ -82,10 +82,12 @@ class AnalysisReport:
 
     def get_by_severity(self, severity: str) -> list[Suggestion]:
         """Get suggestions by severity."""
+        severity = require_string(severity, "AnalysisReport severity")
         return [s for s in self.suggestions if s.severity == severity]
 
     def get_by_category(self, category: str) -> list[Suggestion]:
         """Get suggestions by category."""
+        category = require_string(category, "AnalysisReport category")
         return [s for s in self.suggestions if s.category == category]
 
 

@@ -44,6 +44,14 @@ def test_rule_get_meta_value_uses_last_duplicate_key_value() -> None:
     assert rule.get_meta_value("owner") == "last"
 
 
+@pytest.mark.parametrize("key", [None, 1, b"owner", object()])
+def test_rule_get_meta_value_rejects_non_string_keys(key: Any) -> None:
+    rule = Rule(name="r1")
+
+    with pytest.raises(TypeError, match="Rule meta key must be a string"):
+        rule.get_meta_value(cast(str, key))
+
+
 def test_rule_pragmas_by_position() -> None:
     rule = Rule(name="r2")
     pragma_before = InRulePragma(
@@ -60,6 +68,16 @@ def test_rule_pragmas_by_position() -> None:
     after = rule.get_pragmas_by_position("after_strings")
     assert before == [pragma_before]
     assert after == [pragma_after]
+
+
+@pytest.mark.parametrize("position", [None, 1, b"before_strings", object()])
+def test_rule_get_pragmas_by_position_rejects_non_string_positions(
+    position: Any,
+) -> None:
+    rule = Rule(name="r2")
+
+    with pytest.raises(TypeError, match="Rule pragma position must be a string"):
+        rule.get_pragmas_by_position(cast(str, position))
 
 
 def test_rule_rejects_invalid_pragmas_without_partial_update() -> None:
