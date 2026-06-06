@@ -51,12 +51,12 @@ def get_workspace_folders(params: InitializeParams) -> list[str]:
     workspace_folders = getattr(params, "workspace_folders", None) or []
     for folder in workspace_folders:
         uri = getattr(folder, "uri", None)
-        if isinstance(uri, str) and uri.startswith("file://"):
+        if isinstance(uri, str) and uri.lower().startswith("file:"):
             path = uri_to_path(uri)
             if path is not None:
                 folders.append(str(path))
     root_uri = getattr(params, "root_uri", None)
-    if isinstance(root_uri, str) and root_uri.startswith("file://"):
+    if isinstance(root_uri, str) and root_uri.lower().startswith("file:"):
         path = uri_to_path(root_uri)
         if path is not None:
             folders.append(str(path))

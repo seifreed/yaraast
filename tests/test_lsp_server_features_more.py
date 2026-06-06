@@ -362,12 +362,13 @@ def test_lsp_path_helpers_reject_empty_workspace_paths() -> None:
     assert str(uri_to_path("file://LOCALHOST/tmp/ws")) == "/tmp/ws"
     assert str(uri_to_path("FILE:///tmp/ws")) == "/tmp/ws"
     assert str(uri_to_path("File://LOCALHOST/tmp/ws")) == "/tmp/ws"
+    assert str(uri_to_path("file:/tmp/ws")) == "/tmp/ws"
     params = SimpleNamespace(
-        root_uri=None,
+        root_uri="file:/tmp/ws",
         root_path="   ",
         workspace_folders=[SimpleNamespace(uri="file://")],
     )
-    assert get_workspace_folders(cast(Any, params)) == []
+    assert get_workspace_folders(cast(Any, params)) == ["/tmp/ws"]
 
 
 def test_did_change_uses_workspace_source_for_incremental_updates() -> None:
