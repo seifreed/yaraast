@@ -64,6 +64,9 @@ class CompletionProvider:
         if not isinstance(position, Position):
             msg = "position must be an LSP Position"
             raise TypeError(msg)
+        if uri is not None and not isinstance(uri, str):
+            msg = "Completion URI must be a string or None"
+            raise TypeError(msg)
 
         items = []
 

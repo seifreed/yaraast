@@ -41,6 +41,13 @@ def test_completion_rejects_non_position_inputs() -> None:
         provider.get_completions("rule r { condition: true }", cast(Any, object()))
 
 
+def test_completion_rejects_invalid_uri() -> None:
+    provider = CompletionProvider()
+
+    with pytest.raises(TypeError, match="Completion URI must be a string or None"):
+        provider.get_completions("rule r { condition: true }", _pos(0, 0), cast(str, object()))
+
+
 def test_completion_keywords_cover_non_modifier_lexer_keywords() -> None:
     missing = set(LEXER_KEYWORDS) - set(KEYWORDS) - set(STRING_MODIFIERS)
 
