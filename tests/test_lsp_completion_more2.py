@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from lsprotocol.types import Position
+import pytest
 
 from yaraast.lexer.lexer_tables import KEYWORDS as LEXER_KEYWORDS
 from yaraast.lsp.completion import CompletionProvider
@@ -21,6 +24,21 @@ def test_completion_keywords_and_builtins() -> None:
     labels = {item.label for item in completions.items}
     assert "rule" in labels
     assert "uint32" in labels
+
+
+@pytest.mark.parametrize("text", [None, 1, b"rule r { condition: true }", object()])
+def test_completion_rejects_non_string_text(text: Any) -> None:
+    provider = CompletionProvider()
+
+    with pytest.raises(TypeError, match="Completion text must be a string"):
+        provider.get_completions(cast(str, text), _pos(0, 0))
+
+
+def test_completion_rejects_non_position_inputs() -> None:
+    provider = CompletionProvider()
+
+    with pytest.raises(TypeError, match="position must be an LSP Position"):
+        provider.get_completions("rule r { condition: true }", cast(Any, object()))
 
 
 def test_completion_keywords_cover_non_modifier_lexer_keywords() -> None:

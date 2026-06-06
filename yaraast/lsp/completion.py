@@ -58,6 +58,13 @@ class CompletionProvider:
         Returns:
             CompletionList with available completions
         """
+        if not isinstance(text, str):
+            msg = "Completion text must be a string"
+            raise TypeError(msg)
+        if not isinstance(position, Position):
+            msg = "position must be an LSP Position"
+            raise TypeError(msg)
+
         items = []
 
         # Analyze context
