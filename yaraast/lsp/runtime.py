@@ -85,6 +85,13 @@ def _parse_language_mode(value: object, default: LanguageMode) -> LanguageMode:
     return mapping.get(raw_mode, default)
 
 
+def _require_document_uri(uri: str) -> str:
+    if not isinstance(uri, str):
+        msg = "Document URI must be a string"
+        raise TypeError(msg)
+    return uri
+
+
 __all__ = [
     "CacheManager",
     "DocumentContext",
@@ -185,6 +192,7 @@ class LspRuntime:
         self.cache.bump_generation()
 
     def open_document(self, uri: str, text: str, version: int | None = None) -> DocumentContext:
+        uri = _require_document_uri(uri)
         ctx = self.documents.get(uri)
         if ctx is None:
             ctx = DocumentContext(
@@ -202,9 +210,11 @@ class LspRuntime:
         return ctx
 
     def update_document(self, uri: str, text: str, version: int | None = None) -> DocumentContext:
+        uri = _require_document_uri(uri)
         return self.open_document(uri, text, version)
 
     def save_document(self, uri: str, text: str | None = None) -> DocumentContext | None:
+        uri = _require_document_uri(uri)
         ctx = self.get_document(uri, load_workspace=False)
         if ctx is None:
             if text is None:
@@ -217,6 +227,7 @@ class LspRuntime:
         return ctx
 
     def close_document(self, uri: str) -> None:
+        uri = _require_document_uri(uri)
         ctx = self.documents.get(uri)
         if ctx is None:
             return
@@ -227,6 +238,7 @@ class LspRuntime:
             self.documents.pop(uri, None)
 
     def get_document(self, uri: str, *, load_workspace: bool = True) -> DocumentContext | None:
+        uri = _require_document_uri(uri)
         ctx = self.documents.get(uri)
         if ctx is not None:
             return ctx
@@ -248,6 +260,7 @@ class LspRuntime:
         return ctx
 
     def ensure_document(self, uri: str, text: str) -> DocumentContext:
+        uri = _require_document_uri(uri)
         ctx = self.documents.get(uri)
         if ctx is None:
             return self.open_document(uri, text)

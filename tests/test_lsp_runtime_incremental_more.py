@@ -292,6 +292,29 @@ def test_document_context_rejects_invalid_text_inputs() -> None:
         doc.update(cast(Any, object()))
 
 
+def test_runtime_rejects_invalid_document_uri_inputs() -> None:
+    runtime = LspRuntime()
+    invalid_uri = cast(str, object())
+
+    with pytest.raises(TypeError, match="Document URI must be a string"):
+        runtime.open_document(invalid_uri, "rule r { condition: true }")
+
+    with pytest.raises(TypeError, match="Document URI must be a string"):
+        runtime.update_document(invalid_uri, "rule r { condition: true }")
+
+    with pytest.raises(TypeError, match="Document URI must be a string"):
+        runtime.ensure_document(invalid_uri, "rule r { condition: true }")
+
+    with pytest.raises(TypeError, match="Document URI must be a string"):
+        runtime.save_document(invalid_uri)
+
+    with pytest.raises(TypeError, match="Document URI must be a string"):
+        runtime.get_document(invalid_uri)
+
+    with pytest.raises(TypeError, match="Document URI must be a string"):
+        runtime.close_document(invalid_uri)
+
+
 def test_document_context_rule_scope_excludes_range_end_position() -> None:
     text = "rule sample { condition: true }\nrule other { condition: true }\n"
     doc = DocumentContext("file://sample.yar", text)
