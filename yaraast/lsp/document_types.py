@@ -32,6 +32,13 @@ def _required_position_int(data: dict[str, Any], key: str) -> int:
     raise ValueError(msg)
 
 
+def _validate_range_order(start: Position, end: Position) -> None:
+    if (start.line, start.character) <= (end.line, end.character):
+        return
+    msg = "SymbolRecord range start must not be after end"
+    raise ValueError(msg)
+
+
 def uri_to_path(uri: object) -> Path | None:
     if not isinstance(uri, str) or not uri:
         return None
@@ -117,20 +124,20 @@ class SymbolRecord:
             msg = "SymbolRecord range endpoints must be objects"
             raise ValueError(msg)
         container_name = data.get("container_name")
+        start_position = Position(
+            line=_required_position_int(start, "line"),
+            character=_required_position_int(start, "character"),
+        )
+        end_position = Position(
+            line=_required_position_int(end, "line"),
+            character=_required_position_int(end, "character"),
+        )
+        _validate_range_order(start_position, end_position)
         return cls(
             name=_required_symbol_string(data, "name"),
             kind=_required_symbol_string(data, "kind"),
             uri=_required_symbol_string(data, "uri"),
-            range=Range(
-                start=Position(
-                    line=_required_position_int(start, "line"),
-                    character=_required_position_int(start, "character"),
-                ),
-                end=Position(
-                    line=_required_position_int(end, "line"),
-                    character=_required_position_int(end, "character"),
-                ),
-            ),
+            range=Range(start=start_position, end=end_position),
             container_name=container_name if isinstance(container_name, str) else None,
         )
 
