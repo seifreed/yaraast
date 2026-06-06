@@ -124,6 +124,14 @@ def test_batch_processor_accepts_pathlike_temp_dir(tmp_path: Path) -> None:
     assert processor.temp_dir == tmp_path
 
 
+def test_batch_processor_rejects_file_temp_dir(tmp_path: Path) -> None:
+    temp_dir = tmp_path / "not_a_directory"
+    temp_dir.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="temp_dir must be a directory"):
+        BatchProcessor(temp_dir=temp_dir)
+
+
 def test_batch_processor_rejects_single_string_file_paths(tmp_path: Path) -> None:
     path = tmp_path / "single.yar"
     path.write_text("rule single { condition: true }", encoding="utf-8")

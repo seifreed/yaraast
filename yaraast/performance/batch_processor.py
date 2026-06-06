@@ -134,7 +134,11 @@ class BatchProcessor:
         if not raw_path.strip():
             msg = "temp_dir must not be empty"
             raise ValueError(msg)
-        return Path(raw_path)
+        path = Path(raw_path)
+        if path.exists() and not path.is_dir():
+            msg = "temp_dir must be a directory"
+            raise ValueError(msg)
+        return path
 
     def process_batch(
         self,
