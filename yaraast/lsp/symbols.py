@@ -34,6 +34,13 @@ class SymbolsProvider:
         Returns:
             List of document symbols
         """
+        if not isinstance(text, str):
+            msg = "Symbols text must be a string"
+            raise TypeError(msg)
+        if uri is not None and not isinstance(uri, str):
+            msg = "Symbols URI must be a string or None"
+            raise TypeError(msg)
+
         started = time.perf_counter()
         doc = None
         symbols: list[DocumentSymbol]

@@ -2,9 +2,26 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.lsp.symbols import SymbolsProvider
+
+
+@pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
+def test_symbols_rejects_non_string_text(text: Any) -> None:
+    provider = SymbolsProvider()
+
+    with pytest.raises(TypeError, match="Symbols text must be a string"):
+        provider.get_symbols(cast(str, text), "file://test.yar")
+
+
+def test_symbols_rejects_invalid_uri() -> None:
+    provider = SymbolsProvider()
+
+    with pytest.raises(TypeError, match="Symbols URI must be a string or None"):
+        provider.get_symbols("rule a { condition: true }", cast(str, object()))
 
 
 def test_symbols_includes_meta_strings_condition() -> None:
