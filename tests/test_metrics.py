@@ -4,13 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 import tempfile
+from typing import Any, cast
 
 import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.metrics import DependencyGraphGenerator
+from yaraast.metrics.capabilities import get_capability
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.complexity_model import ComplexityMetrics
+from yaraast.metrics.facade import MetricsSubsystem
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.parser import Parser
@@ -64,6 +67,20 @@ def parsed_ast(sample_yara_content: str) -> YaraFile:
     """Parse sample YARA content into AST."""
     parser = Parser()
     return parser.parse(sample_yara_content)
+
+
+@pytest.mark.parametrize("name", [None, 1, b"complexity", object()])
+def test_metrics_capability_lookup_rejects_non_string_names(name: Any) -> None:
+    with pytest.raises(TypeError, match="Metrics capability name must be a string"):
+        get_capability(cast(str, name))
+
+
+@pytest.mark.parametrize("name", [None, 1, b"complexity", object()])
+def test_metrics_subsystem_capability_lookup_rejects_non_string_names(name: Any) -> None:
+    metrics = MetricsSubsystem()
+
+    with pytest.raises(TypeError, match="Metrics capability name must be a string"):
+        metrics.get_capability(cast(str, name))
 
 
 class TestComplexityAnalyzer:

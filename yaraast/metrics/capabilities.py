@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from yaraast.ast.base import require_string
+
 
 @dataclass(frozen=True)
 class MetricsCapability:
@@ -47,6 +49,7 @@ CAPABILITIES: tuple[MetricsCapability, ...] = (
 
 
 def get_capability(name: str) -> MetricsCapability | None:
+    name = require_string(name, "Metrics capability name")
     for capability in CAPABILITIES:
         if capability.name == name:
             return capability
