@@ -24,6 +24,24 @@ def _single_location(location: Location | list[Location]) -> Location:
     return location
 
 
+@pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
+def test_selection_ranges_rejects_non_string_text(text: Any) -> None:
+    provider = SelectionRangeProvider()
+
+    with pytest.raises(TypeError, match="Selection range text must be a string"):
+        provider.get_selection_ranges(cast(str, text), [Position(line=0, character=0)])
+
+
+def test_selection_ranges_rejects_invalid_positions() -> None:
+    provider = SelectionRangeProvider()
+
+    with pytest.raises(TypeError, match="positions must be a list of LSP Position values"):
+        provider.get_selection_ranges("rule a { condition: true }", cast(Any, object()))
+
+    with pytest.raises(TypeError, match="positions must be a list of LSP Position values"):
+        provider.get_selection_ranges("rule a { condition: true }", [cast(Any, object())])
+
+
 def test_runtime_cross_file_definition_references_and_rename(tmp_path: Path) -> None:
     common = tmp_path / "common.yar"
     user = tmp_path / "user.yar"

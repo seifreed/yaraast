@@ -26,6 +26,16 @@ class SelectionRangeProvider:
         positions: list[Position],
         uri: str | None = None,
     ) -> list[SelectionRange]:
+        if not isinstance(text, str):
+            msg = "Selection range text must be a string"
+            raise TypeError(msg)
+        if not isinstance(positions, list):
+            msg = "positions must be a list of LSP Position values"
+            raise TypeError(msg)
+        if any(not isinstance(position, Position) for position in positions):
+            msg = "positions must be a list of LSP Position values"
+            raise TypeError(msg)
+
         lines = text.split("\n")
         doc = self.runtime.get_document(uri) if self.runtime and uri else None
 
