@@ -43,11 +43,14 @@ class ResolvedFile:
         return rules
 
 
-def _read_yara_include_text(file_path: Path) -> str:
+def _read_yara_text(file_path: Path, *, is_include: bool) -> str:
     try:
         return file_path.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
-        msg = "YARA include file must contain valid UTF-8 text"
+        if is_include:
+            msg = "YARA include file must contain valid UTF-8 text"
+        else:
+            msg = "YARA file must contain valid UTF-8 text"
         raise ValueError(msg) from exc
 
 
@@ -124,10 +127,11 @@ class IncludeResolver:
 
         """
         resolved_path = self._find_file(file_path, base_path)
+        is_include = base_path is not None
         cache_key = str(resolved_path)
         if cache_key in self.cache:
             cached = self.cache[cache_key]
-            current_checksum = self._calculate_checksum(resolved_path)
+            current_checksum = self._calculate_checksum(resolved_path, is_include=is_include)
             if (
                 cached.checksum == current_checksum
                 and self._all_declared_includes_resolved(cached)
@@ -143,13 +147,25 @@ class IncludeResolver:
 
         self.resolution_stack.append(resolved_path)
         try:
-            return deepcopy(self._parse_and_resolve(resolved_path, cache_key))
+            return deepcopy(
+                self._parse_and_resolve(
+                    resolved_path,
+                    cache_key,
+                    is_include=is_include,
+                )
+            )
         finally:
             self.resolution_stack.pop()
 
-    def _parse_and_resolve(self, resolved_path: Path, cache_key: str) -> ResolvedFile:
+    def _parse_and_resolve(
+        self,
+        resolved_path: Path,
+        cache_key: str,
+        *,
+        is_include: bool,
+    ) -> ResolvedFile:
         """Parse file and recursively resolve its includes."""
-        content = _read_yara_include_text(resolved_path)
+        content = _read_yara_text(resolved_path, is_include=is_include)
         ast = parse_yara_source(content)
         checksum = self._calculate_checksum_from_content(content)
 
@@ -240,7 +256,7 @@ class IncludeResolver:
             try:
                 if not self._all_declared_includes_resolved(included):
                     return False
-                current = self._calculate_checksum(included.path)
+                current = self._calculate_checksum(included.path, is_include=True)
                 if current != included.checksum:
                     return False
                 # Recursively check nested includes
@@ -254,9 +270,9 @@ class IncludeResolver:
         """Check whether cached resolution covered every include declaration."""
         return len(resolved.includes) == len(resolved.ast.includes)
 
-    def _calculate_checksum(self, file_path: Path) -> str:
+    def _calculate_checksum(self, file_path: Path, *, is_include: bool) -> str:
         """Calculate checksum of a file."""
-        content = _read_yara_include_text(file_path)
+        content = _read_yara_text(file_path, is_include=is_include)
         return self._calculate_checksum_from_content(content)
 
     def _calculate_checksum_from_content(self, content: str) -> str:
