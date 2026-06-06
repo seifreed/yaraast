@@ -10,6 +10,7 @@ from typing import Any
 from yaraast.types._registry_base import YaraType
 from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition
 from yaraast.types.module_definitions import load_builtin_modules
+from yaraast.types.type_environment import _normalize_identifier
 
 
 class ModuleSpecError(ValueError):
@@ -19,7 +20,26 @@ class ModuleSpecError(ValueError):
 def _normalize_module_name(name: object) -> str:
     if not isinstance(name, str) or not name.strip():
         raise ValueError("Module name must be a non-empty string")
-    return name
+    return _normalize_identifier(name, "Module name", "module")
+
+
+def _normalize_member_name(name: object, kind: str) -> str:
+    if not isinstance(name, str) or not name.strip():
+        msg = f"Module {kind} names must be non-empty strings"
+        raise ValueError(msg)
+    return _normalize_identifier(name, f"Module {kind} name", f"module {kind}")
+
+
+def _normalize_function_name(name: object) -> str:
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("Module function names must be non-empty strings")
+    parts = name.split(".")
+    if any(not part.strip() for part in parts):
+        msg = f"Invalid module function identifier: {name}"
+        raise ValueError(msg)
+    return ".".join(
+        _normalize_identifier(part, "Module function name", "module function") for part in parts
+    )
 
 
 def _normalize_parameter_name(name: object, index: int) -> str:
@@ -142,8 +162,7 @@ class ModuleLoader:
             if not isinstance(attributes, dict):
                 raise TypeError("Module attributes must be an object")
             for attr_name, attr_type in attributes.items():
-                if not isinstance(attr_name, str) or not attr_name.strip():
-                    raise ValueError("Module attribute names must be non-empty strings")
+                attr_name = _normalize_member_name(attr_name, "attribute")
                 module.attributes[attr_name] = self._parse_type(attr_type)
 
         # Parse functions
@@ -152,8 +171,7 @@ class ModuleLoader:
             if not isinstance(functions, dict):
                 raise TypeError("Module functions must be an object")
             for func_name, func_data in functions.items():
-                if not isinstance(func_name, str) or not func_name.strip():
-                    raise ValueError("Module function names must be non-empty strings")
+                func_name = _normalize_function_name(func_name)
                 if not isinstance(func_data, dict):
                     raise TypeError(f"Module function '{func_name}' must be an object")
                 func_def = FunctionDefinition(
@@ -175,8 +193,7 @@ class ModuleLoader:
             if not isinstance(constants, dict):
                 raise TypeError("Module constants must be an object")
             for const_name, const_type in constants.items():
-                if not isinstance(const_name, str) or not const_name.strip():
-                    raise ValueError("Module constant names must be non-empty strings")
+                const_name = _normalize_member_name(const_name, "constant")
                 module.constants[const_name] = self._parse_type(const_type)
 
         return module

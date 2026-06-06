@@ -138,6 +138,28 @@ def test_module_loader_rejects_whitespace_only_module_names_without_partial_load
     assert loader.modules == before
 
 
+def test_module_loader_rejects_invalid_identifier_module_names_without_partial_load(
+    tmp_path: Path,
+) -> None:
+    json_path = tmp_path / "modules.json"
+    json_path.write_text(
+        json.dumps(
+            [
+                {"name": "first", "attributes": {"enabled": "bool"}},
+                {"name": "bad-name", "attributes": {"broken": "int"}},
+                {"name": "last", "constants": {"K": "int"}},
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loader = ModuleLoader()
+    before = dict(loader.modules)
+    with pytest.raises(ModuleSpecError, match="Invalid module identifier: bad-name"):
+        loader._load_module_file(json_path)
+    assert loader.modules == before
+
+
 @pytest.mark.parametrize(
     ("section", "payload", "message"),
     [
@@ -147,6 +169,29 @@ def test_module_loader_rejects_whitespace_only_module_names_without_partial_load
     ],
 )
 def test_module_loader_rejects_whitespace_only_member_names(
+    section: str,
+    payload: dict[str, object],
+    message: str,
+) -> None:
+    loader = ModuleLoader()
+
+    with pytest.raises(ValueError, match=message):
+        loader._parse_module("manual", {"name": "manual", section: payload})
+
+
+@pytest.mark.parametrize(
+    ("section", "payload", "message"),
+    [
+        ("attributes", {"bad attr": "int"}, "Invalid module attribute identifier: bad attr"),
+        (
+            "functions",
+            {"network.bad-name": {"return": "int"}},
+            "Invalid module function identifier: bad-name",
+        ),
+        ("constants", {"1bad": "string"}, "Invalid module constant identifier: 1bad"),
+    ],
+)
+def test_module_loader_rejects_invalid_member_identifiers(
     section: str,
     payload: dict[str, object],
     message: str,
