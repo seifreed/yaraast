@@ -30,6 +30,11 @@ def test_iter_matching_files_rejects_file_directory(tmp_path: Path) -> None:
         list(iter_matching_files(path))
 
 
+def test_iter_matching_files_rejects_missing_directory(tmp_path: Path) -> None:
+    with pytest.raises(FileNotFoundError, match="directory does not exist"):
+        list(iter_matching_files(tmp_path / "missing"))
+
+
 def test_normalize_file_patterns_rejects_non_string_entries(tmp_path: Path) -> None:
     with pytest.raises(TypeError, match="File patterns must be a string or iterable of strings"):
         normalize_file_patterns(cast(Any, [object()]))

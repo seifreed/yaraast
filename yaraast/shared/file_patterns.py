@@ -49,7 +49,10 @@ def iter_matching_files(
         msg = "directory must not be empty"
         raise ValueError(msg)
     directory_path = Path(raw_path)
-    if directory_path.exists() and not directory_path.is_dir():
+    if not directory_path.exists():
+        msg = f"directory does not exist: {directory_path}"
+        raise FileNotFoundError(msg)
+    if not directory_path.is_dir():
         msg = "directory must not be a file"
         raise ValueError(msg)
     if not isinstance(recursive, bool):
