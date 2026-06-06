@@ -251,8 +251,8 @@ class ModuleLoader:
                     return AnyType()
                 fields: dict[str, YaraType] = {}
                 for field_name, field_type in raw_fields.items():
-                    if isinstance(field_name, str) and field_name:
-                        fields[field_name] = self._parse_type(field_type)
+                    field_name = _normalize_member_name(field_name, "struct field")
+                    fields[field_name] = self._parse_type(field_type)
                 return StructType(fields)
 
         return AnyType()

@@ -311,6 +311,24 @@ def test_module_loader_degrades_malformed_complex_type_without_aborting_module()
     assert isinstance(module.attributes["ok"], IntegerType)
 
 
+@pytest.mark.parametrize(
+    ("field_name", "message"),
+    [
+        ("bad field", "Invalid module struct field identifier: bad field"),
+        ("for", "Invalid module struct field identifier: for"),
+        ("1bad", "Invalid module struct field identifier: 1bad"),
+    ],
+)
+def test_module_loader_rejects_invalid_struct_field_identifiers(
+    field_name: str,
+    message: str,
+) -> None:
+    loader = ModuleLoader()
+
+    with pytest.raises(ValueError, match=message):
+        loader._parse_type({"type": "struct", "fields": {field_name: "int"}})
+
+
 def test_module_loader_rejects_malformed_parameter_lists() -> None:
     loader = ModuleLoader()
 
