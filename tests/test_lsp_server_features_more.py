@@ -361,7 +361,7 @@ def test_lsp_path_helpers_reject_empty_workspace_paths() -> None:
     assert str(uri_to_path("file://localhost/tmp/ws")) == "/tmp/ws"
     params = SimpleNamespace(
         root_uri=None,
-        root_path="",
+        root_path="   ",
         workspace_folders=[SimpleNamespace(uri="file://")],
     )
     assert get_workspace_folders(cast(Any, params)) == []
