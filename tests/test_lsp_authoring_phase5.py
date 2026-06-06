@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from lsprotocol.types import CodeAction, CodeActionKind, Diagnostic, Position, Range, TextEdit
+import pytest
 
 from yaraast.lsp.authoring import AuthoringActions
 from yaraast.lsp.code_actions import CodeActionsProvider
@@ -24,6 +27,52 @@ def _preview(action: CodeAction) -> str:
     preview = data["preview"]
     assert isinstance(preview, str)
     return preview
+
+
+@pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
+def test_code_actions_rejects_non_string_text(text: Any) -> None:
+    provider = CodeActionsProvider()
+
+    with pytest.raises(TypeError, match="Code actions text must be a string"):
+        provider.get_code_actions(cast(str, text), _range(0, 0, 1), [], "file://test.yar")
+
+
+def test_code_actions_rejects_invalid_range() -> None:
+    provider = CodeActionsProvider()
+
+    with pytest.raises(TypeError, match="range_ must be an LSP Range"):
+        provider.get_code_actions(
+            "rule a { condition: true }", cast(Any, object()), [], "file://test.yar"
+        )
+
+
+def test_code_actions_rejects_invalid_diagnostics() -> None:
+    provider = CodeActionsProvider()
+
+    with pytest.raises(TypeError, match="diagnostics must be a list of LSP Diagnostic values"):
+        provider.get_code_actions(
+            "rule a { condition: true }",
+            _range(0, 0, 1),
+            cast(Any, object()),
+            "file://test.yar",
+        )
+
+    with pytest.raises(TypeError, match="diagnostics must be a list of LSP Diagnostic values"):
+        provider.get_code_actions(
+            "rule a { condition: true }",
+            _range(0, 0, 1),
+            [cast(Any, object())],
+            "file://test.yar",
+        )
+
+
+def test_code_actions_rejects_non_string_uri() -> None:
+    provider = CodeActionsProvider()
+
+    with pytest.raises(TypeError, match="Code actions URI must be a string"):
+        provider.get_code_actions(
+            "rule a { condition: true }", _range(0, 0, 1), [], cast(str, object())
+        )
 
 
 def test_create_missing_string_action_adds_strings_section_when_missing() -> None:

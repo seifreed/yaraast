@@ -39,6 +39,22 @@ class CodeActionsProvider(
         Returns:
             List of available code actions
         """
+        if not isinstance(text, str):
+            msg = "Code actions text must be a string"
+            raise TypeError(msg)
+        if not isinstance(range_, Range):
+            msg = "range_ must be an LSP Range"
+            raise TypeError(msg)
+        if not isinstance(diagnostics, list):
+            msg = "diagnostics must be a list of LSP Diagnostic values"
+            raise TypeError(msg)
+        if any(not isinstance(diagnostic, Diagnostic) for diagnostic in diagnostics):
+            msg = "diagnostics must be a list of LSP Diagnostic values"
+            raise TypeError(msg)
+        if not isinstance(uri, str):
+            msg = "Code actions URI must be a string"
+            raise TypeError(msg)
+
         actions = []
 
         # Add quick fixes for diagnostics
