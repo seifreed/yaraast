@@ -36,6 +36,9 @@ def read_utf8(path: str | Path) -> str:
 
 def write_utf8(path: str | Path, text: str) -> None:
     """Write UTF-8 text to disk."""
+    if not isinstance(text, str):
+        msg = "text must be a string"
+        raise TypeError(msg)
     try:
         text.encode("utf-8")
     except UnicodeEncodeError as exc:

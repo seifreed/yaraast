@@ -25,6 +25,12 @@ def test_file_io_helpers_reject_non_utf8_encodable_text(tmp_path: Path) -> None:
         write_utf8(tmp_path / "sample.txt", "\ud800")
 
 
+@pytest.mark.parametrize("text", [b"content", object()])
+def test_file_io_helpers_reject_non_text_content(tmp_path: Path, text: object) -> None:
+    with pytest.raises(TypeError, match="text must be a string"):
+        write_utf8(tmp_path / "sample.txt", cast(Any, text))
+
+
 def test_file_io_helpers_reject_non_utf8_file_contents(tmp_path: Path) -> None:
     path = tmp_path / "sample.txt"
     path.write_bytes(b"\xff")

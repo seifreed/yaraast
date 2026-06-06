@@ -100,6 +100,9 @@ def read_text(path: str | Path) -> str:
 
 def write_text(path: str | Path, content: str) -> None:
     """Write a text file with UTF-8 encoding."""
+    if not isinstance(content, str):
+        msg = "content must be a string"
+        raise TypeError(msg)
     try:
         content.encode("utf-8")
     except UnicodeEncodeError as exc:
