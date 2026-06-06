@@ -161,3 +161,21 @@ def test_format_command_reports_parse_error(tmp_path: Path) -> None:
 
     assert result.exit_code != 0
     assert "Error" in result.output or "Expected" in result.output
+
+
+def test_format_commands_reject_invalid_utf8(tmp_path: Path) -> None:
+    runner = CliRunner()
+    input_file = tmp_path / "bad_utf8.yar"
+    output_file = tmp_path / "out.yar"
+    input_file.write_bytes(b"\xff")
+
+    format_result = runner.invoke(format_yara, [str(input_file), str(output_file)])
+    validate_result = runner.invoke(validate_syntax, [str(input_file)])
+
+    assert format_result.exit_code != 0
+    assert "file must contain valid UTF-8 text" in format_result.output
+    assert "codec can't decode" not in format_result.output
+    assert not output_file.exists()
+    assert validate_result.exit_code != 0
+    assert "file must contain valid UTF-8 text" in validate_result.output
+    assert "codec can't decode" not in validate_result.output
