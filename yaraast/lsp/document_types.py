@@ -42,6 +42,10 @@ def uri_to_path(uri: object) -> Path | None:
         decoded = unquote(parsed.path)
         if not decoded:
             return None
+        if not decoded.startswith("/") and not (
+            len(decoded) >= 2 and decoded[0].isalpha() and decoded[1] == ":"
+        ):
+            return None
         # On Windows, file:///C:/path yields /C:/path — strip leading slash
         if len(decoded) >= 3 and decoded[0] == "/" and decoded[2] == ":":
             decoded = decoded[1:]
