@@ -356,6 +356,8 @@ def test_lsp_path_helpers_reject_empty_workspace_paths() -> None:
     assert uri_to_path(cast(Any, 123)) is None
     assert uri_to_path(cast(Any, object())) is None
     assert uri_to_path("") is None
+    assert uri_to_path("   ") is None
+    assert uri_to_path("\t") is None
     assert uri_to_path("file://") is None
     assert uri_to_path("file://example.com/tmp/ws") is None
     assert str(uri_to_path("file://localhost/tmp/ws")) == "/tmp/ws"
