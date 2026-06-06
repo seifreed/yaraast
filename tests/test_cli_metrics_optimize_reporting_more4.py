@@ -131,6 +131,8 @@ def test_optimize_error_path_with_invalid_utf8(tmp_path: Path) -> None:
 
     assert result.exit_code != 0
     assert "Error:" in result.output
+    assert "file must contain valid UTF-8 text" in result.output
+    assert "codec can't decode" not in result.output
     assert not output_file.exists()
 
 

@@ -22,7 +22,7 @@ from yaraast.cli.optimize_services import (
     optimize_ast,
     parse_yara_with_tolerance,
 )
-from yaraast.cli.utils import _require_file_path
+from yaraast.cli.utils import _require_file_path, read_text
 
 console = Console()
 
@@ -65,7 +65,7 @@ def optimize(input_file: Path, output_file: str, dry_run: bool, analyze: bool) -
     try:
         # Parse the YARA file
         with console.status("[cyan]Parsing YARA file..."):
-            content = input_file.read_text(encoding="utf-8")
+            content = read_text(input_file)
             ast, _, parse_errors = parse_yara_with_tolerance(content)
 
         if parse_errors:
