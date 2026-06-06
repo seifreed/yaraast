@@ -49,6 +49,13 @@ class HoverProvider:
         Returns:
             Hover information or None
         """
+        if not isinstance(text, str):
+            msg = "Hover text must be a string"
+            raise TypeError(msg)
+        if not isinstance(position, Position):
+            msg = "position must be an LSP Position"
+            raise TypeError(msg)
+
         doc = (
             self.runtime.ensure_document(uri, text)
             if self.runtime and uri

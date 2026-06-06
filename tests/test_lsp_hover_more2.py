@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from lsprotocol.types import Hover, MarkupContent, Position
+import pytest
 
 from yaraast.lsp.hover import HoverProvider
 
@@ -14,6 +17,21 @@ def _pos(line: int, char: int) -> Position:
 def _hover_text(hover: Hover) -> str:
     assert isinstance(hover.contents, MarkupContent)
     return hover.contents.value
+
+
+@pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
+def test_hover_rejects_non_string_text(text: Any) -> None:
+    provider = HoverProvider()
+
+    with pytest.raises(TypeError, match="Hover text must be a string"):
+        provider.get_hover(cast(str, text), _pos(0, 0))
+
+
+def test_hover_rejects_non_position_inputs() -> None:
+    provider = HoverProvider()
+
+    with pytest.raises(TypeError, match="position must be an LSP Position"):
+        provider.get_hover("rule a { condition: true }", cast(Any, object()))
 
 
 def test_hover_keyword_and_builtin() -> None:
