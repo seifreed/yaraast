@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from lsprotocol.types import Position
+import pytest
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import BinaryExpression
@@ -94,6 +96,17 @@ def test_position_offset_roundtrip_uses_lsp_utf16_columns() -> None:
 
     assert offset == 2
     assert offset_to_position(text, offset) == after_emoji
+
+
+@pytest.mark.parametrize("offset", [True, "1", object()])
+def test_offset_to_position_rejects_invalid_offset_types(offset: Any) -> None:
+    with pytest.raises(TypeError, match="offset must be an integer"):
+        offset_to_position("abc", cast(Any, offset))
+
+
+def test_offset_to_position_rejects_negative_offsets() -> None:
+    with pytest.raises(ValueError, match="offset must be non-negative"):
+        offset_to_position("abc\ndef", -1)
 
 
 def test_get_word_at_position_and_find_node() -> None:

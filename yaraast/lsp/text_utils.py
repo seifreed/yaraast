@@ -19,6 +19,12 @@ def position_to_offset(text: str, position: Position) -> int:
 
 
 def offset_to_position(text: str, offset: int) -> Position:
+    if isinstance(offset, bool) or not isinstance(offset, int):
+        msg = "offset must be an integer"
+        raise TypeError(msg)
+    if offset < 0:
+        msg = "offset must be non-negative"
+        raise ValueError(msg)
     lines = text.split("\n")
     current_offset = 0
     for line_num, line in enumerate(lines):
