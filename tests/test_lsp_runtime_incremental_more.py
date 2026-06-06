@@ -13,7 +13,10 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.lsp.diagnostics import DiagnosticsProvider
-from yaraast.lsp.document_query_resolution_ranges import range_contains_position
+from yaraast.lsp.document_query_resolution_ranges import (
+    narrow_range_to_name,
+    range_contains_position,
+)
 from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.document_types import LanguageMode
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
@@ -680,6 +683,13 @@ rule beta {
 
     assert len(uses) == 1
     assert uses[0].end.character - uses[0].start.character == len("alpha")
+
+
+def test_narrow_range_to_name_keeps_range_for_empty_name() -> None:
+    doc = DocumentContext("file:///range.yar", "rule alpha { condition: true }")
+    node_range = Range(Position(line=0, character=5), Position(line=0, character=10))
+
+    assert narrow_range_to_name(doc, node_range, "") == node_range
 
 
 def test_document_context_rule_reference_ranges_use_utf16_columns() -> None:

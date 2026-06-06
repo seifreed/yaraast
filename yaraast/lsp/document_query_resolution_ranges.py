@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 def narrow_range_to_name(ctx: DocumentContext, node_range: Range, name: str) -> Range:
+    if not name:
+        return node_range
     line = ctx.lines[node_range.start.line] if 0 <= node_range.start.line < len(ctx.lines) else ""
     source_start = utf16_col_to_utf8(line, node_range.start.character)
     start = line.find(name, max(0, source_start - 1))
