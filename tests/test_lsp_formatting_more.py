@@ -2,11 +2,62 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from lsprotocol.types import Position
+import pytest
 
 from yaraast.lsp.formatting import FormattingProvider
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.utf16 import utf8_col_to_utf16
+
+
+@pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
+def test_formatting_rejects_non_string_text(text: Any) -> None:
+    provider = FormattingProvider()
+
+    with pytest.raises(TypeError, match="Formatting text must be a string"):
+        provider.format_document(cast(str, text))
+
+    with pytest.raises(TypeError, match="Formatting text must be a string"):
+        provider.format_range(
+            cast(str, text),
+            Position(line=0, character=0),
+            Position(line=0, character=1),
+        )
+
+
+def test_formatting_rejects_invalid_uri() -> None:
+    provider = FormattingProvider()
+
+    with pytest.raises(TypeError, match="Formatting URI must be a string or None"):
+        provider.format_document("rule a { condition: true }", cast(str, object()))
+
+    with pytest.raises(TypeError, match="Formatting URI must be a string or None"):
+        provider.format_range(
+            "rule a { condition: true }",
+            Position(line=0, character=0),
+            Position(line=0, character=1),
+            cast(str, object()),
+        )
+
+
+def test_formatting_rejects_invalid_range_positions() -> None:
+    provider = FormattingProvider()
+
+    with pytest.raises(TypeError, match="format range start must be an LSP Position"):
+        provider.format_range(
+            "rule a { condition: true }",
+            cast(Any, object()),
+            Position(line=0, character=1),
+        )
+
+    with pytest.raises(TypeError, match="format range end must be an LSP Position"):
+        provider.format_range(
+            "rule a { condition: true }",
+            Position(line=0, character=0),
+            cast(Any, object()),
+        )
 
 
 def test_formatting_returns_edit() -> None:

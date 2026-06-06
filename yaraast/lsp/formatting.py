@@ -25,7 +25,6 @@ class FormattingProvider:
     def __init__(self, runtime: LspRuntime | None = None) -> None:
         self.runtime = runtime
 
-    @lsp_safe_handler(default=[])
     def format_document(self, text: str, uri: str | None = None) -> list[TextEdit]:
         """
         Format the entire document.
@@ -37,6 +36,11 @@ class FormattingProvider:
         Returns:
             List of text edits to apply
         """
+        self._validate_document_request(text, uri)
+        return self._format_document_safe(text, uri)
+
+    @lsp_safe_handler(default=[])
+    def _format_document_safe(self, text: str, uri: str | None = None) -> list[TextEdit]:
         ast = self._parse(text, uri)
         formatted_text = self._generator(uri).generate(ast)
 
@@ -48,7 +52,6 @@ class FormattingProvider:
 
         return [TextEdit(range=doc_range, new_text=formatted_text)]
 
-    @lsp_safe_handler(default=[])
     def format_range(
         self,
         text: str,
@@ -63,14 +66,39 @@ class FormattingProvider:
         - if the range falls inside a rule, replace that full rule only
         - otherwise, fall back to whole-document formatting
         """
+        self._validate_document_request(text, uri)
+        if not isinstance(start, Position):
+            msg = "format range start must be an LSP Position"
+            raise TypeError(msg)
+        if not isinstance(end, Position):
+            msg = "format range end must be an LSP Position"
+            raise TypeError(msg)
+        return self._format_range_safe(text, start, end, uri)
+
+    @lsp_safe_handler(default=[])
+    def _format_range_safe(
+        self,
+        text: str,
+        start: Position,
+        end: Position,
+        uri: str | None = None,
+    ) -> list[TextEdit]:
         ast = self._parse(text, uri)
         rule_info = self._find_enclosing_rule(text, ast, start, end)
         if rule_info is None:
-            return self.format_document(text, uri)
+            return self._format_document_safe(text, uri)
 
         rule, rule_range = rule_info
         formatted_rule = self._generator(uri).generate(rule)
         return [TextEdit(range=rule_range, new_text=formatted_rule)]
+
+    def _validate_document_request(self, text: str, uri: str | None) -> None:
+        if not isinstance(text, str):
+            msg = "Formatting text must be a string"
+            raise TypeError(msg)
+        if uri is not None and not isinstance(uri, str):
+            msg = "Formatting URI must be a string or None"
+            raise TypeError(msg)
 
     def _generator(self, uri: str | None) -> CodeGenerator:
         return CodeGenerator(options=GeneratorOptions(advanced=self._config(uri)))
