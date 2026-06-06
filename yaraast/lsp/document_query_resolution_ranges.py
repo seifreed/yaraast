@@ -38,7 +38,7 @@ def range_contains_position(range_obj: Range, position: Position) -> bool:
     if position.line == range_obj.start.line and position.character < range_obj.start.character:
         return False
     return not (
-        position.line == range_obj.end.line and position.character > range_obj.end.character
+        position.line == range_obj.end.line and position.character >= range_obj.end.character
     )
 
 

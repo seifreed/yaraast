@@ -13,6 +13,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.lsp.diagnostics import DiagnosticsProvider
+from yaraast.lsp.document_query_resolution_ranges import range_contains_position
 from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.document_types import LanguageMode
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
@@ -295,6 +296,14 @@ def test_document_context_rule_scope_excludes_range_end_position() -> None:
     assert doc.rule_name_at_position(Position(line=0, character=30)) == "sample"
     assert doc.rule_name_at_position(Position(line=0, character=31)) is None
     assert doc.rule_name_at_position(Position(line=1, character=0)) == "other"
+
+
+def test_lsp_range_contains_position_uses_exclusive_end() -> None:
+    range_ = Range(start=Position(line=0, character=5), end=Position(line=0, character=11))
+
+    assert range_contains_position(range_, Position(line=0, character=5)) is True
+    assert range_contains_position(range_, Position(line=0, character=10)) is True
+    assert range_contains_position(range_, Position(line=0, character=11)) is False
 
 
 def test_runtime_indexes_yaral_sections_as_section_symbols(tmp_path: Path) -> None:

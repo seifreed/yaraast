@@ -429,10 +429,19 @@ def _resolved_local_identifier(
     range_: Range,
     position: Position,
 ) -> ResolvedSymbol | None:
-    return resolved_if_contains(
-        position,
-        ResolvedSymbol(ctx.uri, name, name, "identifier", range_),
-    )
+    resolved = ResolvedSymbol(ctx.uri, name, name, "identifier", range_)
+    if resolved_if_contains(position, resolved) is not None:
+        return resolved
+    word, word_range = get_word_at_position(ctx.text, position)
+    if (
+        word == name
+        and position.line == range_.end.line
+        and position.character == range_.end.character
+        and word_range.start == range_.start
+        and word_range.end == range_.end
+    ):
+        return resolved
+    return None
 
 
 def _resolve_typed_node(
