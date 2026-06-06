@@ -5,7 +5,7 @@ from __future__ import annotations
 import builtins
 from collections.abc import Callable
 from types import ModuleType as PythonModuleType
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -132,6 +132,14 @@ def test_module_and_function_types_and_environment_aliases() -> None:
     env.add_rule("rule_a")
     assert env.has_rule("rule_a") is True
     assert env.has_rule("rule_b") is False
+
+
+@pytest.mark.parametrize("name", [None, 1, b"pe", object()])
+def test_type_system_rejects_non_string_module_lookup_names(name: Any) -> None:
+    ts = TypeSystem()
+
+    with pytest.raises(TypeError, match="Module lookup name must be a string"):
+        ts.get_module(cast(str, name))
 
 
 def test_type_environment_rejects_embedded_string_reference_operators() -> None:

@@ -23,6 +23,13 @@ def _normalize_module_name(name: object) -> str:
     return _normalize_identifier(name, "Module name", "module")
 
 
+def _require_module_lookup_name(name: str) -> str:
+    if not isinstance(name, str):
+        msg = "Module lookup name must be a string"
+        raise TypeError(msg)
+    return name
+
+
 def _normalize_member_name(name: object, kind: str) -> str:
     if not isinstance(name, str) or not name.strip():
         msg = f"Module {kind} names must be non-empty strings"
@@ -322,6 +329,7 @@ class ModuleLoader:
 
     def get_module(self, name: str) -> ModuleDefinition | None:
         """Get module definition by name."""
+        name = _require_module_lookup_name(name)
         return self.modules.get(name)
 
     def list_modules(self) -> list[str]:

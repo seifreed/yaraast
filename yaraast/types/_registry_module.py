@@ -8,6 +8,13 @@ from ._registry_base import YaraType
 from .module_contracts import ModuleDefinition
 
 
+def _require_module_lookup_name(name: str) -> str:
+    if not isinstance(name, str):
+        msg = "Module lookup name must be a string"
+        raise TypeError(msg)
+    return name
+
+
 @dataclass
 class ModuleType(YaraType):
     """Module type with attributes."""
@@ -65,4 +72,5 @@ class TypeSystem:
 
     def get_module(self, name: str) -> ModuleDefinition | None:
         """Get module definition by name."""
+        name = _require_module_lookup_name(name)
         return self.modules.get(name)

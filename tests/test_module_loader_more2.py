@@ -5,11 +5,20 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
 from yaraast.types.module_loader import ModuleLoader, ModuleSpecError
 from yaraast.types.type_system import AnyType, BooleanType, IntegerType
+
+
+@pytest.mark.parametrize("name", [None, 1, b"pe", object()])
+def test_module_loader_rejects_non_string_lookup_names(name: Any) -> None:
+    loader = ModuleLoader()
+
+    with pytest.raises(TypeError, match="Module lookup name must be a string"):
+        loader.get_module(cast(str, name))
 
 
 @pytest.mark.parametrize(
