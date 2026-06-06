@@ -206,6 +206,17 @@ def test_workspace_index_skips_malformed_cached_symbols(tmp_path: Path) -> None:
         }
       }
     ],
+    "file:///blank-name.yar": [
+      {
+        "name": "   ",
+        "kind": "rule",
+        "uri": "file:///blank-name.yar",
+        "range": {
+          "start": {"line": 0, "character": 0},
+          "end": {"line": 0, "character": 3}
+        }
+      }
+    ],
     "file:///bad.yar": [
       {
         "name": "bad",

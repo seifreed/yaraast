@@ -29,7 +29,7 @@ SYMBOL_KIND_MAP = {
 
 def _required_symbol_string(data: dict[str, Any], key: str) -> str:
     value = data.get(key)
-    if not isinstance(value, str) or not value:
+    if not isinstance(value, str) or not value.strip():
         msg = f"SymbolRecord {key} must be a non-empty string"
         raise ValueError(msg)
     return value
