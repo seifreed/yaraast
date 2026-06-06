@@ -19,6 +19,10 @@ class FoldingRangesProvider:
 
     def get_folding_ranges(self, text: str) -> list[FoldingRange]:
         """Get all folding ranges in the document."""
+        if not isinstance(text, str):
+            msg = "Folding ranges text must be a string"
+            raise TypeError(msg)
+
         try:
             ast = parse_for_lsp(text)
 

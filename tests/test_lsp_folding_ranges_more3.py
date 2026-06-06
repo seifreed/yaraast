@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.lsp.folding_ranges import FoldingRangesProvider
 from yaraast.lsp.structure import (
     find_rule_end,
@@ -10,6 +14,14 @@ from yaraast.lsp.structure import (
     find_string_line,
 )
 from yaraast.parser.parser import Parser
+
+
+@pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
+def test_folding_ranges_rejects_non_string_text(text: Any) -> None:
+    provider = FoldingRangesProvider()
+
+    with pytest.raises(TypeError, match="Folding ranges text must be a string"):
+        provider.get_folding_ranges(cast(str, text))
 
 
 def test_folding_ranges_imports_and_sections() -> None:
