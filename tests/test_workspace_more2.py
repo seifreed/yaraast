@@ -71,6 +71,7 @@ def test_workspace_add_file_error_paths_and_getters(tmp_path: Path) -> None:
     missing = workspace.add_file("missing.yar")
     assert missing.errors
     assert "File not found:" in missing.errors[0]
+    assert "Cannot find YARA file" in missing.errors[0]
 
     bad_file = _write(root / "bad.yar", 'rule bad { condition: "oops"')
     bad = workspace.add_file(str(bad_file))
@@ -369,6 +370,13 @@ def test_include_resolver_accepts_pathlike_file_path(tmp_path: Path) -> None:
     assert resolved.path == rule_file.resolve()
 
 
+def test_include_resolver_reports_missing_root_file_context(tmp_path: Path) -> None:
+    resolver = IncludeResolver([str(tmp_path)])
+
+    with pytest.raises(FileNotFoundError, match=r"Cannot find YARA file 'missing\.yar'"):
+        resolver.resolve_file("missing.yar")
+
+
 def test_include_resolver_rejects_invalid_utf8_file(tmp_path: Path) -> None:
     rule_file = tmp_path / "invalid.yar"
     rule_file.write_bytes(b"\xff")
@@ -396,7 +404,7 @@ def test_include_resolver_treats_directory_matches_as_unresolved(tmp_path: Path)
     directory.mkdir()
     resolver = IncludeResolver([str(tmp_path)])
 
-    with pytest.raises(FileNotFoundError, match="Cannot find include file"):
+    with pytest.raises(FileNotFoundError, match="Cannot find YARA file"):
         resolver.resolve_file(str(directory))
 
 
@@ -445,8 +453,13 @@ def test_include_resolver_reports_missing_nested_includes(tmp_path: Path) -> Non
 
     resolver = IncludeResolver([str(tmp_path)])
 
-    with pytest.raises(FileNotFoundError, match=r"Cannot find include file 'missing\.yar'"):
+    with pytest.raises(
+        FileNotFoundError,
+        match=r"Cannot find include file 'missing\.yar'",
+    ) as exc_info:
         resolver.resolve_file(str(main))
+
+    assert str(exc_info.value).count(str(tmp_path)) == 1
 
 
 def test_workspace_add_directory_default_includes_yara_extension(tmp_path: Path) -> None:

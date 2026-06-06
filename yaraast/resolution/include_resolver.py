@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field
 import hashlib
@@ -231,11 +232,24 @@ class IncludeResolver:
 
         # Not found
         search_dirs = [base_path, *self.search_paths] if base_path else list(self.search_paths)
-        searched = [str(d) for d in search_dirs]
-        msg = f"Cannot find include file '{file_path_text}'. Searched in: {', '.join(searched)}"
+        searched = self._format_searched_directories(search_dirs)
+        if base_path is None:
+            msg = f"Cannot find YARA file '{file_path_text}'. Searched in: {searched}"
+        else:
+            msg = f"Cannot find include file '{file_path_text}'. Searched in: {searched}"
         raise FileNotFoundError(
             msg,
         )
+
+    def _format_searched_directories(self, search_dirs: Sequence[Path | None]) -> str:
+        seen: set[Path] = set()
+        searched: list[str] = []
+        for search_dir in search_dirs:
+            if search_dir is None or search_dir in seen:
+                continue
+            seen.add(search_dir)
+            searched.append(str(search_dir))
+        return ", ".join(searched)
 
     def _require_file_path(self, file_path: object) -> str:
         if isinstance(file_path, bool | bytes) or not isinstance(file_path, str | PathLike):
