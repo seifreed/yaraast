@@ -189,6 +189,16 @@ rule two {
     assert analyzer.used_strings["manual"] == {"$a", "$b"}
 
 
+@pytest.mark.parametrize("rule_name", [1, b"one", object()])
+def test_string_usage_getters_reject_non_string_rule_names(rule_name: Any) -> None:
+    analyzer = StringUsageAnalyzer()
+
+    with pytest.raises(TypeError, match="StringUsageAnalyzer rule name must be a string"):
+        analyzer.get_unused_strings(cast(str, rule_name))
+    with pytest.raises(TypeError, match="StringUsageAnalyzer rule name must be a string"):
+        analyzer.get_undefined_strings(cast(str, rule_name))
+
+
 def test_string_usage_analyzer_preserves_duplicate_rule_occurrences() -> None:
     ast = Parser().parse("""
 rule dup_first {
