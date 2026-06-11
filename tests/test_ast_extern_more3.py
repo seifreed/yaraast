@@ -68,6 +68,14 @@ def test_extern_namespace_rejects_non_string_rule_lookup_names(name: Any) -> Non
         ns.get_rule_by_name(cast(str, name))
 
 
+@pytest.mark.parametrize("name", ["", "   "])
+def test_extern_namespace_rejects_empty_rule_lookup_names(name: str) -> None:
+    ns = ExternNamespace(name="ext")
+
+    with pytest.raises(ValueError, match="ExternNamespace rule name cannot be empty"):
+        ns.get_rule_by_name(name)
+
+
 def test_extern_namespace_rejects_invalid_rule_inputs_without_partial_update() -> None:
     ns = ExternNamespace(name="ext")
     rule = ExternRule(name="R1")
@@ -125,4 +133,39 @@ def test_extern_helpers_reject_invalid_inputs_at_creation_time() -> None:
 
     for factory, message in invalid_cases:
         with pytest.raises(TypeError, match=message):
+            factory()
+
+    empty_cases: list[tuple[Callable[[], object], str]] = [
+        (
+            lambda: create_extern_rule(""),
+            "ExternRule name cannot be empty",
+        ),
+        (
+            lambda: create_extern_rule("R1", namespace="   "),
+            "ExternRule namespace cannot be empty",
+        ),
+        (
+            lambda: create_extern_reference(""),
+            "ExternRuleReference rule_name cannot be empty",
+        ),
+        (
+            lambda: create_extern_reference("R1", namespace=""),
+            "ExternRuleReference namespace cannot be empty",
+        ),
+        (
+            lambda: create_extern_import("   "),
+            "ExternImport module_path cannot be empty",
+        ),
+        (
+            lambda: create_extern_import("external", alias=""),
+            "ExternImport alias cannot be empty",
+        ),
+        (
+            lambda: create_extern_import("external", rules=[""]),
+            "ExternImport rules must contain non-empty strings",
+        ),
+    ]
+
+    for factory, message in empty_cases:
+        with pytest.raises(ValueError, match=message):
             factory()

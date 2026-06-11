@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import ASTNode, _VisitorType, require_optional_string, require_string
+from yaraast.ast.base import (
+    ASTNode,
+    _require_nonempty_string,
+    _require_optional_nonempty_string,
+    _VisitorType,
+)
 from yaraast.ast.expressions import Expression
 from yaraast.string_escaping import escape_string_source_value
 
@@ -19,6 +24,9 @@ def _normalize_string_list(values: list[str] | None, field_name: str) -> list[st
     if not isinstance(values, list) or not all(isinstance(item, str) for item in values):
         msg = f"{field_name} must be a list of strings"
         raise TypeError(msg)
+    if any(not item.strip() for item in values):
+        msg = f"{field_name} must contain non-empty strings"
+        raise ValueError(msg)
     return list(values)
 
 
@@ -137,7 +145,7 @@ class ExternNamespace(ASTNode):
 
     def get_rule_by_name(self, name: str) -> ExternRule | None:
         """Get extern rule by name within this namespace."""
-        name = require_string(name, "ExternNamespace rule name")
+        name = _require_nonempty_string(name, "ExternNamespace rule name")
         for rule in self.extern_rules:
             if rule.name == name:
                 return rule
@@ -158,8 +166,8 @@ def create_extern_rule(
     """Create an extern rule with string modifiers."""
     from yaraast.ast.modifiers import RuleModifier
 
-    rule_name = require_string(name, "ExternRule name")
-    rule_namespace = require_optional_string(namespace, "ExternRule namespace")
+    rule_name = _require_nonempty_string(name, "ExternRule name")
+    rule_namespace = _require_optional_nonempty_string(namespace, "ExternRule namespace")
     rule_modifiers = []
     for mod_str in _normalize_string_list(modifiers, "ExternRule modifiers"):
         rule_modifiers.append(RuleModifier.from_string(mod_str))
@@ -173,8 +181,8 @@ def create_extern_reference(
 ) -> ExternRuleReference:
     """Create an extern rule reference."""
     return ExternRuleReference(
-        rule_name=require_string(rule_name, "ExternRuleReference rule_name"),
-        namespace=require_optional_string(namespace, "ExternRuleReference namespace"),
+        rule_name=_require_nonempty_string(rule_name, "ExternRuleReference rule_name"),
+        namespace=_require_optional_nonempty_string(namespace, "ExternRuleReference namespace"),
     )
 
 
@@ -185,7 +193,7 @@ def create_extern_import(
 ) -> ExternImport:
     """Create an extern import statement."""
     return ExternImport(
-        module_path=require_string(module_path, "ExternImport module_path"),
-        alias=require_optional_string(alias, "ExternImport alias"),
+        module_path=_require_nonempty_string(module_path, "ExternImport module_path"),
+        alias=_require_optional_nonempty_string(alias, "ExternImport alias"),
         rules=_normalize_string_list(rules, "ExternImport rules"),
     )
