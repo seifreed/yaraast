@@ -192,6 +192,14 @@ class MetaEntry:
     value: str | int | bool | float
     scope: MetaScope = MetaScope.PUBLIC
 
+    def validate_structure(self) -> None:
+        """Validate meta entry fields before direct analysis."""
+        _require_nonempty_string(self.key, "Meta key")
+        _require_meta_value(self.value)
+        if not isinstance(self.scope, MetaScope):
+            msg = "Meta scope must be a MetaScope"
+            raise TypeError(msg)
+
     @classmethod
     def from_key_value(
         cls,

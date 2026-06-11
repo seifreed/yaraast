@@ -156,6 +156,8 @@ class Rule(ASTNode):
     def validate_structure(self) -> None:
         """Validate child containers before traversal."""
         _require_nonempty_string(self.name, "Rule name")
+        from yaraast.ast.meta import Meta
+        from yaraast.ast.modifiers import MetaEntry
         from yaraast.ast.pragmas import InRulePragma
         from yaraast.ast.strings import StringDefinition
 
@@ -177,10 +179,27 @@ class Rule(ASTNode):
             InRulePragma,
             "InRulePragma",
         )
+        if self.meta is not None:
+            if isinstance(self.meta, dict):
+                for key, value in self.meta.items():
+                    MetaEntry.from_key_value(key, value)
+            else:
+                if not isinstance(self.meta, list | tuple):
+                    msg = "Rule meta must be a list or tuple"
+                    raise TypeError(msg)
+                for meta in self.meta:
+                    if not isinstance(meta, Meta | MetaEntry):
+                        msg = "Rule meta must contain Meta or MetaEntry nodes"
+                        raise TypeError(msg)
         if self.condition is not None:
             _require_ast_node(self.condition, "Rule.condition")
         for tag in self.tags:
             tag.validate_structure()
+        if self.meta is not None and not isinstance(self.meta, dict):
+            for meta in self.meta:
+                validate_structure = getattr(meta, "validate_structure", None)
+                if callable(validate_structure):
+                    validate_structure()
         for string in self.strings:
             validate_structure = getattr(string, "validate_structure", None)
             if callable(validate_structure):

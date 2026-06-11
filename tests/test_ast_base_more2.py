@@ -31,6 +31,8 @@ from yaraast.ast.expressions import (
     StringWildcard,
 )
 from yaraast.ast.extern import ExternRule
+from yaraast.ast.meta import Meta
+from yaraast.ast.modifiers import MetaEntry
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import IncludeOncePragma
@@ -412,6 +414,50 @@ def test_direct_yarafile_analysis_rejects_invalid_hex_token_scalars(
     )
 
     with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("meta", "message"),
+    [
+        ([Meta("", "x")], "Meta key cannot be empty"),
+        ([Meta(cast(Any, 123), "x")], "Meta key must be a string"),
+        ([Meta("x", cast(Any, object()))], "Meta value must be a string"),
+        ([MetaEntry("", "x")], "Meta key cannot be empty"),
+        ([MetaEntry(cast(Any, 123), "x")], "Meta key must be a string"),
+        ([MetaEntry("x", cast(Any, object()))], "Meta value must be a string"),
+        ([MetaEntry("x", float("nan"))], "Meta value must be a string"),
+        ([cast(Any, object())], "Rule meta must contain Meta or MetaEntry nodes"),
+        (cast(Any, False), "Rule meta must contain Meta or MetaEntry nodes"),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_rule_meta_fields(
+    meta: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_meta", meta=meta, condition=BooleanLiteral(True))])
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+def test_direct_yarafile_analysis_rejects_mutated_scalar_rule_meta() -> None:
+    rule = Rule("bad_meta", condition=BooleanLiteral(True))
+    rule.meta = cast(Any, False)
+    malformed_file = YaraFile(rules=[rule])
+
+    with pytest.raises(TypeError, match="Rule meta must be a list or tuple"):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+def test_direct_yarafile_analysis_rejects_invalid_meta_entry_scope() -> None:
+    meta = MetaEntry("key", "value")
+    cast(Any, meta).scope = "secret"
+    malformed_file = YaraFile(
+        rules=[Rule("bad_meta_scope", meta=[meta], condition=BooleanLiteral(True))]
+    )
+
+    with pytest.raises(TypeError, match="Meta scope must be a MetaScope"):
         ExpressionOptimizer().optimize(malformed_file)
 
 
