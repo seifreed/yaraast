@@ -171,3 +171,21 @@ def test_modifier_helpers_reject_invalid_inputs_at_creation_time() -> None:
     for factory, message in invalid_cases:
         with pytest.raises(TypeError, match=message):
             factory()
+
+    empty_cases: list[tuple[Callable[[], object], str]] = [
+        (
+            lambda: MetaScope.from_string("   "),
+            "Meta scope input cannot be empty",
+        ),
+        (
+            lambda: MetaEntry.from_key_value("key", "value", ""),
+            "Meta scope input cannot be empty",
+        ),
+        (
+            lambda: create_meta_entry("key", "value", "   "),
+            "Meta scope input cannot be empty",
+        ),
+    ]
+    for factory, message in empty_cases:
+        with pytest.raises(ValueError, match=message):
+            factory()

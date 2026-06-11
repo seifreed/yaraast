@@ -115,6 +115,9 @@ class MetaScope(Enum):
     def from_string(cls, scope_str: str) -> "MetaScope":
         """Convert string to meta scope enum."""
         scope_text = require_string(scope_str, "Meta scope input")
+        if not scope_text.strip():
+            msg = "Meta scope input cannot be empty"
+            raise ValueError(msg)
         try:
             return cls(scope_text.lower())
         except ValueError:
