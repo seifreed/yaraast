@@ -110,6 +110,15 @@ def _require_optional_nonempty_string(value: Any, field_name: str) -> str | None
     return text
 
 
+def _require_pragma_type(value: Any, field_name: str) -> PragmaType:
+    from yaraast.ast.pragmas import PragmaType
+
+    if not isinstance(value, PragmaType):
+        msg = f"{field_name} must be a PragmaType"
+        raise TypeError(msg)
+    return value
+
+
 def _require_ast_node(value: Any, field_name: str) -> ASTNode:
     if not isinstance(value, ASTNode):
         msg = f"{field_name} must be an AST node"
@@ -224,6 +233,7 @@ class YaraFile(ASTNode):
 
     def get_pragma_by_type(self, pragma_type: PragmaType) -> list[Pragma]:
         """Get all pragmas of a specific type."""
+        pragma_type = _require_pragma_type(pragma_type, "YaraFile pragma type")
         return [p for p in self.pragmas if p.pragma_type == pragma_type]
 
     def has_include_once(self) -> bool:

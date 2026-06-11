@@ -63,6 +63,13 @@ class PragmaScope(Enum):
     LOCAL = "local"  # Local scope pragma
 
 
+def _require_pragma_type(pragma_type: PragmaType) -> PragmaType:
+    if not isinstance(pragma_type, PragmaType):
+        msg = "Pragma type must be a PragmaType"
+        raise TypeError(msg)
+    return pragma_type
+
+
 @dataclass
 class Pragma(ASTNode):
     """Base pragma/directive node."""
@@ -265,10 +272,12 @@ class PragmaBlock(ASTNode):
 
     def get_pragmas_by_type(self, pragma_type: PragmaType) -> list[Pragma]:
         """Get all pragmas of a specific type."""
+        pragma_type = _require_pragma_type(pragma_type)
         return [p for p in self.pragmas if p.pragma_type == pragma_type]
 
     def has_pragma(self, pragma_type: PragmaType) -> bool:
         """Check if block contains a pragma of specific type."""
+        pragma_type = _require_pragma_type(pragma_type)
         return any(p.pragma_type == pragma_type for p in self.pragmas)
 
     def __str__(self) -> str:

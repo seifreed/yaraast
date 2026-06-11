@@ -72,6 +72,16 @@ def test_custom_pragma_and_block_helpers() -> None:
     assert str(block) == str(custom)
 
 
+@pytest.mark.parametrize("pragma_type", [None, 1, "custom", object()])
+def test_pragma_block_rejects_invalid_lookup_types(pragma_type: Any) -> None:
+    block = PragmaBlock(scope=PragmaScope.RULE)
+
+    with pytest.raises(TypeError, match="Pragma type must be a PragmaType"):
+        block.get_pragmas_by_type(cast(PragmaType, pragma_type))
+    with pytest.raises(TypeError, match="Pragma type must be a PragmaType"):
+        block.has_pragma(cast(PragmaType, pragma_type))
+
+
 def test_custom_pragma_parameter_keys_must_be_strings_without_partial_update() -> None:
     custom = CustomPragma(name="vendor", arguments=["x"], scope=PragmaScope.FILE)
     custom.set_parameter("level", 3)

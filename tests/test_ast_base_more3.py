@@ -35,6 +35,14 @@ def test_yarafile_accept_and_pragma_lookup_paths() -> None:
     assert missing_pragmas == []
 
 
+@pytest.mark.parametrize("pragma_type", [None, 1, "include_once", object()])
+def test_yarafile_get_pragma_by_type_rejects_invalid_types(pragma_type: Any) -> None:
+    file_node = YaraFile()
+
+    with pytest.raises(TypeError, match="YaraFile pragma type must be a PragmaType"):
+        file_node.get_pragma_by_type(cast(PragmaType, pragma_type))
+
+
 def test_yarafile_rejects_invalid_extern_rules_and_pragmas_without_partial_update() -> None:
     file_node = YaraFile()
     extern_rule = ExternRule(name="r1")
