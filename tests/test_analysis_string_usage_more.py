@@ -366,14 +366,17 @@ def test_string_usage_analyzer_counts_string_literals_in_condition_sets() -> Non
 
 
 @pytest.mark.parametrize(
-    "string_set",
+    ("string_set", "message"),
     [
-        StringLiteral(cast(Any, False)),
-        StringIdentifier(cast(Any, False)),
-        StringWildcard(cast(Any, False)),
+        (StringLiteral(cast(Any, False)), "String literal value must be a string"),
+        (StringIdentifier(cast(Any, False)), "String identifier must be a string"),
+        (StringWildcard(cast(Any, False)), "String wildcard pattern must be a string"),
     ],
 )
-def test_string_usage_analyzer_rejects_non_string_string_set_values(string_set: Any) -> None:
+def test_string_usage_analyzer_rejects_non_string_string_set_values(
+    string_set: Any,
+    message: str,
+) -> None:
     ast = YaraFile(
         rules=[
             Rule(
@@ -384,7 +387,7 @@ def test_string_usage_analyzer_rejects_non_string_string_set_values(string_set: 
         ]
     )
 
-    with pytest.raises(TypeError, match="String reference must be a string"):
+    with pytest.raises(TypeError, match=message):
         StringUsageAnalyzer().analyze(ast)
 
 
@@ -399,21 +402,30 @@ def test_string_usage_analyzer_rejects_non_string_identifier_string_set() -> Non
         ]
     )
 
-    with pytest.raises(TypeError, match="String reference must be a string"):
+    with pytest.raises(TypeError, match="Identifier name must be a string"):
         StringUsageAnalyzer().analyze(ast)
 
 
 @pytest.mark.parametrize(
-    "condition",
+    ("condition", "message"),
     [
-        AtExpression(cast(Any, False), IntegerLiteral(0)),
-        InExpression(
-            cast(Any, False),
-            RangeExpression(IntegerLiteral(0), IntegerLiteral(1)),
+        (
+            AtExpression(cast(Any, False), IntegerLiteral(0)),
+            "AtExpression string_id must be a string or expression",
+        ),
+        (
+            InExpression(
+                cast(Any, False),
+                RangeExpression(IntegerLiteral(0), IntegerLiteral(1)),
+            ),
+            "InExpression subject must be a string or expression",
         ),
     ],
 )
-def test_string_usage_analyzer_rejects_non_string_at_in_subjects(condition: Any) -> None:
+def test_string_usage_analyzer_rejects_non_string_at_in_subjects(
+    condition: Any,
+    message: str,
+) -> None:
     ast = YaraFile(
         rules=[
             Rule(
@@ -424,15 +436,15 @@ def test_string_usage_analyzer_rejects_non_string_at_in_subjects(condition: Any)
         ]
     )
 
-    with pytest.raises(TypeError, match="String reference must be a string"):
+    with pytest.raises(TypeError, match=message):
         StringUsageAnalyzer().analyze(ast)
 
 
 @pytest.mark.parametrize(
     ("condition", "message"),
     [
-        (AtExpression("$a", cast(Any, False)), "'at' offset must be an Expression"),
-        (InExpression("$a", cast(Any, False)), "'in' range must be an Expression"),
+        (AtExpression("$a", cast(Any, False)), "'at' offset must be an AST node"),
+        (InExpression("$a", cast(Any, False)), "'in' range must be an AST node"),
     ],
 )
 def test_string_usage_analyzer_rejects_invalid_at_in_expression_fields(
@@ -454,21 +466,30 @@ def test_string_usage_analyzer_rejects_invalid_at_in_expression_fields(
 
 
 @pytest.mark.parametrize(
-    "condition",
+    ("condition", "message"),
     [
-        ForExpression(
-            "any",
-            cast(Any, False),
-            SetExpression([IntegerLiteral(1)]),
-            StringIdentifier("$a"),
+        (
+            ForExpression(
+                "any",
+                cast(Any, False),
+                SetExpression([IntegerLiteral(1)]),
+                StringIdentifier("$a"),
+            ),
+            "ForExpression variable must be a string",
         ),
-        WithStatement(
-            declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
-            body=StringIdentifier("$a"),
+        (
+            WithStatement(
+                declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
+                body=StringIdentifier("$a"),
+            ),
+            "Local variable name must be a string",
         ),
     ],
 )
-def test_string_usage_analyzer_rejects_non_string_local_names(condition: Any) -> None:
+def test_string_usage_analyzer_rejects_non_string_local_names(
+    condition: Any,
+    message: str,
+) -> None:
     ast = YaraFile(
         rules=[
             Rule(
@@ -479,7 +500,7 @@ def test_string_usage_analyzer_rejects_non_string_local_names(condition: Any) ->
         ]
     )
 
-    with pytest.raises(TypeError, match="Local variable name must be a string"):
+    with pytest.raises(TypeError, match=message):
         StringUsageAnalyzer().analyze(ast)
 
 

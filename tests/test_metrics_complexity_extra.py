@@ -446,24 +446,33 @@ def test_complexity_string_usage_ignores_yarax_string_locals_in_reference_forms(
 
 
 @pytest.mark.parametrize(
-    "condition",
+    ("condition", "message"),
     [
-        ForExpression(
-            quantifier="any",
-            variable=cast(Any, False),
-            iterable=SetExpression([IntegerLiteral(1)]),
-            body=BooleanLiteral(True),
+        (
+            ForExpression(
+                quantifier="any",
+                variable=cast(Any, False),
+                iterable=SetExpression([IntegerLiteral(1)]),
+                body=BooleanLiteral(True),
+            ),
+            "ForExpression variable must be a string",
         ),
-        WithStatement(
-            declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
-            body=BooleanLiteral(True),
+        (
+            WithStatement(
+                declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
+                body=BooleanLiteral(True),
+            ),
+            "Local variable name must be a string",
         ),
     ],
 )
-def test_complexity_analyzer_rejects_invalid_local_variable_names(condition: Any) -> None:
+def test_complexity_analyzer_rejects_invalid_local_variable_names(
+    condition: Any,
+    message: str,
+) -> None:
     ast = YaraFile(rules=[Rule("invalid_local", condition=condition)])
 
-    with pytest.raises(TypeError, match="Local variable name must be a string"):
+    with pytest.raises(TypeError, match=message):
         ComplexityAnalyzer().analyze(ast)
 
 

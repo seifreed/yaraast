@@ -8,6 +8,13 @@ import pytest
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
     BooleanLiteral,
     DoubleLiteral,
@@ -25,6 +32,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.extern import ExternRule
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexAlternative, HexByte, HexString, HexWildcard, PlainString
@@ -256,6 +264,98 @@ def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
     message: str,
 ) -> None:
     malformed_file = YaraFile(rules=[Rule("bad_literal", condition=condition)])
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (AtExpression("", IntegerLiteral(0)), "AtExpression string_id must not be empty"),
+        (
+            AtExpression(cast(Any, 7), IntegerLiteral(0)),
+            "AtExpression string_id must be a string or expression",
+        ),
+        (AtExpression("$a", cast(Any, object())), "'at' offset must be an AST node"),
+        (InExpression("", Identifier("filesize")), "InExpression subject must not be empty"),
+        (
+            InExpression(cast(Any, 7), Identifier("filesize")),
+            "InExpression subject must be a string or expression",
+        ),
+        (InExpression("$a", cast(Any, object())), "'in' range must be an AST node"),
+        (
+            ForExpression(cast(Any, ["any"]), "i", Identifier("items"), BooleanLiteral(True)),
+            "ForExpression quantifier must be a string, number, or expression",
+        ),
+        (
+            ForExpression(float("nan"), "i", Identifier("items"), BooleanLiteral(True)),
+            "ForExpression quantifier must be finite",
+        ),
+        (
+            ForExpression("any", "", Identifier("items"), BooleanLiteral(True)),
+            "ForExpression variable must not be empty",
+        ),
+        (
+            ForExpression("any", cast(Any, ["i"]), Identifier("items"), BooleanLiteral(True)),
+            "ForExpression variable must be a string",
+        ),
+        (
+            ForExpression("any", "i", cast(Any, object()), BooleanLiteral(True)),
+            "ForExpression iterable must be an AST expression",
+        ),
+        (
+            ForExpression("any", "i", Identifier("items"), cast(Any, object())),
+            "ForExpression body must be an AST expression",
+        ),
+        (
+            ForOfExpression("any", cast(Any, object()), BooleanLiteral(True)),
+            "ForOfExpression string_set must be",
+        ),
+        (
+            ForOfExpression("any", [cast(Any, object())], BooleanLiteral(True)),
+            "ForOfExpression string_set must contain strings or expressions",
+        ),
+        (
+            ForOfExpression(float("inf"), ["$a"], BooleanLiteral(True)),
+            "ForOfExpression quantifier must be finite",
+        ),
+        (
+            ForOfExpression("any", ["$a"], cast(Any, object())),
+            "ForOfExpression condition must be an AST expression",
+        ),
+        (
+            OfExpression(cast(Any, True), ["$a"]),
+            "OfExpression quantifier must be a string, number, or expression",
+        ),
+        (OfExpression("any", cast(Any, {})), "OfExpression string_set is required"),
+        (
+            DefinedExpression(cast(Any, object())),
+            "DefinedExpression expression must be an AST expression",
+        ),
+        (
+            StringOperatorExpression(StringLiteral("a"), "", StringLiteral("b")),
+            "StringOperatorExpression operator must not be empty",
+        ),
+        (
+            StringOperatorExpression(StringLiteral("a"), cast(Any, object()), StringLiteral("b")),
+            "StringOperatorExpression operator must be a string",
+        ),
+        (
+            StringOperatorExpression(cast(Any, object()), "contains", StringLiteral("b")),
+            "StringOperatorExpression left must be an AST expression",
+        ),
+        (
+            StringOperatorExpression(StringLiteral("a"), "contains", cast(Any, object())),
+            "StringOperatorExpression right must be an AST expression",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_condition_scalars(
+    condition: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_condition", condition=condition)])
 
     with pytest.raises((TypeError, ValueError), match=message):
         ExpressionOptimizer().optimize(malformed_file)

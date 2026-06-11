@@ -418,37 +418,55 @@ def test_dependency_analyzer_rejects_invalid_string_wildcard_pattern() -> None:
 
 
 @pytest.mark.parametrize(
-    "condition",
+    ("condition", "message"),
     [
-        ForExpression(
-            quantifier="any",
-            variable=cast(Any, False),
-            iterable=SetExpression([IntegerLiteral(1)]),
-            body=BooleanLiteral(True),
+        (
+            ForExpression(
+                quantifier="any",
+                variable=cast(Any, False),
+                iterable=SetExpression([IntegerLiteral(1)]),
+                body=BooleanLiteral(True),
+            ),
+            "ForExpression variable must be a string",
         ),
-        WithStatement(
-            declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
-            body=BooleanLiteral(True),
+        (
+            WithStatement(
+                declarations=[WithDeclaration(cast(Any, False), IntegerLiteral(1))],
+                body=BooleanLiteral(True),
+            ),
+            "Local variable name must be a string",
         ),
-        ArrayComprehension(
-            expression=IntegerLiteral(1),
-            variable=cast(Any, False),
-            iterable=ListExpression([IntegerLiteral(1)]),
+        (
+            ArrayComprehension(
+                expression=IntegerLiteral(1),
+                variable=cast(Any, False),
+                iterable=ListExpression([IntegerLiteral(1)]),
+            ),
+            "Local variable name must be a string",
         ),
-        DictComprehension(
-            key_expression=Identifier("k"),
-            value_expression=Identifier("v"),
-            key_variable=cast(Any, False),
-            value_variable="v",
-            iterable=ListExpression([IntegerLiteral(1)]),
+        (
+            DictComprehension(
+                key_expression=Identifier("k"),
+                value_expression=Identifier("v"),
+                key_variable=cast(Any, False),
+                value_variable="v",
+                iterable=ListExpression([IntegerLiteral(1)]),
+            ),
+            "Local variable name must be a string",
         ),
-        LambdaExpression(parameters=[cast(Any, False)], body=BooleanLiteral(True)),
+        (
+            LambdaExpression(parameters=[cast(Any, False)], body=BooleanLiteral(True)),
+            "Local variable name must be a string",
+        ),
     ],
 )
-def test_dependency_analyzer_rejects_invalid_local_variable_names(condition: Any) -> None:
+def test_dependency_analyzer_rejects_invalid_local_variable_names(
+    condition: Any,
+    message: str,
+) -> None:
     ast = YaraFile(rules=[Rule(name="caller", condition=condition)])
 
-    with pytest.raises(TypeError, match="Local variable name must be a string"):
+    with pytest.raises(TypeError, match=message):
         DependencyAnalyzer().analyze(ast)
 
 
@@ -505,7 +523,7 @@ def test_dependency_analyzer_rejects_malformed_local_variable_identifiers(
 @pytest.mark.parametrize(
     ("variable", "message"),
     [
-        ("", "Local variable name must not be empty"),
+        ("", "ForExpression variable must not be empty"),
         ("i,,j", "Local variable declaration must not contain empty entries: i,,j"),
     ],
 )
