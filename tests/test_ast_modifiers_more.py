@@ -174,6 +174,14 @@ def test_modifier_helpers_reject_invalid_inputs_at_creation_time() -> None:
 
     empty_cases: list[tuple[Callable[[], object], str]] = [
         (
+            lambda: MetaEntry.from_key_value("", "value"),
+            "Meta key cannot be empty",
+        ),
+        (
+            lambda: create_meta_entry("   ", "value"),
+            "Meta key cannot be empty",
+        ),
+        (
             lambda: MetaScope.from_string("   "),
             "Meta scope input cannot be empty",
         ),

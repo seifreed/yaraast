@@ -75,6 +75,28 @@ def test_rule_validate_structure_rejects_non_ast_children() -> None:
         invalid_condition.validate_structure()
 
 
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (Import(""), "Import module cannot be empty"),
+        (Import("   "), "Import module cannot be empty"),
+        (Import("pe", alias=""), "Import alias cannot be empty"),
+        (Include(""), "Include path cannot be empty"),
+        (Include("\t"), "Include path cannot be empty"),
+        (Tag(""), "Tag name cannot be empty"),
+        (Tag("   "), "Tag name cannot be empty"),
+        (Rule(""), "Rule name cannot be empty"),
+        (Rule("   "), "Rule name cannot be empty"),
+    ],
+)
+def test_validate_structure_rejects_empty_scalar_fields(
+    node: Import | Include | Tag | Rule,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        node.validate_structure()
+
+
 def test_direct_yarafile_optimizers_validate_structure() -> None:
     malformed_file = YaraFile(rules=[cast(Any, object())])
 

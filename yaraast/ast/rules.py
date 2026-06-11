@@ -10,6 +10,8 @@ from yaraast.ast.base import (
     ASTNode,
     _require_ast_node,
     _require_ast_node_sequence_type,
+    _require_nonempty_string,
+    _require_optional_nonempty_string,
     _VisitorType,
     require_string,
 )
@@ -31,9 +33,9 @@ class Import(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate import scalar fields before direct analysis."""
-        require_string(self.module, "Import module")
+        _require_nonempty_string(self.module, "Import module")
         if self.alias is not None:
-            require_string(self.alias, "Import alias")
+            _require_optional_nonempty_string(self.alias, "Import alias")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_import(self)
@@ -47,7 +49,7 @@ class Include(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate include scalar fields before direct analysis."""
-        require_string(self.path, "Include path")
+        _require_nonempty_string(self.path, "Include path")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_include(self)
@@ -61,7 +63,7 @@ class Tag(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate tag scalar fields before direct analysis."""
-        require_string(self.name, "Tag name")
+        _require_nonempty_string(self.name, "Tag name")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_tag(self)
@@ -153,7 +155,7 @@ class Rule(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate child containers before traversal."""
-        require_string(self.name, "Rule name")
+        _require_nonempty_string(self.name, "Rule name")
         from yaraast.ast.pragmas import InRulePragma
         from yaraast.ast.strings import StringDefinition
 

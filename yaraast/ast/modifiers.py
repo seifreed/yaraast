@@ -5,7 +5,7 @@ from enum import Enum
 import math
 from typing import Any
 
-from yaraast.ast.base import ASTNode, _VisitorType, require_string
+from yaraast.ast.base import ASTNode, _require_nonempty_string, _VisitorType, require_string
 from yaraast.errors import ValidationError
 from yaraast.string_escaping import escape_string_source_value
 from yaraast.xor_keys import parse_xor_key_text
@@ -200,7 +200,7 @@ class MetaEntry:
         scope: str | None = None,
     ) -> "MetaEntry":
         """Create MetaEntry from key, value, and optional scope."""
-        meta_key = require_string(key, "Meta key")
+        meta_key = _require_nonempty_string(key, "Meta key")
         meta_value = _require_meta_value(value)
         meta_scope = MetaScope.from_string(scope) if scope is not None else MetaScope.PUBLIC
         return cls(key=meta_key, value=meta_value, scope=meta_scope)
