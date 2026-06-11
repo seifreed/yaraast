@@ -21,6 +21,14 @@ def test_module_loader_rejects_non_string_lookup_names(name: Any) -> None:
         loader.get_module(cast(str, name))
 
 
+@pytest.mark.parametrize("name", ["", "   ", "\t"])
+def test_module_loader_rejects_empty_lookup_names(name: str) -> None:
+    loader = ModuleLoader()
+
+    with pytest.raises(ValueError, match="Module lookup name cannot be empty"):
+        loader.get_module(name)
+
+
 @pytest.mark.parametrize(
     "env_name",
     ["YARAAST_MODULE_SPEC_PATH", "YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"],

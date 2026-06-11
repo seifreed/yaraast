@@ -50,6 +50,9 @@ CAPABILITIES: tuple[MetricsCapability, ...] = (
 
 def get_capability(name: str) -> MetricsCapability | None:
     name = require_string(name, "Metrics capability name")
+    if not name.strip():
+        msg = "Metrics capability name cannot be empty"
+        raise ValueError(msg)
     for capability in CAPABILITIES:
         if capability.name == name:
             return capability

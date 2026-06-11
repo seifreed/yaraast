@@ -27,6 +27,9 @@ def _require_module_lookup_name(name: str) -> str:
     if not isinstance(name, str):
         msg = "Module lookup name must be a string"
         raise TypeError(msg)
+    if not name.strip():
+        msg = "Module lookup name cannot be empty"
+        raise ValueError(msg)
     return name
 
 

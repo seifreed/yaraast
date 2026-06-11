@@ -158,6 +158,14 @@ def test_type_system_rejects_non_string_module_lookup_names(name: Any) -> None:
         ts.get_module(cast(str, name))
 
 
+@pytest.mark.parametrize("name", ["", "   ", "\t"])
+def test_type_system_rejects_empty_module_lookup_names(name: str) -> None:
+    ts = TypeSystem()
+
+    with pytest.raises(ValueError, match="Module lookup name cannot be empty"):
+        ts.get_module(name)
+
+
 def test_type_environment_rejects_embedded_string_reference_operators() -> None:
     env = TypeEnvironment()
 

@@ -103,7 +103,13 @@ class TypeChecker(BaseVisitor[None]):
             self.visit(rule)
 
     def visit_import(self, node: Import) -> None:
-        if ModuleLoader().get_module(node.module) is None:
+        try:
+            module = ModuleLoader().get_module(node.module)
+        except (TypeError, ValueError) as exc:
+            self.errors.append(str(exc))
+            return
+
+        if module is None:
             self.errors.append(f"Unknown module: {node.module}")
             return
 
