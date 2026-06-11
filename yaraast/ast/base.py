@@ -94,6 +94,22 @@ def require_optional_string(value: Any, field_name: str) -> str | None:
     return require_string(value, field_name)
 
 
+def _require_nonempty_string(value: Any, field_name: str) -> str:
+    text = require_string(value, field_name)
+    if not text.strip():
+        msg = f"{field_name} cannot be empty"
+        raise ValueError(msg)
+    return text
+
+
+def _require_optional_nonempty_string(value: Any, field_name: str) -> str | None:
+    text = require_optional_string(value, field_name)
+    if text is not None and not text.strip():
+        msg = f"{field_name} cannot be empty"
+        raise ValueError(msg)
+    return text
+
+
 def _require_ast_node(value: Any, field_name: str) -> ASTNode:
     if not isinstance(value, ASTNode):
         msg = f"{field_name} must be an AST node"
@@ -222,6 +238,8 @@ class YaraFile(ASTNode):
         namespace: str | None = None,
     ) -> ExternRule | None:
         """Get extern rule by name and optional namespace."""
+        name = _require_nonempty_string(name, "YaraFile extern rule name")
+        namespace = _require_optional_nonempty_string(namespace, "YaraFile extern namespace")
         for rule in self.extern_rules:
             if rule.name == name and rule.namespace == namespace:
                 return rule

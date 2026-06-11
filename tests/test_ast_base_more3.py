@@ -64,6 +64,40 @@ def test_get_extern_rule_by_name_none_path() -> None:
     assert file_node.get_extern_rule_by_name("missing", "ns1") is None
 
 
+@pytest.mark.parametrize("name", [None, 1, b"r1", object()])
+def test_get_extern_rule_by_name_rejects_non_string_names(name: Any) -> None:
+    file_node = YaraFile()
+
+    with pytest.raises(TypeError, match="YaraFile extern rule name must be a string"):
+        file_node.get_extern_rule_by_name(cast(str, name))
+
+
+@pytest.mark.parametrize("name", ["", "   ", "\t"])
+def test_get_extern_rule_by_name_rejects_empty_names(name: str) -> None:
+    file_node = YaraFile()
+
+    with pytest.raises(ValueError, match="YaraFile extern rule name cannot be empty"):
+        file_node.get_extern_rule_by_name(name)
+
+
+@pytest.mark.parametrize("namespace", [1, b"ns", object()])
+def test_get_extern_rule_by_name_rejects_non_string_namespaces(
+    namespace: Any,
+) -> None:
+    file_node = YaraFile()
+
+    with pytest.raises(TypeError, match="YaraFile extern namespace must be a string"):
+        file_node.get_extern_rule_by_name("r1", cast(str, namespace))
+
+
+@pytest.mark.parametrize("namespace", ["", "   ", "\t"])
+def test_get_extern_rule_by_name_rejects_empty_namespaces(namespace: str) -> None:
+    file_node = YaraFile()
+
+    with pytest.raises(ValueError, match="YaraFile extern namespace cannot be empty"):
+        file_node.get_extern_rule_by_name("r1", namespace)
+
+
 def test_get_extern_rule_by_name_finds_namespaced_rules() -> None:
     nested_rule = ExternRule(name="nested")
     namespace = ExternNamespace(name="corp")
