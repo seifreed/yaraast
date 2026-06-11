@@ -134,6 +134,22 @@ def test_module_and_function_types_and_environment_aliases() -> None:
     assert env.has_rule("rule_b") is False
 
 
+@pytest.mark.parametrize("attr", [None, 1, b"machine", object()])
+def test_module_type_rejects_non_string_attribute_names(attr: Any) -> None:
+    module = ModuleType("pe", {"machine": IntegerType()})
+
+    with pytest.raises(TypeError, match="Module attribute name must be a string"):
+        module.get_attribute_type(cast(str, attr))
+
+
+@pytest.mark.parametrize("attr", ["", "   ", "\t"])
+def test_module_type_rejects_empty_attribute_names(attr: str) -> None:
+    module = ModuleType("pe", {"machine": IntegerType()})
+
+    with pytest.raises(ValueError, match="Module attribute name cannot be empty"):
+        module.get_attribute_type(attr)
+
+
 @pytest.mark.parametrize("name", [None, 1, b"pe", object()])
 def test_type_system_rejects_non_string_module_lookup_names(name: Any) -> None:
     ts = TypeSystem()

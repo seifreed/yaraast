@@ -15,6 +15,16 @@ def _require_module_lookup_name(name: str) -> str:
     return name
 
 
+def _require_module_attribute_name(attr: str) -> str:
+    if not isinstance(attr, str):
+        msg = "Module attribute name must be a string"
+        raise TypeError(msg)
+    if not attr.strip():
+        msg = "Module attribute name cannot be empty"
+        raise ValueError(msg)
+    return attr
+
+
 @dataclass
 class ModuleType(YaraType):
     """Module type with attributes."""
@@ -30,6 +40,7 @@ class ModuleType(YaraType):
 
     def get_attribute_type(self, attr: str) -> YaraType | None:
         """Get type of module attribute."""
+        attr = _require_module_attribute_name(attr)
         return self.attributes.get(attr)
 
 
