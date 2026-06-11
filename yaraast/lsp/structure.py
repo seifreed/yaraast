@@ -15,6 +15,13 @@ REGEX_CONTEXT_CHARS = frozenset("([{,=!:<>~&|?+-*")
 REGEX_CONTEXT_WORDS = frozenset({"matches", "contains", "and", "or", "not", "condition"})
 
 
+def _require_search_text(value: object, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class RuleTextRange:
     """Text range that covers one parsed rule in the source."""
@@ -257,6 +264,7 @@ def get_rule_text_range(text: str, current_line: int) -> RuleTextRange | None:
 
 
 def find_section_line(lines: list[str], section_header: str, start_line: int) -> int:
+    section_header = _require_search_text(section_header, "Section header")
     for idx in range(max(0, start_line), len(lines)):
         stripped = lines[idx].strip()
         if RULE_DECLARATION_RE.match(stripped) and idx > start_line:
@@ -267,6 +275,7 @@ def find_section_line(lines: list[str], section_header: str, start_line: int) ->
 
 
 def find_string_line(lines: list[str], string_id: str, start: int = 0) -> int:
+    string_id = _require_search_text(string_id, "String identifier")
     if not string_id:
         return -1
     for idx in range(max(0, start), len(lines)):

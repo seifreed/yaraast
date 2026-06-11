@@ -11,6 +11,7 @@ from yaraast.lsp.structure import (
     find_rule_end,
     find_rule_line,
     find_section_header_position,
+    find_section_line,
     find_string_line,
 )
 from yaraast.parser.parser import Parser
@@ -96,6 +97,26 @@ def test_structure_find_string_line_rejects_empty_identifier() -> None:
     lines = ['rule a { strings: $a = "x" condition: $a }']
 
     assert find_string_line(lines, "") == -1
+
+
+@pytest.mark.parametrize("section_header", [None, 1, b"strings:", object()])
+def test_structure_find_section_line_rejects_non_string_headers(
+    section_header: Any,
+) -> None:
+    lines = ["rule a {", "strings:", '  $a = "x"', "condition:", "  $a", "}"]
+
+    with pytest.raises(TypeError, match="Section header must be a string"):
+        find_section_line(lines, cast(str, section_header), 0)
+
+
+@pytest.mark.parametrize("string_id", [None, 1, b"$a", object()])
+def test_structure_find_string_line_rejects_non_string_identifiers(
+    string_id: Any,
+) -> None:
+    lines = ["rule a {", "strings:", '  $a = "x"', "condition:", "  $a", "}"]
+
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        find_string_line(lines, cast(str, string_id), 0)
 
 
 def test_folding_ranges_fallback_on_invalid() -> None:
