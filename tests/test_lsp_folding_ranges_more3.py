@@ -74,6 +74,16 @@ rule sample {
     assert find_rule_end(lines, 0) == 3
 
 
+@pytest.mark.parametrize("section_name", [None, 1, b"strings", object()])
+def test_structure_find_section_header_position_rejects_non_string_names(
+    section_name: Any,
+) -> None:
+    lines = ["rule a {", "strings:", '  $a = "x"', "condition:", "  $a", "}"]
+
+    with pytest.raises(TypeError, match="Section name must be a string"):
+        find_section_header_position(lines, cast(str, section_name), 0, len(lines) - 1)
+
+
 def test_folding_ranges_match_exact_rule_names() -> None:
     text = """
 rule foobar {

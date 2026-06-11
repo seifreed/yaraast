@@ -171,6 +171,7 @@ def find_section_header_position(
     start_line: int,
     end_line: int | None = None,
 ) -> tuple[int, int] | None:
+    section_name = _require_search_text(section_name, "Section name")
     in_block_comment = False
     stop_line = len(lines) - 1 if end_line is None else min(end_line, len(lines) - 1)
     for line_num in range(max(0, start_line), stop_line + 1):
