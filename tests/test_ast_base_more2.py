@@ -10,12 +10,16 @@ from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.expressions import (
     BooleanLiteral,
+    DoubleLiteral,
     FunctionCall,
     Identifier,
+    IntegerLiteral,
     MemberAccess,
+    RegexLiteral,
     StringCount,
     StringIdentifier,
     StringLength,
+    StringLiteral,
     StringOffset,
     StringWildcard,
 )
@@ -226,6 +230,32 @@ def test_direct_yarafile_analysis_rejects_empty_expression_scalars(
     message: str,
 ) -> None:
     malformed_file = YaraFile(rules=[Rule("bad_expression", condition=condition)])
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (BooleanLiteral(cast(Any, 1)), "Boolean literal value must be a boolean"),
+        (IntegerLiteral(cast(Any, True)), "Integer literal value must be an integer"),
+        (IntegerLiteral(cast(Any, "1")), "Integer literal value must be an integer"),
+        (DoubleLiteral(cast(Any, True)), "Double literal value must be numeric"),
+        (DoubleLiteral(cast(Any, "1.0")), "Double literal value must be numeric"),
+        (DoubleLiteral(float("nan")), "Double literal value must be finite"),
+        (DoubleLiteral(float("inf")), "Double literal value must be finite"),
+        (StringLiteral(cast(Any, object())), "String literal value must be a string"),
+        (RegexLiteral(cast(Any, object())), "Regex literal pattern must be a string"),
+        (RegexLiteral(""), "RegexLiteral pattern must not be empty"),
+        (RegexLiteral("x", cast(Any, object())), "Regex literal modifiers must be a string"),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
+    condition: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_literal", condition=condition)])
 
     with pytest.raises((TypeError, ValueError), match=message):
         ExpressionOptimizer().optimize(malformed_file)

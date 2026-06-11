@@ -744,7 +744,7 @@ def test_eliminate_dead_code_single_rule_resets_condition_context() -> None:
     assert "$outside" not in dce.used_strings
 
 
-def test_dead_code_eliminator_does_not_optimize_malformed_boolean_literals() -> None:
+def test_dead_code_eliminator_rejects_malformed_boolean_literals() -> None:
     falsey_rule = Rule(
         "falsey",
         strings=[PlainString("$a", value="x")],
@@ -766,12 +766,8 @@ def test_dead_code_eliminator_does_not_optimize_malformed_boolean_literals() -> 
     )
     ast = YaraFile(rules=[falsey_rule, unary_rule, binary_rule])
 
-    optimized, _ = DeadCodeEliminator().eliminate(ast)
-
-    assert [rule.name for rule in optimized.rules] == ["falsey", "unary", "binary"]
-    assert optimized.rules[0].condition == falsey_rule.condition
-    assert optimized.rules[1].condition == unary_rule.condition
-    assert optimized.rules[2].condition == binary_rule.condition
+    with pytest.raises(TypeError, match="Boolean literal value must be a boolean"):
+        DeadCodeEliminator().eliminate(ast)
 
 
 def test_visit_boolean_literal_passthrough() -> None:

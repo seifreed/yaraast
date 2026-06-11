@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import Any
 
 from yaraast.ast.base import (
@@ -132,6 +133,12 @@ class IntegerLiteral(Expression):
 
     value: int
 
+    def validate_structure(self) -> None:
+        """Validate scalar fields before direct analysis."""
+        if isinstance(self.value, bool) or not isinstance(self.value, int):
+            msg = "Integer literal value must be an integer"
+            raise TypeError(msg)
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_integer_literal(self)
 
@@ -142,6 +149,15 @@ class DoubleLiteral(Expression):
 
     value: float
 
+    def validate_structure(self) -> None:
+        """Validate scalar fields before direct analysis."""
+        if isinstance(self.value, bool) or not isinstance(self.value, int | float):
+            msg = "Double literal value must be numeric"
+            raise TypeError(msg)
+        if not math.isfinite(self.value):
+            msg = "Double literal value must be finite"
+            raise ValueError(msg)
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_double_literal(self)
 
@@ -151,6 +167,12 @@ class StringLiteral(Expression):
     """String literal."""
 
     value: str
+
+    def validate_structure(self) -> None:
+        """Validate scalar fields before direct analysis."""
+        if not isinstance(self.value, str):
+            msg = "String literal value must be a string"
+            raise TypeError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_literal(self)
@@ -163,6 +185,18 @@ class RegexLiteral(Expression):
     pattern: str
     modifiers: str = ""  # i for case-insensitive, s for single-line, etc.
 
+    def validate_structure(self) -> None:
+        """Validate scalar fields before direct analysis."""
+        if not isinstance(self.pattern, str):
+            msg = "Regex literal pattern must be a string"
+            raise TypeError(msg)
+        if not self.pattern:
+            msg = "RegexLiteral pattern must not be empty"
+            raise ValueError(msg)
+        if not isinstance(self.modifiers, str):
+            msg = "Regex literal modifiers must be a string"
+            raise TypeError(msg)
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_regex_literal(self)
 
@@ -172,6 +206,12 @@ class BooleanLiteral(Expression):
     """Boolean literal."""
 
     value: bool
+
+    def validate_structure(self) -> None:
+        """Validate scalar fields before direct analysis."""
+        if not isinstance(self.value, bool):
+            msg = "Boolean literal value must be a boolean"
+            raise TypeError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_boolean_literal(self)
