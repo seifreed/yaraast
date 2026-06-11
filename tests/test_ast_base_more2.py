@@ -35,7 +35,16 @@ from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import HexAlternative, HexByte, HexString, HexWildcard, PlainString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexString,
+    HexWildcard,
+    PlainString,
+)
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
 from yaraast.parser import Parser
 from yaraast.yarax.ast_nodes import (
@@ -356,6 +365,51 @@ def test_direct_yarafile_analysis_rejects_invalid_condition_scalars(
     message: str,
 ) -> None:
     malformed_file = YaraFile(rules=[Rule("bad_condition", condition=condition)])
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("token", "message"),
+    [
+        (HexByte(cast(Any, object())), "HexByte value must be a byte"),
+        (HexByte(-1), "HexByte value must be a byte"),
+        (HexByte(0x100), "HexByte value must be a byte"),
+        (
+            HexNegatedByte(cast(Any, object())),
+            "HexNegatedByte value must be a byte",
+        ),
+        (
+            HexJump(cast(Any, object()), 2),
+            "HexJump min_jump must be a non-negative integer",
+        ),
+        (HexJump(4, 2), "HexJump min_jump cannot exceed max_jump"),
+        (
+            HexAlternative(cast(Any, object())),
+            "HexAlternative must contain at least one branch",
+        ),
+        (
+            HexAlternative([[HexByte(1)], [cast(Any, object())]]),
+            "Unsupported hex token 'object'",
+        ),
+        (HexNibble(cast(Any, "yes"), 1), "HexNibble high must be a boolean"),
+        (HexNibble(True, cast(Any, object())), "HexNibble value must be a nibble"),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_hex_token_scalars(
+    token: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(
+        rules=[
+            Rule(
+                "bad_hex_token",
+                strings=[HexString("$a", tokens=[token])],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
 
     with pytest.raises((TypeError, ValueError), match=message):
         ExpressionOptimizer().optimize(malformed_file)
