@@ -45,6 +45,10 @@ def _require_string(value: object, context: str) -> str:
     raise ValidationError(msg)
 
 
+def require_rule_lookup_name(value: object) -> str:
+    return _require_string(value, "DependencyGraph rule name")
+
+
 def _require_string_or_path(value: object, context: str) -> str | Path:
     if isinstance(value, str):
         if not value.strip():
@@ -416,6 +420,7 @@ class DependencyGraph:
 
     def get_rule_dependencies(self, rule_name: str) -> set[str]:
         """Get all dependencies of a rule."""
+        rule_name = require_rule_lookup_name(rule_name)
         rule_key = f"rule:{rule_name}"
         if rule_key not in self.nodes:
             return set()

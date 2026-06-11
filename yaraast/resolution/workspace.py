@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from yaraast.errors import YaraASTError
 from yaraast.parser.source import parse_yara_source
-from yaraast.resolution.dependency_graph import DependencyGraph
+from yaraast.resolution.dependency_graph import DependencyGraph, require_rule_lookup_name
 from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace_analysis import WorkspaceAnalyzer
 from yaraast.resolution.workspace_models import FileAnalysisResult, WorkspaceReport
@@ -195,6 +195,7 @@ class Workspace:
 
     def find_rule(self, rule_name: str) -> tuple[str, Rule] | None:
         """Find a rule by name. Returns (file_path, rule) or None."""
+        rule_name = require_rule_lookup_name(rule_name)
         for file_path, resolved in self._iter_resolved_files():
             for rule in resolved.ast.rules:
                 if rule.name == rule_name:

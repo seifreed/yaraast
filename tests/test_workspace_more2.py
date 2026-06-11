@@ -13,6 +13,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Include, Rule
 from yaraast.ast.strings import StringDefinition
+from yaraast.errors import ValidationError
 from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace import (
     FileAnalysisResult,
@@ -104,6 +105,17 @@ def test_workspace_add_file_error_paths_and_getters(tmp_path: Path) -> None:
     assert found is not None and found[0] == str(ok)
     assert isinstance(workspace.get_file_dependencies(str(ok)), set)
     assert isinstance(workspace.get_file_dependents(str(ok)), set)
+
+
+@pytest.mark.parametrize("rule_name", [None, 1, b"ok_rule", object(), "", "   "])
+def test_workspace_find_rule_rejects_invalid_rule_names(
+    tmp_path: Path,
+    rule_name: Any,
+) -> None:
+    workspace = Workspace(str(tmp_path))
+
+    with pytest.raises(ValidationError, match="DependencyGraph rule name"):
+        workspace.find_rule(cast(str, rule_name))
 
 
 def test_workspace_add_file_reports_invalid_utf8(tmp_path: Path) -> None:

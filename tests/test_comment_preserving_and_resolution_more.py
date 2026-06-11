@@ -128,6 +128,16 @@ def test_dependency_graph_transitive_queries_cycles_and_export() -> None:
     assert graph.get_file_dependents("missing") == set()
 
 
+@pytest.mark.parametrize("rule_name", [None, 1, b"rule", object(), "", "   "])
+def test_dependency_graph_rejects_invalid_rule_dependency_names(
+    rule_name: Any,
+) -> None:
+    graph = DependencyGraph()
+
+    with pytest.raises(ValidationError, match="DependencyGraph rule name"):
+        graph.get_rule_dependencies(cast(str, rule_name))
+
+
 def test_dependency_graph_traverses_falsy_present_nodes() -> None:
     class FalsyDependencyNode(DependencyNode):
         def __bool__(self) -> bool:
