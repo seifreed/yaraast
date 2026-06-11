@@ -33,6 +33,14 @@ if TYPE_CHECKING:
     from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 
 
+def _require_optional_rule_name(rule_name: str | None) -> str | None:
+    rule_name = require_optional_string(rule_name, "StringUsageAnalyzer rule name")
+    if rule_name is not None and not rule_name.strip():
+        msg = "StringUsageAnalyzer rule name cannot be empty"
+        raise ValueError(msg)
+    return rule_name
+
+
 class StringUsageAnalyzer(BaseVisitor[None]):
     """Analyze string usage in YARA rules."""
 
@@ -91,7 +99,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
 
     def get_unused_strings(self, rule_name: str | None = None) -> dict[str, list[str]]:
         """Get unused strings for a specific rule or all rules."""
-        rule_name = require_optional_string(rule_name, "StringUsageAnalyzer rule name")
+        rule_name = _require_optional_rule_name(rule_name)
         if rule_name:
             defined = self.defined_strings.get(rule_name, set())
             used = self.used_strings.get(rule_name, set())
@@ -112,7 +120,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         rule_name: str | None = None,
     ) -> dict[str, list[str]]:
         """Get undefined but used strings for a specific rule or all rules."""
-        rule_name = require_optional_string(rule_name, "StringUsageAnalyzer rule name")
+        rule_name = _require_optional_rule_name(rule_name)
         if rule_name:
             defined = self.defined_strings.get(rule_name, set())
             used = self.used_strings.get(rule_name, set())

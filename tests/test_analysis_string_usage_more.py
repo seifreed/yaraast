@@ -199,6 +199,16 @@ def test_string_usage_getters_reject_non_string_rule_names(rule_name: Any) -> No
         analyzer.get_undefined_strings(cast(str, rule_name))
 
 
+@pytest.mark.parametrize("rule_name", ["", "   ", "\t"])
+def test_string_usage_getters_reject_empty_rule_names(rule_name: str) -> None:
+    analyzer = StringUsageAnalyzer()
+
+    with pytest.raises(ValueError, match="StringUsageAnalyzer rule name cannot be empty"):
+        analyzer.get_unused_strings(rule_name)
+    with pytest.raises(ValueError, match="StringUsageAnalyzer rule name cannot be empty"):
+        analyzer.get_undefined_strings(rule_name)
+
+
 def test_string_usage_analyzer_preserves_duplicate_rule_occurrences() -> None:
     ast = Parser().parse("""
 rule dup_first {
