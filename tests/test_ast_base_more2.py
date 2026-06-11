@@ -8,8 +8,19 @@ import pytest
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.expressions import (
+    BooleanLiteral,
+    FunctionCall,
+    Identifier,
+    MemberAccess,
+    StringCount,
+    StringIdentifier,
+    StringLength,
+    StringOffset,
+    StringWildcard,
+)
 from yaraast.ast.extern import ExternRule
+from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexAlternative, HexByte, HexString, HexWildcard, PlainString
@@ -182,6 +193,41 @@ def test_direct_yarafile_analysis_validates_yarax_condition_structure(
     malformed_file = YaraFile(rules=[Rule("bad_yarax", condition=condition)])
 
     with pytest.raises(TypeError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (Identifier(""), "Identifier name cannot be empty"),
+        (StringIdentifier(""), "String identifier cannot be empty"),
+        (StringWildcard(""), "String wildcard pattern cannot be empty"),
+        (StringCount(""), "String count identifier cannot be empty"),
+        (StringOffset(""), "String offset identifier cannot be empty"),
+        (StringLength(""), "String length identifier cannot be empty"),
+        (FunctionCall("", []), "Function name cannot be empty"),
+        (
+            FunctionCall("fn", [cast(Any, object())]),
+            "Function arguments must contain AST nodes",
+        ),
+        (
+            MemberAccess(Identifier("obj"), ""),
+            "MemberAccess member cannot be empty",
+        ),
+        (ModuleReference(""), "ModuleReference module cannot be empty"),
+        (
+            DictionaryAccess(ModuleReference("pe"), ""),
+            "DictionaryAccess key cannot be empty",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_empty_expression_scalars(
+    condition: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_expression", condition=condition)])
+
+    with pytest.raises((TypeError, ValueError), match=message):
         ExpressionOptimizer().optimize(malformed_file)
 
 

@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from yaraast.ast.base import ASTNode, _VisitorType
+from yaraast.ast.base import (
+    ASTNode,
+    _require_ast_node_sequence_type,
+    _require_nonempty_string,
+    _VisitorType,
+)
 
 
 @dataclass
@@ -16,11 +21,30 @@ class Expression(ASTNode):
         return visitor.visit_expression(self)
 
 
+def _require_expression(value: Any, field_name: str) -> Expression:
+    if not isinstance(value, Expression):
+        msg = f"{field_name} must be an Expression"
+        raise TypeError(msg)
+    return value
+
+
+def _validate_expression(value: Any, field_name: str) -> Expression:
+    expression = _require_expression(value, field_name)
+    validate_structure = getattr(expression, "validate_structure", None)
+    if callable(validate_structure):
+        validate_structure()
+    return expression
+
+
 @dataclass
 class Identifier(Expression):
     """Identifier expression."""
 
     name: str
+
+    def validate_structure(self) -> None:
+        """Validate scalar fields before direct analysis."""
+        _require_nonempty_string(self.name, "Identifier name")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_identifier(self)
@@ -32,6 +56,10 @@ class StringIdentifier(Expression):
 
     name: str
 
+    def validate_structure(self) -> None:
+        """Validate scalar fields before direct analysis."""
+        _require_nonempty_string(self.name, "String identifier")
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_identifier(self)
 
@@ -42,6 +70,10 @@ class StringWildcard(Expression):
 
     pattern: str
 
+    def validate_structure(self) -> None:
+        """Validate scalar fields before direct analysis."""
+        _require_nonempty_string(self.pattern, "String wildcard pattern")
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_wildcard(self)
 
@@ -51,6 +83,10 @@ class StringCount(Expression):
     """String count expression (#str)."""
 
     string_id: str
+
+    def validate_structure(self) -> None:
+        """Validate scalar fields before direct analysis."""
+        _require_nonempty_string(self.string_id, "String count identifier")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_count(self)
@@ -63,6 +99,12 @@ class StringOffset(Expression):
     string_id: str
     index: Expression | None = None
 
+    def validate_structure(self) -> None:
+        """Validate scalar fields and optional index before direct analysis."""
+        _require_nonempty_string(self.string_id, "String offset identifier")
+        if self.index is not None:
+            _validate_expression(self.index, "StringOffset.index")
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_offset(self)
 
@@ -73,6 +115,12 @@ class StringLength(Expression):
 
     string_id: str
     index: Expression | None = None
+
+    def validate_structure(self) -> None:
+        """Validate scalar fields and optional index before direct analysis."""
+        _require_nonempty_string(self.string_id, "String length identifier")
+        if self.index is not None:
+            _validate_expression(self.index, "StringLength.index")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_length(self)
@@ -137,6 +185,12 @@ class BinaryExpression(Expression):
     operator: str
     right: Expression
 
+    def validate_structure(self) -> None:
+        """Validate child expressions and operator before direct analysis."""
+        _validate_expression(self.left, "BinaryExpression.left")
+        _require_nonempty_string(self.operator, "BinaryExpression operator")
+        _validate_expression(self.right, "BinaryExpression.right")
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_binary_expression(self)
 
@@ -148,6 +202,11 @@ class UnaryExpression(Expression):
     operator: str
     operand: Expression
 
+    def validate_structure(self) -> None:
+        """Validate child expression and operator before direct analysis."""
+        _require_nonempty_string(self.operator, "UnaryExpression operator")
+        _validate_expression(self.operand, "UnaryExpression.operand")
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_unary_expression(self)
 
@@ -157,6 +216,10 @@ class ParenthesesExpression(Expression):
     """Parentheses expression."""
 
     expression: Expression
+
+    def validate_structure(self) -> None:
+        """Validate wrapped expression before direct analysis."""
+        _validate_expression(self.expression, "ParenthesesExpression.expression")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_parentheses_expression(self)
@@ -168,6 +231,17 @@ class SetExpression(Expression):
 
     elements: list[Expression]
 
+    def validate_structure(self) -> None:
+        """Validate set elements before direct analysis."""
+        _require_ast_node_sequence_type(
+            self.elements,
+            "SetExpression.elements",
+            Expression,
+            "Expression",
+        )
+        for element in self.elements:
+            _validate_expression(element, "SetExpression.elements")
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_set_expression(self)
 
@@ -178,6 +252,11 @@ class RangeExpression(Expression):
 
     low: Expression
     high: Expression
+
+    def validate_structure(self) -> None:
+        """Validate range bounds before direct analysis."""
+        _validate_expression(self.low, "RangeExpression.low")
+        _validate_expression(self.high, "RangeExpression.high")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_range_expression(self)
@@ -198,6 +277,20 @@ class FunctionCall(Expression):
     function: str
     arguments: list[Expression]
     receiver: Expression | None = None
+
+    def validate_structure(self) -> None:
+        """Validate callee and argument expressions before direct analysis."""
+        _require_nonempty_string(self.function, "Function name")
+        _require_ast_node_sequence_type(
+            self.arguments,
+            "Function arguments",
+            Expression,
+            "AST",
+        )
+        for argument in self.arguments:
+            _validate_expression(argument, "FunctionCall.arguments")
+        if self.receiver is not None:
+            _validate_expression(self.receiver, "FunctionCall.receiver")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_function_call(self)
@@ -266,6 +359,11 @@ class ArrayAccess(Expression):
     array: Expression
     index: Expression
 
+    def validate_structure(self) -> None:
+        """Validate array and index expressions before direct analysis."""
+        _validate_expression(self.array, "ArrayAccess.array")
+        _validate_expression(self.index, "ArrayAccess.index")
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_array_access(self)
 
@@ -276,6 +374,11 @@ class MemberAccess(Expression):
 
     object: Expression
     member: str
+
+    def validate_structure(self) -> None:
+        """Validate object expression and member name before direct analysis."""
+        _validate_expression(self.object, "MemberAccess.object")
+        _require_nonempty_string(self.member, "MemberAccess member")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_member_access(self)
