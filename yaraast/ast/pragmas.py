@@ -48,6 +48,9 @@ class PragmaType(Enum):
     def from_string(cls, pragma_str: str) -> PragmaType:
         """Convert string to pragma type."""
         pragma_text = require_string(pragma_str, "Pragma type input")
+        if not pragma_text.strip():
+            msg = "Pragma type input cannot be empty"
+            raise ValueError(msg)
         try:
             return cls(pragma_text.lower())
         except ValueError:

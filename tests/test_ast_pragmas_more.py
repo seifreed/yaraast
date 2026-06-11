@@ -196,6 +196,20 @@ def test_pragma_helpers_reject_invalid_inputs_at_creation_time() -> None:
         with pytest.raises(TypeError, match=message):
             factory()
 
+    empty_cases: list[tuple[Callable[[], object], str]] = [
+        (
+            lambda: PragmaType.from_string("   "),
+            "Pragma type input cannot be empty",
+        ),
+        (
+            lambda: create_pragma(""),
+            "Pragma type input cannot be empty",
+        ),
+    ]
+    for factory, message in empty_cases:
+        with pytest.raises(ValueError, match=message):
+            factory()
+
 
 def test_pragma_accept_methods() -> None:
     class _Visitor:
