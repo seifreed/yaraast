@@ -152,6 +152,21 @@ def test_for_of_accepts_expression_quantifier() -> None:
     assert not isinstance(condition.quantifier, str)
 
 
+@pytest.mark.parametrize("quantifier", ["-1", "~1"])
+def test_for_of_rejects_negative_static_expression_quantifier(quantifier: str) -> None:
+    source = f'rule r {{ strings: $a = "x" condition: for {quantifier} of them : ($) }}'
+    with pytest.raises(ParserError, match="quantifier can not be negative"):
+        Parser().parse(source)
+
+
+def test_for_of_accepts_dynamic_negative_expression_quantifier() -> None:
+    source = 'rule r { strings: $a = "x" condition: for -#a of them : ($) }'
+    ast = Parser().parse(source)
+    condition = ast.rules[0].condition
+    assert isinstance(condition, ForOfExpression)
+    assert not isinstance(condition.quantifier, str)
+
+
 @pytest.mark.parametrize(
     "quantifier",
     [

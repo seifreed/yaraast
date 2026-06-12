@@ -147,6 +147,10 @@ class ExpressionForMixin:
         if isinstance(quantifier, BooleanLiteral | RegexLiteral | StringIdentifier):
             msg = "Expected quantifier after 'for'"
             raise ParserError(msg, token)
+        value = self._static_integer_value(quantifier)
+        if value is not None and value < 0:
+            msg = "For-expression quantifier can not be negative"
+            raise ParserError(msg, token)
 
     def _is_nested_parenthesized_range(self, iterable: Expression) -> bool:
         if not isinstance(iterable, ParenthesesExpression):
