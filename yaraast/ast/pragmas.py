@@ -125,12 +125,13 @@ class Pragma(ASTNode):
 
     def __str__(self) -> str:
         """String representation of pragma."""
+        name = _require_nonempty_string(self.name, "Pragma name")
         arguments = _normalize_arguments(self.arguments)
         args_str = " " + " ".join(arguments) if arguments else ""
 
         if self.pragma_type == PragmaType.PRAGMA:
-            return f"#pragma {self.name}{args_str}"
-        return f"#{self.name}{args_str}"
+            return f"#pragma {name}{args_str}"
+        return f"#{name}{args_str}"
 
 
 @dataclass
@@ -172,9 +173,12 @@ class DefineDirective(Pragma):
             require_string(self.macro_value, "Pragma macro_value")
 
     def __str__(self) -> str:
-        if self.macro_value:
-            return f"#define {self.macro_name} {self.macro_value}"
-        return f"#define {self.macro_name}"
+        macro_name = _require_nonempty_string(self.macro_name, "Pragma macro_name")
+        if self.macro_value is not None:
+            macro_value = require_string(self.macro_value, "Pragma macro_value")
+            if macro_value:
+                return f"#define {macro_name} {macro_value}"
+        return f"#define {macro_name}"
 
 
 @dataclass
@@ -197,7 +201,8 @@ class UndefDirective(Pragma):
         _require_nonempty_string(self.macro_name, "Pragma macro_name")
 
     def __str__(self) -> str:
-        return f"#undef {self.macro_name}"
+        macro_name = _require_nonempty_string(self.macro_name, "Pragma macro_name")
+        return f"#undef {macro_name}"
 
 
 @dataclass
@@ -284,9 +289,10 @@ class CustomPragma(Pragma):
         self.parameters[require_string(key, "Pragma parameter key")] = value
 
     def __str__(self) -> str:
+        name = _require_nonempty_string(self.name, "Pragma name")
         arguments = _normalize_arguments(self.arguments)
         args_str = " " + " ".join(arguments) if arguments else ""
-        return f"#pragma {self.name}{args_str}"
+        return f"#pragma {name}{args_str}"
 
 
 @dataclass

@@ -70,6 +70,30 @@ def test_pragma_string_reprs_reject_invalid_arguments() -> None:
 
 
 @pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (Pragma(PragmaType.PRAGMA, ""), "Pragma name cannot be empty"),
+        (CustomPragma(""), "Pragma name cannot be empty"),
+        (DefineDirective(""), "Pragma macro_name cannot be empty"),
+        (UndefDirective(""), "Pragma macro_name cannot be empty"),
+    ],
+)
+def test_pragma_string_reprs_reject_empty_required_names(
+    node: Pragma,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        str(node)
+
+
+def test_define_string_repr_rejects_invalid_macro_value() -> None:
+    directive = DefineDirective("FLAG", cast(Any, False))
+
+    with pytest.raises(TypeError, match="Pragma macro_value must be a string"):
+        str(directive)
+
+
+@pytest.mark.parametrize(
     ("pragma_type", "condition", "error_type", "message"),
     [
         (PragmaType.IFDEF, "", ValueError, "Pragma condition cannot be empty"),
