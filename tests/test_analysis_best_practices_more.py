@@ -221,6 +221,40 @@ rule them_usage {
     assert unused_messages == []
 
 
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        Identifier("$a"),
+        SetExpression([Identifier("$a")]),
+    ],
+)
+def test_best_practices_treats_identifier_string_set_items_as_usage(
+    string_set: Any,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="identifier_string_set",
+                strings=[
+                    PlainString(identifier="$a", value="needle"),
+                    PlainString(identifier="$unused", value="unused"),
+                ],
+                condition=OfExpression("any", string_set),
+            )
+        ]
+    )
+
+    report = BestPracticesAnalyzer().analyze(ast)
+    unused_messages = [
+        suggestion.message
+        for suggestion in report.suggestions
+        if "defined but never used" in suggestion.message
+    ]
+
+    assert "String '$a' is defined but never used in condition" not in unused_messages
+    assert "String '$unused' is defined but never used in condition" in unused_messages
+
+
 def test_best_practices_keeps_rule_wildcard_sets_out_of_string_usage() -> None:
     ast = Parser().parse("""
 rule alpha_one {

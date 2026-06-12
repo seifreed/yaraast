@@ -435,8 +435,15 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
             for item in string_set:
                 self._visit_string_set_value(item)
             return
-        if isinstance(string_set, Identifier) and string_set.name == "them":
-            self._mark_all_current_rule_strings()
+        if isinstance(string_set, Identifier):
+            name = require_string(string_set.name, "String set identifier")
+            if name == "them":
+                self._mark_all_current_rule_strings()
+                return
+            if name.startswith("$"):
+                self._mark_string_set_text(name)
+                return
+            self._visit_ast_value(string_set)
             return
         if isinstance(string_set, StringLiteral):
             self._mark_string_set_text(string_set.value)
