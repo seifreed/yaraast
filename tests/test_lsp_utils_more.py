@@ -103,6 +103,13 @@ def test_position_offset_roundtrip_uses_lsp_utf16_columns() -> None:
     assert offset_to_position(text, offset) == after_emoji
 
 
+def test_position_to_offset_clamps_lines_beyond_document() -> None:
+    text = "abc\ndef"
+
+    assert position_to_offset(text, Position(line=2, character=0)) == len(text)
+    assert position_to_offset(text, Position(line=99, character=0)) == len(text)
+
+
 @pytest.mark.parametrize("offset", [True, "1", object()])
 def test_offset_to_position_rejects_invalid_offset_types(offset: Any) -> None:
     with pytest.raises(TypeError, match="offset must be an integer"):

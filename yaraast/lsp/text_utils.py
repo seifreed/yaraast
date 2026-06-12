@@ -9,12 +9,12 @@ from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8, utf16_len
 
 def position_to_offset(text: str, position: Position) -> int:
     lines = text.split("\n")
+    if position.line >= len(lines):
+        return len(text)
     offset = 0
     for i in range(position.line):
-        if i < len(lines):
-            offset += len(lines[i]) + 1
-    if position.line < len(lines):
-        offset += utf16_col_to_utf8(lines[position.line], position.character)
+        offset += len(lines[i]) + 1
+    offset += utf16_col_to_utf8(lines[position.line], position.character)
     return offset
 
 
