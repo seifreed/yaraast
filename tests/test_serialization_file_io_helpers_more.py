@@ -89,3 +89,16 @@ def test_file_io_helpers_reject_directory_paths(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="input_path must not be a directory"):
         require_input_path(directory, "input_path")
+
+
+def test_file_io_helpers_reject_inaccessible_paths() -> None:
+    path = "a" * 5000
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        read_utf8(path)
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        write_utf8(path, "content")
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        require_input_path(path, "input_path")

@@ -6,6 +6,29 @@ from os import PathLike, fspath
 from pathlib import Path
 
 
+def _path_access_error(path: Path) -> ValueError:
+    msg = f"path could not be accessed: {path}"
+    return ValueError(msg)
+
+
+def _path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_exists_and_is_dir(path: Path) -> bool:
+    return _path_exists(path) and _path_is_dir(path)
+
+
 def _require_file_path(path: object) -> Path:
     if isinstance(path, bool) or not isinstance(path, str | PathLike):
         msg = "path must be a file path"
@@ -18,7 +41,7 @@ def _require_file_path(path: object) -> Path:
         msg = "path must not be empty"
         raise ValueError(msg)
     path_obj = Path(raw_path)
-    if path_obj.exists() and path_obj.is_dir():
+    if _path_exists_and_is_dir(path_obj):
         msg = "path must not be a directory"
         raise ValueError(msg)
     return path_obj
@@ -29,6 +52,9 @@ def read_utf8(path: str | Path) -> str:
     try:
         with _require_file_path(path).open(encoding="utf-8") as handle:
             return handle.read()
+    except OSError as exc:
+        msg = f"path could not be accessed: {path}"
+        raise ValueError(msg) from exc
     except UnicodeDecodeError as exc:
         msg = "file must contain valid UTF-8 text"
         raise ValueError(msg) from exc
@@ -44,5 +70,9 @@ def write_utf8(path: str | Path, text: str) -> None:
     except UnicodeEncodeError as exc:
         msg = "text must be UTF-8 encodable"
         raise ValueError(msg) from exc
-    with _require_file_path(path).open("w", encoding="utf-8") as handle:
-        handle.write(text)
+    try:
+        with _require_file_path(path).open("w", encoding="utf-8") as handle:
+            handle.write(text)
+    except OSError as exc:
+        msg = f"path could not be accessed: {path}"
+        raise ValueError(msg) from exc
