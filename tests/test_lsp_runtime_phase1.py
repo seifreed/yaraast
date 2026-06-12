@@ -195,6 +195,31 @@ def test_workspace_index_rejects_invalid_document_mutation_inputs() -> None:
     assert index.search_records("") == []
 
 
+@pytest.mark.parametrize(
+    ("persisted_symbols", "message"),
+    [
+        (cast(Any, []), "Workspace index persisted_symbols must be a dictionary"),
+        ({cast(Any, object()): []}, "Workspace index URI must be a string"),
+        ({"file:///sample.yar": cast(Any, object())}, "Workspace index symbols must be a list"),
+        (
+            {"file:///sample.yar": [cast(Any, object())]},
+            "Workspace index symbol must be a SymbolRecord",
+        ),
+    ],
+)
+def test_workspace_index_save_rejects_invalid_persisted_symbols(
+    tmp_path: Path,
+    persisted_symbols: Any,
+    message: str,
+) -> None:
+    index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
+    index.persisted_symbols = persisted_symbols
+
+    with pytest.raises(TypeError, match=message):
+        index.save()
+
+
 def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
     tmp_path: Path,
 ) -> None:

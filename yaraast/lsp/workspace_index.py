@@ -36,6 +36,26 @@ def _normalize_excluded_uris(exclude_uris: object) -> set[str]:
     return exclude_uris
 
 
+def _validated_persisted_symbols(value: object) -> dict[str, list[SymbolRecord]]:
+    if not isinstance(value, dict):
+        msg = "Workspace index persisted_symbols must be a dictionary"
+        raise TypeError(msg)
+    records: dict[str, list[SymbolRecord]] = {}
+    for uri, symbols in value.items():
+        if not isinstance(uri, str):
+            msg = "Workspace index URI must be a string"
+            raise TypeError(msg)
+        if not isinstance(symbols, list):
+            msg = "Workspace index symbols must be a list"
+            raise TypeError(msg)
+        for symbol in symbols:
+            if not isinstance(symbol, SymbolRecord):
+                msg = "Workspace index symbol must be a SymbolRecord"
+                raise TypeError(msg)
+        records[uri] = list(symbols)
+    return records
+
+
 class WorkspaceIndex:
     """Workspace-wide view built on top of cached documents."""
 
@@ -94,10 +114,11 @@ class WorkspaceIndex:
         if cache_path is None:
             return
         cache_path.parent.mkdir(parents=True, exist_ok=True)
+        persisted_symbols = _validated_persisted_symbols(self.persisted_symbols)
         payload = {
             "symbols": {
                 uri: [symbol.to_dict() for symbol in symbols]
-                for uri, symbols in self.persisted_symbols.items()
+                for uri, symbols in persisted_symbols.items()
             }
         }
         cache_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
