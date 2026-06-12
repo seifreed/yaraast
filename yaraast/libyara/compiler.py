@@ -69,6 +69,14 @@ def normalize_libyara_includes(includes: dict[str, str] | None) -> dict[str, str
     return normalized
 
 
+def require_error_on_warning(error_on_warning: object) -> bool:
+    """Validate the libyara warning policy flag."""
+    if not isinstance(error_on_warning, bool):
+        msg = "error_on_warning must be a boolean"
+        raise TypeError(msg)
+    return error_on_warning
+
+
 @dataclass
 class CompilationResult:
     """Result of compiling AST to libyara."""
@@ -221,6 +229,7 @@ class LibyaraCompiler:
         includes: dict[str, str] | None,
         error_on_warning: bool,
     ) -> dict[str, Any]:
+        error_on_warning = require_error_on_warning(error_on_warning)
         kwargs: dict[str, Any] = {
             "externals": self.externals,
             "error_on_warning": error_on_warning,

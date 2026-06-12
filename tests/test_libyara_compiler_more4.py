@@ -79,6 +79,29 @@ def test_libyara_compile_source_reports_invalid_include_mapping() -> None:
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.parametrize("error_on_warning", [None, 1, "yes", object()])
+def test_libyara_compilers_reject_invalid_error_on_warning_values(
+    error_on_warning: Any,
+) -> None:
+    source = "rule ok { condition: true }\n"
+    ast = parse_yara_source(source)
+
+    base_result = LibyaraCompiler().compile_source(
+        source,
+        error_on_warning=cast(bool, error_on_warning),
+    )
+    direct_result = DirectASTCompiler(enable_optimization=False).compile_ast(
+        ast,
+        error_on_warning=cast(bool, error_on_warning),
+    )
+
+    assert base_result.success is False
+    assert base_result.errors == ["error_on_warning must be a boolean"]
+    assert direct_result.success is False
+    assert direct_result.errors == ["error_on_warning must be a boolean"]
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 def test_libyara_compiler_compile_file_success_and_save(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
 
