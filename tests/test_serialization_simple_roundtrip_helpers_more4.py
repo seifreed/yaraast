@@ -696,6 +696,9 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma name must not be empty"):
         deserialize_node(_serialized_simple_pragma(name=""))
 
+    with pytest.raises(SerializationError, match="Pragma name must not be empty"):
+        deserialize_node(_serialized_simple_pragma(name="   "))
+
     with pytest.raises(SerializationError, match="Pragma arguments must be a list of strings"):
         deserialize_node(_serialized_simple_pragma(arguments="on"))
 
