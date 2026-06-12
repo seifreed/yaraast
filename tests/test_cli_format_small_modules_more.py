@@ -133,6 +133,19 @@ def test_format_command_rejects_empty_output_file(tmp_path: Path) -> None:
     assert "Formatted YARA file written" not in result.output
 
 
+def test_format_command_rejects_inaccessible_output_file(tmp_path: Path) -> None:
+    runner = CliRunner()
+    input_file = tmp_path / "input.yar"
+    input_file.write_text("rule fmt { condition: true }", encoding="utf-8")
+
+    result = runner.invoke(format_yara, [str(input_file), "a" * 5000])
+
+    assert result.exit_code == 2
+    assert "path could not be accessed" in result.output
+    assert "Errno" not in result.output
+    assert "Formatted YARA file written" not in result.output
+
+
 def test_format_commands_reject_directory_input(tmp_path: Path) -> None:
     runner = CliRunner()
     input_dir = tmp_path / "rules"

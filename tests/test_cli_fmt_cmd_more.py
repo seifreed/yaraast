@@ -116,6 +116,20 @@ def test_fmt_cmd_rejects_directory_output(tmp_path: Path) -> None:
     assert source.read_text(encoding="utf-8") == original
 
 
+def test_fmt_cmd_rejects_inaccessible_output(tmp_path: Path) -> None:
+    runner = CliRunner()
+    source = tmp_path / "source.yar"
+    original = 'rule x { strings: $a = "x" condition: $a }\n'
+    source.write_text(original, encoding="utf-8")
+
+    result = runner.invoke(fmt, [str(source), "--output", "a" * 5000])
+
+    assert result.exit_code == 2
+    assert "path could not be accessed" in result.output
+    assert "Errno" not in result.output
+    assert source.read_text(encoding="utf-8") == original
+
+
 def test_fmt_cmd_rejects_directory_input(tmp_path: Path) -> None:
     runner = CliRunner()
     input_dir = tmp_path / "rules"

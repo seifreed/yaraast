@@ -22,7 +22,7 @@ from yaraast.cli.optimize_services import (
     optimize_ast,
     parse_yara_with_tolerance,
 )
-from yaraast.cli.utils import _require_file_path, read_text
+from yaraast.cli.utils import _path_exists_and_is_dir, _require_file_path, read_text
 
 console = Console()
 
@@ -30,13 +30,13 @@ console = Console()
 def _validate_output_path(output_file: str | None) -> Path:
     try:
         output_path = _require_file_path(output_file)
+        if _path_exists_and_is_dir(output_path):
+            raise click.BadParameter(
+                "output path must not be a directory",
+                param_hint="OUTPUT_FILE",
+            )
     except (TypeError, ValueError) as exc:
         raise click.BadParameter(str(exc), param_hint="OUTPUT_FILE") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter(
-            "output path must not be a directory",
-            param_hint="OUTPUT_FILE",
-        )
     return output_path
 
 

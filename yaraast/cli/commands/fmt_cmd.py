@@ -14,7 +14,7 @@ from yaraast.cli.fmt_reporting import (
     display_format_result,
 )
 from yaraast.cli.fmt_services import check_format, format_file, format_for_diff, get_formatter
-from yaraast.cli.utils import _require_file_path, print_cli_error
+from yaraast.cli.utils import _path_exists_and_is_dir, _require_file_path, print_cli_error
 
 console = Console()
 
@@ -24,10 +24,10 @@ def _validate_output_path(input_path: Path, output: str | None) -> Path:
         return input_path
     try:
         output_path = _require_file_path(output)
+        if _path_exists_and_is_dir(output_path):
+            raise click.BadParameter("output path must not be a directory", param_hint="--output")
     except (TypeError, ValueError) as exc:
         raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
     return output_path
 
 

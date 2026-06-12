@@ -82,3 +82,24 @@ rule sample {
     assert result.exit_code == 2
     assert "path must not be empty" in result.output
     assert "Optimizing" not in result.output
+
+
+def test_optimize_command_rejects_inaccessible_output_path(tmp_path: Path) -> None:
+    runner = CliRunner()
+    src = tmp_path / "rule.yar"
+    _write(
+        src,
+        """
+rule sample {
+    condition:
+        true
+}
+""",
+    )
+
+    result = runner.invoke(optimize, [str(src), "a" * 5000])
+
+    assert result.exit_code == 2
+    assert "path could not be accessed" in result.output
+    assert "Errno" not in result.output
+    assert "Optimizing" not in result.output
