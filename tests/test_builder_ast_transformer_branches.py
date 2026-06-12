@@ -376,6 +376,40 @@ def test_rule_transformer_renames_string_literals_inside_string_sets() -> None:
     assert nested_item.value == "$renamed"
 
 
+def test_rule_transformer_renames_identifier_string_set_items() -> None:
+    rule = Rule(
+        name="identifier_string_sets",
+        strings=[
+            PlainString(identifier="$a", value="1"),
+            PlainString(identifier="$b", value="2"),
+        ],
+        condition=SetExpression(
+            [
+                OfExpression("any", Identifier("$a")),
+                ForOfExpression(
+                    "any",
+                    SetExpression([Identifier("$a"), Identifier("$b")]),
+                    condition=None,
+                ),
+            ]
+        ),
+    )
+
+    transformed = RuleTransformer(rule).rename_strings({"$a": "$renamed", "$b": "$other"}).build()
+
+    assert isinstance(transformed.condition, SetExpression)
+    of_expr, for_of_expr = transformed.condition.elements
+    assert isinstance(of_expr, OfExpression)
+    assert isinstance(of_expr.string_set, Identifier)
+    assert of_expr.string_set.name == "$renamed"
+    assert isinstance(for_of_expr, ForOfExpression)
+    assert isinstance(for_of_expr.string_set, SetExpression)
+    renamed_items = for_of_expr.string_set.elements
+    assert all(isinstance(item, Identifier) for item in renamed_items)
+    renamed_identifiers = cast(list[Identifier], renamed_items)
+    assert [item.name for item in renamed_identifiers] == ["$renamed", "$other"]
+
+
 def test_rule_transformer_rejects_duplicate_string_renames_without_partial_update() -> None:
     rule = Rule(
         name="duplicate_rename",

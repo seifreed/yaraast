@@ -11,6 +11,7 @@ from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, 
 from yaraast.ast.expressions import (
     BinaryExpression,
     Expression,
+    Identifier,
     ParenthesesExpression,
     SetExpression,
     StringCount,
@@ -421,6 +422,10 @@ class RuleTransformer:
     ) -> object:
         if isinstance(value, str):
             return self._rename_string_pattern(value, mapping)
+        if isinstance(value, Identifier):
+            if isinstance(value.name, str) and value.name.startswith("$"):
+                value.name = self._rename_string_reference(value.name, mapping)
+            return value
         if isinstance(value, StringLiteral):
             value.value = self._rename_string_pattern(value.value, mapping)
             return value
