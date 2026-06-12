@@ -13,6 +13,7 @@ from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
     _validate_location_metadata,
     _validate_string_reference_text,
+    _validate_yara_identifier_text,
 )
 from yaraast.serialization.json_serialize_visitors import (
     _serialize_anonymous_flag,
@@ -331,7 +332,10 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_tag(self, node) -> dict[str, Any]:
         return self._simple_node(
             "Tag",
-            name=_serialize_required_nonempty_string(node.name, "Tag name"),
+            name=_validate_yara_identifier_text(
+                _serialize_required_nonempty_string(node.name, "Tag name"),
+                "tag",
+            ),
         )
 
     def visit_string_definition(self, node) -> dict[str, Any]:

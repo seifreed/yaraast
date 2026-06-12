@@ -298,11 +298,17 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Rule name must not be empty"):
         deserialize_rule(_serialized_simple_rule(name=""))
 
+    with pytest.raises(SerializationError, match="Invalid rule identifier"):
+        deserialize_rule(_serialized_simple_rule(name="bad-name"))
+
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         deserialize_node({"type": "Tag", "name": 7})
 
     with pytest.raises(SerializationError, match="Tag name must not be empty"):
         deserialize_node({"type": "Tag", "name": ""})
+
+    with pytest.raises(SerializationError, match="Invalid tag identifier"):
+        deserialize_node({"type": "Tag", "name": "bad-name"})
 
     with pytest.raises(SerializationError, match="Meta key must be a string"):
         deserialize_meta({"key": ["author"], "value": "me"})
@@ -337,6 +343,9 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
 
     with pytest.raises(SerializationError, match="Tag name must not be empty"):
         deserialize_rule(_serialized_simple_rule(tags=[""]))
+
+    with pytest.raises(SerializationError, match="Invalid tag identifier"):
+        deserialize_rule(_serialized_simple_rule(tags=[{"name": "bad-name"}]))
 
 
 def test_simple_roundtrip_unknown_node_payloads_are_rejected() -> None:
@@ -2019,6 +2028,7 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
         (Tag(""), "Tag name must not be empty"),
         (Tag("   "), "Tag name must not be empty"),
         (Tag(cast(Any, 123)), "Tag name must be a string"),
+        (Tag("bad-name"), "Invalid tag identifier"),
         (Comment(cast(Any, 123)), "Comment text must be a string"),
         (
             Comment("note", is_multiline=cast(Any, "false")),
@@ -2027,6 +2037,7 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
         (Rule("", condition=BooleanLiteral(True)), "Rule name must not be empty"),
         (Rule("   ", condition=BooleanLiteral(True)), "Rule name must not be empty"),
         (Rule(cast(Any, 123), condition=BooleanLiteral(True)), "Rule name must be a string"),
+        (Rule("bad-name", condition=BooleanLiteral(True)), "Invalid rule identifier"),
         (ExternRule(""), "ExternRule name must not be empty"),
         (ExternRule(cast(Any, 123)), "ExternRule name must be a string"),
         (ExternRule("remote", namespace=""), "ExternRule namespace must not be empty"),

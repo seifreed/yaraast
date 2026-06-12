@@ -16,6 +16,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_text,
     _validate_loop_variable_text,
     _validate_string_reference_text,
+    _validate_yara_identifier_text,
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.pragma_scopes import serialize_pragma_scope
@@ -547,7 +548,10 @@ def visit_rule(serializer, node) -> dict[str, Any]:
 
     return {
         "type": "Rule",
-        "name": _serialize_required_nonempty_string(node.name, "Rule name"),
+        "name": _validate_yara_identifier_text(
+            _serialize_required_nonempty_string(node.name, "Rule name"),
+            "rule",
+        ),
         "modifiers": _serialize_rule_modifiers(node.modifiers),
         "tags": _serialize_node_list(serializer, node.tags, "Rule tags", Tag),
         "meta": _serialize_meta_list(serializer, node.meta),

@@ -10,7 +10,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.expressions import StringLiteral
 from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
 from yaraast.parser import Parser
@@ -90,7 +90,7 @@ def test_json_serializer_rejects_empty_output_path() -> None:
 
 def test_json_serializer_rejects_non_utf8_encodable_output(tmp_path: Path) -> None:
     serializer = JsonSerializer(include_metadata=False)
-    ast = YaraFile(rules=[Rule("\ud800", condition=BooleanLiteral(True))])
+    ast = YaraFile(rules=[Rule("invalid_output", condition=StringLiteral("\ud800"))])
 
     with pytest.raises(SerializationError, match="JSON output must be UTF-8 encodable"):
         serializer.serialize(ast)

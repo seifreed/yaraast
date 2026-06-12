@@ -655,6 +655,10 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
             "Rule name must not be empty",
         ),
         (
+            YaraFile(rules=[Rule(name="bad-name", condition=BooleanLiteral(True))]),
+            "Invalid rule identifier",
+        ),
+        (
             YaraFile(
                 rules=[
                     Rule(
@@ -677,6 +681,18 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
                 ]
             ),
             "Tag name must not be empty",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="invalid_tag",
+                        tags=[Tag(name="bad-name")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Invalid tag identifier",
         ),
         (
             YaraFile(

@@ -1485,12 +1485,20 @@ def test_protobuf_serializer_rejects_unknown_pragma_type() -> None:
             "Rule name must not be empty",
         ),
         (
+            YaraFile(rules=[Rule("bad-name", condition=BooleanLiteral(True))]),
+            "Invalid rule identifier",
+        ),
+        (
             YaraFile(rules=[Rule("r", tags=[Tag("")], condition=BooleanLiteral(True))]),
             "Tag name must not be empty",
         ),
         (
             YaraFile(rules=[Rule("r", tags=[Tag("   ")], condition=BooleanLiteral(True))]),
             "Tag name must not be empty",
+        ),
+        (
+            YaraFile(rules=[Rule("r", tags=[Tag("bad-name")], condition=BooleanLiteral(True))]),
+            "Invalid tag identifier",
         ),
         (
             YaraFile(
@@ -1586,8 +1594,10 @@ def test_protobuf_serializer_rejects_empty_top_level_identifier_fields(
         ("include_whitespace", "Include path must not be empty"),
         ("rule", "Rule name must not be empty"),
         ("rule_whitespace", "Rule name must not be empty"),
+        ("rule_invalid", "Invalid rule identifier"),
         ("tag", "Tag name must not be empty"),
         ("tag_whitespace", "Tag name must not be empty"),
+        ("tag_invalid", "Invalid tag identifier"),
         ("string", "PlainString identifier must not be empty"),
         ("string_whitespace", "PlainString identifier must not be empty"),
         ("extern_rule", "ExternRule name must not be empty"),
@@ -1616,6 +1626,10 @@ def test_protobuf_deserializer_rejects_empty_top_level_identifier_fields(
         pb_rule = pb_file.rules.add()
         pb_rule.name = "   "
         pb_rule.condition.boolean_literal.value = True
+    elif payload_kind == "rule_invalid":
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "bad-name"
+        pb_rule.condition.boolean_literal.value = True
     elif payload_kind == "tag":
         pb_rule = pb_file.rules.add()
         pb_rule.name = "r"
@@ -1626,6 +1640,11 @@ def test_protobuf_deserializer_rejects_empty_top_level_identifier_fields(
         pb_rule.name = "r"
         pb_rule.condition.boolean_literal.value = True
         pb_rule.tags.add().name = "   "
+    elif payload_kind == "tag_invalid":
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "r"
+        pb_rule.condition.boolean_literal.value = True
+        pb_rule.tags.add().name = "bad-name"
     elif payload_kind == "string":
         pb_rule = pb_file.rules.add()
         pb_rule.name = "r"

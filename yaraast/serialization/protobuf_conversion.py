@@ -17,6 +17,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_location_metadata,
     _validate_loop_variable_text,
     _validate_string_reference_text,
+    _validate_yara_identifier_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -317,7 +318,10 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
     from yaraast.ast.pragmas import InRulePragma
     from yaraast.ast.rules import Tag
 
-    pb_rule.name = _protobuf_required_nonempty_string(rule.name, "Rule name")
+    pb_rule.name = _validate_yara_identifier_text(
+        _protobuf_required_nonempty_string(rule.name, "Rule name"),
+        "rule",
+    )
     pb_rule.modifiers.extend(
         _protobuf_modifier_name(modifier, "Rule modifier")
         for modifier in _protobuf_rule_modifier_list(rule.modifiers, "Rule modifiers")
@@ -326,7 +330,10 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
 
     for tag in _protobuf_node_list(rule.tags, "Rule tags", Tag):
         pb_tag = pb_rule.tags.add()
-        pb_tag.name = _protobuf_required_nonempty_string(tag.name, "Tag name")
+        pb_tag.name = _validate_yara_identifier_text(
+            _protobuf_required_nonempty_string(tag.name, "Tag name"),
+            "tag",
+        )
         _copy_node_metadata_to_protobuf(tag, pb_tag)
 
     for entry in _protobuf_node_list(rule.meta, "Rule meta", (Meta, MetaEntry)):
@@ -1804,9 +1811,12 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
                 _apply_node_metadata_from_protobuf(
                     pb_tag,
                     Tag(
-                        name=_protobuf_required_nonempty_string(
-                            pb_tag.name,
-                            "Tag name",
+                        name=_validate_yara_identifier_text(
+                            _protobuf_required_nonempty_string(
+                                pb_tag.name,
+                                "Tag name",
+                            ),
+                            "tag",
                         ),
                     ),
                 )
@@ -1843,7 +1853,10 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
         pragmas_for_rule = [protobuf_to_in_rule_pragma(pb_pragma) for pb_pragma in pb_rule.pragmas]
 
         rule = Rule(
-            name=_protobuf_required_nonempty_string(pb_rule.name, "Rule name"),
+            name=_validate_yara_identifier_text(
+                _protobuf_required_nonempty_string(pb_rule.name, "Rule name"),
+                "rule",
+            ),
             modifiers=_protobuf_modifier_names_from_protobuf(
                 pb_rule.modifiers,
                 "Rule modifier",

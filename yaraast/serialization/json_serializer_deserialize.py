@@ -34,6 +34,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_text,
     _validate_loop_variable_text,
     _validate_string_reference_text,
+    _validate_yara_identifier_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -1171,7 +1172,10 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             Rule(
-                name=_deserialize_nonempty_string_field(data, "name", "Rule"),
+                name=_validate_yara_identifier_text(
+                    _deserialize_nonempty_string_field(data, "name", "Rule"),
+                    "rule",
+                ),
                 modifiers=[
                     _normalize_rule_modifier_text(modifier, "Rule")
                     for modifier in _deserialize_required_nonempty_string_list_field(
@@ -1196,7 +1200,13 @@ class JsonSerializerDeserializeMixin:
             msg = "Rule tags must contain Tag nodes"
             raise SerializationError(msg)
         return self._apply_node_metadata(
-            Tag(name=_deserialize_nonempty_string_field(data, "name", "Tag")), data
+            Tag(
+                name=_validate_yara_identifier_text(
+                    _deserialize_nonempty_string_field(data, "name", "Tag"),
+                    "tag",
+                )
+            ),
+            data,
         )
 
     def _deserialize_meta(self, data: dict[str, Any]):

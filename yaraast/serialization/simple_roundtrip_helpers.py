@@ -102,6 +102,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_location_metadata,
     _validate_loop_variable_text,
     _validate_string_reference_text,
+    _validate_yara_identifier_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -709,20 +710,28 @@ def _serialize_meta_entry_value(value: Any) -> str | int | bool | float:
 
 def _deserialize_rule_tag(value: Any) -> Tag:
     if isinstance(value, Tag):
-        _serialize_required_nonempty_string(value.name, "Tag name")
+        _validate_yara_identifier_text(
+            _serialize_required_nonempty_string(value.name, "Tag name"),
+            "tag",
+        )
         return value
     if isinstance(value, str):
         if not value:
             msg = "Tag name must not be empty"
             raise SerializationError(msg)
-        return Tag(name=value)
+        return Tag(name=_validate_yara_identifier_text(value, "tag"))
     if isinstance(value, dict):
         node_type = value.get("type")
         if node_type is not None and node_type != "Tag":
             msg = "Rule tags must contain Tag nodes"
             raise SerializationError(msg)
         return _apply_node_metadata(
-            Tag(name=_deserialize_nonempty_string_field(value, "name", "Tag")),
+            Tag(
+                name=_validate_yara_identifier_text(
+                    _deserialize_nonempty_string_field(value, "name", "Tag"),
+                    "tag",
+                )
+            ),
             value,
         )
     msg = "Tag name must be a string"
@@ -1129,7 +1138,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, Tag):
         return {
             "type": "Tag",
-            "name": _serialize_required_nonempty_string(node.name, "Tag name"),
+            "name": _validate_yara_identifier_text(
+                _serialize_required_nonempty_string(node.name, "Tag name"),
+                "tag",
+            ),
         }
     if isinstance(node, Meta):
         return serialize_meta(node)
@@ -1642,7 +1654,10 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
     """Serialize a Rule."""
     data: dict[str, Any] = {
         "type": "Rule",
-        "name": _serialize_required_nonempty_string(rule.name, "Rule name"),
+        "name": _validate_yara_identifier_text(
+            _serialize_required_nonempty_string(rule.name, "Rule name"),
+            "rule",
+        ),
         "modifiers": _serialize_rule_modifiers(rule.modifiers, "Rule"),
         "condition": serialize_node(rule.condition) if rule.condition is not None else None,
     }
@@ -1711,7 +1726,10 @@ def _serialize_rule_tags(tags: Any) -> list[Any]:
         if isinstance(tag, Tag):
             data = {
                 "type": "Tag",
-                "name": _serialize_required_nonempty_string(tag.name, "Tag name"),
+                "name": _validate_yara_identifier_text(
+                    _serialize_required_nonempty_string(tag.name, "Tag name"),
+                    "tag",
+                ),
             }
             if _node_has_roundtrip_metadata(tag):
                 serialized.append(_with_node_metadata(tag, data))
@@ -1894,7 +1912,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "Include":
         return Include(_deserialize_nonempty_string_field(data, "path", "Include"))
     if node_type == "Tag":
-        return Tag(_deserialize_nonempty_string_field(data, "name", "Tag"))
+        return Tag(
+            _validate_yara_identifier_text(
+                _deserialize_nonempty_string_field(data, "name", "Tag"),
+                "tag",
+            )
+        )
     if node_type in {"Meta", "MetaEntry"}:
         return deserialize_meta(data)
     if node_type == "Comment":
@@ -2442,7 +2465,10 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     condition_data = _deserialize_required_field(data, "condition", "Rule")
     condition = _deserialize_optional_node_value(condition_data, "Rule condition")
     rule = Rule(
-        name=_deserialize_nonempty_string_field(data, "name", "Rule"),
+        name=_validate_yara_identifier_text(
+            _deserialize_nonempty_string_field(data, "name", "Rule"),
+            "rule",
+        ),
         modifiers=_deserialize_rule_modifiers(
             _deserialize_required_nonempty_string_list_field(data, "modifiers", "Rule"),
             "Rule",
