@@ -530,28 +530,36 @@ class AstHasher(ASTVisitor[str]):
         return pragma_type in {"custom", "include_once"}
 
     def visit_meta(self, node) -> str:
+        _validate_real_ast_node(node)
         return f"Meta({node.key},{_meta_value_repr(node.value)})"
 
     def visit_module_reference(self, node) -> str:
+        _validate_real_expression(node)
         return f"ModRef({node.module})"
 
     def visit_dictionary_access(self, node) -> str:
+        _validate_real_expression(node)
         return f"Dict({self.visit(node.object)},{self._hash_value(node.key)})"
 
     def visit_comment(self, node) -> str:
+        _validate_real_ast_node(node)
         return f"Comment({node.text},{node.is_multiline})"
 
     def visit_comment_group(self, node) -> str:
+        _validate_real_ast_node(node)
         comments = "|".join(self.visit(c) for c in node.comments)
         return f"CommentGroup({comments})"
 
     def visit_defined_expression(self, node) -> str:
+        _validate_real_expression(node)
         return f"Defined({self.visit(node.expression)})"
 
     def visit_string_operator_expression(self, node) -> str:
+        _validate_real_expression(node)
         return f"StrOp({self.visit(node.left)},{node.operator},{self.visit(node.right)})"
 
     def visit_extern_import(self, node) -> str:
+        _validate_real_ast_node(node)
         if hasattr(node, "module"):
             module_path = _string_attr_or_empty(node, "module", "ExternImport module")
         else:
@@ -565,17 +573,20 @@ class AstHasher(ASTVisitor[str]):
         return f"ExternImport({module_path},{alias},{rules})"
 
     def visit_extern_namespace(self, node) -> str:
+        _validate_real_ast_node(node)
         rules = "|".join(sorted(self.visit(rule) for rule in getattr(node, "extern_rules", [])))
         name = _string_attr_or_empty(node, "name", "ExternNamespace name")
         return f"ExternNamespace({name},{rules})"
 
     def visit_extern_rule(self, node) -> str:
+        _validate_real_ast_node(node)
         modifiers = "|".join(sorted(str(mod) for mod in getattr(node, "modifiers", [])))
         name = _string_attr_or_empty(node, "name", "ExternRule name")
         namespace = _optional_string_attr(node, "namespace", "ExternRule namespace")
         return f"ExternRule({name},{modifiers},{namespace})"
 
     def visit_extern_rule_reference(self, node) -> str:
+        _validate_real_expression(node)
         if hasattr(node, "name"):
             rule_name = _string_attr_or_empty(node, "name", "ExternRuleReference name")
         else:
@@ -588,6 +599,7 @@ class AstHasher(ASTVisitor[str]):
         return f"ExternRuleRef({rule_name},{namespace})"
 
     def visit_in_rule_pragma(self, node) -> str:
+        _validate_real_ast_node(node)
         pragma = getattr(node, "pragma", "")
         pragma_hash = self._hash_value(pragma)
         position = _optional_string_attr(node, "position", "InRulePragma position")
@@ -616,6 +628,7 @@ class AstHasher(ASTVisitor[str]):
         return f"Pragma({node.pragma_type.value},{node.name},{args}," f"{node.scope.value},{extra})"
 
     def visit_pragma_block(self, node) -> str:
+        _validate_real_ast_node(node)
         pragmas = (
             ",".join([self.visit(p) for p in node.pragmas]) if hasattr(node, "pragmas") else ""
         )

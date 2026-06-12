@@ -9,6 +9,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -28,9 +29,12 @@ from yaraast.ast.expressions import (
     StringLiteral,
     StringWildcard,
 )
-from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
+from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier, StringModifier
-from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaType
+from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
+from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaBlock, PragmaType
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import (
     HexAlternative,
@@ -674,6 +678,65 @@ def test_ast_hasher_rejects_invalid_real_condition_state(
 )
 def test_ast_hasher_rejects_invalid_real_yarax_state(node: Any, message: str) -> None:
     with pytest.raises(TypeError, match=message):
+        AstHasher().visit(node)
+
+
+@pytest.mark.parametrize(
+    ("node", "error_type", "message"),
+    [
+        (Meta(cast(Any, object()), "value"), TypeError, "Meta key must be a string"),
+        (ModuleReference(""), ValueError, "ModuleReference module cannot be empty"),
+        (
+            DictionaryAccess(cast(Any, object()), "key"),
+            TypeError,
+            "DictionaryAccess.object must be an Expression",
+        ),
+        (Comment(cast(Any, object())), TypeError, "Comment text must be a string"),
+        (
+            CommentGroup([cast(Any, object())]),
+            TypeError,
+            "CommentGroup comments must contain Comment nodes",
+        ),
+        (
+            DefinedExpression(cast(Any, object())),
+            TypeError,
+            "DefinedExpression expression must be an AST expression",
+        ),
+        (
+            StringOperatorExpression(Identifier("a"), "", StringLiteral("b")),
+            ValueError,
+            "StringOperatorExpression operator must not be empty",
+        ),
+        (ExternImport(""), ValueError, "ExternImport module_path cannot be empty"),
+        (
+            ExternNamespace("ns", [cast(Any, object())]),
+            TypeError,
+            "ExternNamespace extern_rules item must be ExternRule",
+        ),
+        (ExternRule(""), ValueError, "ExternRule name cannot be empty"),
+        (
+            ExternRuleReference(""),
+            ValueError,
+            "ExternRuleReference rule_name cannot be empty",
+        ),
+        (
+            InRulePragma(cast(Any, object())),
+            TypeError,
+            "InRulePragma pragma must be a Pragma",
+        ),
+        (
+            PragmaBlock([cast(Any, object())]),
+            TypeError,
+            "PragmaBlock pragmas must contain Pragma nodes",
+        ),
+    ],
+)
+def test_ast_hasher_rejects_invalid_real_misc_state(
+    node: Any,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
         AstHasher().visit(node)
 
 
