@@ -161,7 +161,12 @@ def _render_string_set_item(gen: Any, item: Any) -> str:
 
     if isinstance(item, StringLiteral):
         return validate_string_set_item_text(item.value)
-    if isinstance(item, Identifier | StringWildcard):
+    if isinstance(item, Identifier):
+        name = _require_string_set_field(item.name, "String set identifier")
+        if name.startswith("$"):
+            return validate_string_set_item_text(name)
+        return cast(str, gen.visit(item))
+    if isinstance(item, StringWildcard):
         return cast(str, gen.visit(item))
     if not _is_string_set_item(item):
         _reject_invalid_string_set_item()

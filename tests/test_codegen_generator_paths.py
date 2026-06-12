@@ -97,6 +97,12 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
     )
     assert gen.visit(of_node_list) == "any of ($a, $b)"
 
+    of_identifier_set = OfExpression(
+        quantifier="any",
+        string_set=SetExpression([Identifier("$a"), Identifier("$b")]),
+    )
+    assert gen.visit(of_identifier_set) == "any of ($a, $b)"
+
     of_wildcard = OfExpression(quantifier="any", string_set=StringWildcard("$a*"))
     assert gen.visit(of_wildcard) == "any of ($a*)"
 
@@ -112,6 +118,13 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
         condition=BooleanLiteral(True),
     )
     assert gen.visit(for_of_node_list) == "for any of ($a, $b) : (true)"
+
+    for_of_identifier_set = ForOfExpression(
+        quantifier="any",
+        string_set=SetExpression([Identifier("$a"), Identifier("$b")]),
+        condition=BooleanLiteral(True),
+    )
+    assert gen.visit(for_of_identifier_set) == "for any of ($a, $b) : (true)"
 
 
 def test_codegen_renders_string_literals_as_references_inside_string_sets() -> None:
