@@ -103,6 +103,18 @@ def test_analyze_file_complexity(tmp_path: Path) -> None:
     assert "complexity" in report
 
 
+@pytest.mark.parametrize("file_path", [None, False, 123, object(), b"sample.yar"])
+def test_analyze_file_complexity_rejects_invalid_path_types(file_path: Any) -> None:
+    with pytest.raises(TypeError, match="file_path must be a file path"):
+        analyze_file_complexity(cast(Any, file_path))
+
+
+@pytest.mark.parametrize("file_path", ["", "   "])
+def test_analyze_file_complexity_rejects_empty_paths(file_path: str) -> None:
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        analyze_file_complexity(file_path)
+
+
 def test_analyze_file_complexity_rejects_invalid_utf8(tmp_path: Path) -> None:
     file_path = tmp_path / "bad.yar"
     file_path.write_bytes(b"\xff")
