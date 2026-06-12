@@ -191,8 +191,8 @@ rule caller {
 @pytest.mark.parametrize(
     "string_set",
     [
-        ["a*"],
-        SetExpression([StringLiteral("a*")]),
+        [StringWildcard("a*")],
+        SetExpression([StringWildcard("a*")]),
     ],
 )
 def test_dependency_analyzer_detects_text_rule_wildcard_dependencies(string_set: Any) -> None:
@@ -211,6 +211,30 @@ def test_dependency_analyzer_detects_text_rule_wildcard_dependencies(string_set:
     assert results["dependency_graph"]["a1"]["depended_by"] == ["caller"]
     assert results["dependency_graph"]["a2"]["depended_by"] == ["caller"]
     assert results["dependency_graph"]["other"]["is_independent"] is True
+
+
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        ["a*"],
+        SetExpression([StringLiteral("a*")]),
+    ],
+)
+def test_dependency_analyzer_treats_raw_wildcards_as_string_sets(string_set: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="a1", condition=BooleanLiteral(True)),
+            Rule(name="a2", condition=BooleanLiteral(True)),
+            Rule(name="caller", condition=ForOfExpression("any", string_set, BooleanLiteral(True))),
+        ]
+    )
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert results["dependencies"].get("caller", []) == []
+    assert results["dependency_graph"]["caller"]["is_independent"] is True
+    assert results["dependency_graph"]["a1"]["is_independent"] is True
+    assert results["dependency_graph"]["a2"]["is_independent"] is True
 
 
 def test_dependency_analyzer_does_not_treat_function_name_as_rule_dependency() -> None:

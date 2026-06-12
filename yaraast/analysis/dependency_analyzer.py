@@ -351,7 +351,6 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     def _visit_rule_set_value(self, value: Any) -> None:
         if isinstance(value, str):
-            self._record_rule_set_text(value)
             return
         if isinstance(value, list | tuple | set | frozenset):
             for item in value:
@@ -361,7 +360,6 @@ class DependencyAnalyzer(BaseVisitor[None]):
             self._record_rule_set_text(value.name)
             return
         if isinstance(value, StringLiteral):
-            self._record_rule_set_text(value.value)
             return
         if isinstance(value, StringWildcard):
             self.visit_string_wildcard(value)
