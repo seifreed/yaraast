@@ -11,6 +11,7 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     ParenthesesExpression,
+    StringIdentifier,
     StringLiteral,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
@@ -67,6 +68,19 @@ def test_condition_builder_accepts_falsy_present_expressions() -> None:
     converted_operand = ConditionBuilder().true().or_(falsy_builder).build()
     assert isinstance(converted_operand, BinaryExpression)
     assert isinstance(converted_operand.right, FalsyBooleanLiteral)
+
+
+def test_condition_builder_rejects_invalid_prebuilt_expression_structure() -> None:
+    invalid_string = StringIdentifier(name="")
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        ConditionBuilder(invalid_string)
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        ConditionBuilder().true().and_(invalid_string)
+
+    with pytest.raises(TypeError, match="Condition expression must be an Expression"):
+        ConditionBuilder(cast(Any, True))
 
 
 @pytest.mark.parametrize("member", ["bad-key", "for", "1bad", ""])

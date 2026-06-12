@@ -23,6 +23,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     StringOffset,
     UnaryExpression,
+    _validate_expression,
 )
 from yaraast.builder.file_builder_validation import validate_identifier, validate_identifier_path
 from yaraast.errors import ValidationError
@@ -43,7 +44,13 @@ class ConditionBuilder:
     """Fluent builder for constructing conditions."""
 
     def __init__(self, expr: Expression | None = None) -> None:
-        self._expression = expr
+        self._expression = self._validate_prebuilt_expression(expr)
+
+    @staticmethod
+    def _validate_prebuilt_expression(expr: Expression | None) -> Expression | None:
+        if expr is None:
+            return None
+        return _validate_expression(expr, "Condition expression")
 
     @staticmethod
     def _integer_literal(value: int) -> IntegerLiteral:
