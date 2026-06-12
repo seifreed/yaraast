@@ -488,6 +488,12 @@ class DeadCodeEliminator(ASTTransformer):
         if isinstance(value, Identifier) and value.name == "them":
             self._mark_all_current_rule_strings()
             return
+        if isinstance(value, Identifier):
+            if value.name.startswith("$"):
+                self._collect_string_set_value(value.name)
+                return
+            self.used_rules.add(value.name)
+            return
         if isinstance(value, StringLiteral):
             self._collect_string_set_value(value.value)
             return

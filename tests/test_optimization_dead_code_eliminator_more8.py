@@ -417,6 +417,31 @@ def test_dead_code_eliminator_resolves_yarax_string_locals_in_string_sets() -> N
     assert [string.identifier for string in optimized.rules[0].strings] == ["$a"]
 
 
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        Identifier("$a"),
+        [Identifier("$a")],
+        SetExpression([Identifier("$a")]),
+    ],
+)
+def test_dead_code_eliminator_keeps_identifier_string_set_items(string_set: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="identifier_string_set",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=OfExpression("any", string_set),
+            )
+        ]
+    )
+
+    optimized, count = DeadCodeEliminator().eliminate(ast)
+
+    assert count == 0
+    assert [string.identifier for string in optimized.rules[0].strings] == ["$a"]
+
+
 def test_string_wildcard_keeps_matching_strings() -> None:
     dce = DeadCodeEliminator()
     rule = Rule(
