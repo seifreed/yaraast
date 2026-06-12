@@ -136,6 +136,10 @@ class HexStringBuilder:
 
     def alternative(self, *alternatives: list[int | str] | HexStringBuilder) -> Self:
         """Add an alternative group (a|b|c)."""
+        if not alternatives:
+            msg = "HexAlternative must contain at least one branch"
+            raise ValidationError(msg)
+
         alt_tokens: list[list[HexToken]] = []
 
         for alt in alternatives:
@@ -158,6 +162,9 @@ class HexStringBuilder:
             else:
                 msg = f"Invalid alternative type: {type(alt)}"
                 raise TypeError(msg)
+            if not alt_tokens[-1]:
+                msg = "HexAlternative branches must not be empty"
+                raise ValidationError(msg)
 
         self._tokens.append(HexAlternative(alternatives=alt_tokens))
         return self

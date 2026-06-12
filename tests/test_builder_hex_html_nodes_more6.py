@@ -51,6 +51,17 @@ def test_hex_string_builder_invalid_low_nibble_and_unknown_pattern_part() -> Non
         HexStringBuilder().pattern("AA XYZ BB")
 
 
+def test_hex_string_builder_rejects_empty_alternatives_directly() -> None:
+    with pytest.raises(ValidationError, match="HexAlternative must contain at least one branch"):
+        HexStringBuilder().alternative()
+
+    with pytest.raises(ValidationError, match="HexAlternative branches must not be empty"):
+        HexStringBuilder().alternative([])
+
+    with pytest.raises(ValidationError, match="HexAlternative branches must not be empty"):
+        HexStringBuilder().alternative(HexStringBuilder())
+
+
 def test_html_tree_nodes_condition_section_none() -> None:
     gen = HtmlTreeGenerator()
     assert gen._condition_section(None) is None
