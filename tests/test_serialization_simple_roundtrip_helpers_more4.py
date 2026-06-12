@@ -633,6 +633,16 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
         deserialize_node({"type": "ExternRuleReference", "rule_name": "RuleA", "namespace": ""})
 
 
+def test_simple_roundtrip_accepts_qualified_extern_import_rules() -> None:
+    ast = YaraFile(extern_imports=[ExternImport("external", rules=["corp.RemoteRule"])])
+
+    serialized = serialize_node(ast)
+    restored = deserialize_node(serialized)
+
+    assert isinstance(restored, YaraFile)
+    assert restored.extern_imports[0].rules == ["corp.RemoteRule"]
+
+
 def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     invalid_text: Any = 123
     invalid_arguments: Any = "on"

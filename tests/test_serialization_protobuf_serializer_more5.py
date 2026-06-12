@@ -1765,6 +1765,15 @@ def test_protobuf_serializer_rejects_empty_extern_import_rules() -> None:
             serializer.serialize(ast)
 
 
+def test_protobuf_serializer_accepts_qualified_extern_import_rules() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(extern_imports=[ExternImport("external", rules=["corp.RemoteRule"])])
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert restored.extern_imports[0].rules == ["corp.RemoteRule"]
+
+
 def test_protobuf_deserializer_rejects_empty_extern_import_rules() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     pb_file = yara_ast_pb2.YaraFile()

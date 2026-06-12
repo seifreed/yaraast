@@ -486,6 +486,16 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
         )
 
 
+def test_json_deserialize_accepts_qualified_extern_import_rules() -> None:
+    s = JsonSerializer()
+
+    node = s._deserialize_extern_import(
+        {"module_path": "external", "alias": None, "rules": ["corp.RemoteRule"]}
+    )
+
+    assert node.rules == ["corp.RemoteRule"]
+
+
 def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()
 

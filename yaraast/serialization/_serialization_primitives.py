@@ -101,6 +101,13 @@ def _validate_extern_rule_identifier_text(value: str) -> str:
     return _validate_yara_identifier_text(value, "extern rule")
 
 
+def _validate_extern_rule_path_text(value: str) -> str:
+    try:
+        return validate_yara_identifier_path(value, "extern rule")
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+
+
 def _validate_namespace_identifier_text(value: str) -> str:
     try:
         return validate_yara_identifier_path(value, "namespace")
@@ -117,7 +124,7 @@ def _validate_optional_namespace_identifier_text(value: str | None) -> str | Non
 
 def _validate_extern_import_rule_identifiers(values: list[str]) -> list[str]:
     for value in values:
-        _validate_extern_rule_identifier_text(value)
+        _validate_extern_rule_path_text(value)
     return values
 
 

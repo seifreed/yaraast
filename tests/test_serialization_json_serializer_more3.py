@@ -1287,6 +1287,15 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
         serializer.visit(empty_namespace)
 
 
+def test_json_serializer_accepts_qualified_extern_import_rules() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(extern_imports=[ExternImport("external", rules=["corp.RemoteRule"])])
+
+    payload = json.loads(serializer.serialize(ast))
+
+    assert payload["ast"]["extern_imports"][0]["rules"] == ["corp.RemoteRule"]
+
+
 def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_text: Any = 123
