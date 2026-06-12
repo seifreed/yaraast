@@ -103,6 +103,10 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_plain_string(self, node) -> str:
         """Hash PlainString node."""
+        from yaraast.ast.strings import PlainString
+
+        if isinstance(node, PlainString):
+            node.validate_structure()
         modifiers = self._hash_modifiers(node)
         return (
             f"PlainString({node.identifier},{node.value},"
@@ -111,6 +115,10 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_hex_string(self, node) -> str:
         """Hash HexString node."""
+        from yaraast.ast.strings import HexString
+
+        if isinstance(node, HexString):
+            node.validate_structure()
         tokens = "|".join(self.visit(token) for token in node.tokens)
         modifiers = self._hash_modifiers(node)
         return (
@@ -120,6 +128,10 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_regex_string(self, node) -> str:
         """Hash RegexString node."""
+        from yaraast.ast.strings import RegexString
+
+        if isinstance(node, RegexString):
+            node.validate_structure()
         modifiers = self._hash_modifiers(node)
         return (
             f"RegexString({node.identifier},{node.regex},"

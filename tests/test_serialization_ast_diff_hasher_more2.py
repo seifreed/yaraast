@@ -23,7 +23,7 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaType
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexAlternative, HexByte
+from yaraast.ast.strings import HexAlternative, HexByte, HexString, PlainString, RegexString
 from yaraast.serialization.ast_diff_hasher import AstHasher
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -437,6 +437,30 @@ def test_ast_hasher_rejects_invalid_real_rule_state(
 
     with pytest.raises(TypeError, match=message):
         AstHasher().visit_rule(rule)
+
+
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (PlainString(cast(Any, 123), "x"), "String identifier must be a string"),
+        (
+            PlainString("$a", cast(Any, object())),
+            "Plain string value must be a string or bytes",
+        ),
+        (HexString("$h", tokens=cast(Any, "bad")), "HexString tokens must be a list or tuple"),
+        (
+            HexString("$h", tokens=[cast(Any, object())]),
+            r"HexString\.tokens must contain AST nodes",
+        ),
+        (RegexString("$r", cast(Any, object())), "Regex string pattern must be a string"),
+    ],
+)
+def test_ast_hasher_rejects_invalid_real_string_state(
+    node: PlainString | HexString | RegexString,
+    message: str,
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        AstHasher().visit(node)
 
 
 @pytest.mark.parametrize(
