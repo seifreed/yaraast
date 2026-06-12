@@ -843,7 +843,7 @@ def _serialize_ast_value(value: Any) -> Any:
 
 def _serialize_quantifier(value: Any, context: str) -> Any:
     if isinstance(value, str):
-        return value
+        return _serialize_required_nonempty_string(value, context)
     if isinstance(value, bool | list | dict | set | tuple) or value is None:
         msg = f"{context} must be a string, number, or expression"
         raise SerializationError(msg)
@@ -914,6 +914,9 @@ def _deserialize_required_quantifier(data: dict[str, Any], field: str, context: 
     value = _deserialize_required_field(data, field, context)
     if isinstance(value, bool | list):
         msg = f"{context} {field} must be a string, number, or expression"
+        raise SerializationError(msg)
+    if isinstance(value, str) and _is_empty_nonempty_field(value, context, field):
+        msg = f"{context} {field} must not be empty"
         raise SerializationError(msg)
     if isinstance(value, float) and not math.isfinite(value):
         msg = f"{context} {field} must be finite"

@@ -228,22 +228,22 @@ def _serialize_expression_list(serializer, values, context: str):
     ]
 
 
-def _serialize_quantifier(serializer, value):
+def _serialize_quantifier(serializer, value, context: str):
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, str):
-        return value
+        return _serialize_required_nonempty_string(value, context)
     if isinstance(value, bool) or value is None or isinstance(value, list | dict | set | tuple):
-        msg = "quantifier must be a string, number, or expression"
+        msg = f"{context} must be a string, number, or expression"
         raise SerializationError(msg)
     if isinstance(value, int | float):
         if isinstance(value, float) and not math.isfinite(value):
-            msg = "quantifier must be finite"
+            msg = f"{context} must be finite"
             raise SerializationError(msg)
         return value
     if isinstance(value, Expression):
         return serializer.visit(value)
-    msg = "quantifier must be a string, number, or expression"
+    msg = f"{context} must be a string, number, or expression"
     raise SerializationError(msg)
 
 
@@ -772,7 +772,11 @@ def visit_member_access(serializer, node) -> dict[str, Any]:
 def visit_for_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "ForExpression",
-        "quantifier": _serialize_quantifier(serializer, node.quantifier),
+        "quantifier": _serialize_quantifier(
+            serializer,
+            node.quantifier,
+            "ForExpression quantifier",
+        ),
         "variable": _serialize_required_nonempty_string(
             node.variable,
             "ForExpression variable",
@@ -789,7 +793,11 @@ def visit_for_expression(serializer, node) -> dict[str, Any]:
 def visit_for_of_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "ForOfExpression",
-        "quantifier": _serialize_quantifier(serializer, node.quantifier),
+        "quantifier": _serialize_quantifier(
+            serializer,
+            node.quantifier,
+            "ForOfExpression quantifier",
+        ),
         "string_set": _serialize_string_set(serializer, node.string_set, "ForOfExpression"),
         "condition": _serialize_optional_expression(
             serializer,
@@ -823,7 +831,11 @@ def visit_in_expression(serializer, node) -> dict[str, Any]:
 def visit_of_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "OfExpression",
-        "quantifier": _serialize_quantifier(serializer, node.quantifier),
+        "quantifier": _serialize_quantifier(
+            serializer,
+            node.quantifier,
+            "OfExpression quantifier",
+        ),
         "string_set": _serialize_string_set(serializer, node.string_set, "OfExpression"),
     }
 

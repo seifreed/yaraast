@@ -1104,12 +1104,12 @@ def _validate_hex_token_sequence_for_protobuf(
             raise SerializationError(msg)
 
 
-def _coerce_quantifier_text(value) -> str:
+def _coerce_quantifier_text(value, context: str) -> str:
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, str):
-        if not value:
-            msg = "quantifier must not be empty"
+        if not value.strip():
+            msg = f"{context} must not be empty"
             raise SerializationError(msg)
         return value
     if isinstance(value, bool):
@@ -1250,9 +1250,9 @@ def _string_set_item_expression(item, context: str):
     raise SerializationError(msg)
 
 
-def _restore_quantifier_text(value: str):
-    if not value:
-        msg = "quantifier must not be empty"
+def _restore_quantifier_text(value: str, context: str):
+    if not value.strip():
+        msg = f"{context} must not be empty"
         raise SerializationError(msg)
     integer_text = value[1:] if value.startswith("-") else value
     if integer_text.isdigit():
@@ -1454,7 +1454,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 "ExternRuleReference namespace",
             )
     elif isinstance(expr, ForExpression):
-        pb_expr.for_expression.quantifier = _coerce_quantifier_text(expr.quantifier)
+        pb_expr.for_expression.quantifier = _coerce_quantifier_text(
+            expr.quantifier,
+            "ForExpression quantifier",
+        )
         quantifier = _coerce_quantifier_expression(expr.quantifier)
         if quantifier is not None:
             convert_expression_to_protobuf(quantifier, pb_expr.for_expression.quantifier_expr)
@@ -1465,7 +1468,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.iterable, pb_expr.for_expression.iterable)
         convert_expression_to_protobuf(expr.body, pb_expr.for_expression.body)
     elif isinstance(expr, ForOfExpression):
-        pb_expr.for_of_expression.quantifier = _coerce_quantifier_text(expr.quantifier)
+        pb_expr.for_of_expression.quantifier = _coerce_quantifier_text(
+            expr.quantifier,
+            "ForOfExpression quantifier",
+        )
         quantifier = _coerce_quantifier_expression(expr.quantifier)
         if quantifier is not None:
             convert_expression_to_protobuf(
@@ -1505,7 +1511,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         if quantifier is not None:
             convert_expression_to_protobuf(quantifier, pb_expr.of_expression.quantifier)
         else:
-            pb_expr.of_expression.quantifier_text = _coerce_quantifier_text(expr.quantifier)
+            pb_expr.of_expression.quantifier_text = _coerce_quantifier_text(
+                expr.quantifier,
+                "OfExpression quantifier",
+            )
         _copy_string_set_to_protobuf(
             expr.string_set,
             pb_expr.of_expression,
@@ -2374,7 +2383,10 @@ def protobuf_to_expression(pb_expr):
                 quantifier=(
                     protobuf_to_expression(pb_expr.for_expression.quantifier_expr)
                     if pb_expr.for_expression.HasField("quantifier_expr")
-                    else _restore_quantifier_text(pb_expr.for_expression.quantifier)
+                    else _restore_quantifier_text(
+                        pb_expr.for_expression.quantifier,
+                        "ForExpression quantifier",
+                    )
                 ),
                 variable=_protobuf_required_nonempty_string(
                     pb_expr.for_expression.variable,
@@ -2390,7 +2402,10 @@ def protobuf_to_expression(pb_expr):
                 quantifier=(
                     protobuf_to_expression(pb_expr.for_of_expression.quantifier_expr)
                     if pb_expr.for_of_expression.HasField("quantifier_expr")
-                    else _restore_quantifier_text(pb_expr.for_of_expression.quantifier)
+                    else _restore_quantifier_text(
+                        pb_expr.for_of_expression.quantifier,
+                        "ForOfExpression quantifier",
+                    )
                 ),
                 string_set=_protobuf_string_set_to_ast(pb_expr.for_of_expression),
                 condition=(
@@ -2434,7 +2449,10 @@ def protobuf_to_expression(pb_expr):
         return with_metadata(
             OfExpression(
                 quantifier=(
-                    _restore_quantifier_text(pb_expr.of_expression.quantifier_text)
+                    _restore_quantifier_text(
+                        pb_expr.of_expression.quantifier_text,
+                        "OfExpression quantifier",
+                    )
                     if pb_expr.of_expression.HasField("quantifier_text")
                     else protobuf_to_expression(pb_expr.of_expression.quantifier)
                 ),

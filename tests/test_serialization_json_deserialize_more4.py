@@ -1449,6 +1449,38 @@ def test_json_deserialize_quantifiers_reject_invalid_raw_values() -> None:
         with pytest.raises(SerializationError, match="quantifier must be"):
             s._deserialize_expression(payload)
 
+    blank_quantifier_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": "   ",
+                "variable": "i",
+                "iterable": int_expr,
+                "body": int_expr,
+            },
+            "ForExpression quantifier must not be empty",
+        ),
+        (
+            {
+                "type": "ForOfExpression",
+                "quantifier": "",
+                "string_set": "them",
+            },
+            "ForOfExpression quantifier must not be empty",
+        ),
+        (
+            {
+                "type": "OfExpression",
+                "quantifier": "   ",
+                "string_set": "them",
+            },
+            "OfExpression quantifier must not be empty",
+        ),
+    )
+    for payload, message in blank_quantifier_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
 
 def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()

@@ -127,6 +127,9 @@ def _deserialize_required_quantifier(self, data: dict[str, Any], field: str, con
     if isinstance(value, bool | list):
         msg = f"{context} {field} must be a string, number, or expression"
         raise SerializationError(msg)
+    if isinstance(value, str) and _is_empty_nonempty_field(value, context, field):
+        msg = f"{context} {field} must not be empty"
+        raise SerializationError(msg)
     if isinstance(value, float) and not math.isfinite(value):
         msg = f"{context} {field} must be finite"
         raise SerializationError(msg)

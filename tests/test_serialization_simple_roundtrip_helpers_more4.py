@@ -2217,6 +2217,38 @@ def test_simple_roundtrip_quantifiers_reject_invalid_raw_values() -> None:
         with pytest.raises(SerializationError, match="quantifier must be"):
             deserialize_node(payload)
 
+    blank_quantifier_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": "   ",
+                "variable": "i",
+                "iterable": int_expr,
+                "body": int_expr,
+            },
+            "ForExpression quantifier must not be empty",
+        ),
+        (
+            {
+                "type": "ForOfExpression",
+                "quantifier": "",
+                "string_set": "them",
+            },
+            "ForOfExpression quantifier must not be empty",
+        ),
+        (
+            {
+                "type": "OfExpression",
+                "quantifier": "   ",
+                "string_set": "them",
+            },
+            "OfExpression quantifier must not be empty",
+        ),
+    )
+    for payload, message in blank_quantifier_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
     non_finite_quantifier_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (
             {
@@ -2294,6 +2326,25 @@ def test_simple_roundtrip_serialize_quantifiers_reject_invalid_values() -> None:
     )
 
     for node, message in invalid_quantifier_cases:
+        with pytest.raises(SerializationError, match=message):
+            serialize_node(node)
+
+    blank_quantifier_cases: tuple[tuple[ASTNode, str], ...] = (
+        (
+            ForExpression("any", "i", string_set, true_expr),
+            "ForExpression quantifier must not be empty",
+        ),
+        (
+            ForOfExpression("any", ["$a"], true_expr),
+            "ForOfExpression quantifier must not be empty",
+        ),
+        (
+            OfExpression("any", ["$a"]),
+            "OfExpression quantifier must not be empty",
+        ),
+    )
+    for node, message in blank_quantifier_cases:
+        cast(Any, node).quantifier = "   "
         with pytest.raises(SerializationError, match=message):
             serialize_node(node)
 

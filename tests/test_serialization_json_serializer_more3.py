@@ -218,6 +218,19 @@ def test_json_serializer_rejects_invalid_raw_quantifiers() -> None:
             with pytest.raises(SerializationError, match="quantifier must be"):
                 serializer.serialize(ast)
 
+    true_expr = BooleanLiteral(True)
+    string_set = SetExpression([StringIdentifier("$a")])
+    blank_quantifier_expressions: list[Any] = [
+        ForExpression("any", "i", string_set, true_expr),
+        ForOfExpression("any", ["$a"], true_expr),
+        OfExpression("any", ["$a"]),
+    ]
+    for expression in blank_quantifier_expressions:
+        cast(Any, expression).quantifier = "   "
+        ast = YaraFile(rules=[Rule(name="blank_quantifier", condition=expression)])
+        with pytest.raises(SerializationError, match="quantifier must not be empty"):
+            serializer.serialize(ast)
+
 
 def test_json_serializer_rejects_invalid_yara_file_node_lists() -> None:
     serializer = JsonSerializer(include_metadata=False)

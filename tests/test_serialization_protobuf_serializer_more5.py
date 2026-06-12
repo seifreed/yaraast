@@ -2054,6 +2054,61 @@ def test_protobuf_serializer_rejects_invalid_expression_leaf_fields(
         serializer.serialize(ast)
 
 
+def test_protobuf_serializer_rejects_blank_quantifiers() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    true_expr = BooleanLiteral(True)
+    string_set = SetExpression([StringIdentifier("$a")])
+    cases: tuple[tuple[Any, str], ...] = (
+        (
+            ForExpression("any", "i", string_set, true_expr),
+            "ForExpression quantifier must not be empty",
+        ),
+        (
+            ForOfExpression("any", ["$a"], true_expr),
+            "ForOfExpression quantifier must not be empty",
+        ),
+        (
+            OfExpression("any", ["$a"]),
+            "OfExpression quantifier must not be empty",
+        ),
+    )
+
+    for condition, message in cases:
+        cast(Any, condition).quantifier = "   "
+        ast = YaraFile(rules=[Rule(name="blank_quantifier", condition=condition)])
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+
+def test_protobuf_deserializer_rejects_blank_quantifiers() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    cases: tuple[tuple[str, str], ...] = (
+        ("for_expression", "ForExpression quantifier must not be empty"),
+        ("for_of_expression", "ForOfExpression quantifier must not be empty"),
+        ("of_expression", "OfExpression quantifier must not be empty"),
+    )
+
+    for expression_kind, message in cases:
+        pb_file = yara_ast_pb2.YaraFile()
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "blank_quantifier"
+        condition = pb_rule.condition
+        if expression_kind == "for_expression":
+            condition.for_expression.quantifier = "   "
+            condition.for_expression.variable = "i"
+            condition.for_expression.iterable.identifier.name = "items"
+            condition.for_expression.body.boolean_literal.value = True
+        elif expression_kind == "for_of_expression":
+            condition.for_of_expression.quantifier = "   "
+            condition.for_of_expression.string_set_text = "them"
+        else:
+            condition.of_expression.quantifier_text = "   "
+            condition.of_expression.string_set_text = "them"
+
+        with pytest.raises(SerializationError, match=message):
+            serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 @pytest.mark.parametrize(
     ("ast", "message"),
     [
