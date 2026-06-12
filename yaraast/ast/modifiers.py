@@ -20,6 +20,37 @@ def _require_meta_value(value: Any) -> str | int | bool | float:
     raise TypeError(msg)
 
 
+def _require_string_modifier_value(value: Any) -> str | int | float | tuple[int, int] | None:
+    if value is None or isinstance(value, str):
+        return value
+    if isinstance(value, bool):
+        msg = "StringModifier value must be a string, number, tuple, or null"
+        raise TypeError(msg)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            msg = "StringModifier value must be finite"
+            raise ValueError(msg)
+        return value
+    if isinstance(value, tuple):
+        if len(value) != 2:
+            msg = "StringModifier tuple value must contain two integers"
+            raise TypeError(msg)
+        low, high = value
+        if (
+            isinstance(low, bool)
+            or isinstance(high, bool)
+            or not isinstance(low, int)
+            or not isinstance(high, int)
+        ):
+            msg = "StringModifier tuple value must contain two integers"
+            raise TypeError(msg)
+        return (low, high)
+    msg = "StringModifier value must be a string, number, tuple, or null"
+    raise TypeError(msg)
+
+
 def _is_xor_modifier_text(value: str) -> bool:
     parts = value.split("-", maxsplit=1)
     keys: list[int] = []
@@ -134,6 +165,13 @@ class StringModifier(ASTNode):
     modifier_type: StringModifierType
     value: str | int | float | tuple[int, int] | None = None
 
+    def validate_structure(self) -> None:
+        """Validate string modifier fields before direct analysis."""
+        if not isinstance(self.modifier_type, StringModifierType):
+            msg = "StringModifier modifier_type must be a StringModifierType"
+            raise TypeError(msg)
+        _require_string_modifier_value(self.value)
+
     @classmethod
     def from_name_value(cls, name: str, value: Any | None = None) -> "StringModifier":
         """Create StringModifier from name and optional value."""
@@ -168,6 +206,12 @@ class RuleModifier:
     """Rule-level modifier with proper type safety."""
 
     modifier_type: RuleModifierType
+
+    def validate_structure(self) -> None:
+        """Validate rule modifier fields before direct analysis."""
+        if not isinstance(self.modifier_type, RuleModifierType):
+            msg = "RuleModifier modifier_type must be a RuleModifierType"
+            raise TypeError(msg)
 
     @classmethod
     def from_string(cls, modifier_str: str) -> "RuleModifier":

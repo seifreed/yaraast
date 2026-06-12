@@ -179,6 +179,17 @@ class Rule(ASTNode):
             InRulePragma,
             "InRulePragma",
         )
+        if not isinstance(self.modifiers, list):
+            msg = "Rule modifiers must be a list"
+            raise TypeError(msg)
+        for modifier in self.modifiers:
+            if isinstance(modifier, RuleModifier):
+                modifier.validate_structure()
+            elif isinstance(modifier, str):
+                _require_nonempty_string(modifier, "Rule modifier name")
+            else:
+                msg = "Rule modifiers item must be RuleModifier or string"
+                raise TypeError(msg)
         if self.meta is not None:
             if isinstance(self.meta, dict):
                 for key, value in self.meta.items():

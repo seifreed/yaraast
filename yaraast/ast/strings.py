@@ -5,7 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from yaraast.ast.base import ASTNode, _require_ast_node_sequence, _VisitorType, require_string
+from yaraast.ast.base import (
+    ASTNode,
+    _require_ast_node_sequence,
+    _require_nonempty_string,
+    _VisitorType,
+    require_string,
+)
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
@@ -88,6 +94,16 @@ class StringDefinition(ASTNode):
         if not isinstance(self.modifiers, list):
             msg = f"{type(self).__name__} modifiers must be a list"
             raise TypeError(msg)
+        from yaraast.ast.modifiers import StringModifier
+
+        for modifier in self.modifiers:
+            if isinstance(modifier, StringModifier):
+                modifier.validate_structure()
+            elif isinstance(modifier, str):
+                _require_nonempty_string(modifier, f"{type(self).__name__} modifier name")
+            else:
+                msg = f"{type(self).__name__} modifiers item must be StringModifier or string"
+                raise TypeError(msg)
         if not isinstance(self.is_anonymous, bool):
             msg = f"{type(self).__name__} is_anonymous must be a boolean"
             raise TypeError(msg)

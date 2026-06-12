@@ -42,6 +42,24 @@ class ExternRule(ASTNode):
     modifiers: list[RuleModifier] = field(default_factory=list)
     namespace: str | None = None  # Optional namespace for rule
 
+    def validate_structure(self) -> None:
+        """Validate extern rule fields before direct analysis."""
+        from yaraast.ast.modifiers import RuleModifier
+
+        _require_nonempty_string(self.name, "ExternRule name")
+        if not isinstance(self.modifiers, list):
+            msg = "ExternRule modifiers must be a list"
+            raise TypeError(msg)
+        for modifier in self.modifiers:
+            if isinstance(modifier, RuleModifier):
+                modifier.validate_structure()
+            elif isinstance(modifier, str):
+                _require_nonempty_string(modifier, "ExternRule modifier name")
+            else:
+                msg = "ExternRule modifiers item must be RuleModifier or string"
+                raise TypeError(msg)
+        _require_optional_nonempty_string(self.namespace, "ExternRule namespace")
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_rule(self)
 
@@ -73,6 +91,11 @@ class ExternRuleReference(Expression):
     rule_name: str
     namespace: str | None = None
 
+    def validate_structure(self) -> None:
+        """Validate extern rule reference fields before direct analysis."""
+        _require_nonempty_string(self.rule_name, "ExternRuleReference rule_name")
+        _require_optional_nonempty_string(self.namespace, "ExternRuleReference namespace")
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_rule_reference(self)
 
@@ -98,6 +121,12 @@ class ExternImport(ASTNode):
     module_path: str
     alias: str | None = None
     rules: list[str] = field(default_factory=list)  # Specific rules to import
+
+    def validate_structure(self) -> None:
+        """Validate extern import fields before direct analysis."""
+        _require_nonempty_string(self.module_path, "ExternImport module_path")
+        _require_optional_nonempty_string(self.alias, "ExternImport alias")
+        _normalize_string_list(self.rules, "ExternImport rules")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_import(self)
@@ -131,6 +160,18 @@ class ExternNamespace(ASTNode):
 
     name: str
     extern_rules: list[ExternRule] = field(default_factory=list)
+
+    def validate_structure(self) -> None:
+        """Validate namespace fields before direct analysis."""
+        _require_nonempty_string(self.name, "ExternNamespace name")
+        if not isinstance(self.extern_rules, list):
+            msg = "ExternNamespace extern_rules must be a list"
+            raise TypeError(msg)
+        for extern_rule in self.extern_rules:
+            if not isinstance(extern_rule, ExternRule):
+                msg = "ExternNamespace extern_rules item must be ExternRule"
+                raise TypeError(msg)
+            extern_rule.validate_structure()
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_namespace(self)

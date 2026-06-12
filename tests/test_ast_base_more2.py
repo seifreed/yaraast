@@ -30,9 +30,9 @@ from yaraast.ast.expressions import (
     StringOffset,
     StringWildcard,
 )
-from yaraast.ast.extern import ExternRule
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import MetaEntry
+from yaraast.ast.modifiers import MetaEntry, StringModifier, StringModifierType
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import (
@@ -450,6 +450,26 @@ def test_direct_yarafile_analysis_rejects_invalid_rule_meta_fields(
         ExpressionOptimizer().optimize(malformed_file)
 
 
+@pytest.mark.parametrize(
+    ("modifiers", "message"),
+    [
+        (cast(Any, False), "Rule modifiers must be a list"),
+        ([cast(Any, object())], "Rule modifiers item must be RuleModifier or string"),
+        ([""], "Rule modifier name cannot be empty"),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_rule_modifiers(
+    modifiers: Any,
+    message: str,
+) -> None:
+    rule = Rule("bad_rule_modifier", condition=BooleanLiteral(True))
+    rule.modifiers = modifiers
+    malformed_file = YaraFile(rules=[rule])
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
 def test_direct_yarafile_analysis_rejects_mutated_scalar_rule_meta() -> None:
     rule = Rule("bad_meta", condition=BooleanLiteral(True))
     rule.meta = cast(Any, False)
@@ -611,6 +631,144 @@ def test_direct_yarafile_analysis_rejects_invalid_trailing_comment_metadata() ->
     malformed_file = YaraFile(rules=[rule])
 
     with pytest.raises(TypeError, match="trailing_comment must be a Comment"):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("malformed_file", "message"),
+    [
+        (
+            YaraFile(extern_rules=[ExternRule(cast(Any, 123))]),
+            "ExternRule name must be a string",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("")]),
+            "ExternRule name cannot be empty",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("ExternalRule", modifiers=cast(Any, "private"))]),
+            "ExternRule modifiers must be a list",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("ExternalRule", modifiers=[cast(Any, object())])]),
+            "ExternRule modifiers item must be RuleModifier or string",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("ExternalRule", modifiers=cast(Any, [""]))]),
+            "ExternRule modifier name cannot be empty",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("ExternalRule", namespace=cast(Any, 123))]),
+            "ExternRule namespace must be a string",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport(cast(Any, 123))]),
+            "ExternImport module_path must be a string",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("")]),
+            "ExternImport module_path cannot be empty",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("external", alias=cast(Any, 123))]),
+            "ExternImport alias must be a string",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("external", rules=cast(Any, "Rule"))]),
+            "ExternImport rules must be a list of strings",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("external", rules=[cast(Any, object())])]),
+            "ExternImport rules must be a list of strings",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace(cast(Any, 123))]),
+            "ExternNamespace name must be a string",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace("")]),
+            "ExternNamespace name cannot be empty",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace("corp", extern_rules=cast(Any, "Rule"))]),
+            "ExternNamespace extern_rules must be a list",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace("corp", extern_rules=[cast(Any, object())])]),
+            "ExternNamespace extern_rules item must be ExternRule",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_extern_fields(
+    malformed_file: YaraFile,
+    message: str,
+) -> None:
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            ExternRuleReference(cast(Any, 123)),
+            "ExternRuleReference rule_name must be a string",
+        ),
+        (
+            ExternRuleReference(""),
+            "ExternRuleReference rule_name cannot be empty",
+        ),
+        (
+            ExternRuleReference("ExternalRule", namespace=cast(Any, 123)),
+            "ExternRuleReference namespace must be a string",
+        ),
+        (
+            ExternRuleReference("ExternalRule", namespace=""),
+            "ExternRuleReference namespace cannot be empty",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_extern_reference_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_extern_reference", condition=condition)])
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("modifiers", "message"),
+    [
+        (cast(Any, "wide"), "PlainString modifiers must be a list"),
+        ([cast(Any, object())], "PlainString modifiers item must be StringModifier or string"),
+        ([""], "PlainString modifier name cannot be empty"),
+        (
+            [StringModifier(cast(Any, "xor"))],
+            "StringModifier modifier_type must be a StringModifierType",
+        ),
+        (
+            [StringModifier(StringModifierType.XOR, cast(Any, object()))],
+            "StringModifier value must be a string, number, tuple, or null",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_string_modifiers(
+    modifiers: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(
+        rules=[
+            Rule(
+                "bad_string_modifier",
+                strings=[PlainString("$a", value="abc", modifiers=modifiers)],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises((TypeError, ValueError), match=message):
         ExpressionOptimizer().optimize(malformed_file)
 
 
