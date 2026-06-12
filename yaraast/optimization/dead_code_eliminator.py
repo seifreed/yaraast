@@ -172,8 +172,18 @@ class DeadCodeEliminator(ASTTransformer):
                 self._collect_from_expression(expr.string_id)
         elif isinstance(expr, InExpression) and isinstance(expr.subject, str):
             self._mark_used_string(expr.subject)
-        elif isinstance(expr, OfExpression | ForOfExpression):
+        elif isinstance(expr, OfExpression):
             self._collect_string_set_value(expr.string_set)
+            if isinstance(expr.quantifier, ASTNode):
+                self._collect_from_expression(expr.quantifier)
+            return
+        elif isinstance(expr, ForOfExpression):
+            self._collect_for_of_string_set_value(expr.string_set)
+            if isinstance(expr.quantifier, ASTNode):
+                self._collect_from_expression(expr.quantifier)
+            if expr.condition is not None:
+                self._collect_from_expression(expr.condition)
+            return
         elif isinstance(expr, ForExpression):
             self._collect_for_expression_usage(expr)
             return
@@ -341,6 +351,15 @@ class DeadCodeEliminator(ASTTransformer):
                 )
                 or self._contains_rule_reference_with_locals(expr.iterable, local_variables)
                 or self._contains_rule_reference_with_locals(expr.body, nested_locals)
+            )
+
+        if isinstance(expr, ForOfExpression):
+            return (
+                isinstance(expr.quantifier, ASTNode)
+                and self._contains_rule_reference_with_locals(expr.quantifier, local_variables)
+            ) or (
+                expr.condition is not None
+                and self._contains_rule_reference_with_locals(expr.condition, local_variables)
             )
 
         if isinstance(expr, WithStatement):
@@ -516,6 +535,28 @@ class DeadCodeEliminator(ASTTransformer):
             for element in value.elements:
                 self._collect_string_set_value(element)
 
+    def _collect_for_of_string_set_value(self, value: Any) -> None:
+        if isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                self._collect_for_of_string_set_value(item)
+            return
+        if isinstance(value, ParenthesesExpression):
+            self._collect_for_of_string_set_value(value.expression)
+            return
+        if isinstance(value, SetExpression):
+            for element in value.elements:
+                self._collect_for_of_string_set_value(element)
+            return
+        if isinstance(value, StringWildcard):
+            if isinstance(value.pattern, str) and value.pattern.startswith("$"):
+                self._mark_used_wildcard(value.pattern)
+            return
+        if isinstance(value, Identifier) and not (
+            isinstance(value.name, str) and (value.name == "them" or value.name.startswith("$"))
+        ):
+            return
+        self._collect_string_set_value(value)
+
     def _is_string_identifier_used(
         self,
         identifier: str,
@@ -604,6 +645,13 @@ class DeadCodeEliminator(ASTTransformer):
         finally:
             del self.local_variables[local_count:]
             del self.local_variable_values[local_count:]
+        return node
+
+    def visit_for_of_expression(self, node: ForOfExpression) -> ForOfExpression:
+        if isinstance(node.quantifier, ASTNode):
+            node.quantifier = cast(Expression, self.visit(node.quantifier))
+        if node.condition is not None:
+            node.condition = cast(Expression, self.visit(node.condition))
         return node
 
     def visit_with_statement(self, node: WithStatement) -> WithStatement:

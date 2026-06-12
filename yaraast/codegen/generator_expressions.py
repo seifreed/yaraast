@@ -81,6 +81,23 @@ def _render_string_set(gen: Any, string_set: Any) -> str:
     return _render_single_string_set_text(string_set)
 
 
+def _reject_for_of_rule_set_items(string_set: Any) -> None:
+    from yaraast.ast.expressions import ParenthesesExpression, SetExpression
+
+    if _is_rule_set_item(string_set):
+        msg = "For-of string set cannot contain rule identifiers for libyara output"
+        raise ValueError(msg)
+    if isinstance(string_set, ParenthesesExpression):
+        _reject_for_of_rule_set_items(string_set.expression)
+        return
+    if isinstance(string_set, SetExpression):
+        _reject_for_of_rule_set_items(string_set.elements)
+        return
+    if isinstance(string_set, list | tuple | set | frozenset):
+        for item in string_set:
+            _reject_for_of_rule_set_items(item)
+
+
 def _is_rule_set_items(items: list[Any] | tuple[Any, ...]) -> bool:
     return bool(items) and all(_is_rule_set_item(item) for item in items)
 
@@ -469,6 +486,7 @@ def render_for_of_expression(gen: Any, node: Any) -> str:
         allow_percentage=node.condition is None,
         context="for quantifier" if node.condition is not None else "quantifier",
     )
+    _reject_for_of_rule_set_items(node.string_set)
     string_set = _render_string_set(gen, node.string_set)
     if node.condition is not None:
         previous = getattr(gen, "_allow_string_placeholder", False)

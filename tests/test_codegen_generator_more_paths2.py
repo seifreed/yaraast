@@ -4199,6 +4199,14 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         )
         == "for all of them : (0)"
     )
+    with pytest.raises(ValueError, match="For-of string set cannot contain rule"):
+        gen.visit_for_of_expression(
+            ForOfExpression("any", SetExpression([StringWildcard("helper*")]), BooleanLiteral(True))
+        )
+    with pytest.raises(ValueError, match="For-of string set cannot contain rule"):
+        gen.visit_for_of_expression(
+            ForOfExpression("any", Identifier("helper"), BooleanLiteral(True))
+        )
     assert gen.visit_at_expression(AtExpression("$a", IntegerLiteral(0))) == "$a at 0"
     with pytest.raises(ValueError, match="In expression range must be a range expression"):
         gen.visit_in_expression(InExpression("$a", ParenthesesExpression(StringOffset("a"))))

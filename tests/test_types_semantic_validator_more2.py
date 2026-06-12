@@ -411,6 +411,27 @@ def test_validate_rule_wildcard_does_not_report_string_pattern_error() -> None:
     assert not any("Undefined string pattern '$a*'" in message for message in messages)
 
 
+def test_validate_rule_rejects_rule_wildcards_in_for_of_string_sets() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="consumer",
+                condition=ForOfExpression(
+                    "any",
+                    StringWildcard("for*"),
+                    BooleanLiteral(True),
+                ),
+            ),
+        ],
+    )
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any("'for...of' requires string set" in message for message in messages)
+
+
 def test_validate_rule_rejects_invalid_rule_wildcard_prefix() -> None:
     ast = YaraFile(
         rules=[

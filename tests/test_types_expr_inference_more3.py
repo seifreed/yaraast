@@ -282,6 +282,21 @@ def test_expr_inference_rejects_invalid_string_wildcards(pattern: Any) -> None:
     assert inf.errors
 
 
+def test_expr_inference_rejects_rule_wildcards_in_for_of_string_sets() -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(
+        ForOfExpression(
+            quantifier="any",
+            string_set=StringWildcard("helper*"),
+            condition=BooleanLiteral(True),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert any("'for...of' requires string set" in error for error in inf.errors)
+
+
 def test_expr_inference_reports_undefined_string_variants() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)

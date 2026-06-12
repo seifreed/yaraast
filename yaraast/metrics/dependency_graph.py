@@ -307,7 +307,6 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
     def visit_for_of_expression(self, node) -> None:
         self._visit_ast_value(node.quantifier)
-        self._visit_rule_set_value(node.string_set)
         if node.condition is not None:
             self.visit(node.condition)
 

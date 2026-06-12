@@ -124,7 +124,7 @@ def test_build_dependency_graph_visits_rare_expression_paths() -> None:
     assert graph.get_dependencies("e") == set()
     assert graph.get_dependencies("f") == set()
     assert graph.get_dependencies("g") == {"b"}
-    assert graph.get_dependencies("h") == {"c"}
+    assert graph.get_dependencies("h") == set()
 
 
 def test_build_dependency_graph_tracks_function_call_receiver_dependencies() -> None:
@@ -173,7 +173,9 @@ def test_build_dependency_graph_tracks_rule_wildcard_sets() -> None:
         SetExpression([StringWildcard("a*")]),
     ],
 )
-def test_build_dependency_graph_tracks_text_rule_wildcard_sets(string_set: Any) -> None:
+def test_build_dependency_graph_ignores_rule_wildcards_in_for_of_string_sets(
+    string_set: Any,
+) -> None:
     ast = YaraFile(
         rules=[
             Rule(name="a1", condition=StringLiteral("x")),
@@ -185,9 +187,9 @@ def test_build_dependency_graph_tracks_text_rule_wildcard_sets(string_set: Any) 
 
     graph = build_dependency_graph(ast)
 
-    assert graph.get_dependencies("caller") == {"a1", "a2"}
-    assert graph.get_dependents("a1") == {"caller"}
-    assert graph.get_dependents("a2") == {"caller"}
+    assert graph.get_dependencies("caller") == set()
+    assert graph.get_dependents("a1") == set()
+    assert graph.get_dependents("a2") == set()
     assert graph.get_dependencies("other") == set()
 
 

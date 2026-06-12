@@ -323,7 +323,9 @@ rule caller {
         SetExpression([StringWildcard("a*")]),
     ],
 )
-def test_dependency_graph_generator_tracks_text_rule_wildcard_sets(string_set: Any) -> None:
+def test_dependency_graph_generator_ignores_rule_wildcards_in_for_of_string_sets(
+    string_set: Any,
+) -> None:
     ast = YaraFile(
         rules=[
             Rule(name="a1", condition=StringLiteral("x")),
@@ -336,7 +338,9 @@ def test_dependency_graph_generator_tracks_text_rule_wildcard_sets(string_set: A
 
     gen.visit(ast)
 
-    assert gen.dependencies["caller"] == {"a1", "a2"}
+    assert gen.dependencies.get("caller", set()) == set()
+    assert gen.dependencies.get("a1", set()) == set()
+    assert gen.dependencies.get("a2", set()) == set()
     assert gen.dependencies.get("other", set()) == set()
 
 

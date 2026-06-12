@@ -1158,6 +1158,8 @@ def _infer_string_set_value(ctx: Any, value: Any) -> YaraType:
         and value.pattern.startswith("$")
     ):
         return StringSetType()
+    if isinstance(value, StringWildcard):
+        return UnknownType()
     if (
         isinstance(value, Identifier)
         and isinstance(value.name, str)
