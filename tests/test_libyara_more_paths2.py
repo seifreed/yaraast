@@ -296,6 +296,37 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"fast_mode": cast(Any, "yes")}, "fast_mode must be a boolean"),
+        ({"timeout": cast(Any, True)}, "timeout must be a non-negative integer or None"),
+        ({"timeout": cast(Any, 1.5)}, "timeout must be a non-negative integer or None"),
+        ({"timeout": -1}, "timeout must be a non-negative integer or None"),
+    ],
+)
+def test_optimized_matcher_rejects_invalid_scan_options(
+    kwargs: dict[str, Any],
+    message: str,
+) -> None:
+    class RecordingRules:
+        called = False
+
+        def match(self, **_kwargs: Any) -> list[Any]:
+            self.called = True
+            return []
+
+    rules = RecordingRules()
+    matcher = OptimizedMatcher(rules)
+
+    result = matcher.scan(b"abc", **kwargs)
+
+    assert result["success"] is False
+    assert message in result["error"]
+    assert rules.called is False
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 def test_direct_compiler_rejects_yarax_ast_before_codegen() -> None:
     compiler = DirectASTCompiler(enable_optimization=False, debug_mode=True)
     ast = parse_yara_source("rule x { condition: with xs = [1]: match xs { _ => true } }")

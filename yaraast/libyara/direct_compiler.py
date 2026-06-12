@@ -224,6 +224,17 @@ class OptimizedMatcher:
         **kwargs: Any,
     ) -> tuple[dict[str, Any], int]:
         """Build scan arguments and compute data size."""
+        if not isinstance(fast_mode, bool):
+            msg = "fast_mode must be a boolean"
+            raise EvaluationError(msg)
+        if timeout is not None:
+            if isinstance(timeout, bool) or not isinstance(timeout, int):
+                msg = "timeout must be a non-negative integer or None"
+                raise EvaluationError(msg)
+            if timeout < 0:
+                msg = "timeout must be a non-negative integer or None"
+                raise EvaluationError(msg)
+
         scan_args: dict[str, Any] = {"fast": fast_mode, **kwargs}
         if timeout is not None:
             scan_args["timeout"] = timeout
