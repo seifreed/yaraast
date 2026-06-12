@@ -356,7 +356,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         if name is None:
             try:
                 name = node.name
-            except AttributeError:
+            except (AttributeError, TypeError):
                 name = None
         return self._simple_node(
             "StringModifier",

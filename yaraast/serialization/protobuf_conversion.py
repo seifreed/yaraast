@@ -511,7 +511,7 @@ def _protobuf_modifier_name(modifier, context: str) -> str:
         return _protobuf_required_nonempty_string(modifier, f"{context} name")
     try:
         name = modifier.name
-    except AttributeError as exc:
+    except (AttributeError, TypeError) as exc:
         msg = f"{context} name must be a string"
         raise SerializationError(msg) from exc
     return _protobuf_required_nonempty_string(name, f"{context} name")

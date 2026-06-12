@@ -200,7 +200,7 @@ class StringModifier(ASTNode):
     @property
     def name(self) -> str:
         """Get the modifier name for backward compatibility."""
-        return self.modifier_type.value
+        return _require_string_modifier_type(self.modifier_type).value
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_modifier(self)
@@ -239,7 +239,7 @@ class RuleModifier:
     @property
     def name(self) -> str:
         """Get the modifier name for backward compatibility."""
-        return self.modifier_type.value
+        return _require_rule_modifier_type(self.modifier_type).value
 
     def __str__(self) -> str:
         return _require_rule_modifier_type(self.modifier_type).value
@@ -275,12 +275,12 @@ class MetaEntry:
     @property
     def is_private(self) -> bool:
         """Check if meta entry is private."""
-        return self.scope == MetaScope.PRIVATE
+        return _require_meta_scope(self.scope) == MetaScope.PRIVATE
 
     @property
     def is_public(self) -> bool:
         """Check if meta entry is public."""
-        return self.scope == MetaScope.PUBLIC
+        return _require_meta_scope(self.scope) == MetaScope.PUBLIC
 
     def __str__(self) -> str:
         """String representation of meta entry."""

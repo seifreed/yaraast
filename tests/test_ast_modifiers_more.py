@@ -88,6 +88,42 @@ def test_string_and_rule_modifier_helpers() -> None:
     assert str(rule_mod) == "global"
 
 
+@pytest.mark.parametrize(
+    ("modifier", "message"),
+    [
+        (
+            StringModifier(cast(Any, "wide")),
+            "StringModifier modifier_type must be a StringModifierType",
+        ),
+        (
+            RuleModifier(cast(Any, "private")),
+            "RuleModifier modifier_type must be a RuleModifierType",
+        ),
+    ],
+)
+def test_modifier_name_properties_reject_invalid_internal_state(
+    modifier: StringModifier | RuleModifier,
+    message: str,
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        _ = modifier.name
+
+
+@pytest.mark.parametrize(
+    ("entry", "property_name"),
+    [
+        (MetaEntry("key", "value", cast(Any, "private")), "is_private"),
+        (MetaEntry("key", "value", cast(Any, object())), "is_public"),
+    ],
+)
+def test_meta_entry_scope_properties_reject_invalid_internal_state(
+    entry: MetaEntry,
+    property_name: str,
+) -> None:
+    with pytest.raises(TypeError, match="Meta scope must be a MetaScope"):
+        _ = entry.is_private if property_name == "is_private" else entry.is_public
+
+
 def test_modifier_accept_and_factory_helpers() -> None:
     class _Visitor:
         def visit_string_modifier(self, node: StringModifier) -> tuple[str, object]:
