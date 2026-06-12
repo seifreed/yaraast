@@ -10,6 +10,7 @@ from lsprotocol.types import Position, Range
 from yaraast.codegen.generator_helpers import escape_plain_string_value
 from yaraast.lsp.document_types import path_to_uri
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8, utf16_len
+from yaraast.lsp.utils import path_exists
 from yaraast.types.module_loader import ModuleLoader
 
 if TYPE_CHECKING:
@@ -171,8 +172,11 @@ def get_include_info(ctx: DocumentContext, include_path: str) -> dict[str, Any]:
     doc_path = ctx.path
     if doc_path is not None:
         candidate = doc_path.parent / include_path
-        if candidate.exists():
-            resolved_path = candidate.resolve()
+        if path_exists(candidate):
+            try:
+                resolved_path = candidate.resolve()
+            except OSError:
+                resolved_path = None
     result = {"path": include_path, "resolved_path": str(resolved_path) if resolved_path else None}
     ctx.set_cached(cache_key, result)
     return dict(result)

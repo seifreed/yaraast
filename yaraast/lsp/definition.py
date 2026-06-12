@@ -5,6 +5,7 @@ from __future__ import annotations
 from lsprotocol.types import Location, Position, Range
 
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri, uri_to_path
+from yaraast.lsp.utils import path_exists
 
 
 class DefinitionProvider:
@@ -80,8 +81,11 @@ class DefinitionProvider:
         doc_path = uri_to_path(uri)
         if doc_path is None:
             return None
-        include_file = (doc_path.parent / include_path).resolve()
-        if not include_file.exists():
+        try:
+            include_file = (doc_path.parent / include_path).resolve()
+        except OSError:
+            return None
+        if not path_exists(include_file):
             return None
         return Location(
             uri=path_to_uri(include_file),

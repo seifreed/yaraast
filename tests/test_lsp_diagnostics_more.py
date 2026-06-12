@@ -10,7 +10,7 @@ from lsprotocol.types import Diagnostic, DiagnosticSeverity
 import pytest
 
 from yaraast.ast.base import Location
-from yaraast.lsp.diagnostics import DiagnosticData, DiagnosticsProvider
+from yaraast.lsp.diagnostics import DiagnosticData, DiagnosticsProvider, _location_source_line
 from yaraast.lsp.diagnostics_helpers import parser_error_to_diagnostic
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.utf16 import utf8_col_to_utf16
@@ -383,6 +383,12 @@ def test_compiler_include_error_is_structured() -> None:
     diag = provider._compiler_error_to_diagnostic('include error: cannot open "missing.yar"')
     assert diag.code == "compiler.include_error"
     assert _diagnostic_metadata(diag)["include"] == "missing.yar"
+
+
+def test_diagnostics_source_line_treats_inaccessible_paths_as_missing() -> None:
+    location = type("Location", (), {"file": "a" * 5000})()
+
+    assert _location_source_line(location, 0) == ""
 
 
 def test_compiler_undefined_identifier_and_syntax_error_are_structured() -> None:

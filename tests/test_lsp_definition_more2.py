@@ -81,3 +81,11 @@ def test_definition_include_target(tmp_path: Path) -> None:
     assert location.uri == include_file.resolve().as_uri()
     assert location.range.start.line == 0
     assert location.range.start.character == 0
+
+
+def test_definition_include_target_ignores_inaccessible_paths(tmp_path: Path) -> None:
+    sample = tmp_path / "sample.yar"
+    sample.write_text('include "missing.yar"\nrule test { condition: true }\n', encoding="utf-8")
+    provider = DefinitionProvider()
+
+    assert provider._find_include_definition(sample.resolve().as_uri(), "a" * 5000) is None

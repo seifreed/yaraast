@@ -125,6 +125,15 @@ def test_include_target_uri_escapes_special_path_characters(tmp_path: Path) -> N
     assert "%20" in target
 
 
+def test_include_info_treats_inaccessible_include_paths_as_unresolved(tmp_path: Path) -> None:
+    doc = DocumentContext(path_to_uri(tmp_path / "main.yar"), "rule main { condition: true }\n")
+
+    info = doc.get_include_info("a" * 5000)
+
+    assert info["resolved_path"] is None
+    assert doc.get_include_target_uri("a" * 5000) is None
+
+
 @pytest.mark.parametrize("include_path", ["", "   ", "\t"])
 def test_include_target_uri_rejects_empty_include_paths(
     tmp_path: Path,
