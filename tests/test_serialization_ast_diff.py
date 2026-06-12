@@ -12,9 +12,11 @@ from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
+    Identifier,
     IntegerLiteral,
     ParenthesesExpression,
     SetExpression,
+    StringIdentifier,
     StringLiteral,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
@@ -644,6 +646,26 @@ def test_ast_diff_treats_ast_string_set_as_equivalent_to_raw_string_set() -> Non
     assert result.old_ast_hash == result.new_ast_hash
     assert not result.has_changes
     assert result.differences == []
+
+
+def test_ast_diff_treats_identifier_string_set_items_as_equivalent() -> None:
+    equivalent_pairs = [
+        (OfExpression("any", Identifier("$a")), OfExpression("any", StringIdentifier("$a"))),
+        (
+            OfExpression("any", SetExpression([Identifier("$b"), Identifier("$a")])),
+            OfExpression("any", ["$a", "$b"]),
+        ),
+    ]
+
+    for old_condition, new_condition in equivalent_pairs:
+        old_ast = YaraFile(rules=[Rule(name="identifier_set", condition=old_condition)])
+        new_ast = YaraFile(rules=[Rule(name="identifier_set", condition=new_condition)])
+
+        result = AstDiff().compare(old_ast, new_ast)
+
+        assert result.old_ast_hash == result.new_ast_hash
+        assert not result.has_changes
+        assert result.differences == []
 
 
 def test_ast_diff_ignores_dictionary_key_expression_metadata() -> None:

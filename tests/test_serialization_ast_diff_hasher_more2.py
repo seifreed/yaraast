@@ -154,7 +154,7 @@ def test_ast_hasher_string_and_expression_helpers() -> None:
         Rule("present", condition=None)
     )
     assert hasher.visit(ForOfExpression("any", Identifier("them"), _FalsyIntegerLiteral(0))) == (
-        "ForOf(any,Id(them),Int(0))"
+        "ForOf(any,[them],Int(0))"
     )
     assert hasher.visit_string_count(SimpleNamespace(string_id="a")) == "Count(a)"
     assert hasher.visit_string_offset(SimpleNamespace(string_id="a")) == "Offset(a)"
@@ -296,7 +296,7 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
                 offset=IntegerLiteral(10),
             )
         )
-        == "At(Of(Int(1),Id(them)),Int(10))"
+        == "At(Of(Int(1),[them]),Int(10))"
     )
 
     in_expr = InExpression(subject="$a", range=IntegerLiteral(value=5))
@@ -318,7 +318,7 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
             string_set="them",
         ),
     )
-    assert of_with_plain_values == "Of(all,them)"
+    assert of_with_plain_values == "Of(all,[them])"
 
     assert hasher.visit_meta(SimpleNamespace(key="author", value="me")) == "Meta(author,str:me)"
     assert hasher.visit_module_reference(SimpleNamespace(module="pe")) == "ModRef(pe)"

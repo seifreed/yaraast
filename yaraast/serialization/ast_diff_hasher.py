@@ -460,6 +460,9 @@ class AstHasher(ASTVisitor[str]):
             return self._string_set_container_items(value.elements)
         if isinstance(value, list | tuple | set | frozenset):
             return self._string_set_container_items(value)
+        item = self._string_set_item(value)
+        if item is not None:
+            return [item]
         return None
 
     def _string_set_container_items(self, values) -> list[str] | None:
@@ -473,10 +476,22 @@ class AstHasher(ASTVisitor[str]):
 
     @staticmethod
     def _string_set_item(value) -> str | None:
-        from yaraast.ast.expressions import StringIdentifier, StringLiteral, StringWildcard
+        from yaraast.ast.expressions import (
+            Identifier,
+            StringIdentifier,
+            StringLiteral,
+            StringWildcard,
+        )
 
         if isinstance(value, str):
             return value
+        if isinstance(value, Identifier):
+            if not isinstance(value.name, str):
+                msg = "String reference must be a string"
+                raise TypeError(msg)
+            if value.name == "them" or value.name.startswith("$"):
+                return value.name
+            return None
         if isinstance(value, StringIdentifier):
             if not isinstance(value.name, str):
                 msg = "String reference must be a string"
