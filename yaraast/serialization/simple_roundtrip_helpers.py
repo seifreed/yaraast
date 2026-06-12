@@ -110,6 +110,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_optional_namespace_identifier_text,
     _validate_quantifier_value,
     _validate_range_expression_bounds,
+    _validate_set_expression_elements,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -1372,6 +1373,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {"type": "ParenthesesExpression", "expression": serialize_node(node.expression)}
     if isinstance(node, SetExpression):
         elements = _validated_node_collection(node.elements, "SetExpression elements", Expression)
+        _validate_set_expression_elements(node)
         return {
             "type": "SetExpression",
             "elements": [serialize_node(element) for element in elements],
@@ -2172,7 +2174,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
                 msg = "SetExpression elements must contain nodes"
                 raise SerializationError(msg)
             elements.append(_deserialize_required_node_value(element, "SetExpression elements"))
-        return SetExpression(elements)
+        return _validate_set_expression_elements(SetExpression(elements))
     if node_type == "RangeExpression":
         return _validate_range_expression_bounds(
             RangeExpression(

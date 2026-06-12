@@ -20,6 +20,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_loop_variable_text,
     _validate_quantifier_value,
     _validate_range_expression_bounds,
+    _validate_set_expression_elements,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -763,9 +764,11 @@ def visit_parentheses_expression(serializer, node) -> dict[str, Any]:
 
 
 def visit_set_expression(serializer, node) -> dict[str, Any]:
+    elements = _serialize_expression_list(serializer, node.elements, "SetExpression elements")
+    _validate_set_expression_elements(node)
     return {
         "type": "SetExpression",
-        "elements": _serialize_expression_list(serializer, node.elements, "SetExpression elements"),
+        "elements": elements,
     }
 
 

@@ -2182,6 +2182,10 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             "Invalid unary operator",
         ),
         (
+            SetExpression([]),
+            "Set expression must contain at least one element",
+        ),
+        (
             RangeExpression(IntegerLiteral(-1), IntegerLiteral(3)),
             "Range low bound cannot be negative",
         ),
@@ -2650,6 +2654,19 @@ def test_protobuf_deserializer_rejects_invalid_range_bounds(
     pb_rule.condition.range_expression.high.integer_literal.value = high
 
     with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserializer_rejects_empty_set_expression() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_set_expression"
+    pb_rule.condition.set_expression.SetInParent()
+
+    with pytest.raises(
+        SerializationError, match="Set expression must contain at least one element"
+    ):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 

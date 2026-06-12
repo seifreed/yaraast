@@ -19,6 +19,7 @@ from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
     _render_unary_operator,
     validate_constant_range_bounds,
+    validate_set_expression_elements,
 )
 from yaraast.codegen.generator_formatting import (
     validate_extern_rule_identifiers,
@@ -243,6 +244,14 @@ def _validate_range_expression_bounds(value: Any) -> Any:
         _reject_non_integer_expression(value.low, "Range low bound")
         _reject_non_integer_expression(value.high, "Range high bound")
         validate_constant_range_bounds(value)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return value
+
+
+def _validate_set_expression_elements(value: Any) -> Any:
+    try:
+        validate_set_expression_elements(value)
     except (TypeError, ValueError) as exc:
         raise SerializationError(str(exc)) from exc
     return value

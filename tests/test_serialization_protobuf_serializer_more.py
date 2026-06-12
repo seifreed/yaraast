@@ -237,7 +237,6 @@ def test_protobuf_deserializer_rejects_empty_hex_alternatives() -> None:
 @pytest.mark.parametrize(
     "condition",
     [
-        SetExpression([]),
         TupleExpression([]),
         ListExpression([]),
         DictExpression([]),
@@ -252,6 +251,16 @@ def test_protobuf_serializer_preserves_empty_collection_expressions(
     restored = serializer.deserialize(binary_data=serializer.serialize(ast))
 
     assert restored.rules[0].condition == condition
+
+
+def test_protobuf_serializer_rejects_empty_set_expression() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="empty_set", condition=SetExpression([]))])
+
+    with pytest.raises(
+        SerializationError, match="Set expression must contain at least one element"
+    ):
+        serializer.serialize(ast)
 
 
 def test_protobuf_serializer_normalizes_scalar_hex_alternatives() -> None:

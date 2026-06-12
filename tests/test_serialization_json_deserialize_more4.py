@@ -1335,6 +1335,11 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="SetExpression elements must contain expressions"):
         s._deserialize_expression({"type": "SetExpression", "elements": [None]})
 
+    with pytest.raises(
+        SerializationError, match="Set expression must contain at least one element"
+    ):
+        s._deserialize_expression({"type": "SetExpression", "elements": []})
+
     with pytest.raises(SerializationError, match="FunctionCall arguments must contain expressions"):
         s._deserialize_expression({"type": "FunctionCall", "function": "fn", "arguments": [None]})
 
@@ -2408,7 +2413,10 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
         {
             "type": "ForOfExpression",
             "quantifier": "all",
-            "string_set": {"type": "SetExpression", "elements": []},
+            "string_set": {
+                "type": "SetExpression",
+                "elements": [{"type": "StringIdentifier", "name": "$a"}],
+            },
             "condition": {"type": "BooleanLiteral", "value": True},
         }
     )
@@ -2468,7 +2476,10 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
         {
             "type": "OfExpression",
             "quantifier": {"type": "IntegerLiteral", "value": 1},
-            "string_set": {"type": "SetExpression", "elements": []},
+            "string_set": {
+                "type": "SetExpression",
+                "elements": [{"type": "StringIdentifier", "name": "$a"}],
+            },
         }
     )
     assert isinstance(of_expr, OfExpression)

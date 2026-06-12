@@ -42,6 +42,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_optional_namespace_identifier_text,
     _validate_quantifier_value,
     _validate_range_expression_bounds,
+    _validate_set_expression_elements,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -504,7 +505,7 @@ def _deser_set_expression(self, data: dict[str, Any]):
             msg = "SetExpression elements must contain expressions"
             raise SerializationError(msg)
         elements.append(expression)
-    return SetExpression(elements=elements)
+    return _validate_set_expression_elements(SetExpression(elements=elements))
 
 
 def _deser_range_expression(self, data: dict[str, Any]):

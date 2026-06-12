@@ -25,6 +25,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_optional_namespace_identifier_text,
     _validate_quantifier_value,
     _validate_range_expression_bounds,
+    _validate_set_expression_elements,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -1540,7 +1541,9 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.expression, pb_expr.parentheses_expression.expression)
     elif isinstance(expr, SetExpression):
         pb_expr.set_expression.SetInParent()
-        for element in _protobuf_node_list(expr.elements, "SetExpression elements", Expression):
+        elements = _protobuf_node_list(expr.elements, "SetExpression elements", Expression)
+        _validate_set_expression_elements(expr)
+        for element in elements:
             convert_expression_to_protobuf(element, pb_expr.set_expression.elements.add())
     elif isinstance(expr, RangeExpression):
         _validate_range_expression_bounds(expr)
@@ -2518,10 +2521,13 @@ def protobuf_to_expression(pb_expr):
         )
     if pb_expr.HasField("set_expression"):
         return with_metadata(
-            SetExpression(
-                elements=[
-                    protobuf_to_expression(element) for element in pb_expr.set_expression.elements
-                ]
+            _validate_set_expression_elements(
+                SetExpression(
+                    elements=[
+                        protobuf_to_expression(element)
+                        for element in pb_expr.set_expression.elements
+                    ]
+                )
             )
         )
     if pb_expr.HasField("range_expression"):

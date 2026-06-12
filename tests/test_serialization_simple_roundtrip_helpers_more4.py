@@ -1740,6 +1740,11 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
         with pytest.raises(SerializationError, match=message):
             deserialize_node(payload)
 
+    with pytest.raises(
+        SerializationError, match="Set expression must contain at least one element"
+    ):
+        deserialize_node({"type": "SetExpression", "elements": []})
+
     with pytest.raises(SerializationError, match="UnaryExpression operator must be a string"):
         deserialize_node({"type": "UnaryExpression", "operator": ["not"], "operand": true_expr})
 
@@ -2017,6 +2022,10 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
         (
             BinaryExpression(true_expr, cast(Any, ["and"]), BooleanLiteral(False)),
             "BinaryExpression operator must be a string",
+        ),
+        (
+            SetExpression([]),
+            "Set expression must contain at least one element",
         ),
         (
             RangeExpression(IntegerLiteral(-1), IntegerLiteral(3)),
