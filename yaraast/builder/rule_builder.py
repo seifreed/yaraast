@@ -474,11 +474,12 @@ class RuleBuilder:
 
         validate_new_string_definitions([], self._strings)
 
-        if self._condition is None:
+        condition = self._condition
+        if condition is None:
             if self._require_condition:
                 msg = "Rule condition is required"
                 raise ValidationError(msg)
-            self._condition = BooleanLiteral(value=True)
+            condition = BooleanLiteral(value=True)
 
         return Rule(
             name=self._name,
@@ -486,5 +487,5 @@ class RuleBuilder:
             tags=[Tag(name=tag) for tag in self._tags],
             meta=dict(self._meta),  # Use dict for consistency with parser output
             strings=deepcopy(self._strings),
-            condition=deepcopy(self._condition),
+            condition=deepcopy(condition),
         )

@@ -128,6 +128,20 @@ def test_rule_builder_rejects_invalid_version_value(version: object) -> None:
         RuleBuilder("metadata_rule").with_version(cast(Any, version))
 
 
+def test_rule_builder_default_condition_does_not_mutate_builder_state() -> None:
+    builder = RuleBuilder("default_condition")
+
+    built = builder.build()
+
+    assert isinstance(built.condition, BooleanLiteral)
+    assert built.condition.value is True
+    assert builder.get_condition() is None
+
+    builder.require_condition()
+    with pytest.raises(ValidationError, match="Rule condition is required"):
+        builder.build()
+
+
 def test_rule_builder_rejects_invalid_string_content_types() -> None:
     with pytest.raises(TypeError, match="Plain string value must be a string or bytes"):
         RuleBuilder("string_rule").with_plain_string("$a", cast(Any, True))
