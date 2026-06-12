@@ -16,6 +16,7 @@ from yaraast.ast.expressions import (
     SetExpression,
     StringIdentifier,
     StringLiteral,
+    _validate_expression,
 )
 from yaraast.errors import ValidationError
 
@@ -23,7 +24,11 @@ _STRING_REFERENCE_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 def make_binary(left: Expression, operator: str, right: Expression) -> BinaryExpression:
-    return BinaryExpression(left=left, operator=operator, right=right)
+    return BinaryExpression(
+        left=_validate_expression(left, "Binary left operand"),
+        operator=operator,
+        right=_validate_expression(right, "Binary right operand"),
+    )
 
 
 def make_integer_literal(value: int) -> IntegerLiteral:
@@ -107,15 +112,18 @@ def build_of_expression(quantifier: int | str, string_set: Expression) -> OfExpr
     else:
         msg = "of quantifier must be an integer or string"
         raise TypeError(msg)
-    return OfExpression(quantifier=quant_expr, string_set=string_set)
+    return OfExpression(
+        quantifier=quant_expr,
+        string_set=_validate_expression(string_set, "of string set"),
+    )
 
 
 def chain_or(conditions: list[Expression]) -> Expression:
     if not conditions:
         raise ValidationError("Expected at least one condition")
-    result = conditions[0]
+    result = _validate_expression(conditions[0], "OR condition")
     for cond in conditions[1:]:
-        result = BinaryExpression(left=result, operator="or", right=cond)
+        result = make_binary(result, "or", cond)
     return result
 
 

@@ -15,6 +15,7 @@ from yaraast.builder.fluent_condition_helpers import (
     build_of_expression,
     build_string_set,
     chain_or,
+    make_binary,
     make_filesize_compare,
 )
 from yaraast.builder.fluent_file_builder import yara_file
@@ -82,6 +83,19 @@ def test_fluent_condition_helpers_reject_invalid_of_quantifiers() -> None:
     invalid_quantifier: Any = object()
     with pytest.raises(TypeError, match="of quantifier must be an integer or string"):
         build_of_expression(invalid_quantifier, Identifier(name="them"))
+
+
+def test_fluent_condition_helpers_reject_invalid_prebuilt_expression_structure() -> None:
+    invalid_string = StringIdentifier(name="")
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        build_of_expression("any", invalid_string)
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        chain_or([Identifier(name="valid"), invalid_string])
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        make_binary(Identifier(name="valid"), "and", invalid_string)
 
 
 def test_rule_builder_builds_independent_ast_nodes() -> None:
