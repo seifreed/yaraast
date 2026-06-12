@@ -271,6 +271,29 @@ def test_custom_pragma_parameter_keys_must_be_strings_without_partial_update() -
     assert custom.parameters == {"level": 3}
 
 
+def test_custom_pragma_parameter_helpers_reject_invalid_parameter_state() -> None:
+    custom = CustomPragma(name="vendor", arguments=["x"], scope=PragmaScope.FILE)
+    custom.parameters = cast(Any, [])
+
+    with pytest.raises(TypeError, match="Pragma parameters must be a dictionary"):
+        custom.get_parameter("level")
+
+    with pytest.raises(TypeError, match="Pragma parameters must be a dictionary"):
+        custom.set_parameter("level", 3)
+
+    assert custom.parameters == cast(Any, [])
+
+
+def test_custom_pragma_set_parameter_rejects_invalid_values_without_partial_update() -> None:
+    custom = CustomPragma(name="vendor", arguments=["x"], scope=PragmaScope.FILE)
+    custom.set_parameter("level", 3)
+
+    with pytest.raises(TypeError, match="Pragma parameter value must be"):
+        custom.set_parameter("next", object())
+
+    assert custom.parameters == {"level": 3}
+
+
 def test_pragma_block_rejects_invalid_pragmas_without_partial_update() -> None:
     custom = CustomPragma(name="vendor", arguments=["x"], scope=PragmaScope.FILE)
     block = PragmaBlock(scope=PragmaScope.RULE)

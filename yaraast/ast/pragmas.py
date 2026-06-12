@@ -282,11 +282,15 @@ class CustomPragma(Pragma):
 
     def get_parameter(self, key: str, default: Any = None) -> Any:
         """Get a parameter value by key."""
+        _validate_pragma_parameters(self.parameters)
         return self.parameters.get(require_string(key, "Pragma parameter key"), default)
 
     def set_parameter(self, key: str, value: Any) -> None:
         """Set a parameter value."""
-        self.parameters[require_string(key, "Pragma parameter key")] = value
+        _validate_pragma_parameters(self.parameters)
+        parameter_key = require_string(key, "Pragma parameter key")
+        _validate_pragma_parameter_value(value)
+        self.parameters[parameter_key] = value
 
     def __str__(self) -> str:
         name = _require_nonempty_string(self.name, "Pragma name")
