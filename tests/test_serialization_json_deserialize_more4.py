@@ -1358,6 +1358,32 @@ def test_json_deserialize_string_set_lists_reject_empty_items() -> None:
 
     empty_string_set_item_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": "", "condition": None},
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            {
+                "type": "ForOfExpression",
+                "quantifier": "any",
+                "string_set": "   ",
+                "condition": None,
+            },
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": [], "condition": None},
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            {
+                "type": "ForOfExpression",
+                "quantifier": "any",
+                "string_set": [""],
+                "condition": None,
+            },
+            "ForOfExpression string_set must contain values",
+        ),
+        (
             {"type": "ForOfExpression", "quantifier": "any", "string_set": [None]},
             "ForOfExpression string_set must contain values",
         ),
@@ -1367,6 +1393,22 @@ def test_json_deserialize_string_set_lists_reject_empty_items() -> None:
         ),
         (
             {"type": "OfExpression", "quantifier": "any", "string_set": [None]},
+            "OfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": ""},
+            "OfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": "   "},
+            "OfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": []},
+            "OfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": ["   "]},
             "OfExpression string_set must contain values",
         ),
         (

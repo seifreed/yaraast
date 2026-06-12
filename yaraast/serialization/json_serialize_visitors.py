@@ -251,6 +251,9 @@ def _serialize_string_set_item(serializer, value, context: str):
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, str):
+        if not value.strip():
+            msg = f"{context} must contain values"
+            raise SerializationError(msg)
         return value
     if isinstance(value, Expression):
         return serializer.visit(value)
@@ -262,14 +265,23 @@ def _serialize_string_set(serializer, value, context: str):
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, str):
+        if not value.strip():
+            msg = f"{context} string_set must contain values"
+            raise SerializationError(msg)
         return value
     if isinstance(value, Expression):
         return serializer.visit(value)
 
     field_context = f"{context} string_set"
     if isinstance(value, list | tuple):
+        if not value:
+            msg = f"{field_context} must contain values"
+            raise SerializationError(msg)
         return [_serialize_string_set_item(serializer, item, field_context) for item in value]
     if isinstance(value, set | frozenset):
+        if not value:
+            msg = f"{field_context} must contain values"
+            raise SerializationError(msg)
         return [
             _serialize_string_set_item(serializer, item, field_context)
             for item in sorted(value, key=str)

@@ -145,6 +145,9 @@ def _deserialize_string_set_item(self, value: Any, context: str) -> Any:
         msg = f"{context} must contain values"
         raise SerializationError(msg)
     if isinstance(value, str):
+        if not value.strip():
+            msg = f"{context} must contain values"
+            raise SerializationError(msg)
         return value
     if isinstance(value, dict):
         expression = self._deserialize_expression(value)
@@ -161,10 +164,16 @@ def _deserialize_required_string_set(self, data: dict[str, Any], field: str, con
         msg = f"{field_context} is required"
         raise SerializationError(msg)
     if isinstance(value, str):
+        if not value.strip():
+            msg = f"{field_context} must contain values"
+            raise SerializationError(msg)
         return value
     if isinstance(value, dict):
         return _deserialize_required_expression_value(self, value, field_context)
     if isinstance(value, list):
+        if not value:
+            msg = f"{field_context} must contain values"
+            raise SerializationError(msg)
         return [_deserialize_string_set_item(self, item, field_context) for item in value]
     msg = f"{field_context} must be a string, expression, or list of strings/expressions"
     raise SerializationError(msg)

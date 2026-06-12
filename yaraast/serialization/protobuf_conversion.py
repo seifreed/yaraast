@@ -1155,14 +1155,23 @@ def _copy_string_set_to_protobuf(value, pb_owner, context: str) -> None:
 
     field_context = f"{context} string_set"
     if isinstance(value, str):
+        if not value.strip():
+            msg = f"{field_context} must contain values"
+            raise SerializationError(msg)
         pb_owner.string_set_text = _protobuf_required_string(value, field_context)
         return
 
     if isinstance(value, list | tuple):
+        if not value:
+            msg = f"{field_context} must contain values"
+            raise SerializationError(msg)
         _copy_string_set_items_to_protobuf(value, pb_owner, field_context)
         return
 
     if isinstance(value, set | frozenset):
+        if not value:
+            msg = f"{field_context} must contain values"
+            raise SerializationError(msg)
         _copy_string_set_items_to_protobuf(sorted(value, key=str), pb_owner, field_context)
         return
 
@@ -1180,6 +1189,12 @@ def _copy_string_set_to_protobuf(value, pb_owner, context: str) -> None:
 
 
 def _copy_string_set_items_to_protobuf(items, pb_owner, context: str) -> None:
+    if not items:
+        msg = f"{context} must contain values"
+        raise SerializationError(msg)
+    if any(isinstance(item, str) and not item.strip() for item in items):
+        msg = f"{context} must contain values"
+        raise SerializationError(msg)
     item_texts = [_string_set_item_text(item) for item in items]
     if all(item_text is not None for item_text in item_texts) and not any(
         _string_set_item_has_metadata(item) for item in items
@@ -1267,13 +1282,22 @@ def _restore_quantifier_text(value: str, context: str):
     return value
 
 
-def _protobuf_string_set_to_ast(pb_owner):
+def _protobuf_string_set_to_ast(pb_owner, context: str):
+    field_context = f"{context} string_set"
     if pb_owner.HasField("string_set_text"):
+        if not pb_owner.string_set_text.strip():
+            msg = f"{field_context} must contain values"
+            raise SerializationError(msg)
         return pb_owner.string_set_text
     if pb_owner.string_set_items:
-        return list(pb_owner.string_set_items)
+        items = list(pb_owner.string_set_items)
+        if any(not item.strip() for item in items):
+            msg = f"{field_context} must contain values"
+            raise SerializationError(msg)
+        return items
     if not pb_owner.HasField("string_set"):
-        return []
+        msg = f"{field_context} must contain values"
+        raise SerializationError(msg)
     return protobuf_to_expression(pb_owner.string_set)
 
 
@@ -2407,7 +2431,10 @@ def protobuf_to_expression(pb_expr):
                         "ForOfExpression quantifier",
                     )
                 ),
-                string_set=_protobuf_string_set_to_ast(pb_expr.for_of_expression),
+                string_set=_protobuf_string_set_to_ast(
+                    pb_expr.for_of_expression,
+                    "ForOfExpression",
+                ),
                 condition=(
                     protobuf_to_expression(pb_expr.for_of_expression.condition)
                     if pb_expr.for_of_expression.HasField("condition")
@@ -2456,7 +2483,10 @@ def protobuf_to_expression(pb_expr):
                     if pb_expr.of_expression.HasField("quantifier_text")
                     else protobuf_to_expression(pb_expr.of_expression.quantifier)
                 ),
-                string_set=_protobuf_string_set_to_ast(pb_expr.of_expression),
+                string_set=_protobuf_string_set_to_ast(
+                    pb_expr.of_expression,
+                    "OfExpression",
+                ),
             ),
         )
     if pb_expr.HasField("defined_expression"):

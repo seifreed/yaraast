@@ -2082,6 +2082,32 @@ def test_simple_roundtrip_string_set_values_reject_empty_payloads() -> None:
             "ForOfExpression string_set must contain values",
         ),
         (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": "", "condition": None},
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            {
+                "type": "ForOfExpression",
+                "quantifier": "any",
+                "string_set": "   ",
+                "condition": None,
+            },
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": [], "condition": None},
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            {
+                "type": "ForOfExpression",
+                "quantifier": "any",
+                "string_set": [""],
+                "condition": None,
+            },
+            "ForOfExpression string_set must contain values",
+        ),
+        (
             {"type": "ForOfExpression", "quantifier": "any", "string_set": [{}]},
             "ForOfExpression string_set must contain values",
         ),
@@ -2095,6 +2121,22 @@ def test_simple_roundtrip_string_set_values_reject_empty_payloads() -> None:
         ),
         (
             {"type": "OfExpression", "quantifier": "any", "string_set": [None]},
+            "OfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": ""},
+            "OfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": "   "},
+            "OfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": []},
+            "OfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": ["   "]},
             "OfExpression string_set must contain values",
         ),
         (
@@ -2164,7 +2206,39 @@ def test_simple_roundtrip_serialize_string_sets_reject_invalid_values() -> None:
             "ForOfExpression string_set must contain values",
         ),
         (
+            ForOfExpression("any", cast(Any, ""), true_expr),
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            ForOfExpression("any", cast(Any, "   "), true_expr),
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            ForOfExpression("any", cast(Any, []), true_expr),
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            ForOfExpression("any", cast(Any, [""]), true_expr),
+            "ForOfExpression string_set must contain values",
+        ),
+        (
             OfExpression("any", cast(Any, [{}])),
+            "OfExpression string_set must contain values",
+        ),
+        (
+            OfExpression("any", cast(Any, "")),
+            "OfExpression string_set must contain values",
+        ),
+        (
+            OfExpression("any", cast(Any, "   ")),
+            "OfExpression string_set must contain values",
+        ),
+        (
+            OfExpression("any", cast(Any, [])),
+            "OfExpression string_set must contain values",
+        ),
+        (
+            OfExpression("any", cast(Any, ["   "])),
             "OfExpression string_set must contain values",
         ),
     )

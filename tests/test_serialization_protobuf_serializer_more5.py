@@ -2193,6 +2193,83 @@ def test_protobuf_serializer_rejects_invalid_string_set_reference_fields(
         serializer.serialize(ast)
 
 
+def test_protobuf_serializer_rejects_empty_string_sets() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    true_expr = BooleanLiteral(True)
+    cases: tuple[tuple[Any, str], ...] = (
+        (
+            ForOfExpression("any", "", true_expr),
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            ForOfExpression("any", "   ", true_expr),
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            ForOfExpression("any", [], true_expr),
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            ForOfExpression("any", [""], true_expr),
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            OfExpression("any", ""),
+            "OfExpression string_set must contain values",
+        ),
+        (
+            OfExpression("any", "   "),
+            "OfExpression string_set must contain values",
+        ),
+        (
+            OfExpression("any", []),
+            "OfExpression string_set must contain values",
+        ),
+        (
+            OfExpression("any", ["   "]),
+            "OfExpression string_set must contain values",
+        ),
+    )
+
+    for condition, message in cases:
+        ast = YaraFile(rules=[Rule(name="empty_string_set", condition=condition)])
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+
+def test_protobuf_deserializer_rejects_empty_string_sets() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    cases: tuple[tuple[str, str, str | None, list[str]], ...] = (
+        ("for_of_expression", "ForOfExpression string_set must contain values", "", []),
+        ("for_of_expression", "ForOfExpression string_set must contain values", "   ", []),
+        ("for_of_expression", "ForOfExpression string_set must contain values", None, []),
+        ("for_of_expression", "ForOfExpression string_set must contain values", None, [""]),
+        ("of_expression", "OfExpression string_set must contain values", "", []),
+        ("of_expression", "OfExpression string_set must contain values", "   ", []),
+        ("of_expression", "OfExpression string_set must contain values", None, []),
+        ("of_expression", "OfExpression string_set must contain values", None, ["   "]),
+    )
+
+    for expression_kind, message, string_set_text, string_set_items in cases:
+        pb_file = yara_ast_pb2.YaraFile()
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "empty_string_set"
+        condition = pb_rule.condition
+        if expression_kind == "for_of_expression":
+            condition.for_of_expression.quantifier = "any"
+            if string_set_text is not None:
+                condition.for_of_expression.string_set_text = string_set_text
+            condition.for_of_expression.string_set_items.extend(string_set_items)
+        else:
+            condition.of_expression.quantifier_text = "any"
+            if string_set_text is not None:
+                condition.of_expression.string_set_text = string_set_text
+            condition.of_expression.string_set_items.extend(string_set_items)
+
+        with pytest.raises(SerializationError, match=message):
+            serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 @pytest.mark.parametrize(
     ("expression_kind", "message"),
     [
@@ -2474,23 +2551,20 @@ def test_protobuf_serializer_preserves_extern_rule_reference_condition() -> None
     assert condition.namespace == "legacy"
 
 
-def test_protobuf_serializer_preserves_empty_string_sets() -> None:
+def test_protobuf_serializer_rejects_legacy_empty_string_sets() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
-    ast = YaraFile(
-        rules=[
-            Rule(name="of_empty", condition=OfExpression(IntegerLiteral(0), [])),
-            Rule(name="for_of_empty", condition=ForOfExpression("any", [], None)),
-        ],
+    cases: tuple[tuple[Any, str], ...] = (
+        (OfExpression(IntegerLiteral(0), []), "OfExpression string_set must contain values"),
+        (
+            ForOfExpression("any", [], None),
+            "ForOfExpression string_set must contain values",
+        ),
     )
 
-    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
-
-    of_condition = restored.rules[0].condition
-    for_of_condition = restored.rules[1].condition
-    assert isinstance(of_condition, OfExpression)
-    assert of_condition.string_set == []
-    assert isinstance(for_of_condition, ForOfExpression)
-    assert for_of_condition.string_set == []
+    for condition, message in cases:
+        ast = YaraFile(rules=[Rule(name="empty_string_set", condition=condition)])
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
 
 
 def _invalid_comment_metadata_cases() -> list[tuple[YaraFile, str]]:
