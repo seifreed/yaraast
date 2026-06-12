@@ -27,10 +27,10 @@ def _validate_output_path(output: str | None) -> str | None:
         return None
     try:
         output_path = _require_file_path(output)
+        if _path_exists_and_is_dir(output_path):
+            raise ValueError("output path must not be a directory")
     except (TypeError, ValueError) as exc:
         raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
     return output
 
 
@@ -44,10 +44,10 @@ def _resolve_output_path(output: str | None) -> Path | None:
         return None
     try:
         output_path = _require_file_path(output)
+        if _path_exists_and_is_dir(output_path):
+            raise ValueError("output path must not be a directory")
     except (TypeError, ValueError) as exc:
         raise click.BadParameter(str(exc), param_hint="--output") from exc
-    if output_path.exists() and output_path.is_dir():
-        raise click.BadParameter("output path must not be a directory", param_hint="--output")
     return output_path
 
 
@@ -60,10 +60,10 @@ def _validate_output_dir_path(output_dir: str | None) -> str | None:
         return None
     try:
         output_path = _require_file_path(output_dir)
+        if _path_exists_and_not_dir(output_path):
+            raise ValueError("output path must be a directory")
     except (TypeError, ValueError) as exc:
         raise click.BadParameter(str(exc), param_hint="--output-dir") from exc
-    if output_path.exists() and not output_path.is_dir():
-        raise click.BadParameter("output path must be a directory", param_hint="--output-dir")
     return output_dir
 
 
@@ -81,9 +81,33 @@ def _require_file_path(path: object) -> Path:
     return Path(raw_path)
 
 
+def _path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError as exc:
+        msg = f"path could not be accessed: {path}"
+        raise ValueError(msg) from exc
+
+
+def _path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError as exc:
+        msg = f"path could not be accessed: {path}"
+        raise ValueError(msg) from exc
+
+
+def _path_exists_and_is_dir(path: Path) -> bool:
+    return _path_exists(path) and _path_is_dir(path)
+
+
+def _path_exists_and_not_dir(path: Path) -> bool:
+    return _path_exists(path) and not _path_is_dir(path)
+
+
 def _require_existing_file_path(path: str | Path) -> Path:
     path_obj = _require_file_path(path)
-    if path_obj.exists() and path_obj.is_dir():
+    if _path_exists_and_is_dir(path_obj):
         msg = "path must not be a directory"
         raise ValueError(msg)
     return path_obj

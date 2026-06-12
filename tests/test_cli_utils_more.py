@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+import click
 import pytest
 
 from yaraast.cli import utils
@@ -89,6 +90,25 @@ def test_cli_utils_reject_empty_pathlike_path() -> None:
 
     with pytest.raises(ValueError, match="path must not be empty"):
         utils.parse_yara_file(cast(Any, empty_path))
+
+
+def test_cli_utils_rejects_inaccessible_paths() -> None:
+    path = "a" * 5000
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        utils.read_text(path)
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        utils.write_text(path, "content")
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        utils.write_json(path, {"value": 1})
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        utils.parse_yara_file(path)
+
+    with pytest.raises(click.BadParameter, match="path could not be accessed"):
+        utils._validate_output_path(path)
 
 
 def test_cli_utils_reject_directory_paths(tmp_path: Path) -> None:
