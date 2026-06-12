@@ -501,7 +501,8 @@ def render_for_of_expression(gen: Any, node: Any) -> str:
         allow_percentage=node.condition is None,
         context="for quantifier" if node.condition is not None else "quantifier",
     )
-    _reject_for_of_rule_set_items(node.string_set)
+    if node.condition is not None:
+        _reject_for_of_rule_set_items(node.string_set)
     string_set = _render_string_set(gen, node.string_set)
     if node.condition is not None:
         previous = getattr(gen, "_allow_string_placeholder", False)

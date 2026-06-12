@@ -273,6 +273,31 @@ def test_dead_code_eliminator_ignores_rule_wildcards_in_for_of_string_sets(
 @pytest.mark.parametrize(
     "string_set",
     [
+        [StringWildcard("a*")],
+        (StringWildcard("a*"),),
+        SetExpression([StringWildcard("a*")]),
+    ],
+)
+def test_dead_code_eliminator_keeps_rule_wildcards_in_conditionless_for_of_string_sets(
+    string_set: Any,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="main", condition=ForOfExpression("any", string_set, None)),
+            Rule(name="a1", modifiers=["private"], condition=BooleanLiteral(False)),
+            Rule(name="a2", modifiers=["private"], condition=BooleanLiteral(True)),
+        ]
+    )
+
+    optimized, count = DeadCodeEliminator().eliminate(ast)
+
+    assert count == 0
+    assert [rule.name for rule in optimized.rules] == ["main", "a1", "a2"]
+
+
+@pytest.mark.parametrize(
+    "string_set",
+    [
         ["a*"],
         (StringLiteral("a*"),),
         SetExpression([StringLiteral("a*")]),

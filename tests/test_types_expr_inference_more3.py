@@ -1626,6 +1626,17 @@ def test_expr_inference_helper_and_branch_edges() -> None:
     )
     assert raw_for_of.errors == []
 
+    raw_rule_env = TypeEnvironment()
+    raw_rule_env.add_rule("helper")
+    raw_rule_for_of = ExpressionTypeInference(raw_rule_env)
+    assert isinstance(
+        raw_rule_for_of.infer(
+            ForOfExpression(quantifier="any", string_set=StringWildcard("helper*"), condition=None)
+        ),
+        BooleanType,
+    )
+    assert raw_rule_for_of.errors == []
+
     percent_for_of = ExpressionTypeInference(TypeEnvironment())
     assert isinstance(
         percent_for_of.infer(
@@ -1666,7 +1677,7 @@ def test_expr_inference_helper_and_branch_edges() -> None:
         ),
         BooleanType,
     )
-    assert any("'for...of' quantifier must be" in e for e in bad_for_of.errors)
+    assert any("'of' quantifier must be" in e for e in bad_for_of.errors)
 
 
 def test_expr_inference_handles_yarax_with_match_collections() -> None:

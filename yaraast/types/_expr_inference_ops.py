@@ -1552,17 +1552,35 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
         ctx.env.pop_scope()
         return BooleanType()
 
+    quantifier_context = "for...of" if node.condition is not None else "of"
     quant_type = _infer_quantifier_value(ctx, node.quantifier)
     _validate_quantifier_value(
         ctx,
         node.quantifier,
-        context="for...of",
+        context=quantifier_context,
         allow_percentage=True,
     )
     if not isinstance(quant_type, StringType | IntegerType | DoubleType):
         ctx.errors.append(
-            f"'for...of' quantifier must be string, integer, or percentage, got {quant_type}"
+            f"'{quantifier_context}' quantifier must be string, integer, or percentage, "
+            f"got {quant_type}"
         )
+    if node.condition is None:
+        set_kind = _classify_of_set_value(node.string_set)
+        if set_kind == "string":
+            _validate_string_set_refs(ctx, node.string_set)
+            set_type = _infer_string_set_value(ctx, node.string_set)
+            if not isinstance(set_type, StringSetType):
+                ctx.errors.append(f"'of' requires string set, got {set_type}")
+        elif set_kind == "rule":
+            _validate_rule_set_refs(ctx, node.string_set)
+        elif set_kind == "mixed":
+            ctx.errors.append("'of' requires string set or rule set, got mixed set")
+        else:
+            _validate_string_set_refs(ctx, node.string_set)
+            set_type = _infer_string_set_value(ctx, node.string_set)
+            ctx.errors.append(f"'of' requires string set or rule set, got {set_type}")
+        return BooleanType()
     _validate_string_set_refs(ctx, node.string_set)
     set_type = _infer_string_set_value(ctx, node.string_set)
     if not isinstance(set_type, StringSetType):

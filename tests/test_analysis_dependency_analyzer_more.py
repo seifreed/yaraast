@@ -218,6 +218,33 @@ def test_dependency_analyzer_ignores_rule_wildcards_in_for_of_string_sets(
 @pytest.mark.parametrize(
     "string_set",
     [
+        [StringWildcard("a*")],
+        SetExpression([StringWildcard("a*")]),
+    ],
+)
+def test_dependency_analyzer_tracks_rule_wildcards_in_conditionless_for_of_string_sets(
+    string_set: Any,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="a1", condition=BooleanLiteral(True)),
+            Rule(name="a2", condition=BooleanLiteral(True)),
+            Rule(name="other", condition=BooleanLiteral(True)),
+            Rule(name="caller", condition=ForOfExpression("any", string_set, None)),
+        ]
+    )
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert results["dependencies"]["caller"] == ["a1", "a2"]
+    assert results["dependency_graph"]["a1"]["depended_by"] == ["caller"]
+    assert results["dependency_graph"]["a2"]["depended_by"] == ["caller"]
+    assert results["dependency_graph"]["other"]["is_independent"] is True
+
+
+@pytest.mark.parametrize(
+    "string_set",
+    [
         ["a*"],
         SetExpression([StringLiteral("a*")]),
     ],

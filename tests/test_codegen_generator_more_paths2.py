@@ -2415,6 +2415,36 @@ def test_codegen_generators_parenthesize_single_string_set_items(
 
 
 @pytest.mark.parametrize(
+    ("string_set", "expected"),
+    [
+        (Identifier("helper"), "any of (helper)"),
+        (StringWildcard("helper*"), "any of (helper*)"),
+        (SetExpression([Identifier("helper")]), "any of (helper)"),
+        (SetExpression([StringWildcard("helper*")]), "any of (helper*)"),
+    ],
+)
+def test_codegen_generators_allow_rule_sets_in_conditionless_for_of_expression(
+    string_set: Any,
+    expected: str,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="helper", condition=BooleanLiteral(True)),
+            Rule(name="main", condition=ForOfExpression("any", string_set, None)),
+        ]
+    )
+
+    assert expected in CodeGenerator().generate(ast)
+    assert expected in CodeGenerator(
+        options=GeneratorOptions(advanced=FormattingConfig())
+    ).generate(ast)
+    assert expected in CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
+    assert expected in CodeGenerator(
+        options=GeneratorOptions(pretty=PrettyPrintOptions())
+    ).generate(ast)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         OfExpression(-1, Identifier("them")),
@@ -4221,6 +4251,15 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         gen.visit_for_of_expression(
             ForOfExpression("any", Identifier("helper"), BooleanLiteral(True))
         )
+    assert (
+        gen.visit_for_of_expression(
+            ForOfExpression("any", SetExpression([StringWildcard("helper*")]), None)
+        )
+        == "any of (helper*)"
+    )
+    assert gen.visit_for_of_expression(ForOfExpression("any", Identifier("helper"), None)) == (
+        "any of (helper)"
+    )
     assert gen.visit_at_expression(AtExpression("$a", IntegerLiteral(0))) == "$a at 0"
     with pytest.raises(ValueError, match="In expression range must be a range expression"):
         gen.visit_in_expression(InExpression("$a", ParenthesesExpression(StringOffset("a"))))

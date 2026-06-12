@@ -382,6 +382,9 @@ class DependencyAnalyzer(BaseVisitor[None]):
     def visit_for_of_expression(self, node: Any) -> None:
         if isinstance(node.quantifier, ASTNode):
             self.visit(node.quantifier)
+        if node.condition is None:
+            self._visit_rule_set_value(node.string_set)
+            return
         self._visit_if(node.condition)
 
     def visit_function_call(self, node: FunctionCall) -> None:

@@ -323,7 +323,7 @@ rule caller {
         SetExpression([StringWildcard("a*")]),
     ],
 )
-def test_dependency_graph_generator_ignores_rule_wildcards_in_for_of_string_sets(
+def test_dependency_graph_generator_tracks_rule_wildcards_in_conditionless_for_of_string_sets(
     string_set: Any,
 ) -> None:
     ast = YaraFile(
@@ -338,7 +338,7 @@ def test_dependency_graph_generator_ignores_rule_wildcards_in_for_of_string_sets
 
     gen.visit(ast)
 
-    assert gen.dependencies.get("caller", set()) == set()
+    assert gen.dependencies.get("caller", set()) == {"a1", "a2"}
     assert gen.dependencies.get("a1", set()) == set()
     assert gen.dependencies.get("a2", set()) == set()
     assert gen.dependencies.get("other", set()) == set()

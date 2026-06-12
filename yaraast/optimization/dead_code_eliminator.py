@@ -178,7 +178,10 @@ class DeadCodeEliminator(ASTTransformer):
                 self._collect_from_expression(expr.quantifier)
             return
         elif isinstance(expr, ForOfExpression):
-            self._collect_for_of_string_set_value(expr.string_set)
+            if expr.condition is None:
+                self._collect_string_set_value(expr.string_set)
+            else:
+                self._collect_for_of_string_set_value(expr.string_set)
             if isinstance(expr.quantifier, ASTNode):
                 self._collect_from_expression(expr.quantifier)
             if expr.condition is not None:
@@ -355,11 +358,21 @@ class DeadCodeEliminator(ASTTransformer):
 
         if isinstance(expr, ForOfExpression):
             return (
-                isinstance(expr.quantifier, ASTNode)
-                and self._contains_rule_reference_with_locals(expr.quantifier, local_variables)
-            ) or (
-                expr.condition is not None
-                and self._contains_rule_reference_with_locals(expr.condition, local_variables)
+                (
+                    expr.condition is None
+                    and self._contains_rule_set_reference_with_locals(
+                        expr.string_set,
+                        local_variables,
+                    )
+                )
+                or (
+                    isinstance(expr.quantifier, ASTNode)
+                    and self._contains_rule_reference_with_locals(expr.quantifier, local_variables)
+                )
+                or (
+                    expr.condition is not None
+                    and self._contains_rule_reference_with_locals(expr.condition, local_variables)
+                )
             )
 
         if isinstance(expr, WithStatement):
@@ -443,6 +456,42 @@ class DeadCodeEliminator(ASTTransformer):
             self._contains_rule_reference_with_locals(child, local_variables)
             for child in expr.children()
         )
+
+    def _contains_rule_set_reference_with_locals(
+        self,
+        value: Any,
+        local_variables: set[str],
+    ) -> bool:
+        if isinstance(value, list | tuple | set | frozenset):
+            return any(
+                self._contains_rule_set_reference_with_locals(item, local_variables)
+                for item in value
+            )
+        if isinstance(value, ParenthesesExpression):
+            return self._contains_rule_set_reference_with_locals(
+                value.expression,
+                local_variables,
+            )
+        if isinstance(value, SetExpression):
+            return any(
+                self._contains_rule_set_reference_with_locals(element, local_variables)
+                for element in value.elements
+            )
+        if isinstance(value, Identifier):
+            return (
+                isinstance(value.name, str)
+                and value.name not in _RESERVED_IDENTIFIERS
+                and value.name != "them"
+                and not value.name.startswith("$")
+                and value.name not in local_variables
+            )
+        if isinstance(value, StringWildcard):
+            return (
+                isinstance(value.pattern, str)
+                and not value.pattern.startswith("$")
+                and bool(self._matching_rule_wildcard_names(value.pattern))
+            )
+        return False
 
     def _normalize_string_id(self, identifier: str) -> str:
         return normalize_string_reference_id(identifier)
