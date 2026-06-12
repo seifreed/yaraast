@@ -3533,6 +3533,40 @@ def test_codegen_generators_reject_invalid_in_and_for_iterables(
 
 
 @pytest.mark.parametrize(
+    ("module_name", "condition"),
+    [
+        (
+            "pe",
+            ForExpression("any", "item", FunctionCall("pe.imphash", []), BooleanLiteral(True)),
+        ),
+        (
+            "math",
+            ForExpression(
+                "any",
+                "item",
+                FunctionCall("math.entropy", [StringLiteral("abc")]),
+                BooleanLiteral(True),
+            ),
+        ),
+    ],
+)
+def test_codegen_rejects_known_module_function_scalar_for_iterables(
+    module_name: str,
+    condition: Any,
+) -> None:
+    ast = YaraFile(
+        imports=[Import(module_name)],
+        rules=[Rule(name="invalid_module_function_iterable", condition=condition)],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="For expression iterable must be a range, set, or iterable expression",
+    ):
+        CodeGenerator().generate(ast)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         OfExpression(IntegerLiteral(1), IntegerLiteral(1)),

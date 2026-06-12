@@ -237,9 +237,13 @@ def _is_definitely_non_iterable_expression(value: Any) -> bool:
         StringIdentifier,
         StringLiteral,
     )
+    from yaraast.types._registry_collections import ArrayType, DictionaryType
 
     if isinstance(value, ParenthesesExpression):
         return _is_definitely_non_iterable_expression(value.expression)
+    expression_type = known_builtin_module_expression_type(value)
+    if expression_type is not None:
+        return not isinstance(expression_type, ArrayType | DictionaryType)
     return isinstance(
         value,
         (
