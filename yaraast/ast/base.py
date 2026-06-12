@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from yaraast.ast.comments import Comment, CommentGroup
@@ -301,13 +301,13 @@ class YaraFile(ASTNode):
     def get_pragma_by_type(self, pragma_type: PragmaType) -> list[Pragma]:
         """Get all pragmas of a specific type."""
         pragma_type = _require_pragma_type(pragma_type, "YaraFile pragma type")
-        return [p for p in self.pragmas if p.pragma_type == pragma_type]
+        return [p for p in self._validated_pragmas() if p.pragma_type == pragma_type]
 
     def has_include_once(self) -> bool:
         """Check if file has include_once pragma."""
         from yaraast.ast.pragmas import PragmaType
 
-        return any(p.pragma_type == PragmaType.INCLUDE_ONCE for p in self.pragmas)
+        return any(p.pragma_type == PragmaType.INCLUDE_ONCE for p in self._validated_pragmas())
 
     def get_extern_rule_by_name(
         self,
@@ -317,10 +317,10 @@ class YaraFile(ASTNode):
         """Get extern rule by name and optional namespace."""
         name = _require_nonempty_string(name, "YaraFile extern rule name")
         namespace = _require_optional_nonempty_string(namespace, "YaraFile extern namespace")
-        for rule in self.extern_rules:
+        for rule in self._validated_extern_rules():
             if rule.name == name and rule.namespace == namespace:
                 return rule
-        for extern_namespace in self.namespaces:
+        for extern_namespace in self._validated_namespaces():
             if namespace is not None and extern_namespace.name != namespace:
                 continue
             for rule in extern_namespace.extern_rules:
@@ -331,7 +331,66 @@ class YaraFile(ASTNode):
 
     def get_all_rules(self) -> list[Rule]:
         """Get a copy of all regular rules in this file."""
-        return self.rules.copy()
+        return self._validated_rules().copy()
+
+    def _validated_rules(self) -> list[Rule]:
+        from yaraast.ast.rules import Rule
+
+        rules = cast(
+            "list[Rule]",
+            _require_ast_node_sequence_type(self.rules, "YaraFile.rules", Rule, "Rule"),
+        )
+        for rule in rules:
+            rule.validate_structure()
+        return rules
+
+    def _validated_pragmas(self) -> list[Pragma]:
+        from yaraast.ast.pragmas import Pragma
+
+        pragmas = cast(
+            "list[Pragma]",
+            _require_ast_node_sequence_type(
+                self.pragmas,
+                "YaraFile.pragmas",
+                Pragma,
+                "Pragma",
+            ),
+        )
+        for pragma in pragmas:
+            pragma.validate_structure()
+        return pragmas
+
+    def _validated_extern_rules(self) -> list[ExternRule]:
+        from yaraast.ast.extern import ExternRule
+
+        extern_rules = cast(
+            "list[ExternRule]",
+            _require_ast_node_sequence_type(
+                self.extern_rules,
+                "YaraFile.extern_rules",
+                ExternRule,
+                "ExternRule",
+            ),
+        )
+        for rule in extern_rules:
+            rule.validate_structure()
+        return extern_rules
+
+    def _validated_namespaces(self) -> list[ExternNamespace]:
+        from yaraast.ast.extern import ExternNamespace
+
+        namespaces = cast(
+            "list[ExternNamespace]",
+            _require_ast_node_sequence_type(
+                self.namespaces,
+                "YaraFile.namespaces",
+                ExternNamespace,
+                "ExternNamespace",
+            ),
+        )
+        for namespace in namespaces:
+            namespace.validate_structure()
+        return namespaces
 
 
 def require_yara_file(value: object, name: str) -> YaraFile:

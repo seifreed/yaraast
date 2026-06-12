@@ -839,6 +839,123 @@ def test_yarafile_helpers() -> None:
     assert file_node.get_extern_rule_by_name("ext1", "ext") == extern_rule
 
 
+@pytest.mark.parametrize(
+    ("field_name", "value", "operation", "message"),
+    [
+        ("rules", cast(Any, "bad"), "get_all_rules", "YaraFile rules must be a list or tuple"),
+        (
+            "rules",
+            [cast(Any, object())],
+            "get_all_rules",
+            "YaraFile rules must contain Rule nodes",
+        ),
+        (
+            "pragmas",
+            cast(Any, "bad"),
+            "get_pragma_by_type",
+            "YaraFile pragmas must be a list or tuple",
+        ),
+        (
+            "pragmas",
+            [cast(Any, object())],
+            "has_include_once",
+            "YaraFile pragmas must contain Pragma nodes",
+        ),
+        (
+            "extern_rules",
+            cast(Any, "bad"),
+            "get_extern_rule_by_name",
+            "YaraFile extern_rules must be a list or tuple",
+        ),
+        (
+            "extern_rules",
+            [cast(Any, object())],
+            "get_extern_rule_by_name",
+            "YaraFile extern_rules must contain ExternRule nodes",
+        ),
+        (
+            "namespaces",
+            cast(Any, "bad"),
+            "get_extern_rule_by_name",
+            "YaraFile namespaces must be a list or tuple",
+        ),
+        (
+            "namespaces",
+            [cast(Any, object())],
+            "get_extern_rule_by_name",
+            "YaraFile namespaces must contain ExternNamespace nodes",
+        ),
+    ],
+)
+def test_yarafile_helpers_reject_invalid_internal_containers(
+    field_name: str,
+    value: Any,
+    operation: str,
+    message: str,
+) -> None:
+    file_node = YaraFile()
+    setattr(file_node, field_name, value)
+
+    with pytest.raises(TypeError, match=message):
+        if operation == "get_all_rules":
+            file_node.get_all_rules()
+        elif operation == "get_pragma_by_type":
+            file_node.get_pragma_by_type(PragmaType.PRAGMA)
+        elif operation == "has_include_once":
+            file_node.has_include_once()
+        else:
+            file_node.get_extern_rule_by_name("Remote")
+
+
+@pytest.mark.parametrize(
+    ("file_node", "operation", "message"),
+    [
+        (
+            YaraFile(rules=[Rule(cast(Any, object()))]),
+            "get_all_rules",
+            "Rule name must be a string",
+        ),
+        (
+            YaraFile(pragmas=[Pragma(cast(Any, "bad"), "vendor")]),
+            "get_pragma_by_type",
+            "Pragma type must be a PragmaType",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule(cast(Any, 123))]),
+            "get_extern_rule_by_name",
+            "ExternRule name must be a string",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace("corp", extern_rules=cast(Any, "Rule"))]),
+            "get_extern_rule_by_name",
+            "ExternNamespace extern_rules must be a list",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace("corp", extern_rules=[cast(Any, object())])]),
+            "get_extern_rule_by_name",
+            "ExternNamespace extern_rules item must be ExternRule",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace("corp", [ExternRule(cast(Any, 123))])]),
+            "get_extern_rule_by_name",
+            "ExternRule name must be a string",
+        ),
+    ],
+)
+def test_yarafile_helpers_reject_invalid_child_state(
+    file_node: YaraFile,
+    operation: str,
+    message: str,
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        if operation == "get_all_rules":
+            file_node.get_all_rules()
+        elif operation == "get_pragma_by_type":
+            file_node.get_pragma_by_type(PragmaType.PRAGMA)
+        else:
+            file_node.get_extern_rule_by_name("Remote")
+
+
 def test_parser_populates_location_spans_for_core_nodes() -> None:
     ast = Parser().parse("""
 rule sample {
