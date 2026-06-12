@@ -403,6 +403,11 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternRuleReference rule_name must not be empty"):
         s._deserialize_expression({"type": "ExternRuleReference", "rule_name": ""})
 
+    with pytest.raises(SerializationError, match="ExternRuleReference rule_name must not be empty"):
+        s._deserialize_expression(
+            {"type": "ExternRuleReference", "rule_name": "   ", "namespace": None}
+        )
+
     with pytest.raises(SerializationError, match="ExternRuleReference namespace must be a string"):
         s._deserialize_expression(
             {"type": "ExternRuleReference", "rule_name": "RuleA", "namespace": True}

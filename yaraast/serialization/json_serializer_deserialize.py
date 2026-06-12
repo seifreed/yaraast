@@ -709,14 +709,16 @@ def _deser_extern_rule_reference(self, data: dict[str, Any]):
     if rule_name is None:
         msg = "ExternRuleReference missing rule_name"
         raise SerializationError(msg)
+    rule_field = "rule_name" if "rule_name" in data else "name"
     if not isinstance(rule_name, str):
         msg = "ExternRuleReference rule_name must be a string"
         raise SerializationError(msg)
-    if not rule_name:
-        msg = "ExternRuleReference rule_name must not be empty"
-        raise SerializationError(msg)
     return ExternRuleReference(
-        rule_name=rule_name,
+        rule_name=_deserialize_nonempty_string_field(
+            data,
+            rule_field,
+            "ExternRuleReference",
+        ),
         namespace=_deserialize_required_nullable_nonempty_string_field(
             data,
             "namespace",
