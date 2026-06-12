@@ -461,6 +461,23 @@ def test_classic_parsers_reject_string_wildcards_outside_of_sets() -> None:
             parser_factory().parse(source)
 
 
+def test_classic_parsers_reject_rule_sets_in_for_of_string_sets() -> None:
+    invalid_sources = [
+        "rule helper { condition: true } rule r { condition: for any of (helper) : (true) }",
+        "rule helper { condition: true } rule r { condition: for any of (helper*) : (true) }",
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="for\\.\\.\\.of string set"):
+                parser_factory().parse(source)
+
+    for parser_factory in (Parser, CommentAwareParser):
+        parser_factory().parse(
+            "rule helper { condition: true } rule r { condition: any of (helper*) }"
+        )
+
+
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:
     p = _parser_with_tokens([_t(TokenType.INTEGER, 7)])
     assert isinstance(p._parse_primary_expression(), IntegerLiteral)

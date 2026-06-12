@@ -181,6 +181,7 @@ class ExpressionForMixin:
         """Parse for...of expression."""
         start_token = start_token or self._peek()
         string_set = self._parse_of_string_set()
+        self._validate_for_of_string_set(string_set)
 
         if not self._match(TokenType.COLON):
             msg = "Expected ':' after string set"
@@ -254,6 +255,13 @@ class ExpressionForMixin:
         if kind is not None:
             return
         msg = "Expected string or rule identifier in of string set"
+        raise ParserError(msg, self._previous())
+
+    def _validate_for_of_string_set(self, expr: Expression) -> None:
+        kind = self._of_string_set_kind(expr, top_level=True)
+        if kind == "string":
+            return
+        msg = "Expected string identifiers in for...of string set"
         raise ParserError(msg, self._previous())
 
     def _of_string_set_kind(self, expr: Expression, *, top_level: bool = False) -> str | None:
