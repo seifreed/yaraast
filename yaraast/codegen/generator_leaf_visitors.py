@@ -176,6 +176,12 @@ def _reject_non_string_dictionary_key(value: Any) -> None:
     if isinstance(value, ParenthesesExpression):
         _reject_non_string_dictionary_key(value.expression)
         return
+    from yaraast.codegen.generator_expression_visitors import _known_builtin_module_scalar_type_name
+
+    known_type = _known_builtin_module_scalar_type_name(value)
+    if known_type is not None and known_type != "string":
+        msg = "Dictionary key must be string for libyara output"
+        raise ValueError(msg)
     if isinstance(
         value,
         (

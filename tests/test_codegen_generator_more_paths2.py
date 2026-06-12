@@ -3988,6 +3988,24 @@ def test_codegen_generators_reject_invalid_module_container_access(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+def test_codegen_rejects_non_string_module_function_dictionary_key() -> None:
+    condition = BinaryExpression(
+        DictionaryAccess(
+            MemberAccess(ModuleReference("pe"), "version_info"),
+            FunctionCall("pe.calculate_checksum", []),
+        ),
+        "==",
+        StringLiteral("x"),
+    )
+    ast = YaraFile(
+        imports=[Import("pe")],
+        rules=[Rule(name="invalid_dictionary_key", condition=condition)],
+    )
+
+    with pytest.raises(ValueError, match="Dictionary key must be string"):
+        CodeGenerator().generate(ast)
+
+
 @pytest.mark.parametrize(
     ("condition", "message"),
     [
