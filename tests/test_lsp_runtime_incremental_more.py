@@ -19,7 +19,7 @@ from yaraast.lsp.document_query_resolution_ranges import (
 )
 from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.document_types import LanguageMode
-from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
+from yaraast.lsp.runtime import DocumentContext, LspRuntime, RuntimeConfig, path_to_uri
 from yaraast.lsp.semantic_tokens import SemanticTokensProvider
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
@@ -329,6 +329,36 @@ def test_runtime_rejects_invalid_document_uri_inputs() -> None:
 
     with pytest.raises(TypeError, match="Document URI must be a string"):
         runtime.close_document(invalid_uri)
+
+
+def test_runtime_rejects_invalid_config_inputs() -> None:
+    with pytest.raises(TypeError, match="LSP runtime config must be a RuntimeConfig"):
+        LspRuntime(config=cast(Any, object()))
+
+    with pytest.raises(TypeError, match="RuntimeConfig cache_workspace must be a boolean"):
+        RuntimeConfig(cache_workspace=cast(Any, "yes"))
+
+    with pytest.raises(
+        TypeError, match="RuntimeConfig rule_name_validation must be a string or None"
+    ):
+        RuntimeConfig(rule_name_validation=cast(Any, object()))
+
+    with pytest.raises(TypeError, match="RuntimeConfig metadata_validation must be a list"):
+        RuntimeConfig(metadata_validation=cast(Any, object()))
+
+    with pytest.raises(TypeError, match="RuntimeConfig code_formatting must be a dictionary"):
+        RuntimeConfig(code_formatting=cast(Any, object()))
+
+    with pytest.raises(TypeError, match="RuntimeConfig language_mode must be a LanguageMode"):
+        RuntimeConfig(language_mode=cast(Any, object()))
+
+    with pytest.raises(TypeError, match="RuntimeConfig diagnostics_debounce_ms must be an integer"):
+        RuntimeConfig(diagnostics_debounce_ms=cast(Any, True))
+
+    with pytest.raises(
+        ValueError, match="RuntimeConfig diagnostics_debounce_ms must be non-negative"
+    ):
+        RuntimeConfig(diagnostics_debounce_ms=-1)
 
 
 def test_document_context_rule_scope_excludes_range_end_position() -> None:

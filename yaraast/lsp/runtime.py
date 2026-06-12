@@ -167,6 +167,9 @@ class LspRuntime:
     ) -> None:
         self.documents: dict[str, DocumentContext] = {}
         self.index = index or WorkspaceIndex()
+        if config is not None and not isinstance(config, RuntimeConfig):
+            msg = "LSP runtime config must be a RuntimeConfig"
+            raise TypeError(msg)
         self.config = config or RuntimeConfig()
         self.cache = cache or CacheManager()
         self._latency: dict[str, deque[float]] = {}

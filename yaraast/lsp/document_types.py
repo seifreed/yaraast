@@ -111,6 +111,35 @@ class RuntimeConfig:
     language_mode: LanguageMode = LanguageMode.AUTO
     diagnostics_debounce_ms: int = DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.cache_workspace, bool):
+            msg = "RuntimeConfig cache_workspace must be a boolean"
+            raise TypeError(msg)
+        if self.rule_name_validation is not None and not isinstance(
+            self.rule_name_validation,
+            str,
+        ):
+            msg = "RuntimeConfig rule_name_validation must be a string or None"
+            raise TypeError(msg)
+        if not isinstance(self.metadata_validation, list):
+            msg = "RuntimeConfig metadata_validation must be a list"
+            raise TypeError(msg)
+        if not isinstance(self.code_formatting, dict):
+            msg = "RuntimeConfig code_formatting must be a dictionary"
+            raise TypeError(msg)
+        if not isinstance(self.language_mode, LanguageMode):
+            msg = "RuntimeConfig language_mode must be a LanguageMode"
+            raise TypeError(msg)
+        if isinstance(self.diagnostics_debounce_ms, bool) or not isinstance(
+            self.diagnostics_debounce_ms,
+            int,
+        ):
+            msg = "RuntimeConfig diagnostics_debounce_ms must be an integer"
+            raise TypeError(msg)
+        if self.diagnostics_debounce_ms < 0:
+            msg = "RuntimeConfig diagnostics_debounce_ms must be non-negative"
+            raise ValueError(msg)
+
 
 @dataclass(slots=True)
 class SymbolRecord:
