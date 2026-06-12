@@ -11,6 +11,7 @@ from yaraast.ast.comments import Comment
 from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
+    BooleanLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
@@ -576,6 +577,18 @@ def test_yara_file_transformer_rejects_invalid_added_rule_inputs_without_partial
     assert [rule.name for rule in transformer.build().rules] == ["valid"]
 
 
+def test_yara_file_transformer_rejects_invalid_added_rule_structure_without_partial_update() -> (
+    None
+):
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("valid")]))
+    bad_rule = Rule(name="bad", condition=cast(Any, object()))
+
+    with pytest.raises(TypeError, match=r"Rule\.condition must be an AST node"):
+        transformer.add_rule(bad_rule)
+
+    assert [rule.name for rule in transformer.build().rules] == ["valid"]
+
+
 def test_yara_file_transformer_rejects_duplicate_transformed_rule_names_without_partial_update() -> (
     None
 ):
@@ -614,6 +627,29 @@ def test_yara_file_transformer_rejects_duplicate_all_rule_transform_names_withou
         transformer.transform_all_rules(lambda rule: RuleTransformer(rule).rename("same").build())
 
     assert [rule.name for rule in transformer.build().rules] == ["one", "two"]
+
+
+@pytest.mark.parametrize("operation", ["transform_rule", "transform_all_rules"])
+def test_yara_file_transformer_rejects_invalid_transformed_rule_structure_without_partial_update(
+    operation: str,
+) -> None:
+    transformer = YaraFileTransformer(
+        YaraFile(rules=[Rule(name="valid", condition=BooleanLiteral(True))])
+    )
+
+    def make_bad(rule: Rule) -> Rule:
+        rule.condition = cast(Any, object())
+        return rule
+
+    with pytest.raises(TypeError, match=r"Rule\.condition must be an AST node"):
+        if operation == "transform_rule":
+            transformer.transform_rule("valid", make_bad)
+        else:
+            transformer.transform_all_rules(make_bad)
+
+    transformed = transformer.build()
+    assert [rule.name for rule in transformed.rules] == ["valid"]
+    assert isinstance(transformed.rules[0].condition, BooleanLiteral)
 
 
 def test_yara_file_transformer_rejects_non_callable_all_rule_transformer() -> None:

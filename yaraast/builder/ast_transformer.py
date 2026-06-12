@@ -491,6 +491,7 @@ class YaraFileTransformer:
     def _validate_rule_list(rules: list[Rule]) -> None:
         for rule in rules:
             validate_identifier(rule.name, "rule")
+            rule.validate_structure()
         validate_unique_rule_names([], rules)
 
     def add_import(self, module: str, alias: str | None = None) -> YaraFileTransformer:
@@ -529,8 +530,7 @@ class YaraFileTransformer:
         if not isinstance(rule, Rule):
             msg = "Rule input must be a Rule"
             raise TypeError(msg)
-        validate_identifier(rule.name, "rule")
-        validate_unique_rule_names(self.yara_file.rules, [rule])
+        self._validate_rule_list([*self.yara_file.rules, rule])
         self.yara_file.rules.append(CloneTransformer.clone_rule(rule))
         return self
 
