@@ -148,6 +148,9 @@ def test_unified_parser_parse_file_permission_and_oserror(tmp_path: Path) -> Non
     with pytest.raises(OSError, match="Error accessing file"):
         UnifiedParser.parse_file(tmp_path / too_long_name)
 
+    with pytest.raises(OSError, match="Error accessing file"):
+        UnifiedParser.detect_file_dialect(tmp_path / too_long_name)
+
 
 def test_unified_parser_parse_yaral_branch() -> None:
     source = """

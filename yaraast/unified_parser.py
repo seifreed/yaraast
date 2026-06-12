@@ -5,6 +5,7 @@ Licensed under GPLv3
 https://www.gnu.org/licenses/gpl-3.0.html
 """
 
+from os import stat_result
 from pathlib import Path
 import re
 import stat as stat_module
@@ -36,6 +37,17 @@ def _read_yara_file_text(file_path: Path) -> str:
     except UnicodeDecodeError as exc:
         msg = "YARA file must contain valid UTF-8 text"
         raise ValueError(msg) from exc
+
+
+def _stat_yara_file(file_path: Path, display_path: object) -> stat_result:
+    try:
+        return file_path.stat()
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(f"YARA file not found: {display_path}") from exc
+    except PermissionError as exc:
+        raise PermissionError(f"Permission denied reading file: {display_path}") from exc
+    except OSError as exc:
+        raise OSError(f"Error accessing file {display_path}: {exc}") from exc
 
 
 class UnifiedParser:
@@ -245,15 +257,8 @@ class UnifiedParser:
 
         """
         file_path_obj = _require_text_file_path(file_path)
-        try:
-            file_stat = file_path_obj.stat()
-            file_size = file_stat.st_size
-        except FileNotFoundError as e:
-            raise FileNotFoundError(f"YARA file not found: {file_path}") from e
-        except PermissionError as e:
-            raise PermissionError(f"Permission denied reading file: {file_path}") from e
-        except OSError as e:
-            raise OSError(f"Error accessing file {file_path}: {e}") from e
+        file_stat = _stat_yara_file(file_path_obj, file_path)
+        file_size = file_stat.st_size
         if stat_module.S_ISDIR(file_stat.st_mode):
             msg = "YARA file path must not be a directory"
             raise IsADirectoryError(msg)
@@ -342,7 +347,8 @@ class UnifiedParser:
 
         """
         file_path_obj = _require_text_file_path(file_path)
-        if stat_module.S_ISDIR(file_path_obj.stat().st_mode):
+        file_stat = _stat_yara_file(file_path_obj, file_path)
+        if stat_module.S_ISDIR(file_stat.st_mode):
             msg = "YARA file path must not be a directory"
             raise IsADirectoryError(msg)
         content = _read_yara_file_text(file_path_obj)
