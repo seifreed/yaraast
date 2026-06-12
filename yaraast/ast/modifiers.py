@@ -51,6 +51,27 @@ def _require_string_modifier_value(value: Any) -> str | int | float | tuple[int,
     raise TypeError(msg)
 
 
+def _require_string_modifier_type(value: Any) -> "StringModifierType":
+    if not isinstance(value, StringModifierType):
+        msg = "StringModifier modifier_type must be a StringModifierType"
+        raise TypeError(msg)
+    return value
+
+
+def _require_rule_modifier_type(value: Any) -> "RuleModifierType":
+    if not isinstance(value, RuleModifierType):
+        msg = "RuleModifier modifier_type must be a RuleModifierType"
+        raise TypeError(msg)
+    return value
+
+
+def _require_meta_scope(value: Any) -> "MetaScope":
+    if not isinstance(value, MetaScope):
+        msg = "Meta scope must be a MetaScope"
+        raise TypeError(msg)
+    return value
+
+
 def _is_xor_modifier_text(value: str) -> bool:
     parts = value.split("-", maxsplit=1)
     keys: list[int] = []
@@ -167,9 +188,7 @@ class StringModifier(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate string modifier fields before direct analysis."""
-        if not isinstance(self.modifier_type, StringModifierType):
-            msg = "StringModifier modifier_type must be a StringModifierType"
-            raise TypeError(msg)
+        _require_string_modifier_type(self.modifier_type)
         _require_string_modifier_value(self.value)
 
     @classmethod
@@ -188,17 +207,17 @@ class StringModifier(ASTNode):
 
     def __str__(self) -> str:
         """String representation of the modifier."""
-        if self.value is not None:
-            if isinstance(self.value, tuple):
-                return f"{self.modifier_type.value}({self.value[0]}-{self.value[1]})"
-            if isinstance(self.value, str):
-                if self.modifier_type == StringModifierType.XOR and _is_xor_modifier_text(
-                    self.value
-                ):
-                    return f"{self.modifier_type.value}({self.value})"
-                return f'{self.modifier_type.value}("{escape_string_source_value(self.value)}")'
-            return f"{self.modifier_type.value}({self.value})"
-        return self.modifier_type.value
+        modifier_type = _require_string_modifier_type(self.modifier_type)
+        value = _require_string_modifier_value(self.value)
+        if value is not None:
+            if isinstance(value, tuple):
+                return f"{modifier_type.value}({value[0]}-{value[1]})"
+            if isinstance(value, str):
+                if modifier_type == StringModifierType.XOR and _is_xor_modifier_text(value):
+                    return f"{modifier_type.value}({value})"
+                return f'{modifier_type.value}("{escape_string_source_value(value)}")'
+            return f"{modifier_type.value}({value})"
+        return modifier_type.value
 
 
 @dataclass(frozen=True)
@@ -209,9 +228,7 @@ class RuleModifier:
 
     def validate_structure(self) -> None:
         """Validate rule modifier fields before direct analysis."""
-        if not isinstance(self.modifier_type, RuleModifierType):
-            msg = "RuleModifier modifier_type must be a RuleModifierType"
-            raise TypeError(msg)
+        _require_rule_modifier_type(self.modifier_type)
 
     @classmethod
     def from_string(cls, modifier_str: str) -> "RuleModifier":
@@ -225,7 +242,7 @@ class RuleModifier:
         return self.modifier_type.value
 
     def __str__(self) -> str:
-        return self.modifier_type.value
+        return _require_rule_modifier_type(self.modifier_type).value
 
 
 @dataclass
@@ -240,9 +257,7 @@ class MetaEntry:
         """Validate meta entry fields before direct analysis."""
         _require_nonempty_string(self.key, "Meta key")
         _require_meta_value(self.value)
-        if not isinstance(self.scope, MetaScope):
-            msg = "Meta scope must be a MetaScope"
-            raise TypeError(msg)
+        _require_meta_scope(self.scope)
 
     @classmethod
     def from_key_value(
@@ -269,13 +284,16 @@ class MetaEntry:
 
     def __str__(self) -> str:
         """String representation of meta entry."""
-        scope_prefix = f"{self.scope.value}:" if self.scope != MetaScope.PUBLIC else ""
-        if isinstance(self.value, str):
-            return f'{scope_prefix}{self.key} = "{escape_string_source_value(self.value)}"'
-        if isinstance(self.value, bool):
-            value = "true" if self.value else "false"
-            return f"{scope_prefix}{self.key} = {value}"
-        return f"{scope_prefix}{self.key} = {self.value}"
+        key = _require_nonempty_string(self.key, "Meta key")
+        value = _require_meta_value(self.value)
+        scope = _require_meta_scope(self.scope)
+        scope_prefix = f"{scope.value}:" if scope != MetaScope.PUBLIC else ""
+        if isinstance(value, str):
+            return f'{scope_prefix}{key} = "{escape_string_source_value(value)}"'
+        if isinstance(value, bool):
+            bool_value = "true" if value else "false"
+            return f"{scope_prefix}{key} = {bool_value}"
+        return f"{scope_prefix}{key} = {value}"
 
 
 # Convenience functions for creating modifiers

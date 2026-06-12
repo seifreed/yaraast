@@ -104,6 +104,66 @@ def test_modifier_accept_and_factory_helpers() -> None:
     assert str(meta_entry) == 'protected:author = "seifreed"'
 
 
+@pytest.mark.parametrize(
+    ("node", "error_type", "message"),
+    [
+        (
+            StringModifier(cast(Any, "xor")),
+            TypeError,
+            "StringModifier modifier_type must be a StringModifierType",
+        ),
+        (
+            StringModifier(StringModifierType.XOR, cast(Any, False)),
+            TypeError,
+            "StringModifier value must be a string, number, tuple, or null",
+        ),
+        (
+            StringModifier(StringModifierType.XOR, cast(Any, (1,))),
+            TypeError,
+            "StringModifier tuple value must contain two integers",
+        ),
+        (
+            StringModifier(StringModifierType.XOR, cast(Any, (False, 2))),
+            TypeError,
+            "StringModifier tuple value must contain two integers",
+        ),
+        (
+            StringModifier(StringModifierType.XOR, cast(Any, float("nan"))),
+            ValueError,
+            "StringModifier value must be finite",
+        ),
+        (
+            RuleModifier(cast(Any, "private")),
+            TypeError,
+            "RuleModifier modifier_type must be a RuleModifierType",
+        ),
+        (MetaEntry("", "value"), ValueError, "Meta key cannot be empty"),
+        (
+            MetaEntry("key", cast(Any, None)),
+            TypeError,
+            "Meta value must be a string, integer, boolean, or finite float",
+        ),
+        (
+            MetaEntry("key", cast(Any, float("inf"))),
+            TypeError,
+            "Meta value must be a string, integer, boolean, or finite float",
+        ),
+        (
+            MetaEntry("key", "value", cast(Any, "public")),
+            TypeError,
+            "Meta scope must be a MetaScope",
+        ),
+    ],
+)
+def test_modifier_string_reprs_reject_invalid_fields(
+    node: object,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
+        str(node)
+
+
 def test_modifier_helpers_reject_invalid_inputs_at_creation_time() -> None:
     invalid_cases: list[tuple[Callable[[], object], str]] = [
         (
