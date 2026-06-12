@@ -1144,6 +1144,16 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
             }
         )
 
+    with pytest.raises(SerializationError, match="StringModifier name must not be empty"):
+        deserialize_string(
+            {
+                "type": "PlainString",
+                "identifier": "$a",
+                "value": "abc",
+                "modifiers": ["   "],
+            }
+        )
+
     with pytest.raises(SerializationError, match="StringModifier value is required"):
         deserialize_string(
             {

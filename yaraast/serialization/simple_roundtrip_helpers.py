@@ -809,7 +809,7 @@ def _deserialize_modifier(modifier: Any) -> Any:
             _deserialize_required_field(modifier, "value", "StringModifier"),
         )
     elif isinstance(modifier, str):
-        if not modifier:
+        if _is_empty_nonempty_text(modifier, "StringModifier name"):
             msg = "StringModifier name must not be empty"
             raise SerializationError(msg)
         name = modifier
