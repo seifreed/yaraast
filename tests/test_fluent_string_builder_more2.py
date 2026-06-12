@@ -139,6 +139,9 @@ def test_fluent_string_builder_rejects_invalid_integer_hex_bytes() -> None:
     with pytest.raises(TypeError, match="Invalid type for hex value"):
         FluentStringBuilder("$bool").hex_bytes(True)
 
+    with pytest.raises(TypeError, match="Invalid type for hex value"):
+        FluentStringBuilder("$object").hex_bytes(0x4D, cast(Any, object()), 0x5A)
+
     with pytest.raises(ValidationError, match="Byte value must be 0-255"):
         FluentStringBuilder("$large").hex_bytes(256)
 

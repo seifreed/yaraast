@@ -82,6 +82,9 @@ class FluentStringBuilder:
                         msg = f"Invalid hex byte: {byte_val}"
                         raise ValidationError(msg)
                     tokens.append(HexByte(value=val))
+            else:
+                msg = f"Invalid type for hex value: {type(byte_val)}"
+                raise TypeError(msg)
 
         self._content = tokens
         self._string_type = "hex"
