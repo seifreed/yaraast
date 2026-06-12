@@ -29,7 +29,11 @@ def parser_error_to_diagnostic(
     start_col = source_col
     end_col = source_col + 10
     source_line = ""
-    source = source_text or getattr(error, "source", None) or getattr(error, "text", None) or ""
+    source = (
+        source_text
+        if source_text is not None
+        else getattr(error, "source", None) or getattr(error, "text", None) or ""
+    )
     if source:
         lines = source.split("\n")
         if 0 <= line < len(lines):

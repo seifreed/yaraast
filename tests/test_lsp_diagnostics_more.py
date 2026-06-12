@@ -69,6 +69,21 @@ def test_parser_error_diagnostic_end_uses_utf16_columns() -> None:
     assert diagnostic.range.end.character == utf8_col_to_utf16(source, source_start + 10)
 
 
+def test_parser_error_diagnostic_respects_empty_source_text() -> None:
+    error = SimpleNamespace(
+        line=1,
+        column=2,
+        source="😀x",
+        __str__=lambda self: "syntax",
+    )
+
+    diagnostic = parser_error_to_diagnostic(error, DiagnosticData, source_text="")
+
+    assert diagnostic.range.start.character == 1
+    assert diagnostic.range.end.character == 11
+    assert _diagnostic_metadata(diagnostic)["column"] == 1
+
+
 def test_provider_parser_error_diagnostic_uses_source_text_for_utf16_columns() -> None:
     provider = DiagnosticsProvider()
     text = """
