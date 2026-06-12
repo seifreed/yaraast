@@ -81,6 +81,14 @@ def _validate_hex_token_sequence(
         raise ValueError(msg)
 
 
+def _require_string_identifier(value: Any, node_type: str) -> str:
+    identifier = require_string(value, "String identifier")
+    if not identifier.strip():
+        msg = f"{node_type} identifier must not be empty"
+        raise ValueError(msg)
+    return identifier
+
+
 @dataclass
 class StringDefinition(ASTNode):
     """Base class for string definitions."""
@@ -91,7 +99,7 @@ class StringDefinition(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate string definition scalar fields before direct analysis."""
-        require_string(self.identifier, "String identifier")
+        _require_string_identifier(self.identifier, type(self).__name__)
         if not isinstance(self.modifiers, list):
             msg = f"{type(self).__name__} modifiers must be a list"
             raise TypeError(msg)

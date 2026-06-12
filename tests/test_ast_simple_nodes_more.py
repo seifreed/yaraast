@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.base import Location
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -164,6 +166,26 @@ def test_string_nodes_accept_positional_payload_arguments() -> None:
     assert hex_string.tokens == [HexByte(0x90)]
     assert hex_string.modifiers == []
     hex_string.validate_structure()
+
+
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (StringDefinition(identifier=""), "StringDefinition identifier must not be empty"),
+        (PlainString(identifier=" ", value="abc"), "PlainString identifier must not be empty"),
+        (
+            HexString(identifier="", tokens=[HexByte(0x90)]),
+            "HexString identifier must not be empty",
+        ),
+        (RegexString(identifier="\t", regex="abc"), "RegexString identifier must not be empty"),
+    ],
+)
+def test_string_nodes_validate_structure_rejects_empty_identifiers(
+    node: StringDefinition | PlainString | HexString | RegexString,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        node.validate_structure()
 
 
 def test_simple_hex_nodes_accept() -> None:
