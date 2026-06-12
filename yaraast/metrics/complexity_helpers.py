@@ -58,7 +58,7 @@ def calculate_cyclomatic_complexity(expr: ASTNode) -> int:
     if isinstance(expr, ForExpression | ForOfExpression | ArrayComprehension | DictComprehension):
         complexity += 1
     if isinstance(expr, PatternMatch):
-        complexity += max(1, len(expr.cases) + (1 if expr.default else 0))
+        complexity += max(1, len(expr.cases) + (1 if expr.default is not None else 0))
 
     # Recursively check children
     for child in _iter_cyclomatic_children(expr):

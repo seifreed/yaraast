@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from yaraast.ast.conditions import ForExpression, ForOfExpression
-from yaraast.ast.expressions import BinaryExpression, Identifier, IntegerLiteral, UnaryExpression
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    Identifier,
+    IntegerLiteral,
+    UnaryExpression,
+)
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.metrics.complexity_helpers import (
@@ -13,6 +19,12 @@ from yaraast.metrics.complexity_helpers import (
     calculate_rule_complexity,
 )
 from yaraast.metrics.complexity_model import ComplexityMetrics
+from yaraast.yarax.ast_nodes import MatchCase, PatternMatch
+
+
+class _FalsyBooleanLiteral(BooleanLiteral):
+    def __bool__(self) -> bool:
+        return False
 
 
 def test_complexity_helpers_cover_rule_expression_and_cognitive_paths() -> None:
@@ -50,6 +62,19 @@ def test_complexity_helpers_cover_rule_expression_and_cognitive_paths() -> None:
     )
     assert calculate_cognitive_complexity(for_expr) >= 4
     assert calculate_cognitive_complexity(for_of_expr) >= 4
+
+
+def test_cyclomatic_complexity_counts_falsy_pattern_match_default() -> None:
+    match_expr = PatternMatch(
+        value=Identifier("value"),
+        cases=[
+            MatchCase(IntegerLiteral(1), BooleanLiteral(True)),
+            MatchCase(IntegerLiteral(2), BooleanLiteral(False)),
+        ],
+        default=_FalsyBooleanLiteral(False),
+    )
+
+    assert calculate_cyclomatic_complexity(match_expr) == 4
 
 
 def test_complexity_model_to_dict_quality_score_and_grades() -> None:
