@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 from typing import Any, cast
 
 import pytest
@@ -139,6 +140,13 @@ def test_metrics_services_path_helpers_and_error_detection() -> None:
         ms.is_graphviz_error(ModuleNotFoundError("No module named 'graphviz'", name="graphviz"))
         is True
     )
+    graphviz_called_process = type(
+        "CalledProcessError",
+        (Exception,),
+        {"__module__": "graphviz.backend.execute"},
+    )
+    assert ms.is_graphviz_error(graphviz_called_process("graphviz dot failed")) is True
+    assert ms.is_graphviz_error(subprocess.CalledProcessError(1, ["not-dot"])) is False
     assert ms.is_graphviz_error(FileNotFoundError("No such file or directory: rules.yar")) is False
     assert ms.is_graphviz_error(Exception("dot product calculation failed")) is False
     assert ms.is_graphviz_error(Exception("another error")) is False

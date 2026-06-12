@@ -9,7 +9,10 @@ def is_graphviz_error(error: Exception) -> bool:
         return True
 
     error_type = type(error).__name__
-    if error_type in ("ExecutableNotFound", "CalledProcessError"):
+    error_module = type(error).__module__
+    if error_type in ("ExecutableNotFound", "CalledProcessError") and error_module.startswith(
+        "graphviz."
+    ):
         return True
 
     error_text = str(error).lower()
