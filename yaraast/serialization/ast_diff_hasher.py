@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.strings import HexByte, HexToken
+from yaraast.ast.strings import HexAlternative, HexByte, HexToken
 from yaraast.visitor import ASTVisitor
 
 if TYPE_CHECKING:
@@ -25,6 +25,13 @@ def _meta_value_repr(value: Any) -> str:
     if isinstance(value, str):
         return f"str:{value}"
     return f"{type(value).__name__}:{value}"
+
+
+def _validate_real_hex_token(node: Any) -> None:
+    if isinstance(node, HexToken):
+        validate_structure = getattr(node, "validate_structure", None)
+        if callable(validate_structure):
+            validate_structure()
 
 
 class AstHasher(ASTVisitor[str]):
@@ -148,18 +155,22 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_hex_byte(self, node) -> str:
         """Hash HexByte node."""
+        _validate_real_hex_token(node)
         return f"Byte({node.value})"
 
     def visit_hex_negated_byte(self, node) -> str:
         """Hash HexNegatedByte node."""
+        _validate_real_hex_token(node)
         return f"NegatedByte({node.value})"
 
     def visit_hex_wildcard(self, node) -> str:
         """Hash HexWildcard node."""
+        _validate_real_hex_token(node)
         return "Wildcard()"
 
     def visit_hex_jump(self, node) -> str:
         """Hash HexJump node."""
+        _validate_real_hex_token(node)
         return f"Jump({node.min_jump},{node.max_jump})"
 
     def visit_binary_expression(self, node) -> str:
@@ -192,9 +203,12 @@ class AstHasher(ASTVisitor[str]):
         return f"StringDef({node.identifier},{getattr(node, 'is_anonymous', False)})"
 
     def visit_hex_token(self, node) -> str:
+        _validate_real_hex_token(node)
         return "Token()"
 
     def visit_hex_alternative(self, node) -> str:
+        if isinstance(node, HexAlternative):
+            node.validate_structure()
         alternatives = []
         for alternative in getattr(node, "alternatives", []):
             alternatives.append(self._hash_hex_alternative_branch(alternative))
@@ -209,10 +223,12 @@ class AstHasher(ASTVisitor[str]):
 
     def _hash_hex_alternative_token(self, token) -> str:
         if isinstance(token, HexToken):
+            _validate_real_hex_token(token)
             return self._hash_value(token)
         return self._hash_value(HexByte(token))
 
     def visit_hex_nibble(self, node) -> str:
+        _validate_real_hex_token(node)
         return f"Nibble({node.high},{node.value})"
 
     def visit_expression(self, node) -> str:

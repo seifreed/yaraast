@@ -23,7 +23,16 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaType
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexAlternative, HexByte, HexString, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexString,
+    PlainString,
+    RegexString,
+)
 from yaraast.serialization.ast_diff_hasher import AstHasher
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -460,6 +469,44 @@ def test_ast_hasher_rejects_invalid_real_string_state(
     message: str,
 ) -> None:
     with pytest.raises(TypeError, match=message):
+        AstHasher().visit(node)
+
+
+@pytest.mark.parametrize(
+    ("node", "error_type", "message"),
+    [
+        (HexByte(cast(Any, 0x100)), TypeError, "HexByte value must be a byte"),
+        (
+            HexNegatedByte(cast(Any, "??")),
+            TypeError,
+            "HexNegatedByte value must be a byte or negated nibble",
+        ),
+        (
+            HexJump(cast(Any, -1), 2),
+            TypeError,
+            "HexJump min_jump must be a non-negative integer",
+        ),
+        (HexJump(3, 1), TypeError, "HexJump min_jump cannot exceed max_jump"),
+        (
+            HexNibble(cast(Any, "high"), "A"),
+            TypeError,
+            "HexNibble high must be a boolean",
+        ),
+        (HexNibble(True, cast(Any, "AA")), TypeError, "HexNibble value must be a nibble"),
+        (HexAlternative([[]]), ValueError, "HexAlternative branches must not be empty"),
+        (
+            HexAlternative([HexJump(1, None)]),
+            ValueError,
+            "Unbounded HexJump is not allowed inside hex alternatives",
+        ),
+    ],
+)
+def test_ast_hasher_rejects_invalid_real_hex_token_state(
+    node: Any,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
         AstHasher().visit(node)
 
 
