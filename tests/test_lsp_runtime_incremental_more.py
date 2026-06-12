@@ -917,6 +917,39 @@ rule sample {
         doc.rename_rule_edits("sample", "")
 
 
+def test_document_context_rejects_invalid_reference_inputs() -> None:
+    doc = DocumentContext(
+        "file:///sample.yar",
+        """
+rule sample {
+  strings:
+    $a = "x"
+  condition:
+    $a
+}
+""".lstrip(),
+    )
+
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        doc.find_string_references(cast(Any, object()))
+    with pytest.raises(TypeError, match="include_declaration must be a boolean"):
+        doc.find_string_references("$a", include_declaration=cast(Any, object()))
+    with pytest.raises(TypeError, match="rule_scope must be a string or None"):
+        doc.find_string_references("$a", rule_scope=cast(Any, object()))
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        doc.find_string_reference_records(cast(Any, object()))
+    with pytest.raises(TypeError, match="include_declaration must be a boolean"):
+        doc.find_string_reference_records("$a", include_declaration=cast(Any, object()))
+    with pytest.raises(TypeError, match="Rule name must be a string"):
+        doc.find_rule_definition(cast(Any, object()))
+    with pytest.raises(TypeError, match="Rule name must be a string"):
+        doc.rule_occurrences(cast(Any, object()))
+    with pytest.raises(TypeError, match="Rule name must be a string"):
+        doc.rule_reference_records(cast(Any, object()))
+    with pytest.raises(TypeError, match="include_declaration must be a boolean"):
+        doc.rule_reference_records("sample", include_declaration=cast(Any, object()))
+
+
 def test_document_context_exposes_include_info(tmp_path: Path) -> None:
     include_file = tmp_path / "common.yar"
     include_file.write_text("rule common { condition: true }\n", encoding="utf-8")

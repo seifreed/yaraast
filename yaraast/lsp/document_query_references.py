@@ -60,6 +60,25 @@ def _require_string_rename_name(new_name: object) -> str:
     return new_name
 
 
+def _require_bool_flag(value: object, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        msg = f"{field_name} must be a boolean"
+        raise TypeError(msg)
+    return value
+
+
+def _require_optional_rule_scope(rule_scope: object) -> str | None:
+    if rule_scope is None:
+        return None
+    if not isinstance(rule_scope, str):
+        msg = "rule_scope must be a string or None"
+        raise TypeError(msg)
+    if not rule_scope.strip():
+        msg = "rule_scope must not be empty"
+        raise ValueError(msg)
+    return rule_scope
+
+
 def find_string_references(
     ctx: DocumentContext,
     identifier: str,
@@ -67,6 +86,9 @@ def find_string_references(
     include_declaration: bool = True,
     rule_scope: str | None = None,
 ) -> list[Location]:
+    identifier = _require_symbol_name(identifier, "String identifier")
+    include_declaration = _require_bool_flag(include_declaration, "include_declaration")
+    rule_scope = _require_optional_rule_scope(rule_scope)
     cache_key = f"string_references:{identifier}:{int(include_declaration)}:{rule_scope}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
@@ -118,6 +140,9 @@ def find_string_reference_records(
     include_declaration: bool = True,
     rule_scope: str | None = None,
 ) -> list[ReferenceRecord]:
+    identifier = _require_symbol_name(identifier, "String identifier")
+    include_declaration = _require_bool_flag(include_declaration, "include_declaration")
+    rule_scope = _require_optional_rule_scope(rule_scope)
     cache_key = f"string_reference_records:{identifier}:{int(include_declaration)}:{rule_scope}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
@@ -190,6 +215,7 @@ def rename_rule_edits(ctx: DocumentContext, rule_name: str, new_name: str) -> li
 
 
 def find_rule_definition(ctx: DocumentContext, rule_name: str) -> Location | None:
+    rule_name = _require_symbol_name(rule_name, "Rule name")
     cache_key = f"rule_definition:{rule_name}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
@@ -203,6 +229,7 @@ def find_rule_definition(ctx: DocumentContext, rule_name: str) -> Location | Non
 
 
 def rule_occurrences(ctx: DocumentContext, rule_name: str) -> list[Location]:
+    rule_name = _require_symbol_name(rule_name, "Rule name")
     cache_key = f"rule_occurrences:{rule_name}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
@@ -241,6 +268,8 @@ def rule_reference_records(
     *,
     include_declaration: bool = True,
 ) -> list[ReferenceRecord]:
+    rule_name = _require_symbol_name(rule_name, "Rule name")
+    include_declaration = _require_bool_flag(include_declaration, "include_declaration")
     cache_key = f"rule_reference_records:{rule_name}:{int(include_declaration)}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
