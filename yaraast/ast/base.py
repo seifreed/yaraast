@@ -95,6 +95,9 @@ def _require_location_int(value: Any, field_name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         msg = f"{field_name} must be an integer"
         raise TypeError(msg)
+    if value < 1:
+        msg = f"{field_name} must be at least 1"
+        raise ValueError(msg)
     return int(value)
 
 

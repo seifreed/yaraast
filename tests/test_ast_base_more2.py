@@ -742,6 +742,29 @@ def test_direct_yarafile_analysis_rejects_invalid_location_metadata(
 
 
 @pytest.mark.parametrize(
+    ("location", "message"),
+    [
+        (Location(0, 1), "Location line must be at least 1"),
+        (Location(-1, 1), "Location line must be at least 1"),
+        (Location(1, 0), "Location column must be at least 1"),
+        (Location(1, -1), "Location column must be at least 1"),
+        (Location(1, 1, end_line=0), "Location end_line must be at least 1"),
+        (Location(1, 1, end_column=0), "Location end_column must be at least 1"),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_non_positive_location_metadata(
+    location: Location,
+    message: str,
+) -> None:
+    rule = Rule("bad_location", condition=BooleanLiteral(True))
+    rule.location = location
+    malformed_file = YaraFile(rules=[rule])
+
+    with pytest.raises(ValueError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
     ("malformed_file", "message"),
     [
         (
