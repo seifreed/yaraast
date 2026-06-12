@@ -184,6 +184,11 @@ class InExpression(Condition):
     @property
     def string_id(self) -> str | None:
         """Return string_id if subject is a string, None otherwise."""
+        _validate_string_or_expression(
+            self.subject,
+            "InExpression subject",
+            "InExpression subject must be a string or expression",
+        )
         return self.subject if isinstance(self.subject, str) else None
 
     def validate_structure(self) -> None:

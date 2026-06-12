@@ -382,6 +382,30 @@ def test_direct_yarafile_analysis_rejects_invalid_condition_scalars(
 
 
 @pytest.mark.parametrize(
+    ("subject", "error_type", "message"),
+    [
+        (
+            cast(Any, object()),
+            TypeError,
+            "InExpression subject must be a string or expression",
+        ),
+        ("", ValueError, "InExpression subject must not be empty"),
+        ("   ", ValueError, "InExpression subject must not be empty"),
+        (Identifier(""), ValueError, "Identifier name cannot be empty"),
+    ],
+)
+def test_in_expression_string_id_property_rejects_invalid_subject_state(
+    subject: Any,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    condition = InExpression(subject, Identifier("filesize"))
+
+    with pytest.raises(error_type, match=message):
+        _ = condition.string_id
+
+
+@pytest.mark.parametrize(
     ("token", "message"),
     [
         (HexByte(cast(Any, object())), "HexByte value must be a byte"),
