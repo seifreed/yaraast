@@ -9,6 +9,7 @@ import pytest
 from yaraast.ast.modifiers import MetaEntry, RuleModifier, RuleModifierType
 from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaType
 from yaraast.ast.rules import Rule, Tag
+from yaraast.errors import ValidationError
 
 
 def test_rule_modifier_flags_and_meta_entries() -> None:
@@ -58,6 +59,9 @@ def test_rule_get_meta_value_rejects_non_string_keys(key: Any) -> None:
         (cast(Any, object()), "Rule modifiers must be a list"),
         ([cast(Any, object())], "Rule modifiers item must be RuleModifier or string"),
         ([""], "Rule modifier name cannot be empty"),
+        (["bad modifier"], "Invalid rule modifier identifier"),
+        (["bad-modifier"], "Invalid rule modifier identifier"),
+        (["1modifier"], "Invalid rule modifier identifier"),
     ],
 )
 def test_rule_modifier_flags_reject_invalid_modifier_state(
@@ -67,10 +71,10 @@ def test_rule_modifier_flags_reject_invalid_modifier_state(
     rule = Rule(name="r1")
     rule.modifiers = modifiers
 
-    with pytest.raises((TypeError, ValueError), match=message):
+    with pytest.raises((TypeError, ValueError, ValidationError), match=message):
         _ = rule.is_private
 
-    with pytest.raises((TypeError, ValueError), match=message):
+    with pytest.raises((TypeError, ValueError, ValidationError), match=message):
         _ = rule.is_global
 
 

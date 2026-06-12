@@ -52,6 +52,6 @@ def test_rule_modifier_flags_negative_and_mixed_paths() -> None:
     assert string_global.is_global is True
     assert string_global.is_private is False
 
-    unrelated_string_mods = Rule(name="s", modifiers=["something-else"])
+    unrelated_string_mods = Rule(name="s", modifiers=["vendor_modifier"])
     assert unrelated_string_mods.is_private is False
     assert unrelated_string_mods.is_global is False

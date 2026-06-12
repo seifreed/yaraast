@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+import re
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import (
@@ -17,11 +18,27 @@ from yaraast.ast.base import (
 )
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
 from yaraast.errors import ValidationError
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 
 if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
     from yaraast.ast.pragmas import InRulePragma
     from yaraast.ast.strings import StringDefinition
+
+_RULE_MODIFIER_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
+
+
+def _require_rule_modifier_name(value: Any) -> str:
+    modifier = _require_nonempty_string(value, "Rule modifier name")
+    if (
+        len(modifier) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _RULE_MODIFIER_IDENTIFIER_RE.fullmatch(modifier) is not None
+        and modifier not in _YARA_KEYWORDS
+    ):
+        return modifier
+    msg = f"Invalid rule modifier identifier: {modifier}"
+    raise ValidationError(msg)
 
 
 @dataclass
@@ -198,7 +215,7 @@ class Rule(ASTNode):
                 modifier.validate_structure()
                 modifiers.append(modifier)
             elif isinstance(modifier, str):
-                modifiers.append(_require_nonempty_string(modifier, "Rule modifier name"))
+                modifiers.append(_require_rule_modifier_name(modifier))
             else:
                 msg = "Rule modifiers item must be RuleModifier or string"
                 raise TypeError(msg)
