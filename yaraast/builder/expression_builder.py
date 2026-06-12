@@ -22,6 +22,7 @@ from yaraast.ast.expressions import (
     StringIdentifier,
     StringLiteral,
     UnaryExpression,
+    _validate_expression,
 )
 from yaraast.builder.file_builder_validation import validate_identifier, validate_identifier_path
 from yaraast.errors import ValidationError
@@ -51,15 +52,12 @@ class ExpressionBuilder:
     @staticmethod
     def _integer_or_expression(value: object) -> Expression:
         if isinstance(value, Expression):
-            return value
+            return _validate_expression(value, "Integer expression")
         return ExpressionBuilder._integer_literal(value)
 
     @staticmethod
     def _expression(value: object, kind: str) -> Expression:
-        if isinstance(value, Expression):
-            return value
-        msg = f"{kind} must be an Expression"
-        raise TypeError(msg)
+        return _validate_expression(value, kind)
 
     @staticmethod
     def _expressions(values: tuple[object, ...], kind: str) -> list[Expression]:

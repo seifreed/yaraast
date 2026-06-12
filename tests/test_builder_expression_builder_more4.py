@@ -12,6 +12,7 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     Identifier,
     IntegerLiteral,
+    StringIdentifier,
     UnaryExpression,
 )
 from yaraast.builder.expression_builder import ExpressionBuilder
@@ -209,6 +210,19 @@ def test_expression_builder_rejects_non_expression_operands() -> None:
 
     with pytest.raises(TypeError, match="Loop body must be an Expression"):
         ExpressionBuilder.for_all("i", ExpressionBuilder.range(0, 1), cast(Any, True))
+
+
+def test_expression_builder_rejects_invalid_prebuilt_expression_structure() -> None:
+    invalid_string = StringIdentifier(name="")
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        ExpressionBuilder.and_(ExpressionBuilder.true(), invalid_string)
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        ExpressionBuilder.range(invalid_string, 1)
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        ExpressionBuilder.set(invalid_string)
 
 
 @pytest.mark.parametrize("function", ["bad-key", "math..entropy", "for.fn", ""])
