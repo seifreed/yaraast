@@ -1466,6 +1466,7 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
         if isinstance(node.string_id, str):
             _validate_raw_string_ref(ctx, node.string_id, allow_wildcard=False)
         else:
+            _validate_restricted_of_expression(ctx, node.string_id)
             subject_type = ctx.visit(node.string_id)
             if not isinstance(subject_type, BooleanType):
                 ctx.errors.append(
@@ -1489,6 +1490,7 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
                 )
             result_type = IntegerType()
         else:
+            _validate_restricted_of_expression(ctx, node.subject)
             subject_type = ctx.visit(node.subject)
             if not isinstance(subject_type, BooleanType):
                 ctx.errors.append(
@@ -1599,3 +1601,29 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
         if not _is_condition_type(cond_type):
             ctx.errors.append(f"'for...of' condition must be scalar condition, got {cond_type}")
     return BooleanType()
+
+
+def _validate_restricted_of_expression(ctx: Any, node: Any) -> None:
+    if not isinstance(node, OfExpression):
+        return
+    if _is_percentage_quantifier_value(node.quantifier):
+        ctx.errors.append("Percentage of-expressions do not support 'in' or 'at' restrictions")
+    set_kind = _classify_of_set_value(node.string_set)
+    if set_kind in {"rule", "mixed"}:
+        ctx.errors.append("Rule sets cannot use at/in restrictions")
+
+
+def _is_percentage_quantifier_value(value: Any) -> bool:
+    if isinstance(value, float):
+        return True
+    if isinstance(value, str):
+        return value.endswith("%")
+    if isinstance(value, DoubleLiteral):
+        return True
+    if isinstance(value, StringLiteral):
+        return isinstance(value.value, str) and value.value.endswith("%")
+    if isinstance(value, UnaryExpression) and value.operator == "%":
+        return True
+    if isinstance(value, ParenthesesExpression):
+        return _is_percentage_quantifier_value(value.expression)
+    return False

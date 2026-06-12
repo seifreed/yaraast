@@ -1125,6 +1125,33 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
     )
     assert at_of.errors == []
 
+    at_rule_set = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        at_rule_set.infer(
+            AtExpression(
+                string_id=OfExpression("any", Identifier("helper")),
+                offset=IntegerLiteral(value=0),
+            )
+        ),
+        BooleanType,
+    )
+    assert any("Rule sets cannot use at/in restrictions" in e for e in at_rule_set.errors)
+
+    at_percent = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        at_percent.infer(
+            AtExpression(
+                string_id=OfExpression(DoubleLiteral(value=0.5), Identifier("them")),
+                offset=IntegerLiteral(value=0),
+            )
+        ),
+        BooleanType,
+    )
+    assert any(
+        "Percentage of-expressions do not support 'in' or 'at' restrictions" in e
+        for e in at_percent.errors
+    )
+
     assert isinstance(
         inf.infer(InExpression(subject="$a", range=IntegerLiteral(value=1))),
         BooleanType,
@@ -1144,6 +1171,33 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
         IntegerType,
     )
     assert in_count.errors == []
+
+    in_rule_set = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        in_rule_set.infer(
+            InExpression(
+                subject=OfExpression("any", StringWildcard("helper*")),
+                range=RangeExpression(IntegerLiteral(value=0), IntegerLiteral(value=1)),
+            )
+        ),
+        BooleanType,
+    )
+    assert any("Rule sets cannot use at/in restrictions" in e for e in in_rule_set.errors)
+
+    in_percent = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        in_percent.infer(
+            InExpression(
+                subject=OfExpression(StringLiteral("50%"), Identifier("them")),
+                range=RangeExpression(IntegerLiteral(value=0), IntegerLiteral(value=1)),
+            )
+        ),
+        BooleanType,
+    )
+    assert any(
+        "Percentage of-expressions do not support 'in' or 'at' restrictions" in e
+        for e in in_percent.errors
+    )
 
     assert isinstance(
         inf.infer(

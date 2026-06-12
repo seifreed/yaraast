@@ -1304,6 +1304,9 @@ def _split_for_loop_variable_names(variable: str) -> list[str]:
 
 
 def visit_at_expression(generator: Any, node: Any) -> str:
+    from yaraast.codegen.generator_expressions import reject_restricted_of_expression
+
+    reject_restricted_of_expression(node.string_id)
     if hasattr(node.string_id, "accept"):
         string_id = generator.visit(node.string_id)
     else:

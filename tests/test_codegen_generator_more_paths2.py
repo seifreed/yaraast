@@ -3054,10 +3054,7 @@ def test_codegen_rejects_malformed_fractional_percentage_quantifiers(
         (
             UnaryExpression(
                 "~",
-                AtExpression(
-                    OfExpression(IntegerLiteral(1), Identifier("other_rule")),
-                    ParenthesesExpression(IntegerLiteral(10)),
-                ),
+                OfExpression(IntegerLiteral(1), Identifier("other_rule")),
             ),
             "Operand of '~' must be integer",
         ),
@@ -3128,6 +3125,41 @@ def test_codegen_rejects_non_integer_binary_range_bound_directly() -> None:
     )
 
     with pytest.raises(ValueError, match="Range low bound must be integer"):
+        CodeGenerator().generate(condition)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            AtExpression(OfExpression("any", Identifier("helper")), IntegerLiteral(0)),
+            "Rule sets cannot use at/in restrictions",
+        ),
+        (
+            InExpression(
+                OfExpression("any", StringWildcard("helper*")),
+                RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
+            ),
+            "Rule sets cannot use at/in restrictions",
+        ),
+        (
+            AtExpression(OfExpression(DoubleLiteral(0.5), Identifier("them")), IntegerLiteral(0)),
+            "Percentage of-expressions do not support at/in restrictions",
+        ),
+        (
+            InExpression(
+                OfExpression(StringLiteral("50%"), Identifier("them")),
+                RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
+            ),
+            "Percentage of-expressions do not support at/in restrictions",
+        ),
+    ],
+)
+def test_codegen_rejects_restricted_of_rule_sets_and_percentages_directly(
+    condition: Any,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
         CodeGenerator().generate(condition)
 
 

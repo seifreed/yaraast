@@ -98,6 +98,60 @@ def _reject_for_of_rule_set_items(string_set: Any) -> None:
             _reject_for_of_rule_set_items(item)
 
 
+def reject_restricted_of_expression(node: Any) -> None:
+    from yaraast.ast.conditions import OfExpression
+
+    if not isinstance(node, OfExpression):
+        return
+    if _is_percentage_quantifier(node.quantifier):
+        msg = "Percentage of-expressions do not support at/in restrictions for libyara output"
+        raise ValueError(msg)
+    _reject_restricted_of_rule_set_items(node.string_set)
+
+
+def _reject_restricted_of_rule_set_items(string_set: Any) -> None:
+    from yaraast.ast.expressions import ParenthesesExpression, SetExpression
+
+    if _is_rule_set_item(string_set):
+        msg = "Rule sets cannot use at/in restrictions for libyara output"
+        raise ValueError(msg)
+    if isinstance(string_set, ParenthesesExpression):
+        _reject_restricted_of_rule_set_items(string_set.expression)
+        return
+    if isinstance(string_set, SetExpression):
+        _reject_restricted_of_rule_set_items(string_set.elements)
+        return
+    if isinstance(string_set, list | tuple | set | frozenset):
+        for item in string_set:
+            _reject_restricted_of_rule_set_items(item)
+
+
+def _is_percentage_quantifier(quantifier: Any) -> bool:
+    from yaraast.ast.expressions import (
+        DoubleLiteral,
+        ParenthesesExpression,
+        StringLiteral,
+        UnaryExpression,
+    )
+
+    if isinstance(quantifier, float):
+        return True
+    if isinstance(quantifier, str):
+        return _PERCENTAGE_QUANTIFIER_RE.fullmatch(quantifier) is not None
+    if isinstance(quantifier, DoubleLiteral):
+        return True
+    if isinstance(quantifier, StringLiteral):
+        return (
+            isinstance(quantifier.value, str)
+            and _PERCENTAGE_QUANTIFIER_RE.fullmatch(quantifier.value) is not None
+        )
+    if isinstance(quantifier, UnaryExpression) and quantifier.operator == "%":
+        return True
+    if isinstance(quantifier, ParenthesesExpression):
+        return _is_percentage_quantifier(quantifier.expression)
+    return False
+
+
 def _is_rule_set_items(items: list[Any] | tuple[Any, ...]) -> bool:
     return bool(items) and all(_is_rule_set_item(item) for item in items)
 
@@ -519,6 +573,7 @@ def render_in_expression(gen: Any, node: Any) -> str:
     """Render an in-expression with parenthesis normalization."""
     from yaraast.ast.expressions import ParenthesesExpression, RangeExpression
 
+    reject_restricted_of_expression(node.subject)
     subject = (
         format_string_reference_identifier(
             node.subject,
