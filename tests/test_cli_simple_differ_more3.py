@@ -125,6 +125,30 @@ def test_simple_ast_differ_diff_directories_includes_yara_files(tmp_path: Path) 
     assert added.summary["added"] > 0
 
 
+def test_simple_ast_differ_diff_directories_reports_empty_added_and_removed_files(
+    tmp_path: Path,
+) -> None:
+    dir1 = tmp_path / "dir1"
+    dir2 = tmp_path / "dir2"
+    dir1.mkdir()
+    dir2.mkdir()
+    (dir1 / "removed.yar").write_text("", encoding="utf-8")
+    (dir2 / "added.yar").write_text("", encoding="utf-8")
+
+    results = SimpleASTDiffer().diff_directories(dir1, dir2)
+
+    removed = results["removed.yar"]
+    added = results["added.yar"]
+    assert isinstance(removed, DiffResult)
+    assert isinstance(added, DiffResult)
+    assert removed.summary["removed"] == 1
+    assert removed.summary["total_changes"] == 1
+    assert added.summary["added"] == 1
+    assert added.summary["total_changes"] == 1
+    assert format_diff(removed) == "- <empty file>"
+    assert format_diff(added) == "+ <empty file>"
+
+
 def test_simple_ast_differ_diff_files_rejects_invalid_utf8(tmp_path: Path) -> None:
     bad = tmp_path / "bad.yar"
     good = tmp_path / "good.yar"

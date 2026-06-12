@@ -424,14 +424,25 @@ def _diff_result_for_removed_file(file_path: Path) -> DiffResult:
         )
         for i, line in enumerate(lines)
     ]
+    removed = len(lines)
+    if not diff_lines:
+        diff_lines.append(
+            DiffLine(
+                type=DiffType.REMOVE,
+                line_num=1,
+                content="- <empty file>",
+                old_content="",
+            ),
+        )
+        removed = 1
     return DiffResult(
         has_changes=True,
         lines=diff_lines,
         summary={
             "added": 0,
-            "removed": len(lines),
+            "removed": removed,
             "modified": 0,
-            "total_changes": len(lines),
+            "total_changes": removed,
         },
     )
 
@@ -449,14 +460,25 @@ def _diff_result_for_added_file(file_path: Path) -> DiffResult:
         )
         for i, line in enumerate(lines)
     ]
+    added = len(lines)
+    if not diff_lines:
+        diff_lines.append(
+            DiffLine(
+                type=DiffType.ADD,
+                line_num=1,
+                content="+ <empty file>",
+                new_content="",
+            ),
+        )
+        added = 1
     return DiffResult(
         has_changes=True,
         lines=diff_lines,
         summary={
-            "added": len(lines),
+            "added": added,
             "removed": 0,
             "modified": 0,
-            "total_changes": len(lines),
+            "total_changes": added,
         },
     )
 
