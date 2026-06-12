@@ -53,6 +53,7 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
+from yaraast.codegen import CodeGenerator
 from yaraast.errors import SerializationError
 from yaraast.serialization import yara_ast_pb2
 from yaraast.serialization.protobuf_conversion import _protobuf_has_field
@@ -530,6 +531,30 @@ def test_protobuf_serializer_canonicalizes_ast_string_set_expression_items() -> 
 
     assert list(protobuf_file.rules[0].condition.of_expression.string_set_items) == ["$a", "$b*"]
     assert restored.rules[0].condition == OfExpression("any", ["$a", "$b*"])
+
+
+def test_protobuf_serializer_restores_compact_rule_wildcard_string_sets_for_codegen() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="rule_wildcard_string_set",
+                condition=OfExpression("any", SetExpression([StringWildcard("helper*")])),
+            )
+        ]
+    )
+
+    protobuf_file = serializer._ast_to_protobuf(ast)
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    condition = restored.rules[0].condition
+
+    assert list(protobuf_file.rules[0].condition.of_expression.string_set_items) == ["helper*"]
+    assert isinstance(condition, OfExpression)
+    assert isinstance(condition.string_set, list)
+    restored_item = condition.string_set[0]
+    assert isinstance(restored_item, StringWildcard)
+    assert restored_item.pattern == "helper*"
+    assert "any of (helper*)" in CodeGenerator().generate(restored)
 
 
 def test_protobuf_serializer_preserves_non_text_string_set_expression_items() -> None:

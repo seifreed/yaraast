@@ -57,13 +57,24 @@ def _render_string_set(gen: Any, string_set: Any) -> str:
         return f"({', '.join(rendered_items)})"
     if isinstance(string_set, list | tuple):
         _validate_non_empty_string_set(string_set)
+        if _is_rule_set_items(string_set):
+            rendered_items = [_render_rule_set_item(item) for item in string_set]
+            return f"({', '.join(rendered_items)})"
+        if _has_mixed_rule_and_string_set_items(string_set):
+            msg = "Mixed string and rule set items are not valid for libyara output"
+            raise ValueError(msg)
         rendered_items = [_render_string_set_item(gen, item) for item in string_set]
         return f"({', '.join(rendered_items)})"
     if isinstance(string_set, set | frozenset):
         _validate_non_empty_string_set(string_set)
-        rendered_items = [
-            _render_string_set_item(gen, item) for item in sorted(string_set, key=str)
-        ]
+        sorted_items = sorted(string_set, key=str)
+        if _is_rule_set_items(sorted_items):
+            rendered_items = [_render_rule_set_item(item) for item in sorted_items]
+            return f"({', '.join(rendered_items)})"
+        if _has_mixed_rule_and_string_set_items(sorted_items):
+            msg = "Mixed string and rule set items are not valid for libyara output"
+            raise ValueError(msg)
+        rendered_items = [_render_string_set_item(gen, item) for item in sorted_items]
         return f"({', '.join(rendered_items)})"
     if hasattr(string_set, "accept"):
         _reject_invalid_string_set_item()

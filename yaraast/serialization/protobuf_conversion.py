@@ -1392,11 +1392,22 @@ def _protobuf_string_set_to_ast(pb_owner, context: str):
         if any(not item.strip() for item in items):
             msg = f"{field_context} must contain values"
             raise SerializationError(msg)
-        return items
+        return [_protobuf_string_set_item_to_ast(item) for item in items]
     if not pb_owner.HasField("string_set"):
         msg = f"{field_context} must contain values"
         raise SerializationError(msg)
     return protobuf_to_expression(pb_owner.string_set)
+
+
+def _protobuf_string_set_item_to_ast(item: str):
+    if item.startswith("$"):
+        return item
+
+    from yaraast.ast.expressions import Identifier, StringWildcard
+
+    if item.endswith("*"):
+        return StringWildcard(item)
+    return Identifier(item)
 
 
 def _protobuf_required_expression_from_message(pb_owner, field: str, context: str):
