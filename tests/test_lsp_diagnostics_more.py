@@ -42,6 +42,14 @@ def test_diagnostics_rejects_invalid_uri() -> None:
         provider.get_diagnostics("rule sample { condition: true }", cast(str, object()))
 
 
+@pytest.mark.parametrize("text", [None, 1, b"rule sample", object()])
+def test_diagnostics_rejects_non_string_text(text: Any) -> None:
+    provider = DiagnosticsProvider()
+
+    with pytest.raises(TypeError, match="Diagnostics text must be a string"):
+        provider.get_diagnostics(cast(str, text))
+
+
 def test_diagnostics_parser_error() -> None:
     provider = DiagnosticsProvider()
     text = "rule bad { condition: "

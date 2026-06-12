@@ -92,6 +92,9 @@ class DiagnosticsProvider:
         Returns:
             List of LSP diagnostics (errors and warnings)
         """
+        if not isinstance(text, str):
+            msg = "Diagnostics text must be a string"
+            raise TypeError(msg)
         if uri is not None and not isinstance(uri, str):
             msg = "Diagnostics URI must be a string or None"
             raise TypeError(msg)
