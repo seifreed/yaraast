@@ -1487,6 +1487,10 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
             ctx.errors.append(str(exc))
             return UnknownType()
 
+        scoped_type = ctx.env.lookup(module_name)
+        if scoped_type is not None:
+            return cast(YaraType, scoped_type)
+
         module_type = ctx._resolve_module_type(module_name)
         if module_type:
             return cast(YaraType, module_type)

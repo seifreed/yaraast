@@ -826,6 +826,27 @@ def test_semantic_validator_accepts_supported_external_values() -> None:
     assert SemanticValidator(externals=externals).validate(ast).is_valid is True
 
 
+def test_semantic_validator_accepts_external_named_like_module_reference() -> None:
+    ast = Parser("rule r { condition: pe }").parse()
+
+    result = SemanticValidator(externals={"pe": 1}).validate(ast)
+
+    assert result.is_valid is True, [error.message for error in result.errors]
+
+
+def test_semantic_validator_uses_external_before_imported_module_reference() -> None:
+    source = 'import "pe"\nrule r { condition: pe.number_of_sections > 0 }'
+    ast = Parser(source).parse()
+
+    result = SemanticValidator(externals={"pe": 1}).validate(ast)
+
+    assert result.is_valid is False
+    assert any(
+        error.message == "Cannot access member of non-module type: integer"
+        for error in result.errors
+    )
+
+
 @pytest.mark.parametrize("externals", [{"bad-name": 1}, {"1bad": 1}, {"for": 1}])
 def test_semantic_validator_rejects_invalid_external_names(
     externals: dict[str, object],
