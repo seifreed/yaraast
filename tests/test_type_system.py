@@ -2364,6 +2364,21 @@ class TestTypeInferenceEdgeCases:
         assert isinstance(result, BooleanType)
         assert len(inference.errors) > 0
 
+    def test_infer_of_expression_accepts_identifier_string_set_reference(self) -> None:
+        env = TypeEnvironment()
+        env.add_string("$str1")
+        inference = TypeInference(env)
+
+        node = OfExpression(
+            quantifier="any",
+            string_set=Identifier("$str1"),
+        )
+
+        result = inference.infer(node)
+
+        assert isinstance(result, BooleanType)
+        assert inference.errors == []
+
     def test_infer_for_of_expression_with_non_scalar_condition(self) -> None:
         """Test inferring for-of expression with non-scalar condition."""
         env = TypeEnvironment()

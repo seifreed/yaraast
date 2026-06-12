@@ -689,6 +689,12 @@ class UndefinedStringDetector:
             name = self._string_ref_or_none(string_set.name)
             if name == "them":
                 refs.add("$*")
+            elif name is not None and name.startswith("$"):
+                local_value = self._local_string_value(name)
+                if local_value is not self._MISSING_LOCAL_STRING:
+                    self._collect_string_set_refs(local_value, refs)
+                else:
+                    refs.add(name)
         elif isinstance(string_set, SetExpression):
             for element in string_set.elements:
                 self._collect_string_set_refs(element, refs)
@@ -862,6 +868,12 @@ class UndefinedStringDetector:
             name = self._string_ref_or_none(string_set.name)
             if name == "them":
                 used.update(defined)
+            elif name is not None and name.startswith("$"):
+                local_value = self._local_string_value(name)
+                if local_value is not self._MISSING_LOCAL_STRING:
+                    self._mark_used_string_set(local_value, defined, anonymous, used)
+                else:
+                    self._mark_used_string_ref(name, defined, anonymous, used)
         elif isinstance(string_set, SetExpression):
             for element in string_set.elements:
                 self._mark_used_string_set(element, defined, anonymous, used)

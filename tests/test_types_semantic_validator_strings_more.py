@@ -621,6 +621,24 @@ def test_semantic_validator_counts_string_sets_as_string_references() -> None:
     assert result.errors == []
 
 
+def test_semantic_validator_counts_identifier_string_set_items_as_references() -> None:
+    for string_set in (Identifier("$a"), SetExpression([Identifier("$a")])):
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="identifier_string_set",
+                    strings=[PlainString(identifier="$a", value="abc")],
+                    condition=OfExpression("any", string_set),
+                )
+            ]
+        )
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+        assert result.errors == []
+
+
 def test_semantic_validator_allows_implicit_current_string_position_checks() -> None:
     ast = Parser().parse("""
         rule implicit_current_string_at {

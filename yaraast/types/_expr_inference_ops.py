@@ -1154,6 +1154,12 @@ def _infer_string_set_value(ctx: Any, value: Any) -> YaraType:
         and value.pattern.startswith("$")
     ):
         return StringSetType()
+    if (
+        isinstance(value, Identifier)
+        and isinstance(value.name, str)
+        and (value.name == "them" or value.name.startswith("$"))
+    ):
+        return StringSetType()
     if hasattr(value, "accept"):
         return cast(YaraType, ctx.visit(value))
     if isinstance(value, str | list | tuple | set | frozenset):
@@ -1255,6 +1261,18 @@ def _validate_string_set_refs(ctx: Any, value: Any) -> None:
         if value.pattern.startswith("$"):
             _validate_raw_string_ref(ctx, value.pattern)
         return
+
+    if isinstance(value, Identifier):
+        if not isinstance(value.name, str):
+            ctx.errors.append("String reference must be a string")
+            return
+        if value.name == "them":
+            return
+        if value.name.startswith("$"):
+            if _validate_string_set_local_ref(ctx, value.name):
+                return
+            _validate_raw_string_ref(ctx, value.name)
+            return
 
     if isinstance(value, SetExpression):
         for element in value.elements:
