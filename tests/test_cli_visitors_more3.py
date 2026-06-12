@@ -195,6 +195,15 @@ def test_condition_formatter_handles_parsed_of_literals() -> None:
         ExpressionStringFormatter()._format_of_expression(parenthesized_literal_set, 0)
         == "any of ($a)"
     )
+    parenthesized_literal_item = OfExpression(
+        quantifier="any",
+        string_set=ParenthesesExpression(StringLiteral("a")),
+    )
+    assert ConditionStringFormatter().format_condition(parenthesized_literal_item) == "any of ($a)"
+    assert (
+        ExpressionStringFormatter()._format_of_expression(parenthesized_literal_item, 0)
+        == "any of ($a)"
+    )
 
     wildcard_ast = Parser().parse('rule r { strings: $a = "a" condition: any of ($a*) }')
     wildcard_condition = wildcard_ast.rules[0].condition

@@ -425,8 +425,8 @@ class ExpressionStringFormatter:
                 return self._format_string_wildcard(inner)
             if inner is not None and inner.__class__.__name__ == "SetExpression":
                 return self._format_set_expression(inner, depth)
-            if inner is not None and hasattr(inner, "value"):
-                return str(inner.value)
+            if inner is not None:
+                return f"({_string_set_item_text(inner, self, depth + 1)})"
             return self.format_expression(string_set, depth)
         if s_class == "SetExpression":
             return self._format_set_expression(string_set, depth)
