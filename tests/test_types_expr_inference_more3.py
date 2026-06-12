@@ -1474,6 +1474,27 @@ def test_expr_inference_rejects_shifted_zero_percentage_quantifier() -> None:
     assert any("'of' percentage quantifier must be between 1 and 100" in e for e in inf.errors)
 
 
+def test_expr_inference_rejects_int64_shift_overflow_percentage_quantifier() -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(
+        OfExpression(
+            quantifier=UnaryExpression(
+                "%",
+                BinaryExpression(
+                    BinaryExpression(IntegerLiteral(1), "<<", IntegerLiteral(63)),
+                    ">>",
+                    IntegerLiteral(63),
+                ),
+            ),
+            string_set=Identifier("them"),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert any("'of' percentage quantifier must be between 1 and 100" in e for e in inf.errors)
+
+
 def test_expr_inference_rejects_invalid_for_expression_variable_names() -> None:
     inf = ExpressionTypeInference(TypeEnvironment())
 

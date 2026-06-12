@@ -1135,11 +1135,11 @@ def _static_integer_value(value: Any) -> int | None:
         if left is None or right is None:
             return None
         if value.operator == "+":
-            return left + right
+            return normalize_int64(left + right)
         if value.operator == "-":
-            return left - right
+            return normalize_int64(left - right)
         if value.operator == "*":
-            return left * right
+            return normalize_int64(left * right)
         if value.operator == "%":
             if right == 0:
                 return None
@@ -1147,17 +1147,17 @@ def _static_integer_value(value: Any) -> int | None:
         if value.operator == "<<":
             if right < 0:
                 return None
-            return left << right
+            return shift_left_int64(left, right)
         if value.operator == ">>":
             if right < 0:
                 return None
-            return left >> right
+            return shift_right_int64(left, right)
         if value.operator == "&":
-            return left & right
+            return normalize_int64(left & right)
         if value.operator == "|":
-            return left | right
+            return normalize_int64(left | right)
         if value.operator == "^":
-            return left ^ right
+            return normalize_int64(left ^ right)
     return None
 
 
