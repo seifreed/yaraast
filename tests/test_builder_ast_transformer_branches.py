@@ -731,6 +731,19 @@ def test_rule_transformer_rejects_non_string_text_inputs_without_partial_update(
     assert transformed.get_meta_value("description") is None
 
 
+@pytest.mark.parametrize("modifier", ["", "   "])
+def test_rule_transformer_rejects_empty_modifiers_without_partial_update(
+    modifier: str,
+) -> None:
+    transformer = RuleTransformer(_sample_rule("valid_name"))
+
+    with pytest.raises(ValidationError, match="Rule modifier must not be empty"):
+        transformer.add_modifier(modifier)
+
+    transformed = transformer.build()
+    assert [str(modifier) for modifier in transformed.modifiers] == ["global"]
+
+
 def test_rule_transformer_rejects_non_string_old_replacement_tag_without_partial_update() -> None:
     transformer = RuleTransformer(_sample_rule("tagged"))
 

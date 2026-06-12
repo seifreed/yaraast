@@ -143,6 +143,7 @@ class RuleTransformer:
     def add_modifier(self, modifier: str) -> RuleTransformer:
         """Add a modifier to the rule."""
         modifier = self._require_text(modifier, "Rule modifier")
+        validate_nonempty_text(modifier, "Rule modifier")
         if not any(str(m) == modifier for m in self.rule.modifiers):
             try:
                 from yaraast.ast.modifiers import RuleModifier
