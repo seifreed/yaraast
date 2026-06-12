@@ -484,10 +484,8 @@ class DeadCodeEliminator(ASTTransformer):
                 return
             if value == "them":
                 self._mark_all_current_rule_strings()
-            elif value.startswith("$"):
-                self._mark_used_string(value)
             else:
-                self._mark_rule_set_reference(value)
+                self._mark_used_string(value)
             return
         if isinstance(value, list | tuple | set | frozenset):
             for item in value:

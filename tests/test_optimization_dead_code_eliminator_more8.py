@@ -248,9 +248,9 @@ def test_dead_code_eliminator_keeps_private_rules_referenced_by_rule_wildcard() 
 @pytest.mark.parametrize(
     "string_set",
     [
-        ["a*"],
-        (StringLiteral("a*"),),
-        SetExpression([StringLiteral("a*")]),
+        [StringWildcard("a*")],
+        (StringWildcard("a*"),),
+        SetExpression([StringWildcard("a*")]),
     ],
 )
 def test_dead_code_eliminator_keeps_private_rules_referenced_by_text_rule_wildcard(
@@ -268,6 +268,31 @@ def test_dead_code_eliminator_keeps_private_rules_referenced_by_text_rule_wildca
 
     assert count == 0
     assert [rule.name for rule in optimized.rules] == ["main", "a1", "a2"]
+
+
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        ["a*"],
+        (StringLiteral("a*"),),
+        SetExpression([StringLiteral("a*")]),
+    ],
+)
+def test_dead_code_eliminator_treats_raw_wildcards_as_string_sets(
+    string_set: Any,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="main", condition=ForOfExpression("any", string_set, BooleanLiteral(True))),
+            Rule(name="a1", modifiers=["private"], condition=BooleanLiteral(False)),
+            Rule(name="a2", modifiers=["private"], condition=BooleanLiteral(True)),
+        ]
+    )
+
+    optimized, count = DeadCodeEliminator().eliminate(ast)
+
+    assert count == 2
+    assert [rule.name for rule in optimized.rules] == ["main"]
 
 
 def test_dead_code_eliminator_removes_unreferenced_private_rules_without_other_references() -> None:
