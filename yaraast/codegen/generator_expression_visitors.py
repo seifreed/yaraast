@@ -499,7 +499,7 @@ def _constant_comparison_operand_type(value: Any) -> str | None:
             return "double"
     if isinstance(value, DoubleLiteral | float):
         return "double"
-    return None
+    return _known_builtin_module_scalar_type_name(value)
 
 
 def _reject_invalid_comparison_operands(node: Any) -> None:
@@ -924,7 +924,7 @@ def _obvious_argument_type(argument: Any) -> str | None:
         and argument.function in _INTEGER_READ_FUNCTIONS
     ):
         return "integer"
-    return None
+    return _known_builtin_module_scalar_type_name(argument)
 
 
 def validate_expression_collection(value: Any, field_name: str) -> None:
@@ -1227,12 +1227,29 @@ def validate_known_module_struct_member_access(generator: Any, node: Any, member
 
 
 def known_builtin_module_expression_type(expression: Any) -> Any | None:
-    from yaraast.ast.expressions import ArrayAccess, MemberAccess, ParenthesesExpression
+    from yaraast.ast.expressions import (
+        ArrayAccess,
+        FunctionCall,
+        MemberAccess,
+        ParenthesesExpression,
+    )
     from yaraast.ast.modules import DictionaryAccess, ModuleReference
     from yaraast.types._registry_collections import ArrayType, DictionaryType, StructType
 
     if isinstance(expression, ParenthesesExpression):
         return known_builtin_module_expression_type(expression.expression)
+    if isinstance(expression, FunctionCall):
+        resolved = expression.module_and_function()
+        if resolved is None:
+            return None
+        module_name, function_name = resolved
+        module_def = _known_builtin_module(module_name)
+        if module_def is None:
+            return None
+        function_def = module_def.functions.get(function_name)
+        if function_def is None:
+            return None
+        return function_def.return_type
     if isinstance(expression, MemberAccess):
         if isinstance(expression.object, ModuleReference):
             module_def = _known_builtin_module(expression.object.module)
@@ -1252,6 +1269,31 @@ def known_builtin_module_expression_type(expression: Any) -> Any | None:
         dictionary_type = known_builtin_module_expression_type(expression.object)
         if isinstance(dictionary_type, DictionaryType):
             return dictionary_type.value_type
+    return None
+
+
+def _known_builtin_module_scalar_type_name(expression: Any) -> str | None:
+    from yaraast.types._registry_primitives import (
+        BooleanType,
+        DoubleType,
+        FloatType,
+        IntegerType,
+        RegexType,
+        StringIdentifierType,
+        StringType,
+    )
+
+    expression_type = known_builtin_module_expression_type(expression)
+    if isinstance(expression_type, BooleanType):
+        return "boolean"
+    if isinstance(expression_type, IntegerType):
+        return "integer"
+    if isinstance(expression_type, DoubleType | FloatType):
+        return "double"
+    if isinstance(expression_type, RegexType):
+        return "regex"
+    if isinstance(expression_type, StringType | StringIdentifierType):
+        return "string"
     return None
 
 

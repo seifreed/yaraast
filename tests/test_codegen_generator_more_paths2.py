@@ -3077,6 +3077,32 @@ def test_codegen_generators_reject_invalid_expression_operators(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            BinaryExpression(FunctionCall("pe.imphash", []), "==", IntegerLiteral(1)),
+            "Incompatible types for '==': string and integer",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), "!=", FunctionCall("pe.imphash", [])),
+            "Incompatible types for '!=': integer and string",
+        ),
+    ],
+)
+def test_codegen_rejects_known_module_function_comparison_type_mismatches(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        imports=[Import("pe")],
+        rules=[Rule(name="invalid_module_function_comparison", condition=condition)],
+    )
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+
+
 def test_codegen_generators_allow_string_count_in_as_integer_operand() -> None:
     condition = BinaryExpression(
         InExpression(
