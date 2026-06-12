@@ -68,6 +68,11 @@ def test_token_and_location_to_range() -> None:
     )
 
 
+def test_utf8_col_to_utf16_clamps_negative_columns() -> None:
+    assert utf8_col_to_utf16("abc", -1) == 0
+    assert utf8_col_to_utf16("😀x", -1) == 0
+
+
 def test_location_to_range_ignores_invalid_utf8_location_file(tmp_path: Path) -> None:
     source_path = tmp_path / "bad.yar"
     source_path.write_bytes(b"\xff")

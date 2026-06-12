@@ -14,6 +14,8 @@ def utf16_len(text: str) -> int:
 
 def utf8_col_to_utf16(line: str, col: int) -> int:
     """Convert a 0-based character column to UTF-16 code unit offset."""
+    if col <= 0:
+        return 0
     prefix = line[:col]
     return utf16_len(prefix)
 
