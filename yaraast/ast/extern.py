@@ -30,6 +30,26 @@ def _normalize_string_list(values: list[str] | None, field_name: str) -> list[st
     return list(values)
 
 
+def _normalize_extern_rule_modifiers(modifiers: Any) -> list[str]:
+    from yaraast.ast.modifiers import RuleModifier
+
+    if not isinstance(modifiers, list):
+        msg = "ExternRule modifiers must be a list"
+        raise TypeError(msg)
+
+    normalized = []
+    for modifier in modifiers:
+        if isinstance(modifier, RuleModifier):
+            modifier.validate_structure()
+            normalized.append(str(modifier))
+        elif isinstance(modifier, str):
+            normalized.append(_require_nonempty_string(modifier, "ExternRule modifier name"))
+        else:
+            msg = "ExternRule modifiers item must be RuleModifier or string"
+            raise TypeError(msg)
+    return normalized
+
+
 @dataclass
 class ExternRule(ASTNode):
     """External rule declaration.
@@ -44,20 +64,8 @@ class ExternRule(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate extern rule fields before direct analysis."""
-        from yaraast.ast.modifiers import RuleModifier
-
         _require_nonempty_string(self.name, "ExternRule name")
-        if not isinstance(self.modifiers, list):
-            msg = "ExternRule modifiers must be a list"
-            raise TypeError(msg)
-        for modifier in self.modifiers:
-            if isinstance(modifier, RuleModifier):
-                modifier.validate_structure()
-            elif isinstance(modifier, str):
-                _require_nonempty_string(modifier, "ExternRule modifier name")
-            else:
-                msg = "ExternRule modifiers item must be RuleModifier or string"
-                raise TypeError(msg)
+        _normalize_extern_rule_modifiers(self.modifiers)
         _require_optional_nonempty_string(self.namespace, "ExternRule namespace")
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -75,10 +83,16 @@ class ExternRule(ASTNode):
 
     def __str__(self) -> str:
         """String representation of extern rule."""
-        modifier_str = " ".join(str(mod) for mod in self.modifiers)
+        name = _require_nonempty_string(self.name, "ExternRule name")
+        modifiers = _normalize_extern_rule_modifiers(self.modifiers)
+        namespace = _require_optional_nonempty_string(
+            self.namespace,
+            "ExternRule namespace",
+        )
+        modifier_str = " ".join(modifiers)
         prefix = f"{modifier_str} " if modifier_str else ""
-        namespace_str = f"{self.namespace}." if self.namespace else ""
-        return f"extern rule {prefix}{namespace_str}{self.name}"
+        namespace_str = f"{namespace}." if namespace is not None else ""
+        return f"extern rule {prefix}{namespace_str}{name}"
 
 
 @dataclass
@@ -102,9 +116,17 @@ class ExternRuleReference(Expression):
     @property
     def qualified_name(self) -> str:
         """Get the fully qualified rule name."""
-        if self.namespace:
-            return f"{self.namespace}.{self.rule_name}"
-        return self.rule_name
+        rule_name = _require_nonempty_string(
+            self.rule_name,
+            "ExternRuleReference rule_name",
+        )
+        namespace = _require_optional_nonempty_string(
+            self.namespace,
+            "ExternRuleReference namespace",
+        )
+        if namespace is not None:
+            return f"{namespace}.{rule_name}"
+        return rule_name
 
     def __str__(self) -> str:
         return self.qualified_name
@@ -134,19 +156,23 @@ class ExternImport(ASTNode):
     @property
     def is_selective_import(self) -> bool:
         """Check if this is a selective import (specific rules only)."""
-        return len(self.rules) > 0
+        return len(_normalize_string_list(self.rules, "ExternImport rules")) > 0
 
     def __str__(self) -> str:
         """String representation of extern import."""
-        module_path = escape_string_source_value(self.module_path)
-        if self.is_selective_import:
-            rules_str = ", ".join(self.rules)
+        module_path = escape_string_source_value(
+            _require_nonempty_string(self.module_path, "ExternImport module_path")
+        )
+        alias = _require_optional_nonempty_string(self.alias, "ExternImport alias")
+        rules = _normalize_string_list(self.rules, "ExternImport rules")
+        if rules:
+            rules_str = ", ".join(rules)
             base = f'import "{module_path}" ({rules_str})'
         else:
             base = f'import "{module_path}"'
 
-        if self.alias:
-            base += f" as {self.alias}"
+        if alias is not None:
+            base += f" as {alias}"
 
         return base
 
@@ -193,7 +219,8 @@ class ExternNamespace(ASTNode):
         return None
 
     def __str__(self) -> str:
-        return f"namespace {self.name}"
+        name = _require_nonempty_string(self.name, "ExternNamespace name")
+        return f"namespace {name}"
 
 
 # Convenience functions for creating extern constructs

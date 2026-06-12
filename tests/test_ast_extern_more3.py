@@ -87,6 +87,61 @@ def test_extern_namespace_rejects_invalid_rule_inputs_without_partial_update() -
     assert ns.extern_rules == [rule]
 
 
+@pytest.mark.parametrize(
+    ("node", "error_type", "message"),
+    [
+        (ExternRule(""), ValueError, "ExternRule name cannot be empty"),
+        (
+            ExternRule("R1", modifiers=cast(Any, False)),
+            TypeError,
+            "ExternRule modifiers must be a list",
+        ),
+        (
+            ExternRule("R1", modifiers=cast(Any, [""])),
+            ValueError,
+            "ExternRule modifier name cannot be empty",
+        ),
+        (ExternRule("R1", namespace="   "), ValueError, "ExternRule namespace cannot be empty"),
+        (
+            ExternRule("R1", namespace=cast(Any, False)),
+            TypeError,
+            "ExternRule namespace must be a string",
+        ),
+        (ExternRuleReference(""), ValueError, "ExternRuleReference rule_name cannot be empty"),
+        (
+            ExternRuleReference("R1", namespace=""),
+            ValueError,
+            "ExternRuleReference namespace cannot be empty",
+        ),
+        (ExternImport(""), ValueError, "ExternImport module_path cannot be empty"),
+        (ExternImport("external", alias=""), ValueError, "ExternImport alias cannot be empty"),
+        (
+            ExternImport("external", alias=cast(Any, False)),
+            TypeError,
+            "ExternImport alias must be a string",
+        ),
+        (
+            ExternImport("external", rules=cast(Any, False)),
+            TypeError,
+            "ExternImport rules must be a list of strings",
+        ),
+        (
+            ExternImport("external", rules=[""]),
+            ValueError,
+            "ExternImport rules must contain non-empty strings",
+        ),
+        (ExternNamespace(""), ValueError, "ExternNamespace name cannot be empty"),
+    ],
+)
+def test_extern_string_reprs_reject_invalid_fields(
+    node: object,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
+        str(node)
+
+
 def test_extern_helpers_reject_invalid_inputs_at_creation_time() -> None:
     invalid_cases: list[tuple[Callable[[], object], str]] = [
         (
