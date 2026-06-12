@@ -27,6 +27,29 @@ __all__ = [
 ]
 
 
+def _path_access_error(path: Path) -> ValueError:
+    msg = f"path could not be accessed: {path}"
+    return ValueError(msg)
+
+
+def _path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_exists_and_not_dir(path: Path) -> bool:
+    return _path_exists(path) and not _path_is_dir(path)
+
+
 class Workspace:
     """Workspace for managing multiple YARA files."""
 
@@ -61,7 +84,7 @@ class Workspace:
             msg = "root_path must not be empty"
             raise ValueError(msg)
         path = Path(raw_path)
-        if path.exists() and not path.is_dir():
+        if _path_exists_and_not_dir(path):
             msg = "root_path must be a directory"
             raise ValueError(msg)
         return path

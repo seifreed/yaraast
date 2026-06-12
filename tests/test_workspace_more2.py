@@ -54,6 +54,11 @@ def test_workspace_rejects_file_root_path(tmp_path: Path) -> None:
         Workspace(root_file)
 
 
+def test_workspace_rejects_inaccessible_root_path() -> None:
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        Workspace("a" * 5000)
+
+
 @pytest.mark.parametrize("file_path", ["", "   ", "\t"])
 def test_workspace_add_file_rejects_empty_file_path(
     tmp_path: Path,
