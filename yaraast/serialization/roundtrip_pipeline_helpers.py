@@ -17,6 +17,8 @@ from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
     _expected_type_names,
     _normalize_rule_modifier_text,
+    _validate_string_identifier_text,
+    _validate_yara_identifier_text,
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.serializer_helpers import (
@@ -138,7 +140,7 @@ def build_pipeline_statistics(ast: Any) -> dict[str, Any]:
     imports = _validated_node_collection(ast.imports, "YaraFile imports", Import)
     rules = _validated_node_collection(ast.rules, "YaraFile rules", Rule)
     for rule in rules:
-        _required_nonempty_string(rule.name, "Rule name")
+        _validate_yara_identifier_text(_required_nonempty_string(rule.name, "Rule name"), "rule")
     return {
         "total_rules": len(rules),
         "imports": _validated_import_modules(imports),
@@ -163,12 +165,18 @@ def build_rules_manifest(ast: Any) -> dict[str, Any]:
     include_paths = [_required_nonempty_string(inc.path, "Include path") for inc in includes]
 
     for rule in rules:
-        rule_name = _required_nonempty_string(rule.name, "Rule name")
+        rule_name = _validate_yara_identifier_text(
+            _required_nonempty_string(rule.name, "Rule name"),
+            "rule",
+        )
         modifiers = _validated_rule_modifiers(rule.modifiers)
         tags = _validated_node_collection(rule.tags, "Rule tags", Tag)
         meta = _validated_node_collection(rule.meta, "Rule meta", (Meta, MetaEntry))
         strings = _validated_node_collection(rule.strings, "Rule strings", StringDefinition)
-        tag_names = [_required_nonempty_string(tag.name, "Tag name") for tag in tags]
+        tag_names = [
+            _validate_yara_identifier_text(_required_nonempty_string(tag.name, "Tag name"), "tag")
+            for tag in tags
+        ]
         _validate_string_identifiers(strings)
         if any(modifier == "private" for modifier in modifiers):
             private_rules += 1
@@ -210,7 +218,10 @@ def _build_rule_meta(meta: Any) -> list[dict[str, Any]]:
             else _serialized_meta_value(entry.value)
         )
         entry_data = {
-            "key": _required_nonempty_string(entry.key, "Meta key"),
+            "key": _validate_yara_identifier_text(
+                _required_nonempty_string(entry.key, "Meta key"),
+                "meta",
+            ),
             "value": value,
         }
         if scope is not None:
@@ -225,21 +236,26 @@ def collect_all_tags(ast: Any) -> list[str]:
     for rule in rules:
         rule_tags = _validated_node_collection(rule.tags, "Rule tags", Tag)
         for tag in rule_tags:
-            tags.add(_required_nonempty_string(tag.name, "Tag name"))
+            tags.add(
+                _validate_yara_identifier_text(
+                    _required_nonempty_string(tag.name, "Tag name"),
+                    "tag",
+                )
+            )
     return sorted(tags)
 
 
 def _validate_string_identifiers(strings: list[Any]) -> None:
     for string_def in strings:
         context = f"{type(string_def).__name__} identifier"
-        _required_nonempty_string(string_def.identifier, context)
+        _validate_string_identifier_text(_required_nonempty_string(string_def.identifier, context))
 
 
 def count_string_types(ast: Any) -> dict[str, int]:
     rules = _validated_node_collection(ast.rules, "YaraFile rules", Rule)
     counts = {"plain": 0, "hex": 0, "regex": 0}
     for rule in rules:
-        _required_nonempty_string(rule.name, "Rule name")
+        _validate_yara_identifier_text(_required_nonempty_string(rule.name, "Rule name"), "rule")
         strings = _validated_node_collection(rule.strings, "Rule strings", StringDefinition)
         _validate_string_identifiers(strings)
         for string_def in strings:

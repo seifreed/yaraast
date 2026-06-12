@@ -20,6 +20,7 @@ from yaraast.codegen.generator_formatting import (
     validate_yara_identifier,
     validate_yara_identifier_path,
 )
+from yaraast.codegen.generator_helpers import validate_string_identifier_text
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.shared.local_scope import local_name_variants, validate_local_identifier
 from yaraast.string_references import normalize_string_reference_id
@@ -188,6 +189,13 @@ def _validate_string_reference_text(
     except (TypeError, ValueError) as exc:
         raise SerializationError(str(exc)) from exc
     return value
+
+
+def _validate_string_identifier_text(value: str) -> str:
+    try:
+        return validate_string_identifier_text(value)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
 
 
 def _validate_location_metadata(

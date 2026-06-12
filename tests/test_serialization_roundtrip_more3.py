@@ -139,6 +139,11 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
         ),
         (
             "statistics",
+            YaraFile(rules=[Rule(name="bad-name", condition=BooleanLiteral(value=True))]),
+            "Invalid rule identifier",
+        ),
+        (
+            "statistics",
             YaraFile(rules=[Rule(name="   ", condition=BooleanLiteral(value=True))]),
             "Rule name must not be empty",
         ),
@@ -161,12 +166,38 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
                 rules=[
                     Rule(
                         name="r",
+                        tags=[Tag(name="bad-name")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Invalid tag identifier",
+        ),
+        (
+            "statistics",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
                         strings=[PlainString(identifier="", value="abc")],
                         condition=BooleanLiteral(value=True),
                     ),
                 ],
             ),
             "PlainString identifier must not be empty",
+        ),
+        (
+            "statistics",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        strings=[PlainString(identifier="$bad-name", value="abc")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Invalid string identifier",
         ),
         (
             "manifest",
@@ -192,6 +223,11 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
             "manifest",
             YaraFile(rules=[Rule(name="", condition=BooleanLiteral(value=True))]),
             "Rule name must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(rules=[Rule(name="bad-name", condition=BooleanLiteral(value=True))]),
+            "Invalid rule identifier",
         ),
         (
             "manifest",
@@ -251,6 +287,19 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
                 rules=[
                     Rule(
                         name="r",
+                        tags=[Tag(name="bad-name")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Invalid tag identifier",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
                         tags=[Tag(name="   ")],
                         condition=BooleanLiteral(value=True),
                     ),
@@ -277,6 +326,19 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
                 rules=[
                     Rule(
                         name="r",
+                        meta=[Meta(key="bad-name", value="value")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Invalid meta identifier",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
                         meta=[MetaEntry(key="score", value=cast(Any, float("inf")))],
                         condition=BooleanLiteral(value=True),
                     ),
@@ -296,6 +358,19 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
                 ],
             ),
             "PlainString identifier must not be empty",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
+                        strings=[PlainString(identifier="$bad-name", value="abc")],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Invalid string identifier",
         ),
         (
             "manifest",
