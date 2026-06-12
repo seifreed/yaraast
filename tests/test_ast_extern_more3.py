@@ -16,6 +16,7 @@ from yaraast.ast.extern import (
     create_extern_reference,
     create_extern_rule,
 )
+from yaraast.errors import ValidationError
 
 
 class _Visitor:
@@ -96,6 +97,24 @@ def test_extern_namespace_rejects_empty_rule_lookup_names(name: str) -> None:
             "is_private",
             ValueError,
             "ExternRule modifier name cannot be empty",
+        ),
+        (
+            ["bad modifier"],
+            "is_private",
+            ValidationError,
+            "Invalid ExternRule modifier identifier",
+        ),
+        (
+            ["bad-modifier"],
+            "is_global",
+            ValidationError,
+            "Invalid ExternRule modifier identifier",
+        ),
+        (
+            ["1modifier"],
+            "is_private",
+            ValidationError,
+            "Invalid ExternRule modifier identifier",
         ),
     ],
 )
@@ -184,6 +203,11 @@ def test_extern_namespace_add_rule_rejects_invalid_namespace_without_partial_upd
             ExternRule("R1", modifiers=cast(Any, [""])),
             ValueError,
             "ExternRule modifier name cannot be empty",
+        ),
+        (
+            ExternRule("R1", modifiers=cast(Any, ["bad modifier"])),
+            ValidationError,
+            "Invalid ExternRule modifier identifier",
         ),
         (ExternRule("R1", namespace="   "), ValueError, "ExternRule namespace cannot be empty"),
         (

@@ -3,12 +3,17 @@
 from dataclasses import dataclass
 from enum import Enum
 import math
+import re
 from typing import Any
 
 from yaraast.ast.base import ASTNode, _require_nonempty_string, _VisitorType, require_string
 from yaraast.errors import ValidationError
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.string_escaping import escape_string_source_value
 from yaraast.xor_keys import parse_xor_key_text
+
+_RULE_MODIFIER_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
 
 
 def _require_meta_value(value: Any) -> str | int | bool | float:
@@ -70,6 +75,23 @@ def _require_meta_scope(value: Any) -> "MetaScope":
         msg = "Meta scope must be a MetaScope"
         raise TypeError(msg)
     return value
+
+
+def require_rule_modifier_identifier(
+    value: Any,
+    name_context: str,
+    identifier_context: str | None = None,
+) -> str:
+    modifier = _require_nonempty_string(value, f"{name_context} name")
+    if (
+        len(modifier) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _RULE_MODIFIER_IDENTIFIER_RE.fullmatch(modifier) is not None
+        and modifier not in _YARA_KEYWORDS
+    ):
+        return modifier
+    identifier_context = name_context if identifier_context is None else identifier_context
+    msg = f"Invalid {identifier_context} identifier: {modifier}"
+    raise ValidationError(msg)
 
 
 def _is_xor_modifier_text(value: str) -> bool:

@@ -12,6 +12,8 @@ from yaraast.ast.base import (
     _VisitorType,
 )
 from yaraast.ast.expressions import Expression
+from yaraast.ast.modifiers import require_rule_modifier_identifier
+from yaraast.errors import ValidationError
 from yaraast.string_escaping import escape_string_source_value
 
 if TYPE_CHECKING:
@@ -43,7 +45,10 @@ def _normalize_extern_rule_modifiers(modifiers: Any) -> list[str]:
             modifier.validate_structure()
             normalized.append(str(modifier))
         elif isinstance(modifier, str):
-            normalized.append(_require_nonempty_string(modifier, "ExternRule modifier name"))
+            try:
+                normalized.append(str(RuleModifier.from_string(modifier)))
+            except (ValueError, ValidationError):
+                normalized.append(require_rule_modifier_identifier(modifier, "ExternRule modifier"))
         else:
             msg = "ExternRule modifiers item must be RuleModifier or string"
             raise TypeError(msg)
