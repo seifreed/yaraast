@@ -370,7 +370,7 @@ def compare_rules(old_rules, new_rules, result, hasher, diff_node, diff_type) ->
     old_rule_map = _nodes_by_key(old_rules, _name_key)
     new_rule_map = _nodes_by_key(new_rules, _name_key)
 
-    for name in new_rule_map:
+    for name in sorted(new_rule_map):
         if name not in old_rule_map:
             new_bucket = new_rule_map[name]
             result.differences.append(
@@ -383,7 +383,7 @@ def compare_rules(old_rules, new_rules, result, hasher, diff_node, diff_type) ->
                 ),
             )
 
-    for name in old_rule_map:
+    for name in sorted(old_rule_map):
         if name not in new_rule_map:
             old_bucket = old_rule_map[name]
             result.differences.append(
@@ -396,7 +396,7 @@ def compare_rules(old_rules, new_rules, result, hasher, diff_node, diff_type) ->
                 ),
             )
 
-    for name in old_rule_map:
+    for name in sorted(old_rule_map):
         if name in new_rule_map:
             old_bucket = old_rule_map[name]
             new_bucket = new_rule_map[name]

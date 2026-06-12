@@ -87,6 +87,33 @@ def test_compare_includes_emits_added_and_removed_paths_in_sorted_order() -> Non
     ]
 
 
+def test_compare_rules_emits_added_and_removed_paths_in_sorted_order() -> None:
+    result = DiffResult(old_ast_hash="old", new_ast_hash="new")
+    hasher = AstHasher()
+
+    compare_rules(
+        [
+            Rule("z_old", condition=BooleanLiteral(True)),
+            Rule("a_old", condition=BooleanLiteral(True)),
+        ],
+        [
+            Rule("z_new", condition=BooleanLiteral(True)),
+            Rule("a_new", condition=BooleanLiteral(True)),
+        ],
+        result,
+        hasher,
+        DiffNode,
+        DiffType,
+    )
+
+    assert [diff.path for diff in result.differences] == [
+        "/rules/a_new",
+        "/rules/z_new",
+        "/rules/a_old",
+        "/rules/z_old",
+    ]
+
+
 def test_compare_rules_removed_modifier_and_string_diffs() -> None:
     hasher = AstHasher()
     result = DiffResult(old_ast_hash="old", new_ast_hash="new")
