@@ -980,6 +980,8 @@ def _validate_quantifier_value(
     if isinstance(value, float):
         if allow_percentage:
             _validate_percentage_quantifier_value(ctx, value, context)
+        else:
+            ctx.errors.append(f"Invalid {context} quantifier '{value}'")
         return
     if isinstance(value, IntegerLiteral):
         if isinstance(value.value, int) and not isinstance(value.value, bool) and value.value < 0:
@@ -988,6 +990,8 @@ def _validate_quantifier_value(
     if isinstance(value, DoubleLiteral):
         if allow_percentage:
             _validate_percentage_quantifier_value(ctx, value.value, context)
+        else:
+            ctx.errors.append(f"Invalid {context} quantifier '{value.value}'")
         return
     if isinstance(value, UnaryExpression) and value.operator == "%":
         if not allow_percentage:
@@ -1558,7 +1562,7 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
         ctx,
         node.quantifier,
         context=quantifier_context,
-        allow_percentage=True,
+        allow_percentage=node.condition is None,
     )
     if not isinstance(quant_type, StringType | IntegerType | DoubleType):
         ctx.errors.append(
