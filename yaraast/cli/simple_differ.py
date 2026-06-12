@@ -12,6 +12,7 @@ from pathlib import Path
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.cli.parser_helpers import parse_yara_source
+from yaraast.cli.utils import _path_exists_and_not_dir
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.parser.parser import Parser
 from yaraast.shared.file_patterns import iter_matching_files
@@ -59,7 +60,7 @@ def _require_directory_path(value: object, name: str) -> Path:
         msg = f"{name} must not be empty"
         raise ValueError(msg)
     path = Path(raw_path)
-    if path.exists() and not path.is_dir():
+    if _path_exists_and_not_dir(path):
         msg = f"{name} must not be a file"
         raise ValueError(msg)
     return path

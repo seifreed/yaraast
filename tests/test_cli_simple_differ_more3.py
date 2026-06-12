@@ -201,6 +201,18 @@ def test_simple_ast_differ_diff_directories_rejects_file_directory(tmp_path: Pat
         SimpleASTDiffer().diff_directories(path, tmp_path)
 
 
+def test_simple_ast_differ_diff_directories_rejects_inaccessible_directories(
+    tmp_path: Path,
+) -> None:
+    directory = "a" * 5000
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        SimpleASTDiffer().diff_directories(directory, tmp_path)
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        SimpleASTDiffer().diff_directories(tmp_path, directory)
+
+
 def test_format_diff_no_changes_and_print_diff() -> None:
     result = DiffResult(
         has_changes=False, lines=[], summary={"added": 0, "removed": 0, "modified": 0}
