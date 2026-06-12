@@ -635,6 +635,31 @@ def test_direct_yarafile_analysis_rejects_invalid_trailing_comment_metadata() ->
 
 
 @pytest.mark.parametrize(
+    ("location", "message"),
+    [
+        (cast(Any, object()), "location must be a Location"),
+        (Location(cast(Any, True), 1), "Location line must be an integer"),
+        (Location(cast(Any, "1"), 1), "Location line must be an integer"),
+        (Location(1, cast(Any, False)), "Location column must be an integer"),
+        (Location(1, cast(Any, "1")), "Location column must be an integer"),
+        (Location(1, 1, file=cast(Any, 123)), "Location file must be a string"),
+        (Location(1, 1, end_line=cast(Any, False)), "Location end_line must be an integer"),
+        (Location(1, 1, end_column=cast(Any, "1")), "Location end_column must be an integer"),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_location_metadata(
+    location: Any,
+    message: str,
+) -> None:
+    rule = Rule("bad_location", condition=BooleanLiteral(True))
+    rule.location = location
+    malformed_file = YaraFile(rules=[rule])
+
+    with pytest.raises(TypeError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
     ("malformed_file", "message"),
     [
         (

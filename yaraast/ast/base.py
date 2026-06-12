@@ -28,6 +28,14 @@ class Location:
     end_line: int | None = None
     end_column: int | None = None
 
+    def validate_structure(self) -> None:
+        """Validate source location metadata fields."""
+        _require_location_int(self.line, "Location line")
+        _require_location_int(self.column, "Location column")
+        require_optional_string(self.file, "Location file")
+        _require_optional_location_int(self.end_line, "Location end_line")
+        _require_optional_location_int(self.end_column, "Location end_column")
+
 
 @dataclass
 class ASTNode(ABC):
@@ -47,6 +55,8 @@ class ASTNode(ABC):
 
     def validate_metadata(self) -> None:
         """Validate comments attached to this node."""
+        if self.location is not None:
+            _require_location_node(self.location, "location")
         _require_comment_sequence(self.leading_comments, "leading_comments")
         if self.trailing_comment is not None:
             _require_comment_node(self.trailing_comment, "trailing_comment")
@@ -79,6 +89,27 @@ class ASTNode(ABC):
             value = getattr(self, f.name)
             children.extend(collect_children(value))
         return children
+
+
+def _require_location_int(value: Any, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        msg = f"{field_name} must be an integer"
+        raise TypeError(msg)
+    return int(value)
+
+
+def _require_optional_location_int(value: Any, field_name: str) -> int | None:
+    if value is None:
+        return None
+    return _require_location_int(value, field_name)
+
+
+def _require_location_node(value: Any, field_name: str) -> Location:
+    if not isinstance(value, Location):
+        msg = f"{field_name} must be a Location"
+        raise TypeError(msg)
+    value.validate_structure()
+    return value
 
 
 def _require_comment_node(value: Any, field_name: str) -> Comment | CommentGroup:
