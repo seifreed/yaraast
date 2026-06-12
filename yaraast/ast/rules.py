@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import (
     ASTNode,
@@ -156,9 +156,6 @@ class Rule(ASTNode):
     def validate_structure(self) -> None:
         """Validate child containers before traversal."""
         _require_nonempty_string(self.name, "Rule name")
-        from yaraast.ast.meta import Meta
-        from yaraast.ast.modifiers import MetaEntry
-        from yaraast.ast.pragmas import InRulePragma
         from yaraast.ast.strings import StringDefinition
 
         _require_ast_node_sequence_type(
@@ -173,45 +170,14 @@ class Rule(ASTNode):
             StringDefinition,
             "StringDefinition",
         )
-        _require_ast_node_sequence_type(
-            self.pragmas,
-            "Rule.pragmas",
-            InRulePragma,
-            "InRulePragma",
-        )
-        if not isinstance(self.modifiers, list):
-            msg = "Rule modifiers must be a list"
-            raise TypeError(msg)
-        for modifier in self.modifiers:
-            if isinstance(modifier, RuleModifier):
-                modifier.validate_structure()
-            elif isinstance(modifier, str):
-                _require_nonempty_string(modifier, "Rule modifier name")
-            else:
-                msg = "Rule modifiers item must be RuleModifier or string"
-                raise TypeError(msg)
-        if self.meta is not None:
-            if isinstance(self.meta, dict):
-                for key, value in self.meta.items():
-                    MetaEntry.from_key_value(key, value)
-            else:
-                if not isinstance(self.meta, list | tuple):
-                    msg = "Rule meta must be a list or tuple"
-                    raise TypeError(msg)
-                for meta in self.meta:
-                    if not isinstance(meta, Meta | MetaEntry):
-                        msg = "Rule meta must contain Meta or MetaEntry nodes"
-                        raise TypeError(msg)
+        self._validated_pragmas()
+        self._validated_modifiers()
+        self._validated_meta_entries()
         if self.condition is not None:
             _require_ast_node(self.condition, "Rule.condition")
         for tag in self.tags:
             tag.validate_structure()
-        if self.meta is not None and not isinstance(self.meta, dict):
-            for meta in self.meta:
-                validate_structure = getattr(meta, "validate_structure", None)
-                if callable(validate_structure):
-                    validate_structure()
-        for pragma in self.pragmas:
+        for pragma in self._validated_pragmas():
             pragma.validate_structure()
         for string in self.strings:
             validate_structure = getattr(string, "validate_structure", None)
@@ -222,28 +188,79 @@ class Rule(ASTNode):
             if callable(validate_structure):
                 validate_structure()
 
+    def _validated_modifiers(self) -> list[RuleModifier | str]:
+        if not isinstance(self.modifiers, list):
+            msg = "Rule modifiers must be a list"
+            raise TypeError(msg)
+        modifiers: list[RuleModifier | str] = []
+        for modifier in self.modifiers:
+            if isinstance(modifier, RuleModifier):
+                modifier.validate_structure()
+                modifiers.append(modifier)
+            elif isinstance(modifier, str):
+                modifiers.append(_require_nonempty_string(modifier, "Rule modifier name"))
+            else:
+                msg = "Rule modifiers item must be RuleModifier or string"
+                raise TypeError(msg)
+        return modifiers
+
+    def _validated_meta_entries(self) -> list[MetaEntry]:
+        from yaraast.ast.meta import Meta
+
+        if self.meta is None:
+            return []
+        if isinstance(self.meta, dict):
+            return [MetaEntry.from_key_value(key, value) for key, value in self.meta.items()]
+        if not isinstance(self.meta, list | tuple):
+            msg = "Rule meta must be a list or tuple"
+            raise TypeError(msg)
+
+        entries: list[MetaEntry] = []
+        for meta in self.meta:
+            if isinstance(meta, MetaEntry):
+                meta.validate_structure()
+                entries.append(meta)
+            elif isinstance(meta, Meta):
+                meta.validate_structure()
+                entries.append(MetaEntry.from_key_value(meta.key, meta.value))
+            else:
+                msg = "Rule meta must contain Meta or MetaEntry nodes"
+                raise TypeError(msg)
+        return entries
+
+    def _validated_pragmas(self) -> list[InRulePragma]:
+        from yaraast.ast.pragmas import InRulePragma
+
+        _require_ast_node_sequence_type(
+            self.pragmas,
+            "Rule.pragmas",
+            InRulePragma,
+            "InRulePragma",
+        )
+        return list(self.pragmas)
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_rule(self)
 
     @property
     def is_private(self) -> bool:
         """Check if rule is private."""
-        return any(str(m) == "private" for m in self.modifiers)
+        return any(str(modifier) == "private" for modifier in self._validated_modifiers())
 
     @property
     def is_global(self) -> bool:
         """Check if rule is global."""
-        return any(str(m) == "global" for m in self.modifiers)
+        return any(str(modifier) == "global" for modifier in self._validated_modifiers())
 
     def get_meta_entries(self) -> list[MetaEntry]:
         """Get meta entries as enhanced MetaEntry objects."""
-        return cast(list[MetaEntry], self.meta)
+        return self._validated_meta_entries()
 
     def get_meta_value(self, key: str, default: Any = None) -> Any:
         """Get the value of a meta entry by key."""
         key = require_string(key, "Rule meta key")
-        for entry in reversed(self.meta):
-            if hasattr(entry, "key") and entry.key == key:
+        for entry in reversed(self._validated_meta_entries()):
+            if entry.key == key:
                 return entry.value
         return default
 
@@ -269,4 +286,4 @@ class Rule(ASTNode):
     def get_pragmas_by_position(self, position: str) -> list[InRulePragma]:
         """Get pragmas by their position in the rule."""
         position = require_string(position, "Rule pragma position")
-        return [p for p in self.pragmas if p.position == position]
+        return [p for p in self._validated_pragmas() if p.position == position]

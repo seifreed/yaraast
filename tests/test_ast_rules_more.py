@@ -52,6 +52,52 @@ def test_rule_get_meta_value_rejects_non_string_keys(key: Any) -> None:
         rule.get_meta_value(cast(str, key))
 
 
+@pytest.mark.parametrize(
+    ("modifiers", "message"),
+    [
+        (cast(Any, object()), "Rule modifiers must be a list"),
+        ([cast(Any, object())], "Rule modifiers item must be RuleModifier or string"),
+        ([""], "Rule modifier name cannot be empty"),
+    ],
+)
+def test_rule_modifier_flags_reject_invalid_modifier_state(
+    modifiers: Any,
+    message: str,
+) -> None:
+    rule = Rule(name="r1")
+    rule.modifiers = modifiers
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        _ = rule.is_private
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        _ = rule.is_global
+
+
+@pytest.mark.parametrize(
+    ("meta", "message"),
+    [
+        (cast(Any, object()), "Rule meta must be a list or tuple"),
+        ([cast(Any, object())], "Rule meta must contain Meta or MetaEntry nodes"),
+    ],
+)
+def test_rule_meta_accessors_reject_invalid_meta_state(
+    meta: Any,
+    message: str,
+) -> None:
+    rule = Rule(name="r1")
+    rule.meta = meta
+
+    with pytest.raises(TypeError, match=message):
+        rule.get_meta_value("owner")
+
+    with pytest.raises(TypeError, match=message):
+        rule.get_private_meta()
+
+    with pytest.raises(TypeError, match=message):
+        rule.get_public_meta()
+
+
 def test_rule_pragmas_by_position() -> None:
     rule = Rule(name="r2")
     pragma_before = InRulePragma(
@@ -78,6 +124,24 @@ def test_rule_get_pragmas_by_position_rejects_non_string_positions(
 
     with pytest.raises(TypeError, match="Rule pragma position must be a string"):
         rule.get_pragmas_by_position(cast(str, position))
+
+
+@pytest.mark.parametrize(
+    ("pragmas", "message"),
+    [
+        (cast(Any, "bad"), "Rule.pragmas must be a list or tuple"),
+        ([cast(Any, object())], "Rule.pragmas must contain InRulePragma nodes"),
+    ],
+)
+def test_rule_get_pragmas_by_position_rejects_invalid_pragma_state(
+    pragmas: Any,
+    message: str,
+) -> None:
+    rule = Rule(name="r2")
+    rule.pragmas = pragmas
+
+    with pytest.raises(TypeError, match=message):
+        rule.get_pragmas_by_position("before_strings")
 
 
 def test_rule_rejects_invalid_pragmas_without_partial_update() -> None:
