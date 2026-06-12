@@ -162,10 +162,18 @@ class ExpressionBinaryMixin:
         if not isinstance(expr, OfExpression):
             return expr
         if self._match(TokenType.AT):
+            self._validate_of_restriction_string_set(expr)
             return self._parse_at_postfix(expr)
         if self._match(TokenType.IN):
+            self._validate_of_restriction_string_set(expr)
             return self._parse_in_postfix(expr)
         return expr
+
+    def _validate_of_restriction_string_set(self, expr: OfExpression) -> None:
+        if self._of_string_set_kind(expr.string_set, top_level=True) == "string":
+            return
+        msg = "Rule sets cannot use at/in restrictions"
+        raise ParserError(msg, self._previous())
 
     def _parse_expression_of_postfix(self, quantifier: Expression) -> Expression:
         """Wrap ``quantifier`` as the count of an of-expression."""

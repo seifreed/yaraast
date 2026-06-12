@@ -208,6 +208,7 @@ class ExpressionPostfixMixin:
             start_token = self._previous()
             if isinstance(expr, OfExpression):
                 self._reject_percentage_of_postfix(expr, start_token)
+                self._reject_rule_set_restriction(expr, start_token)
             offset = self._parse_bitwise_or_expression()
             self._validate_integer_context_expression(
                 offset,
@@ -242,6 +243,7 @@ class ExpressionPostfixMixin:
         if isinstance(expr, OfExpression):
             start_token = self._previous()
             self._reject_percentage_of_postfix(expr, start_token)
+            self._reject_rule_set_restriction(expr, start_token)
             range_expr = self._parse_parenthesized_range_after_in()
             node = InExpression(subject=expr, range=range_expr)
             if getattr(expr, "location", None) is not None:
@@ -258,6 +260,12 @@ class ExpressionPostfixMixin:
         if isinstance(expr.quantifier, DoubleLiteral | float):
             msg = "Percentage of-expressions do not support 'in' or 'at' restrictions"
             raise ParserError(msg, token)
+
+    def _reject_rule_set_restriction(self, expr: OfExpression, token) -> None:
+        if self._of_string_set_kind(expr.string_set, top_level=True) == "string":
+            return
+        msg = "Rule sets cannot use at/in restrictions"
+        raise ParserError(msg, token)
 
     def _parse_parenthesized_range_after_in(self) -> RangeExpression:
         if not self._match(TokenType.LPAREN):

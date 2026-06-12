@@ -216,6 +216,29 @@ class TestOfInSyntax:
 
         assert TypeChecker().check(ast) == ["Undefined rule: missing"]
 
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "any of (alpha) at 0",
+            "1 of (alpha) at 0",
+            "any of (alpha*) in (0..10)",
+        ],
+    )
+    def test_rule_sets_reject_at_and_in_restrictions(self, condition: str) -> None:
+        yara_code = f"""
+        rule alpha {{
+            condition:
+                true
+        }}
+        rule probe {{
+            condition:
+                {condition}
+        }}
+        """
+
+        with pytest.raises(ParserError, match="Rule sets cannot use"):
+            Parser().parse(yara_code)
+
     def test_mixed_string_and_rule_sets_are_rejected(self) -> None:
         yara_code = """
         rule alpha {
