@@ -76,6 +76,79 @@ def test_extern_namespace_rejects_empty_rule_lookup_names(name: str) -> None:
         ns.get_rule_by_name(name)
 
 
+@pytest.mark.parametrize(
+    ("modifiers", "property_name", "error_type", "message"),
+    [
+        (
+            cast(Any, "private"),
+            "is_private",
+            TypeError,
+            "ExternRule modifiers must be a list",
+        ),
+        (
+            [cast(Any, object())],
+            "is_global",
+            TypeError,
+            "ExternRule modifiers item must be RuleModifier or string",
+        ),
+        (
+            [""],
+            "is_private",
+            ValueError,
+            "ExternRule modifier name cannot be empty",
+        ),
+    ],
+)
+def test_extern_rule_modifier_properties_reject_invalid_internal_state(
+    modifiers: Any,
+    property_name: str,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    rule = ExternRule("Remote")
+    rule.modifiers = modifiers
+
+    with pytest.raises(error_type, match=message):
+        _ = rule.is_private if property_name == "is_private" else rule.is_global
+
+
+@pytest.mark.parametrize(
+    ("extern_rules", "error_type", "message"),
+    [
+        (
+            cast(Any, "bad"),
+            TypeError,
+            "ExternNamespace extern_rules must be a list",
+        ),
+        (
+            [cast(Any, object())],
+            TypeError,
+            "ExternNamespace extern_rules item must be ExternRule",
+        ),
+        (
+            [ExternRule(cast(Any, 123))],
+            TypeError,
+            "ExternRule name must be a string",
+        ),
+        (
+            [ExternRule("")],
+            ValueError,
+            "ExternRule name cannot be empty",
+        ),
+    ],
+)
+def test_extern_namespace_lookup_rejects_invalid_internal_state(
+    extern_rules: Any,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    ns = ExternNamespace(name="ext")
+    ns.extern_rules = extern_rules
+
+    with pytest.raises(error_type, match=message):
+        ns.get_rule_by_name("Remote")
+
+
 def test_extern_namespace_rejects_invalid_rule_inputs_without_partial_update() -> None:
     ns = ExternNamespace(name="ext")
     rule = ExternRule(name="R1")

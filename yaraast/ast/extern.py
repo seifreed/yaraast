@@ -74,12 +74,12 @@ class ExternRule(ASTNode):
     @property
     def is_private(self) -> bool:
         """Check if extern rule is private."""
-        return any(str(modifier) == "private" for modifier in self.modifiers)
+        return "private" in _normalize_extern_rule_modifiers(self.modifiers)
 
     @property
     def is_global(self) -> bool:
         """Check if extern rule is global."""
-        return any(str(modifier) == "global" for modifier in self.modifiers)
+        return "global" in _normalize_extern_rule_modifiers(self.modifiers)
 
     def __str__(self) -> str:
         """String representation of extern rule."""
@@ -190,14 +190,20 @@ class ExternNamespace(ASTNode):
     def validate_structure(self) -> None:
         """Validate namespace fields before direct analysis."""
         _require_nonempty_string(self.name, "ExternNamespace name")
+        self._validated_extern_rules()
+
+    def _validated_extern_rules(self) -> list[ExternRule]:
         if not isinstance(self.extern_rules, list):
             msg = "ExternNamespace extern_rules must be a list"
             raise TypeError(msg)
+        extern_rules = []
         for extern_rule in self.extern_rules:
             if not isinstance(extern_rule, ExternRule):
                 msg = "ExternNamespace extern_rules item must be ExternRule"
                 raise TypeError(msg)
             extern_rule.validate_structure()
+            extern_rules.append(extern_rule)
+        return extern_rules
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_namespace(self)
@@ -213,7 +219,7 @@ class ExternNamespace(ASTNode):
     def get_rule_by_name(self, name: str) -> ExternRule | None:
         """Get extern rule by name within this namespace."""
         name = _require_nonempty_string(name, "ExternNamespace rule name")
-        for rule in self.extern_rules:
+        for rule in self._validated_extern_rules():
             if rule.name == name:
                 return rule
         return None
