@@ -2656,6 +2656,15 @@ def test_protobuf_serializer_rejects_invalid_location_metadata(
         serializer.serialize(YaraFile(rules=[rule]))
 
 
+def test_protobuf_deserialize_rejects_non_positive_location_metadata() -> None:
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_file.node_metadata.location.line = 0
+    pb_file.node_metadata.location.column = 1
+
+    with pytest.raises(SerializationError, match="Location line must be at least 1"):
+        ProtobufSerializer().deserialize(binary_data=pb_file.SerializeToString())
+
+
 def test_protobuf_serializer_preserves_node_comment_metadata() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     plain = PlainString(identifier="$a", value="abc")

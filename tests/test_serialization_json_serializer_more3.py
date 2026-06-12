@@ -1643,6 +1643,24 @@ def test_json_serializer_rejects_invalid_location_fields() -> None:
             serializer.serialize(ast)
 
 
+def test_json_serializer_deserialize_rejects_non_positive_location_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    payload = {
+        "type": "YaraFile",
+        "imports": [],
+        "includes": [],
+        "rules": [],
+        "extern_rules": [],
+        "extern_imports": [],
+        "pragmas": [],
+        "namespaces": [],
+        "location": {"line": 0, "column": 1},
+    }
+
+    with pytest.raises(SerializationError, match="Location line must be at least 1"):
+        serializer.deserialize(json.dumps(payload))
+
+
 def test_json_serializer_rejects_invalid_anonymous_string_flags() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_flag: Any = "yes"

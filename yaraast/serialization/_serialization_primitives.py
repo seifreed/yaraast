@@ -109,13 +109,18 @@ def _deserialize_comment_text(data: dict[str, Any]) -> str:
 
 
 def _deserialize_location(data: dict[str, Any]) -> Location:
-    return Location(
+    location = Location(
         line=_deserialize_location_int_field(data, "line"),
         column=_deserialize_location_int_field(data, "column"),
         file=_deserialize_nullable_string_field(data, "file", "Location"),
         end_line=_deserialize_location_optional_int_field(data, "end_line"),
         end_column=_deserialize_location_optional_int_field(data, "end_column"),
     )
+    try:
+        location.validate_structure()
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return location
 
 
 def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:

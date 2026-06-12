@@ -76,7 +76,7 @@ def _copy_location_to_protobuf(location, pb_location) -> None:
 def _protobuf_location_to_ast(pb_location):
     from yaraast.ast.base import Location
 
-    return Location(
+    location = Location(
         line=pb_location.line,
         column=pb_location.column,
         file=pb_location.file if _protobuf_has_field(pb_location, "file") else None,
@@ -85,6 +85,11 @@ def _protobuf_location_to_ast(pb_location):
             pb_location.end_column if _protobuf_has_field(pb_location, "end_column") else None
         ),
     )
+    try:
+        location.validate_structure()
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return location
 
 
 def _copy_comment_to_protobuf(comment, pb_comment) -> None:
