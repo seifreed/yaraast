@@ -1637,6 +1637,19 @@ def test_expr_inference_helper_and_branch_edges() -> None:
     )
     assert raw_rule_for_of.errors == []
 
+    raw_float_for_of = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        raw_float_for_of.infer(
+            ForOfExpression(
+                quantifier=0.5,
+                string_set=Identifier(name="them"),
+                condition=BooleanLiteral(value=True),
+            )
+        ),
+        BooleanType,
+    )
+    assert any("Invalid for...of quantifier" in e for e in raw_float_for_of.errors)
+
     percent_for_of = ExpressionTypeInference(TypeEnvironment())
     assert isinstance(
         percent_for_of.infer(
