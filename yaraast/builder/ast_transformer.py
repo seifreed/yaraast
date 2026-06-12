@@ -75,6 +75,9 @@ class RuleTransformer:
     @staticmethod
     def _require_expression(value: object, context: str) -> Expression:
         if isinstance(value, Expression):
+            validate_structure = getattr(value, "validate_structure", None)
+            if callable(validate_structure):
+                validate_structure()
             return value
         msg = f"{context}, got {type(value).__name__}"
         raise TypeError(msg)

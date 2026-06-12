@@ -224,6 +224,19 @@ def test_rule_transformer_rejects_invalid_replacement_condition_without_partial_
     assert transformed.condition.name == "$a"
 
 
+def test_rule_transformer_rejects_invalid_replacement_condition_structure_without_partial_update() -> (
+    None
+):
+    transformer = RuleTransformer(_sample_rule("condition_rule"))
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        transformer.replace_condition(StringIdentifier(name=""))
+
+    transformed = transformer.build()
+    assert isinstance(transformed.condition, StringIdentifier)
+    assert transformed.condition.name == "$a"
+
+
 def test_rule_transformer_rejects_invalid_condition_transform_results_without_partial_update() -> (
     None
 ):
@@ -231,6 +244,19 @@ def test_rule_transformer_rejects_invalid_condition_transform_results_without_pa
 
     with pytest.raises(TypeError, match="Condition transformer must return an Expression"):
         transformer.transform_condition(cast(Any, lambda expr: None))
+
+    transformed = transformer.build()
+    assert isinstance(transformed.condition, StringIdentifier)
+    assert transformed.condition.name == "$a"
+
+
+def test_rule_transformer_rejects_invalid_condition_transform_structure_without_partial_update() -> (
+    None
+):
+    transformer = RuleTransformer(_sample_rule("condition_rule"))
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        transformer.transform_condition(lambda _expr: StringIdentifier(name=""))
 
     transformed = transformer.build()
     assert isinstance(transformed.condition, StringIdentifier)
