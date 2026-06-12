@@ -73,7 +73,7 @@ from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
-from yaraast.shared.integer_semantics import INT64_MIN
+from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictExpression,
@@ -3046,6 +3046,18 @@ def test_codegen_rejects_malformed_fractional_percentage_quantifiers(
                 ParenthesesExpression(UnaryExpression("-", IntegerLiteral(1))),
             ),
             "Right operand of '>>' cannot be negative",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(INT64_MAX), "+", IntegerLiteral(1)),
+            "Integer overflow in '\\+' expression",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(INT64_MIN), "-", IntegerLiteral(1)),
+            "Integer overflow in '-' expression",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(INT64_MAX), "*", IntegerLiteral(2)),
+            "Integer overflow in '\\*' expression",
         ),
         (
             UnaryExpression("-", StringLiteral("x")),

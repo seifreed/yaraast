@@ -465,6 +465,27 @@ def _reject_negative_shift_count(node: Any) -> None:
         raise ValueError(msg)
 
 
+def _reject_static_integer_arithmetic_overflow(node: Any) -> None:
+    from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
+
+    if node.operator not in {"+", "-", "*"}:
+        return
+    left = _constant_integer_value(node.left)
+    right = _constant_integer_value(node.right)
+    if left is None or right is None:
+        return
+    if node.operator == "+":
+        result = left + right
+    elif node.operator == "-":
+        result = left - right
+    else:
+        result = left * right
+    if INT64_MIN <= result <= INT64_MAX:
+        return
+    msg = f"Integer overflow in '{node.operator}' expression for libyara output"
+    raise ValueError(msg)
+
+
 def _constant_comparison_operand_type(value: Any) -> str | None:
     from yaraast.ast.expressions import (
         BinaryExpression,
@@ -542,6 +563,7 @@ def validate_binary_expression_operands(node: Any) -> None:
     _reject_invalid_comparison_operands(node)
     _reject_zero_integer_divisor(node)
     _reject_negative_shift_count(node)
+    _reject_static_integer_arithmetic_overflow(node)
     _reject_invalid_binary_numeric_operands(node)
     _reject_invalid_string_binary_operands(node)
 
