@@ -2152,6 +2152,37 @@ def test_json_deserialize_condition_fields_reject_wrong_scalar_types() -> None:
             }
         )
 
+    with pytest.raises(
+        SerializationError,
+        match="For expression iterable must be a range, set, or iterable expression",
+    ):
+        s._deserialize_expression(
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": "i",
+                "iterable": {"type": "BooleanLiteral", "value": True},
+                "body": true_expr,
+            }
+        )
+
+    with pytest.raises(
+        SerializationError,
+        match="For expression iterable set items must be integer or string expressions",
+    ):
+        s._deserialize_expression(
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": "i",
+                "iterable": {
+                    "type": "SetExpression",
+                    "elements": [{"type": "RegexLiteral", "pattern": "x", "modifiers": ""}],
+                },
+                "body": true_expr,
+            }
+        )
+
     with pytest.raises(SerializationError, match="InExpression subject must be a string"):
         s._deserialize_expression(
             {

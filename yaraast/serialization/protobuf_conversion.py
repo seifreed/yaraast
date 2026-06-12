@@ -15,6 +15,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_binary_operator_text,
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
+    _validate_for_expression_iterable,
     _validate_function_identifier_text,
     _validate_in_expression_range,
     _validate_integer_expression,
@@ -1625,7 +1626,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 "ForExpression variable",
             )
         )
-        convert_expression_to_protobuf(expr.iterable, pb_expr.for_expression.iterable)
+        convert_expression_to_protobuf(
+            _validate_for_expression_iterable(expr.iterable),
+            pb_expr.for_expression.iterable,
+        )
         convert_expression_to_protobuf(expr.body, pb_expr.for_expression.body)
     elif isinstance(expr, ForOfExpression):
         pb_expr.for_of_expression.quantifier = _coerce_quantifier_text(
@@ -2636,6 +2640,7 @@ def protobuf_to_expression(pb_expr):
             ),
         )
     if pb_expr.HasField("for_expression"):
+        iterable = protobuf_to_expression(pb_expr.for_expression.iterable)
         return with_metadata(
             ForExpression(
                 quantifier=(
@@ -2653,7 +2658,7 @@ def protobuf_to_expression(pb_expr):
                         "ForExpression variable",
                     )
                 ),
-                iterable=protobuf_to_expression(pb_expr.for_expression.iterable),
+                iterable=_validate_for_expression_iterable(iterable),
                 body=protobuf_to_expression(pb_expr.for_expression.body),
             ),
         )

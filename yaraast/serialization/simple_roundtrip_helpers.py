@@ -100,6 +100,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_binary_operator_text,
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
+    _validate_for_expression_iterable,
     _validate_function_identifier_text,
     _validate_in_expression_range,
     _validate_integer_expression,
@@ -1434,21 +1435,26 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             ),
         }
     if isinstance(node, ForExpression):
+        quantifier = _serialize_quantifier(
+            node.quantifier,
+            "ForExpression quantifier",
+            allow_percentage=False,
+        )
+        variable = _validate_loop_variable_text(
+            _serialize_required_nonempty_string(
+                node.variable,
+                "ForExpression variable",
+            )
+        )
+        iterable = serialize_node(node.iterable)
+        body = serialize_node(node.body)
+        _validate_for_expression_iterable(node.iterable)
         return {
             "type": "ForExpression",
-            "quantifier": _serialize_quantifier(
-                node.quantifier,
-                "ForExpression quantifier",
-                allow_percentage=False,
-            ),
-            "variable": _validate_loop_variable_text(
-                _serialize_required_nonempty_string(
-                    node.variable,
-                    "ForExpression variable",
-                )
-            ),
-            "iterable": serialize_node(node.iterable),
-            "body": serialize_node(node.body),
+            "quantifier": quantifier,
+            "variable": variable,
+            "iterable": iterable,
+            "body": body,
         }
     if isinstance(node, ForOfExpression):
         return {
@@ -2225,18 +2231,23 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             ),
         )
     if node_type == "ForExpression":
+        quantifier = _deserialize_required_quantifier(
+            data,
+            "quantifier",
+            "ForExpression",
+            allow_percentage=False,
+        )
+        variable = _validate_loop_variable_text(
+            _deserialize_nonempty_string_field(data, "variable", "ForExpression")
+        )
+        iterable = _deserialize_required_node(data, "iterable", "ForExpression")
+        body = _deserialize_required_node(data, "body", "ForExpression")
+        _validate_for_expression_iterable(iterable)
         return ForExpression(
-            _deserialize_required_quantifier(
-                data,
-                "quantifier",
-                "ForExpression",
-                allow_percentage=False,
-            ),
-            _validate_loop_variable_text(
-                _deserialize_nonempty_string_field(data, "variable", "ForExpression")
-            ),
-            _deserialize_required_node(data, "iterable", "ForExpression"),
-            _deserialize_required_node(data, "body", "ForExpression"),
+            quantifier,
+            variable,
+            iterable,
+            body,
         )
     if node_type == "ForOfExpression":
         return ForOfExpression(

@@ -965,6 +965,14 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
             "ForExpression variable must be a string",
         ),
         (
+            ForExpression("any", "i", BooleanLiteral(True), BooleanLiteral(True)),
+            "For expression iterable must be a range, set, or iterable expression",
+        ),
+        (
+            ForExpression("any", "i", SetExpression([RegexLiteral("x")]), BooleanLiteral(True)),
+            "For expression iterable set items must be integer or string expressions",
+        ),
+        (
             ForExpression("50%", "i", SetExpression([IntegerLiteral(1)]), BooleanLiteral(True)),
             "Invalid ForExpression quantifier",
         ),

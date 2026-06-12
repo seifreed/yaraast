@@ -15,6 +15,8 @@ from typing import Any
 from yaraast.ast.base import Location
 from yaraast.ast.modifiers import RuleModifier, require_rule_modifier_identifier
 from yaraast.codegen.generator_expression_visitors import (
+    _is_definitely_non_iterable_expression,
+    _is_invalid_for_iterable_set_item,
     _reject_non_integer_expression,
     _render_binary_operator,
     _render_unary_operator,
@@ -262,6 +264,26 @@ def _validate_integer_expression(value: Any, context: str) -> Any:
         _reject_non_integer_expression(value, context)
     except (TypeError, ValueError) as exc:
         raise SerializationError(str(exc)) from exc
+    return value
+
+
+def _validate_for_expression_iterable(value: Any) -> Any:
+    from yaraast.ast.expressions import SetExpression
+
+    if _is_definitely_non_iterable_expression(value):
+        msg = (
+            "For expression iterable must be a range, set, or iterable expression "
+            "for libyara output"
+        )
+        raise SerializationError(msg)
+    if isinstance(value, SetExpression) and any(
+        _is_invalid_for_iterable_set_item(item) for item in value.elements
+    ):
+        msg = (
+            "For expression iterable set items must be integer or string expressions "
+            "for libyara output"
+        )
+        raise SerializationError(msg)
     return value
 
 

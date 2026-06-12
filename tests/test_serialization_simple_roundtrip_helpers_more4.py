@@ -2118,6 +2118,14 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             "ForExpression variable must be a string",
         ),
         (
+            ForExpression("any", "i", BooleanLiteral(True), true_expr),
+            "For expression iterable must be a range, set, or iterable expression",
+        ),
+        (
+            ForExpression("any", "i", SetExpression([RegexLiteral("x")]), true_expr),
+            "For expression iterable set items must be integer or string expressions",
+        ),
+        (
             ForExpression("any", "bad-name", SetExpression([]), true_expr),
             "Invalid local variable identifier: bad-name",
         ),
@@ -3235,6 +3243,37 @@ def test_simple_roundtrip_condition_fields_reject_wrong_scalar_types() -> None:
                 "quantifier": "any",
                 "variable": "",
                 "iterable": true_expr,
+                "body": true_expr,
+            }
+        )
+
+    with pytest.raises(
+        SerializationError,
+        match="For expression iterable must be a range, set, or iterable expression",
+    ):
+        deserialize_node(
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": "i",
+                "iterable": {"type": "BooleanLiteral", "value": True},
+                "body": true_expr,
+            }
+        )
+
+    with pytest.raises(
+        SerializationError,
+        match="For expression iterable set items must be integer or string expressions",
+    ):
+        deserialize_node(
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": "i",
+                "iterable": {
+                    "type": "SetExpression",
+                    "elements": [{"type": "RegexLiteral", "pattern": "x", "modifiers": ""}],
+                },
                 "body": true_expr,
             }
         )

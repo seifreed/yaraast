@@ -13,6 +13,7 @@ from yaraast.serialization._serialization_primitives import (
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
     _validate_binary_operator_text,
+    _validate_for_expression_iterable,
     _validate_function_identifier_text,
     _validate_in_expression_range,
     _validate_integer_expression,
@@ -837,26 +838,27 @@ def visit_member_access(serializer, node) -> dict[str, Any]:
 
 
 def visit_for_expression(serializer, node) -> dict[str, Any]:
+    quantifier = _serialize_quantifier(
+        serializer,
+        node.quantifier,
+        "ForExpression quantifier",
+        allow_percentage=False,
+    )
+    variable = _validate_loop_variable_text(
+        _serialize_required_nonempty_string(
+            node.variable,
+            "ForExpression variable",
+        )
+    )
+    iterable = _serialize_required_expression(serializer, node.iterable, "ForExpression iterable")
+    body = _serialize_required_expression(serializer, node.body, "ForExpression body")
+    _validate_for_expression_iterable(node.iterable)
     return {
         "type": "ForExpression",
-        "quantifier": _serialize_quantifier(
-            serializer,
-            node.quantifier,
-            "ForExpression quantifier",
-            allow_percentage=False,
-        ),
-        "variable": _validate_loop_variable_text(
-            _serialize_required_nonempty_string(
-                node.variable,
-                "ForExpression variable",
-            )
-        ),
-        "iterable": _serialize_required_expression(
-            serializer,
-            node.iterable,
-            "ForExpression iterable",
-        ),
-        "body": _serialize_required_expression(serializer, node.body, "ForExpression body"),
+        "quantifier": quantifier,
+        "variable": variable,
+        "iterable": iterable,
+        "body": body,
     }
 
 

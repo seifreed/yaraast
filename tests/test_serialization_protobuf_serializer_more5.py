@@ -2223,6 +2223,14 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             "Invalid local variable identifier: bad-name",
         ),
         (
+            ForExpression("any", "i", BooleanLiteral(True), BooleanLiteral(True)),
+            "For expression iterable must be a range, set, or iterable expression",
+        ),
+        (
+            ForExpression("any", "i", SetExpression([RegexLiteral("x")]), BooleanLiteral(True)),
+            "For expression iterable set items must be integer or string expressions",
+        ),
+        (
             ForExpression("50%", "i", SetExpression([IntegerLiteral(1)]), BooleanLiteral(True)),
             "Invalid ForExpression quantifier",
         ),
@@ -2700,6 +2708,41 @@ def test_protobuf_deserializer_rejects_non_integer_index_expressions(
     elif expression_kind == "at_expression":
         condition.at_expression.string_id = "$a"
         condition.at_expression.offset.string_literal.value = "x"
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("case_name", "message"),
+    [
+        (
+            "boolean_iterable",
+            "For expression iterable must be a range, set, or iterable expression",
+        ),
+        (
+            "regex_set_item",
+            "For expression iterable set items must be integer or string expressions",
+        ),
+    ],
+)
+def test_protobuf_deserializer_rejects_invalid_for_expression_iterables(
+    case_name: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_for_iterable"
+    condition = pb_rule.condition.for_expression
+    condition.quantifier = "any"
+    condition.variable = "i"
+    condition.body.boolean_literal.value = True
+
+    if case_name == "boolean_iterable":
+        condition.iterable.boolean_literal.value = True
+    elif case_name == "regex_set_item":
+        condition.iterable.set_expression.elements.add().regex_literal.pattern = "x"
 
     with pytest.raises(SerializationError, match=message):
         serializer.deserialize(binary_data=pb_file.SerializeToString())

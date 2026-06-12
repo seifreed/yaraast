@@ -33,6 +33,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_binary_operator_text,
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
+    _validate_for_expression_iterable,
     _validate_function_identifier_text,
     _validate_in_expression_range,
     _validate_integer_expression,
@@ -661,19 +662,24 @@ def _deser_boolean_literal(self, data: dict[str, Any]):
 def _deser_for_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import ForExpression
 
+    quantifier = _deserialize_required_quantifier(
+        self,
+        data,
+        "quantifier",
+        "ForExpression",
+        allow_percentage=False,
+    )
+    variable = _validate_loop_variable_text(
+        _deserialize_nonempty_string_field(data, "variable", "ForExpression")
+    )
+    iterable = _deserialize_required_expression(self, data, "iterable", "ForExpression")
+    body = _deserialize_required_expression(self, data, "body", "ForExpression")
+    _validate_for_expression_iterable(iterable)
     return ForExpression(
-        quantifier=_deserialize_required_quantifier(
-            self,
-            data,
-            "quantifier",
-            "ForExpression",
-            allow_percentage=False,
-        ),
-        variable=_validate_loop_variable_text(
-            _deserialize_nonempty_string_field(data, "variable", "ForExpression")
-        ),
-        iterable=_deserialize_required_expression(self, data, "iterable", "ForExpression"),
-        body=_deserialize_required_expression(self, data, "body", "ForExpression"),
+        quantifier=quantifier,
+        variable=variable,
+        iterable=iterable,
+        body=body,
     )
 
 
