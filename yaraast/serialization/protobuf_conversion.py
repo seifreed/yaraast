@@ -1574,9 +1574,11 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             convert_expression_to_protobuf(expr.condition, pb_expr.for_of_expression.condition)
     elif isinstance(expr, AtExpression):
         if isinstance(expr.string_id, str):
-            pb_expr.at_expression.string_id = _protobuf_required_nonempty_string(
-                expr.string_id,
-                "AtExpression string_id",
+            pb_expr.at_expression.string_id = _validate_string_reference_text(
+                _protobuf_required_nonempty_string(
+                    expr.string_id,
+                    "AtExpression string_id",
+                )
             )
         elif isinstance(expr.string_id, Expression):
             convert_expression_to_protobuf(expr.string_id, pb_expr.at_expression.subject)
@@ -1586,9 +1588,11 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.offset, pb_expr.at_expression.offset)
     elif isinstance(expr, InExpression):
         if isinstance(expr.subject, str):
-            pb_expr.in_expression.string_id = _protobuf_required_nonempty_string(
-                expr.subject,
-                "InExpression subject",
+            pb_expr.in_expression.string_id = _validate_string_reference_text(
+                _protobuf_required_nonempty_string(
+                    expr.subject,
+                    "InExpression subject",
+                )
             )
         else:
             convert_expression_to_protobuf(expr.subject, pb_expr.in_expression.subject)
@@ -2536,9 +2540,11 @@ def protobuf_to_expression(pb_expr):
         subject = (
             protobuf_to_expression(pb_expr.at_expression.subject)
             if pb_expr.at_expression.HasField("subject")
-            else _protobuf_required_nonempty_string(
-                pb_expr.at_expression.string_id,
-                "AtExpression string_id",
+            else _validate_string_reference_text(
+                _protobuf_required_nonempty_string(
+                    pb_expr.at_expression.string_id,
+                    "AtExpression string_id",
+                )
             )
         )
         return with_metadata(
@@ -2551,9 +2557,11 @@ def protobuf_to_expression(pb_expr):
         subject = (
             protobuf_to_expression(pb_expr.in_expression.subject)
             if pb_expr.in_expression.HasField("subject")
-            else _protobuf_required_nonempty_string(
-                pb_expr.in_expression.string_id,
-                "InExpression subject",
+            else _validate_string_reference_text(
+                _protobuf_required_nonempty_string(
+                    pb_expr.in_expression.string_id,
+                    "InExpression subject",
+                )
             )
         )
         return with_metadata(

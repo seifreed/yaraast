@@ -567,6 +567,16 @@ def test_json_serializer_rejects_invalid_leaf_values() -> None:
         (ModuleReference(invalid_list), "ModuleReference module must be a string"),
         (AtExpression("", IntegerLiteral(0)), "AtExpression string_id must not be empty"),
         (AtExpression(invalid_text, IntegerLiteral(0)), "AtExpression string_id must be a string"),
+        (AtExpression("@a", IntegerLiteral(0)), "Invalid string reference"),
+        (AtExpression("$bad-name", IntegerLiteral(0)), "Invalid string reference"),
+        (
+            InExpression("@a", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
+            "Invalid string reference",
+        ),
+        (
+            InExpression("$bad-name", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
+            "Invalid string reference",
+        ),
     ]
 
     for expression, message in invalid_cases:

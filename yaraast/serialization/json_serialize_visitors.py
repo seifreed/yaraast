@@ -296,11 +296,20 @@ def _serialize_string_set(serializer, value, context: str):
     raise SerializationError(msg)
 
 
-def _serialize_string_or_expression(serializer, value, context: str):
+def _serialize_string_or_expression(
+    serializer,
+    value,
+    context: str,
+    *,
+    validate_string_reference: bool = False,
+):
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, str):
-        return _serialize_required_nonempty_string(value, context)
+        text = _serialize_required_nonempty_string(value, context)
+        if validate_string_reference:
+            return _validate_string_reference_text(text)
+        return text
     if isinstance(value, Expression):
         return serializer.visit(value)
     msg = f"{context} must be a string or expression"
@@ -840,13 +849,19 @@ def visit_at_expression(serializer, node) -> dict[str, Any]:
             serializer,
             node.string_id,
             "AtExpression string_id",
+            validate_string_reference=True,
         ),
         "offset": _serialize_required_expression(serializer, node.offset, "AtExpression offset"),
     }
 
 
 def visit_in_expression(serializer, node) -> dict[str, Any]:
-    subject = _serialize_string_or_expression(serializer, node.subject, "InExpression subject")
+    subject = _serialize_string_or_expression(
+        serializer,
+        node.subject,
+        "InExpression subject",
+        validate_string_reference=True,
+    )
     return {
         "type": "InExpression",
         "subject": subject,

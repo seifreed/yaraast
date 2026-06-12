@@ -548,9 +548,17 @@ def _serialize_required_nonempty_string(value: Any, context: str) -> str:
     return text
 
 
-def _serialize_string_or_expression(value: Any, context: str) -> str | dict[str, Any]:
+def _serialize_string_or_expression(
+    value: Any,
+    context: str,
+    *,
+    validate_string_reference: bool = False,
+) -> str | dict[str, Any]:
     if isinstance(value, str):
-        return _serialize_required_nonempty_string(value, context)
+        text = _serialize_required_nonempty_string(value, context)
+        if validate_string_reference:
+            return _validate_string_reference_text(text)
+        return text
     if isinstance(value, Expression):
         return serialize_node(value)
     msg = f"{context} must be a string or expression"
@@ -1405,6 +1413,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "string_id": _serialize_string_or_expression(
                 node.string_id,
                 "AtExpression string_id",
+                validate_string_reference=True,
             ),
             "offset": serialize_node(node.offset),
         }
@@ -1414,6 +1423,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "subject": _serialize_string_or_expression(
                 node.subject,
                 "InExpression subject",
+                validate_string_reference=True,
             ),
             "range": serialize_node(node.range),
         }
@@ -2114,7 +2124,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         if isinstance(raw_subject, dict):
             subject = _deserialize_required_node_value(raw_subject, "AtExpression string_id")
         elif isinstance(raw_subject, str):
-            subject = _deserialize_nonempty_string_field(data, "string_id", "AtExpression")
+            subject = _validate_string_reference_text(
+                _deserialize_nonempty_string_field(data, "string_id", "AtExpression")
+            )
         else:
             subject = _deserialize_string_field(data, "string_id", "AtExpression")
         return AtExpression(
@@ -2131,7 +2143,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             if _is_empty_nonempty_text(raw_subject, "InExpression subject"):
                 msg = "InExpression subject must not be empty"
                 raise SerializationError(msg)
-            subject = raw_subject
+            subject = _validate_string_reference_text(raw_subject)
         else:
             msg = "InExpression subject must be a string or expression"
             raise SerializationError(msg)

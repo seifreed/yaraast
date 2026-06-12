@@ -1633,6 +1633,49 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
             }
         )
 
+    invalid_reference_range = {
+        "type": "RangeExpression",
+        "low": {"type": "IntegerLiteral", "value": 0},
+        "high": {"type": "IntegerLiteral", "value": 1},
+    }
+    invalid_string_reference_subject_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {
+                "type": "AtExpression",
+                "string_id": "@a",
+                "offset": {"type": "IntegerLiteral", "value": 0},
+            },
+            "Invalid string reference",
+        ),
+        (
+            {
+                "type": "AtExpression",
+                "string_id": "$bad-name",
+                "offset": {"type": "IntegerLiteral", "value": 0},
+            },
+            "Invalid string reference",
+        ),
+        (
+            {
+                "type": "InExpression",
+                "subject": "@a",
+                "range": invalid_reference_range,
+            },
+            "Invalid string reference",
+        ),
+        (
+            {
+                "type": "InExpression",
+                "subject": "$bad-name",
+                "range": invalid_reference_range,
+            },
+            "Invalid string reference",
+        ),
+    )
+    for payload, message in invalid_string_reference_subject_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
     int_expr = {"type": "IntegerLiteral", "value": 1}
     missing_condition_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (
@@ -1831,9 +1874,19 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             AtExpression(cast(Any, 7), IntegerLiteral(0)),
             "AtExpression string_id must be a string or expression",
         ),
+        (AtExpression("@a", IntegerLiteral(0)), "Invalid string reference"),
+        (AtExpression("$bad-name", IntegerLiteral(0)), "Invalid string reference"),
         (
             InExpression(cast(Any, 7), IntegerLiteral(0)),
             "InExpression subject must be a string or expression",
+        ),
+        (
+            InExpression("@a", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
+            "Invalid string reference",
+        ),
+        (
+            InExpression("$bad-name", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
+            "Invalid string reference",
         ),
         (
             ForExpression("any", "", SetExpression([]), true_expr),

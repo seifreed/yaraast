@@ -9,7 +9,13 @@ import pytest
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.conditions import AtExpression, ForExpression, ForOfExpression, OfExpression
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -18,6 +24,7 @@ from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
     MemberAccess,
+    RangeExpression,
     RegexLiteral,
     SetExpression,
     StringCount,
@@ -2014,6 +2021,16 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             AtExpression("", IntegerLiteral(0)),
             "AtExpression string_id must not be empty",
         ),
+        (AtExpression("@a", IntegerLiteral(0)), "Invalid string reference"),
+        (AtExpression("$bad-name", IntegerLiteral(0)), "Invalid string reference"),
+        (
+            InExpression("@a", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
+            "Invalid string reference",
+        ),
+        (
+            InExpression("$bad-name", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
+            "Invalid string reference",
+        ),
         (ModuleReference(cast(Any, ["pe"])), "ModuleReference module must be a string"),
         (ModuleReference(""), "ModuleReference module must not be empty"),
         (
@@ -2407,6 +2424,10 @@ def test_protobuf_deserializer_rejects_empty_expression_identifier_fields(
         ("string_offset", "$bad-name"),
         ("string_length", "!a"),
         ("string_length", "$bad-name"),
+        ("at_expression", "@a"),
+        ("at_expression", "$bad-name"),
+        ("in_expression", "@a"),
+        ("in_expression", "$bad-name"),
     ],
 )
 def test_protobuf_deserializer_rejects_invalid_string_reference_fields(
@@ -2429,6 +2450,13 @@ def test_protobuf_deserializer_rejects_invalid_string_reference_fields(
         condition.string_offset.string_id = value
     elif expression_kind == "string_length":
         condition.string_length.string_id = value
+    elif expression_kind == "at_expression":
+        condition.at_expression.string_id = value
+        condition.at_expression.offset.integer_literal.value = 0
+    elif expression_kind == "in_expression":
+        condition.in_expression.string_id = value
+        condition.in_expression.range.range_expression.low.integer_literal.value = 0
+        condition.in_expression.range.range_expression.high.integer_literal.value = 1
 
     with pytest.raises(SerializationError, match="Invalid string reference"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())

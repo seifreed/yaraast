@@ -1223,6 +1223,49 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             }
         )
 
+    invalid_reference_range = {
+        "type": "RangeExpression",
+        "low": {"type": "IntegerLiteral", "value": 0},
+        "high": {"type": "IntegerLiteral", "value": 1},
+    }
+    invalid_string_reference_subject_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {
+                "type": "AtExpression",
+                "string_id": "@a",
+                "offset": {"type": "IntegerLiteral", "value": 0},
+            },
+            "Invalid string reference",
+        ),
+        (
+            {
+                "type": "AtExpression",
+                "string_id": "$bad-name",
+                "offset": {"type": "IntegerLiteral", "value": 0},
+            },
+            "Invalid string reference",
+        ),
+        (
+            {
+                "type": "InExpression",
+                "subject": "@a",
+                "range": invalid_reference_range,
+            },
+            "Invalid string reference",
+        ),
+        (
+            {
+                "type": "InExpression",
+                "subject": "$bad-name",
+                "range": invalid_reference_range,
+            },
+            "Invalid string reference",
+        ),
+    )
+    for payload, message in invalid_string_reference_subject_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
     int_expr = {"type": "IntegerLiteral", "value": 1}
     missing_condition_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (

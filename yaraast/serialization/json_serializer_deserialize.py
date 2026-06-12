@@ -653,7 +653,9 @@ def _deser_at_expression(self, data: dict[str, Any]):
     if isinstance(raw_subject, dict):
         subject = _deserialize_required_expression(self, data, "string_id", "AtExpression")
     else:
-        subject = _deserialize_nonempty_string_field(data, "string_id", "AtExpression")
+        subject = _validate_string_reference_text(
+            _deserialize_nonempty_string_field(data, "string_id", "AtExpression")
+        )
     return AtExpression(
         string_id=subject,
         offset=_deserialize_required_expression(self, data, "offset", "AtExpression"),
@@ -672,7 +674,7 @@ def _deser_in_expression(self, data: dict[str, Any]):
         if not raw_subject.strip():
             msg = "InExpression subject must not be empty"
             raise SerializationError(msg)
-        subject = raw_subject
+        subject = _validate_string_reference_text(raw_subject)
     else:
         msg = "InExpression subject must be a string or expression"
         raise SerializationError(msg)
