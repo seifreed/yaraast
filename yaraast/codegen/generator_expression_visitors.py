@@ -182,6 +182,9 @@ def _is_definitely_non_numeric_expression(value: Any) -> bool:
                 value.left
             ) or _is_definitely_non_numeric_expression(value.right)
         return True
+    known_type = _known_builtin_module_scalar_type_name(value)
+    if known_type is not None:
+        return known_type not in {"double", "integer"}
     return isinstance(
         value,
         bool | BooleanLiteral | StringLiteral | RegexLiteral | StringIdentifier,
@@ -218,6 +221,9 @@ def _is_definitely_non_integer_expression(value: Any) -> bool:
             return True
         if value.operator == "-":
             return _is_definitely_non_numeric_expression(value.operand)
+    known_type = _known_builtin_module_scalar_type_name(value)
+    if known_type is not None:
+        return known_type != "integer"
     return isinstance(value, float | DoubleLiteral) or _is_definitely_non_numeric_expression(value)
 
 

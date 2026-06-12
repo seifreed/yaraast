@@ -3103,6 +3103,53 @@ def test_codegen_rejects_known_module_function_comparison_type_mismatches(
         CodeGenerator().generate(ast)
 
 
+@pytest.mark.parametrize(
+    ("module_name", "condition", "message"),
+    [
+        (
+            "pe",
+            BinaryExpression(FunctionCall("pe.imphash", []), "+", IntegerLiteral(1)),
+            "Left operand of '\\+' must be numeric",
+        ),
+        (
+            "hash",
+            BinaryExpression(
+                FunctionCall("hash.md5", [StringLiteral("abc")]), "-", IntegerLiteral(1)
+            ),
+            "Left operand of '-' must be numeric",
+        ),
+        (
+            "math",
+            BinaryExpression(
+                FunctionCall("math.entropy", [StringLiteral("abc")]), "&", IntegerLiteral(1)
+            ),
+            "Left operand of '&' must be integer",
+        ),
+        (
+            "math",
+            BinaryExpression(
+                FunctionCall("math.entropy", [StringLiteral("abc")]),
+                "<<",
+                IntegerLiteral(1),
+            ),
+            "Left operand of '<<' must be integer",
+        ),
+    ],
+)
+def test_codegen_rejects_known_module_function_numeric_operand_mismatches(
+    module_name: str,
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        imports=[Import(module_name)],
+        rules=[Rule(name="invalid_module_function_operand", condition=condition)],
+    )
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+
+
 def test_codegen_generators_allow_string_count_in_as_integer_operand() -> None:
     condition = BinaryExpression(
         InExpression(
