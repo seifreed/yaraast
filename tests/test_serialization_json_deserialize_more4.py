@@ -482,6 +482,9 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma name must not be empty"):
         s._deserialize_pragma(_serialized_json_pragma(name=""))
 
+    with pytest.raises(SerializationError, match="Pragma name must not be empty"):
+        s._deserialize_pragma(_serialized_json_pragma(name="   "))
+
     with pytest.raises(SerializationError, match="Pragma arguments must be a list of strings"):
         s._deserialize_pragma(_serialized_json_pragma(arguments="on"))
 

@@ -1498,10 +1498,7 @@ class JsonSerializerDeserializeMixin:
         scope = _deserialize_pragma_scope(
             _deserialize_required_field(data, "scope", "Pragma"), "Pragma"
         )
-        name = _deserialize_string_field(data, "name", "Pragma")
-        if not name:
-            msg = "Pragma name must not be empty"
-            raise SerializationError(msg)
+        name = _deserialize_nonempty_string_field(data, "name", "Pragma")
         arguments = _deserialize_required_string_list_field(data, "arguments", "Pragma")
 
         if pragma_type == PragmaType.INCLUDE_ONCE:
