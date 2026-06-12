@@ -160,7 +160,7 @@ class DefineDirective(Pragma):
         super().__init__(
             pragma_type=PragmaType.DEFINE,
             name="define",
-            arguments=[macro_name] + ([macro_value] if macro_value else []),
+            arguments=[macro_name] + ([macro_value] if macro_value is not None else []),
         )
         self.macro_name = macro_name
         self.macro_value = macro_value

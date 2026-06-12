@@ -58,6 +58,13 @@ def test_pragma_string_reprs_and_flags() -> None:
     assert str(endif) == "#endif"
 
 
+def test_define_directive_preserves_empty_macro_value_argument() -> None:
+    directive = DefineDirective("EMPTY", "")
+
+    assert directive.macro_value == ""
+    assert directive.arguments == ["EMPTY", ""]
+
+
 @pytest.mark.parametrize(
     ("pragma", "property_name"),
     [

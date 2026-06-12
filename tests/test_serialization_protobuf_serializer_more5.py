@@ -2278,6 +2278,17 @@ def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     assert restored_rule_pragma.parameters == {"enabled": True}
 
 
+def test_protobuf_roundtrip_preserves_empty_define_macro_value_argument() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(pragmas=[DefineDirective("EMPTY", "")])
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert isinstance(restored.pragmas[0], DefineDirective)
+    assert restored.pragmas[0].macro_value == ""
+    assert restored.pragmas[0].arguments == ["EMPTY", ""]
+
+
 def test_protobuf_serialize_rejects_invalid_pragma_scope() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     pragma = CustomPragma(name="custom", scope=PragmaScope.FILE)
