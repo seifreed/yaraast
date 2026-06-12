@@ -127,6 +127,18 @@ def test_semantic_validator_rejects_invalid_literal_scalars(
     assert any(error.message == message for error in result.errors)
 
 
+@pytest.mark.parametrize("name", ["any", "all", "none"])
+def test_semantic_validator_rejects_quantifier_keywords_as_plain_identifiers(
+    name: str,
+) -> None:
+    ast = YaraFile(rules=[Rule("invalid_keyword_identifier", condition=Identifier(name))])
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any(f"Invalid identifier identifier: {name}" in error.message for error in result.errors)
+
+
 @pytest.mark.parametrize(
     ("condition", "message"),
     [

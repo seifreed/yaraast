@@ -65,8 +65,6 @@ def infer_identifier(ctx: Any, node: Identifier) -> YaraType:
         return IntegerType()
     if node.name == "them":
         return StringSetType()
-    if node.name in ("any", "all", "none"):
-        return StringType()
     if node.name.startswith("$"):
         return _infer_string_reference_identifier(ctx, node.name)
     try:
@@ -951,6 +949,8 @@ def _infer_quantifier_value(ctx: Any, value: Any) -> YaraType:
     if isinstance(value, UnaryExpression) and value.operator == "%":
         ctx.visit(value.operand)
         return DoubleType()
+    if isinstance(value, Identifier) and value.name in {"all", "any", "none"}:
+        return StringType()
     if hasattr(value, "accept"):
         return cast(YaraType, ctx.visit(value))
     if isinstance(value, bool):

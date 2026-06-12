@@ -1853,14 +1853,14 @@ class TestTypeInferenceEdgeCases:
         assert isinstance(result, StringSetType)
 
     def test_infer_identifier_quantifiers(self) -> None:
-        """Test inferring type of quantifier keywords."""
+        """Test quantifier keywords are not plain identifiers."""
         env = TypeEnvironment()
         inference = TypeInference(env)
 
         for keyword in ["any", "all", "none"]:
             node = Identifier(name=keyword)
             result = inference.infer(node)
-            assert isinstance(result, StringType)
+            assert isinstance(result, UnknownType)
 
     def test_infer_identifier_rule_reference(self) -> None:
         """Test inferring type of rule reference."""

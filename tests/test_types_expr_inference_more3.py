@@ -137,6 +137,30 @@ def test_expr_inference_rejects_invalid_identifier_names_before_environment_look
     assert inf.errors
 
 
+@pytest.mark.parametrize("name", ["any", "all", "none"])
+def test_expr_inference_rejects_quantifier_keywords_as_plain_identifiers(name: str) -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    out = inf.infer(Identifier(name))
+
+    assert isinstance(out, UnknownType)
+    assert any(f"Invalid identifier identifier: {name}" in error for error in inf.errors)
+
+
+@pytest.mark.parametrize("name", ["any", "all", "none"])
+def test_expr_inference_allows_identifier_quantifier_keywords_in_of_expression(
+    name: str,
+) -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(OfExpression(Identifier(name), Identifier("them")))
+
+    assert isinstance(out, BooleanType)
+    assert not inf.errors
+
+
 def test_expr_inference_treats_identifier_string_reference_as_string_identifier() -> None:
     env = TypeEnvironment()
     env.add_string("$a")
