@@ -166,11 +166,17 @@ class LspRuntime:
         cache: CacheManager | None = None,
     ) -> None:
         self.documents: dict[str, DocumentContext] = {}
+        if index is not None and not isinstance(index, WorkspaceIndex):
+            msg = "LSP runtime index must be a WorkspaceIndex"
+            raise TypeError(msg)
         self.index = index or WorkspaceIndex()
         if config is not None and not isinstance(config, RuntimeConfig):
             msg = "LSP runtime config must be a RuntimeConfig"
             raise TypeError(msg)
         self.config = config or RuntimeConfig()
+        if cache is not None and not isinstance(cache, CacheManager):
+            msg = "LSP runtime cache must be a CacheManager"
+            raise TypeError(msg)
         self.cache = cache or CacheManager()
         self._latency: dict[str, deque[float]] = {}
         self._task_timestamps: dict[tuple[str, str], float] = {}

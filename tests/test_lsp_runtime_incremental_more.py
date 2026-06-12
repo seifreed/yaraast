@@ -332,8 +332,14 @@ def test_runtime_rejects_invalid_document_uri_inputs() -> None:
 
 
 def test_runtime_rejects_invalid_config_inputs() -> None:
+    with pytest.raises(TypeError, match="LSP runtime index must be a WorkspaceIndex"):
+        LspRuntime(index=cast(Any, object()))
+
     with pytest.raises(TypeError, match="LSP runtime config must be a RuntimeConfig"):
         LspRuntime(config=cast(Any, object()))
+
+    with pytest.raises(TypeError, match="LSP runtime cache must be a CacheManager"):
+        LspRuntime(cache=cast(Any, object()))
 
     with pytest.raises(TypeError, match="RuntimeConfig cache_workspace must be a boolean"):
         RuntimeConfig(cache_workspace=cast(Any, "yes"))
