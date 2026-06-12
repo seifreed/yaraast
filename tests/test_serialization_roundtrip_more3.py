@@ -212,6 +212,19 @@ def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
                 rules=[
                     Rule(
                         name="r",
+                        modifiers=["bad modifier"],
+                        condition=BooleanLiteral(value=True),
+                    ),
+                ],
+            ),
+            "Invalid rule modifier identifier",
+        ),
+        (
+            "manifest",
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="r",
                         modifiers=["   "],
                         condition=BooleanLiteral(value=True),
                     ),

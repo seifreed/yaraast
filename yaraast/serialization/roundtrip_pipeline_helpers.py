@@ -10,10 +10,10 @@ from typing import Any
 import yaml
 
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import MetaEntry, RuleModifier
+from yaraast.ast.modifiers import MetaEntry, RuleModifier, require_rule_modifier_identifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import StringDefinition
-from yaraast.errors import SerializationError
+from yaraast.errors import SerializationError, ValidationError
 from yaraast.serialization._serialization_primitives import _expected_type_names
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.serializer_helpers import (
@@ -98,6 +98,18 @@ def _validated_rule_modifiers(values: Any) -> list[str]:
     if any(not modifier.strip() for modifier in serialized):
         msg = "Rule modifiers must contain non-empty strings"
         raise SerializationError(msg)
+    for index, modifier in enumerate(serialized):
+        try:
+            serialized[index] = str(RuleModifier.from_string(modifier))
+        except (ValueError, ValidationError):
+            try:
+                require_rule_modifier_identifier(
+                    modifier,
+                    "Rule modifier",
+                    "rule modifier",
+                )
+            except ValidationError as exc:
+                raise SerializationError(str(exc)) from exc
     return serialized
 
 
