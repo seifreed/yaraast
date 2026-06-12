@@ -2671,6 +2671,21 @@ def test_protobuf_serializer_rejects_invalid_comment_metadata(
         serializer.serialize(ast)
 
 
+@pytest.mark.parametrize("comment_position", ["leading", "trailing"])
+def test_protobuf_deserializer_rejects_empty_comment_metadata(
+    comment_position: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    if comment_position == "leading":
+        pb_file.node_metadata.leading_comments.add()
+    else:
+        pb_file.node_metadata.trailing_comment.SetInParent()
+
+    with pytest.raises(SerializationError, match="Protobuf comment metadata is missing"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 @pytest.mark.parametrize(
     ("location", "message"),
     [

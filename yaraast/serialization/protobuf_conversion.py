@@ -183,7 +183,10 @@ def _protobuf_comment_metadata_to_ast(pb_comment_metadata):
             ]
         )
         return _apply_node_metadata_from_protobuf(pb_comment_metadata.group, group)
-    return _protobuf_comment_to_ast(pb_comment_metadata.comment)
+    if pb_comment_metadata.HasField("comment"):
+        return _protobuf_comment_to_ast(pb_comment_metadata.comment)
+    msg = "Protobuf comment metadata is missing a comment type"
+    raise SerializationError(msg)
 
 
 def _copy_node_metadata_to_protobuf(node, pb_owner) -> None:
