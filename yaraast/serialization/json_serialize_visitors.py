@@ -11,6 +11,7 @@ from yaraast.serialization._serialization_primitives import (
     _expected_type_names,
     _is_empty_nonempty_text,
     _is_negated_nibble_pattern,
+    _normalize_rule_modifier_text,
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.pragma_scopes import serialize_pragma_scope
@@ -464,6 +465,7 @@ def _serialize_rule_modifiers(values, context: str = "Rule") -> list[str]:
     if any(not value for value in serialized):
         msg = f"{context} modifiers must contain non-empty strings"
         raise SerializationError(msg)
+    serialized = [_normalize_rule_modifier_text(value, context) for value in serialized]
     return serialized
 
 

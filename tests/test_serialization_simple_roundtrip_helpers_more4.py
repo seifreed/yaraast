@@ -1100,6 +1100,9 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
     with pytest.raises(SerializationError, match="Rule modifiers must contain non-empty strings"):
         deserialize_rule(_serialized_simple_rule(modifiers=[""]))
 
+    with pytest.raises(SerializationError, match="Invalid rule modifier identifier"):
+        deserialize_rule(_serialized_simple_rule(modifiers=["bad modifier"]))
+
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
         deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private", "namespace": None})
 
@@ -1110,6 +1113,11 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
         SerializationError, match="ExternRule modifiers must contain non-empty strings"
     ):
         deserialize_extern_rule({"name": "RemoteRule", "modifiers": [""], "namespace": None})
+
+    with pytest.raises(SerializationError, match="Invalid ExternRule modifier identifier"):
+        deserialize_extern_rule(
+            {"name": "RemoteRule", "modifiers": ["bad modifier"], "namespace": None}
+        )
 
     with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
         deserialize_node(
@@ -1253,6 +1261,10 @@ def test_simple_roundtrip_serializers_reject_non_list_collections() -> None:
     with pytest.raises(SerializationError, match="Rule modifiers must contain non-empty strings"):
         serialize_rule(rule)
 
+    cast(Any, rule).modifiers = ["bad modifier"]
+    with pytest.raises(SerializationError, match="Invalid rule modifier identifier"):
+        serialize_rule(rule)
+
     extern_rule = ExternRule(name="RemoteRule")
     cast(Any, extern_rule).modifiers = "private"
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
@@ -1262,6 +1274,10 @@ def test_simple_roundtrip_serializers_reject_non_list_collections() -> None:
     with pytest.raises(
         SerializationError, match="ExternRule modifiers must contain non-empty strings"
     ):
+        serialize_extern_rule(extern_rule)
+
+    cast(Any, extern_rule).modifiers = ["bad modifier"]
+    with pytest.raises(SerializationError, match="Invalid ExternRule modifier identifier"):
         serialize_extern_rule(extern_rule)
 
     plain = PlainString(identifier="$a", value="abc")

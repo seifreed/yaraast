@@ -29,6 +29,7 @@ from yaraast.serialization._serialization_primitives import (
     _deserialize_string_field,
     _deserialize_string_list_field,
     _is_negated_nibble_pattern,
+    _normalize_rule_modifier_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -1137,9 +1138,12 @@ class JsonSerializerDeserializeMixin:
         return self._apply_node_metadata(
             Rule(
                 name=_deserialize_nonempty_string_field(data, "name", "Rule"),
-                modifiers=_deserialize_required_nonempty_string_list_field(
-                    data, "modifiers", "Rule"
-                ),
+                modifiers=[
+                    _normalize_rule_modifier_text(modifier, "Rule")
+                    for modifier in _deserialize_required_nonempty_string_list_field(
+                        data, "modifiers", "Rule"
+                    )
+                ],
                 tags=tags,
                 meta=meta,
                 strings=strings,
@@ -1469,7 +1473,12 @@ class JsonSerializerDeserializeMixin:
             ExternRule(
                 name=_deserialize_nonempty_string_field(data, "name", "ExternRule"),
                 modifiers=Rule._normalize_modifiers(
-                    _deserialize_nonempty_string_list_field(data, "modifiers", "ExternRule")
+                    [
+                        _normalize_rule_modifier_text(modifier, "ExternRule")
+                        for modifier in _deserialize_nonempty_string_list_field(
+                            data, "modifiers", "ExternRule"
+                        )
+                    ]
                 ),
                 namespace=_deserialize_required_nullable_nonempty_string_field(
                     data,

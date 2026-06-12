@@ -13,7 +13,8 @@ import math
 from typing import Any
 
 from yaraast.ast.base import Location
-from yaraast.errors import SerializationError
+from yaraast.ast.modifiers import RuleModifier, require_rule_modifier_identifier
+from yaraast.errors import SerializationError, ValidationError
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
@@ -35,6 +36,20 @@ def _is_empty_nonempty_text(text: str, context: str) -> bool:
 def _expected_type_names(expected_type: type[Any] | tuple[type[Any], ...]) -> str:
     expected_types = expected_type if isinstance(expected_type, tuple) else (expected_type,)
     return " or ".join(item_type.__name__ for item_type in expected_types)
+
+
+def _normalize_rule_modifier_text(value: str, context: str) -> str:
+    try:
+        return str(RuleModifier.from_string(value))
+    except (ValueError, ValidationError):
+        try:
+            if context == "Rule":
+                require_rule_modifier_identifier(value, "Rule modifier", "rule modifier")
+            else:
+                require_rule_modifier_identifier(value, f"{context} modifier")
+        except ValidationError as exc:
+            raise SerializationError(str(exc)) from exc
+        return value
 
 
 def _serialize_modifier_value(value: Any) -> str | int | float | list[int] | None:

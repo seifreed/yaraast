@@ -769,6 +769,9 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
     with pytest.raises(SerializationError, match="Rule modifiers must contain non-empty strings"):
         s._deserialize_rule(_serialized_json_rule(modifiers=[""]))
 
+    with pytest.raises(SerializationError, match="Invalid rule modifier identifier"):
+        s._deserialize_rule(_serialized_json_rule(modifiers=["bad modifier"]))
+
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
         s._deserialize_extern_rule(
             {"name": "RemoteRule", "modifiers": "private", "namespace": None}
@@ -781,6 +784,11 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
         SerializationError, match="ExternRule modifiers must contain non-empty strings"
     ):
         s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": [""], "namespace": None})
+
+    with pytest.raises(SerializationError, match="Invalid ExternRule modifier identifier"):
+        s._deserialize_extern_rule(
+            {"name": "RemoteRule", "modifiers": ["bad modifier"], "namespace": None}
+        )
 
     with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
         s._deserialize_extern_namespace({"name": "remote", "extern_rules": "RemoteRule"})

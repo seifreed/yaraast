@@ -95,6 +95,7 @@ from yaraast.serialization._serialization_primitives import (
     _expected_type_names,
     _is_empty_nonempty_text,
     _is_negated_nibble_pattern,
+    _normalize_rule_modifier_text,
     _serialize_modifier_value,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
@@ -1652,6 +1653,7 @@ def _serialize_rule_modifiers(modifiers: Any, context: str) -> list[str]:
     if any(not modifier for modifier in serialized):
         msg = f"{context} modifiers must contain non-empty strings"
         raise SerializationError(msg)
+    serialized = [_normalize_rule_modifier_text(modifier, context) for modifier in serialized]
     return serialized
 
 
@@ -2364,7 +2366,8 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     rule = Rule(
         name=_deserialize_nonempty_string_field(data, "name", "Rule"),
         modifiers=_deserialize_rule_modifiers(
-            _deserialize_required_nonempty_string_list_field(data, "modifiers", "Rule")
+            _deserialize_required_nonempty_string_list_field(data, "modifiers", "Rule"),
+            "Rule",
         ),
         condition=condition,
     )
@@ -2389,10 +2392,11 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     return rule
 
 
-def _deserialize_rule_modifiers(modifiers: list[Any]) -> list[Any]:
+def _deserialize_rule_modifiers(modifiers: list[Any], context: str) -> list[Any]:
     normalized = []
     for modifier in modifiers:
         if isinstance(modifier, str):
+            modifier = _normalize_rule_modifier_text(modifier, context)
             try:
                 normalized.append(RuleModifier.from_string(modifier))
             except (ValueError, ValidationError):
@@ -2407,7 +2411,8 @@ def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
         ExternRule(
             name=_deserialize_nonempty_string_field(data, "name", "ExternRule"),
             modifiers=_deserialize_rule_modifiers(
-                _deserialize_nonempty_string_list_field(data, "modifiers", "ExternRule")
+                _deserialize_nonempty_string_list_field(data, "modifiers", "ExternRule"),
+                "ExternRule",
             ),
             namespace=_deserialize_required_nullable_nonempty_string_field(
                 data, "namespace", "ExternRule"
