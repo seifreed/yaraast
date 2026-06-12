@@ -166,6 +166,31 @@ def test_build_dependency_graph_tracks_rule_wildcard_sets() -> None:
     assert graph.get_dependencies("other") == set()
 
 
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        ["a*"],
+        SetExpression([StringLiteral("a*")]),
+    ],
+)
+def test_build_dependency_graph_tracks_text_rule_wildcard_sets(string_set: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="a1", condition=StringLiteral("x")),
+            Rule(name="a2", condition=StringLiteral("x")),
+            Rule(name="other", condition=StringLiteral("x")),
+            Rule(name="caller", condition=ForOfExpression("any", string_set, None)),
+        ],
+    )
+
+    graph = build_dependency_graph(ast)
+
+    assert graph.get_dependencies("caller") == {"a1", "a2"}
+    assert graph.get_dependents("a1") == {"caller"}
+    assert graph.get_dependents("a2") == {"caller"}
+    assert graph.get_dependencies("other") == set()
+
+
 def test_build_dependency_graph_does_not_treat_member_root_as_rule_dependency() -> None:
     ast = YaraFile(
         rules=[

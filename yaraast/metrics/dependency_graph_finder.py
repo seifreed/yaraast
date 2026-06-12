@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
+from yaraast.ast.expressions import (
+    Identifier,
+    ParenthesesExpression,
+    SetExpression,
+    StringLiteral,
+    StringWildcard,
+)
 from yaraast.metrics._visitor_base import MetricsVisitorBase
 from yaraast.shared.local_scope import local_name_variants
-
-if TYPE_CHECKING:
-    from yaraast.ast.expressions import Identifier
 
 
 class DependencyFinder(MetricsVisitorBase):
@@ -76,7 +78,7 @@ class DependencyFinder(MetricsVisitorBase):
     def visit_for_of_expression(self, node) -> None:
         if hasattr(node.quantifier, "accept"):
             self.visit(node.quantifier)
-        self._visit_ast_value(node.string_set)
+        self._visit_rule_set_value(node.string_set)
         if node.condition is not None:
             self.visit(node.condition)
 
@@ -91,7 +93,7 @@ class DependencyFinder(MetricsVisitorBase):
     def visit_of_expression(self, node) -> None:
         if hasattr(node.quantifier, "accept"):
             self.visit(node.quantifier)
-        self._visit_ast_value(node.string_set)
+        self._visit_rule_set_value(node.string_set)
 
     def visit_dictionary_access(self, node) -> None:
         self.visit(node.object)
@@ -123,6 +125,41 @@ class DependencyFinder(MetricsVisitorBase):
             and rule_name != self.current_rule
             and not self._is_local(rule_name)
         )
+
+    def _record_rule_set_text(self, value: str) -> None:
+        if value == "them" or value.startswith("$") or self._is_local(value):
+            return
+        if value.endswith("*"):
+            self.visit_string_wildcard(StringWildcard(value))
+            return
+        if value in self.all_rules and value != self.current_rule:
+            self.dependencies.add(value)
+
+    def _visit_rule_set_value(self, value) -> None:
+        if isinstance(value, str):
+            self._record_rule_set_text(value)
+            return
+        if isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                self._visit_rule_set_value(item)
+            return
+        if isinstance(value, Identifier):
+            self._record_rule_set_text(value.name)
+            return
+        if isinstance(value, StringLiteral):
+            self._record_rule_set_text(value.value)
+            return
+        if isinstance(value, StringWildcard):
+            self.visit_string_wildcard(value)
+            return
+        if isinstance(value, ParenthesesExpression):
+            self._visit_rule_set_value(value.expression)
+            return
+        if isinstance(value, SetExpression):
+            for item in value.elements:
+                self._visit_rule_set_value(item)
+            return
+        self._visit_ast_value(value)
 
     def visit_with_statement(self, node) -> None:
         self._push_local_scope()

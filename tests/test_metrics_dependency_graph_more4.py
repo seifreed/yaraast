@@ -317,6 +317,30 @@ rule caller {
 
 
 @pytest.mark.parametrize(
+    "string_set",
+    [
+        ["a*"],
+        SetExpression([StringLiteral("a*")]),
+    ],
+)
+def test_dependency_graph_generator_tracks_text_rule_wildcard_sets(string_set: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="a1", condition=StringLiteral("x")),
+            Rule(name="a2", condition=StringLiteral("x")),
+            Rule(name="other", condition=StringLiteral("x")),
+            Rule(name="caller", condition=ForOfExpression("any", string_set, None)),
+        ],
+    )
+    gen = DependencyGraphGenerator()
+
+    gen.visit(ast)
+
+    assert gen.dependencies["caller"] == {"a1", "a2"}
+    assert gen.dependencies.get("other", set()) == set()
+
+
+@pytest.mark.parametrize(
     "analyze",
     [
         lambda ast: DependencyGraphGenerator().visit(ast),

@@ -7,7 +7,13 @@ from typing import TYPE_CHECKING, Any
 
 import graphviz
 
-from yaraast.ast.expressions import Identifier, StringWildcard
+from yaraast.ast.expressions import (
+    Identifier,
+    ParenthesesExpression,
+    SetExpression,
+    StringLiteral,
+    StringWildcard,
+)
 from yaraast.metrics._visitor_base import MetricsVisitorBase
 from yaraast.metrics.dependency_graph_generation import (
     generate_complexity_graph as dependency_generate_complexity_graph,
@@ -301,7 +307,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
     def visit_for_of_expression(self, node) -> None:
         self._visit_ast_value(node.quantifier)
-        self._visit_ast_value(node.string_set)
+        self._visit_rule_set_value(node.string_set)
         if node.condition is not None:
             self.visit(node.condition)
 
@@ -314,7 +320,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
     def visit_of_expression(self, node) -> None:
         self._visit_ast_value(node.quantifier)
-        self._visit_ast_value(node.string_set)
+        self._visit_rule_set_value(node.string_set)
 
     def visit_module_reference(self, node) -> None:
         self._add_module_reference(node.module)
@@ -342,6 +348,50 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
         for rule_name in self._matching_rule_wildcard_names(node.pattern):
             self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(rule_name))
+
+    def _record_rule_set_text(self, value: str) -> None:
+        if value == "them" or value.startswith("$") or self._is_local(value):
+            return
+
+        rule_key = self._active_rule_key()
+        if not rule_key:
+            return
+
+        if value.endswith("*"):
+            for rule_name in self._matching_rule_wildcard_names(value):
+                self.dependencies[rule_key].update(
+                    self._dependency_targets_for_rule_name(rule_name)
+                )
+            return
+
+        if value in self._rule_names and value != self._current_rule:
+            self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(value))
+
+    def _visit_rule_set_value(self, value) -> None:
+        if isinstance(value, str):
+            self._record_rule_set_text(value)
+            return
+        if isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                self._visit_rule_set_value(item)
+            return
+        if isinstance(value, Identifier):
+            self._record_rule_set_text(value.name)
+            return
+        if isinstance(value, StringLiteral):
+            self._record_rule_set_text(value.value)
+            return
+        if isinstance(value, StringWildcard):
+            self.visit_string_wildcard(value)
+            return
+        if isinstance(value, ParenthesesExpression):
+            self._visit_rule_set_value(value.expression)
+            return
+        if isinstance(value, SetExpression):
+            for item in value.elements:
+                self._visit_rule_set_value(item)
+            return
+        self._visit_ast_value(value)
 
     def _matching_rule_wildcard_names(self, pattern: str) -> tuple[str, ...]:
         if not pattern.endswith("*"):
