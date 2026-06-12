@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.syntax import Syntax
 from rich.table import Table
 
-from yaraast.cli.utils import format_json, write_text
+from yaraast.cli.utils import _path_exists_and_is_dir, format_json, write_text
 
 _DIFF_OUTPUT_FORMATS = frozenset({"json", "yaml"})
 
@@ -29,7 +29,7 @@ def _has_output_path(output: object, name: str = "output") -> bool:
         msg = f"{name} path must not be empty"
         raise ValueError(msg)
     output_path = Path(raw_path)
-    if output_path.exists() and output_path.is_dir():
+    if _path_exists_and_is_dir(output_path):
         msg = f"{name} path must not be a directory"
         raise ValueError(msg)
     return True

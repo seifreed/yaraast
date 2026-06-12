@@ -46,6 +46,13 @@ def test_build_diff_output_path_rejects_directory_output_path(tmp_path: Path) ->
         build_diff_output_path("old.yar", "new.yar", output_dir, "json")
 
 
+def test_build_diff_output_path_rejects_inaccessible_output_path() -> None:
+    output = "a" * 5000
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        build_diff_output_path("old.yar", "new.yar", output, "json")
+
+
 @pytest.mark.parametrize("output", [False, 0, object()])
 def test_build_diff_output_path_rejects_invalid_output_path_types(output: Any) -> None:
     with pytest.raises(TypeError, match="output path must be a file path"):

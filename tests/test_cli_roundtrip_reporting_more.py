@@ -108,6 +108,23 @@ def test_roundtrip_display_helpers_reject_directory_output_path(tmp_path: Path) 
         rr.display_pipeline_result(output_dir, "yaml: 1", True, "manifest: 1", ast)
 
 
+def test_roundtrip_display_helpers_reject_inaccessible_output_path() -> None:
+    ast = _Ast()
+    output = "a" * 5000
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        rr.display_serialize_result(output, "json", ast, False, False, "serialized")
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        rr.display_deserialize_result(output, "json", ast, False, "rule x { condition: true }")
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        rr.display_pretty_result(output, "compact", ast, 2, 80, "formatted")
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        rr.display_pipeline_result(output, "yaml: 1", True, "manifest: 1", ast)
+
+
 @pytest.mark.parametrize("output", [False, 0, object()])
 def test_roundtrip_display_helpers_reject_invalid_output_path_types(output: Any) -> None:
     ast = _Ast()

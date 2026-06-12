@@ -109,6 +109,17 @@ def test_display_export_import_reject_directory_output_path(tmp_path: Path) -> N
         sr.display_import_result(console, "in.json", "json", _Ast(), output=str(output_dir))
 
 
+def test_display_export_import_reject_inaccessible_output_path() -> None:
+    console = Console(record=True, width=120)
+    output = "a" * 5000
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        sr.display_export_result(console, "{}", "json", output=output, pretty=True, stats=None)
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        sr.display_import_result(console, "in.json", "json", _Ast(), output=output)
+
+
 @pytest.mark.parametrize("output", [False, 0, object()])
 def test_display_export_import_reject_invalid_output_path_types(output: Any) -> None:
     console = Console(record=True, width=120)

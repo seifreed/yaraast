@@ -8,6 +8,8 @@ from typing import Any
 
 import click
 
+from yaraast.cli.utils import _path_exists_and_is_dir
+
 
 def _optional_output_path(output: object, name: str = "output") -> Path | None:
     if output is None:
@@ -23,7 +25,7 @@ def _optional_output_path(output: object, name: str = "output") -> Path | None:
         msg = f"{name} path must not be empty"
         raise ValueError(msg)
     output_path = Path(raw_path)
-    if output_path.exists() and output_path.is_dir():
+    if _path_exists_and_is_dir(output_path):
         msg = f"{name} path must not be a directory"
         raise ValueError(msg)
     return output_path
