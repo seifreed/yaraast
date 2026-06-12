@@ -429,6 +429,30 @@ def test_did_change_ignores_malformed_change_without_workspace_source() -> None:
     assert server.published == [(uri, ["diag:0"])]
 
 
+def test_did_change_ignores_malformed_workspace_source_uses_latest_change_text() -> None:
+    server = FakeServer()
+    sf.register_server_features(server)
+    runtime = _RecordingRuntime()
+    server.runtime = runtime
+    uri = "file:///a.yar"
+    latest_text = "rule a { condition: false }"
+    server.workspace._docs[uri] = SimpleNamespace(uri=uri, source=object())
+
+    asyncio.run(
+        _call(
+            server,
+            sf.TEXT_DOCUMENT_DID_CHANGE,
+            SimpleNamespace(
+                text_document=SimpleNamespace(uri=uri, version=3),
+                content_changes=[SimpleNamespace(text=latest_text)],
+            ),
+        )
+    )
+
+    assert runtime.updated == [(uri, latest_text, 3)]
+    assert server.published == [(uri, [f"diag:{len(latest_text)}"])]
+
+
 def test_initialize_decodes_workspace_folder_file_uris(tmp_path: Path) -> None:
     server = FakeServer()
     sf.register_initialize(server)

@@ -40,7 +40,9 @@ def _latest_change_text(changes: Any) -> str | None:
 
 def _changed_document_text(ls: Any, uri: str, changes: Any) -> str:
     try:
-        return str(ls.workspace.get_text_document(uri).source)
+        source = ls.workspace.get_text_document(uri).source
+        if isinstance(source, str):
+            return source
     except Exception:
         logger.debug("Operation failed in %s", __name__, exc_info=True)
     return _latest_change_text(changes) or ""
