@@ -106,6 +106,16 @@ def test_remove_redundant_assignments_and_similarity_grouping() -> None:
     assert len(exact_redundant) == 1
     assert opt3.stats.redundant_checks_removed == 1
 
+    opt4 = YaraLOptimizer()
+    boolean_numeric_operators = opt4._remove_redundant_assignments(
+        [
+            _assign(["principal", "ip"], ">=", True),
+            _assign(["principal", "ip"], ">", False),
+        ]
+    )
+    assert [assignment.value for assignment in boolean_numeric_operators] == [True, False]
+    assert opt4.stats.redundant_checks_removed == 0
+
     s1 = _stmt("login", [a1, a4])
     s2 = _stmt("login", [_assign(["principal", "ip"], "=", "2.2.2.2")])
     s3 = _stmt("dns", [_assign(["principal", "ip"], "=", "3.3.3.3")])

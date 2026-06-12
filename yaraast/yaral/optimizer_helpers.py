@@ -7,6 +7,10 @@ from typing import Any
 from yaraast.yaral.ast_nodes import EventAssignment, UDMFieldPath
 
 
+def _is_number(value: object) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
 class YaraLOptimizerHelpersMixin:
     """Shared helper methods for optimizer."""
 
@@ -57,8 +61,8 @@ class YaraLOptimizerHelpersMixin:
         if (
             assign1.operator == ">"
             and assign2.operator == "<"
-            and isinstance(assign1.value, int | float)
-            and isinstance(assign2.value, int | float)
+            and _is_number(assign1.value)
+            and _is_number(assign2.value)
         ):
             return assign1.value >= assign2.value
 
@@ -71,8 +75,8 @@ class YaraLOptimizerHelpersMixin:
         if (
             assign1.operator == ">="
             and assign2.operator == ">"
-            and isinstance(assign1.value, int | float)
-            and isinstance(assign2.value, int | float)
+            and _is_number(assign1.value)
+            and _is_number(assign2.value)
         ):
             return assign1.value >= assign2.value
 
@@ -85,8 +89,8 @@ class YaraLOptimizerHelpersMixin:
         if (
             assign1.operator in [">", ">="]
             and assign2.operator in [">", ">="]
-            and isinstance(assign1.value, int | float)
-            and isinstance(assign2.value, int | float)
+            and _is_number(assign1.value)
+            and _is_number(assign2.value)
         ):
             return assign1.value > assign2.value
 
