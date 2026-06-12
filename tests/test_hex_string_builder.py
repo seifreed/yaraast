@@ -969,6 +969,15 @@ class TestHexStringBuilderComplexScenarios:
         assert isinstance(rebuilt[0], HexByte)
         assert rebuilt[0].value == 0xFF
 
+    def test_add_rejects_invalid_hex_token_structure(self) -> None:
+        """Malformed HexToken instances should be rejected before build output."""
+        builder = HexStringBuilder()
+
+        with pytest.raises(TypeError, match="HexByte value must be a byte"):
+            builder.add(HexByte(value=999))
+
+        assert builder.build() == []
+
     def test_comprehensive_hex_pattern_from_real_malware_analysis(self) -> None:
         """Build comprehensive pattern from realistic malware analysis."""
         builder = HexStringBuilder(identifier="$malware_signature")

@@ -54,6 +54,8 @@ def _validate_hex_token_sequence(
         ):
             msg = f"Unsupported hex token '{type(token).__name__}'"
             raise TypeError(msg)
+        else:
+            _validate_hex_token_structure(token)
 
     if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
         msg = f"HexJump cannot appear at the beginning or end of {context} {identifier}"
@@ -77,6 +79,12 @@ def _validate_hex_alternative(token: HexAlternative, identifier: str) -> None:
             context="hex alternative branch",
             inside_alternative=True,
         )
+
+
+def _validate_hex_token_structure(token: HexToken) -> None:
+    validate_structure = getattr(token, "validate_structure", None)
+    if callable(validate_structure):
+        validate_structure()
 
 
 def _validate_hex_byte_value(value: int | str) -> None:

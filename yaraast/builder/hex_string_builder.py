@@ -48,6 +48,9 @@ class HexStringBuilder:
         if isinstance(value, int | str):
             self._tokens.append(self._byte_token_from_value(value))
         elif isinstance(value, HexToken):
+            validate_structure = getattr(value, "validate_structure", None)
+            if callable(validate_structure):
+                validate_structure()
             self._tokens.append(value)
         else:
             msg = f"Invalid type for hex value: {type(value)}"
