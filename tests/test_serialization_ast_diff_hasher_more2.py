@@ -35,7 +35,7 @@ from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaBlock, PragmaType
-from yaraast.ast.rules import Rule
+from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
@@ -45,6 +45,7 @@ from yaraast.ast.strings import (
     HexString,
     PlainString,
     RegexString,
+    StringDefinition,
 )
 from yaraast.serialization.ast_diff_hasher import AstHasher
 from yaraast.yarax.ast_nodes import (
@@ -732,6 +733,28 @@ def test_ast_hasher_rejects_invalid_real_yarax_state(node: Any, message: str) ->
     ],
 )
 def test_ast_hasher_rejects_invalid_real_misc_state(
+    node: Any,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
+        AstHasher().visit(node)
+
+
+@pytest.mark.parametrize(
+    ("node", "error_type", "message"),
+    [
+        (Import(""), ValueError, "Import module cannot be empty"),
+        (Include(cast(Any, object())), TypeError, "Include path must be a string"),
+        (Tag(""), ValueError, "Tag name cannot be empty"),
+        (
+            StringDefinition(cast(Any, object())),
+            TypeError,
+            "String identifier must be a string",
+        ),
+    ],
+)
+def test_ast_hasher_rejects_invalid_real_leaf_state(
     node: Any,
     error_type: type[Exception],
     message: str,

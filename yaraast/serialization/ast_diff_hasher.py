@@ -88,12 +88,14 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_import(self, node) -> str:
         """Hash Import node."""
+        _validate_real_ast_node(node)
         module = _required_string_attr(node, "module", "Import module")
         alias = _optional_string_attr(node, "alias", "Import alias")
         return f"Import({module},{alias})"
 
     def visit_include(self, node) -> str:
         """Hash Include node."""
+        _validate_real_ast_node(node)
         path = _required_string_attr(node, "path", "Include path")
         return f"Include({path})"
 
@@ -121,6 +123,7 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_tag(self, node) -> str:
         """Hash Tag node."""
+        _validate_real_ast_node(node)
         name = _required_string_attr(node, "name", "Tag name")
         return f"Tag({name})"
 
@@ -222,6 +225,7 @@ class AstHasher(ASTVisitor[str]):
         return f"Bool({node.value})"
 
     def visit_string_definition(self, node) -> str:
+        _validate_real_ast_node(node)
         return f"StringDef({node.identifier},{getattr(node, 'is_anonymous', False)})"
 
     def visit_hex_token(self, node) -> str:
