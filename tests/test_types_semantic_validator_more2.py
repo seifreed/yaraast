@@ -835,6 +835,26 @@ def test_semantic_validator_accepts_supported_external_values() -> None:
     assert SemanticValidator(externals=externals).validate(ast).is_valid is True
 
 
+@pytest.mark.parametrize(
+    "condition",
+    [
+        "b + c == 1",
+        "b & c == 0",
+        "b << 1 == 2",
+        "~b == -2",
+        "b == c",
+    ],
+)
+def test_semantic_validator_accepts_numeric_bool_external_operations(
+    condition: str,
+) -> None:
+    ast = Parser(f"rule r {{ condition: {condition} }}").parse()
+
+    result = SemanticValidator(externals={"b": True, "c": False}).validate(ast)
+
+    assert result.is_valid is True, [error.message for error in result.errors]
+
+
 def test_semantic_validator_accepts_external_named_like_module_reference() -> None:
     ast = Parser("rule r { condition: pe }").parse()
 

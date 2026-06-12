@@ -18,7 +18,6 @@ from yaraast.types.semantic_validator_strings import (
     UndefinedStringDetector,
 )
 from yaraast.types.type_system import (
-    BooleanType,
     DoubleType,
     IntegerType,
     StringType,
@@ -212,7 +211,7 @@ def _normalize_externals(externals: Mapping[str, object] | None) -> dict[str, ob
 
 def _external_type(value: object) -> YaraType:
     if isinstance(value, bool):
-        return BooleanType()
+        return IntegerType()
     if isinstance(value, int):
         return IntegerType()
     if isinstance(value, float):
