@@ -14,6 +14,29 @@ from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 logger = logging.getLogger(__name__)
 
 
+def _path_access_error(path: Path) -> ValueError:
+    msg = f"path could not be accessed: {path}"
+    return ValueError(msg)
+
+
+def _path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_exists_and_not_dir(path: Path) -> bool:
+    return _path_exists(path) and not _path_is_dir(path)
+
+
 def _require_workspace_root(root_path: object) -> Path:
     if isinstance(root_path, bool | bytes) or not isinstance(root_path, str | PathLike):
         msg = "root_path must be a string or path-like object"
@@ -26,7 +49,7 @@ def _require_workspace_root(root_path: object) -> Path:
         msg = "root_path must not be empty"
         raise ValueError(msg)
     path = Path(raw_path)
-    if path.exists() and not path.is_dir():
+    if _path_exists_and_not_dir(path):
         msg = "root_path must not be a file"
         raise ValueError(msg)
     return path
@@ -65,7 +88,7 @@ class WorkspaceSymbolsProvider:
             raise TypeError("Workspace symbol query must be a string")
         if self.runtime:
             return self.runtime.workspace_symbols(query)
-        if not self.workspace_root or not self.workspace_root.exists():
+        if not self.workspace_root or not _path_exists(self.workspace_root):
             return []
 
         symbols = []

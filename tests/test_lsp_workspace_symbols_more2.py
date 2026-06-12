@@ -57,6 +57,13 @@ def test_workspace_symbols_rejects_file_workspace_root(tmp_path: Path) -> None:
         provider.set_workspace_root(root_path)
 
 
+def test_workspace_symbols_rejects_inaccessible_workspace_root() -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        provider.set_workspace_root("a" * 5000)
+
+
 def test_workspace_symbols_accepts_pathlike_workspace_root(tmp_path: Path) -> None:
     provider = WorkspaceSymbolsProvider()
 
