@@ -183,6 +183,24 @@ def test_ast_formatter_rejects_directory_output_path(tmp_path: Path) -> None:
     assert err == "Formatting error: output_path must not be a directory"
 
 
+def test_ast_formatter_rejects_inaccessible_paths(tmp_path: Path) -> None:
+    good = tmp_path / "ok.yar"
+    good.write_text("rule a { condition: true }", encoding="utf-8")
+    inaccessible = "a" * 5000
+    formatter = ASTFormatter()
+
+    output_ok, output_err = formatter.format_file(good, output_path=inaccessible)
+    input_ok, input_err = formatter.format_file(inaccessible)
+
+    assert output_ok is False
+    assert output_err.startswith("Formatting error: path could not be accessed")
+    assert input_ok is False
+    assert input_err.startswith("Formatting error: path could not be accessed")
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        formatter.check_format(inaccessible)
+
+
 @pytest.mark.parametrize("output_path", [False, 0, object()])
 def test_ast_formatter_rejects_invalid_output_path_types(
     output_path: Any,
@@ -223,6 +241,17 @@ def test_ast_differ_rejects_invalid_file_path_types(
 
     assert result.has_changes is True
     assert result.logical_changes == ["Error comparing files: file1_path must be a file path"]
+
+
+def test_ast_differ_reports_inaccessible_file_path(tmp_path: Path) -> None:
+    good = tmp_path / "ok.yar"
+    good.write_text("rule a { condition: true }", encoding="utf-8")
+
+    result = ASTDiffer().diff_files("a" * 5000, good)
+
+    assert result.has_changes is True
+    assert len(result.logical_changes) == 1
+    assert result.logical_changes[0].startswith("Error comparing files: path could not be accessed")
 
 
 def test_ast_formatter_format_file_propagates_internal_generator_errors(
