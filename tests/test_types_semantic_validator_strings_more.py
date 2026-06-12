@@ -655,6 +655,61 @@ def test_semantic_validator_does_not_shadow_explicit_string_ref_with_external() 
     assert result.is_valid is True, [error.message for error in result.errors]
 
 
+def test_semantic_validator_rejects_invalid_external_of_quantifiers() -> None:
+    ast = Parser().parse("""
+        rule external_quantifier {
+            strings:
+                $a = "a"
+                $b = "b"
+            condition:
+                q of ($a, $b)
+        }
+        """)
+
+    for value in (-1, 1.0, "any"):
+        result = SemanticValidator(externals={"q": value}).validate(ast)
+
+        assert result.is_valid is False
+        assert any("Invalid of quantifier external 'q'" in error.message for error in result.errors)
+
+
+def test_semantic_validator_accepts_integer_external_of_quantifiers() -> None:
+    ast = Parser().parse("""
+        rule external_quantifier {
+            strings:
+                $a = "a"
+                $b = "b"
+            condition:
+                q of ($a, $b)
+        }
+        """)
+
+    for value in (0, False, 1):
+        result = SemanticValidator(externals={"q": value}).validate(ast)
+
+        assert result.is_valid is True, [error.message for error in result.errors]
+
+
+def test_semantic_validator_rejects_invalid_external_for_of_quantifiers() -> None:
+    ast = Parser().parse("""
+        rule external_quantifier {
+            strings:
+                $a = "a"
+                $b = "b"
+            condition:
+                for q of ($a, $b) : (true)
+        }
+        """)
+
+    for value in (-1, 1.0, "any"):
+        result = SemanticValidator(externals={"q": value}).validate(ast)
+
+        assert result.is_valid is False
+        assert any(
+            "Invalid for...of quantifier external 'q'" in error.message for error in result.errors
+        )
+
+
 def test_semantic_validator_accepts_bare_string_literal_string_set_items() -> None:
     ast = YaraFile(
         rules=[

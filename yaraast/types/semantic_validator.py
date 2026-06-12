@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from dataclasses import fields, is_dataclass
 import re
 from typing import TYPE_CHECKING
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.conditions import ForOfExpression, OfExpression
+from yaraast.ast.expressions import Identifier
 from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.types.module_loader import ModuleLoader
 from yaraast.types.semantic_validator_core import ValidationError, ValidationResult
@@ -88,6 +91,8 @@ class SemanticValidator:
             if rule.condition is not None:
                 function_validator.visit(rule.condition)
 
+        _validate_external_quantifiers(result, ast, effective_externals)
+
         type_env = TypeEnvironment()
         _define_external_types(type_env, effective_externals)
         type_checker = TypeChecker(type_env)
@@ -131,6 +136,8 @@ class SemanticValidator:
             function_validator = FunctionCallValidator(result, env)
             function_validator.visit(rule.condition)
 
+        _validate_external_quantifiers(result, rule, self._effective_externals(externals))
+
         type_checker = TypeChecker(env)
         type_errors = type_checker.check(YaraFile(rules=[rule]))
 
@@ -157,6 +164,8 @@ class SemanticValidator:
         _define_external_types(env, self._effective_externals(externals))
         function_validator = FunctionCallValidator(result, env)
         function_validator.visit(expr)
+
+        _validate_external_quantifiers(result, expr, self._effective_externals(externals))
 
         type_checker = TypeChecker(env)
         try:
@@ -227,6 +236,61 @@ def _define_external_types(
 ) -> None:
     for name, value in externals.items():
         env.define(name, _external_type(value))
+
+
+def _validate_external_quantifiers(
+    result: ValidationResult,
+    node: ASTNode,
+    externals: Mapping[str, object],
+) -> None:
+    for candidate in _walk_ast_nodes(node):
+        if isinstance(candidate, OfExpression):
+            _validate_external_quantifier_value(
+                result,
+                candidate.quantifier,
+                externals,
+                context="of",
+            )
+        elif isinstance(candidate, ForOfExpression):
+            context = "for...of" if candidate.condition is not None else "of"
+            _validate_external_quantifier_value(
+                result,
+                candidate.quantifier,
+                externals,
+                context=context,
+            )
+
+
+def _walk_ast_nodes(value: object) -> Iterator[ASTNode]:
+    if isinstance(value, ASTNode):
+        yield value
+        if not is_dataclass(value):
+            return
+        for field in fields(value):
+            yield from _walk_ast_nodes(getattr(value, field.name))
+        return
+    if isinstance(value, list | tuple | set | frozenset):
+        for item in value:
+            yield from _walk_ast_nodes(item)
+
+
+def _validate_external_quantifier_value(
+    result: ValidationResult,
+    quantifier: object,
+    externals: Mapping[str, object],
+    *,
+    context: str,
+) -> None:
+    if not isinstance(quantifier, Identifier):
+        return
+    value = externals.get(quantifier.name)
+    if value is None:
+        return
+    if isinstance(value, bool):
+        return
+    if isinstance(value, int) and value >= 0:
+        return
+    result.add_error(f"Invalid {context} quantifier external '{quantifier.name}'")
 
 
 # Convenience functions for easy usage
