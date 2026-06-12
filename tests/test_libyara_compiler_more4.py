@@ -39,6 +39,21 @@ def test_libyara_externals_reject_empty_names(externals: dict[str, object]) -> N
         normalize_libyara_externals(externals)
 
 
+@pytest.mark.parametrize("externals", [{"x": b"bytes"}, {"x": None}, {"x": object()}])
+def test_libyara_externals_reject_unsupported_values(externals: dict[str, object]) -> None:
+    with pytest.raises(
+        TypeError,
+        match="libyara external values must be integer, float, boolean, or string",
+    ):
+        normalize_libyara_externals(externals)
+
+
+def test_libyara_externals_accept_supported_values() -> None:
+    externals = {"i": 1, "f": 1.5, "b": True, "s": "text"}
+
+    assert normalize_libyara_externals(externals) == externals
+
+
 @pytest.mark.parametrize("includes", [cast(Any, []), cast(Any, "shared.yar")])
 def test_libyara_includes_reject_non_mapping_inputs(includes: Any) -> None:
     with pytest.raises(TypeError, match="libyara includes must be a dictionary"):

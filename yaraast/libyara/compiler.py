@@ -43,6 +43,9 @@ def normalize_libyara_externals(externals: dict[str, Any] | None) -> dict[str, A
         if not name.strip():
             msg = "libyara external names must not be empty"
             raise ValueError(msg)
+        if not isinstance(value, bool | int | float | str):
+            msg = "libyara external values must be integer, float, boolean, or string"
+            raise TypeError(msg)
         normalized[name] = value
     return normalized
 
