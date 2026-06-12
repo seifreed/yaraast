@@ -2709,6 +2709,7 @@ def test_protobuf_deserializer_rejects_empty_comment_metadata(
 @pytest.mark.parametrize(
     ("location", "message"),
     [
+        (cast(Any, object()), "location must be a Location"),
         (Location(cast(Any, True), 1), "Location line must be an integer"),
         (Location(2**31, 1), "Location line must fit in protobuf int32"),
         (Location(1, cast(Any, "2")), "Location column must be an integer"),
@@ -2725,7 +2726,7 @@ def test_protobuf_deserializer_rejects_empty_comment_metadata(
     ],
 )
 def test_protobuf_serializer_rejects_invalid_location_metadata(
-    location: Location,
+    location: Any,
     message: str,
 ) -> None:
     serializer = ProtobufSerializer(include_metadata=False)

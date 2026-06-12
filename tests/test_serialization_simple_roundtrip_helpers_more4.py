@@ -2783,6 +2783,14 @@ def test_simple_roundtrip_deserializer_rejects_invalid_local_identifier_fields(
         deserialize_node(payload)
 
 
+def test_simple_roundtrip_serializer_rejects_invalid_location_metadata() -> None:
+    rule = Rule("bad_location", condition=BooleanLiteral(True))
+    rule.location = cast(Any, object())
+
+    with pytest.raises(SerializationError, match="location must be a Location"):
+        serialize_node(rule)
+
+
 def test_simple_roundtrip_condition_fields_reject_wrong_scalar_types() -> None:
     true_expr = {"type": "BooleanLiteral", "value": True}
 

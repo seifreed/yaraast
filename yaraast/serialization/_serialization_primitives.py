@@ -83,6 +83,23 @@ def _validate_local_identifier_list(values: list[str]) -> list[str]:
     return values
 
 
+def _validate_location_metadata(
+    location: Any,
+    *,
+    validate_structure: bool = True,
+) -> Location:
+    if not isinstance(location, Location):
+        msg = "location must be a Location"
+        raise SerializationError(msg)
+    if not validate_structure:
+        return location
+    try:
+        location.validate_structure()
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return location
+
+
 def _serialize_modifier_value(value: Any) -> str | int | float | list[int] | None:
     if value is None or isinstance(value, str):
         return value

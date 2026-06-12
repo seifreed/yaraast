@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from yaraast.ast.base import ASTNode, Location
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
+from yaraast.serialization._serialization_primitives import _validate_location_metadata
 from yaraast.serialization.json_serialize_visitors import (
     _serialize_anonymous_flag,
     _serialize_dynamic_node_metadata,
@@ -172,10 +173,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._with_node_metadata(node, serialized)
 
     def _serialize_location(self, location: Location) -> dict[str, Any]:
-        try:
-            location.validate_structure()
-        except (TypeError, ValueError) as exc:
-            raise SerializationError(str(exc)) from exc
+        location = _validate_location_metadata(location)
         data: dict[str, Any] = {
             "line": _serialize_required_int(location.line, "Location line"),
             "column": _serialize_required_int(location.column, "Location column"),

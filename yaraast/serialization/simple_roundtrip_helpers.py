@@ -99,6 +99,7 @@ from yaraast.serialization._serialization_primitives import (
     _serialize_modifier_value,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
+    _validate_location_metadata,
     _validate_loop_variable_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
@@ -981,10 +982,7 @@ def _deserialize_required_string_set(data: dict[str, Any], field: str, context: 
 
 
 def _serialize_location(location: Location) -> dict[str, Any]:
-    try:
-        location.validate_structure()
-    except (TypeError, ValueError) as exc:
-        raise SerializationError(str(exc)) from exc
+    location = _validate_location_metadata(location)
     data: dict[str, Any] = {
         "line": _serialize_required_int(location.line, "Location line"),
         "column": _serialize_required_int(location.column, "Location column"),
