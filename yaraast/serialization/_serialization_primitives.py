@@ -43,8 +43,10 @@ def _normalize_rule_modifier_text(value: str, context: str) -> str:
         return str(RuleModifier.from_string(value))
     except (ValueError, ValidationError):
         try:
-            if context == "Rule":
+            if context in {"Rule", "Rule modifier"}:
                 require_rule_modifier_identifier(value, "Rule modifier", "rule modifier")
+            elif context in {"ExternRule", "ExternRule modifier"}:
+                require_rule_modifier_identifier(value, "ExternRule modifier")
             else:
                 require_rule_modifier_identifier(value, f"{context} modifier")
         except ValidationError as exc:

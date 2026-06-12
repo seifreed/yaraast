@@ -11,6 +11,7 @@ from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
     _is_empty_nonempty_text,
     _is_negated_nibble_pattern,
+    _normalize_rule_modifier_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -534,17 +535,29 @@ def _protobuf_rule_modifier_list(values, context: str) -> list:
 
 def _protobuf_modifier_name(modifier, context: str) -> str:
     if isinstance(modifier, str):
-        return _protobuf_required_nonempty_string(modifier, f"{context} name")
+        modifier = _protobuf_required_nonempty_string(modifier, f"{context} name")
+        if context in {"Rule modifier", "ExternRule modifier"}:
+            modifier = _normalize_rule_modifier_text(modifier, context)
+        return modifier
     try:
         name = modifier.name
     except (AttributeError, TypeError) as exc:
         msg = f"{context} name must be a string"
         raise SerializationError(msg) from exc
-    return _protobuf_required_nonempty_string(name, f"{context} name")
+    name = _protobuf_required_nonempty_string(name, f"{context} name")
+    if context in {"Rule modifier", "ExternRule modifier"}:
+        name = _normalize_rule_modifier_text(name, context)
+    return name
 
 
 def _protobuf_modifier_names_from_protobuf(values, context: str) -> list[str]:
-    return [_protobuf_required_nonempty_string(value, f"{context} name") for value in values]
+    return [
+        _normalize_rule_modifier_text(
+            _protobuf_required_nonempty_string(value, f"{context} name"),
+            context,
+        )
+        for value in values
+    ]
 
 
 def _protobuf_string_modifier_list(values, context: str) -> list:

@@ -938,11 +938,20 @@ def _invalid_modifier_and_hex_container_cases() -> list[tuple[YaraFile, str]]:
     bad_rule_modifier = Rule("bad_rule_modifier", condition=BooleanLiteral(True))
     cast(Any, bad_rule_modifier).modifiers = [object()]
 
+    invalid_rule_modifier_name = Rule(
+        "invalid_rule_modifier_name",
+        modifiers=["bad modifier"],
+        condition=BooleanLiteral(True),
+    )
+
     bad_extern_rule_modifiers = ExternRule("ExternalRule")
     cast(Any, bad_extern_rule_modifiers).modifiers = False
 
     bad_extern_rule_modifier = ExternRule("ExternalRule")
     cast(Any, bad_extern_rule_modifier).modifiers = [object()]
+
+    invalid_extern_rule_modifier_name = ExternRule("ExternalRule")
+    cast(Any, invalid_extern_rule_modifier_name).modifiers = ["bad modifier"]
 
     bad_plain_modifiers = PlainString(identifier="$a", value="abc")
     cast(Any, bad_plain_modifiers).modifiers = False
@@ -978,12 +987,20 @@ def _invalid_modifier_and_hex_container_cases() -> list[tuple[YaraFile, str]]:
             "Rule modifiers item must be RuleModifier or string",
         ),
         (
+            YaraFile(rules=[invalid_rule_modifier_name]),
+            "Invalid rule modifier identifier",
+        ),
+        (
             YaraFile(extern_rules=[bad_extern_rule_modifiers]),
             "ExternRule modifiers must be a list",
         ),
         (
             YaraFile(extern_rules=[bad_extern_rule_modifier]),
             "ExternRule modifiers item must be RuleModifier or string",
+        ),
+        (
+            YaraFile(extern_rules=[invalid_extern_rule_modifier_name]),
+            "Invalid ExternRule modifier identifier",
         ),
         (
             YaraFile(
@@ -1916,6 +1933,33 @@ def test_protobuf_deserializer_rejects_empty_rule_modifier_names(
         pb_extern_rule = pb_file.extern_rules.add()
         pb_extern_rule.name = "ExternalRule"
         pb_extern_rule.modifiers.append("")
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("payload_kind", "message"),
+    [
+        ("rule", "Invalid rule modifier identifier"),
+        ("extern_rule", "Invalid ExternRule modifier identifier"),
+    ],
+)
+def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
+    payload_kind: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    if payload_kind == "rule":
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "bad_modifier"
+        pb_rule.modifiers.append("bad modifier")
+        pb_rule.condition.boolean_literal.value = True
+    else:
+        pb_extern_rule = pb_file.extern_rules.add()
+        pb_extern_rule.name = "ExternalRule"
+        pb_extern_rule.modifiers.append("bad modifier")
 
     with pytest.raises(SerializationError, match=message):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
