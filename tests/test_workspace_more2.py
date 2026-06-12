@@ -132,6 +132,32 @@ def test_workspace_missing_include_keeps_resolved_sibling_include(
     assert not any("Cannot resolve include 'child.yar'" in err for err in report.global_errors)
 
 
+def test_workspace_missing_include_is_not_satisfied_by_matching_basename(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path
+    nested = root / "dir"
+    nested.mkdir()
+    main = _write(
+        root / "main.yar",
+        """
+        include "dir/child.yar"
+        include "child.yar"
+        rule main { condition: true }
+        """,
+    )
+    child = _write(nested / "child.yar", "rule child { condition: true }")
+
+    workspace = Workspace(root_path=root, search_paths=[str(root)])
+    result = workspace.add_file(main)
+    report = workspace.analyze(parallel=False)
+
+    assert result.resolved is not None
+    assert [included.path for included in result.resolved.includes] == [child.resolve()]
+    assert any("Cannot resolve include 'child.yar'" in err for err in report.global_errors)
+    assert not any("Cannot resolve include 'dir/child.yar'" in err for err in report.global_errors)
+
+
 @pytest.mark.parametrize("rule_name", [None, 1, b"ok_rule", object(), "", "   "])
 def test_workspace_find_rule_rejects_invalid_rule_names(
     tmp_path: Path,

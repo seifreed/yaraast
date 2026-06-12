@@ -189,17 +189,9 @@ class WorkspaceAnalyzer:
 
         for file_path, result in report.file_results.items():
             if result.resolved:
+                resolved_include_paths = set(result.resolved.include_path_map)
                 for include in result.resolved.ast.includes:
-                    resolved_names = {inc.path.name for inc in result.resolved.includes}
-                    resolved_paths = {str(inc.path) for inc in result.resolved.includes}
-                    include_path = include.path
-                    if not (
-                        include_path in resolved_names
-                        or include_path in resolved_paths
-                        or any(
-                            str(inc.path).endswith(include_path) for inc in result.resolved.includes
-                        )
-                    ):
+                    if include.path not in resolved_include_paths:
                         report.global_errors.append(
                             f"File '{file_path}': Cannot resolve include '{include.path}'",
                         )
