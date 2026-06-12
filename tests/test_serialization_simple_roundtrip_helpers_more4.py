@@ -326,6 +326,9 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Meta key must not be empty"):
         deserialize_meta({"key": "", "value": "me"})
 
+    with pytest.raises(SerializationError, match="Invalid meta identifier"):
+        deserialize_meta({"key": "bad-name", "value": "me"})
+
     with pytest.raises(SerializationError, match="Meta type must be Meta or MetaEntry"):
         deserialize_meta({"type": "Rule", "key": "author", "value": "me"})
 
@@ -2251,6 +2254,7 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
     invalid_cases = (
         (Meta("", "value"), "Meta key must not be empty"),
         (Meta(cast(Any, 123), "value"), "Meta key must be a string"),
+        (Meta("bad-name", "value"), "Invalid meta identifier"),
         (Meta("key", cast(Any, 1.2)), "Meta value must be a string, integer, or boolean"),
         (
             PlainString(identifier="", value="abc"),

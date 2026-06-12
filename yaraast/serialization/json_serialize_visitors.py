@@ -422,7 +422,10 @@ def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     )
     data = {
         "type": "MetaEntry" if scope is not None else "Meta",
-        "key": _serialize_required_nonempty_string(getattr(meta, "key", ""), "Meta key"),
+        "key": _validate_yara_identifier_text(
+            _serialize_required_nonempty_string(getattr(meta, "key", ""), "Meta key"),
+            "meta",
+        ),
         "value": value,
     }
     if scope is not None:

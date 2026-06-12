@@ -552,7 +552,10 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         )
         data = self._simple_node(
             node_type,
-            key=_serialize_required_nonempty_string(node.key, "Meta key"),
+            key=_validate_yara_identifier_text(
+                _serialize_required_nonempty_string(node.key, "Meta key"),
+                "meta",
+            ),
             value=value,
         )
         if scope is not None:

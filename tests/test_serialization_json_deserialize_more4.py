@@ -220,6 +220,9 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Meta key must not be empty"):
         s._deserialize_meta({"key": "", "value": "me"})
 
+    with pytest.raises(SerializationError, match="Invalid meta identifier"):
+        s._deserialize_meta({"key": "bad-name", "value": "me"})
+
     with pytest.raises(SerializationError, match="Meta type must be Meta or MetaEntry"):
         s._deserialize_meta({"type": "Rule", "key": "author", "value": "me"})
 

@@ -1246,7 +1246,10 @@ class JsonSerializerDeserializeMixin:
 
             return self._apply_node_metadata(
                 Meta(
-                    _deserialize_nonempty_string_field(data, "key", "Meta"),
+                    _validate_yara_identifier_text(
+                        _deserialize_nonempty_string_field(data, "key", "Meta"),
+                        "meta",
+                    ),
                     _deserialize_meta_value(data),
                 ),
                 data,
@@ -1257,7 +1260,10 @@ class JsonSerializerDeserializeMixin:
             scope = _deserialize_nullable_string_field(data, "scope", "Meta")
         return self._apply_node_metadata(
             MetaEntry.from_key_value(
-                _deserialize_nonempty_string_field(data, "key", "Meta"),
+                _validate_yara_identifier_text(
+                    _deserialize_nonempty_string_field(data, "key", "Meta"),
+                    "meta",
+                ),
                 _deserialize_meta_entry_value(data),
                 deserialize_meta_scope(scope),
             ),

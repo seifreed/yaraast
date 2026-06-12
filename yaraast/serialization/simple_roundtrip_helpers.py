@@ -1843,7 +1843,10 @@ def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
     )
     data = {
         "type": "Meta",
-        "key": _serialize_required_nonempty_string(meta.key, "Meta key"),
+        "key": _validate_yara_identifier_text(
+            _serialize_required_nonempty_string(meta.key, "Meta key"),
+            "meta",
+        ),
         "value": value,
     }
     if scope is not None:
@@ -2709,7 +2712,10 @@ def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
             scope = _deserialize_nullable_string_field(data, "scope", "Meta")
         return _apply_node_metadata(
             MetaEntry.from_key_value(
-                _deserialize_nonempty_string_field(data, "key", "Meta"),
+                _validate_yara_identifier_text(
+                    _deserialize_nonempty_string_field(data, "key", "Meta"),
+                    "meta",
+                ),
                 _deserialize_meta_entry_value(data),
                 deserialize_meta_scope(scope),
             ),
@@ -2717,7 +2723,10 @@ def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
         )
     return _apply_node_metadata(
         Meta(
-            _deserialize_nonempty_string_field(data, "key", "Meta"),
+            _validate_yara_identifier_text(
+                _deserialize_nonempty_string_field(data, "key", "Meta"),
+                "meta",
+            ),
             _deserialize_meta_value(data),
         ),
         data,

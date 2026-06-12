@@ -1478,6 +1478,18 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
             YaraFile(
                 rules=[
                     Rule(
+                        "invalid_meta_key",
+                        meta=[Meta("bad-name", "value")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Invalid meta identifier",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
                         "invalid_meta_value",
                         meta=[Meta("key", invalid_float)],
                         condition=BooleanLiteral(True),
