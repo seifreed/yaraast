@@ -18,12 +18,13 @@ def get_document_source(ls: YaraLanguageServer, uri: str, fallback_text: str | N
     runtime = getattr(ls, "runtime", None)
     if runtime is not None:
         document = runtime.get_document(uri, load_workspace=False)
-        if document is not None:
-            return str(document.text)
+        if document is not None and isinstance(document.text, str):
+            return document.text
     if fallback_text is not None:
         return fallback_text
     document = ls.workspace.get_text_document(uri)
-    return str(document.source)
+    source = document.source
+    return source if isinstance(source, str) else ""
 
 
 def get_diagnostics(ls: YaraLanguageServer, text: str, uri: str) -> list[Diagnostic]:

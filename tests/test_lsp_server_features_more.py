@@ -153,9 +153,16 @@ class FakeServer:
 class _RecordingRuntime:
     def __init__(self) -> None:
         self.updated: list[tuple[str, str, int | None]] = []
+        self.saved: list[tuple[str, str]] = []
 
     def update_document(self, uri: str, text: str, version: int | None = None) -> None:
         self.updated.append((uri, text, version))
+
+    def save_document(self, uri: str, text: str | None = None) -> None:
+        self.saved.append((uri, "" if text is None else text))
+
+    def get_document(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
 
     def should_debounce(self, *_args: Any, **_kwargs: Any) -> bool:
         return False
@@ -451,6 +458,26 @@ def test_did_change_ignores_malformed_workspace_source_uses_latest_change_text()
 
     assert runtime.updated == [(uri, latest_text, 3)]
     assert server.published == [(uri, [f"diag:{len(latest_text)}"])]
+
+
+def test_did_save_ignores_malformed_workspace_source_without_text() -> None:
+    server = FakeServer()
+    sf.register_server_features(server)
+    runtime = _RecordingRuntime()
+    server.runtime = runtime
+    uri = "file:///a.yar"
+    server.workspace._docs[uri] = SimpleNamespace(uri=uri, source=object())
+
+    asyncio.run(
+        _call(
+            server,
+            sf.TEXT_DOCUMENT_DID_SAVE,
+            SimpleNamespace(text_document=SimpleNamespace(uri=uri), text=None),
+        )
+    )
+
+    assert runtime.saved == [(uri, "")]
+    assert server.published == [(uri, ["diag:0"])]
 
 
 def test_initialize_decodes_workspace_folder_file_uris(tmp_path: Path) -> None:
