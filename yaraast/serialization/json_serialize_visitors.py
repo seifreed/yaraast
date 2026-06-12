@@ -15,6 +15,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_loop_variable_text,
+    _validate_string_reference_text,
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.pragma_scopes import serialize_pragma_scope
@@ -666,9 +667,12 @@ def _coerce_hex_alternative_token(token):
 def visit_string_offset(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringOffset",
-        "string_id": _serialize_required_nonempty_string(
-            node.string_id,
-            "StringOffset string_id",
+        "string_id": _validate_string_reference_text(
+            _serialize_required_nonempty_string(
+                node.string_id,
+                "StringOffset string_id",
+            ),
+            allow_placeholder=True,
         ),
         "index": _serialize_optional_expression(serializer, node.index, "StringOffset index"),
     }
@@ -677,9 +681,12 @@ def visit_string_offset(serializer, node) -> dict[str, Any]:
 def visit_string_length(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringLength",
-        "string_id": _serialize_required_nonempty_string(
-            node.string_id,
-            "StringLength string_id",
+        "string_id": _validate_string_reference_text(
+            _serialize_required_nonempty_string(
+                node.string_id,
+                "StringLength string_id",
+            ),
+            allow_placeholder=True,
         ),
         "index": _serialize_optional_expression(serializer, node.index, "StringLength index"),
     }

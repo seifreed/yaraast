@@ -33,6 +33,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_loop_variable_text,
+    _validate_string_reference_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -535,7 +536,9 @@ def _deser_string_identifier(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringIdentifier
 
     return StringIdentifier(
-        name=_deserialize_nonempty_string_field(data, "name", "StringIdentifier")
+        name=_validate_string_reference_text(
+            _deserialize_nonempty_string_field(data, "name", "StringIdentifier")
+        )
     )
 
 
@@ -543,7 +546,10 @@ def _deser_string_wildcard(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringWildcard
 
     return StringWildcard(
-        pattern=_deserialize_nonempty_string_field(data, "pattern", "StringWildcard")
+        pattern=_validate_string_reference_text(
+            _deserialize_nonempty_string_field(data, "pattern", "StringWildcard"),
+            allow_wildcard=True,
+        )
     )
 
 
@@ -551,7 +557,10 @@ def _deser_string_count(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringCount
 
     return StringCount(
-        string_id=_deserialize_nonempty_string_field(data, "string_id", "StringCount")
+        string_id=_validate_string_reference_text(
+            _deserialize_nonempty_string_field(data, "string_id", "StringCount"),
+            allow_placeholder=True,
+        )
     )
 
 
@@ -559,7 +568,10 @@ def _deser_string_offset(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringOffset
 
     return StringOffset(
-        string_id=_deserialize_nonempty_string_field(data, "string_id", "StringOffset"),
+        string_id=_validate_string_reference_text(
+            _deserialize_nonempty_string_field(data, "string_id", "StringOffset"),
+            allow_placeholder=True,
+        ),
         index=_deserialize_nullable_expression_field(self, data, "index", "StringOffset"),
     )
 
@@ -568,7 +580,10 @@ def _deser_string_length(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringLength
 
     return StringLength(
-        string_id=_deserialize_nonempty_string_field(data, "string_id", "StringLength"),
+        string_id=_validate_string_reference_text(
+            _deserialize_nonempty_string_field(data, "string_id", "StringLength"),
+            allow_placeholder=True,
+        ),
         index=_deserialize_nullable_expression_field(self, data, "index", "StringLength"),
     )
 

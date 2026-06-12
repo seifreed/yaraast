@@ -10,7 +10,10 @@ from typing import TYPE_CHECKING, Any
 from yaraast.ast.base import ASTNode, Location
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
-from yaraast.serialization._serialization_primitives import _validate_location_metadata
+from yaraast.serialization._serialization_primitives import (
+    _validate_location_metadata,
+    _validate_string_reference_text,
+)
 from yaraast.serialization.json_serialize_visitors import (
     _serialize_anonymous_flag,
     _serialize_dynamic_node_metadata,
@@ -411,24 +414,32 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_string_identifier(self, node) -> dict[str, Any]:
         return self._simple_node(
             "StringIdentifier",
-            name=_serialize_required_nonempty_string(node.name, "StringIdentifier name"),
+            name=_validate_string_reference_text(
+                _serialize_required_nonempty_string(node.name, "StringIdentifier name")
+            ),
         )
 
     def visit_string_wildcard(self, node) -> dict[str, Any]:
         return self._simple_node(
             "StringWildcard",
-            pattern=_serialize_required_nonempty_string(
-                node.pattern,
-                "StringWildcard pattern",
+            pattern=_validate_string_reference_text(
+                _serialize_required_nonempty_string(
+                    node.pattern,
+                    "StringWildcard pattern",
+                ),
+                allow_wildcard=True,
             ),
         )
 
     def visit_string_count(self, node) -> dict[str, Any]:
         return self._simple_node(
             "StringCount",
-            string_id=_serialize_required_nonempty_string(
-                node.string_id,
-                "StringCount string_id",
+            string_id=_validate_string_reference_text(
+                _serialize_required_nonempty_string(
+                    node.string_id,
+                    "StringCount string_id",
+                ),
+                allow_placeholder=True,
             ),
         )
 

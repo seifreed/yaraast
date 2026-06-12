@@ -1055,6 +1055,32 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
         with pytest.raises(SerializationError, match=message):
             s._deserialize_expression(payload)
 
+    invalid_string_reference_cases = (
+        ({"type": "StringIdentifier", "name": "$bad-name"}, "Invalid string reference"),
+        ({"type": "StringIdentifier", "name": "$a*"}, "Invalid string reference"),
+        ({"type": "StringWildcard", "pattern": "$bad-name*"}, "Invalid string reference"),
+        ({"type": "StringCount", "string_id": "#a"}, "Invalid string reference"),
+        ({"type": "StringCount", "string_id": "$bad-name"}, "Invalid string reference"),
+        ({"type": "StringOffset", "string_id": "@a"}, "Invalid string reference"),
+        ({"type": "StringOffset", "string_id": "$bad-name"}, "Invalid string reference"),
+        ({"type": "StringLength", "string_id": "!a"}, "Invalid string reference"),
+        ({"type": "StringLength", "string_id": "$bad-name"}, "Invalid string reference"),
+    )
+    for payload, message in invalid_string_reference_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
+    placeholder_count = s._deserialize_expression({"type": "StringCount", "string_id": "$"})
+    assert placeholder_count == StringCount("$")
+    placeholder_offset = s._deserialize_expression(
+        {"type": "StringOffset", "string_id": "$", "index": None}
+    )
+    assert placeholder_offset == StringOffset("$")
+    placeholder_length = s._deserialize_expression(
+        {"type": "StringLength", "string_id": "$", "index": None}
+    )
+    assert placeholder_length == StringLength("$")
+
     with pytest.raises(SerializationError, match="BinaryExpression left is required"):
         s._deserialize_expression(
             {"type": "BinaryExpression", "operator": "and", "right": true_expr}

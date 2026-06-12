@@ -16,6 +16,7 @@ from yaraast.ast.base import Location
 from yaraast.ast.modifiers import RuleModifier, require_rule_modifier_identifier
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.shared.local_scope import local_name_variants, validate_local_identifier
+from yaraast.string_references import normalize_string_reference_id
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
@@ -81,6 +82,21 @@ def _validate_local_identifier_list(values: list[str]) -> list[str]:
     for value in values:
         _validate_local_identifier_text(value)
     return values
+
+
+def _validate_string_reference_text(
+    value: str,
+    *,
+    allow_wildcard: bool = False,
+    allow_placeholder: bool = False,
+) -> str:
+    if allow_placeholder and value == "$":
+        return value
+    try:
+        normalize_string_reference_id(value, allow_wildcard=allow_wildcard)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return value
 
 
 def _validate_location_metadata(

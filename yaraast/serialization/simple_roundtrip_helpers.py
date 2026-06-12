@@ -101,6 +101,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_text,
     _validate_location_metadata,
     _validate_loop_variable_text,
+    _validate_string_reference_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -1256,39 +1257,53 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, StringIdentifier):
         return {
             "type": "StringIdentifier",
-            "name": _serialize_required_nonempty_string(node.name, "StringIdentifier name"),
+            "name": _validate_string_reference_text(
+                _serialize_required_nonempty_string(node.name, "StringIdentifier name")
+            ),
         }
     if isinstance(node, StringWildcard):
         return {
             "type": "StringWildcard",
-            "pattern": _serialize_required_nonempty_string(
-                node.pattern,
-                "StringWildcard pattern",
+            "pattern": _validate_string_reference_text(
+                _serialize_required_nonempty_string(
+                    node.pattern,
+                    "StringWildcard pattern",
+                ),
+                allow_wildcard=True,
             ),
         }
     if isinstance(node, StringCount):
         return {
             "type": "StringCount",
-            "string_id": _serialize_required_nonempty_string(
-                node.string_id,
-                "StringCount string_id",
+            "string_id": _validate_string_reference_text(
+                _serialize_required_nonempty_string(
+                    node.string_id,
+                    "StringCount string_id",
+                ),
+                allow_placeholder=True,
             ),
         }
     if isinstance(node, StringOffset):
         return {
             "type": "StringOffset",
-            "string_id": _serialize_required_nonempty_string(
-                node.string_id,
-                "StringOffset string_id",
+            "string_id": _validate_string_reference_text(
+                _serialize_required_nonempty_string(
+                    node.string_id,
+                    "StringOffset string_id",
+                ),
+                allow_placeholder=True,
             ),
             "index": serialize_node(node.index) if node.index is not None else None,
         }
     if isinstance(node, StringLength):
         return {
             "type": "StringLength",
-            "string_id": _serialize_required_nonempty_string(
-                node.string_id,
-                "StringLength string_id",
+            "string_id": _validate_string_reference_text(
+                _serialize_required_nonempty_string(
+                    node.string_id,
+                    "StringLength string_id",
+                ),
+                allow_placeholder=True,
             ),
             "index": serialize_node(node.index) if node.index is not None else None,
         }
@@ -1987,20 +2002,38 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return Identifier(_deserialize_nonempty_string_field(data, "name", "Identifier"))
     if node_type == "StringIdentifier":
         return StringIdentifier(
-            _deserialize_nonempty_string_field(data, "name", "StringIdentifier")
+            _validate_string_reference_text(
+                _deserialize_nonempty_string_field(data, "name", "StringIdentifier")
+            )
         )
     if node_type == "StringWildcard":
-        return StringWildcard(_deserialize_nonempty_string_field(data, "pattern", "StringWildcard"))
+        return StringWildcard(
+            _validate_string_reference_text(
+                _deserialize_nonempty_string_field(data, "pattern", "StringWildcard"),
+                allow_wildcard=True,
+            )
+        )
     if node_type == "StringCount":
-        return StringCount(_deserialize_nonempty_string_field(data, "string_id", "StringCount"))
+        return StringCount(
+            _validate_string_reference_text(
+                _deserialize_nonempty_string_field(data, "string_id", "StringCount"),
+                allow_placeholder=True,
+            )
+        )
     if node_type == "StringOffset":
         return StringOffset(
-            _deserialize_nonempty_string_field(data, "string_id", "StringOffset"),
+            _validate_string_reference_text(
+                _deserialize_nonempty_string_field(data, "string_id", "StringOffset"),
+                allow_placeholder=True,
+            ),
             _deserialize_nullable_node_field(data, "index", "StringOffset"),
         )
     if node_type == "StringLength":
         return StringLength(
-            _deserialize_nonempty_string_field(data, "string_id", "StringLength"),
+            _validate_string_reference_text(
+                _deserialize_nonempty_string_field(data, "string_id", "StringLength"),
+                allow_placeholder=True,
+            ),
             _deserialize_nullable_node_field(data, "index", "StringLength"),
         )
     if node_type == "BinaryExpression":

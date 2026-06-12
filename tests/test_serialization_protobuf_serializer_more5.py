@@ -2072,14 +2072,23 @@ def test_protobuf_serializer_rejects_invalid_expression_scalar_fields(
         (Identifier(""), "Identifier name must not be empty"),
         (StringIdentifier(cast(Any, 123)), "StringIdentifier name must be a string"),
         (StringIdentifier(""), "StringIdentifier name must not be empty"),
+        (StringIdentifier("$bad-name"), "Invalid string reference"),
+        (StringIdentifier("$a*"), "Invalid string reference"),
         (StringWildcard(cast(Any, 123)), "StringWildcard pattern must be a string"),
         (StringWildcard(""), "StringWildcard pattern must not be empty"),
+        (StringWildcard("$bad-name*"), "Invalid string reference"),
         (StringCount(cast(Any, 123)), "StringCount string_id must be a string"),
         (StringCount(""), "StringCount string_id must not be empty"),
+        (StringCount("#a"), "Invalid string reference"),
+        (StringCount("$bad-name"), "Invalid string reference"),
         (StringOffset(cast(Any, 123)), "StringOffset string_id must be a string"),
         (StringOffset(""), "StringOffset string_id must not be empty"),
+        (StringOffset("@a"), "Invalid string reference"),
+        (StringOffset("$bad-name"), "Invalid string reference"),
         (StringLength(cast(Any, 123)), "StringLength string_id must be a string"),
         (StringLength(""), "StringLength string_id must not be empty"),
+        (StringLength("!a"), "Invalid string reference"),
+        (StringLength("$bad-name"), "Invalid string reference"),
         (IntegerLiteral(cast(Any, True)), "IntegerLiteral value must be an integer"),
         (IntegerLiteral(cast(Any, "1")), "IntegerLiteral value must be an integer"),
         (IntegerLiteral(2**63), "IntegerLiteral value must fit in protobuf int64"),
@@ -2384,6 +2393,65 @@ def test_protobuf_deserializer_rejects_empty_expression_identifier_fields(
 
     with pytest.raises(SerializationError, match=message):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("expression_kind", "value"),
+    [
+        ("string_identifier", "$bad-name"),
+        ("string_identifier", "$a*"),
+        ("string_wildcard", "$bad-name*"),
+        ("string_count", "#a"),
+        ("string_count", "$bad-name"),
+        ("string_offset", "@a"),
+        ("string_offset", "$bad-name"),
+        ("string_length", "!a"),
+        ("string_length", "$bad-name"),
+    ],
+)
+def test_protobuf_deserializer_rejects_invalid_string_reference_fields(
+    expression_kind: str,
+    value: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_string_reference"
+    condition = pb_rule.condition
+
+    if expression_kind == "string_identifier":
+        condition.string_identifier.name = value
+    elif expression_kind == "string_wildcard":
+        condition.string_wildcard.pattern = value
+    elif expression_kind == "string_count":
+        condition.string_count.string_id = value
+    elif expression_kind == "string_offset":
+        condition.string_offset.string_id = value
+    elif expression_kind == "string_length":
+        condition.string_length.string_id = value
+
+    with pytest.raises(SerializationError, match="Invalid string reference"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_accepts_placeholder_string_references() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(name="count_placeholder", condition=StringCount("$")),
+            Rule(name="offset_placeholder", condition=StringOffset("$", IntegerLiteral(0))),
+            Rule(name="length_placeholder", condition=StringLength("$", IntegerLiteral(0))),
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    conditions = [rule.condition for rule in restored.rules]
+    assert conditions == [
+        StringCount("$"),
+        StringOffset("$", IntegerLiteral(0)),
+        StringLength("$", IntegerLiteral(0)),
+    ]
 
 
 def test_protobuf_deserializer_rejects_invalid_for_expression_variable() -> None:

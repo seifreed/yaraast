@@ -16,6 +16,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_text,
     _validate_location_metadata,
     _validate_loop_variable_text,
+    _validate_string_reference_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -1279,9 +1280,14 @@ def _expression_string_set_item_text(item) -> str | None:
     from yaraast.ast.expressions import StringIdentifier, StringLiteral, StringWildcard
 
     if isinstance(item, StringIdentifier):
-        return _protobuf_required_nonempty_string(item.name, "StringIdentifier name")
+        return _validate_string_reference_text(
+            _protobuf_required_nonempty_string(item.name, "StringIdentifier name")
+        )
     if isinstance(item, StringWildcard):
-        return _protobuf_required_nonempty_string(item.pattern, "StringWildcard pattern")
+        return _validate_string_reference_text(
+            _protobuf_required_nonempty_string(item.pattern, "StringWildcard pattern"),
+            allow_wildcard=True,
+        )
     if isinstance(item, StringLiteral):
         value = _protobuf_required_string(item.value, "StringLiteral value")
         if value.startswith("$"):
@@ -1397,31 +1403,45 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     if isinstance(expr, Identifier):
         pb_expr.identifier.name = _protobuf_required_nonempty_string(expr.name, "Identifier name")
     elif isinstance(expr, StringIdentifier):
-        pb_expr.string_identifier.name = _protobuf_required_nonempty_string(
-            expr.name,
-            "StringIdentifier name",
+        pb_expr.string_identifier.name = _validate_string_reference_text(
+            _protobuf_required_nonempty_string(
+                expr.name,
+                "StringIdentifier name",
+            )
         )
     elif isinstance(expr, StringWildcard):
-        pb_expr.string_wildcard.pattern = _protobuf_required_nonempty_string(
-            expr.pattern,
-            "StringWildcard pattern",
+        pb_expr.string_wildcard.pattern = _validate_string_reference_text(
+            _protobuf_required_nonempty_string(
+                expr.pattern,
+                "StringWildcard pattern",
+            ),
+            allow_wildcard=True,
         )
     elif isinstance(expr, StringCount):
-        pb_expr.string_count.string_id = _protobuf_required_nonempty_string(
-            expr.string_id,
-            "StringCount string_id",
+        pb_expr.string_count.string_id = _validate_string_reference_text(
+            _protobuf_required_nonempty_string(
+                expr.string_id,
+                "StringCount string_id",
+            ),
+            allow_placeholder=True,
         )
     elif isinstance(expr, StringOffset):
-        pb_expr.string_offset.string_id = _protobuf_required_nonempty_string(
-            expr.string_id,
-            "StringOffset string_id",
+        pb_expr.string_offset.string_id = _validate_string_reference_text(
+            _protobuf_required_nonempty_string(
+                expr.string_id,
+                "StringOffset string_id",
+            ),
+            allow_placeholder=True,
         )
         if expr.index is not None:
             convert_expression_to_protobuf(expr.index, pb_expr.string_offset.index)
     elif isinstance(expr, StringLength):
-        pb_expr.string_length.string_id = _protobuf_required_nonempty_string(
-            expr.string_id,
-            "StringLength string_id",
+        pb_expr.string_length.string_id = _validate_string_reference_text(
+            _protobuf_required_nonempty_string(
+                expr.string_id,
+                "StringLength string_id",
+            ),
+            allow_placeholder=True,
         )
         if expr.index is not None:
             convert_expression_to_protobuf(expr.index, pb_expr.string_length.index)
@@ -2271,36 +2291,47 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("string_identifier"):
         return with_metadata(
             StringIdentifier(
-                name=_protobuf_required_nonempty_string(
-                    pb_expr.string_identifier.name,
-                    "StringIdentifier name",
+                name=_validate_string_reference_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.string_identifier.name,
+                        "StringIdentifier name",
+                    )
                 )
             )
         )
     if pb_expr.HasField("string_wildcard"):
         return with_metadata(
             StringWildcard(
-                pattern=_protobuf_required_nonempty_string(
-                    pb_expr.string_wildcard.pattern,
-                    "StringWildcard pattern",
+                pattern=_validate_string_reference_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.string_wildcard.pattern,
+                        "StringWildcard pattern",
+                    ),
+                    allow_wildcard=True,
                 )
             )
         )
     if pb_expr.HasField("string_count"):
         return with_metadata(
             StringCount(
-                string_id=_protobuf_required_nonempty_string(
-                    pb_expr.string_count.string_id,
-                    "StringCount string_id",
+                string_id=_validate_string_reference_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.string_count.string_id,
+                        "StringCount string_id",
+                    ),
+                    allow_placeholder=True,
                 )
             )
         )
     if pb_expr.HasField("string_offset"):
         return with_metadata(
             StringOffset(
-                string_id=_protobuf_required_nonempty_string(
-                    pb_expr.string_offset.string_id,
-                    "StringOffset string_id",
+                string_id=_validate_string_reference_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.string_offset.string_id,
+                        "StringOffset string_id",
+                    ),
+                    allow_placeholder=True,
                 ),
                 index=(
                     protobuf_to_expression(pb_expr.string_offset.index)
@@ -2312,9 +2343,12 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("string_length"):
         return with_metadata(
             StringLength(
-                string_id=_protobuf_required_nonempty_string(
-                    pb_expr.string_length.string_id,
-                    "StringLength string_id",
+                string_id=_validate_string_reference_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.string_length.string_id,
+                        "StringLength string_id",
+                    ),
+                    allow_placeholder=True,
                 ),
                 index=(
                     protobuf_to_expression(pb_expr.string_length.index)

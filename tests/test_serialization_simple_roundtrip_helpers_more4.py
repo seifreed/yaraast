@@ -1516,6 +1516,21 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
         with pytest.raises(SerializationError, match=message):
             deserialize_node(payload)
 
+    invalid_string_reference_cases = (
+        ({"type": "StringIdentifier", "name": "$bad-name"}, "Invalid string reference"),
+        ({"type": "StringIdentifier", "name": "$a*"}, "Invalid string reference"),
+        ({"type": "StringWildcard", "pattern": "$bad-name*"}, "Invalid string reference"),
+        ({"type": "StringCount", "string_id": "#a"}, "Invalid string reference"),
+        ({"type": "StringCount", "string_id": "$bad-name"}, "Invalid string reference"),
+        ({"type": "StringOffset", "string_id": "@a"}, "Invalid string reference"),
+        ({"type": "StringOffset", "string_id": "$bad-name"}, "Invalid string reference"),
+        ({"type": "StringLength", "string_id": "!a"}, "Invalid string reference"),
+        ({"type": "StringLength", "string_id": "$bad-name"}, "Invalid string reference"),
+    )
+    for payload, message in invalid_string_reference_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
     true_expr = {"type": "BooleanLiteral", "value": True}
 
     with pytest.raises(SerializationError, match="BinaryExpression left is required"):
@@ -1740,19 +1755,41 @@ def test_simple_roundtrip_serialize_string_reference_nodes_reject_wrong_scalar_t
         (Identifier(""), "Identifier name must not be empty"),
         (StringIdentifier(""), "StringIdentifier name must not be empty"),
         (StringIdentifier(cast(Any, ["$a"])), "StringIdentifier name must be a string"),
+        (StringIdentifier("$bad-name"), "Invalid string reference"),
+        (StringIdentifier("$a*"), "Invalid string reference"),
         (StringWildcard(""), "StringWildcard pattern must not be empty"),
         (StringWildcard(cast(Any, ["$a*"])), "StringWildcard pattern must be a string"),
+        (StringWildcard("$bad-name*"), "Invalid string reference"),
         (StringCount(""), "StringCount string_id must not be empty"),
         (StringCount(cast(Any, 7)), "StringCount string_id must be a string"),
+        (StringCount("#a"), "Invalid string reference"),
+        (StringCount("$bad-name"), "Invalid string reference"),
         (StringOffset(""), "StringOffset string_id must not be empty"),
         (StringOffset(cast(Any, 7)), "StringOffset string_id must be a string"),
+        (StringOffset("@a"), "Invalid string reference"),
+        (StringOffset("$bad-name"), "Invalid string reference"),
         (StringLength(""), "StringLength string_id must not be empty"),
         (StringLength(cast(Any, 7)), "StringLength string_id must be a string"),
+        (StringLength("!a"), "Invalid string reference"),
+        (StringLength("$bad-name"), "Invalid string reference"),
     )
 
     for node, message in invalid_cases:
         with pytest.raises(SerializationError, match=message):
             serialize_node(node)
+
+
+def test_simple_roundtrip_accepts_placeholder_string_references() -> None:
+    nodes = (
+        StringCount("$"),
+        StringOffset("$", IntegerLiteral(0)),
+        StringLength("$", IntegerLiteral(0)),
+    )
+
+    for node in nodes:
+        serialized = serialize_node(node)
+        assert serialized["string_id"] == "$"
+        assert deserialize_node(serialized) == node
 
 
 def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types() -> None:
