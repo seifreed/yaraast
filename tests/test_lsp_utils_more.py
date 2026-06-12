@@ -119,6 +119,23 @@ def test_position_to_offset_clamps_lines_beyond_document() -> None:
     assert position_to_offset(text, Position(line=99, character=0)) == len(text)
 
 
+@pytest.mark.parametrize("text", [None, 1, b"abc", object()])
+def test_position_to_offset_rejects_invalid_text_types(text: Any) -> None:
+    with pytest.raises(TypeError, match="text must be a string"):
+        position_to_offset(cast(Any, text), Position(line=0, character=0))
+
+
+def test_position_to_offset_rejects_invalid_position_type() -> None:
+    with pytest.raises(TypeError, match="position must be an LSP Position"):
+        position_to_offset("abc", cast(Any, object()))
+
+
+@pytest.mark.parametrize("text", [None, 1, b"abc", object()])
+def test_offset_to_position_rejects_invalid_text_types(text: Any) -> None:
+    with pytest.raises(TypeError, match="text must be a string"):
+        offset_to_position(cast(Any, text), 0)
+
+
 @pytest.mark.parametrize("offset", [True, "1", object()])
 def test_offset_to_position_rejects_invalid_offset_types(offset: Any) -> None:
     with pytest.raises(TypeError, match="offset must be an integer"):
@@ -151,6 +168,17 @@ def test_get_word_at_position_returns_lsp_utf16_range() -> None:
     assert word == "$a"
     assert word_range.start.character == 3
     assert word_range.end.character == 5
+
+
+@pytest.mark.parametrize("text", [None, 1, b"abc", object()])
+def test_get_word_at_position_rejects_invalid_text_types(text: Any) -> None:
+    with pytest.raises(TypeError, match="text must be a string"):
+        get_word_at_position(cast(Any, text), Position(line=0, character=0))
+
+
+def test_get_word_at_position_rejects_invalid_position_type() -> None:
+    with pytest.raises(TypeError, match="position must be an LSP Position"):
+        get_word_at_position("abc", cast(Any, object()))
 
 
 def test_location_to_range_uses_parser_span_when_available() -> None:

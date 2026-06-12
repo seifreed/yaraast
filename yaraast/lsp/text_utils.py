@@ -7,7 +7,23 @@ from lsprotocol.types import Position, Range
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8, utf16_len
 
 
+def _require_text(text: object) -> str:
+    if not isinstance(text, str):
+        msg = "text must be a string"
+        raise TypeError(msg)
+    return text
+
+
+def _require_position(position: object) -> Position:
+    if not isinstance(position, Position):
+        msg = "position must be an LSP Position"
+        raise TypeError(msg)
+    return position
+
+
 def position_to_offset(text: str, position: Position) -> int:
+    text = _require_text(text)
+    position = _require_position(position)
     lines = text.split("\n")
     if position.line >= len(lines):
         return len(text)
@@ -19,6 +35,7 @@ def position_to_offset(text: str, position: Position) -> int:
 
 
 def offset_to_position(text: str, offset: int) -> Position:
+    text = _require_text(text)
     if isinstance(offset, bool) or not isinstance(offset, int):
         msg = "offset must be an integer"
         raise TypeError(msg)
@@ -39,6 +56,8 @@ def offset_to_position(text: str, offset: int) -> Position:
 
 
 def get_word_at_position(text: str, position: Position) -> tuple[str, Range]:
+    text = _require_text(text)
+    position = _require_position(position)
     lines = text.split("\n")
     if position.line >= len(lines):
         return "", Range(start=position, end=position)
