@@ -209,6 +209,42 @@ class DialectSpec:
     detection_patterns: list[tuple[str, re.RegexFlag]]  # (regex, re_flags) pairs
     priority: int = 0  # higher = checked first
 
+    def __post_init__(self) -> None:
+        self.validate_structure()
+
+    def validate_structure(self) -> None:
+        if not isinstance(self.dialect, YaraDialect):
+            msg = "DialectSpec dialect must be a YaraDialect"
+            raise TypeError(msg)
+        if not callable(self.parser_factory):
+            msg = "DialectSpec parser_factory must be callable"
+            raise TypeError(msg)
+        if not isinstance(self.detection_patterns, list):
+            msg = "DialectSpec detection_patterns must be a list"
+            raise TypeError(msg)
+        for index, pattern_entry in enumerate(self.detection_patterns):
+            if not isinstance(pattern_entry, tuple) or len(pattern_entry) != 2:
+                msg = "DialectSpec detection_patterns must contain pattern/flags pairs"
+                raise TypeError(msg)
+            pattern, flags = pattern_entry
+            if not isinstance(pattern, str):
+                msg = "DialectSpec detection pattern must be a string"
+                raise TypeError(msg)
+            if not pattern:
+                msg = "DialectSpec detection pattern must not be empty"
+                raise ValueError(msg)
+            if not isinstance(flags, re.RegexFlag):
+                msg = "DialectSpec detection flags must be re.RegexFlag values"
+                raise TypeError(msg)
+            try:
+                re.compile(pattern, flags)
+            except re.error as exc:
+                msg = f"DialectSpec detection pattern {index} must be valid regex"
+                raise ValueError(msg) from exc
+        if isinstance(self.priority, bool) or not isinstance(self.priority, int):
+            msg = "DialectSpec priority must be an integer"
+            raise TypeError(msg)
+
 
 class DialectRegistry:
     """Registry allowing dialect plugins without modifying UnifiedParser."""
@@ -221,6 +257,7 @@ class DialectRegistry:
         if not isinstance(spec, DialectSpec):
             msg = "Dialect spec must be a DialectSpec"
             raise TypeError(msg)
+        spec.validate_structure()
         with cls._lock:
             cls._specs.append(spec)
             cls._specs.sort(key=lambda s: -s.priority)

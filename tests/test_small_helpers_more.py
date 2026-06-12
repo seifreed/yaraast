@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, cast
 
 import pytest
@@ -12,7 +13,7 @@ from yaraast.codegen.generator_helpers import (
     format_integer_literal,
     format_modifiers,
 )
-from yaraast.dialects import DialectRegistry, YaraDialect, detect_dialect
+from yaraast.dialects import DialectRegistry, DialectSpec, YaraDialect, detect_dialect
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.lexer_helpers import (
     _skip_block_comment,
@@ -162,12 +163,117 @@ def test_detect_dialect_rejects_non_string_content(content: Any) -> None:
         detect_dialect(cast(str, content))
 
 
+def _dialect_test_parser(text: str) -> str:
+    return text
+
+
+@pytest.mark.parametrize(
+    ("spec_kwargs", "error_type", "message"),
+    [
+        (
+            {
+                "dialect": "bad",
+                "parser_factory": _dialect_test_parser,
+                "detection_patterns": [],
+                "priority": 1,
+            },
+            TypeError,
+            "DialectSpec dialect must be a YaraDialect",
+        ),
+        (
+            {
+                "dialect": YaraDialect.YARA,
+                "parser_factory": "bad",
+                "detection_patterns": [],
+                "priority": 1,
+            },
+            TypeError,
+            "DialectSpec parser_factory must be callable",
+        ),
+        (
+            {
+                "dialect": YaraDialect.YARA,
+                "parser_factory": _dialect_test_parser,
+                "detection_patterns": "bad",
+                "priority": 1,
+            },
+            TypeError,
+            "DialectSpec detection_patterns must be a list",
+        ),
+        (
+            {
+                "dialect": YaraDialect.YARA,
+                "parser_factory": _dialect_test_parser,
+                "detection_patterns": [("(", re.IGNORECASE)],
+                "priority": 1,
+            },
+            ValueError,
+            "DialectSpec detection pattern 0 must be valid regex",
+        ),
+        (
+            {
+                "dialect": YaraDialect.YARA,
+                "parser_factory": _dialect_test_parser,
+                "detection_patterns": [(123, re.IGNORECASE)],
+                "priority": 1,
+            },
+            TypeError,
+            "DialectSpec detection pattern must be a string",
+        ),
+        (
+            {
+                "dialect": YaraDialect.YARA,
+                "parser_factory": _dialect_test_parser,
+                "detection_patterns": [("rule", 0)],
+                "priority": 1,
+            },
+            TypeError,
+            "DialectSpec detection flags must be re.RegexFlag values",
+        ),
+        (
+            {
+                "dialect": YaraDialect.YARA,
+                "parser_factory": _dialect_test_parser,
+                "detection_patterns": [],
+                "priority": True,
+            },
+            TypeError,
+            "DialectSpec priority must be an integer",
+        ),
+    ],
+)
+def test_dialect_spec_rejects_malformed_fields(
+    spec_kwargs: dict[str, Any],
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
+        DialectSpec(**spec_kwargs)
+
+
 @pytest.mark.parametrize("spec", [None, object(), "not-a-spec"])
 def test_dialect_registry_rejects_invalid_specs_without_mutating_registry(spec: Any) -> None:
     original_specs = list(DialectRegistry._specs)
     try:
         with pytest.raises(TypeError, match="Dialect spec must be a DialectSpec"):
             DialectRegistry.register(cast(Any, spec))
+        assert DialectRegistry._specs == original_specs
+    finally:
+        DialectRegistry._specs = original_specs
+
+
+def test_dialect_registry_revalidates_specs_before_mutating_registry() -> None:
+    original_specs = list(DialectRegistry._specs)
+    spec = DialectSpec(
+        dialect=YaraDialect.YARA,
+        parser_factory=_dialect_test_parser,
+        detection_patterns=[("rule", re.IGNORECASE)],
+        priority=1,
+    )
+    spec.detection_patterns = cast(Any, "bad")
+    try:
+        with pytest.raises(TypeError, match="DialectSpec detection_patterns must be a list"):
+            DialectRegistry.register(spec)
         assert DialectRegistry._specs == original_specs
     finally:
         DialectRegistry._specs = original_specs
