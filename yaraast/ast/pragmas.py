@@ -260,10 +260,10 @@ class CustomPragma(Pragma):
         super().__init__(
             pragma_type=PragmaType.CUSTOM,
             name=name,
-            arguments=arguments or [],
+            arguments=arguments if arguments is not None else [],
             scope=scope,
         )
-        self.parameters = parameters or {}
+        self.parameters = parameters if parameters is not None else {}
 
     def validate_structure(self) -> None:
         """Validate custom pragma fields before direct analysis."""

@@ -69,6 +69,22 @@ def test_pragma_string_reprs_reject_invalid_arguments() -> None:
         str(custom)
 
 
+@pytest.mark.parametrize("arguments", ["", (), False])
+def test_custom_pragma_preserves_invalid_falsy_arguments(arguments: Any) -> None:
+    custom = CustomPragma("vendor", arguments=cast(Any, arguments))
+
+    with pytest.raises(TypeError, match="Pragma arguments must be a list of strings"):
+        custom.validate_structure()
+
+
+@pytest.mark.parametrize("parameters", [False, [], ()])
+def test_custom_pragma_preserves_invalid_falsy_parameters(parameters: Any) -> None:
+    custom = CustomPragma("vendor", parameters=cast(Any, parameters))
+
+    with pytest.raises(TypeError, match="Pragma parameters must be a dictionary"):
+        custom.validate_structure()
+
+
 def test_custom_pragma_and_block_helpers() -> None:
     custom = CustomPragma(name="vendor", arguments=["x", "y"], scope=PragmaScope.FILE)
     custom.set_parameter("level", 3)
