@@ -905,6 +905,7 @@ class TestExpressionQuantifierOf:
             "--1.2% of them",
             "(#a + --1.2)% of them",
             "(-#a >> 50 >> 101)% of them",
+            "(1 << 63 >> 63)% of them",
             "25 + 25% of them",
             "25 - 1% of them",
             "25 << 1% of them",

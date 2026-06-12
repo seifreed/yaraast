@@ -417,27 +417,27 @@ def _constant_integer_value(value: Any) -> int | None:
         if left is None or right is None:
             return None
         if value.operator == "+":
-            return left + right
+            return _normalize_int64(left + right)
         if value.operator == "-":
-            return left - right
+            return _normalize_int64(left - right)
         if value.operator == "*":
-            return left * right
+            return _normalize_int64(left * right)
         if value.operator == "%":
             if right == 0:
                 return None
             return _integer_remainder(left, right)
         if value.operator == "&":
-            return left & right
+            return _normalize_int64(left & right)
         if value.operator == "|":
-            return left | right
+            return _normalize_int64(left | right)
         if value.operator == "^":
-            return left ^ right
+            return _normalize_int64(left ^ right)
         if right < 0:
             return None
         if value.operator == "<<":
-            return left << right
+            return _shift_left_int64(left, right)
         if value.operator == ">>":
-            return left >> right
+            return _shift_right_int64(left, right)
     return None
 
 
@@ -446,6 +446,30 @@ def _integer_remainder(left: int, right: int) -> int:
     if (left < 0) != (right < 0):
         quotient = -quotient
     return left - quotient * right
+
+
+_INT64_BITS = 64
+_INT64_MAX = (1 << 63) - 1
+_UINT64_MASK = (1 << _INT64_BITS) - 1
+
+
+def _normalize_int64(value: int) -> int:
+    unsigned = value & _UINT64_MASK
+    if unsigned > _INT64_MAX:
+        return unsigned - (1 << _INT64_BITS)
+    return unsigned
+
+
+def _shift_left_int64(left: int, right: int) -> int:
+    if right >= _INT64_BITS:
+        return 0
+    return _normalize_int64(left << right)
+
+
+def _shift_right_int64(left: int, right: int) -> int:
+    if right >= _INT64_BITS:
+        return 0
+    return _normalize_int64(left) >> right
 
 
 def _reject_zero_integer_divisor(node: Any) -> None:

@@ -2853,6 +2853,28 @@ def test_codegen_rejects_malformed_fractional_percentage_quantifiers(
         CodeGenerator().generate(ForOfExpression(quantifier, Identifier("them")))
 
 
+def test_codegen_rejects_static_percentage_quantifier_after_int64_shift_overflow() -> None:
+    overflowed_shift = BinaryExpression(
+        BinaryExpression(
+            IntegerLiteral(1),
+            "<<",
+            IntegerLiteral(63),
+        ),
+        ">>",
+        IntegerLiteral(63),
+    )
+    overflowed_percent = UnaryExpression(
+        "%",
+        overflowed_shift,
+    )
+
+    with pytest.raises(ValueError, match=r"Invalid quantifier"):
+        CodeGenerator().generate(OfExpression(overflowed_percent, Identifier("them")))
+
+    with pytest.raises(ValueError, match=r"cannot be negative"):
+        CodeGenerator().generate(BinaryExpression(IntegerLiteral(1), "<<", overflowed_shift))
+
+
 @pytest.mark.parametrize(
     ("condition", "message"),
     [

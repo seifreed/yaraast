@@ -472,11 +472,11 @@ class ExpressionBinaryMixin:
             if left is None or right is None:
                 return None
             if expr.operator == "+":
-                return left + right
+                return _normalize_int64(left + right)
             if expr.operator == "-":
-                return left - right
+                return _normalize_int64(left - right)
             if expr.operator == "*":
-                return left * right
+                return _normalize_int64(left * right)
             if expr.operator == "%":
                 if right == 0:
                     return None
@@ -484,17 +484,17 @@ class ExpressionBinaryMixin:
             if expr.operator == "<<":
                 if right < 0:
                     return None
-                return left << right
+                return _shift_left_int64(left, right)
             if expr.operator == ">>":
                 if right < 0:
                     return None
-                return left >> right
+                return _shift_right_int64(left, right)
             if expr.operator == "&":
-                return left & right
+                return _normalize_int64(left & right)
             if expr.operator == "|":
-                return left | right
+                return _normalize_int64(left | right)
             if expr.operator == "^":
-                return left ^ right
+                return _normalize_int64(left ^ right)
         return None
 
     def _parse_unary_expression(self) -> Expression:
@@ -526,3 +526,24 @@ def _integer_remainder(left: int, right: int) -> int:
 
 
 _INT64_BITS = 64
+_INT64_MAX = (1 << 63) - 1
+_UINT64_MASK = (1 << _INT64_BITS) - 1
+
+
+def _normalize_int64(value: int) -> int:
+    unsigned = value & _UINT64_MASK
+    if unsigned > _INT64_MAX:
+        return unsigned - (1 << _INT64_BITS)
+    return unsigned
+
+
+def _shift_left_int64(left: int, right: int) -> int:
+    if right >= _INT64_BITS:
+        return 0
+    return _normalize_int64(left << right)
+
+
+def _shift_right_int64(left: int, right: int) -> int:
+    if right >= _INT64_BITS:
+        return 0
+    return _normalize_int64(left) >> right
