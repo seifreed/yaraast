@@ -910,6 +910,10 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
             "FunctionCall function must be a string",
         ),
         (
+            FunctionCall("bad-name", []),
+            "Invalid function identifier",
+        ),
+        (
             MemberAccess(Identifier("pe"), ""),
             "MemberAccess member must not be empty",
         ),
@@ -986,6 +990,15 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
         ast = YaraFile(rules=[Rule(name="invalid_scalar", condition=expression)])
         with pytest.raises(SerializationError, match=message):
             serializer.serialize(ast)
+
+
+def test_json_serializer_accepts_dotted_function_call_names() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="dotted_call", condition=FunctionCall("pe.imphash", []))])
+
+    payload = json.loads(serializer.serialize(ast))
+
+    assert payload["ast"]["rules"][0]["condition"]["function"] == "pe.imphash"
 
 
 @pytest.mark.parametrize(

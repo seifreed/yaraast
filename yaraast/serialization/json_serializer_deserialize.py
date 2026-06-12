@@ -32,6 +32,7 @@ from yaraast.serialization._serialization_primitives import (
     _normalize_rule_modifier_text,
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
+    _validate_function_identifier_text,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_loop_variable_text,
@@ -507,10 +508,12 @@ def _deser_function_call(self, data: dict[str, Any]):
             msg = "FunctionCall arguments must contain expressions"
             raise SerializationError(msg)
         args.append(expression)
+    function = _deserialize_nonempty_string_field(data, "function", "FunctionCall")
+    receiver = _deserialize_nullable_expression_field(self, data, "receiver", "FunctionCall")
     return FunctionCall(
-        function=_deserialize_nonempty_string_field(data, "function", "FunctionCall"),
+        function=_validate_function_identifier_text(function, receiver),
         arguments=args,
-        receiver=_deserialize_nullable_expression_field(self, data, "receiver", "FunctionCall"),
+        receiver=receiver,
     )
 
 

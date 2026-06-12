@@ -1257,6 +1257,17 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="FunctionCall function must not be empty"):
         s._deserialize_expression({"type": "FunctionCall", "function": "", "arguments": []})
 
+    with pytest.raises(SerializationError, match="Invalid function identifier"):
+        s._deserialize_expression(
+            {"type": "FunctionCall", "function": "bad-name", "arguments": [], "receiver": None}
+        )
+
+    dotted_call = s._deserialize_expression(
+        {"type": "FunctionCall", "function": "pe.imphash", "arguments": [], "receiver": None}
+    )
+    assert isinstance(dotted_call, FunctionCall)
+    assert dotted_call.function == "pe.imphash"
+
     with pytest.raises(SerializationError, match="SetExpression elements must be a list"):
         s._deserialize_expression({"type": "SetExpression", "elements": "x"})
 

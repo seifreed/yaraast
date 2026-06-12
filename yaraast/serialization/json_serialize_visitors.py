@@ -12,6 +12,7 @@ from yaraast.serialization._serialization_primitives import (
     _is_empty_nonempty_text,
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
+    _validate_function_identifier_text,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_loop_variable_text,
@@ -776,9 +777,12 @@ def visit_range_expression(serializer, node) -> dict[str, Any]:
 def visit_function_call(serializer, node) -> dict[str, Any]:
     return {
         "type": "FunctionCall",
-        "function": _serialize_required_nonempty_string(
-            node.function,
-            "FunctionCall function",
+        "function": _validate_function_identifier_text(
+            _serialize_required_nonempty_string(
+                node.function,
+                "FunctionCall function",
+            ),
+            node.receiver,
         ),
         "arguments": _serialize_expression_list(
             serializer,

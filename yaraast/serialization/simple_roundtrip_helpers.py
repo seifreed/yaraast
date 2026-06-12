@@ -99,6 +99,7 @@ from yaraast.serialization._serialization_primitives import (
     _serialize_modifier_value,
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
+    _validate_function_identifier_text,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_location_metadata,
@@ -1379,9 +1380,12 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         )
         data: dict[str, Any] = {
             "type": "FunctionCall",
-            "function": _serialize_required_nonempty_string(
-                node.function,
-                "FunctionCall function",
+            "function": _validate_function_identifier_text(
+                _serialize_required_nonempty_string(
+                    node.function,
+                    "FunctionCall function",
+                ),
+                node.receiver,
             ),
             "arguments": [serialize_node(argument) for argument in arguments],
             "receiver": None,
@@ -2140,10 +2144,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
                 msg = "FunctionCall arguments must contain nodes"
                 raise SerializationError(msg)
             arguments.append(_deserialize_required_node_value(argument, "FunctionCall arguments"))
+        function = _deserialize_nonempty_string_field(data, "function", "FunctionCall")
+        receiver = _deserialize_nullable_node_field(data, "receiver", "FunctionCall")
         return FunctionCall(
-            _deserialize_nonempty_string_field(data, "function", "FunctionCall"),
+            _validate_function_identifier_text(function, receiver),
             arguments,
-            receiver=_deserialize_nullable_node_field(data, "receiver", "FunctionCall"),
+            receiver=receiver,
         )
     if node_type == "ArrayAccess":
         return ArrayAccess(

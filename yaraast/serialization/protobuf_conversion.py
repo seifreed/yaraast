@@ -14,6 +14,7 @@ from yaraast.serialization._serialization_primitives import (
     _normalize_rule_modifier_text,
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
+    _validate_function_identifier_text,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_location_metadata,
@@ -1521,9 +1522,12 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.low, pb_expr.range_expression.low)
         convert_expression_to_protobuf(expr.high, pb_expr.range_expression.high)
     elif isinstance(expr, FunctionCall):
-        pb_expr.function_call.function = _protobuf_required_nonempty_string(
-            expr.function,
-            "FunctionCall function",
+        pb_expr.function_call.function = _validate_function_identifier_text(
+            _protobuf_required_nonempty_string(
+                expr.function,
+                "FunctionCall function",
+            ),
+            expr.receiver,
         )
         for argument in _protobuf_node_list(expr.arguments, "FunctionCall arguments", Expression):
             convert_expression_to_protobuf(argument, pb_expr.function_call.arguments.add())
@@ -2467,20 +2471,24 @@ def protobuf_to_expression(pb_expr):
             ),
         )
     if pb_expr.HasField("function_call"):
+        receiver = (
+            protobuf_to_expression(pb_expr.function_call.receiver)
+            if pb_expr.function_call.HasField("receiver")
+            else None
+        )
         return with_metadata(
             FunctionCall(
-                function=_protobuf_required_nonempty_string(
-                    pb_expr.function_call.function,
-                    "FunctionCall function",
+                function=_validate_function_identifier_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.function_call.function,
+                        "FunctionCall function",
+                    ),
+                    receiver,
                 ),
                 arguments=[
                     protobuf_to_expression(argument) for argument in pb_expr.function_call.arguments
                 ],
-                receiver=(
-                    protobuf_to_expression(pb_expr.function_call.receiver)
-                    if pb_expr.function_call.HasField("receiver")
-                    else None
-                ),
+                receiver=receiver,
             ),
         )
     if pb_expr.HasField("array_access"):

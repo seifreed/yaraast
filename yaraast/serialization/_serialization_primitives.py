@@ -108,6 +108,15 @@ def _validate_extern_rule_path_text(value: str) -> str:
         raise SerializationError(str(exc)) from exc
 
 
+def _validate_function_identifier_text(value: str, receiver: Any | None) -> str:
+    try:
+        if receiver is None:
+            return validate_yara_identifier_path(value, "function")
+        return validate_yara_identifier(value, "function")
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+
+
 def _validate_namespace_identifier_text(value: str) -> str:
     try:
         return validate_yara_identifier_path(value, "namespace")

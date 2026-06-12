@@ -2108,6 +2108,7 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
         ),
         (FunctionCall(cast(Any, 123), []), "FunctionCall function must be a string"),
         (FunctionCall("", []), "FunctionCall function must not be empty"),
+        (FunctionCall("bad-name", []), "Invalid function identifier"),
         (
             MemberAccess(Identifier("pe"), cast(Any, 123)),
             "MemberAccess member must be a string",
@@ -2195,6 +2196,17 @@ def test_protobuf_serializer_rejects_invalid_expression_scalar_fields(
 
     with pytest.raises(SerializationError, match=message):
         serializer.serialize(ast)
+
+
+def test_protobuf_serializer_accepts_dotted_function_call_names() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule("dotted_call", condition=FunctionCall("pe.imphash", []))])
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    condition = restored.rules[0].condition
+    assert isinstance(condition, FunctionCall)
+    assert condition.function == "pe.imphash"
 
 
 @pytest.mark.parametrize(
@@ -2524,6 +2536,17 @@ def test_protobuf_deserializer_rejects_empty_expression_identifier_fields(
         condition.string_operator_expression.right.string_literal.value = "b"
 
     with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserializer_rejects_invalid_function_call_names() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_function_call"
+    pb_rule.condition.function_call.function = "bad-name"
+
+    with pytest.raises(SerializationError, match="Invalid function identifier"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 

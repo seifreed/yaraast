@@ -1941,6 +1941,7 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
         (UnaryExpression("", true_expr), "UnaryExpression operator must not be empty"),
         (FunctionCall("", []), "FunctionCall function must not be empty"),
         (FunctionCall(cast(Any, ["fn"]), []), "FunctionCall function must be a string"),
+        (FunctionCall("bad-name", []), "Invalid function identifier"),
         (
             FunctionCall("fn", [], receiver=cast(Any, "not_expression")),
             "FunctionCall receiver must be Expression",
@@ -2051,6 +2052,15 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
     for node, message in invalid_cases:
         with pytest.raises(SerializationError, match=message):
             serialize_node(node)
+
+
+def test_simple_roundtrip_accepts_dotted_function_call_names() -> None:
+    node = FunctionCall("pe.imphash", [])
+
+    restored = deserialize_node(serialize_node(node))
+
+    assert isinstance(restored, FunctionCall)
+    assert restored.function == "pe.imphash"
 
 
 @pytest.mark.parametrize("invalid_collection", [False, 0, "", None])
@@ -2699,6 +2709,11 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
 
     with pytest.raises(SerializationError, match="FunctionCall receiver is required"):
         deserialize_node({"type": "FunctionCall", "function": "fn", "arguments": []})
+
+    with pytest.raises(SerializationError, match="Invalid function identifier"):
+        deserialize_node(
+            {"type": "FunctionCall", "function": "bad-name", "arguments": [], "receiver": None}
+        )
 
     with pytest.raises(
         SerializationError, match="StringOperatorExpression operator must not be empty"
