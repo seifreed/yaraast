@@ -46,6 +46,7 @@ class CommentGroup(ASTNode):
     @property
     def text(self) -> str:
         """Return the group text as newline-separated comment text."""
+        self.validate_structure()
         return "\n".join(comment.text for comment in self.comments)
 
     @text.setter

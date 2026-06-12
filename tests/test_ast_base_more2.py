@@ -616,6 +616,31 @@ def test_direct_yarafile_analysis_rejects_invalid_comment_metadata(
         ExpressionOptimizer().optimize(malformed_file)
 
 
+@pytest.mark.parametrize(
+    ("group", "message"),
+    [
+        (
+            CommentGroup(cast(Any, "bad")),
+            "CommentGroup comments must be a list",
+        ),
+        (
+            CommentGroup(cast(Any, ["bad"])),
+            "CommentGroup comments must contain Comment nodes",
+        ),
+        (
+            CommentGroup([Comment(cast(Any, 123))]),
+            "Comment text must be a string",
+        ),
+    ],
+)
+def test_comment_group_text_rejects_invalid_comment_state(
+    group: CommentGroup,
+    message: str,
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        _ = group.text
+
+
 def test_direct_yarafile_analysis_rejects_invalid_child_node_comment_metadata() -> None:
     rule = Rule("bad_child_comment", condition=BooleanLiteral(True))
     rule.leading_comments = [cast(Any, object())]
