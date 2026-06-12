@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING
 
-from yaraast.ast.base import require_yara_file
+from yaraast.ast.base import require_string, require_yara_file
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     Identifier,
@@ -239,8 +239,15 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             for item in string_set:
                 self._visit_string_set_value(item)
             return
-        if isinstance(string_set, Identifier) and string_set.name == "them":
-            self._mark_all_current_rule_strings()
+        if isinstance(string_set, Identifier):
+            name = require_string(string_set.name, "String set identifier")
+            if name == "them":
+                self._mark_all_current_rule_strings()
+                return
+            if name.startswith("$"):
+                self._mark_string_set_text(name)
+                return
+            self._visit_ast_value(string_set)
             return
         if isinstance(string_set, StringLiteral):
             self._mark_string_set_text(string_set.value)

@@ -16,6 +16,7 @@ from yaraast.ast.expressions import (
     BooleanLiteral,
     Expression,
     FunctionCall,
+    Identifier,
     IntegerLiteral,
     SetExpression,
     StringCount,
@@ -235,6 +236,32 @@ def test_complexity_string_usage_tracks_condition_string_forms() -> None:
         "$wild_one",
         "$wild_two",
     }
+
+
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        Identifier("$a"),
+        SetExpression([Identifier("$a")]),
+    ],
+)
+def test_complexity_string_usage_tracks_identifier_string_set_items(
+    string_set: Any,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="identifier_string_set",
+                strings=[PlainString(identifier="$a", value="needle")],
+                condition=OfExpression("any", string_set),
+            )
+        ]
+    )
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.unused_strings == []
+    assert metrics.string_dependencies["identifier_string_set"] == {"$a"}
 
 
 def test_complexity_string_usage_tracks_function_call_receiver() -> None:
