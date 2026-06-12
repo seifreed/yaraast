@@ -30,6 +30,7 @@ class FluentStringBuilder:
     """Fluent builder for YARA string definitions with full modifier support."""
 
     def __init__(self, identifier: str) -> None:
+        normalize_string_identifier(identifier)
         self.identifier = identifier
         self._content: str | list[HexToken] | None = None
         self._string_type: str = "plain"  # "plain", "hex", "regex"

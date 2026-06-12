@@ -10,6 +10,7 @@ from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.builder.fluent_rule_helpers import apply_last_string_modifier, combine_condition
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
+from yaraast.builder.string_identifier_validation import normalize_string_identifier
 from yaraast.errors import ValidationError
 
 if TYPE_CHECKING:
@@ -101,6 +102,7 @@ class FluentRuleBuilder:
             self._string_builders.append(builder)
         elif isinstance(identifier_or_builder, FluentStringBuilder):
             # Builder case
+            normalize_string_identifier(identifier_or_builder.identifier)
             self._string_builders.append(identifier_or_builder)
         else:
             msg = "Either provide (identifier, value) or a FluentStringBuilder"

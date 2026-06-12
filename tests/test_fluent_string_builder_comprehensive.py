@@ -533,6 +533,12 @@ class TestFluentStringBuilderAdvancedHexPatterns:
 class TestFluentStringBuilderBuildMethod:
     """Test build method and error handling."""
 
+    @pytest.mark.parametrize("identifier", ["", "$", "bad-id"])
+    def test_constructor_rejects_invalid_identifiers(self, identifier: str) -> None:
+        """Invalid identifiers should be rejected before builder state is used."""
+        with pytest.raises(ValidationError, match="Invalid string identifier"):
+            FluentStringBuilder(identifier)
+
     def test_build_without_content_raises_error(self) -> None:
         """Build without content should raise ValueError."""
         builder = FluentStringBuilder("$empty")

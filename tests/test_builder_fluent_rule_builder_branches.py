@@ -21,6 +21,7 @@ from yaraast.builder.fluent_rule_presets import (
     rule,
     trojan_rule,
 )
+from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.errors import ValidationError
 
 
@@ -36,6 +37,18 @@ def test_with_string_rejects_invalid_argument_shapes() -> None:
 
     with pytest.raises(ValidationError, match="Either provide"):
         builder.with_string(cast(Any, 123))
+
+
+def test_with_string_rejects_invalid_external_builder_identifier_without_partial_update() -> None:
+    builder = FluentRuleBuilder("stable").text_string("$known", "alpha").matches_any()
+    external = FluentStringBuilder("$valid").literal("beta")
+    external.identifier = ""
+
+    with pytest.raises(ValidationError, match="Invalid string identifier"):
+        builder.with_string(external)
+
+    built_rule = builder.build()
+    assert [string.identifier for string in built_rule.strings] == ["$known"]
 
 
 def test_fluent_rule_build_does_not_accumulate_strings_between_builds() -> None:
