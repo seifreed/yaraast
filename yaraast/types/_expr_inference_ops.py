@@ -451,6 +451,11 @@ def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
     resolved = node.module_and_function()
     if resolved is not None:
         module_name, func_name = resolved
+        scoped_type = ctx.env.lookup(module_name)
+        if scoped_type is not None:
+            ctx.errors.append(f"Cannot call function on non-module type: {scoped_type}")
+            _visit_function_arguments(ctx, arguments)
+            return UnknownType()
         if ctx.env.has_module(module_name):
             actual_module = ctx.env.get_module_name(module_name)
             if actual_module:

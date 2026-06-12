@@ -856,6 +856,19 @@ def test_semantic_validator_uses_external_before_imported_module_reference() -> 
     )
 
 
+def test_semantic_validator_uses_external_before_imported_module_function() -> None:
+    source = 'import "math"\nrule r { condition: math.count(0x00) >= 0 }'
+    ast = Parser(source).parse()
+
+    result = SemanticValidator(externals={"math": 1}).validate(ast)
+
+    assert result.is_valid is False
+    assert any(
+        error.message == "Cannot call function on non-module type: integer"
+        for error in result.errors
+    )
+
+
 @pytest.mark.parametrize("externals", [{"bad-name": 1}, {"1bad": 1}, {"for": 1}])
 def test_semantic_validator_rejects_invalid_external_names(
     externals: dict[str, object],
