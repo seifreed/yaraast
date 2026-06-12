@@ -329,6 +329,10 @@ class InRulePragma(ASTNode):
         return self.position == "before_condition"
 
     def __str__(self) -> str:
+        if not isinstance(self.pragma, Pragma):
+            msg = "InRulePragma pragma must be a Pragma"
+            raise TypeError(msg)
+        _require_nonempty_string(self.position, "InRulePragma position")
         return str(self.pragma)
 
 
@@ -373,6 +377,14 @@ class PragmaBlock(ASTNode):
         return any(p.pragma_type == pragma_type for p in self.pragmas)
 
     def __str__(self) -> str:
+        if not isinstance(self.pragmas, list | tuple):
+            msg = "PragmaBlock pragmas must be a list or tuple"
+            raise TypeError(msg)
+        _require_scope(self.scope)
+        for pragma in self.pragmas:
+            if not isinstance(pragma, Pragma):
+                msg = "PragmaBlock pragmas must contain Pragma nodes"
+                raise TypeError(msg)
         return "\n".join(str(pragma) for pragma in self.pragmas)
 
 

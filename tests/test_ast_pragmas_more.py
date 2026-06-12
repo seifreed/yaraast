@@ -94,6 +94,45 @@ def test_define_string_repr_rejects_invalid_macro_value() -> None:
 
 
 @pytest.mark.parametrize(
+    ("node", "error_type", "message"),
+    [
+        (
+            InRulePragma(cast(Any, "bad")),
+            TypeError,
+            "InRulePragma pragma must be a Pragma",
+        ),
+        (
+            InRulePragma(Pragma(PragmaType.PRAGMA, "vendor"), ""),
+            ValueError,
+            "InRulePragma position cannot be empty",
+        ),
+        (
+            PragmaBlock(cast(Any, "bad")),
+            TypeError,
+            "PragmaBlock pragmas must be a list or tuple",
+        ),
+        (
+            PragmaBlock(cast(Any, ["bad"])),
+            TypeError,
+            "PragmaBlock pragmas must contain Pragma nodes",
+        ),
+        (
+            PragmaBlock([Pragma(PragmaType.PRAGMA, "vendor")], scope=cast(Any, "file")),
+            TypeError,
+            "Pragma scope must be a PragmaScope",
+        ),
+    ],
+)
+def test_pragma_container_string_reprs_reject_invalid_fields(
+    node: object,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
+        str(node)
+
+
+@pytest.mark.parametrize(
     ("pragma_type", "condition", "error_type", "message"),
     [
         (PragmaType.IFDEF, "", ValueError, "Pragma condition cannot be empty"),
