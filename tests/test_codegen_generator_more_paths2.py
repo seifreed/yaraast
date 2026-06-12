@@ -3929,6 +3929,20 @@ def test_codegen_generators_reject_invalid_console_module_function_calls(
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
 
 
+def test_codegen_accepts_regex_module_function_arguments() -> None:
+    ast = YaraFile(
+        imports=[Import("cuckoo")],
+        rules=[
+            Rule(
+                name="cuckoo_regex_argument",
+                condition=FunctionCall("cuckoo.network.http_request", [RegexLiteral("evil")]),
+            )
+        ],
+    )
+
+    assert "cuckoo.network.http_request(/evil/)" in CodeGenerator().generate(ast)
+
+
 @pytest.mark.parametrize(
     ("condition", "message"),
     [

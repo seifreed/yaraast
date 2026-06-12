@@ -869,6 +869,7 @@ def _validate_generic_module_function_argument_types(
         DoubleType,
         FloatType,
         IntegerType,
+        RegexType,
         ScalarType,
         StringType,
     )
@@ -880,6 +881,7 @@ def _validate_generic_module_function_argument_types(
         compatible = (
             (isinstance(parameter_type, IntegerType) and argument_type == "integer")
             or (isinstance(parameter_type, StringType) and argument_type == "string")
+            or (isinstance(parameter_type, RegexType) and argument_type == "regex")
             or (isinstance(parameter_type, BooleanType) and argument_type == "boolean")
             or (
                 isinstance(parameter_type, DoubleType | FloatType)
