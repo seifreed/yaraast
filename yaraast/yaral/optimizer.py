@@ -90,6 +90,7 @@ class YaraLOptimizer(
 
     def optimize(self, ast: YaraLFile) -> tuple[YaraLFile, OptimizationStats]:
         """Optimize YARA-L file and return optimized AST with stats."""
+        ast.validate_structure()
         self.stats = OptimizationStats()
         optimized_ast = self.visit(ast)
         return optimized_ast, self.stats

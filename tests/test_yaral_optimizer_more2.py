@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.yaral.ast_nodes import (
     BinaryCondition,
     ConditionSection,
@@ -31,6 +33,17 @@ def _assignment(
         operator=operator,
         value=value,
     )
+
+
+def test_optimizer_rejects_invalid_yaral_file_structure() -> None:
+    ast = YaraLFile(rules=cast(Any, [object()]))
+
+    try:
+        YaraLOptimizer().optimize(ast)
+    except TypeError as exc:
+        assert "YaraLFile rules must contain YaraLRule nodes" in str(exc)
+    else:
+        raise AssertionError("expected invalid YaraLFile structure")
 
 
 def test_optimizer_reorders_and_indexes() -> None:

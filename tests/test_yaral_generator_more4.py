@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
@@ -74,6 +74,53 @@ def test_generator_handles_empty_sections_and_sparse_rule() -> None:
 
     minimal_code = generator.generate(YaraLFile(rules=[YaraLRule(name="minimal")]))
     assert minimal_code == "rule minimal {\n}"
+
+
+def test_generator_rejects_invalid_yaral_file_structure() -> None:
+    generator = YaraLGenerator()
+
+    cases = [
+        (
+            YaraLFile(rules=cast(Any, [object()])),
+            TypeError,
+            "YaraLFile rules must contain YaraLRule nodes",
+        ),
+        (
+            YaraLFile(rules=[YaraLRule(cast(Any, 123))]),
+            TypeError,
+            "YaraLRule name must be a string",
+        ),
+        (
+            YaraLFile(rules=[YaraLRule("")]),
+            ValueError,
+            "YaraLRule name cannot be empty",
+        ),
+        (
+            YaraLFile(rules=[YaraLRule("bad", events=cast(Any, object()))]),
+            TypeError,
+            "YaraLRule events must be an EventsSection or None",
+        ),
+        (
+            YaraLFile(
+                rules=[
+                    YaraLRule(
+                        "bad",
+                        events=EventsSection(statements=cast(Any, [object()])),
+                    )
+                ]
+            ),
+            TypeError,
+            "EventsSection statements must contain EventStatement nodes",
+        ),
+    ]
+
+    for ast, error_type, message in cases:
+        try:
+            generator.generate(ast)
+        except error_type as exc:
+            assert message in str(exc)
+        else:
+            raise AssertionError(f"expected {error_type.__name__}: {message}")
 
 
 def test_generator_generate_resets_indent_after_failed_generation() -> None:
