@@ -12,7 +12,7 @@ from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.document_types import SymbolRecord
 from yaraast.lsp.references import ReferencesProvider
 from yaraast.lsp.rename import RenameProvider
-from yaraast.lsp.runtime import LspRuntime, path_to_uri
+from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 from yaraast.lsp.selection_range import SelectionRangeProvider
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.lsp.workspace_index import WorkspaceIndex
@@ -165,6 +165,34 @@ def test_workspace_index_search_rejects_invalid_query_and_exclusions() -> None:
         index.search_records("", exclude_uris=cast(Any, {object()}))
 
     assert [record.name for record in index.search_records("")] == ["sample"]
+
+
+def test_workspace_index_rejects_invalid_document_mutation_inputs() -> None:
+    index = WorkspaceIndex()
+    uri = "file:///sample.yar"
+    index.persisted_symbols[uri] = [
+        SymbolRecord(
+            "sample",
+            "rule",
+            uri,
+            Range(Position(line=0, character=0), Position(line=0, character=6)),
+        )
+    ]
+
+    with pytest.raises(TypeError, match="Workspace index document must be a DocumentContext"):
+        index.update_document(cast(Any, object()))
+    with pytest.raises(TypeError, match="Workspace index URI must be a string"):
+        index.remove_document(cast(Any, object()))
+
+    assert [record.name for record in index.search_records("")] == ["sample"]
+
+    index.update_document(DocumentContext(uri, "rule updated { condition: true }\n"))
+    updated_names = {record.name for record in index.search_records("")}
+    assert "updated" in updated_names
+    assert "sample" not in updated_names
+
+    index.remove_document(uri)
+    assert index.search_records("") == []
 
 
 def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(

@@ -103,10 +103,16 @@ class WorkspaceIndex:
         cache_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
     def update_document(self, document: DocumentContext) -> None:
+        if not isinstance(document, DocumentContext):
+            msg = "Workspace index document must be a DocumentContext"
+            raise TypeError(msg)
         self.persisted_symbols[document.uri] = list(document.symbols())
         self.save()
 
     def remove_document(self, uri: str) -> None:
+        if not isinstance(uri, str):
+            msg = "Workspace index URI must be a string"
+            raise TypeError(msg)
         self.persisted_symbols.pop(uri, None)
         self.save()
 
