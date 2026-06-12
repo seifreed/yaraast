@@ -13,8 +13,11 @@ from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, 
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    DoubleLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
+    RegexLiteral,
     StringIdentifier,
     StringLiteral,
     StringWildcard,
@@ -521,6 +524,58 @@ def test_ast_hasher_rejects_invalid_real_hex_token_state(
 def test_ast_hasher_rejects_non_string_string_set_values(string_set: Any) -> None:
     with pytest.raises(TypeError, match="String reference must be a string"):
         AstHasher().visit(OfExpression("any", [string_set]))
+
+
+@pytest.mark.parametrize(
+    ("node", "error_type", "message"),
+    [
+        (Identifier(""), ValueError, "Identifier name cannot be empty"),
+        (
+            StringIdentifier(cast(Any, False)),
+            TypeError,
+            "String identifier must be a string",
+        ),
+        (StringWildcard(""), ValueError, "String wildcard pattern cannot be empty"),
+        (
+            IntegerLiteral(cast(Any, True)),
+            TypeError,
+            "Integer literal value must be an integer",
+        ),
+        (
+            DoubleLiteral(cast(Any, float("inf"))),
+            ValueError,
+            "Double literal value must be finite",
+        ),
+        (
+            StringLiteral(cast(Any, False)),
+            TypeError,
+            "String literal value must be a string",
+        ),
+        (RegexLiteral(""), ValueError, "RegexLiteral pattern must not be empty"),
+        (
+            BooleanLiteral(cast(Any, 1)),
+            TypeError,
+            "Boolean literal value must be a boolean",
+        ),
+        (
+            BinaryExpression(cast(Any, "left"), "+", IntegerLiteral(1)),
+            TypeError,
+            "BinaryExpression.left must be an Expression",
+        ),
+        (
+            FunctionCall("fn", [cast(Any, "arg")]),
+            TypeError,
+            "Function arguments must contain AST nodes",
+        ),
+    ],
+)
+def test_ast_hasher_rejects_invalid_real_expression_state(
+    node: Any,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
+        AstHasher().visit(node)
 
 
 def test_ast_hasher_yarax_expression_nodes() -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.expressions import Expression
 from yaraast.ast.strings import HexAlternative, HexByte, HexToken
 from yaraast.visitor import ASTVisitor
 
@@ -29,6 +30,13 @@ def _meta_value_repr(value: Any) -> str:
 
 def _validate_real_hex_token(node: Any) -> None:
     if isinstance(node, HexToken):
+        validate_structure = getattr(node, "validate_structure", None)
+        if callable(validate_structure):
+            validate_structure()
+
+
+def _validate_real_expression(node: Any) -> None:
+    if isinstance(node, Expression):
         validate_structure = getattr(node, "validate_structure", None)
         if callable(validate_structure):
             validate_structure()
@@ -175,28 +183,34 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_binary_expression(self, node) -> str:
         """Hash BinaryExpression node."""
+        _validate_real_expression(node)
         left = self.visit(node.left)
         right = self.visit(node.right)
         return f"Binary({left},{node.operator},{right})"
 
     def visit_identifier(self, node) -> str:
         """Hash Identifier node."""
+        _validate_real_expression(node)
         return f"Id({node.name})"
 
     def visit_string_identifier(self, node) -> str:
         """Hash StringIdentifier node."""
+        _validate_real_expression(node)
         return f"StrId({node.name})"
 
     def visit_string_wildcard(self, node) -> str:
         """Visit StringWildcard node."""
+        _validate_real_expression(node)
         return node.pattern
 
     def visit_integer_literal(self, node) -> str:
         """Hash IntegerLiteral node."""
+        _validate_real_expression(node)
         return f"Int({node.value})"
 
     def visit_boolean_literal(self, node) -> str:
         """Hash BooleanLiteral node."""
+        _validate_real_expression(node)
         return f"Bool({node.value})"
 
     def visit_string_definition(self, node) -> str:
@@ -232,55 +246,69 @@ class AstHasher(ASTVisitor[str]):
         return f"Nibble({node.high},{node.value})"
 
     def visit_expression(self, node) -> str:
+        _validate_real_expression(node)
         return "Expr()"
 
     def visit_string_count(self, node) -> str:
+        _validate_real_expression(node)
         return f"Count({node.string_id})"
 
     def visit_string_offset(self, node) -> str:
+        _validate_real_expression(node)
         index = self._hash_value(getattr(node, "index", None))
         if index:
             return f"Offset({node.string_id},{index})"
         return f"Offset({node.string_id})"
 
     def visit_string_length(self, node) -> str:
+        _validate_real_expression(node)
         index = self._hash_value(getattr(node, "index", None))
         if index:
             return f"Length({node.string_id},{index})"
         return f"Length({node.string_id})"
 
     def visit_double_literal(self, node) -> str:
+        _validate_real_expression(node)
         return f"Double({node.value})"
 
     def visit_string_literal(self, node) -> str:
+        _validate_real_expression(node)
         return f"Str({node.value})"
 
     def visit_regex_literal(self, node) -> str:
+        _validate_real_expression(node)
         return f"Regex({node.pattern},{node.modifiers})"
 
     def visit_unary_expression(self, node) -> str:
+        _validate_real_expression(node)
         return f"Unary({node.operator},{self.visit(node.operand)})"
 
     def visit_parentheses_expression(self, node) -> str:
+        _validate_real_expression(node)
         return f"Parens({self.visit(node.expression)})"
 
     def visit_set_expression(self, node) -> str:
+        _validate_real_expression(node)
         elements = "|".join(sorted(self.visit(elem) for elem in node.elements))
         return f"Set({elements})"
 
     def visit_range_expression(self, node) -> str:
+        _validate_real_expression(node)
         return f"Range({self.visit(node.low)},{self.visit(node.high)})"
 
     def visit_function_call(self, node) -> str:
+        _validate_real_expression(node)
         args = "|".join(self.visit(arg) for arg in node.arguments)
         receiver_node = getattr(node, "receiver", None)
         receiver = self.visit(receiver_node) if receiver_node is not None else ""
         return f"Call({receiver}:{node.function},{args})"
 
     def visit_array_access(self, node) -> str:
+        _validate_real_expression(node)
         return f"Array({self.visit(node.array)},{self.visit(node.index)})"
 
     def visit_member_access(self, node) -> str:
+        _validate_real_expression(node)
         return f"Member({self.visit(node.object)},{node.member})"
 
     def visit_condition(self, node) -> str:
