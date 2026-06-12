@@ -781,6 +781,15 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
             }
         )
 
+    with pytest.raises(SerializationError, match="InRulePragma position must not be empty"):
+        deserialize_node(
+            {
+                "type": "InRulePragma",
+                "pragma": _serialized_simple_pragma(),
+                "position": "   ",
+            }
+        )
+
 
 def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Location line is required"):

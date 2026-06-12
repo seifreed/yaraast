@@ -572,6 +572,14 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
             }
         )
 
+    with pytest.raises(SerializationError, match="InRulePragma position must not be empty"):
+        s._deserialize_in_rule_pragma(
+            {
+                "pragma": _serialized_json_pragma(),
+                "position": "   ",
+            }
+        )
+
 
 def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
     s = JsonSerializer()

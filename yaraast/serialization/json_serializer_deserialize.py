@@ -23,7 +23,6 @@ from yaraast.serialization._serialization_primitives import (
     _deserialize_meta_value,
     _deserialize_nullable_string_field,
     _deserialize_object,
-    _deserialize_optional_string_field,
     _deserialize_plain_string_raw_bytes,
     _deserialize_plain_string_value,
     _deserialize_required_field,
@@ -1558,16 +1557,9 @@ class JsonSerializerDeserializeMixin:
         )
 
     def _deserialize_in_rule_pragma_position(self, data: dict[str, Any]) -> str:
-        position = _deserialize_optional_string_field(
-            data,
-            "position",
-            "InRulePragma",
-            "before_strings",
-        )
-        if not position:
-            msg = "InRulePragma position must not be empty"
-            raise SerializationError(msg)
-        return position
+        if "position" not in data:
+            return "before_strings"
+        return _deserialize_nonempty_string_field(data, "position", "InRulePragma")
 
     def _deserialize_pragma_block(self, data: dict[str, Any]):
         from yaraast.ast.pragmas import PragmaBlock

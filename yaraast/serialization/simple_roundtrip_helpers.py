@@ -87,7 +87,6 @@ from yaraast.serialization._serialization_primitives import (
     _deserialize_meta_value,
     _deserialize_nullable_string_field,
     _deserialize_object,
-    _deserialize_optional_string_field,
     _deserialize_plain_string_raw_bytes,
     _deserialize_plain_string_value,
     _deserialize_required_field,
@@ -2389,16 +2388,9 @@ def _deserialize_pragma_scope(value: Any, context: str = "Pragma") -> PragmaScop
 
 
 def _deserialize_in_rule_pragma_position(data: dict[str, Any]) -> str:
-    position = _deserialize_optional_string_field(
-        data,
-        "position",
-        "InRulePragma",
-        "before_strings",
-    )
-    if not position:
-        msg = "InRulePragma position must not be empty"
-        raise SerializationError(msg)
-    return position
+    if "position" not in data:
+        return "before_strings"
+    return _deserialize_nonempty_string_field(data, "position", "InRulePragma")
 
 
 def deserialize_pragma(data: dict[str, Any]) -> Pragma:
