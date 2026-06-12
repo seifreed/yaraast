@@ -264,6 +264,26 @@ def test_rule_builder_rejects_invalid_runtime_condition_objects() -> None:
     assert isinstance(builder.build().condition, BooleanLiteral)
 
 
+def test_rule_builder_rejects_invalid_condition_expression_structure() -> None:
+    builder = RuleBuilder("bad_condition_structure").with_condition("true")
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        builder.with_condition(StringIdentifier(name=""))
+
+    assert isinstance(builder.build().condition, BooleanLiteral)
+
+
+def test_rule_builder_rejects_invalid_condition_builder_structure() -> None:
+    builder = RuleBuilder("bad_condition_builder_structure").with_condition("true")
+    condition_builder = ConditionBuilder().identifier("valid")
+    condition_builder._expression = StringIdentifier(name="")
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        builder.with_condition(condition_builder)
+
+    assert isinstance(builder.build().condition, BooleanLiteral)
+
+
 def test_rule_builder_copies_direct_condition_expressions() -> None:
     condition = BooleanLiteral(value=True)
     builder = RuleBuilder("stable_condition").with_condition(condition)

@@ -57,6 +57,13 @@ def _parse_condition_text(condition: str) -> Expression:
     return parsed_condition
 
 
+def _validated_condition(condition: Expression) -> Expression:
+    validate_structure = getattr(condition, "validate_structure", None)
+    if callable(validate_structure):
+        validate_structure()
+    return condition
+
+
 def _validate_yara_identifier(name: str, kind: str) -> None:
     if not isinstance(name, str):
         msg = f"Invalid {kind} identifier: {name}"
@@ -403,9 +410,9 @@ class RuleBuilder:
             else:
                 self._condition = _parse_condition_text(condition)
         elif isinstance(condition, ConditionBuilder):
-            self._condition = condition.build()
+            self._condition = _validated_condition(condition.build())
         elif isinstance(condition, Expression):
-            self._condition = deepcopy(condition)
+            self._condition = _validated_condition(deepcopy(condition))
         else:
             msg = f"Rule condition must be an Expression, got {type(condition).__name__}"
             raise TypeError(msg)
