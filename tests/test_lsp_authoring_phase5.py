@@ -5,7 +5,10 @@ from typing import Any, cast
 from lsprotocol.types import CodeAction, CodeActionKind, Diagnostic, Position, Range, TextEdit
 import pytest
 
+from yaraast.ast.conditions import ForOfExpression, OfExpression
+from yaraast.ast.expressions import Identifier, SetExpression
 from yaraast.lsp.authoring import AuthoringActions
+from yaraast.lsp.authoring_rewriters import OfThemTransformer
 from yaraast.lsp.code_actions import CodeActionsProvider
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
@@ -541,6 +544,27 @@ rule demo {
     assert "$a..." in action.title
     edit = _first_edit(action)
     assert "all of them" in edit.new_text
+
+
+@pytest.mark.parametrize(
+    "node",
+    [
+        OfExpression("all", SetExpression([Identifier("$a"), Identifier("$b")])),
+        ForOfExpression("all", SetExpression([Identifier("$a"), Identifier("$b")]), None),
+    ],
+)
+def test_of_them_transformer_compresses_identifier_string_set_items(
+    node: OfExpression | ForOfExpression,
+) -> None:
+    transformer = OfThemTransformer(string_ids=["$a", "$b"], mode="compress")
+
+    if isinstance(node, OfExpression):
+        rewritten = transformer.visit_of_expression(node)
+    else:
+        rewritten = transformer.visit_for_of_expression(node)
+
+    assert isinstance(rewritten.string_set, Identifier)
+    assert rewritten.string_set.name == "them"
 
 
 def test_deduplicate_identical_strings_rewrites_count_offset_length_and_in_at() -> None:

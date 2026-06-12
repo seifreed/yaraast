@@ -87,12 +87,16 @@ class OfThemTransformer(ASTTransformer):
             return False
         values = []
         for element in string_set.elements:
+            value: str
             if isinstance(element, StringLiteral):
-                values.append(element.value)
-            elif isinstance(element, StringIdentifier):
-                values.append(element.name)
+                value = element.value
+            elif isinstance(element, StringIdentifier) or (
+                isinstance(element, Identifier) and element.name.startswith("$")
+            ):
+                value = element.name
             else:
                 return False
+            values.append(value)
         return sorted(values) == sorted(self.string_ids)
 
     def visit_of_expression(self, node: OfExpression) -> Any:
