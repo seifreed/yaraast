@@ -1146,6 +1146,10 @@ def _validate_quantifier_text_value(
 def _infer_string_set_value(ctx: Any, value: Any) -> YaraType:
     if isinstance(value, ParenthesesExpression):
         return _infer_string_set_value(ctx, value.expression)
+    if isinstance(value, SetExpression) and all(
+        _is_string_set_value(element) for element in value.elements
+    ):
+        return StringSetType()
     if isinstance(value, StringIdentifier | StringLiteral):
         return StringSetType()
     if (
@@ -1317,9 +1321,7 @@ def _is_string_set_value(value: Any) -> bool:
     if isinstance(value, StringWildcard):
         return isinstance(value.pattern, str) and value.pattern.startswith("$")
     if isinstance(value, StringLiteral):
-        return isinstance(value.value, str) and (
-            value.value == "them" or value.value.startswith("$")
-        )
+        return isinstance(value.value, str)
     if isinstance(value, Identifier):
         return isinstance(value.name, str) and (value.name == "them" or value.name.startswith("$"))
     return bool(isinstance(value, str))

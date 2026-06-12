@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import OfExpression
+from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -637,6 +637,30 @@ def test_semantic_validator_counts_identifier_string_set_items_as_references() -
 
         assert result.is_valid is True
         assert result.errors == []
+
+
+def test_semantic_validator_accepts_bare_string_literal_string_set_items() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="literal_string_set_items",
+                strings=[
+                    PlainString(identifier="$a", value="abc"),
+                    PlainString(identifier="$api_call", value="def"),
+                ],
+                condition=ForOfExpression(
+                    "any",
+                    SetExpression([StringLiteral("a"), StringLiteral("api*")]),
+                    BooleanLiteral(True),
+                ),
+            )
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is True
+    assert result.errors == []
 
 
 def test_semantic_validator_allows_implicit_current_string_position_checks() -> None:

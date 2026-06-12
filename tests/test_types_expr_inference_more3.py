@@ -415,6 +415,28 @@ def test_expr_inference_accepts_non_list_string_set_containers() -> None:
     assert not any("'for...of' requires string set" in error for error in for_of_inf.errors)
 
 
+def test_expr_inference_accepts_bare_string_literal_string_set_items() -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+    env.add_string("$api_call")
+
+    cases = [
+        OfExpression("any", SetExpression([StringLiteral("a")])),
+        OfExpression("any", SetExpression([StringLiteral("api*")])),
+        ForOfExpression(
+            "any",
+            SetExpression([StringLiteral("a")]),
+            BooleanLiteral(value=True),
+        ),
+    ]
+
+    for expression in cases:
+        inf = ExpressionTypeInference(env)
+
+        assert isinstance(inf.infer(expression), BooleanType)
+        assert inf.errors == []
+
+
 def test_expr_inference_accepts_parenthesized_string_set_items() -> None:
     env = TypeEnvironment()
     env.add_string("$a")
