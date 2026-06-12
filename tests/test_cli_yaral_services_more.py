@@ -48,6 +48,14 @@ def test_parse_yaral_best_effort_returns_ast_for_degraded_input() -> None:
     assert isinstance(ast, YaraLFile)
 
 
+def test_parse_yaral_enhanced_rejects_recovered_parser_errors() -> None:
+    with pytest.raises(ValueError, match="YARA-L parse failed"):
+        ys.parse_yaral(
+            "rule bad { events: $e.metadata.event_type = condition: $e }",
+            enhanced=True,
+        )
+
+
 @pytest.mark.parametrize("content", [None, 123, object()])
 def test_parse_yaral_rejects_invalid_content_types(content: Any) -> None:
     with pytest.raises(TypeError, match="content must be a string"):

@@ -18,7 +18,12 @@ def parse_yaral(content: str, enhanced: bool) -> YaraLFile:
         msg = "enhanced must be a boolean"
         raise TypeError(msg)
     if enhanced:
-        return EnhancedYaraLParser(content).parse()
+        parser = EnhancedYaraLParser(content)
+        ast = parser.parse()
+        if parser.errors:
+            msg = "YARA-L parse failed: " + "; ".join(parser.errors)
+            raise ValueError(msg)
+        return ast
     return YaraLParser(content).parse()
 
 

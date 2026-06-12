@@ -98,10 +98,10 @@ def test_yaral_parse_enhanced_writes_output(tmp_path: Path) -> None:
     rule enhanced_parse {
         events:
             $e.metadata.event_type = "LOGIN"
-        condition:
-            #e > 0
         outcome:
             $count = count(metadata.event_type)
+        condition:
+            #e > 0
     }
     """
     yaral_path = _write_yaral(tmp_path, "enhanced.yaral", yaral_code)
@@ -125,3 +125,17 @@ def test_yaral_parse_enhanced_writes_output(tmp_path: Path) -> None:
     assert "Using enhanced YARA-L parser" in result.output
     assert output_path.exists()
     assert "rules" in output_path.read_text(encoding="utf-8")
+
+
+def test_yaral_parse_enhanced_rejects_recovered_parser_errors(tmp_path: Path) -> None:
+    yaral_path = _write_yaral(
+        tmp_path,
+        "bad.yaral",
+        "rule bad { events: $e.metadata.event_type = condition: $e }",
+    )
+
+    result = CliRunner().invoke(yaral, ["parse", yaral_path, "--enhanced"])
+
+    assert result.exit_code != 0
+    assert "YARA-L parse failed" in result.output
+    assert "Successfully parsed 0 rules" not in result.output
