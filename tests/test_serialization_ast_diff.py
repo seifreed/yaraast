@@ -18,6 +18,7 @@ from yaraast.ast.expressions import (
     SetExpression,
     StringIdentifier,
     StringLiteral,
+    StringWildcard,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
@@ -666,6 +667,54 @@ def test_ast_diff_treats_identifier_string_set_items_as_equivalent() -> None:
         assert result.old_ast_hash == result.new_ast_hash
         assert not result.has_changes
         assert result.differences == []
+
+
+def test_ast_diff_distinguishes_rule_wildcards_from_raw_string_wildcards() -> None:
+    rule_wildcard_ast = YaraFile(
+        rules=[
+            Rule(
+                name="wildcard_set",
+                condition=OfExpression("any", SetExpression([StringWildcard("helper*")])),
+            ),
+        ],
+    )
+    raw_string_wildcard_ast = YaraFile(
+        rules=[
+            Rule(
+                name="wildcard_set",
+                condition=OfExpression("any", ["helper*"]),
+            ),
+        ],
+    )
+
+    result = AstDiff().compare(rule_wildcard_ast, raw_string_wildcard_ast)
+
+    assert result.old_ast_hash != result.new_ast_hash
+    assert result.has_changes
+
+
+def test_ast_diff_treats_bare_raw_wildcards_as_string_wildcards() -> None:
+    typed_string_wildcard_ast = YaraFile(
+        rules=[
+            Rule(
+                name="wildcard_set",
+                condition=OfExpression("any", SetExpression([StringWildcard("$helper*")])),
+            ),
+        ],
+    )
+    raw_string_wildcard_ast = YaraFile(
+        rules=[
+            Rule(
+                name="wildcard_set",
+                condition=OfExpression("any", ["helper*"]),
+            ),
+        ],
+    )
+
+    result = AstDiff().compare(typed_string_wildcard_ast, raw_string_wildcard_ast)
+
+    assert result.old_ast_hash == result.new_ast_hash
+    assert not result.has_changes
 
 
 def test_ast_diff_ignores_dictionary_key_expression_metadata() -> None:

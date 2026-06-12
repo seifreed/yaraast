@@ -484,31 +484,38 @@ class AstHasher(ASTVisitor[str]):
         )
 
         if isinstance(value, str):
-            return value
+            return AstHasher._raw_string_set_item(value)
         if isinstance(value, Identifier):
             if not isinstance(value.name, str):
                 msg = "String reference must be a string"
                 raise TypeError(msg)
             if value.name == "them" or value.name.startswith("$"):
-                return value.name
+                return AstHasher._raw_string_set_item(value.name)
             return None
         if isinstance(value, StringIdentifier):
             if not isinstance(value.name, str):
                 msg = "String reference must be a string"
                 raise TypeError(msg)
-            return value.name
+            return AstHasher._raw_string_set_item(value.name)
         if isinstance(value, StringWildcard):
             if not isinstance(value.pattern, str):
                 msg = "String reference must be a string"
                 raise TypeError(msg)
+            if not value.pattern.startswith("$"):
+                return value.pattern
             return value.pattern
         if isinstance(value, StringLiteral):
             if not isinstance(value.value, str):
                 msg = "String reference must be a string"
                 raise TypeError(msg)
-            if value.value.startswith("$"):
-                return value.value
+            return AstHasher._raw_string_set_item(value.value)
         return None
+
+    @staticmethod
+    def _raw_string_set_item(value: str) -> str:
+        if value == "them" or value.startswith("$"):
+            return value
+        return f"${value}"
 
     def _hash_in_rule_pragmas(self, pragmas) -> str:
         """Hash rule pragmas by position while preserving sequential directives."""
