@@ -395,7 +395,7 @@ def create_include_once() -> IncludeOncePragma:
 
 def create_define(macro_name: str, macro_value: str | None = None) -> DefineDirective:
     """Create a define directive."""
-    validated_macro_name = require_string(macro_name, "Pragma macro_name")
+    validated_macro_name = _require_nonempty_string(macro_name, "Pragma macro_name")
     if macro_value is not None:
         macro_value = require_string(macro_value, "Pragma macro_value")
     return DefineDirective(validated_macro_name, macro_value)
@@ -403,17 +403,17 @@ def create_define(macro_name: str, macro_value: str | None = None) -> DefineDire
 
 def create_undef(macro_name: str) -> UndefDirective:
     """Create an undef directive."""
-    return UndefDirective(require_string(macro_name, "Pragma macro_name"))
+    return UndefDirective(_require_nonempty_string(macro_name, "Pragma macro_name"))
 
 
 def create_ifdef(condition: str) -> ConditionalDirective:
     """Create an ifdef directive."""
-    return ConditionalDirective.ifdef(require_string(condition, "Pragma condition"))
+    return ConditionalDirective.ifdef(_require_nonempty_string(condition, "Pragma condition"))
 
 
 def create_ifndef(condition: str) -> ConditionalDirective:
     """Create an ifndef directive."""
-    return ConditionalDirective.ifndef(require_string(condition, "Pragma condition"))
+    return ConditionalDirective.ifndef(_require_nonempty_string(condition, "Pragma condition"))
 
 
 def create_endif() -> ConditionalDirective:
@@ -429,4 +429,7 @@ def create_in_rule_pragma(
     if not isinstance(pragma, Pragma):
         msg = "InRulePragma pragma must be a Pragma"
         raise TypeError(msg)
-    return InRulePragma(pragma, require_string(position, "InRulePragma position"))
+    return InRulePragma(
+        pragma,
+        _require_nonempty_string(position, "InRulePragma position"),
+    )

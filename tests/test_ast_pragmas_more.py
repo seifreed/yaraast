@@ -253,6 +253,26 @@ def test_pragma_helpers_reject_invalid_inputs_at_creation_time() -> None:
             lambda: create_pragma(""),
             "Pragma type input cannot be empty",
         ),
+        (
+            lambda: create_define(""),
+            "Pragma macro_name cannot be empty",
+        ),
+        (
+            lambda: create_undef(""),
+            "Pragma macro_name cannot be empty",
+        ),
+        (
+            lambda: create_ifdef(""),
+            "Pragma condition cannot be empty",
+        ),
+        (
+            lambda: create_ifndef("   "),
+            "Pragma condition cannot be empty",
+        ),
+        (
+            lambda: create_in_rule_pragma(pragma, ""),
+            "InRulePragma position cannot be empty",
+        ),
     ]
     for factory, message in empty_cases:
         with pytest.raises(ValueError, match=message):
