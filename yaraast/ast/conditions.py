@@ -118,6 +118,9 @@ class ForExpression(Condition):
         if not self.variable.strip():
             msg = "ForExpression variable must not be empty"
             raise ValueError(msg)
+        from yaraast.shared.local_scope import local_name_variants
+
+        local_name_variants(self.variable)
         _validate_required_expression(
             self.iterable,
             "ForExpression iterable must be an AST expression",

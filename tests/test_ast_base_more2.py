@@ -24,6 +24,7 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     MemberAccess,
     RegexLiteral,
+    SetExpression,
     StringCount,
     StringIdentifier,
     StringLength,
@@ -204,6 +205,33 @@ def test_yarax_validate_structure_rejects_invalid_local_identifiers(
 
 def test_yarax_validate_structure_allows_with_string_reference_identifier() -> None:
     WithDeclaration("$x", IntegerLiteral(1)).validate_structure()
+
+
+@pytest.mark.parametrize("variable", ["bad-name", "1bad", "for", "i, "])
+def test_for_expression_validate_structure_rejects_invalid_loop_variables(
+    variable: str,
+) -> None:
+    condition = ForExpression(
+        "any",
+        variable,
+        SetExpression([IntegerLiteral(1)]),
+        BooleanLiteral(True),
+    )
+
+    with pytest.raises(ValueError, match=r"[Ll]ocal variable"):
+        condition.validate_structure()
+
+
+@pytest.mark.parametrize("variable", ["as", "include", "i, j"])
+def test_for_expression_validate_structure_allows_valid_loop_variables(
+    variable: str,
+) -> None:
+    ForExpression(
+        "any",
+        variable,
+        SetExpression([IntegerLiteral(1)]),
+        BooleanLiteral(True),
+    ).validate_structure()
 
 
 def test_direct_yarafile_optimizers_validate_structure() -> None:
