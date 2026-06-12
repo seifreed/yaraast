@@ -995,6 +995,10 @@ def _validate_quantifier_value(
             return
         _validate_static_percentage_expression_quantifier(ctx, value, context)
         return
+    static_value = _static_integer_value(value)
+    if static_value is not None and static_value < 0:
+        ctx.errors.append(f"Invalid {context} quantifier '{static_value}'")
+        return
     if isinstance(value, StringLiteral):
         _validate_quantifier_text_value(
             ctx,

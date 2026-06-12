@@ -284,6 +284,7 @@ def _render_quantifier(
         if _needs_percentage_quantifier_parentheses(quantifier.operand):
             operand = f"({operand})"
         return f"{operand}%"
+    _validate_static_integer_quantifier(quantifier, context)
     if isinstance(quantifier, Identifier):
         # filesize and entrypoint are reserved words that libyara nonetheless
         # accepts as integer quantifiers; the strict identifier validator would
@@ -357,6 +358,20 @@ def _validate_static_percentage_expression_quantifier(quantifier: Any) -> None:
     value = _static_integer_quantifier_value(quantifier.operand)
     if value is not None:
         _validate_percentage_quantifier(value, f"{value}%")
+
+
+def _validate_static_integer_quantifier(quantifier: Any, context: str) -> None:
+    value = _static_integer_quantifier_value(quantifier)
+    if value is not None and value < 0:
+        msg = (
+            f"Invalid {context} '{_static_integer_quantifier_text(quantifier, value)}' "
+            "for libyara output"
+        )
+        raise ValueError(msg)
+
+
+def _static_integer_quantifier_text(quantifier: Any, value: int) -> str:
+    return str(value) if not isinstance(quantifier, int) else str(quantifier)
 
 
 def _has_invalid_static_percentage_operand(value: Any) -> bool:

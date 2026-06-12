@@ -2433,8 +2433,20 @@ def test_codegen_generators_parenthesize_single_string_set_items(
         OfExpression(StringLiteral("bad-key"), Identifier("them")),
         OfExpression(StringLiteral("true"), Identifier("them")),
         OfExpression(IntegerLiteral(-1), Identifier("them")),
+        OfExpression(UnaryExpression("-", IntegerLiteral(1)), Identifier("them")),
+        OfExpression(UnaryExpression("~", IntegerLiteral(1)), Identifier("them")),
         OfExpression(BooleanLiteral(True), Identifier("them")),
         OfExpression(Identifier("true"), Identifier("them")),
+        ForOfExpression(
+            UnaryExpression("-", IntegerLiteral(1)),
+            Identifier("them"),
+            StringIdentifier("$"),
+        ),
+        ForOfExpression(
+            UnaryExpression("~", IntegerLiteral(1)),
+            Identifier("them"),
+            StringIdentifier("$"),
+        ),
     ],
 )
 def test_codegen_generators_reject_invalid_quantifiers(condition: Any) -> None:
@@ -2572,6 +2584,8 @@ def test_codegen_generators_reject_empty_set_expression() -> None:
         "true",
         "bad-key",
         IntegerLiteral(-1),
+        UnaryExpression("-", IntegerLiteral(1)),
+        UnaryExpression("~", IntegerLiteral(1)),
         StringLiteral("50%"),
         StringLiteral("true"),
         DoubleLiteral(0.5),

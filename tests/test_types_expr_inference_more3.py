@@ -219,12 +219,30 @@ def test_expr_inference_rejects_wildcard_string_references_in_concrete_contexts(
     "expression",
     [
         OfExpression(quantifier=-1, string_set=Identifier(name="them")),
+        OfExpression(
+            quantifier=UnaryExpression("-", IntegerLiteral(value=1)),
+            string_set=Identifier(name="them"),
+        ),
+        OfExpression(
+            quantifier=UnaryExpression("~", IntegerLiteral(value=1)),
+            string_set=Identifier(name="them"),
+        ),
         OfExpression(quantifier="", string_set=Identifier(name="them")),
         OfExpression(quantifier="true", string_set=Identifier(name="them")),
         OfExpression(quantifier="bad-key", string_set=Identifier(name="them")),
         OfExpression(quantifier=StringLiteral(value="-1"), string_set=Identifier(name="them")),
         ForOfExpression(
             quantifier=-1,
+            string_set=Identifier(name="them"),
+            condition=BooleanLiteral(value=True),
+        ),
+        ForOfExpression(
+            quantifier=UnaryExpression("-", IntegerLiteral(value=1)),
+            string_set=Identifier(name="them"),
+            condition=BooleanLiteral(value=True),
+        ),
+        ForOfExpression(
+            quantifier=UnaryExpression("~", IntegerLiteral(value=1)),
             string_set=Identifier(name="them"),
             condition=BooleanLiteral(value=True),
         ),
@@ -1216,6 +1234,34 @@ def test_expr_inference_validates_for_expression_quantifier_type() -> None:
     )
 
     assert any("'for' quantifier must be string or integer" in e for e in inf.errors)
+
+
+@pytest.mark.parametrize(
+    "quantifier",
+    [
+        UnaryExpression("-", IntegerLiteral(value=1)),
+        UnaryExpression("~", IntegerLiteral(value=1)),
+    ],
+)
+def test_expr_inference_rejects_negative_static_for_quantifier(quantifier: Any) -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    assert isinstance(
+        inf.infer(
+            ForExpression(
+                quantifier=quantifier,
+                variable="i",
+                iterable=RangeExpression(
+                    low=IntegerLiteral(value=1),
+                    high=IntegerLiteral(value=2),
+                ),
+                body=BooleanLiteral(value=True),
+            )
+        ),
+        BooleanType,
+    )
+
+    assert any("Invalid for quantifier" in e for e in inf.errors)
 
 
 def test_expr_inference_rejects_raw_boolean_quantifiers() -> None:
