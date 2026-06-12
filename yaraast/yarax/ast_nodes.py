@@ -10,11 +10,24 @@ from yaraast.ast.base import (
     _require_ast_node,
     _require_ast_node_sequence_type,
     _VisitorType,
-    require_optional_string,
     require_string,
 )
 from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import Expression
+
+
+def _require_nonempty_local_identifier(value: Any, empty_context: str) -> str:
+    identifier = require_string(value, "Local variable name")
+    if not identifier.strip():
+        msg = f"{empty_context} must not be empty"
+        raise ValueError(msg)
+    return identifier
+
+
+def _require_optional_nonempty_local_identifier(value: Any, empty_context: str) -> str | None:
+    if value is None:
+        return None
+    return _require_nonempty_local_identifier(value, empty_context)
 
 
 def _validate_child_structure(value: Any) -> None:
@@ -62,7 +75,7 @@ class WithDeclaration(ASTNode):
     value: Expression  # Initial value
 
     def validate_structure(self) -> None:
-        require_string(self.identifier, "Local variable name")
+        _require_nonempty_local_identifier(self.identifier, "WithDeclaration identifier")
         _validate_child_structure(_require_ast_node(self.value, "WithDeclaration.value"))
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -88,7 +101,7 @@ class ArrayComprehension(Expression):
             _validate_child_structure(
                 _require_ast_node(self.expression, "ArrayComprehension.expression")
             )
-        require_string(self.variable, "Local variable name")
+        _require_nonempty_local_identifier(self.variable, "ArrayComprehension variable")
         if self.iterable is not None:
             _validate_child_structure(
                 _require_ast_node(self.iterable, "ArrayComprehension.iterable")
@@ -127,8 +140,11 @@ class DictComprehension(Expression):
             _validate_child_structure(
                 _require_ast_node(self.value_expression, "DictComprehension.value_expression")
             )
-        require_string(self.key_variable, "Local variable name")
-        require_optional_string(self.value_variable, "Local variable name")
+        _require_nonempty_local_identifier(self.key_variable, "DictComprehension key_variable")
+        _require_optional_nonempty_local_identifier(
+            self.value_variable,
+            "DictComprehension value_variable",
+        )
         if self.iterable is not None:
             _validate_child_structure(
                 _require_ast_node(self.iterable, "DictComprehension.iterable")
@@ -295,7 +311,7 @@ class LambdaExpression(Expression):
             msg = "LambdaExpression parameters must be a list or tuple"
             raise TypeError(msg)
         for parameter in self.parameters:
-            require_string(parameter, "Local variable name")
+            _require_nonempty_local_identifier(parameter, "LambdaExpression parameters item")
         _validate_child_structure(_require_ast_node(self.body, "LambdaExpression.body"))
 
     def accept(self, visitor: _VisitorType) -> Any:

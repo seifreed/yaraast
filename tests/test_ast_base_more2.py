@@ -59,9 +59,12 @@ from yaraast.ast.strings import (
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
 from yaraast.parser import Parser
 from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
     DictExpression,
     LambdaExpression,
     PatternMatch,
+    WithDeclaration,
     WithStatement,
 )
 
@@ -134,6 +137,36 @@ def test_rule_validate_structure_rejects_non_ast_children() -> None:
 )
 def test_validate_structure_rejects_empty_scalar_fields(
     node: Import | Include | Tag | Rule,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        node.validate_structure()
+
+
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (WithDeclaration("", IntegerLiteral(1)), "WithDeclaration identifier must not be empty"),
+        (
+            ArrayComprehension(Identifier("x"), " ", Identifier("xs")),
+            "ArrayComprehension variable must not be empty",
+        ),
+        (
+            DictComprehension(Identifier("k"), Identifier("v"), "", None, Identifier("xs")),
+            "DictComprehension key_variable must not be empty",
+        ),
+        (
+            DictComprehension(Identifier("k"), Identifier("v"), "k", " ", Identifier("xs")),
+            "DictComprehension value_variable must not be empty",
+        ),
+        (
+            LambdaExpression(parameters=[""], body=BooleanLiteral(True)),
+            "LambdaExpression parameters item must not be empty",
+        ),
+    ],
+)
+def test_yarax_validate_structure_rejects_empty_local_identifiers(
+    node: WithDeclaration | ArrayComprehension | DictComprehension | LambdaExpression,
     message: str,
 ) -> None:
     with pytest.raises(ValueError, match=message):
