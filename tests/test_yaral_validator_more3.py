@@ -102,6 +102,25 @@ def test_validator_accepts_bracketed_udm_fields_and_dollar_event_conditions() ->
     assert not any("Unused event variable" in warning.message for warning in warnings)
 
 
+def test_validator_accepts_enhanced_n_of_and_null_check_conditions() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_conditions {
+            events:
+                $e1.metadata.event_type = "LOGIN"
+                $e2.metadata.event_type = "LOGOUT"
+            condition:
+                2 of ($e1, $e2) and $e1.principal.ip is not null
+        }
+        """)
+    ast = parser.parse()
+
+    errors, warnings = YaraLValidator().validate(ast)
+
+    assert parser.errors == []
+    assert errors == []
+    assert not any("Unused event variable" in warning.message for warning in warnings)
+
+
 def test_validator_event_assignment_checks() -> None:
     events = EventsSection(
         statements=[

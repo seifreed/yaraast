@@ -19,6 +19,8 @@ from yaraast.yaral.ast_nodes import (
     JoinCondition,
     MatchSection,
     MatchVariable,
+    NOfCondition,
+    NullCheckCondition,
     OptionsSection,
     OutcomeAssignment,
     OutcomeExpression,
@@ -78,6 +80,8 @@ def test_optimizer_optimize_and_direct_visitors() -> None:
     )
     assert opt.visit_yaral_event_variable(ev) == ev
     assert opt.visit_yaral_udm_field_path(path) == path
+    field_access = UDMFieldAccess(event=ev, field=path)
+    assert opt.visit_yaral_udm_field_access(field_access) == field_access
     assert opt.visit_yaral_reference_list(ref) == ref
 
     tw = TimeWindow(duration=1, unit="h")
@@ -101,6 +105,10 @@ def test_optimizer_optimize_and_direct_visitors() -> None:
     assert opt.visit_yaral_event_exists_condition(ex) == ex
     assert opt.visit_yaral_variable_comparison_condition(vc) == vc
     assert opt.visit_yaral_join_condition(jc) == jc
+    n_of = NOfCondition(count=1, events=["$e"])
+    null_check = NullCheckCondition(field=field_access, negated=True)
+    assert opt.visit_yaral_n_of_condition(n_of) == n_of
+    assert opt.visit_yaral_null_check_condition(null_check) == null_check
 
     out_expr = OutcomeExpression()
     out_assign = OutcomeAssignment(variable="$x", expression=out_expr)
@@ -114,7 +122,7 @@ def test_optimizer_optimize_and_direct_visitors() -> None:
     aexpr = ArithmeticExpression(operator="+", left=1, right=2)
     opts = OptionsSection(options={"x": 1})
     regex = RegexPattern(pattern="ab+")
-    cidr = CIDRExpression(field=UDMFieldAccess(event=ev, field=path), cidr="10.0.0.0/8")
+    cidr = CIDRExpression(field=field_access, cidr="10.0.0.0/8")
     fn = FunctionCall(function="re.regex", arguments=["ab"])
 
     assert opt.visit_yaral_aggregation_function(agg) == agg

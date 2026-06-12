@@ -13,6 +13,8 @@ if TYPE_CHECKING:
         EventCountCondition,
         EventExistsCondition,
         JoinCondition,
+        NOfCondition,
+        NullCheckCondition,
         UnaryCondition,
         VariableComparisonCondition,
     )
@@ -58,6 +60,20 @@ class ConditionValidationMixin:
 
     def visit_yaral_join_condition(self, node: JoinCondition) -> None:
         return
+
+    def visit_yaral_n_of_condition(self, node: NOfCondition) -> None:
+        for event in node.events:
+            self.used_events.add(event.lstrip("$"))
+
+    def visit_yaral_null_check_condition(self, node: NullCheckCondition) -> None:
+        field = node.field
+        if hasattr(field, "event") and field.event is not None:
+            self.used_events.add(field.event.name.lstrip("$"))
+            self.visit(field)
+            return
+        if isinstance(field, str) and field.startswith("$"):
+            event_name, _separator, _field_path = field.partition(".")
+            self.used_events.add(event_name.lstrip("$"))
 
     def visit_yaral_conditional_expression(self, node: ConditionalExpression) -> None:
         if hasattr(node.condition, "accept"):

@@ -40,12 +40,15 @@ if TYPE_CHECKING:
         JoinCondition,
         MatchSection,
         MatchVariable,
+        NOfCondition,
+        NullCheckCondition,
         OptionsSection,
         OutcomeAssignment,
         OutcomeExpression,
         OutcomeSection,
         ReferenceList,
         RegexPattern,
+        UDMFieldAccess,
         UDMFieldPath,
         VariableComparisonCondition,
         YaraLFile,
@@ -151,6 +154,9 @@ class YaraLOptimizer(
     def visit_yaral_udm_field_path(self, node: UDMFieldPath) -> UDMFieldPath:
         return node
 
+    def visit_yaral_udm_field_access(self, node: UDMFieldAccess) -> UDMFieldAccess:
+        return node
+
     def visit_yaral_reference_list(self, node: ReferenceList) -> ReferenceList:
         return node
 
@@ -188,6 +194,12 @@ class YaraLOptimizer(
         return node
 
     def visit_yaral_join_condition(self, node: JoinCondition) -> ConditionExpression:
+        return node
+
+    def visit_yaral_n_of_condition(self, node: NOfCondition) -> ConditionExpression:
+        return node
+
+    def visit_yaral_null_check_condition(self, node: NullCheckCondition) -> ConditionExpression:
         return node
 
     def visit_yaral_outcome_section(self, node: OutcomeSection) -> OutcomeSection:
