@@ -203,6 +203,9 @@ def _normalize_externals(externals: Mapping[str, object] | None) -> dict[str, ob
         ):
             msg = f"SemanticValidator external names must be valid identifiers: {name}"
             raise ValueError(msg)
+        if not isinstance(value, bool | int | float | str):
+            msg = "SemanticValidator external values must be integer, float, boolean, or string"
+            raise TypeError(msg)
         normalized[name] = value
     return normalized
 

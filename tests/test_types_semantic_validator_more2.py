@@ -785,6 +785,47 @@ def test_semantic_validator_rejects_empty_external_names(externals: dict[str, ob
         validator.validate_expression(BooleanLiteral(True), externals=externals)
 
 
+@pytest.mark.parametrize("externals", [{"x": b"bytes"}, {"x": None}, {"x": object()}])
+def test_semantic_validator_rejects_unsupported_external_values(
+    externals: dict[str, object],
+) -> None:
+    ast = YaraFile(rules=[Rule(name="externals", condition=BooleanLiteral(True))])
+    rule = ast.rules[0]
+
+    with pytest.raises(
+        TypeError,
+        match="SemanticValidator external values must be integer, float, boolean, or string",
+    ):
+        SemanticValidator(externals=externals)
+
+    validator = SemanticValidator()
+
+    with pytest.raises(
+        TypeError,
+        match="SemanticValidator external values must be integer, float, boolean, or string",
+    ):
+        validator.validate(ast, externals=externals)
+
+    with pytest.raises(
+        TypeError,
+        match="SemanticValidator external values must be integer, float, boolean, or string",
+    ):
+        validator.validate_rule(rule, externals=externals)
+
+    with pytest.raises(
+        TypeError,
+        match="SemanticValidator external values must be integer, float, boolean, or string",
+    ):
+        validator.validate_expression(BooleanLiteral(True), externals=externals)
+
+
+def test_semantic_validator_accepts_supported_external_values() -> None:
+    ast = YaraFile(rules=[Rule(name="externals", condition=BooleanLiteral(True))])
+    externals = {"i": 1, "f": 1.5, "b": True, "s": "text"}
+
+    assert SemanticValidator(externals=externals).validate(ast).is_valid is True
+
+
 @pytest.mark.parametrize("externals", [{"bad-name": 1}, {"1bad": 1}, {"for": 1}])
 def test_semantic_validator_rejects_invalid_external_names(
     externals: dict[str, object],
