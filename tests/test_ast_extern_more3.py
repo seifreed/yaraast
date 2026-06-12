@@ -160,6 +160,17 @@ def test_extern_namespace_rejects_invalid_rule_inputs_without_partial_update() -
     assert ns.extern_rules == [rule]
 
 
+def test_extern_namespace_add_rule_rejects_invalid_namespace_without_partial_update() -> None:
+    ns = ExternNamespace(name=cast(Any, object()))
+    rule = ExternRule(name="R1")
+
+    with pytest.raises(TypeError, match="ExternNamespace name must be a string"):
+        ns.add_extern_rule(rule)
+
+    assert ns.extern_rules == []
+    assert rule.namespace is None
+
+
 @pytest.mark.parametrize(
     ("node", "error_type", "message"),
     [

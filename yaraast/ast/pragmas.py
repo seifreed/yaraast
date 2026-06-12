@@ -363,10 +363,12 @@ class PragmaBlock(ASTNode):
 
     def add_pragma(self, pragma: Pragma) -> None:
         """Add a pragma to this block."""
+        scope = _require_scope(self.scope)
         if not isinstance(pragma, Pragma):
             msg = "Pragma input must be a Pragma"
             raise TypeError(msg)
-        pragma.scope = self.scope
+        pragma.validate_structure()
+        pragma.scope = scope
         self.pragmas.append(pragma)
 
     def get_pragmas_by_type(self, pragma_type: PragmaType) -> list[Pragma]:

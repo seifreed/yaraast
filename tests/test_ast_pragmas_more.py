@@ -305,6 +305,17 @@ def test_pragma_block_rejects_invalid_pragmas_without_partial_update() -> None:
     assert block.pragmas == [custom]
 
 
+def test_pragma_block_add_pragma_rejects_invalid_scope_without_partial_update() -> None:
+    block = PragmaBlock(scope=cast(Any, "file"))
+    pragma = Pragma(PragmaType.PRAGMA, "vendor")
+
+    with pytest.raises(TypeError, match="Pragma scope must be a PragmaScope"):
+        block.add_pragma(pragma)
+
+    assert block.pragmas == []
+    assert pragma.scope == PragmaScope.FILE
+
+
 def test_create_helpers_and_in_rule_positions() -> None:
     pragma = create_pragma("define", ["X", "2"])
     assert isinstance(pragma, Pragma)
