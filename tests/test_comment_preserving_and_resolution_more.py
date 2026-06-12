@@ -303,6 +303,25 @@ def test_dependency_graph_readding_file_removes_stale_nodes_and_edges() -> None:
     assert {"new.yar", "rule:new_rule"}.issubset(dependencies)
 
 
+def test_dependency_graph_readding_file_compacts_resolved_duplicate_rule_keys() -> None:
+    parser = Parser()
+    graph = DependencyGraph()
+
+    graph.add_file(Path("first.yar"), parser.parse("rule dup { condition: true }"))
+    graph.add_file(Path("second.yar"), parser.parse("rule dup { condition: true }"))
+    graph.add_file(Path("caller.yar"), parser.parse("rule caller { condition: dup }"))
+
+    assert graph.get_rule_dependencies("caller") == {"rule:dup#1", "rule:dup#2"}
+
+    graph.add_file(Path("second.yar"), parser.parse("rule unique { condition: true }"))
+
+    assert "rule:dup" in graph.nodes
+    assert "rule:dup#1" not in graph.nodes
+    assert graph.file_rules["first.yar"] == {"dup"}
+    assert graph.rule_files["dup"] == "first.yar"
+    assert graph.get_rule_dependencies("caller") == {"rule:dup"}
+
+
 def test_dependency_graph_add_file_rejects_invalid_inputs_without_partial_update() -> None:
     graph = DependencyGraph()
     graph.add_file(Path("existing.yar"), YaraFile(rules=[Rule(name="existing")]))

@@ -282,6 +282,7 @@ class DependencyGraph:
 
     def _remove_existing_file_state(self, file_key: str) -> None:
         """Remove stale graph state before re-adding a file."""
+        removed_rule_names: set[str] = set()
         file_node = self.nodes.get(file_key)
         if file_node is not None:
             for dependency in list(file_node.dependencies):
@@ -295,11 +296,14 @@ class DependencyGraph:
             rule_key = f"rule:{rule_name}"
             rule_node = self.nodes.get(rule_key)
             if rule_node is not None and str(rule_node.file_path) == file_key:
+                removed_rule_names.add(rule_node.name)
                 self._remove_rule_node(rule_key)
             if self.rule_files.get(rule_name) == file_key:
                 del self.rule_files[rule_name]
 
         self.file_rules.pop(file_key, None)
+        for rule_name in removed_rule_names:
+            self._compact_unique_rule_occurrence(rule_name)
 
     def _remove_rule_node(self, rule_key: str) -> None:
         """Remove a rule node and references to it."""
@@ -347,6 +351,45 @@ class DependencyGraph:
         analysis_input = self._rule_analysis_inputs.pop(old_key, None)
         if analysis_input is not None:
             self._rule_analysis_inputs[new_key] = analysis_input
+
+    def _compact_unique_rule_occurrence(self, rule_name: str) -> None:
+        """Rename the only remaining indexed occurrence back to its bare key."""
+        bare_key = f"rule:{rule_name}"
+        if bare_key in self.nodes:
+            return
+        matching_keys = self._rule_node_keys_for_name(rule_name)
+        if len(matching_keys) != 1:
+            return
+
+        old_key = matching_keys[0]
+        if not old_key.startswith(f"{bare_key}#"):
+            return
+
+        node = self.nodes.get(old_key)
+        if node is None or node.type != "rule":
+            return
+
+        self.nodes[bare_key] = self.nodes.pop(old_key)
+        old_rule_name = old_key.removeprefix("rule:")
+        for graph_node in self.nodes.values():
+            if old_key in graph_node.dependencies:
+                graph_node.dependencies.remove(old_key)
+                graph_node.dependencies.add(bare_key)
+            if old_key in graph_node.dependents:
+                graph_node.dependents.remove(old_key)
+                graph_node.dependents.add(bare_key)
+
+        file_path = self.rule_files.pop(old_rule_name, None)
+        if file_path is not None:
+            self.rule_files[rule_name] = file_path
+            file_rules = self.file_rules.get(file_path)
+            if file_rules is not None and old_rule_name in file_rules:
+                file_rules.remove(old_rule_name)
+                file_rules.add(rule_name)
+
+        analysis_input = self._rule_analysis_inputs.pop(old_key, None)
+        if analysis_input is not None:
+            self._rule_analysis_inputs[bare_key] = analysis_input
 
     def _remove_orphan_external_node(self, node_key: str) -> None:
         """Remove include/module placeholders that no node references anymore."""
