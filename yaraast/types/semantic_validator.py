@@ -9,7 +9,12 @@ from typing import TYPE_CHECKING
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.conditions import ForOfExpression, OfExpression
-from yaraast.ast.expressions import Identifier
+from yaraast.ast.expressions import (
+    Identifier,
+    IntegerLiteral,
+    ParenthesesExpression,
+    RangeExpression,
+)
 from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.types.module_loader import ModuleLoader
 from yaraast.types.semantic_validator_core import ValidationError, ValidationResult
@@ -91,7 +96,7 @@ class SemanticValidator:
             if rule.condition is not None:
                 function_validator.visit(rule.condition)
 
-        _validate_external_quantifiers(result, ast, effective_externals)
+        _validate_external_expression_values(result, ast, effective_externals)
 
         type_env = TypeEnvironment()
         _define_external_types(type_env, effective_externals)
@@ -136,7 +141,7 @@ class SemanticValidator:
             function_validator = FunctionCallValidator(result, env)
             function_validator.visit(rule.condition)
 
-        _validate_external_quantifiers(result, rule, self._effective_externals(externals))
+        _validate_external_expression_values(result, rule, self._effective_externals(externals))
 
         type_checker = TypeChecker(env)
         type_errors = type_checker.check(YaraFile(rules=[rule]))
@@ -165,7 +170,7 @@ class SemanticValidator:
         function_validator = FunctionCallValidator(result, env)
         function_validator.visit(expr)
 
-        _validate_external_quantifiers(result, expr, self._effective_externals(externals))
+        _validate_external_expression_values(result, expr, self._effective_externals(externals))
 
         type_checker = TypeChecker(env)
         try:
@@ -238,7 +243,7 @@ def _define_external_types(
         env.define(name, _external_type(value))
 
 
-def _validate_external_quantifiers(
+def _validate_external_expression_values(
     result: ValidationResult,
     node: ASTNode,
     externals: Mapping[str, object],
@@ -259,6 +264,8 @@ def _validate_external_quantifiers(
                 externals,
                 context=context,
             )
+        elif isinstance(candidate, RangeExpression):
+            _validate_external_range_bounds(result, candidate, externals)
 
 
 def _walk_ast_nodes(value: object) -> Iterator[ASTNode]:
@@ -291,6 +298,53 @@ def _validate_external_quantifier_value(
     if isinstance(value, int) and value >= 0:
         return
     result.add_error(f"Invalid {context} quantifier external '{quantifier.name}'")
+
+
+def _validate_external_range_bounds(
+    result: ValidationResult,
+    node: RangeExpression,
+    externals: Mapping[str, object],
+) -> None:
+    low = _static_external_integer_value(node.low, externals)
+    high = _static_external_integer_value(node.high, externals)
+    if low is not None and high is not None and low < 0:
+        name = _external_identifier_name(node.low)
+        if name is None:
+            result.add_error("Range lower bound must not be negative")
+        else:
+            result.add_error(f"Range lower bound external '{name}' must not be negative")
+        return
+    if low is not None and high is not None and low > high:
+        result.add_error(
+            "Range lower bound external value must be less than or equal to upper bound"
+        )
+
+
+def _static_external_integer_value(
+    value: object,
+    externals: Mapping[str, object],
+) -> int | None:
+    if isinstance(value, IntegerLiteral) and isinstance(value.value, int):
+        return value.value
+    if isinstance(value, ParenthesesExpression):
+        return _static_external_integer_value(value.expression, externals)
+    name = _external_identifier_name(value)
+    if name is None or name not in externals:
+        return None
+    external_value = externals[name]
+    if isinstance(external_value, bool):
+        return int(external_value)
+    if isinstance(external_value, int):
+        return external_value
+    return None
+
+
+def _external_identifier_name(value: object) -> str | None:
+    if isinstance(value, Identifier):
+        return value.name
+    if isinstance(value, ParenthesesExpression):
+        return _external_identifier_name(value.expression)
+    return None
 
 
 # Convenience functions for easy usage

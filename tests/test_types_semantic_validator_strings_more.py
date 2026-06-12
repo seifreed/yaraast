@@ -710,6 +710,47 @@ def test_semantic_validator_rejects_invalid_external_for_of_quantifiers() -> Non
         )
 
 
+def test_semantic_validator_rejects_invalid_external_range_bounds() -> None:
+    ast = Parser().parse("""
+        rule external_range {
+            strings:
+                $a = "a"
+            condition:
+                $a in (low..high)
+        }
+        """)
+
+    descending = SemanticValidator(externals={"low": 1, "high": 0}).validate(ast)
+    negative_low = SemanticValidator(externals={"low": -1, "high": 0}).validate(ast)
+
+    assert descending.is_valid is False
+    assert any(
+        "Range lower bound external value must be less than or equal to upper bound"
+        in error.message
+        for error in descending.errors
+    )
+    assert negative_low.is_valid is False
+    assert any(
+        "Range lower bound external 'low' must not be negative" in error.message
+        for error in negative_low.errors
+    )
+
+
+def test_semantic_validator_accepts_valid_external_range_bounds() -> None:
+    ast = Parser().parse("""
+        rule external_range {
+            strings:
+                $a = "a"
+            condition:
+                $a in (low..high)
+        }
+        """)
+
+    result = SemanticValidator(externals={"low": False, "high": 1}).validate(ast)
+
+    assert result.is_valid is True, [error.message for error in result.errors]
+
+
 def test_semantic_validator_accepts_bare_string_literal_string_set_items() -> None:
     ast = YaraFile(
         rules=[
