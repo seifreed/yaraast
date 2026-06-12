@@ -1659,6 +1659,39 @@ def test_protobuf_deserializer_rejects_empty_extern_import_alias() -> None:
             serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
+@pytest.mark.parametrize(
+    ("payload_kind", "message"),
+    [
+        ("import_alias", "Import alias must not be empty"),
+        ("extern_rule_namespace", "ExternRule namespace must not be empty"),
+        ("extern_rule_reference_namespace", "ExternRuleReference namespace must not be empty"),
+    ],
+)
+def test_protobuf_deserializer_rejects_whitespace_optional_identifiers(
+    payload_kind: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+
+    if payload_kind == "import_alias":
+        pb_import = pb_file.imports.add()
+        pb_import.module = "pe"
+        pb_import.alias = "   "
+    elif payload_kind == "extern_rule_namespace":
+        pb_extern_rule = pb_file.extern_rules.add()
+        pb_extern_rule.name = "ExternalRule"
+        pb_extern_rule.namespace = "   "
+    else:
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "uses_external"
+        pb_rule.condition.extern_rule_reference.rule_name = "ExternalRule"
+        pb_rule.condition.extern_rule_reference.namespace = "   "
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 def test_protobuf_serializer_rejects_empty_meta_keys() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

@@ -394,6 +394,12 @@ def _protobuf_optional_string(value, context: str) -> str | None:
     return _protobuf_required_string(value, context)
 
 
+def _protobuf_optional_nonempty_scalar(value: str, context: str) -> str | None:
+    if not value:
+        return None
+    return _protobuf_required_nonempty_string(value, context)
+
+
 def _protobuf_required_bool(value, context: str) -> bool:
     if isinstance(value, bool):
         return value
@@ -1650,7 +1656,10 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
                         pb_import.module,
                         "Import module",
                     ),
-                    alias=pb_import.alias if pb_import.alias else None,
+                    alias=_protobuf_optional_nonempty_scalar(
+                        pb_import.alias,
+                        "Import alias",
+                    ),
                 ),
             ),
         )
@@ -1771,7 +1780,10 @@ def protobuf_to_extern_rule(pb_extern_rule):
                 "ExternRule name",
             ),
             modifiers=modifiers,
-            namespace=pb_extern_rule.namespace or None,
+            namespace=_protobuf_optional_nonempty_scalar(
+                pb_extern_rule.namespace,
+                "ExternRule namespace",
+            ),
         ),
     )
 
@@ -2350,7 +2362,10 @@ def protobuf_to_expression(pb_expr):
                     pb_expr.extern_rule_reference.rule_name,
                     "ExternRuleReference rule_name",
                 ),
-                namespace=pb_expr.extern_rule_reference.namespace or None,
+                namespace=_protobuf_optional_nonempty_scalar(
+                    pb_expr.extern_rule_reference.namespace,
+                    "ExternRuleReference namespace",
+                ),
             ),
         )
     if pb_expr.HasField("for_expression"):
