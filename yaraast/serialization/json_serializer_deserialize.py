@@ -30,6 +30,9 @@ from yaraast.serialization._serialization_primitives import (
     _deserialize_string_list_field,
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
+    _validate_local_identifier_list,
+    _validate_local_identifier_text,
+    _validate_loop_variable_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -608,7 +611,9 @@ def _deser_for_expression(self, data: dict[str, Any]):
 
     return ForExpression(
         quantifier=_deserialize_required_quantifier(self, data, "quantifier", "ForExpression"),
-        variable=_deserialize_nonempty_string_field(data, "variable", "ForExpression"),
+        variable=_validate_loop_variable_text(
+            _deserialize_nonempty_string_field(data, "variable", "ForExpression")
+        ),
         iterable=_deserialize_required_expression(self, data, "iterable", "ForExpression"),
         body=_deserialize_required_expression(self, data, "body", "ForExpression"),
     )
@@ -769,7 +774,10 @@ def _deser_with_declaration(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import WithDeclaration
 
     return WithDeclaration(
-        identifier=_deserialize_nonempty_string_field(data, "identifier", "WithDeclaration"),
+        identifier=_validate_local_identifier_text(
+            _deserialize_nonempty_string_field(data, "identifier", "WithDeclaration"),
+            allow_string_identifier=True,
+        ),
         value=_deserialize_required_expression(self, data, "value", "WithDeclaration"),
     )
 
@@ -798,7 +806,9 @@ def _deser_array_comprehension(self, data: dict[str, Any]):
             self, data, "condition", "ArrayComprehension"
         )
 
-    variable = _deserialize_nonempty_string_field(data, "variable", "ArrayComprehension")
+    variable = _validate_local_identifier_text(
+        _deserialize_nonempty_string_field(data, "variable", "ArrayComprehension")
+    )
     if not expression_present:
         expression = _deserialize_nullable_expression_field(
             self, data, "expression", "ArrayComprehension"
@@ -851,13 +861,20 @@ def _deser_dict_comprehension(self, data: dict[str, Any]):
             self, data, "condition", "DictComprehension"
         )
 
-    key_variable = _deserialize_nonempty_string_field(
-        data,
-        "key_variable",
-        "DictComprehension",
+    key_variable = _validate_local_identifier_text(
+        _deserialize_nonempty_string_field(
+            data,
+            "key_variable",
+            "DictComprehension",
+        )
     )
-    value_variable = _deserialize_required_nullable_nonempty_string_field(
+    raw_value_variable = _deserialize_required_nullable_nonempty_string_field(
         data, "value_variable", "DictComprehension"
+    )
+    value_variable = (
+        _validate_local_identifier_text(raw_value_variable)
+        if raw_value_variable is not None
+        else None
     )
     if not key_expression_present:
         key_expression = _deserialize_nullable_expression_field(
@@ -982,7 +999,7 @@ def _deser_lambda_expression(self, data: dict[str, Any]):
         msg = "LambdaExpression parameters must contain non-empty strings"
         raise SerializationError(msg)
     return LambdaExpression(
-        parameters=raw_parameters,
+        parameters=_validate_local_identifier_list(raw_parameters),
         body=_deserialize_required_expression(self, data, "body", "LambdaExpression"),
     )
 

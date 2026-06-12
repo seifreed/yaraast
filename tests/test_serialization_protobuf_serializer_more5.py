@@ -2003,6 +2003,10 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             "ForExpression variable must not be empty",
         ),
         (
+            ForExpression("any", "bad-name", StringIdentifier("$a"), BooleanLiteral(True)),
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
             AtExpression(cast(Any, 123), IntegerLiteral(0)),
             "AtExpression string_id must be a string or expression",
         ),
@@ -2379,6 +2383,22 @@ def test_protobuf_deserializer_rejects_empty_expression_identifier_fields(
         condition.string_operator_expression.right.string_literal.value = "b"
 
     with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserializer_rejects_invalid_for_expression_variable() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_for_variable"
+    condition = pb_rule.condition
+    condition.for_expression.quantifier = "any"
+    condition.for_expression.variable = "bad-name"
+    condition.for_expression.iterable.range_expression.low.integer_literal.value = 0
+    condition.for_expression.iterable.range_expression.high.integer_literal.value = 3
+    condition.for_expression.body.boolean_literal.value = True
+
+    with pytest.raises(SerializationError, match="Invalid local variable identifier: bad-name"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 

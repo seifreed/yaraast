@@ -1806,6 +1806,10 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             ForExpression("any", cast(Any, ["i"]), SetExpression([]), true_expr),
             "ForExpression variable must be a string",
         ),
+        (
+            ForExpression("any", "bad-name", SetExpression([]), true_expr),
+            "Invalid local variable identifier: bad-name",
+        ),
         (ModuleReference(""), "ModuleReference module must not be empty"),
         (ModuleReference(cast(Any, ["pe"])), "ModuleReference module must be a string"),
         (
@@ -1817,6 +1821,10 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             "WithDeclaration identifier must not be empty",
         ),
         (
+            WithDeclaration("bad-name", IntegerLiteral(1)),
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
             StringOperatorExpression(StringLiteral("a"), "", StringLiteral("b")),
             "StringOperatorExpression operator must not be empty",
         ),
@@ -1825,12 +1833,24 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             "ArrayComprehension variable must not be empty",
         ),
         (
+            ArrayComprehension(variable="1bad"),
+            "Invalid local variable identifier: 1bad",
+        ),
+        (
             DictComprehension(key_variable=""),
             "DictComprehension key_variable must not be empty",
         ),
         (
+            DictComprehension(key_variable="for"),
+            "Invalid local variable identifier: for",
+        ),
+        (
             DictComprehension(key_variable="k", value_variable=""),
             "DictComprehension value_variable must not be empty",
+        ),
+        (
+            DictComprehension(key_variable="k", value_variable="bad-name"),
+            "Invalid local variable identifier: bad-name",
         ),
         (
             LambdaExpression([""], true_expr),
@@ -1839,6 +1859,10 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
         (
             LambdaExpression(cast(Any, "x"), true_expr),
             "LambdaExpression parameters must be a list of strings",
+        ),
+        (
+            LambdaExpression(["1bad"], true_expr),
+            "Invalid local variable identifier: 1bad",
         ),
         (
             SpreadOperator(Identifier("x"), cast(Any, "true")),
@@ -2684,6 +2708,79 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
 
     with pytest.raises(SerializationError, match="SpreadOperator is_dict is required"):
         deserialize_node({"type": "SpreadOperator", "expression": true_expr})
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": "bad-name",
+                "iterable": {"type": "BooleanLiteral", "value": True},
+                "body": {"type": "BooleanLiteral", "value": True},
+            },
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
+            {
+                "type": "WithDeclaration",
+                "identifier": "bad-name",
+                "value": {"type": "IntegerLiteral", "value": 1},
+            },
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
+            {
+                "type": "ArrayComprehension",
+                "expression": {"type": "BooleanLiteral", "value": True},
+                "variable": "1bad",
+                "iterable": {"type": "BooleanLiteral", "value": True},
+                "condition": None,
+            },
+            "Invalid local variable identifier: 1bad",
+        ),
+        (
+            {
+                "type": "DictComprehension",
+                "key_expression": {"type": "BooleanLiteral", "value": True},
+                "value_expression": {"type": "BooleanLiteral", "value": True},
+                "key_variable": "for",
+                "value_variable": None,
+                "iterable": {"type": "BooleanLiteral", "value": True},
+                "condition": None,
+            },
+            "Invalid local variable identifier: for",
+        ),
+        (
+            {
+                "type": "DictComprehension",
+                "key_expression": {"type": "BooleanLiteral", "value": True},
+                "value_expression": {"type": "BooleanLiteral", "value": True},
+                "key_variable": "k",
+                "value_variable": "bad-name",
+                "iterable": {"type": "BooleanLiteral", "value": True},
+                "condition": None,
+            },
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
+            {
+                "type": "LambdaExpression",
+                "parameters": ["1bad"],
+                "body": {"type": "BooleanLiteral", "value": True},
+            },
+            "Invalid local variable identifier: 1bad",
+        ),
+    ],
+)
+def test_simple_roundtrip_deserializer_rejects_invalid_local_identifier_fields(
+    payload: dict[str, Any],
+    message: str,
+) -> None:
+    with pytest.raises(SerializationError, match=message):
+        deserialize_node(payload)
 
 
 def test_simple_roundtrip_condition_fields_reject_wrong_scalar_types() -> None:

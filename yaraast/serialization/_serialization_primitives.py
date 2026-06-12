@@ -15,6 +15,7 @@ from typing import Any
 from yaraast.ast.base import Location
 from yaraast.ast.modifiers import RuleModifier, require_rule_modifier_identifier
 from yaraast.errors import SerializationError, ValidationError
+from yaraast.shared.local_scope import local_name_variants, validate_local_identifier
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
@@ -52,6 +53,34 @@ def _normalize_rule_modifier_text(value: str, context: str) -> str:
         except ValidationError as exc:
             raise SerializationError(str(exc)) from exc
         return value
+
+
+def _validate_local_identifier_text(
+    value: str,
+    *,
+    allow_string_identifier: bool = False,
+) -> str:
+    try:
+        return validate_local_identifier(
+            value,
+            allow_string_identifier=allow_string_identifier,
+        )
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+
+
+def _validate_loop_variable_text(value: str) -> str:
+    try:
+        local_name_variants(value)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return value
+
+
+def _validate_local_identifier_list(values: list[str]) -> list[str]:
+    for value in values:
+        _validate_local_identifier_text(value)
+    return values
 
 
 def _serialize_modifier_value(value: Any) -> str | int | float | list[int] | None:

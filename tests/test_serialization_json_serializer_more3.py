@@ -916,6 +916,150 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
             serializer.serialize(ast)
 
 
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            ForExpression("any", "bad-name", Identifier("items"), BooleanLiteral(True)),
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
+            WithStatement([WithDeclaration("bad-name", IntegerLiteral(1))], BooleanLiteral(True)),
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
+            ArrayComprehension(variable="1bad"),
+            "Invalid local variable identifier: 1bad",
+        ),
+        (
+            DictComprehension(key_variable="for"),
+            "Invalid local variable identifier: for",
+        ),
+        (
+            DictComprehension(key_variable="k", value_variable="bad-name"),
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
+            LambdaExpression(["1bad"], BooleanLiteral(True)),
+            "Invalid local variable identifier: 1bad",
+        ),
+    ],
+)
+def test_json_serializer_rejects_invalid_local_identifier_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="invalid_local_identifier", condition=condition)])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": "bad-name",
+                "iterable": {"type": "Identifier", "name": "items"},
+                "body": {"type": "BooleanLiteral", "value": True},
+            },
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
+            {
+                "type": "WithStatement",
+                "declarations": [
+                    {
+                        "type": "WithDeclaration",
+                        "identifier": "bad-name",
+                        "value": {"type": "IntegerLiteral", "value": 1},
+                    }
+                ],
+                "body": {"type": "BooleanLiteral", "value": True},
+            },
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
+            {
+                "type": "ArrayComprehension",
+                "expression": {"type": "Identifier", "name": "x"},
+                "variable": "1bad",
+                "iterable": {"type": "Identifier", "name": "xs"},
+                "condition": None,
+            },
+            "Invalid local variable identifier: 1bad",
+        ),
+        (
+            {
+                "type": "DictComprehension",
+                "key_expression": {"type": "Identifier", "name": "k"},
+                "value_expression": {"type": "Identifier", "name": "v"},
+                "key_variable": "for",
+                "value_variable": None,
+                "iterable": {"type": "Identifier", "name": "xs"},
+                "condition": None,
+            },
+            "Invalid local variable identifier: for",
+        ),
+        (
+            {
+                "type": "DictComprehension",
+                "key_expression": {"type": "Identifier", "name": "k"},
+                "value_expression": {"type": "Identifier", "name": "v"},
+                "key_variable": "k",
+                "value_variable": "bad-name",
+                "iterable": {"type": "Identifier", "name": "xs"},
+                "condition": None,
+            },
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
+            {
+                "type": "LambdaExpression",
+                "parameters": ["1bad"],
+                "body": {"type": "BooleanLiteral", "value": True},
+            },
+            "Invalid local variable identifier: 1bad",
+        ),
+    ],
+)
+def test_json_deserializer_rejects_invalid_local_identifier_fields(
+    payload: dict[str, Any],
+    message: str,
+) -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast_payload = {
+        "ast": {
+            "type": "YaraFile",
+            "imports": [],
+            "includes": [],
+            "rules": [
+                {
+                    "type": "Rule",
+                    "name": "invalid_local_identifier",
+                    "modifiers": [],
+                    "tags": [],
+                    "meta": [],
+                    "strings": [],
+                    "condition": payload,
+                    "pragmas": [],
+                }
+            ],
+            "extern_rules": [],
+            "extern_imports": [],
+            "pragmas": [],
+            "namespaces": [],
+        }
+    }
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(json.dumps(ast_payload))
+
+
 def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_text: Any = 123

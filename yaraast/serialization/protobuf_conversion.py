@@ -12,6 +12,9 @@ from yaraast.serialization._serialization_primitives import (
     _is_empty_nonempty_text,
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
+    _validate_local_identifier_list,
+    _validate_local_identifier_text,
+    _validate_loop_variable_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -1521,9 +1524,11 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         quantifier = _coerce_quantifier_expression(expr.quantifier)
         if quantifier is not None:
             convert_expression_to_protobuf(quantifier, pb_expr.for_expression.quantifier_expr)
-        pb_expr.for_expression.variable = _protobuf_required_nonempty_string(
-            expr.variable,
-            "ForExpression variable",
+        pb_expr.for_expression.variable = _validate_loop_variable_text(
+            _protobuf_required_nonempty_string(
+                expr.variable,
+                "ForExpression variable",
+            )
         )
         convert_expression_to_protobuf(expr.iterable, pb_expr.for_expression.iterable)
         convert_expression_to_protobuf(expr.body, pb_expr.for_expression.body)
@@ -1606,9 +1611,11 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 expr.expression,
                 pb_expr.array_comprehension.expression,
             )
-        pb_expr.array_comprehension.variable = _protobuf_required_nonempty_string(
-            expr.variable,
-            "ArrayComprehension variable",
+        pb_expr.array_comprehension.variable = _validate_local_identifier_text(
+            _protobuf_required_nonempty_string(
+                expr.variable,
+                "ArrayComprehension variable",
+            )
         )
         if expr.iterable is not None:
             convert_expression_to_protobuf(expr.iterable, pb_expr.array_comprehension.iterable)
@@ -1628,14 +1635,18 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 expr.value_expression,
                 pb_expr.dict_comprehension.value_expression,
             )
-        pb_expr.dict_comprehension.key_variable = _protobuf_required_nonempty_string(
-            expr.key_variable,
-            "DictComprehension key_variable",
+        pb_expr.dict_comprehension.key_variable = _validate_local_identifier_text(
+            _protobuf_required_nonempty_string(
+                expr.key_variable,
+                "DictComprehension key_variable",
+            )
         )
         if expr.value_variable is not None:
-            pb_expr.dict_comprehension.value_variable = _protobuf_required_nonempty_string(
-                expr.value_variable,
-                "DictComprehension value_variable",
+            pb_expr.dict_comprehension.value_variable = _validate_local_identifier_text(
+                _protobuf_required_nonempty_string(
+                    expr.value_variable,
+                    "DictComprehension value_variable",
+                )
             )
         if expr.iterable is not None:
             convert_expression_to_protobuf(expr.iterable, pb_expr.dict_comprehension.iterable)
@@ -1669,7 +1680,9 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             convert_expression_to_protobuf(expr.step, pb_expr.slice_expression.step)
     elif isinstance(expr, LambdaExpression):
         pb_expr.lambda_expression.parameters.extend(
-            _protobuf_nonempty_string_list(expr.parameters, "LambdaExpression parameters")
+            _validate_local_identifier_list(
+                _protobuf_nonempty_string_list(expr.parameters, "LambdaExpression parameters")
+            )
         )
         convert_expression_to_protobuf(expr.body, pb_expr.lambda_expression.body)
     elif isinstance(expr, PatternMatch):
@@ -1690,9 +1703,12 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
 
 
 def convert_with_declaration_to_protobuf(declaration, pb_declaration) -> None:
-    pb_declaration.identifier = _protobuf_required_nonempty_string(
-        declaration.identifier,
-        "WithDeclaration identifier",
+    pb_declaration.identifier = _validate_local_identifier_text(
+        _protobuf_required_nonempty_string(
+            declaration.identifier,
+            "WithDeclaration identifier",
+        ),
+        allow_string_identifier=True,
     )
     convert_expression_to_protobuf(declaration.value, pb_declaration.value)
     _copy_node_metadata_to_protobuf(declaration, pb_declaration)
@@ -2448,9 +2464,11 @@ def protobuf_to_expression(pb_expr):
                         "ForExpression quantifier",
                     )
                 ),
-                variable=_protobuf_required_nonempty_string(
-                    pb_expr.for_expression.variable,
-                    "ForExpression variable",
+                variable=_validate_loop_variable_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.for_expression.variable,
+                        "ForExpression variable",
+                    )
                 ),
                 iterable=protobuf_to_expression(pb_expr.for_expression.iterable),
                 body=protobuf_to_expression(pb_expr.for_expression.body),
@@ -2560,9 +2578,11 @@ def protobuf_to_expression(pb_expr):
                     if pb_expr.array_comprehension.HasField("expression")
                     else None
                 ),
-                variable=_protobuf_required_nonempty_string(
-                    pb_expr.array_comprehension.variable,
-                    "ArrayComprehension variable",
+                variable=_validate_local_identifier_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.array_comprehension.variable,
+                        "ArrayComprehension variable",
+                    )
                 ),
                 iterable=(
                     protobuf_to_expression(pb_expr.array_comprehension.iterable)
@@ -2589,14 +2609,18 @@ def protobuf_to_expression(pb_expr):
                     if pb_expr.dict_comprehension.HasField("value_expression")
                     else None
                 ),
-                key_variable=_protobuf_required_nonempty_string(
-                    pb_expr.dict_comprehension.key_variable,
-                    "DictComprehension key_variable",
+                key_variable=_validate_local_identifier_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.dict_comprehension.key_variable,
+                        "DictComprehension key_variable",
+                    )
                 ),
                 value_variable=(
-                    _protobuf_required_nonempty_string(
-                        pb_expr.dict_comprehension.value_variable,
-                        "DictComprehension value_variable",
+                    _validate_local_identifier_text(
+                        _protobuf_required_nonempty_string(
+                            pb_expr.dict_comprehension.value_variable,
+                            "DictComprehension value_variable",
+                        )
                     )
                     if pb_expr.dict_comprehension.HasField("value_variable")
                     else None
@@ -2666,9 +2690,11 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("lambda_expression"):
         return with_metadata(
             LambdaExpression(
-                parameters=_protobuf_nonempty_string_list(
-                    list(pb_expr.lambda_expression.parameters),
-                    "LambdaExpression parameters",
+                parameters=_validate_local_identifier_list(
+                    _protobuf_nonempty_string_list(
+                        list(pb_expr.lambda_expression.parameters),
+                        "LambdaExpression parameters",
+                    )
                 ),
                 body=protobuf_to_expression(pb_expr.lambda_expression.body),
             ),
@@ -2702,9 +2728,12 @@ def protobuf_to_with_declaration(pb_declaration):
     return _apply_node_metadata_from_protobuf(
         pb_declaration,
         WithDeclaration(
-            identifier=_protobuf_required_nonempty_string(
-                pb_declaration.identifier,
-                "WithDeclaration identifier",
+            identifier=_validate_local_identifier_text(
+                _protobuf_required_nonempty_string(
+                    pb_declaration.identifier,
+                    "WithDeclaration identifier",
+                ),
+                allow_string_identifier=True,
             ),
             value=protobuf_to_expression(pb_declaration.value),
         ),

@@ -286,6 +286,57 @@ def test_protobuf_serializer_rejects_empty_yarax_identifier_fields(
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            ArrayComprehension(
+                expression=Identifier("x"),
+                variable="1bad",
+                iterable=Identifier("xs"),
+            ),
+            "Invalid local variable identifier: 1bad",
+        ),
+        (
+            DictComprehension(
+                key_expression=Identifier("k"),
+                value_expression=Identifier("v"),
+                key_variable="for",
+                iterable=Identifier("xs"),
+            ),
+            "Invalid local variable identifier: for",
+        ),
+        (
+            DictComprehension(
+                key_expression=Identifier("k"),
+                value_expression=Identifier("v"),
+                key_variable="k",
+                value_variable="bad-name",
+                iterable=Identifier("xs"),
+            ),
+            "Invalid local variable identifier: bad-name",
+        ),
+        (
+            LambdaExpression(parameters=["1bad"], body=BooleanLiteral(True)),
+            "Invalid local variable identifier: 1bad",
+        ),
+        (
+            WithStatement([WithDeclaration("bad-name", IntegerLiteral(1))], BooleanLiteral(True)),
+            "Invalid local variable identifier: bad-name",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_invalid_yarax_local_identifier_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="invalid_yarax_identifier", condition=condition)])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
     ("payload_kind", "message"),
     [
         ("with_declaration", "WithDeclaration identifier must not be empty"),
@@ -326,6 +377,53 @@ def test_protobuf_deserializer_rejects_empty_yarax_identifier_fields(
         condition.dict_comprehension.iterable.identifier.name = "xs"
     elif payload_kind == "lambda_parameter":
         condition.lambda_expression.parameters.append("")
+        condition.lambda_expression.body.boolean_literal.value = True
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("payload_kind", "message"),
+    [
+        ("with_declaration", "Invalid local variable identifier: bad-name"),
+        ("array_comprehension", "Invalid local variable identifier: 1bad"),
+        ("dict_key_variable", "Invalid local variable identifier: for"),
+        ("dict_value_variable", "Invalid local variable identifier: bad-name"),
+        ("lambda_parameter", "Invalid local variable identifier: 1bad"),
+    ],
+)
+def test_protobuf_deserializer_rejects_invalid_yarax_local_identifier_fields(
+    payload_kind: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_yarax_identifier"
+    condition = pb_rule.condition
+    if payload_kind == "with_declaration":
+        declaration = condition.with_statement.declarations.add()
+        declaration.identifier = "bad-name"
+        declaration.value.integer_literal.value = 1
+        condition.with_statement.body.boolean_literal.value = True
+    elif payload_kind == "array_comprehension":
+        condition.array_comprehension.expression.identifier.name = "x"
+        condition.array_comprehension.variable = "1bad"
+        condition.array_comprehension.iterable.identifier.name = "xs"
+    elif payload_kind == "dict_key_variable":
+        condition.dict_comprehension.key_expression.identifier.name = "k"
+        condition.dict_comprehension.value_expression.identifier.name = "v"
+        condition.dict_comprehension.key_variable = "for"
+        condition.dict_comprehension.iterable.identifier.name = "xs"
+    elif payload_kind == "dict_value_variable":
+        condition.dict_comprehension.key_expression.identifier.name = "k"
+        condition.dict_comprehension.value_expression.identifier.name = "v"
+        condition.dict_comprehension.key_variable = "k"
+        condition.dict_comprehension.value_variable = "bad-name"
+        condition.dict_comprehension.iterable.identifier.name = "xs"
+    elif payload_kind == "lambda_parameter":
+        condition.lambda_expression.parameters.append("1bad")
         condition.lambda_expression.body.boolean_literal.value = True
 
     with pytest.raises(SerializationError, match=message):

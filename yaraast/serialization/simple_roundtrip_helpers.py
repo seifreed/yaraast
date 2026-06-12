@@ -97,6 +97,9 @@ from yaraast.serialization._serialization_primitives import (
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
     _serialize_modifier_value,
+    _validate_local_identifier_list,
+    _validate_local_identifier_text,
+    _validate_loop_variable_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
@@ -1364,9 +1367,11 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
                 node.quantifier,
                 "ForExpression quantifier",
             ),
-            "variable": _serialize_required_nonempty_string(
-                node.variable,
-                "ForExpression variable",
+            "variable": _validate_loop_variable_text(
+                _serialize_required_nonempty_string(
+                    node.variable,
+                    "ForExpression variable",
+                )
             ),
             "iterable": serialize_node(node.iterable),
             "body": serialize_node(node.body),
@@ -1448,9 +1453,12 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, WithDeclaration):
         return {
             "type": "WithDeclaration",
-            "identifier": _serialize_required_nonempty_string(
-                node.identifier,
-                "WithDeclaration identifier",
+            "identifier": _validate_local_identifier_text(
+                _serialize_required_nonempty_string(
+                    node.identifier,
+                    "WithDeclaration identifier",
+                ),
+                allow_string_identifier=True,
             ),
             "value": serialize_node(node.value),
         }
@@ -1458,9 +1466,11 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "ArrayComprehension",
             "expression": serialize_node(node.expression) if node.expression is not None else None,
-            "variable": _serialize_required_nonempty_string(
-                node.variable,
-                "ArrayComprehension variable",
+            "variable": _validate_local_identifier_text(
+                _serialize_required_nonempty_string(
+                    node.variable,
+                    "ArrayComprehension variable",
+                )
             ),
             "iterable": serialize_node(node.iterable) if node.iterable is not None else None,
             "condition": serialize_node(node.condition) if node.condition is not None else None,
@@ -1474,13 +1484,22 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "value_expression": (
                 serialize_node(node.value_expression) if node.value_expression is not None else None
             ),
-            "key_variable": _serialize_required_nonempty_string(
-                node.key_variable,
-                "DictComprehension key_variable",
+            "key_variable": _validate_local_identifier_text(
+                _serialize_required_nonempty_string(
+                    node.key_variable,
+                    "DictComprehension key_variable",
+                )
             ),
-            "value_variable": _serialize_nullable_nonempty_string(
-                node.value_variable,
-                "DictComprehension value_variable",
+            "value_variable": (
+                _validate_local_identifier_text(value_variable)
+                if (
+                    value_variable := _serialize_nullable_nonempty_string(
+                        node.value_variable,
+                        "DictComprehension value_variable",
+                    )
+                )
+                is not None
+                else None
             ),
             "iterable": serialize_node(node.iterable) if node.iterable is not None else None,
             "condition": serialize_node(node.condition) if node.condition is not None else None,
@@ -1530,9 +1549,11 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, LambdaExpression):
         return {
             "type": "LambdaExpression",
-            "parameters": _serialize_nonempty_string_list(
-                node.parameters,
-                "LambdaExpression parameters",
+            "parameters": _validate_local_identifier_list(
+                _serialize_nonempty_string_list(
+                    node.parameters,
+                    "LambdaExpression parameters",
+                )
             ),
             "body": serialize_node(node.body),
         }
@@ -2045,7 +2066,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "ForExpression":
         return ForExpression(
             _deserialize_required_quantifier(data, "quantifier", "ForExpression"),
-            _deserialize_nonempty_string_field(data, "variable", "ForExpression"),
+            _validate_loop_variable_text(
+                _deserialize_nonempty_string_field(data, "variable", "ForExpression")
+            ),
             _deserialize_required_node(data, "iterable", "ForExpression"),
             _deserialize_required_node(data, "body", "ForExpression"),
         )
@@ -2125,7 +2148,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "WithDeclaration":
         return WithDeclaration(
-            identifier=_deserialize_nonempty_string_field(data, "identifier", "WithDeclaration"),
+            identifier=_validate_local_identifier_text(
+                _deserialize_nonempty_string_field(data, "identifier", "WithDeclaration"),
+                allow_string_identifier=True,
+            ),
             value=_deserialize_required_node(data, "value", "WithDeclaration"),
         )
     if node_type == "ArrayComprehension":
@@ -2144,7 +2170,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         if condition_present:
             condition = _deserialize_nullable_node_field(data, "condition", "ArrayComprehension")
 
-        variable = _deserialize_nonempty_string_field(data, "variable", "ArrayComprehension")
+        variable = _validate_local_identifier_text(
+            _deserialize_nonempty_string_field(data, "variable", "ArrayComprehension")
+        )
         if not expression_present:
             expression = _deserialize_nullable_node_field(data, "expression", "ArrayComprehension")
         if not iterable_present:
@@ -2183,15 +2211,22 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         if condition_present:
             condition = _deserialize_nullable_node_field(data, "condition", "DictComprehension")
 
-        key_variable = _deserialize_nonempty_string_field(
-            data,
-            "key_variable",
-            "DictComprehension",
+        key_variable = _validate_local_identifier_text(
+            _deserialize_nonempty_string_field(
+                data,
+                "key_variable",
+                "DictComprehension",
+            )
         )
-        value_variable = _deserialize_required_nullable_nonempty_string_field(
+        raw_value_variable = _deserialize_required_nullable_nonempty_string_field(
             data,
             "value_variable",
             "DictComprehension",
+        )
+        value_variable = (
+            _validate_local_identifier_text(raw_value_variable)
+            if raw_value_variable is not None
+            else None
         )
         if not key_expression_present:
             key_expression = _deserialize_nullable_node_field(
@@ -2281,7 +2316,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             msg = "LambdaExpression parameters must contain non-empty strings"
             raise SerializationError(msg)
         return LambdaExpression(
-            parameters=raw_parameters,
+            parameters=_validate_local_identifier_list(raw_parameters),
             body=_deserialize_required_node(data, "body", "LambdaExpression"),
         )
     if node_type == "PatternMatch":

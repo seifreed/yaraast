@@ -12,6 +12,9 @@ from yaraast.serialization._serialization_primitives import (
     _is_empty_nonempty_text,
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
+    _validate_local_identifier_list,
+    _validate_local_identifier_text,
+    _validate_loop_variable_text,
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.pragma_scopes import serialize_pragma_scope
@@ -791,9 +794,11 @@ def visit_for_expression(serializer, node) -> dict[str, Any]:
             node.quantifier,
             "ForExpression quantifier",
         ),
-        "variable": _serialize_required_nonempty_string(
-            node.variable,
-            "ForExpression variable",
+        "variable": _validate_loop_variable_text(
+            _serialize_required_nonempty_string(
+                node.variable,
+                "ForExpression variable",
+            )
         ),
         "iterable": _serialize_required_expression(
             serializer,
@@ -933,9 +938,12 @@ def visit_with_statement(serializer, node) -> dict[str, Any]:
 def visit_with_declaration(serializer, node) -> dict[str, Any]:
     return {
         "type": "WithDeclaration",
-        "identifier": _serialize_required_nonempty_string(
-            node.identifier,
-            "WithDeclaration identifier",
+        "identifier": _validate_local_identifier_text(
+            _serialize_required_nonempty_string(
+                node.identifier,
+                "WithDeclaration identifier",
+            ),
+            allow_string_identifier=True,
         ),
         "value": _serialize_required_expression(serializer, node.value, "WithDeclaration value"),
     }
@@ -949,9 +957,11 @@ def visit_array_comprehension(serializer, node) -> dict[str, Any]:
             node.expression,
             "ArrayComprehension expression",
         ),
-        "variable": _serialize_required_nonempty_string(
-            node.variable,
-            "ArrayComprehension variable",
+        "variable": _validate_local_identifier_text(
+            _serialize_required_nonempty_string(
+                node.variable,
+                "ArrayComprehension variable",
+            )
         ),
         "iterable": _serialize_optional_expression(
             serializer,
@@ -981,13 +991,22 @@ def visit_dict_comprehension(serializer, node) -> dict[str, Any]:
                 "DictComprehension value_expression",
             )
         ),
-        "key_variable": _serialize_required_nonempty_string(
-            node.key_variable,
-            "DictComprehension key_variable",
+        "key_variable": _validate_local_identifier_text(
+            _serialize_required_nonempty_string(
+                node.key_variable,
+                "DictComprehension key_variable",
+            )
         ),
-        "value_variable": _serialize_nullable_nonempty_string(
-            node.value_variable,
-            "DictComprehension value_variable",
+        "value_variable": (
+            _validate_local_identifier_text(value_variable)
+            if (
+                value_variable := _serialize_nullable_nonempty_string(
+                    node.value_variable,
+                    "DictComprehension value_variable",
+                )
+            )
+            is not None
+            else None
         ),
         "iterable": _serialize_optional_expression(
             serializer,
@@ -1066,9 +1085,11 @@ def visit_slice_expression(serializer, node) -> dict[str, Any]:
 def visit_lambda_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "LambdaExpression",
-        "parameters": _serialize_nonempty_string_list(
-            node.parameters,
-            "LambdaExpression parameters",
+        "parameters": _validate_local_identifier_list(
+            _serialize_nonempty_string_list(
+                node.parameters,
+                "LambdaExpression parameters",
+            )
         ),
         "body": _serialize_required_expression(serializer, node.body, "LambdaExpression body"),
     }
