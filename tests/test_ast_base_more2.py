@@ -567,6 +567,53 @@ def test_direct_yarafile_analysis_rejects_invalid_pragma_block_fields() -> None:
         block.validate_structure()
 
 
+@pytest.mark.parametrize(
+    ("comment", "message"),
+    [
+        (Comment(cast(Any, 123)), "Comment text must be a string"),
+        (
+            Comment("note", is_multiline=cast(Any, "false")),
+            "Comment is_multiline must be a boolean",
+        ),
+        (
+            CommentGroup([Comment("ok"), cast(Any, object())]),
+            "CommentGroup comments must contain Comment nodes",
+        ),
+        (
+            CommentGroup(cast(Any, "bad")),
+            "CommentGroup comments must be a list",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_comment_metadata(
+    comment: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_comment", condition=BooleanLiteral(True))])
+    malformed_file.leading_comments = [comment]
+
+    with pytest.raises(TypeError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+def test_direct_yarafile_analysis_rejects_invalid_child_node_comment_metadata() -> None:
+    rule = Rule("bad_child_comment", condition=BooleanLiteral(True))
+    rule.leading_comments = [cast(Any, object())]
+    malformed_file = YaraFile(rules=[rule])
+
+    with pytest.raises(TypeError, match="leading_comments must contain Comment"):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+def test_direct_yarafile_analysis_rejects_invalid_trailing_comment_metadata() -> None:
+    rule = Rule("bad_trailing_comment", condition=BooleanLiteral(True))
+    rule.trailing_comment = cast(Any, object())
+    malformed_file = YaraFile(rules=[rule])
+
+    with pytest.raises(TypeError, match="trailing_comment must be a Comment"):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
 def test_yarafile_helpers() -> None:
     file_node = YaraFile(
         imports=[Import(module="pe")],

@@ -45,6 +45,12 @@ class ASTNode(ABC):
     def accept(self, visitor: _VisitorType) -> Any:
         """Accept a visitor for the visitor pattern."""
 
+    def validate_metadata(self) -> None:
+        """Validate comments attached to this node."""
+        _require_comment_sequence(self.leading_comments, "leading_comments")
+        if self.trailing_comment is not None:
+            _require_comment_node(self.trailing_comment, "trailing_comment")
+
     _METADATA_FIELDS = frozenset({"location", "leading_comments", "trailing_comment"})
 
     def children(self) -> list[ASTNode]:
@@ -73,6 +79,34 @@ class ASTNode(ABC):
             value = getattr(self, f.name)
             children.extend(collect_children(value))
         return children
+
+
+def _require_comment_node(value: Any, field_name: str) -> Comment | CommentGroup:
+    from yaraast.ast.comments import Comment, CommentGroup
+
+    if not isinstance(value, Comment | CommentGroup):
+        if field_name == "trailing_comment":
+            msg = "trailing_comment must be a Comment or CommentGroup node"
+        else:
+            msg = f"{field_name} must contain Comment or CommentGroup nodes"
+        raise TypeError(msg)
+    validate_structure = getattr(value, "validate_structure", None)
+    if callable(validate_structure):
+        validate_structure()
+    return value
+
+
+def _require_comment_sequence(values: Any, field_name: str) -> list[Comment | CommentGroup]:
+    if not isinstance(values, list):
+        msg = f"{field_name} must be a list"
+        raise TypeError(msg)
+    return [_require_comment_node(value, field_name) for value in values]
+
+
+def _validate_metadata_tree(node: ASTNode) -> None:
+    node.validate_metadata()
+    for child in node.children():
+        _validate_metadata_tree(child)
 
 
 def require_string(value: Any, field_name: str) -> str:
@@ -171,6 +205,7 @@ class YaraFile(ASTNode):
         from yaraast.ast.pragmas import Pragma
         from yaraast.ast.rules import Import, Include, Rule
 
+        self.validate_metadata()
         _require_ast_node_sequence_type(self.imports, "YaraFile.imports", Import, "Import")
         _require_ast_node_sequence_type(self.includes, "YaraFile.includes", Include, "Include")
         _require_ast_node_sequence_type(self.rules, "YaraFile.rules", Rule, "Rule")
@@ -203,6 +238,7 @@ class YaraFile(ASTNode):
                 *self.pragmas,
                 *self.namespaces,
             ):
+                _validate_metadata_tree(item)
                 validate_structure = getattr(item, "validate_structure", None)
                 if callable(validate_structure):
                     validate_structure()
