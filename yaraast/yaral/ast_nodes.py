@@ -865,6 +865,7 @@ class YaraLFile(ASTNode):
         if not isinstance(rule, YaraLRule):
             msg = "YaraL rule input must be a YaraLRule"
             raise TypeError(msg)
+        rule.validate_structure()
         self.rules.append(rule)
 
     def accept(self, visitor: _VisitorType) -> Any:

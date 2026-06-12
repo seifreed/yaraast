@@ -266,6 +266,16 @@ def test_yaral_file_rejects_invalid_rule_inputs_without_partial_update() -> None
     assert [rule.name for rule in yf.rules] == ["r1"]
 
 
+def test_yaral_file_rejects_invalid_rule_structure_without_partial_update() -> None:
+    yf = YaraLFile()
+    yf.add_rule(YaraLRule(name="r1"))
+
+    with pytest.raises(ValueError, match="YaraLRule name cannot be empty"):
+        yf.add_rule(YaraLRule(name=""))
+
+    assert [rule.name for rule in yf.rules] == ["r1"]
+
+
 def test_yaral_lexer_handles_large_inputs_and_multiline_backtick_regex() -> None:
     regex_tokens = YaraLLexer("`first\nsecond`").tokenize()
     regex_token = next(tok for tok in regex_tokens if tok.type == T.REGEX)
