@@ -405,6 +405,14 @@ def test_metrics_reporting_complexity_and_string_outputs(
         ):
             _format_string_analysis_output(analysis, unknown_format)
 
+    for invalid_analysis in [[], "bad", object()]:
+        with pytest.raises(TypeError, match="string analysis must be a dictionary"):
+            _format_string_analysis_output(cast(Any, invalid_analysis), "json")
+        with pytest.raises(TypeError, match="string analysis must be a dictionary"):
+            _format_string_analysis_output(cast(Any, invalid_analysis), "text")
+        with pytest.raises(TypeError, match="string analysis must be a dictionary"):
+            _format_strings_text(cast(Any, invalid_analysis))
+
     string_path = tmp_path / "strings.txt"
     _output_string_analysis_results(string_text, str(string_path))
     _output_string_analysis_results("inline strings", None)

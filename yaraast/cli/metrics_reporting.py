@@ -169,16 +169,24 @@ def _require_string_output_format(format: object) -> str:
     return format
 
 
+def _require_string_analysis(analysis: object) -> dict[str, Any]:
+    if not isinstance(analysis, dict):
+        raise TypeError("string analysis must be a dictionary")
+    return analysis
+
+
 def _format_string_analysis_output(analysis: dict[str, Any], format: object) -> str:
     """Format analysis results for output."""
+    analysis = _require_string_analysis(analysis)
     format = _require_string_output_format(format)
     if format == "json":
         return format_json(analysis)
     return _format_strings_text(analysis)
 
 
-def _format_strings_text(analysis: dict) -> str:
+def _format_strings_text(analysis: dict[str, Any]) -> str:
     """Format string analysis results as text."""
+    analysis = _require_string_analysis(analysis)
     lines = [
         "YARA String Analysis",
         "=" * 25,
