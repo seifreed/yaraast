@@ -125,7 +125,8 @@ class Pragma(ASTNode):
 
     def __str__(self) -> str:
         """String representation of pragma."""
-        args_str = " " + " ".join(self.arguments) if self.arguments else ""
+        arguments = _normalize_arguments(self.arguments)
+        args_str = " " + " ".join(arguments) if arguments else ""
 
         if self.pragma_type == PragmaType.PRAGMA:
             return f"#pragma {self.name}{args_str}"
@@ -278,7 +279,8 @@ class CustomPragma(Pragma):
         self.parameters[require_string(key, "Pragma parameter key")] = value
 
     def __str__(self) -> str:
-        args_str = " " + " ".join(self.arguments) if self.arguments else ""
+        arguments = _normalize_arguments(self.arguments)
+        args_str = " " + " ".join(arguments) if arguments else ""
         return f"#pragma {self.name}{args_str}"
 
 

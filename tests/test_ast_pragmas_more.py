@@ -58,6 +58,17 @@ def test_pragma_string_reprs_and_flags() -> None:
     assert str(endif) == "#endif"
 
 
+def test_pragma_string_reprs_reject_invalid_arguments() -> None:
+    generic = Pragma(PragmaType.PRAGMA, "vendor", cast(Any, "on"))
+    custom = CustomPragma("vendor", arguments=cast(Any, "on"))
+
+    with pytest.raises(TypeError, match="Pragma arguments must be a list of strings"):
+        str(generic)
+
+    with pytest.raises(TypeError, match="Pragma arguments must be a list of strings"):
+        str(custom)
+
+
 def test_custom_pragma_and_block_helpers() -> None:
     custom = CustomPragma(name="vendor", arguments=["x", "y"], scope=PragmaScope.FILE)
     custom.set_parameter("level", 3)
