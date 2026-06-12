@@ -153,3 +153,14 @@ def test_rule_rejects_invalid_pragmas_without_partial_update() -> None:
         rule.add_pragma(cast(Any, object()))
 
     assert rule.pragmas == [pragma]
+
+
+def test_rule_add_pragma_validates_structure_without_partial_update() -> None:
+    rule = Rule(name="r2")
+    pragma = InRulePragma(pragma=Pragma(PragmaType.DEFINE, "define"))
+    rule.add_pragma(pragma)
+
+    with pytest.raises(ValueError, match="InRulePragma position cannot be empty"):
+        rule.add_pragma(InRulePragma(pragma=Pragma(PragmaType.PRAGMA, "vendor"), position=""))
+
+    assert rule.pragmas == [pragma]

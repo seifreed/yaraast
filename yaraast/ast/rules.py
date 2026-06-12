@@ -281,6 +281,7 @@ class Rule(ASTNode):
         if not isinstance(pragma, InRulePragma):
             msg = "Rule pragma input must be an InRulePragma"
             raise TypeError(msg)
+        pragma.validate_structure()
         self.pragmas.append(pragma)
 
     def get_pragmas_by_position(self, position: str) -> list[InRulePragma]:
