@@ -24,6 +24,16 @@ def _copy_info_dict(info: dict[str, Any]) -> dict[str, Any]:
     return copied
 
 
+def _require_include_path(include_path: object) -> str:
+    if not isinstance(include_path, str):
+        msg = "Include path must be a string"
+        raise TypeError(msg)
+    if not include_path.strip():
+        msg = "Include path must not be empty"
+        raise ValueError(msg)
+    return include_path
+
+
 def get_meta_value(ctx: DocumentContext, key: str) -> Any | None:
     cache_key = f"meta_value:{key}"
     cached = ctx.get_cached(cache_key)
@@ -137,6 +147,7 @@ def get_module_member_info(ctx: DocumentContext, qualified_name: str) -> dict[st
 
 
 def get_include_info(ctx: DocumentContext, include_path: str) -> dict[str, Any]:
+    include_path = _require_include_path(include_path)
     cache_key = f"include_info:{include_path}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
@@ -153,6 +164,7 @@ def get_include_info(ctx: DocumentContext, include_path: str) -> dict[str, Any]:
 
 
 def get_include_target_uri(ctx: DocumentContext, include_path: str) -> str | None:
+    include_path = _require_include_path(include_path)
     include_info = ctx.get_include_info(include_path)
     resolved_path = include_info.get("resolved_path")
     return path_to_uri(Path(resolved_path)) if resolved_path else None

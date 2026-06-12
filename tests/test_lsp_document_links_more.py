@@ -125,6 +125,34 @@ def test_include_target_uri_escapes_special_path_characters(tmp_path: Path) -> N
     assert "%20" in target
 
 
+@pytest.mark.parametrize("include_path", ["", "   ", "\t"])
+def test_include_target_uri_rejects_empty_include_paths(
+    tmp_path: Path,
+    include_path: str,
+) -> None:
+    doc = DocumentContext(path_to_uri(tmp_path / "main.yar"), "")
+
+    with pytest.raises(ValueError, match="Include path must not be empty"):
+        doc.get_include_info(include_path)
+
+    with pytest.raises(ValueError, match="Include path must not be empty"):
+        doc.get_include_target_uri(include_path)
+
+
+@pytest.mark.parametrize("include_path", [None, False, 123, object(), b"inc.yar"])
+def test_include_target_uri_rejects_invalid_include_path_types(
+    tmp_path: Path,
+    include_path: Any,
+) -> None:
+    doc = DocumentContext(path_to_uri(tmp_path / "main.yar"), "")
+
+    with pytest.raises(TypeError, match="Include path must be a string"):
+        doc.get_include_info(cast(str, include_path))
+
+    with pytest.raises(TypeError, match="Include path must be a string"):
+        doc.get_include_target_uri(cast(str, include_path))
+
+
 def test_document_links_parser_fallback_and_error_edges(tmp_path: Path) -> None:
     include_path = tmp_path / "inc.yar"
     include_path.write_text("rule inc { condition: true }", encoding="utf-8")
