@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, cast
 
 import pytest
@@ -171,6 +172,38 @@ def test_yarax_validate_structure_rejects_empty_local_identifiers(
 ) -> None:
     with pytest.raises(ValueError, match=message):
         node.validate_structure()
+
+
+@pytest.mark.parametrize(
+    ("node", "identifier"),
+    [
+        (WithDeclaration("bad-name", IntegerLiteral(1)), "bad-name"),
+        (WithDeclaration("$bad-name", IntegerLiteral(1)), "$bad-name"),
+        (ArrayComprehension(Identifier("x"), "1bad", Identifier("xs")), "1bad"),
+        (
+            DictComprehension(Identifier("k"), Identifier("v"), "for", None, Identifier("xs")),
+            "for",
+        ),
+        (
+            DictComprehension(Identifier("k"), Identifier("v"), "k", "bad-name", Identifier("xs")),
+            "bad-name",
+        ),
+        (LambdaExpression(parameters=["1bad"], body=BooleanLiteral(True)), "1bad"),
+    ],
+)
+def test_yarax_validate_structure_rejects_invalid_local_identifiers(
+    node: WithDeclaration | ArrayComprehension | DictComprehension | LambdaExpression,
+    identifier: str,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=re.escape(f"Invalid local variable identifier: {identifier}"),
+    ):
+        node.validate_structure()
+
+
+def test_yarax_validate_structure_allows_with_string_reference_identifier() -> None:
+    WithDeclaration("$x", IntegerLiteral(1)).validate_structure()
 
 
 def test_direct_yarafile_optimizers_validate_structure() -> None:

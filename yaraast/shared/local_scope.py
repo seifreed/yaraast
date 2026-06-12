@@ -29,6 +29,23 @@ def _validate_local_identifier(name: str) -> str:
     raise ValueError(msg)
 
 
+def validate_local_identifier(name: object, *, allow_string_identifier: bool = False) -> str:
+    """Validate one local variable name and return its normalized spelling."""
+    if not isinstance(name, str):
+        msg = "Local variable name must be a string"
+        raise TypeError(msg)
+    if not name.strip():
+        msg = "Local variable name must not be empty"
+        raise ValueError(msg)
+    if allow_string_identifier and name.startswith("$"):
+        try:
+            return normalize_string_reference_id(name, allow_wildcard=False)
+        except ValueError:
+            msg = f"Invalid local variable identifier: {name}"
+            raise ValueError(msg) from None
+    return _validate_local_identifier(name)
+
+
 def local_name_variants(name: str, *, allow_string_identifier: bool = False) -> set[str]:
     """Split a (possibly comma-joined) loop declaration into its variable names."""
     if not isinstance(name, str):
@@ -43,12 +60,10 @@ def local_name_variants(name: str, *, allow_string_identifier: bool = False) -> 
         raise ValueError(msg)
     variants: set[str] = set()
     for local_name in names:
-        if allow_string_identifier and local_name.startswith("$"):
-            try:
-                variants.add(normalize_string_reference_id(local_name, allow_wildcard=False))
-            except ValueError:
-                msg = f"Invalid local variable identifier: {local_name}"
-                raise ValueError(msg) from None
-            continue
-        variants.add(_validate_local_identifier(local_name))
+        variants.add(
+            validate_local_identifier(
+                local_name,
+                allow_string_identifier=allow_string_identifier,
+            )
+        )
     return variants

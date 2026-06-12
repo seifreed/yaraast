@@ -16,18 +16,35 @@ from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import Expression
 
 
-def _require_nonempty_local_identifier(value: Any, empty_context: str) -> str:
+def _require_nonempty_local_identifier(
+    value: Any,
+    empty_context: str,
+    *,
+    allow_string_identifier: bool = False,
+) -> str:
     identifier = require_string(value, "Local variable name")
     if not identifier.strip():
         msg = f"{empty_context} must not be empty"
         raise ValueError(msg)
+    from yaraast.shared.local_scope import validate_local_identifier
+
+    validate_local_identifier(identifier, allow_string_identifier=allow_string_identifier)
     return identifier
 
 
-def _require_optional_nonempty_local_identifier(value: Any, empty_context: str) -> str | None:
+def _require_optional_nonempty_local_identifier(
+    value: Any,
+    empty_context: str,
+    *,
+    allow_string_identifier: bool = False,
+) -> str | None:
     if value is None:
         return None
-    return _require_nonempty_local_identifier(value, empty_context)
+    return _require_nonempty_local_identifier(
+        value,
+        empty_context,
+        allow_string_identifier=allow_string_identifier,
+    )
 
 
 def _validate_child_structure(value: Any) -> None:
@@ -75,7 +92,11 @@ class WithDeclaration(ASTNode):
     value: Expression  # Initial value
 
     def validate_structure(self) -> None:
-        _require_nonempty_local_identifier(self.identifier, "WithDeclaration identifier")
+        _require_nonempty_local_identifier(
+            self.identifier,
+            "WithDeclaration identifier",
+            allow_string_identifier=True,
+        )
         _validate_child_structure(_require_ast_node(self.value, "WithDeclaration.value"))
 
     def accept(self, visitor: _VisitorType) -> Any:
