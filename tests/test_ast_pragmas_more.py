@@ -193,6 +193,56 @@ def test_pragma_block_rejects_invalid_lookup_types(pragma_type: Any) -> None:
         block.has_pragma(cast(PragmaType, pragma_type))
 
 
+@pytest.mark.parametrize(
+    ("value", "operation", "message"),
+    [
+        (
+            cast(Any, "bad"),
+            "get_pragmas_by_type",
+            "PragmaBlock pragmas must be a list or tuple",
+        ),
+        (
+            [cast(Any, object())],
+            "get_pragmas_by_type",
+            "PragmaBlock pragmas must contain Pragma nodes",
+        ),
+        (
+            [Pragma(cast(Any, "bad"), "vendor")],
+            "get_pragmas_by_type",
+            "Pragma type must be a PragmaType",
+        ),
+        (
+            cast(Any, "bad"),
+            "has_pragma",
+            "PragmaBlock pragmas must be a list or tuple",
+        ),
+        (
+            [cast(Any, object())],
+            "has_pragma",
+            "PragmaBlock pragmas must contain Pragma nodes",
+        ),
+        (
+            [Pragma(cast(Any, "bad"), "vendor")],
+            "has_pragma",
+            "Pragma type must be a PragmaType",
+        ),
+    ],
+)
+def test_pragma_block_lookup_helpers_reject_invalid_internal_state(
+    value: Any,
+    operation: str,
+    message: str,
+) -> None:
+    block = PragmaBlock(scope=PragmaScope.RULE)
+    block.pragmas = value
+
+    with pytest.raises(TypeError, match=message):
+        if operation == "get_pragmas_by_type":
+            block.get_pragmas_by_type(PragmaType.PRAGMA)
+        else:
+            block.has_pragma(PragmaType.PRAGMA)
+
+
 def test_custom_pragma_parameter_keys_must_be_strings_without_partial_update() -> None:
     custom = CustomPragma(name="vendor", arguments=["x"], scope=PragmaScope.FILE)
     custom.set_parameter("level", 3)

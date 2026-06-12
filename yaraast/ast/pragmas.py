@@ -345,15 +345,7 @@ class PragmaBlock(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate block pragma container before direct analysis."""
-        if not isinstance(self.pragmas, list | tuple):
-            msg = "PragmaBlock pragmas must be a list or tuple"
-            raise TypeError(msg)
-        _require_scope(self.scope)
-        for pragma in self.pragmas:
-            if not isinstance(pragma, Pragma):
-                msg = "PragmaBlock pragmas must contain Pragma nodes"
-                raise TypeError(msg)
-            pragma.validate_structure()
+        self._validated_pragmas()
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_pragma_block(self)
@@ -369,23 +361,29 @@ class PragmaBlock(ASTNode):
     def get_pragmas_by_type(self, pragma_type: PragmaType) -> list[Pragma]:
         """Get all pragmas of a specific type."""
         pragma_type = _require_pragma_type(pragma_type)
-        return [p for p in self.pragmas if p.pragma_type == pragma_type]
+        return [p for p in self._validated_pragmas() if p.pragma_type == pragma_type]
 
     def has_pragma(self, pragma_type: PragmaType) -> bool:
         """Check if block contains a pragma of specific type."""
         pragma_type = _require_pragma_type(pragma_type)
-        return any(p.pragma_type == pragma_type for p in self.pragmas)
+        return any(p.pragma_type == pragma_type for p in self._validated_pragmas())
 
     def __str__(self) -> str:
+        return "\n".join(str(pragma) for pragma in self._validated_pragmas())
+
+    def _validated_pragmas(self) -> list[Pragma]:
         if not isinstance(self.pragmas, list | tuple):
             msg = "PragmaBlock pragmas must be a list or tuple"
             raise TypeError(msg)
         _require_scope(self.scope)
+        pragmas = []
         for pragma in self.pragmas:
             if not isinstance(pragma, Pragma):
                 msg = "PragmaBlock pragmas must contain Pragma nodes"
                 raise TypeError(msg)
-        return "\n".join(str(pragma) for pragma in self.pragmas)
+            pragma.validate_structure()
+            pragmas.append(pragma)
+        return pragmas
 
 
 # Convenience functions for creating pragmas
