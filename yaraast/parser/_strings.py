@@ -205,7 +205,7 @@ class StringParsingMixin:
 
         try:
             validate_string_modifiers(modifiers)
-        except ValueError as e:
+        except (TypeError, ValueError) as e:
             raise ParserError(str(e), self._previous()) from e
         return modifiers
 

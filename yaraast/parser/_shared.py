@@ -9,6 +9,7 @@ from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.errors import YaraASTError
 from yaraast.interfaces import IToken
 from yaraast.regex_literals import validate_regex_modifiers, validate_regex_pattern
+from yaraast.xor_keys import parse_xor_key_text
 
 # Known YARA modules for identifier resolution
 KNOWN_MODULES: frozenset[str] = frozenset(
@@ -121,33 +122,74 @@ def _validate_string_modifier_value(modifier: StringModifier) -> None:
     if modifier.modifier_type == StringModifierType.XOR:
         _validate_xor_modifier_value(modifier.value)
     elif modifier.modifier_type in (StringModifierType.BASE64, StringModifierType.BASE64WIDE):
-        _validate_base64_modifier_value(modifier.value)
+        _validate_base64_modifier_value(modifier.modifier_type.value, modifier.value)
 
 
-def _validate_xor_modifier_value(value: str | int | float | tuple[int, int] | None) -> None:
+def _validate_xor_modifier_value(value: object) -> None:
     if value is None:
         return
-    if isinstance(value, int):
-        if value > _MAX_XOR_KEY:
-            msg = "invalid xor range"
-            raise ValueError(msg)
-        return
+
     if isinstance(value, tuple):
-        min_value, max_value = value
+        _validate_xor_modifier_range(value)
+        return
+
+    if isinstance(value, str) and "-" in value:
+        min_text, max_text = value.split("-", maxsplit=1)
+        min_value = _parse_xor_modifier_key(min_text)
+        max_value = _parse_xor_modifier_key(max_text)
+        if min_value is None or max_value is None:
+            msg = "xor range value must contain byte bounds"
+            raise TypeError(msg)
         if min_value > max_value:
-            msg = "xor lower bound exceeds upper bound"
-            raise ValueError(msg)
-        if max_value > _MAX_XOR_KEY:
-            msg = f"upper bound for xor range exceeded (max: {_MAX_XOR_KEY})"
-            raise ValueError(msg)
+            msg = "xor range value must be ascending"
+            raise TypeError(msg)
+        return
+
+    if _parse_xor_modifier_key(value) is None:
+        msg = "xor value must be a byte"
+        raise TypeError(msg)
 
 
-def _validate_base64_modifier_value(value: str | int | float | tuple[int, int] | None) -> None:
+def _validate_xor_modifier_range(value: tuple[object, ...]) -> None:
+    if len(value) != 2:
+        msg = "xor range value must contain byte bounds"
+        raise TypeError(msg)
+
+    min_value = _parse_xor_modifier_key(value[0])
+    max_value = _parse_xor_modifier_key(value[1])
+    if min_value is None or max_value is None:
+        msg = "xor range value must contain byte bounds"
+        raise TypeError(msg)
+    if min_value > max_value:
+        msg = "xor range value must be ascending"
+        raise TypeError(msg)
+
+
+def _parse_xor_modifier_key(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if 0 <= value <= _MAX_XOR_KEY else None
+    if isinstance(value, str):
+        parsed_value = parse_xor_key_text(value)
+        if parsed_value is not None and 0 <= parsed_value <= _MAX_XOR_KEY:
+            return parsed_value
+    return None
+
+
+def _validate_base64_modifier_value(name: str, value: object) -> None:
     if value is None:
         return
-    if isinstance(value, str) and len(value) != _BASE64_ALPHABET_LENGTH:
-        msg = "length of base64 alphabet must be 64"
-        raise ValueError(msg)
+    if not isinstance(value, str):
+        msg = f"{name} value must be a string"
+        raise TypeError(msg)
+    try:
+        encoded_value = value.encode("ascii")
+    except UnicodeEncodeError:
+        encoded_value = b""
+    if len(encoded_value) != _BASE64_ALPHABET_LENGTH:
+        msg = f"{name} alphabet must be 64 bytes"
+        raise TypeError(msg)
 
 
 def parse_regex_value(regex_val: str) -> tuple[str, list[str]]:

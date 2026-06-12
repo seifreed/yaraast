@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
+from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.strings import HexNegatedByte, HexString, RegexString
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.limits import LIBYARA_HEX_JUMP_MAX
-from yaraast.parser._shared import ParserError
+from yaraast.parser._shared import ParserError, validate_string_modifiers
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
 from yaraast.types.semantic_validator import SemanticValidator
@@ -223,6 +226,52 @@ def test_parse_rejects_libyara_invalid_string_modifiers(modifiers: str) -> None:
     for parser_factory in (Parser, CommentAwareParser):
         with pytest.raises(ParserError):
             parser_factory().parse(source)
+
+
+@pytest.mark.parametrize(
+    ("value", "message"),
+    [
+        (True, "xor value must be a byte"),
+        (-1, "xor value must be a byte"),
+        (256, "xor value must be a byte"),
+        (1.5, "xor value must be a byte"),
+        ("bad", "xor value must be a byte"),
+        ("0x01-0x100", "xor range value must contain byte bounds"),
+        ("0x04-0x03", "xor range value must be ascending"),
+        ((True, 3), "xor range value must contain byte bounds"),
+        ((1, False), "xor range value must contain byte bounds"),
+        ((1, 256), "xor range value must contain byte bounds"),
+        ((4, 3), "xor range value must be ascending"),
+    ],
+)
+def test_string_modifier_validation_rejects_invalid_xor_values(
+    value: object,
+    message: str,
+) -> None:
+    modifier = StringModifier(StringModifierType.XOR, cast(Any, value))
+
+    with pytest.raises(TypeError, match=message):
+        validate_string_modifiers([modifier])
+
+
+@pytest.mark.parametrize(
+    ("modifier_type", "value", "message"),
+    [
+        (StringModifierType.BASE64, 1, "base64 value must be a string"),
+        (StringModifierType.BASE64WIDE, True, "base64wide value must be a string"),
+        (StringModifierType.BASE64, "é" * 64, "base64 alphabet must be 64 bytes"),
+        (StringModifierType.BASE64WIDE, "A" * 63, "base64wide alphabet must be 64 bytes"),
+    ],
+)
+def test_string_modifier_validation_rejects_invalid_base64_values(
+    modifier_type: StringModifierType,
+    value: object,
+    message: str,
+) -> None:
+    modifier = StringModifier(modifier_type, cast(Any, value))
+
+    with pytest.raises(TypeError, match=message):
+        validate_string_modifiers([modifier])
 
 
 @pytest.mark.parametrize(
