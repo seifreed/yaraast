@@ -55,6 +55,18 @@ def _read_yara_text(file_path: Path, *, is_include: bool) -> str:
         raise ValueError(msg) from exc
 
 
+def _path_access_error(path: Path) -> ValueError:
+    msg = f"path could not be accessed: {path}"
+    return ValueError(msg)
+
+
+def _path_is_file(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
 class IncludeResolver:
     """Resolves YARA include statements with caching and cycle detection."""
 
@@ -209,19 +221,19 @@ class IncludeResolver:
         path = Path(file_path_text)
 
         # If absolute and exists, return it
-        if path.is_absolute() and path.is_file():
+        if path.is_absolute() and _path_is_file(path):
             return path.resolve()
 
         # First try relative to base path
         if base_path:
             full_path = base_path / path
-            if full_path.is_file():
+            if _path_is_file(full_path):
                 return full_path.resolve()
 
         # Then try search paths
         for search_dir in self.search_paths:
             full_path = search_dir / path
-            if full_path.is_file():
+            if _path_is_file(full_path):
                 resolved = full_path.resolve()
                 # Prevent path traversal — resolved path must be within search directory
                 try:

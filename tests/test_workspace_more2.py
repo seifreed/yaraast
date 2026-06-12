@@ -492,6 +492,20 @@ def test_include_resolver_reports_missing_root_file_context(tmp_path: Path) -> N
         resolver.resolve_file("missing.yar")
 
 
+def test_include_resolver_rejects_inaccessible_paths(tmp_path: Path) -> None:
+    absolute = "/" + ("a" * 5000)
+    relative = "a" * 5000
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        IncludeResolver().resolve_file(absolute)
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        IncludeResolver([str(tmp_path)])._find_file(relative, tmp_path)
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        IncludeResolver([absolute])._find_file("rule.yar", None)
+
+
 def test_include_resolver_rejects_invalid_utf8_file(tmp_path: Path) -> None:
     rule_file = tmp_path / "invalid.yar"
     rule_file.write_bytes(b"\xff")
