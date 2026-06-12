@@ -252,6 +252,22 @@ def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
     assert runtime.index.workspace_folders == [tmp_path]
 
 
+def test_workspace_index_treats_inaccessible_workspace_folders_as_empty() -> None:
+    inaccessible_root = "a" * 5000
+    index = WorkspaceIndex()
+
+    index.set_workspace_folders([inaccessible_root])
+
+    assert index.workspace_folders == [Path(inaccessible_root)]
+    assert index.iter_candidate_files() == []
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([inaccessible_root])
+    runtime.open_document("file:///sample.yar", "rule sample { condition: true }\n")
+
+    assert runtime.workspace_symbols("sample")
+
+
 def test_workspace_index_skips_malformed_cached_symbols(tmp_path: Path) -> None:
     cache_dir = tmp_path / ".yaraast"
     cache_dir.mkdir()

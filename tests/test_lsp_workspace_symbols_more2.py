@@ -111,6 +111,7 @@ rule sample {
 
         # Parse failure path inside _get_symbols_from_file should be swallowed.
         assert provider._get_symbols_from_file(bad) == []
+        assert provider._get_symbols_from_file(Path("a" * 5000)) == []
 
         # Query filter path
         filtered = provider.get_workspace_symbols("sam")

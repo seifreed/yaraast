@@ -37,6 +37,13 @@ def _path_exists_and_not_dir(path: Path) -> bool:
     return _path_exists(path) and not _path_is_dir(path)
 
 
+def _path_mtime(path: Path) -> float | None:
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return None
+
+
 def _require_workspace_root(root_path: object) -> Path:
     if isinstance(root_path, bool | bytes) or not isinstance(root_path, str | PathLike):
         msg = "root_path must be a string or path-like object"
@@ -123,7 +130,9 @@ class WorkspaceSymbolsProvider:
         """Extract all symbols from a YARA file."""
         # Check cache first
         cache_key = str(file_path)
-        mtime = file_path.stat().st_mtime
+        mtime = _path_mtime(file_path)
+        if mtime is None:
+            return []
 
         if cache_key in self.symbol_cache:
             cached_mtime, cached_symbols = self.symbol_cache[cache_key]

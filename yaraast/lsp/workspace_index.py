@@ -14,6 +14,7 @@ from yaraast.lsp.document_types import (
     SymbolRecord,
     require_workspace_symbol_query,
 )
+from yaraast.lsp.utils import path_exists, path_is_dir, path_is_file
 
 logger = logging.getLogger(__name__)
 
@@ -71,14 +72,14 @@ class WorkspaceIndex:
         if not self.workspace_folders:
             return None
         root = self.workspace_folders[0]
-        if root.is_file():
+        if path_is_file(root):
             root = root.parent
         return root / ".yaraast" / "lsp-workspace-index.json"
 
     def load(self) -> None:
         cache_path = self._cache_path()
         self.persisted_symbols = {}
-        if cache_path is None or not cache_path.exists():
+        if cache_path is None or not path_exists(cache_path):
             return
         try:
             payload = json.loads(cache_path.read_text(encoding="utf-8"))
@@ -113,7 +114,6 @@ class WorkspaceIndex:
         cache_path = self._cache_path()
         if cache_path is None:
             return
-        cache_path.parent.mkdir(parents=True, exist_ok=True)
         persisted_symbols = _validated_persisted_symbols(self.persisted_symbols)
         payload = {
             "symbols": {
@@ -121,7 +121,11 @@ class WorkspaceIndex:
                 for uri, symbols in persisted_symbols.items()
             }
         }
-        cache_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+        try:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+        except OSError:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
 
     def update_document(self, document: DocumentContext) -> None:
         if not isinstance(document, DocumentContext):
@@ -162,11 +166,16 @@ class WorkspaceIndex:
     def iter_candidate_files(self) -> list[Path]:
         files: set[Path] = set()
         for folder in self.workspace_folders:
-            if not folder.exists():
+            if not path_exists(folder):
                 continue
-            if folder.is_file() and folder.suffix.lower() in YARA_FILE_SUFFIXES:
+            if path_is_file(folder) and folder.suffix.lower() in YARA_FILE_SUFFIXES:
                 files.add(folder)
                 continue
+            if not path_is_dir(folder):
+                continue
             for suffix in YARA_FILE_SUFFIXES:
-                files.update(folder.rglob(f"*{suffix}"))
+                try:
+                    files.update(folder.rglob(f"*{suffix}"))
+                except OSError:
+                    logger.debug("Operation failed in %s", __name__, exc_info=True)
         return sorted(files)
