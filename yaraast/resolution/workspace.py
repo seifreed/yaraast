@@ -88,7 +88,7 @@ class Workspace:
         except FileNotFoundError as e:
             result.errors.append(f"File not found: {e}")
             if path.is_file():
-                result.resolved = self._resolve_main_file_without_includes(path)
+                result.resolved = self._resolve_main_file_with_available_includes(path)
         except RecursionError as e:
             result.errors.append(f"Circular include: {e}")
         except (OSError, UnicodeDecodeError, ValueError, YaraASTError) as e:
@@ -99,14 +99,26 @@ class Workspace:
             self._rebuild_dependency_graph()
         return result
 
-    def _resolve_main_file_without_includes(self, path: Path) -> ResolvedFile:
+    def _resolve_main_file_with_available_includes(self, path: Path) -> ResolvedFile:
         content = path.read_text(encoding="utf-8")
-        return ResolvedFile(
+        ast = parse_yara_source(content)
+        resolved = ResolvedFile(
             path=path.resolve(),
             content=content,
-            ast=parse_yara_source(content),
+            ast=ast,
             checksum=hashlib.sha256(content.encode()).hexdigest(),
         )
+        for include in ast.includes:
+            try:
+                included_file = self.include_resolver.resolve_file(
+                    include.path,
+                    base_path=path.parent,
+                )
+            except (FileNotFoundError, RecursionError, OSError, ValueError, YaraASTError):
+                continue
+            resolved.includes.append(included_file)
+            resolved.include_path_map[include.path] = included_file.path
+        return resolved
 
     def add_directory(
         self,

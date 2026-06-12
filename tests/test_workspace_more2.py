@@ -107,6 +107,31 @@ def test_workspace_add_file_error_paths_and_getters(tmp_path: Path) -> None:
     assert isinstance(workspace.get_file_dependents(str(ok)), set)
 
 
+def test_workspace_missing_include_keeps_resolved_sibling_include(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path
+    main = _write(
+        root / "main.yar",
+        """
+        include "child.yar"
+        include "missing.yar"
+        rule main { condition: true }
+        """,
+    )
+    child = _write(root / "child.yar", "rule child { condition: true }")
+
+    workspace = Workspace(root_path=root, search_paths=[str(root)])
+    result = workspace.add_file(main)
+    report = workspace.analyze(parallel=False)
+
+    assert result.resolved is not None
+    assert [included.path for included in result.resolved.includes] == [child.resolve()]
+    assert str(child.resolve()) in workspace.get_file_dependencies(str(main))
+    assert any("Cannot resolve include 'missing.yar'" in err for err in report.global_errors)
+    assert not any("Cannot resolve include 'child.yar'" in err for err in report.global_errors)
+
+
 @pytest.mark.parametrize("rule_name", [None, 1, b"ok_rule", object(), "", "   "])
 def test_workspace_find_rule_rejects_invalid_rule_names(
     tmp_path: Path,
