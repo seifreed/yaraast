@@ -18,6 +18,7 @@ from yaraast.lsp.document_types import (
     copy_rule_link_record,
     uri_to_path,
 )
+from yaraast.lsp.utils import path_exists, path_is_file
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +150,7 @@ def find_rule_reference_records_in_document(
     doc = runtime.documents.get(document_uri)
     if doc is None:
         path = uri_to_path(document_uri)
-        if path is None or not path.exists() or not path.is_file():
+        if path is None or not path_exists(path) or not path_is_file(path):
             return []
         try:
             doc = runtime.get_document(document_uri)
@@ -186,7 +187,7 @@ def get_rule_link_records_for_document(
     doc = runtime.documents.get(document_uri)
     if doc is None:
         path = uri_to_path(document_uri)
-        if path is None or not path.exists() or not path.is_file():
+        if path is None or not path_exists(path) or not path_is_file(path):
             return []
         try:
             doc = runtime.get_document(document_uri)

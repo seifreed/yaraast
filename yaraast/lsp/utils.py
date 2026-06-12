@@ -17,6 +17,27 @@ from yaraast.lsp.text_utils import (
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 
 
+def path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError:
+        return False
+
+
+def path_is_file(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except OSError:
+        return False
+
+
+def path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError:
+        return False
+
+
 def token_to_range(token: Token) -> Range:
     """Convert a token to an LSP Range."""
     start_character = max(0, token.column - 1)
@@ -137,7 +158,7 @@ def _get_location_line_text(location: Location, source_text: str | None) -> str 
         return None
     if location.file:
         path = Path(location.file)
-        if path.exists() and path.is_file():
+        if path_exists(path) and path_is_file(path):
             try:
                 lines = path.read_text(encoding="utf-8").split("\n")
             except (OSError, UnicodeDecodeError):

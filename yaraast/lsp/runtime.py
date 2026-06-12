@@ -38,6 +38,7 @@ from yaraast.lsp.runtime_workspace import (
     workspace_symbol_records as runtime_workspace_symbol_records,
     workspace_symbols as runtime_workspace_symbols,
 )
+from yaraast.lsp.utils import path_exists, path_is_dir, path_is_file
 from yaraast.lsp.workspace_index import WorkspaceIndex
 
 logger = logging.getLogger(__name__)
@@ -254,7 +255,7 @@ class LspRuntime:
         if not load_workspace:
             return None
         path = uri_to_path(uri)
-        if path is None or not path.exists() or path.is_dir():
+        if path is None or not path_exists(path) or path_is_dir(path):
             return None
         try:
             text = path.read_text(encoding="utf-8")
@@ -343,7 +344,7 @@ class LspRuntime:
             path = uri_to_path(uri)
             if path is None:
                 continue
-            if path.exists() and path.is_file():
+            if path_exists(path) and path_is_file(path):
                 ctx = self.documents.get(uri)
                 if ctx is not None and ctx.is_open:
                     self._sync_document_to_index(uri)

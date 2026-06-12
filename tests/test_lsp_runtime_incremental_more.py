@@ -365,6 +365,26 @@ def test_runtime_rejects_invalid_document_uri_inputs() -> None:
         runtime.close_document(invalid_uri)
 
 
+def test_runtime_treats_inaccessible_document_paths_as_missing() -> None:
+    uri = path_to_uri(Path("a" * 5000))
+    runtime = LspRuntime()
+
+    assert runtime.get_document(uri) is None
+    assert runtime.find_rule_reference_records_in_document("sample", uri) == []
+    assert runtime.get_rule_link_records_for_document(uri) == []
+
+
+def test_runtime_watched_files_treats_inaccessible_paths_as_deleted() -> None:
+    uri = path_to_uri(Path("a" * 5000))
+    runtime = LspRuntime()
+    runtime.open_document(uri, "rule sample { condition: true }\n")
+    change = type("Change", (), {"uri": uri})()
+
+    runtime.handle_watched_files([change])
+
+    assert runtime.get_document(uri, load_workspace=False) is None
+
+
 def test_runtime_rejects_invalid_config_inputs() -> None:
     with pytest.raises(TypeError, match="LSP runtime index must be a WorkspaceIndex"):
         LspRuntime(index=cast(Any, object()))
