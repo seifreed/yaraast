@@ -548,13 +548,36 @@ def test_protobuf_serializer_restores_compact_rule_wildcard_string_sets_for_code
     restored = serializer.deserialize(binary_data=serializer.serialize(ast))
     condition = restored.rules[0].condition
 
-    assert list(protobuf_file.rules[0].condition.of_expression.string_set_items) == ["helper*"]
+    assert _protobuf_has_field(protobuf_file.rules[0].condition.of_expression, "string_set")
+    assert not protobuf_file.rules[0].condition.of_expression.string_set_items
     assert isinstance(condition, OfExpression)
-    assert isinstance(condition.string_set, list)
-    restored_item = condition.string_set[0]
+    assert isinstance(condition.string_set, SetExpression)
+    restored_item = condition.string_set.elements[0]
     assert isinstance(restored_item, StringWildcard)
     assert restored_item.pattern == "helper*"
     assert "any of (helper*)" in CodeGenerator().generate(restored)
+
+
+def test_protobuf_serializer_preserves_compact_bare_string_set_items_as_strings() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bare_string_set_item",
+                strings=[PlainString("$a", "needle")],
+                condition=OfExpression("any", ["a"]),
+            )
+        ]
+    )
+
+    protobuf_file = serializer._ast_to_protobuf(ast)
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    condition = restored.rules[0].condition
+
+    assert list(protobuf_file.rules[0].condition.of_expression.string_set_items) == ["a"]
+    assert isinstance(condition, OfExpression)
+    assert condition.string_set == ["a"]
+    assert "any of ($a)" in CodeGenerator().generate(restored)
 
 
 def test_protobuf_serializer_preserves_non_text_string_set_expression_items() -> None:

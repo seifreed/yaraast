@@ -1291,8 +1291,13 @@ def _copy_string_set_items_to_protobuf(items, pb_owner, context: str) -> None:
         msg = f"{context} must contain values"
         raise SerializationError(msg)
     item_texts = [_string_set_item_text(item) for item in items]
-    if all(item_text is not None for item_text in item_texts) and not any(
-        _string_set_item_has_metadata(item) for item in items
+    if (
+        all(item_text is not None for item_text in item_texts)
+        and not any(_string_set_item_has_metadata(item) for item in items)
+        and all(
+            _can_compact_string_set_item(item, item_text)
+            for item, item_text in zip(items, item_texts, strict=True)
+        )
     ):
         pb_owner.string_set_items.extend(item_texts)
         return
@@ -1319,10 +1324,22 @@ def _expression_string_set_items(value) -> list[str] | None:
         return None
     for element in elements:
         item_text = _expression_string_set_item_text(element)
-        if item_text is None or _string_set_item_has_metadata(element):
+        if (
+            item_text is None
+            or _string_set_item_has_metadata(element)
+            or not _is_compact_string_set_item_text(item_text)
+        ):
             return None
         items.append(item_text)
     return items
+
+
+def _is_compact_string_set_item_text(item: object) -> bool:
+    return isinstance(item, str) and item.startswith("$")
+
+
+def _can_compact_string_set_item(item: object, item_text: object) -> bool:
+    return isinstance(item, str) or _is_compact_string_set_item_text(item_text)
 
 
 def _string_set_item_has_metadata(item) -> bool:
@@ -1392,22 +1409,11 @@ def _protobuf_string_set_to_ast(pb_owner, context: str):
         if any(not item.strip() for item in items):
             msg = f"{field_context} must contain values"
             raise SerializationError(msg)
-        return [_protobuf_string_set_item_to_ast(item) for item in items]
+        return items
     if not pb_owner.HasField("string_set"):
         msg = f"{field_context} must contain values"
         raise SerializationError(msg)
     return protobuf_to_expression(pb_owner.string_set)
-
-
-def _protobuf_string_set_item_to_ast(item: str):
-    if item.startswith("$"):
-        return item
-
-    from yaraast.ast.expressions import Identifier, StringWildcard
-
-    if item.endswith("*"):
-        return StringWildcard(item)
-    return Identifier(item)
 
 
 def _protobuf_required_expression_from_message(pb_owner, field: str, context: str):
