@@ -117,6 +117,12 @@ class DocumentContext:
         if version is not None and (isinstance(version, bool) or not isinstance(version, int)):
             msg = "Document version must be an integer or None"
             raise TypeError(msg)
+        if not isinstance(is_open, bool):
+            msg = "Document is_open flag must be a boolean"
+            raise TypeError(msg)
+        if not isinstance(language_mode, LanguageMode):
+            msg = "Document language_mode must be a LanguageMode"
+            raise TypeError(msg)
         self.version = version
         self.is_open = is_open
         self.language_mode = language_mode

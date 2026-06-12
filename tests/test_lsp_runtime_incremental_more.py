@@ -292,6 +292,22 @@ def test_document_context_rejects_invalid_text_inputs() -> None:
         doc.update(cast(Any, object()))
 
 
+def test_document_context_constructor_rejects_invalid_state_inputs() -> None:
+    with pytest.raises(TypeError, match="Document is_open flag must be a boolean"):
+        DocumentContext(
+            "file://sample.yar",
+            "rule r { condition: true }",
+            is_open=cast(Any, "yes"),
+        )
+
+    with pytest.raises(TypeError, match="Document language_mode must be a LanguageMode"):
+        DocumentContext(
+            "file://sample.yar",
+            "rule r { condition: true }",
+            language_mode=cast(Any, object()),
+        )
+
+
 def test_runtime_rejects_invalid_document_uri_inputs() -> None:
     runtime = LspRuntime()
     invalid_uri = cast(str, object())
