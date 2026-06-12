@@ -459,6 +459,12 @@ class DeadCodeEliminator(ASTTransformer):
             )
         )
 
+    def _mark_rule_set_reference(self, name: str) -> None:
+        if name.endswith("*"):
+            self.used_rules.update(self._matching_rule_wildcard_names(name))
+            return
+        self.used_rules.add(name)
+
     def _mark_all_current_rule_strings(self) -> None:
         for identifier in self.current_rule_strings:
             self._mark_used_string(identifier)
@@ -478,8 +484,10 @@ class DeadCodeEliminator(ASTTransformer):
                 return
             if value == "them":
                 self._mark_all_current_rule_strings()
-            else:
+            elif value.startswith("$"):
                 self._mark_used_string(value)
+            else:
+                self._mark_rule_set_reference(value)
             return
         if isinstance(value, list | tuple | set | frozenset):
             for item in value:
@@ -492,7 +500,7 @@ class DeadCodeEliminator(ASTTransformer):
             if value.name.startswith("$"):
                 self._collect_string_set_value(value.name)
                 return
-            self.used_rules.add(value.name)
+            self._mark_rule_set_reference(value.name)
             return
         if isinstance(value, StringLiteral):
             self._collect_string_set_value(value.value)
