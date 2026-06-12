@@ -10,6 +10,20 @@ import click
 from yaraast.ast.base import YaraFile
 
 
+def path_exists_for_display(path: str) -> bool:
+    try:
+        return Path(path).exists()
+    except OSError:
+        return False
+
+
+def path_size_for_display(path: str) -> int | None:
+    try:
+        return Path(path).stat().st_size if path_exists_for_display(path) else None
+    except OSError:
+        return None
+
+
 def graphviz_fallback_message(output_kind: str) -> str:
     return f"⚠️ Graphviz not installed. Generating {output_kind} instead...\n"
 
@@ -35,7 +49,7 @@ def display_graph_statistics(generator: Any) -> None:
 
 
 def display_successful_graph_result(result_path: str, generator: Any) -> None:
-    if isinstance(result_path, str) and Path(result_path).exists():
+    if isinstance(result_path, str) and path_exists_for_display(result_path):
         click.echo(f"Dependency graph generated: {result_path}")
         if generator is not None:
             display_graph_statistics(generator)

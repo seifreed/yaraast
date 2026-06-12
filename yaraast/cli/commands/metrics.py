@@ -22,6 +22,7 @@ from yaraast.cli.metrics_reporting import (
     write_complexity_report_files,
     write_report_summary,
 )
+from yaraast.cli.metrics_reporting_display import path_size_for_display
 from yaraast.cli.metrics_services import (
     analyze_complexity,
     build_report,
@@ -182,8 +183,8 @@ def tree(
     click.echo(f"HTML tree visualization generated: {output}")
 
     # Show file size
-    if Path(output).exists():
-        size = Path(output).stat().st_size
+    size = path_size_for_display(output)
+    if size is not None:
         click.echo(f"File size: {size:,} bytes")
 
 

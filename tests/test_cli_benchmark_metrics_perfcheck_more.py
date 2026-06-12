@@ -37,6 +37,7 @@ from yaraast.cli.metrics_reporting import (
     write_complexity_report_files,
     write_report_summary,
 )
+from yaraast.cli.metrics_reporting_display import path_size_for_display
 from yaraast.cli.metrics_services import MetricsReportData
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.cli.performance_check_services import parse_performance_file
@@ -577,6 +578,20 @@ def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[
     assert "HEX pattern (3 tokens)" in out
     assert "/ab+/" in out
     assert "Total strings: 3" in out
+
+
+def test_metrics_reporting_treats_inaccessible_result_paths_as_non_files(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    result_path = "a" * 5000
+
+    _display_pattern_result(result_path)
+    _display_successful_graph_result(result_path, object())
+
+    output = capsys.readouterr().out
+    assert "Diagram source:" in output
+    assert "Dependency graph generated" not in output
+    assert path_size_for_display(result_path) is None
 
 
 def test_metrics_reporting_analyze_pattern_counts_and_string_branches(
