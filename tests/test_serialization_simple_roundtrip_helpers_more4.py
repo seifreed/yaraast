@@ -2045,6 +2045,10 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             "Invalid string reference",
         ),
         (
+            InExpression("$a", IntegerLiteral(0)),
+            "InExpression range must be a range expression",
+        ),
+        (
             ForExpression("any", "", SetExpression([]), true_expr),
             "ForExpression variable must not be empty",
         ),
@@ -3188,6 +3192,15 @@ def test_simple_roundtrip_condition_fields_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="InExpression subject must not be empty"):
         deserialize_node({"type": "InExpression", "subject": "   ", "range": true_expr})
+
+    with pytest.raises(SerializationError, match="InExpression range must be a range expression"):
+        deserialize_node(
+            {
+                "type": "InExpression",
+                "subject": "$a",
+                "range": {"type": "IntegerLiteral", "value": 0},
+            }
+        )
 
 
 def test_simple_roundtrip_optional_expression_fields_reject_empty_objects() -> None:

@@ -2242,6 +2242,10 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             InExpression("$bad-name", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
             "Invalid string reference",
         ),
+        (
+            InExpression("$a", IntegerLiteral(0)),
+            "InExpression range must be a range expression",
+        ),
         (ModuleReference(cast(Any, ["pe"])), "ModuleReference module must be a string"),
         (ModuleReference(""), "ModuleReference module must not be empty"),
         (ModuleReference("bad-name"), "Invalid module identifier"),
@@ -2602,6 +2606,19 @@ def test_protobuf_deserializer_rejects_invalid_expression_operators(
         condition.string_operator_expression.right.string_literal.value = "b"
 
     with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserializer_rejects_invalid_in_expression_range() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_in_expression_range"
+    condition = pb_rule.condition
+    condition.in_expression.string_id = "$a"
+    condition.in_expression.range.integer_literal.value = 0
+
+    with pytest.raises(SerializationError, match="InExpression range must be a range expression"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 

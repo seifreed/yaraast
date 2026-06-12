@@ -107,7 +107,10 @@ def _sample_ast() -> YaraFile:
         condition=BinaryExpression(
             left=Identifier(name="true"),
             operator="and",
-            right=InExpression(subject="a", range=IntegerLiteral(value=10)),
+            right=InExpression(
+                subject="a",
+                range=RangeExpression(IntegerLiteral(value=0), IntegerLiteral(value=10)),
+            ),
         ),
     )
     return YaraFile(imports=[Import(module="pe")], includes=[], rules=[rule])
@@ -577,6 +580,10 @@ def test_json_serializer_rejects_invalid_leaf_values() -> None:
         (
             InExpression("$bad-name", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
             "Invalid string reference",
+        ),
+        (
+            InExpression("$a", IntegerLiteral(0)),
+            "InExpression range must be a range expression",
         ),
     ]
 
@@ -2608,7 +2615,11 @@ def test_json_deserialize_expressions() -> None:
     in_expr_data = {
         "type": "InExpression",
         "string_id": {"type": "StringIdentifier", "name": "$a"},
-        "range": {"type": "IntegerLiteral", "value": 5},
+        "range": {
+            "type": "RangeExpression",
+            "low": {"type": "IntegerLiteral", "value": 0},
+            "high": {"type": "IntegerLiteral", "value": 5},
+        },
     }
     in_expr = serializer._deserialize_expression(in_expr_data)
     assert isinstance(in_expr.subject, StringIdentifier)

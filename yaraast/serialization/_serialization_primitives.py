@@ -227,6 +227,15 @@ def _validate_string_operator_text(value: str) -> str:
     return value
 
 
+def _validate_in_expression_range(value: Any) -> Any:
+    from yaraast.ast.expressions import RangeExpression
+
+    if isinstance(value, RangeExpression):
+        return value
+    msg = "InExpression range must be a range expression"
+    raise SerializationError(msg)
+
+
 def _invalid_quantifier(value: object, context: str) -> None:
     msg = f"Invalid {context} '{value}' for libyara output"
     raise SerializationError(msg)

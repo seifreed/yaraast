@@ -16,6 +16,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
     _validate_function_identifier_text,
+    _validate_in_expression_range,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_location_metadata,
@@ -1657,7 +1658,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             )
         else:
             convert_expression_to_protobuf(expr.subject, pb_expr.in_expression.subject)
-        convert_expression_to_protobuf(expr.range, pb_expr.in_expression.range)
+        convert_expression_to_protobuf(
+            _validate_in_expression_range(expr.range),
+            pb_expr.in_expression.range,
+        )
     elif isinstance(expr, OfExpression):
         quantifier = _coerce_quantifier_expression(expr.quantifier)
         if quantifier is not None:
@@ -2678,11 +2682,9 @@ def protobuf_to_expression(pb_expr):
                 )
             )
         )
+        range_expression = protobuf_to_expression(pb_expr.in_expression.range)
         return with_metadata(
-            InExpression(
-                subject=subject,
-                range=protobuf_to_expression(pb_expr.in_expression.range),
-            ),
+            InExpression(subject=subject, range=_validate_in_expression_range(range_expression)),
         )
     if pb_expr.HasField("of_expression"):
         return with_metadata(

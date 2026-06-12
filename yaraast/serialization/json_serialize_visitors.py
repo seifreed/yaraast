@@ -14,6 +14,7 @@ from yaraast.serialization._serialization_primitives import (
     _normalize_rule_modifier_text,
     _validate_binary_operator_text,
     _validate_function_identifier_text,
+    _validate_in_expression_range,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_loop_variable_text,
@@ -883,10 +884,12 @@ def visit_in_expression(serializer, node) -> dict[str, Any]:
         "InExpression subject",
         validate_string_reference=True,
     )
+    range_expression = _serialize_required_expression(serializer, node.range, "InExpression range")
+    _validate_in_expression_range(node.range)
     return {
         "type": "InExpression",
         "subject": subject,
-        "range": _serialize_required_expression(serializer, node.range, "InExpression range"),
+        "range": range_expression,
     }
 
 

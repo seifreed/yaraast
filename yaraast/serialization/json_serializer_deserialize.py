@@ -34,6 +34,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
     _validate_function_identifier_text,
+    _validate_in_expression_range,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_loop_variable_text,
@@ -721,10 +722,8 @@ def _deser_in_expression(self, data: dict[str, Any]):
     else:
         msg = "InExpression subject must be a string or expression"
         raise SerializationError(msg)
-    return InExpression(
-        subject=subject,
-        range=_deserialize_required_expression(self, data, "range", "InExpression"),
-    )
+    range_expression = _deserialize_required_expression(self, data, "range", "InExpression")
+    return InExpression(subject=subject, range=_validate_in_expression_range(range_expression))
 
 
 def _deser_of_expression(self, data: dict[str, Any]):

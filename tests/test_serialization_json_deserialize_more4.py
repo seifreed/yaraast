@@ -2121,6 +2121,15 @@ def test_json_deserialize_condition_fields_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="InExpression subject must not be empty"):
         s._deserialize_expression({"type": "InExpression", "subject": "   ", "range": true_expr})
 
+    with pytest.raises(SerializationError, match="InExpression range must be a range expression"):
+        s._deserialize_expression(
+            {
+                "type": "InExpression",
+                "subject": "$a",
+                "range": {"type": "IntegerLiteral", "value": 0},
+            }
+        )
+
     with pytest.raises(SerializationError, match="Expression must be an object"):
         s._deserialize_rule(_serialized_json_rule(name="bad_condition", condition=False))
 
@@ -2410,7 +2419,11 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
         {
             "type": "InExpression",
             "string_id": "$a",
-            "range": {"type": "IntegerLiteral", "value": 50},
+            "range": {
+                "type": "RangeExpression",
+                "low": {"type": "IntegerLiteral", "value": 0},
+                "high": {"type": "IntegerLiteral", "value": 50},
+            },
         }
     )
     assert isinstance(in_str, InExpression)
@@ -2420,7 +2433,11 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
         {
             "type": "InExpression",
             "subject": {"type": "Identifier", "name": "x"},
-            "range": {"type": "IntegerLiteral", "value": 5},
+            "range": {
+                "type": "RangeExpression",
+                "low": {"type": "IntegerLiteral", "value": 0},
+                "high": {"type": "IntegerLiteral", "value": 5},
+            },
         }
     )
     assert isinstance(in_dict_subject.subject, Identifier)

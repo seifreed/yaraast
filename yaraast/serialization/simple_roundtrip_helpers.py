@@ -101,6 +101,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
     _validate_function_identifier_text,
+    _validate_in_expression_range,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_location_metadata,
@@ -1458,14 +1459,17 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "offset": serialize_node(node.offset),
         }
     if isinstance(node, InExpression):
+        subject = _serialize_string_or_expression(
+            node.subject,
+            "InExpression subject",
+            validate_string_reference=True,
+        )
+        range_expression = serialize_node(node.range)
+        _validate_in_expression_range(node.range)
         return {
             "type": "InExpression",
-            "subject": _serialize_string_or_expression(
-                node.subject,
-                "InExpression subject",
-                validate_string_reference=True,
-            ),
-            "range": serialize_node(node.range),
+            "subject": subject,
+            "range": range_expression,
         }
     if isinstance(node, OfExpression):
         return {
@@ -2254,7 +2258,8 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         else:
             msg = "InExpression subject must be a string or expression"
             raise SerializationError(msg)
-        return InExpression(subject, _deserialize_required_node(data, "range", "InExpression"))
+        range_expression = _deserialize_required_node(data, "range", "InExpression")
+        return InExpression(subject, _validate_in_expression_range(range_expression))
     if node_type == "OfExpression":
         return OfExpression(
             _deserialize_required_quantifier(
