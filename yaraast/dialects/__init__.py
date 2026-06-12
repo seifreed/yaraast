@@ -286,6 +286,9 @@ def detect_dialect(content: str) -> YaraDialect:
         The detected YARA dialect
 
     """
+    if not isinstance(content, str):
+        msg = "dialect content must be a string"
+        raise TypeError(msg)
     return DialectRegistry.detect(content)
 
 

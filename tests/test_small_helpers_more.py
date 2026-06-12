@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.modifiers import StringModifier
@@ -152,6 +154,12 @@ rule login_event {
 
     module_array_access = 'rule classic { condition: pe.sections[0].name == "x" }'
     assert detect_dialect(module_array_access) == YaraDialect.YARA
+
+
+@pytest.mark.parametrize("content", [None, b"rule a { condition: true }", 123, object()])
+def test_detect_dialect_rejects_non_string_content(content: Any) -> None:
+    with pytest.raises(TypeError, match="dialect content must be a string"):
+        detect_dialect(cast(str, content))
 
 
 def test_detect_dialect_yarax_signals() -> None:
