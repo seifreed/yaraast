@@ -123,7 +123,9 @@ def test_expression_optimizer_preserves_defined_boolean_operands() -> None:
             condition:
                 defined (false or uint8(filesize)) and
                 defined (true and uint8(filesize)) and
-                defined (uint8(filesize) or false)
+                defined (uint8(filesize) or false) and
+                defined (uint8(filesize) and false) and
+                defined (uint8(filesize) or true)
         }
     """)
 

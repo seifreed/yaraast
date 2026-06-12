@@ -138,7 +138,11 @@ def _is_static_boolean_identity_operand(node: Expression) -> bool:
     return isinstance(node, StringIdentifier | StringWildcard | DefinedExpression)
 
 
-def _simplify_boolean_short_circuit(node: BinaryExpression) -> tuple[Expression | None, int]:
+def _simplify_boolean_short_circuit(
+    node: BinaryExpression,
+    *,
+    preserve_undefined: bool = False,
+) -> tuple[Expression | None, int]:
     """Simplify boolean short-circuit patterns. Returns (result, opt_count)."""
     if isinstance(node.left, BooleanLiteral):
         left_value = _boolean_literal_value(node.left)
@@ -159,9 +163,17 @@ def _simplify_boolean_short_circuit(node: BinaryExpression) -> tuple[Expression 
         right_value = _boolean_literal_value(node.right)
         if right_value is None:
             return None, 0
-        if node.operator == "and" and not right_value:
+        if (
+            node.operator == "and"
+            and not right_value
+            and (not preserve_undefined or _is_static_boolean_identity_operand(node.left))
+        ):
             return BooleanLiteral(value=False), 1
-        if node.operator == "or" and right_value:
+        if (
+            node.operator == "or"
+            and right_value
+            and (not preserve_undefined or _is_static_boolean_identity_operand(node.left))
+        ):
             return BooleanLiteral(value=True), 1
         if node.operator == "and" and _is_static_boolean_identity_operand(node.left):
             return node.left, 1
@@ -205,6 +217,7 @@ class ExpressionOptimizer(ASTTransformer):
     def __init__(self) -> None:
         super().__init__()
         self.optimization_count = 0
+        self._defined_expression_depth = 0
 
     @overload
     def optimize(self, node: YaraFile) -> tuple[YaraFile, int]: ...
@@ -283,7 +296,10 @@ class ExpressionOptimizer(ASTTransformer):
             return identity
 
         # Boolean simplifications
-        short_circuit, count = _simplify_boolean_short_circuit(node)
+        short_circuit, count = _simplify_boolean_short_circuit(
+            node,
+            preserve_undefined=self._defined_expression_depth > 0,
+        )
         if short_circuit is not None:
             self.optimization_count += count
             return short_circuit
@@ -407,7 +423,11 @@ class ExpressionOptimizer(ASTTransformer):
         return node
 
     def visit_defined_expression(self, node: DefinedExpression) -> DefinedExpression:
-        node.expression = cast(Expression, self.visit(node.expression))
+        self._defined_expression_depth += 1
+        try:
+            node.expression = cast(Expression, self.visit(node.expression))
+        finally:
+            self._defined_expression_depth -= 1
         return node
 
     def visit_for_expression(self, node: Any) -> Any:
