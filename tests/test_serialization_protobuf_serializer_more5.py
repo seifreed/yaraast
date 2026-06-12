@@ -2166,12 +2166,20 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             "BinaryExpression operator must not be empty",
         ),
         (
+            BinaryExpression(BooleanLiteral(True), "???", BooleanLiteral(False)),
+            "Invalid binary operator",
+        ),
+        (
             UnaryExpression(cast(Any, 123), BooleanLiteral(True)),
             "UnaryExpression operator must be a string",
         ),
         (
             UnaryExpression("", BooleanLiteral(True)),
             "UnaryExpression operator must not be empty",
+        ),
+        (
+            UnaryExpression("???", BooleanLiteral(True)),
+            "Invalid unary operator",
         ),
         (FunctionCall(cast(Any, 123), []), "FunctionCall function must be a string"),
         (FunctionCall("", []), "FunctionCall function must not be empty"),
@@ -2272,6 +2280,10 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
         (
             StringOperatorExpression(StringLiteral("a"), "", StringLiteral("b")),
             "StringOperatorExpression operator must not be empty",
+        ),
+        (
+            StringOperatorExpression(StringLiteral("a"), "???", StringLiteral("b")),
+            "Invalid string operator",
         ),
     ],
 )
@@ -2557,6 +2569,40 @@ def test_protobuf_deserializer_rejects_empty_string_sets() -> None:
 
         with pytest.raises(SerializationError, match=message):
             serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("expression_kind", "message"),
+    [
+        ("binary_expression", "Invalid binary operator"),
+        ("unary_expression", "Invalid unary operator"),
+        ("string_operator_expression", "Invalid string operator"),
+    ],
+)
+def test_protobuf_deserializer_rejects_invalid_expression_operators(
+    expression_kind: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_expression_operator"
+    condition = pb_rule.condition
+
+    if expression_kind == "binary_expression":
+        condition.binary_expression.left.boolean_literal.value = True
+        condition.binary_expression.operator = "???"
+        condition.binary_expression.right.boolean_literal.value = False
+    elif expression_kind == "unary_expression":
+        condition.unary_expression.operator = "???"
+        condition.unary_expression.operand.boolean_literal.value = True
+    elif expression_kind == "string_operator_expression":
+        condition.string_operator_expression.left.string_literal.value = "a"
+        condition.string_operator_expression.operator = "???"
+        condition.string_operator_expression.right.string_literal.value = "b"
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
 @pytest.mark.parametrize(

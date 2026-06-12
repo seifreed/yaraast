@@ -30,6 +30,7 @@ from yaraast.serialization._serialization_primitives import (
     _deserialize_string_list_field,
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
+    _validate_binary_operator_text,
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
     _validate_function_identifier_text,
@@ -39,7 +40,9 @@ from yaraast.serialization._serialization_primitives import (
     _validate_namespace_identifier_text,
     _validate_optional_namespace_identifier_text,
     _validate_quantifier_value,
+    _validate_string_operator_text,
     _validate_string_reference_text,
+    _validate_unary_operator_text,
     _validate_unique_rule_tags,
     _validate_yara_identifier_text,
 )
@@ -459,7 +462,9 @@ def _deser_binary_expression(self, data: dict[str, Any]):
     right = _deserialize_required_expression(self, data, "right", "BinaryExpression")
     return BinaryExpression(
         left=left,
-        operator=_deserialize_nonempty_string_field(data, "operator", "BinaryExpression"),
+        operator=_validate_binary_operator_text(
+            _deserialize_nonempty_string_field(data, "operator", "BinaryExpression")
+        ),
         right=right,
     )
 
@@ -469,7 +474,9 @@ def _deser_unary_expression(self, data: dict[str, Any]):
 
     operand = _deserialize_required_expression(self, data, "operand", "UnaryExpression")
     return UnaryExpression(
-        operator=_deserialize_nonempty_string_field(data, "operator", "UnaryExpression"),
+        operator=_validate_unary_operator_text(
+            _deserialize_nonempty_string_field(data, "operator", "UnaryExpression")
+        ),
         operand=operand,
     )
 
@@ -777,7 +784,9 @@ def _deser_string_operator_expression(self, data: dict[str, Any]):
             "left",
             "StringOperatorExpression",
         ),
-        operator=_deserialize_nonempty_string_field(data, "operator", "StringOperatorExpression"),
+        operator=_validate_string_operator_text(
+            _deserialize_nonempty_string_field(data, "operator", "StringOperatorExpression")
+        ),
         right=_deserialize_required_expression(
             self,
             data,

@@ -14,6 +14,10 @@ from typing import Any
 
 from yaraast.ast.base import Location
 from yaraast.ast.modifiers import RuleModifier, require_rule_modifier_identifier
+from yaraast.codegen.generator_expression_visitors import (
+    _render_binary_operator,
+    _render_unary_operator,
+)
 from yaraast.codegen.generator_formatting import (
     validate_extern_rule_identifiers,
     validate_optional_namespace,
@@ -21,6 +25,7 @@ from yaraast.codegen.generator_formatting import (
     validate_yara_identifier_path,
 )
 from yaraast.codegen.generator_helpers import validate_string_identifier_text
+from yaraast.codegen.generator_leaf_visitors import _render_string_operator
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.shared.local_scope import local_name_variants, validate_local_identifier
 from yaraast.string_references import normalize_string_reference_id
@@ -196,6 +201,30 @@ def _validate_string_identifier_text(value: str) -> str:
         return validate_string_identifier_text(value)
     except (TypeError, ValueError) as exc:
         raise SerializationError(str(exc)) from exc
+
+
+def _validate_binary_operator_text(value: str) -> str:
+    try:
+        _render_binary_operator(value)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return value
+
+
+def _validate_unary_operator_text(value: str) -> str:
+    try:
+        _render_unary_operator(value)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return value
+
+
+def _validate_string_operator_text(value: str) -> str:
+    try:
+        _render_string_operator(value)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return value
 
 
 def _invalid_quantifier(value: object, context: str) -> None:

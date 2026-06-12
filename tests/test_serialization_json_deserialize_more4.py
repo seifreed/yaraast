@@ -1264,6 +1264,16 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             }
         )
 
+    with pytest.raises(SerializationError, match="Invalid binary operator"):
+        s._deserialize_expression(
+            {
+                "type": "BinaryExpression",
+                "left": true_expr,
+                "operator": "???",
+                "right": true_expr,
+            }
+        )
+
     with pytest.raises(SerializationError, match="UnaryExpression operator must be a string"):
         s._deserialize_expression(
             {"type": "UnaryExpression", "operator": ["not"], "operand": true_expr}
@@ -1271,6 +1281,11 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="UnaryExpression operator must not be empty"):
         s._deserialize_expression({"type": "UnaryExpression", "operator": "", "operand": true_expr})
+
+    with pytest.raises(SerializationError, match="Invalid unary operator"):
+        s._deserialize_expression(
+            {"type": "UnaryExpression", "operator": "???", "operand": true_expr}
+        )
 
     with pytest.raises(SerializationError, match="FunctionCall function must be a string"):
         s._deserialize_expression({"type": "FunctionCall", "function": ["fn"], "arguments": []})
@@ -1800,6 +1815,16 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
                 "type": "StringOperatorExpression",
                 "left": true_expr,
                 "operator": "",
+                "right": true_expr,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="Invalid string operator"):
+        s._deserialize_expression(
+            {
+                "type": "StringOperatorExpression",
+                "left": true_expr,
+                "operator": "???",
                 "right": true_expr,
             }
         )

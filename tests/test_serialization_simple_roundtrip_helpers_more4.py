@@ -1708,11 +1708,24 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
             }
         )
 
+    with pytest.raises(SerializationError, match="Invalid binary operator"):
+        deserialize_node(
+            {
+                "type": "BinaryExpression",
+                "left": true_expr,
+                "operator": "???",
+                "right": true_expr,
+            }
+        )
+
     with pytest.raises(SerializationError, match="UnaryExpression operator must be a string"):
         deserialize_node({"type": "UnaryExpression", "operator": ["not"], "operand": true_expr})
 
     with pytest.raises(SerializationError, match="UnaryExpression operator must not be empty"):
         deserialize_node({"type": "UnaryExpression", "operator": "", "operand": true_expr})
+
+    with pytest.raises(SerializationError, match="Invalid unary operator"):
+        deserialize_node({"type": "UnaryExpression", "operator": "???", "operand": true_expr})
 
     with pytest.raises(SerializationError, match="FunctionCall function must be a string"):
         deserialize_node({"type": "FunctionCall", "function": ["fn"], "arguments": []})
@@ -1976,6 +1989,10 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             "BinaryExpression operator must not be empty",
         ),
         (
+            BinaryExpression(true_expr, "???", BooleanLiteral(False)),
+            "Invalid binary operator",
+        ),
+        (
             BinaryExpression(true_expr, cast(Any, ["and"]), BooleanLiteral(False)),
             "BinaryExpression operator must be a string",
         ),
@@ -1983,6 +2000,7 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             UnaryExpression(cast(Any, ["not"]), true_expr),
             "UnaryExpression operator must be a string",
         ),
+        (UnaryExpression("???", true_expr), "Invalid unary operator"),
         (UnaryExpression("", true_expr), "UnaryExpression operator must not be empty"),
         (FunctionCall("", []), "FunctionCall function must not be empty"),
         (FunctionCall(cast(Any, ["fn"]), []), "FunctionCall function must be a string"),
@@ -2056,6 +2074,10 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
         (
             StringOperatorExpression(StringLiteral("a"), "", StringLiteral("b")),
             "StringOperatorExpression operator must not be empty",
+        ),
+        (
+            StringOperatorExpression(StringLiteral("a"), "???", StringLiteral("b")),
+            "Invalid string operator",
         ),
         (
             ArrayComprehension(variable=""),
@@ -2832,6 +2854,16 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
                 "type": "StringOperatorExpression",
                 "left": true_expr,
                 "operator": "",
+                "right": true_expr,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="Invalid string operator"):
+        deserialize_node(
+            {
+                "type": "StringOperatorExpression",
+                "left": true_expr,
+                "operator": "???",
                 "right": true_expr,
             }
         )

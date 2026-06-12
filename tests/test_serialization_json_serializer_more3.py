@@ -891,12 +891,20 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
             "BinaryExpression operator must not be empty",
         ),
         (
+            BinaryExpression(BooleanLiteral(True), "???", BooleanLiteral(False)),
+            "Invalid binary operator",
+        ),
+        (
             BinaryExpression(BooleanLiteral(True), invalid_text, BooleanLiteral(False)),
             "BinaryExpression operator must be a string",
         ),
         (
             UnaryExpression("", BooleanLiteral(True)),
             "UnaryExpression operator must not be empty",
+        ),
+        (
+            UnaryExpression("???", BooleanLiteral(True)),
+            "Invalid unary operator",
         ),
         (
             UnaryExpression(invalid_text, BooleanLiteral(True)),
@@ -957,6 +965,10 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
         (
             StringOperatorExpression(StringLiteral("a"), "", StringLiteral("b")),
             "StringOperatorExpression operator must not be empty",
+        ),
+        (
+            StringOperatorExpression(StringLiteral("a"), "???", StringLiteral("b")),
+            "Invalid string operator",
         ),
         (
             WithStatement([WithDeclaration("", IntegerLiteral(1))], BooleanLiteral(True)),

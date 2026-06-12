@@ -12,12 +12,15 @@ from yaraast.serialization._serialization_primitives import (
     _is_empty_nonempty_text,
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
+    _validate_binary_operator_text,
     _validate_function_identifier_text,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_loop_variable_text,
     _validate_quantifier_value,
+    _validate_string_operator_text,
     _validate_string_reference_text,
+    _validate_unary_operator_text,
     _validate_unique_extern_rule_identifiers,
     _validate_unique_rule_identifiers,
     _validate_unique_rule_tags,
@@ -715,9 +718,11 @@ def visit_binary_expression(serializer, node) -> dict[str, Any]:
             node.left,
             "BinaryExpression left",
         ),
-        "operator": _serialize_required_nonempty_string(
-            node.operator,
-            "BinaryExpression operator",
+        "operator": _validate_binary_operator_text(
+            _serialize_required_nonempty_string(
+                node.operator,
+                "BinaryExpression operator",
+            )
         ),
         "right": _serialize_required_expression(
             serializer,
@@ -730,9 +735,11 @@ def visit_binary_expression(serializer, node) -> dict[str, Any]:
 def visit_unary_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "UnaryExpression",
-        "operator": _serialize_required_nonempty_string(
-            node.operator,
-            "UnaryExpression operator",
+        "operator": _validate_unary_operator_text(
+            _serialize_required_nonempty_string(
+                node.operator,
+                "UnaryExpression operator",
+            )
         ),
         "operand": _serialize_required_expression(
             serializer,
@@ -930,9 +937,11 @@ def visit_string_operator_expression(serializer, node) -> dict[str, Any]:
             node.left,
             "StringOperatorExpression left",
         ),
-        "operator": _serialize_required_nonempty_string(
-            node.operator,
-            "StringOperatorExpression operator",
+        "operator": _validate_string_operator_text(
+            _serialize_required_nonempty_string(
+                node.operator,
+                "StringOperatorExpression operator",
+            )
         ),
         "right": _serialize_required_expression(
             serializer,

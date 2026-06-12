@@ -97,6 +97,7 @@ from yaraast.serialization._serialization_primitives import (
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
     _serialize_modifier_value,
+    _validate_binary_operator_text,
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
     _validate_function_identifier_text,
@@ -107,7 +108,9 @@ from yaraast.serialization._serialization_primitives import (
     _validate_namespace_identifier_text,
     _validate_optional_namespace_identifier_text,
     _validate_quantifier_value,
+    _validate_string_operator_text,
     _validate_string_reference_text,
+    _validate_unary_operator_text,
     _validate_unique_extern_rule_identifiers,
     _validate_unique_rule_identifiers,
     _validate_unique_rule_tags,
@@ -1344,18 +1347,22 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "BinaryExpression",
             "left": serialize_node(node.left),
-            "operator": _serialize_required_nonempty_string(
-                node.operator,
-                "BinaryExpression operator",
+            "operator": _validate_binary_operator_text(
+                _serialize_required_nonempty_string(
+                    node.operator,
+                    "BinaryExpression operator",
+                )
             ),
             "right": serialize_node(node.right),
         }
     if isinstance(node, UnaryExpression):
         return {
             "type": "UnaryExpression",
-            "operator": _serialize_required_nonempty_string(
-                node.operator,
-                "UnaryExpression operator",
+            "operator": _validate_unary_operator_text(
+                _serialize_required_nonempty_string(
+                    node.operator,
+                    "UnaryExpression operator",
+                )
             ),
             "operand": serialize_node(node.operand),
         }
@@ -1493,9 +1500,11 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "StringOperatorExpression",
             "left": serialize_node(node.left),
-            "operator": _serialize_required_nonempty_string(
-                node.operator,
-                "StringOperatorExpression operator",
+            "operator": _validate_string_operator_text(
+                _serialize_required_nonempty_string(
+                    node.operator,
+                    "StringOperatorExpression operator",
+                )
             ),
             "right": serialize_node(node.right),
         }
@@ -2128,12 +2137,16 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "BinaryExpression":
         return BinaryExpression(
             _deserialize_required_node(data, "left", "BinaryExpression"),
-            _deserialize_nonempty_string_field(data, "operator", "BinaryExpression"),
+            _validate_binary_operator_text(
+                _deserialize_nonempty_string_field(data, "operator", "BinaryExpression")
+            ),
             _deserialize_required_node(data, "right", "BinaryExpression"),
         )
     if node_type == "UnaryExpression":
         return UnaryExpression(
-            _deserialize_nonempty_string_field(data, "operator", "UnaryExpression"),
+            _validate_unary_operator_text(
+                _deserialize_nonempty_string_field(data, "operator", "UnaryExpression")
+            ),
             _deserialize_required_node(data, "operand", "UnaryExpression"),
         )
     if node_type == "ParenthesesExpression":
@@ -2271,7 +2284,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "StringOperatorExpression":
         return StringOperatorExpression(
             _deserialize_required_node(data, "left", "StringOperatorExpression"),
-            _deserialize_nonempty_string_field(data, "operator", "StringOperatorExpression"),
+            _validate_string_operator_text(
+                _deserialize_nonempty_string_field(data, "operator", "StringOperatorExpression")
+            ),
             _deserialize_required_node(data, "right", "StringOperatorExpression"),
         )
     if node_type == "WithStatement":

@@ -12,6 +12,7 @@ from yaraast.serialization._serialization_primitives import (
     _is_empty_nonempty_text,
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
+    _validate_binary_operator_text,
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
     _validate_function_identifier_text,
@@ -22,7 +23,9 @@ from yaraast.serialization._serialization_primitives import (
     _validate_namespace_identifier_text,
     _validate_optional_namespace_identifier_text,
     _validate_quantifier_value,
+    _validate_string_operator_text,
     _validate_string_reference_text,
+    _validate_unary_operator_text,
     _validate_unique_extern_rule_identifiers,
     _validate_unique_rule_identifiers,
     _validate_unique_rule_tags,
@@ -1515,16 +1518,20 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             "BooleanLiteral value",
         )
     elif isinstance(expr, BinaryExpression):
-        pb_expr.binary_expression.operator = _protobuf_required_nonempty_string(
-            expr.operator,
-            "BinaryExpression operator",
+        pb_expr.binary_expression.operator = _validate_binary_operator_text(
+            _protobuf_required_nonempty_string(
+                expr.operator,
+                "BinaryExpression operator",
+            )
         )
         convert_expression_to_protobuf(expr.left, pb_expr.binary_expression.left)
         convert_expression_to_protobuf(expr.right, pb_expr.binary_expression.right)
     elif isinstance(expr, UnaryExpression):
-        pb_expr.unary_expression.operator = _protobuf_required_nonempty_string(
-            expr.operator,
-            "UnaryExpression operator",
+        pb_expr.unary_expression.operator = _validate_unary_operator_text(
+            _protobuf_required_nonempty_string(
+                expr.operator,
+                "UnaryExpression operator",
+            )
         )
         convert_expression_to_protobuf(expr.operand, pb_expr.unary_expression.operand)
     elif isinstance(expr, ParenthesesExpression):
@@ -1670,9 +1677,11 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.expression, pb_expr.defined_expression.expression)
     elif isinstance(expr, StringOperatorExpression):
         convert_expression_to_protobuf(expr.left, pb_expr.string_operator_expression.left)
-        pb_expr.string_operator_expression.operator = _protobuf_required_nonempty_string(
-            expr.operator,
-            "StringOperatorExpression operator",
+        pb_expr.string_operator_expression.operator = _validate_string_operator_text(
+            _protobuf_required_nonempty_string(
+                expr.operator,
+                "StringOperatorExpression operator",
+            )
         )
         convert_expression_to_protobuf(expr.right, pb_expr.string_operator_expression.right)
     elif isinstance(expr, WithStatement):
@@ -2474,9 +2483,11 @@ def protobuf_to_expression(pb_expr):
         return with_metadata(
             BinaryExpression(
                 left=protobuf_to_expression(pb_expr.binary_expression.left),
-                operator=_protobuf_required_nonempty_string(
-                    pb_expr.binary_expression.operator,
-                    "BinaryExpression operator",
+                operator=_validate_binary_operator_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.binary_expression.operator,
+                        "BinaryExpression operator",
+                    )
                 ),
                 right=protobuf_to_expression(pb_expr.binary_expression.right),
             ),
@@ -2484,9 +2495,11 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("unary_expression"):
         return with_metadata(
             UnaryExpression(
-                operator=_protobuf_required_nonempty_string(
-                    pb_expr.unary_expression.operator,
-                    "UnaryExpression operator",
+                operator=_validate_unary_operator_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.unary_expression.operator,
+                        "UnaryExpression operator",
+                    )
                 ),
                 operand=protobuf_to_expression(pb_expr.unary_expression.operand),
             ),
@@ -2699,9 +2712,11 @@ def protobuf_to_expression(pb_expr):
         return with_metadata(
             StringOperatorExpression(
                 left=protobuf_to_expression(pb_expr.string_operator_expression.left),
-                operator=_protobuf_required_nonempty_string(
-                    pb_expr.string_operator_expression.operator,
-                    "StringOperatorExpression operator",
+                operator=_validate_string_operator_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.string_operator_expression.operator,
+                        "StringOperatorExpression operator",
+                    )
                 ),
                 right=protobuf_to_expression(pb_expr.string_operator_expression.right),
             ),
