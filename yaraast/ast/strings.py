@@ -340,7 +340,10 @@ class RegexString(StringDefinition):
     def validate_structure(self) -> None:
         """Validate regex string scalar fields before direct analysis."""
         super().validate_structure()
-        require_string(self.regex, "Regex string pattern")
+        regex = require_string(self.regex, "Regex string pattern")
+        if not regex:
+            msg = "RegexString regex must not be empty"
+            raise ValueError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_regex_string(self)

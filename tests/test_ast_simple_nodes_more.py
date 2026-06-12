@@ -188,6 +188,11 @@ def test_string_nodes_validate_structure_rejects_empty_identifiers(
         node.validate_structure()
 
 
+def test_regex_string_validate_structure_rejects_empty_pattern() -> None:
+    with pytest.raises(ValueError, match="RegexString regex must not be empty"):
+        RegexString(identifier="$r", regex="").validate_structure()
+
+
 def test_simple_hex_nodes_accept() -> None:
     visitor = _Visitor()
 
