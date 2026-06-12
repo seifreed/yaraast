@@ -1399,6 +1399,13 @@ def _protobuf_string_set_to_ast(pb_owner, context: str):
     return protobuf_to_expression(pb_owner.string_set)
 
 
+def _protobuf_required_expression_from_message(pb_owner, field: str, context: str):
+    if not pb_owner.HasField(field):
+        msg = f"{context} {field} is required"
+        raise SerializationError(msg)
+    return protobuf_to_expression(getattr(pb_owner, field))
+
+
 def convert_expression_to_protobuf(expr, pb_expr) -> None:
     """Convert an AST expression to protobuf."""
     from yaraast.ast.conditions import (
@@ -1719,35 +1726,29 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             )
         convert_expression_to_protobuf(expr.body, pb_expr.with_statement.body)
     elif isinstance(expr, ArrayComprehension):
-        if expr.expression is not None:
-            convert_expression_to_protobuf(
-                expr.expression,
-                pb_expr.array_comprehension.expression,
-            )
         pb_expr.array_comprehension.variable = _validate_local_identifier_text(
             _protobuf_required_nonempty_string(
                 expr.variable,
                 "ArrayComprehension variable",
             )
         )
-        if expr.iterable is not None:
-            convert_expression_to_protobuf(expr.iterable, pb_expr.array_comprehension.iterable)
+        if expr.expression is None:
+            msg = "ArrayComprehension expression is required"
+            raise SerializationError(msg)
+        convert_expression_to_protobuf(
+            expr.expression,
+            pb_expr.array_comprehension.expression,
+        )
+        if expr.iterable is None:
+            msg = "ArrayComprehension iterable is required"
+            raise SerializationError(msg)
+        convert_expression_to_protobuf(expr.iterable, pb_expr.array_comprehension.iterable)
         if expr.condition is not None:
             convert_expression_to_protobuf(
                 expr.condition,
                 pb_expr.array_comprehension.condition,
             )
     elif isinstance(expr, DictComprehension):
-        if expr.key_expression is not None:
-            convert_expression_to_protobuf(
-                expr.key_expression,
-                pb_expr.dict_comprehension.key_expression,
-            )
-        if expr.value_expression is not None:
-            convert_expression_to_protobuf(
-                expr.value_expression,
-                pb_expr.dict_comprehension.value_expression,
-            )
         pb_expr.dict_comprehension.key_variable = _validate_local_identifier_text(
             _protobuf_required_nonempty_string(
                 expr.key_variable,
@@ -1761,8 +1762,25 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                     "DictComprehension value_variable",
                 )
             )
+        if expr.key_expression is None:
+            msg = "DictComprehension key_expression is required"
+            raise SerializationError(msg)
+        convert_expression_to_protobuf(
+            expr.key_expression,
+            pb_expr.dict_comprehension.key_expression,
+        )
+        if expr.value_expression is None:
+            msg = "DictComprehension value_expression is required"
+            raise SerializationError(msg)
+        convert_expression_to_protobuf(
+            expr.value_expression,
+            pb_expr.dict_comprehension.value_expression,
+        )
         if expr.iterable is not None:
             convert_expression_to_protobuf(expr.iterable, pb_expr.dict_comprehension.iterable)
+        else:
+            msg = "DictComprehension iterable is required"
+            raise SerializationError(msg)
         if expr.condition is not None:
             convert_expression_to_protobuf(
                 expr.condition,
@@ -2770,10 +2788,10 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("array_comprehension"):
         return with_metadata(
             ArrayComprehension(
-                expression=(
-                    protobuf_to_expression(pb_expr.array_comprehension.expression)
-                    if pb_expr.array_comprehension.HasField("expression")
-                    else None
+                expression=_protobuf_required_expression_from_message(
+                    pb_expr.array_comprehension,
+                    "expression",
+                    "ArrayComprehension",
                 ),
                 variable=_validate_local_identifier_text(
                     _protobuf_required_nonempty_string(
@@ -2781,10 +2799,10 @@ def protobuf_to_expression(pb_expr):
                         "ArrayComprehension variable",
                     )
                 ),
-                iterable=(
-                    protobuf_to_expression(pb_expr.array_comprehension.iterable)
-                    if pb_expr.array_comprehension.HasField("iterable")
-                    else None
+                iterable=_protobuf_required_expression_from_message(
+                    pb_expr.array_comprehension,
+                    "iterable",
+                    "ArrayComprehension",
                 ),
                 condition=(
                     protobuf_to_expression(pb_expr.array_comprehension.condition)
@@ -2796,15 +2814,15 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("dict_comprehension"):
         return with_metadata(
             DictComprehension(
-                key_expression=(
-                    protobuf_to_expression(pb_expr.dict_comprehension.key_expression)
-                    if pb_expr.dict_comprehension.HasField("key_expression")
-                    else None
+                key_expression=_protobuf_required_expression_from_message(
+                    pb_expr.dict_comprehension,
+                    "key_expression",
+                    "DictComprehension",
                 ),
-                value_expression=(
-                    protobuf_to_expression(pb_expr.dict_comprehension.value_expression)
-                    if pb_expr.dict_comprehension.HasField("value_expression")
-                    else None
+                value_expression=_protobuf_required_expression_from_message(
+                    pb_expr.dict_comprehension,
+                    "value_expression",
+                    "DictComprehension",
                 ),
                 key_variable=_validate_local_identifier_text(
                     _protobuf_required_nonempty_string(
@@ -2822,10 +2840,10 @@ def protobuf_to_expression(pb_expr):
                     if pb_expr.dict_comprehension.HasField("value_variable")
                     else None
                 ),
-                iterable=(
-                    protobuf_to_expression(pb_expr.dict_comprehension.iterable)
-                    if pb_expr.dict_comprehension.HasField("iterable")
-                    else None
+                iterable=_protobuf_required_expression_from_message(
+                    pb_expr.dict_comprehension,
+                    "iterable",
+                    "DictComprehension",
                 ),
                 condition=(
                     protobuf_to_expression(pb_expr.dict_comprehension.condition)

@@ -238,6 +238,54 @@ def test_protobuf_serializer_rejects_invalid_yarax_container_fields(
     ("condition", "message"),
     [
         (
+            ArrayComprehension(variable="x", iterable=Identifier("xs")),
+            "ArrayComprehension expression is required",
+        ),
+        (
+            ArrayComprehension(expression=Identifier("x"), variable="x"),
+            "ArrayComprehension iterable is required",
+        ),
+        (
+            DictComprehension(
+                value_expression=Identifier("v"),
+                key_variable="k",
+                iterable=Identifier("xs"),
+            ),
+            "DictComprehension key_expression is required",
+        ),
+        (
+            DictComprehension(
+                key_expression=Identifier("k"),
+                key_variable="k",
+                iterable=Identifier("xs"),
+            ),
+            "DictComprehension value_expression is required",
+        ),
+        (
+            DictComprehension(
+                key_expression=Identifier("k"),
+                value_expression=Identifier("v"),
+                key_variable="k",
+            ),
+            "DictComprehension iterable is required",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_incomplete_yarax_comprehensions(
+    condition: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="incomplete_yarax_comprehension", condition=condition)])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
             WithStatement([WithDeclaration("", IntegerLiteral(1))], BooleanLiteral(True)),
             "WithDeclaration identifier must not be empty",
         ),
@@ -425,6 +473,45 @@ def test_protobuf_deserializer_rejects_invalid_yarax_local_identifier_fields(
     elif payload_kind == "lambda_parameter":
         condition.lambda_expression.parameters.append("1bad")
         condition.lambda_expression.body.boolean_literal.value = True
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("payload_kind", "message"),
+    [
+        ("array_expression", "ArrayComprehension expression is required"),
+        ("array_iterable", "ArrayComprehension iterable is required"),
+        ("dict_key_expression", "DictComprehension key_expression is required"),
+        ("dict_value_expression", "DictComprehension value_expression is required"),
+        ("dict_iterable", "DictComprehension iterable is required"),
+    ],
+)
+def test_protobuf_deserializer_rejects_incomplete_yarax_comprehensions(
+    payload_kind: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "incomplete_yarax_comprehension"
+    condition = pb_rule.condition
+
+    if payload_kind.startswith("array_"):
+        condition.array_comprehension.variable = "x"
+        if payload_kind != "array_expression":
+            condition.array_comprehension.expression.identifier.name = "x"
+        if payload_kind != "array_iterable":
+            condition.array_comprehension.iterable.identifier.name = "xs"
+    else:
+        condition.dict_comprehension.key_variable = "k"
+        if payload_kind != "dict_key_expression":
+            condition.dict_comprehension.key_expression.identifier.name = "k"
+        if payload_kind != "dict_value_expression":
+            condition.dict_comprehension.value_expression.identifier.name = "v"
+        if payload_kind != "dict_iterable":
+            condition.dict_comprehension.iterable.identifier.name = "xs"
 
     with pytest.raises(SerializationError, match=message):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
