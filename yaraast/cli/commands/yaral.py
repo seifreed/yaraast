@@ -27,7 +27,6 @@ from yaraast.cli.yaral_services import (
     generate_yaral,
     optimize_yaral,
     parse_yaral,
-    parse_yaral_best_effort,
     validate_yaral,
 )
 from yaraast.yaral.validator import YaraLValidator
@@ -157,7 +156,7 @@ def generate(file: str, output: str | None, format: bool) -> None:
     output = _validate_output_path(output)
     try:
         content = read_text(file)
-        ast = parse_yaral_best_effort(content)
+        ast = parse_yaral(content, enhanced=True)
         code = generate_yaral(ast)
         if format:
             code = format_yaral_code(code)

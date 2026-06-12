@@ -139,3 +139,17 @@ def test_yaral_parse_enhanced_rejects_recovered_parser_errors(tmp_path: Path) ->
     assert result.exit_code != 0
     assert "YARA-L parse failed" in result.output
     assert "Successfully parsed 0 rules" not in result.output
+
+
+def test_yaral_generate_rejects_recovered_parser_errors(tmp_path: Path) -> None:
+    yaral_path = _write_yaral(
+        tmp_path,
+        "bad_generate.yaral",
+        "rule bad { events: $e.metadata.event_type = condition: $e }",
+    )
+
+    result = CliRunner().invoke(yaral, ["generate", yaral_path])
+
+    assert result.exit_code != 0
+    assert "YARA-L parse failed" in result.output
+    assert "Successfully generated code for 0 rules" not in result.output
