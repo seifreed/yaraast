@@ -6,7 +6,14 @@ from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from yaraast.ast.base import ASTNode, require_string, require_yara_file
-from yaraast.ast.expressions import Identifier, MemberAccess, StringWildcard
+from yaraast.ast.expressions import (
+    Identifier,
+    MemberAccess,
+    ParenthesesExpression,
+    SetExpression,
+    StringLiteral,
+    StringWildcard,
+)
 from yaraast.shared.local_scope import local_name_variants
 from yaraast.visitor.base import BaseVisitor
 
@@ -323,6 +330,62 @@ class DependencyAnalyzer(BaseVisitor[None]):
                 and not self._is_local(rule_name)
             )
         )
+
+    def _record_rule_set_text(self, value: str) -> None:
+        if value == "them" or value.startswith("$"):
+            return
+
+        rule_key = self._active_rule_key()
+        if not rule_key or self._is_local(value):
+            return
+
+        if value.endswith("*"):
+            for rule_name in self._matching_rule_wildcard_names(value):
+                self.dependencies[rule_key].update(
+                    self._dependency_targets_for_rule_name(rule_name)
+                )
+            return
+
+        if value in self._known_raw_rule_names() and value != self.current_rule:
+            self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(value))
+
+    def _visit_rule_set_value(self, value: Any) -> None:
+        if isinstance(value, str):
+            self._record_rule_set_text(value)
+            return
+        if isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                self._visit_rule_set_value(item)
+            return
+        if isinstance(value, Identifier):
+            self._record_rule_set_text(value.name)
+            return
+        if isinstance(value, StringLiteral):
+            self._record_rule_set_text(value.value)
+            return
+        if isinstance(value, StringWildcard):
+            self.visit_string_wildcard(value)
+            return
+        if isinstance(value, ParenthesesExpression):
+            self._visit_rule_set_value(value.expression)
+            return
+        if isinstance(value, SetExpression):
+            for element in value.elements:
+                self._visit_rule_set_value(element)
+            return
+        if isinstance(value, ASTNode):
+            self.visit(value)
+
+    def visit_of_expression(self, node: Any) -> None:
+        if isinstance(node.quantifier, ASTNode):
+            self.visit(node.quantifier)
+        self._visit_rule_set_value(node.string_set)
+
+    def visit_for_of_expression(self, node: Any) -> None:
+        if isinstance(node.quantifier, ASTNode):
+            self.visit(node.quantifier)
+        self._visit_rule_set_value(node.string_set)
+        self._visit_if(node.condition)
 
     def visit_function_call(self, node: FunctionCall) -> None:
         # Function callees are not rule references; only their arguments can contain them.

@@ -7,7 +7,7 @@ import pytest
 
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForExpression, InExpression, OfExpression
+from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
     FunctionCall,
@@ -16,6 +16,7 @@ from yaraast.ast.expressions import (
     MemberAccess,
     RangeExpression,
     SetExpression,
+    StringLiteral,
     StringWildcard,
 )
 from yaraast.ast.rules import Import, Include, Rule
@@ -178,6 +179,31 @@ rule caller {
         any of (a*)
 }
 """)
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert results["dependencies"]["caller"] == ["a1", "a2"]
+    assert results["dependency_graph"]["a1"]["depended_by"] == ["caller"]
+    assert results["dependency_graph"]["a2"]["depended_by"] == ["caller"]
+    assert results["dependency_graph"]["other"]["is_independent"] is True
+
+
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        ["a*"],
+        SetExpression([StringLiteral("a*")]),
+    ],
+)
+def test_dependency_analyzer_detects_text_rule_wildcard_dependencies(string_set: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="a1", condition=BooleanLiteral(True)),
+            Rule(name="a2", condition=BooleanLiteral(True)),
+            Rule(name="other", condition=BooleanLiteral(True)),
+            Rule(name="caller", condition=ForOfExpression("any", string_set, BooleanLiteral(True))),
+        ]
+    )
 
     results = DependencyAnalyzer().analyze(ast)
 
