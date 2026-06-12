@@ -211,6 +211,11 @@ def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> 
     assert analyzer.optimize_worker_count(large_rules) <= 8
     assert analyzer.optimize_worker_count(huge_rules) >= 1
 
+    with pytest.raises(TypeError, match="rules must be a sequence of Rule nodes"):
+        analyzer.optimize_worker_count(cast(Any, "not-rules"))
+    with pytest.raises(TypeError, match="rules must contain Rule nodes"):
+        analyzer.optimize_worker_count(cast(Any, [object()]))
+
     profile = analyzer.profile_performance(small_rules)
     assert profile["rule_count"] == len(small_rules)
     assert profile["optimal_workers"] in profile["worker_performance"]

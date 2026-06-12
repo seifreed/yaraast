@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 import multiprocessing as mp
 from os import PathLike
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
 from yaraast.ast.base import require_yara_file
+from yaraast.ast.rules import Rule
 from yaraast.performance.parallel_execution import (
     analyze_rules as execution_analyze_rules,
     analyze_with_custom_function as execution_analyze_with_custom_function,
@@ -31,10 +33,19 @@ from yaraast.performance.parallel_models import Job
 from yaraast.performance.validation import validate_positive_int_setting
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable
 
     from yaraast.ast.base import YaraFile
-    from yaraast.ast.rules import Rule
+
+
+def _require_rule_sequence(rules: object) -> Sequence[Rule]:
+    if isinstance(rules, str | bytes) or not isinstance(rules, Sequence):
+        msg = "rules must be a sequence of Rule nodes"
+        raise TypeError(msg)
+    if not all(isinstance(rule, Rule) for rule in rules):
+        msg = "rules must contain Rule nodes"
+        raise TypeError(msg)
+    return rules
 
 
 class ParallelAnalyzer:
@@ -189,7 +200,7 @@ class ParallelAnalyzer:
             Optimal worker count
 
         """
-        rule_count = len(rules)
+        rule_count = len(_require_rule_sequence(rules))
         cpu_count = mp.cpu_count()
 
         # Heuristics for worker count
