@@ -280,6 +280,14 @@ def test_json_serializer_rejects_invalid_rule_lists() -> None:
     ):
         serializer.serialize(YaraFile(rules=[rule]))
 
+    rule = Rule(
+        "invalid_rule",
+        modifiers=[RuleModifier(cast(Any, object()))],
+        condition=BooleanLiteral(True),
+    )
+    with pytest.raises(SerializationError, match="Rule modifier name must be a string"):
+        serializer.serialize(YaraFile(rules=[rule]))
+
 
 def test_json_serializer_rejects_invalid_string_definition_lists() -> None:
     serializer = JsonSerializer(include_metadata=False)
