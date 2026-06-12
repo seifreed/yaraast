@@ -101,7 +101,7 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
     bad_integer_text: Any = "abc"
     with pytest.raises(TypeError, match="Integer literal value must be an integer"):
         format_integer_literal(bad_integer_text)
-    for invalid_integer_text in ("1_000", "0x1_0", "0o1_0", "10_000KB"):
+    for invalid_integer_text in ("1_000", "0x1_0", "0o1_0", "10_000KB", " 1", "1 "):
         with pytest.raises(TypeError, match="Integer literal value must be an integer"):
             format_integer_literal(invalid_integer_text)
     bad_integer_number: Any = 1.5

@@ -569,6 +569,8 @@ def format_integer_literal(value: object) -> str:
 
 
 def _parse_integer_literal_text(value: str) -> int | str | None:
+    if value != value.strip():
+        return None
     if "_" in value:
         return None
     if value.strip().startswith("+"):
