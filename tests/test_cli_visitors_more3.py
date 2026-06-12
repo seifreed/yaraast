@@ -244,6 +244,24 @@ def test_condition_formatter_handles_for_of_expression_details() -> None:
         "for any of ($a, $b*) : (true)"
     )
 
+    raw_string_wildcard = OfExpression(quantifier="any", string_set=["a*"])
+    literal_string_wildcard = OfExpression(
+        quantifier="any",
+        string_set=SetExpression([StringLiteral("a*")]),
+    )
+    rule_wildcard = OfExpression(
+        quantifier="any",
+        string_set=SetExpression([StringWildcard("a*")]),
+    )
+    assert ConditionStringFormatter().format_condition(raw_string_wildcard) == "any of ($a*)"
+    assert ExpressionStringFormatter().format_expression(raw_string_wildcard) == "any of ($a*)"
+    assert ConditionStringFormatter().format_condition(literal_string_wildcard) == ("any of ($a*)")
+    assert ExpressionStringFormatter().format_expression(literal_string_wildcard) == (
+        "any of ($a*)"
+    )
+    assert ConditionStringFormatter().format_condition(rule_wildcard) == "any of (a*)"
+    assert ExpressionStringFormatter().format_expression(rule_wildcard) == "any of (a*)"
+
     built = ForOfExpression(
         quantifier=IntegerLiteral(2),
         string_set=StringWildcard("$a*"),

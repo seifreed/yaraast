@@ -34,18 +34,31 @@ def _string_reference_suffix(string_id: Any) -> str:
     return normalize_string_reference_id(str(string_id)).removeprefix("$")
 
 
+def _string_set_reference_text(value: str) -> str:
+    if value == "them" or value.startswith("$"):
+        return value
+    return f"${value}"
+
+
 def _string_set_item_text(item: Any, formatter: Any, depth: int) -> str:
     pattern = getattr(item, "pattern", None)
     if pattern is not None:
         return str(pattern)
+    item_class = item.__class__.__name__ if hasattr(item, "__class__") else ""
     name = getattr(item, "name", None)
     if name is not None:
+        if item_class == "StringIdentifier" and isinstance(name, str):
+            return _string_set_reference_text(name)
         return str(name)
     raw_value = getattr(item, "value", None)
     if raw_value is not None:
+        if isinstance(raw_value, str):
+            return _string_set_reference_text(raw_value)
         return str(raw_value)
     if hasattr(item, "accept"):
         return formatter.format_expression(item, depth)
+    if isinstance(item, str):
+        return _string_set_reference_text(item)
     return _node_text(item, str(item))
 
 
