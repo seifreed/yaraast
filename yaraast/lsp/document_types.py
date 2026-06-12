@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -27,7 +28,7 @@ SYMBOL_KIND_MAP = {
 }
 
 
-def _required_symbol_string(data: dict[str, Any], key: str) -> str:
+def _required_symbol_string(data: Mapping[str, Any], key: str) -> str:
     value = data.get(key)
     if not isinstance(value, str) or not value.strip():
         msg = f"SymbolRecord {key} must be a non-empty string"
@@ -35,7 +36,7 @@ def _required_symbol_string(data: dict[str, Any], key: str) -> str:
     return value
 
 
-def _required_symbol_kind(data: dict[str, Any]) -> str:
+def _required_symbol_kind(data: Mapping[str, Any]) -> str:
     value = _required_symbol_string(data, "kind")
     if value in SYMBOL_KIND_MAP:
         return value
@@ -43,7 +44,7 @@ def _required_symbol_kind(data: dict[str, Any]) -> str:
     raise ValueError(msg)
 
 
-def _required_position_int(data: dict[str, Any], key: str) -> int:
+def _required_position_int(data: Mapping[str, Any], key: str) -> int:
     value = data.get(key)
     if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
         return value
@@ -132,14 +133,17 @@ class SymbolRecord:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> SymbolRecord:
+    def from_dict(cls, data: object) -> SymbolRecord:
+        if not isinstance(data, Mapping):
+            msg = "SymbolRecord data must be an object"
+            raise ValueError(msg)
         range_data = data.get("range", {})
-        if not isinstance(range_data, dict):
+        if not isinstance(range_data, Mapping):
             msg = "SymbolRecord range must be an object"
             raise ValueError(msg)
         start = range_data.get("start", {})
         end = range_data.get("end", {})
-        if not isinstance(start, dict) or not isinstance(end, dict):
+        if not isinstance(start, Mapping) or not isinstance(end, Mapping):
             msg = "SymbolRecord range endpoints must be objects"
             raise ValueError(msg)
         container_name = data.get("container_name")

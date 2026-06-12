@@ -24,6 +24,11 @@ def _single_location(location: Location | list[Location]) -> Location:
     return location
 
 
+def test_symbol_record_from_dict_rejects_non_object_payload() -> None:
+    with pytest.raises(ValueError, match="SymbolRecord data must be an object"):
+        SymbolRecord.from_dict(cast(Any, []))
+
+
 @pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
 def test_selection_ranges_rejects_non_string_text(text: Any) -> None:
     provider = SelectionRangeProvider()
