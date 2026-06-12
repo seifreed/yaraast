@@ -19,6 +19,12 @@ def test_unified_parser_rejects_invalid_text_types(text: Any) -> None:
         UnifiedParser(cast(str, text))
 
 
+@pytest.mark.parametrize("dialect", [object(), "yara", False, 0])
+def test_unified_parser_rejects_invalid_dialect_values(dialect: Any) -> None:
+    with pytest.raises(TypeError, match="Parser dialect must be a YaraDialect or None"):
+        UnifiedParser("rule sample { condition: true }", dialect=cast(Any, dialect))
+
+
 @pytest.mark.parametrize("file_path", [None, 123, object()])
 def test_unified_parser_parse_file_rejects_invalid_path_types(file_path: Any) -> None:
     with pytest.raises(TypeError, match="YARA file path must be a string or Path"):

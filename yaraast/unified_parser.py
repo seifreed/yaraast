@@ -83,7 +83,13 @@ class UnifiedParser:
             msg = "Parser text must be a string"
             raise TypeError(msg)
         self.text = text
-        self.dialect = dialect or detect_dialect(text)
+        if dialect is None:
+            self.dialect = detect_dialect(text)
+        elif isinstance(dialect, YaraDialect):
+            self.dialect = dialect
+        else:
+            msg = "Parser dialect must be a YaraDialect or None"
+            raise TypeError(msg)
 
     def parse(self) -> YaraFile | YaraLFile:
         """Parse the input based on detected or specified dialect.
