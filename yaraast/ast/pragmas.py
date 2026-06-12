@@ -116,12 +116,12 @@ class Pragma(ASTNode):
     @property
     def is_include_once(self) -> bool:
         """Check if this is an include_once pragma."""
-        return self.pragma_type == PragmaType.INCLUDE_ONCE
+        return _require_pragma_type(self.pragma_type) == PragmaType.INCLUDE_ONCE
 
     @property
     def is_define(self) -> bool:
         """Check if this is a define pragma."""
-        return self.pragma_type == PragmaType.DEFINE
+        return _require_pragma_type(self.pragma_type) == PragmaType.DEFINE
 
     def __str__(self) -> str:
         """String representation of pragma."""
@@ -304,11 +304,18 @@ class InRulePragma(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate nested pragma and position before direct analysis."""
+        self._validated_pragma()
+        self._validated_position()
+
+    def _validated_pragma(self) -> Pragma:
         if not isinstance(self.pragma, Pragma):
             msg = "InRulePragma pragma must be a Pragma"
             raise TypeError(msg)
         self.pragma.validate_structure()
-        _require_nonempty_string(self.position, "InRulePragma position")
+        return self.pragma
+
+    def _validated_position(self) -> str:
+        return _require_nonempty_string(self.position, "InRulePragma position")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_in_rule_pragma(self)
@@ -316,24 +323,24 @@ class InRulePragma(ASTNode):
     @property
     def is_before_strings(self) -> bool:
         """Check if pragma appears before strings section."""
-        return self.position == "before_strings"
+        self._validated_pragma()
+        return self._validated_position() == "before_strings"
 
     @property
     def is_after_strings(self) -> bool:
         """Check if pragma appears after strings section."""
-        return self.position == "after_strings"
+        self._validated_pragma()
+        return self._validated_position() == "after_strings"
 
     @property
     def is_before_condition(self) -> bool:
         """Check if pragma appears before condition section."""
-        return self.position == "before_condition"
+        self._validated_pragma()
+        return self._validated_position() == "before_condition"
 
     def __str__(self) -> str:
-        if not isinstance(self.pragma, Pragma):
-            msg = "InRulePragma pragma must be a Pragma"
-            raise TypeError(msg)
-        _require_nonempty_string(self.position, "InRulePragma position")
-        return str(self.pragma)
+        self._validated_position()
+        return str(self._validated_pragma())
 
 
 @dataclass

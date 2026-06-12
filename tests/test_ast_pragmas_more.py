@@ -58,6 +58,21 @@ def test_pragma_string_reprs_and_flags() -> None:
     assert str(endif) == "#endif"
 
 
+@pytest.mark.parametrize(
+    ("pragma", "property_name"),
+    [
+        (Pragma(cast(Any, "include_once"), "include_once"), "is_include_once"),
+        (Pragma(cast(Any, "define"), "define"), "is_define"),
+    ],
+)
+def test_pragma_flag_properties_reject_invalid_internal_state(
+    pragma: Pragma,
+    property_name: str,
+) -> None:
+    with pytest.raises(TypeError, match="Pragma type must be a PragmaType"):
+        _ = pragma.is_include_once if property_name == "is_include_once" else pragma.is_define
+
+
 def test_pragma_string_reprs_reject_invalid_arguments() -> None:
     generic = Pragma(PragmaType.PRAGMA, "vendor", cast(Any, "on"))
     custom = CustomPragma("vendor", arguments=cast(Any, "on"))
@@ -297,6 +312,50 @@ def test_create_helpers_and_in_rule_positions() -> None:
 
     in_rule2 = create_in_rule_pragma(pragma, "before_condition")
     assert in_rule2.is_before_condition is True
+
+
+@pytest.mark.parametrize(
+    ("in_rule_pragma", "property_name", "error_type", "message"),
+    [
+        (
+            InRulePragma(cast(Any, object())),
+            "is_before_strings",
+            TypeError,
+            "InRulePragma pragma must be a Pragma",
+        ),
+        (
+            InRulePragma(Pragma(PragmaType.PRAGMA, "vendor"), cast(Any, object())),
+            "is_before_strings",
+            TypeError,
+            "InRulePragma position must be a string",
+        ),
+        (
+            InRulePragma(Pragma(PragmaType.PRAGMA, "vendor"), ""),
+            "is_after_strings",
+            ValueError,
+            "InRulePragma position cannot be empty",
+        ),
+        (
+            InRulePragma(Pragma(PragmaType.PRAGMA, "vendor"), "   "),
+            "is_before_condition",
+            ValueError,
+            "InRulePragma position cannot be empty",
+        ),
+    ],
+)
+def test_in_rule_pragma_position_properties_reject_invalid_internal_state(
+    in_rule_pragma: InRulePragma,
+    property_name: str,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
+        if property_name == "is_before_strings":
+            _ = in_rule_pragma.is_before_strings
+        elif property_name == "is_after_strings":
+            _ = in_rule_pragma.is_after_strings
+        else:
+            _ = in_rule_pragma.is_before_condition
 
 
 def test_pragma_helpers_reject_invalid_inputs_at_creation_time() -> None:
