@@ -13,6 +13,25 @@ FILE_PATTERNS_EMPTY_ERROR = "File patterns must not contain empty patterns"
 DIRECTORY_TYPE_ERROR = "directory must be a directory path"
 
 
+def _path_access_error(path: Path) -> ValueError:
+    msg = f"path could not be accessed: {path}"
+    return ValueError(msg)
+
+
+def _path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
 def normalize_file_patterns(
     patterns: FilePatterns,
     default: tuple[str, ...] = DEFAULT_CLASSIC_YARA_FILE_PATTERNS,
@@ -49,10 +68,10 @@ def iter_matching_files(
         msg = "directory must not be empty"
         raise ValueError(msg)
     directory_path = Path(raw_path)
-    if not directory_path.exists():
+    if not _path_exists(directory_path):
         msg = f"directory does not exist: {directory_path}"
         raise FileNotFoundError(msg)
-    if not directory_path.is_dir():
+    if not _path_is_dir(directory_path):
         msg = "directory must not be a file"
         raise ValueError(msg)
     if not isinstance(recursive, bool):
