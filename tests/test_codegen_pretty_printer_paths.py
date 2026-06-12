@@ -569,7 +569,7 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
     )
 
     ast = YaraFile(
-        imports=[Import("b"), Import("a")],
+        imports=[Import("pe"), Import("math")],
         includes=[Include("z.yar"), Include("a.yar")],
         rules=[
             Rule(name="one", condition=BooleanLiteral(True)),
@@ -577,7 +577,7 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
         ],
     )
     out = printer.generate(ast)
-    assert out.index('import "a"') < out.index('import "b"')
+    assert out.index('import "math"') < out.index('import "pe"')
     assert out.index('include "a.yar"') < out.index('include "z.yar"')
     assert '\n\n\ninclude "a.yar"' in out
 

@@ -242,6 +242,10 @@ def test_codegen_generators_reject_empty_import_and_include_paths(
             "Import module must not contain quotes or control characters",
         ),
         (
+            YaraFile(imports=[Import("nosuch")], rules=[Rule("r", condition=BooleanLiteral(True))]),
+            "Unknown module 'nosuch'",
+        ),
+        (
             YaraFile(
                 includes=[Include('bad"path')], rules=[Rule("r", condition=BooleanLiteral(True))]
             ),
@@ -3693,7 +3697,6 @@ def test_codegen_generators_allow_matches_regex_literal() -> None:
         (FunctionCall("math..entropy", []), "Invalid function identifier"),
         (Identifier("$a"), "String references must use StringIdentifier"),
         (MemberAccess(ModuleReference("pe"), "bad-name"), "Invalid member identifier"),
-        (ModuleReference("bad-mod"), "Invalid module identifier"),
     ],
 )
 def test_codegen_generators_reject_invalid_reference_names(
@@ -3701,7 +3704,7 @@ def test_codegen_generators_reject_invalid_reference_names(
     message: str,
 ) -> None:
     ast = YaraFile(
-        imports=[Import("bad-mod"), Import("math"), Import("pe")],
+        imports=[Import("math"), Import("pe")],
         rules=[Rule(name="invalid_reference_name", condition=condition)],
     )
 
@@ -3713,6 +3716,21 @@ def test_codegen_generators_reject_invalid_reference_names(
         CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)
     with pytest.raises(ValueError, match=message):
         CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(ast)
+
+
+def test_codegen_generators_reject_invalid_module_reference_name_directly() -> None:
+    with pytest.raises(ValueError, match="Invalid module identifier"):
+        CodeGenerator().generate(ModuleReference("bad-mod"))
+    with pytest.raises(ValueError, match="Invalid module identifier"):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(
+            ModuleReference("bad-mod")
+        )
+    with pytest.raises(ValueError, match="Invalid module identifier"):
+        CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ModuleReference("bad-mod"))
+    with pytest.raises(ValueError, match="Invalid module identifier"):
+        CodeGenerator(options=GeneratorOptions(pretty=PrettyPrintOptions())).generate(
+            ModuleReference("bad-mod")
+        )
 
 
 @pytest.mark.parametrize(

@@ -166,7 +166,13 @@ def _collect_required_module_imports(value: Any, modules: set[str]) -> None:
 
 
 def visit_import(node: Any) -> str:
-    value = f"import \"{format_nonempty_quoted_value(node.module, 'Import module')}\""
+    module_name = format_nonempty_quoted_value(node.module, "Import module")
+    from yaraast.types.module_definitions import load_builtin_modules
+
+    if module_name not in load_builtin_modules():
+        msg = f"Unknown module '{module_name}' for libyara output"
+        raise ValueError(msg)
+    value = f'import "{module_name}"'
     reject_import_alias(getattr(node, "alias", None))
     return value
 
