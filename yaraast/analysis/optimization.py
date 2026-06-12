@@ -329,6 +329,9 @@ class OptimizationAnalyzer(BaseVisitor[None]):
             name = require_string(string_set.name, "String set identifier")
             if name == "them":
                 return
+            if name.startswith("$"):
+                self._mark_string_set_text(name)
+                return
             self._visit_ast_value(string_set)
             return
         if isinstance(string_set, StringLiteral):

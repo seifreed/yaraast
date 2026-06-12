@@ -160,6 +160,44 @@ def test_optimization_analyzer_tracks_string_refs_inside_of_expressions() -> Non
     assert any("String '$s' is referenced 4 times" in s.description for s in report.suggestions)
 
 
+@pytest.mark.parametrize(
+    "string_set",
+    [
+        Identifier("$s"),
+        SetExpression([Identifier("$s")]),
+    ],
+)
+def test_optimization_analyzer_tracks_identifier_string_set_refs(
+    string_set: Any,
+) -> None:
+    repeated = BinaryExpression(
+        BinaryExpression(
+            OfExpression(1, string_set),
+            "and",
+            OfExpression(1, string_set),
+        ),
+        "and",
+        BinaryExpression(
+            OfExpression(1, string_set),
+            "and",
+            OfExpression(1, string_set),
+        ),
+    )
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="identifier_of_refs",
+                strings=[PlainString(identifier="$s", value="value")],
+                condition=repeated,
+            )
+        ],
+    )
+
+    report = OptimizationAnalyzer().analyze(ast)
+
+    assert any("String '$s' is referenced 4 times" in s.description for s in report.suggestions)
+
+
 def test_optimization_analyzer_rejects_non_string_string_references() -> None:
     cases = [
         StringIdentifier(cast(Any, False)),
