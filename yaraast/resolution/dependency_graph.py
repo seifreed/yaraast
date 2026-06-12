@@ -136,26 +136,30 @@ class _RuleDependencyCollector(DependencyFinder):
             self.module_references.add(canonical_name)
 
 
-def _rule_occurrence_keys(rules: list[Rule]) -> dict[int, str]:
+def _rule_occurrence_keys(
+    rules: list[Rule],
+    used_indices_by_name: Mapping[str, set[int]] | None = None,
+) -> dict[int, str]:
     counts = Counter(rule.name for rule in rules)
-    seen_rules: defaultdict[str, int] = defaultdict(int)
+    used_indices: defaultdict[str, set[int]] = defaultdict(set)
+    if used_indices_by_name is not None:
+        for rule_name, indices in used_indices_by_name.items():
+            used_indices[rule_name].update(indices)
     rule_keys: dict[int, str] = {}
 
     for rule in rules:
-        seen_rules[rule.name] += 1
-        rule_keys[id(rule)] = _rule_occurrence_key(
-            rule.name,
-            seen_rules[rule.name],
-            counts,
-        )
+        if not used_indices[rule.name] and counts[rule.name] == 1:
+            used_indices[rule.name].add(1)
+            rule_keys[id(rule)] = rule.name
+            continue
+
+        occurrence = 1
+        while occurrence in used_indices[rule.name]:
+            occurrence += 1
+        used_indices[rule.name].add(occurrence)
+        rule_keys[id(rule)] = f"{rule.name}#{occurrence}"
 
     return rule_keys
-
-
-def _rule_occurrence_key(rule_name: str, occurrence: int, counts: Counter[str]) -> str:
-    if counts[rule_name] == 1:
-        return rule_name
-    return f"{rule_name}#{occurrence}"
 
 
 @dataclass
@@ -225,8 +229,13 @@ class DependencyGraph:
             include_target = include_resolutions.get(include_stmt.path, include_stmt.path)
             self._add_include_dependency(file_key, include_target)
 
+        new_rule_counts = Counter(rule.name for rule in ast.rules)
+        for rule_name, new_count in new_rule_counts.items():
+            if len(self._rule_node_keys_for_name(rule_name)) + new_count > 1:
+                self._rename_bare_rule_occurrence(rule_name)
+
         # Add all rules first so forward references can resolve during analysis.
-        rule_keys = _rule_occurrence_keys(ast.rules)
+        rule_keys = _rule_occurrence_keys(ast.rules, self._used_rule_occurrence_indices())
         for rule in ast.rules:
             rule_key = f"rule:{rule_keys[id(rule)]}"
             self._add_rule(file_key, rule, rule_keys[id(rule)])
@@ -310,6 +319,35 @@ class DependencyGraph:
             if dependent_node is not None:
                 dependent_node.dependencies.discard(rule_key)
 
+    def _rename_bare_rule_occurrence(self, rule_name: str) -> None:
+        """Rename an existing bare rule key to its first occurrence key."""
+        old_key = f"rule:{rule_name}"
+        new_key = f"{old_key}#1"
+        node = self.nodes.get(old_key)
+        if node is None or node.type != "rule" or new_key in self.nodes:
+            return
+
+        self.nodes[new_key] = self.nodes.pop(old_key)
+        for graph_node in self.nodes.values():
+            if old_key in graph_node.dependencies:
+                graph_node.dependencies.remove(old_key)
+                graph_node.dependencies.add(new_key)
+            if old_key in graph_node.dependents:
+                graph_node.dependents.remove(old_key)
+                graph_node.dependents.add(new_key)
+
+        file_path = self.rule_files.pop(rule_name, None)
+        if file_path is not None:
+            self.rule_files[f"{rule_name}#1"] = file_path
+            file_rules = self.file_rules.get(file_path)
+            if file_rules is not None and rule_name in file_rules:
+                file_rules.remove(rule_name)
+                file_rules.add(f"{rule_name}#1")
+
+        analysis_input = self._rule_analysis_inputs.pop(old_key, None)
+        if analysis_input is not None:
+            self._rule_analysis_inputs[new_key] = analysis_input
+
     def _remove_orphan_external_node(self, node_key: str) -> None:
         """Remove include/module placeholders that no node references anymore."""
         node = self.nodes.get(node_key)
@@ -384,6 +422,23 @@ class DependencyGraph:
 
     def _raw_rule_names(self) -> set[str]:
         return {node.name for node in self.nodes.values() if node.type == "rule"}
+
+    def _used_rule_occurrence_indices(self) -> dict[str, set[int]]:
+        used_indices: defaultdict[str, set[int]] = defaultdict(set)
+        for node_key, node in self.nodes.items():
+            if node.type != "rule":
+                continue
+            bare_key = f"rule:{node.name}"
+            indexed_prefix = f"{bare_key}#"
+            if node_key == bare_key:
+                used_indices[node.name].add(1)
+                continue
+            if not node_key.startswith(indexed_prefix):
+                continue
+            occurrence = node_key[len(indexed_prefix) :]
+            if occurrence.isdecimal():
+                used_indices[node.name].add(int(occurrence))
+        return dict(used_indices)
 
     def _rule_node_keys_for_name(self, rule_name: str) -> list[str]:
         return [

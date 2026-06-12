@@ -186,6 +186,45 @@ def test_workspace_analysis_detects_conflicts_in_resolved_include_trees(
     assert any("Rule 'dup_rule' defined in multiple files" in err for err in report.global_errors)
 
 
+def test_workspace_dependency_graph_preserves_cross_file_duplicate_rules(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    first = _write(root / "first.yar", "rule dup { condition: true }")
+    second = _write(root / "second.yar", "rule dup { condition: true }")
+    caller = _write(root / "caller.yar", "rule caller { condition: dup }")
+
+    workspace = Workspace(root_path=root, search_paths=[str(root)])
+    workspace.add_file(first)
+    workspace.add_file(second)
+    workspace.add_file(caller)
+
+    first_key = str(first.resolve())
+    second_key = str(second.resolve())
+
+    assert {"rule:dup#1", "rule:dup#2"}.issubset(workspace.dependency_graph.nodes)
+    assert workspace.dependency_graph.file_rules[first_key] == {"dup#1"}
+    assert workspace.dependency_graph.file_rules[second_key] == {"dup#2"}
+    assert workspace.dependency_graph.rule_files["dup#1"] == first_key
+    assert workspace.dependency_graph.rule_files["dup#2"] == second_key
+    assert workspace.dependency_graph.get_statistics()["rule_count"] == 3
+    assert workspace.dependency_graph.get_rule_dependencies("caller") == {
+        "rule:dup#1",
+        "rule:dup#2",
+    }
+    assert "rule:dup#1" in workspace.get_file_dependencies(first_key)
+    assert "rule:dup#2" in workspace.get_file_dependencies(second_key)
+
+    workspace.add_file(first)
+
+    assert workspace.dependency_graph.file_rules[first_key] == {"dup#1"}
+    assert workspace.dependency_graph.get_rule_dependencies("caller") == {
+        "rule:dup#1",
+        "rule:dup#2",
+    }
+
+
 def test_workspace_analysis_does_not_accumulate_warnings_between_runs(
     tmp_path: Path,
 ) -> None:
@@ -263,7 +302,7 @@ def test_workspace_add_directory_relative_parallel_analysis_and_global_issues(
     assert report.total_rules == 2
     assert report.statistics["file_count"] == 2
     assert report.statistics["rule_count"] == 2
-    assert report.statistics["graph_rule_count"] == 1
+    assert report.statistics["graph_rule_count"] == 2
     assert report.statistics["include_count"] == 1
     assert report.statistics["rule_name_conflicts"] == 1
     assert "dup_rule" in report.statistics["conflicting_rules"]
