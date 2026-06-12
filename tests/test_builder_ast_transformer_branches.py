@@ -263,6 +263,13 @@ def test_rule_transformer_rejects_invalid_condition_transform_structure_without_
     assert transformed.condition.name == "$a"
 
 
+def test_rule_transformer_rejects_invalid_initial_rule_structure() -> None:
+    invalid_rule = Rule(name="bad", condition=StringIdentifier(name=""))
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        RuleTransformer(invalid_rule)
+
+
 def test_rule_transformer_rejects_non_callable_condition_transformer() -> None:
     transformer = RuleTransformer(_sample_rule("condition_rule"))
 

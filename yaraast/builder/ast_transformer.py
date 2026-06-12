@@ -70,7 +70,9 @@ class RuleTransformer:
     """Specialized transformer for rule modifications."""
 
     def __init__(self, rule: Rule) -> None:
-        self.rule = CloneTransformer.clone_rule(rule)
+        cloned_rule = CloneTransformer.clone_rule(rule)
+        cloned_rule.validate_structure()
+        self.rule = cloned_rule
 
     @staticmethod
     def _require_expression(value: object, context: str) -> Expression:
