@@ -21,6 +21,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_loop_variable_text,
     _validate_namespace_identifier_text,
     _validate_optional_namespace_identifier_text,
+    _validate_quantifier_value,
     _validate_string_reference_text,
     _validate_unique_extern_rule_identifiers,
     _validate_unique_rule_identifiers,
@@ -1189,38 +1190,39 @@ def _validate_hex_token_sequence_for_protobuf(
             raise SerializationError(msg)
 
 
-def _coerce_quantifier_text(value, context: str) -> str:
+def _coerce_quantifier_text(value, context: str, *, allow_percentage: bool) -> str:
     from yaraast.ast.expressions import Expression
-
-    if isinstance(value, str):
-        if not value.strip():
-            msg = f"{context} must not be empty"
-            raise SerializationError(msg)
-        return value
-    if isinstance(value, bool):
-        msg = "quantifier must be a string, number, or expression"
-        raise SerializationError(msg)
-    if isinstance(value, int | float):
-        _validate_finite_quantifier(value)
-        return str(value)
 
     if isinstance(value, Expression):
         raw_value = getattr(value, "value", None)
         if raw_value is not None:
-            if isinstance(raw_value, bool):
-                msg = "quantifier must be a string, number, or expression"
-                raise SerializationError(msg)
-            _validate_finite_quantifier(raw_value)
-            return str(raw_value)
+            return str(
+                _validate_quantifier_value(
+                    raw_value,
+                    context,
+                    allow_percentage=allow_percentage,
+                )
+            )
 
         name = getattr(value, "name", None)
         if name is not None:
-            return str(name)
+            return str(
+                _validate_quantifier_value(
+                    str(name),
+                    context,
+                    allow_percentage=allow_percentage,
+                )
+            )
 
         return ""
 
-    msg = "quantifier must be a string, number, or expression"
-    raise SerializationError(msg)
+    return str(
+        _validate_quantifier_value(
+            value,
+            context,
+            allow_percentage=allow_percentage,
+        )
+    )
 
 
 def _coerce_quantifier_expression(value):
@@ -1355,10 +1357,8 @@ def _string_set_item_expression(item, context: str):
     raise SerializationError(msg)
 
 
-def _restore_quantifier_text(value: str, context: str):
-    if not value.strip():
-        msg = f"{context} must not be empty"
-        raise SerializationError(msg)
+def _restore_quantifier_text(value: str, context: str, *, allow_percentage: bool):
+    _validate_quantifier_value(value, context, allow_percentage=allow_percentage)
     integer_text = value[1:] if value.startswith("-") else value
     if integer_text.isdigit():
         return int(value)
@@ -1594,6 +1594,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         pb_expr.for_expression.quantifier = _coerce_quantifier_text(
             expr.quantifier,
             "ForExpression quantifier",
+            allow_percentage=False,
         )
         quantifier = _coerce_quantifier_expression(expr.quantifier)
         if quantifier is not None:
@@ -1610,6 +1611,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         pb_expr.for_of_expression.quantifier = _coerce_quantifier_text(
             expr.quantifier,
             "ForOfExpression quantifier",
+            allow_percentage=True,
         )
         quantifier = _coerce_quantifier_expression(expr.quantifier)
         if quantifier is not None:
@@ -1657,6 +1659,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             pb_expr.of_expression.quantifier_text = _coerce_quantifier_text(
                 expr.quantifier,
                 "OfExpression quantifier",
+                allow_percentage=True,
             )
         _copy_string_set_to_protobuf(
             expr.string_set,
@@ -2598,6 +2601,7 @@ def protobuf_to_expression(pb_expr):
                     else _restore_quantifier_text(
                         pb_expr.for_expression.quantifier,
                         "ForExpression quantifier",
+                        allow_percentage=False,
                     )
                 ),
                 variable=_validate_loop_variable_text(
@@ -2619,6 +2623,7 @@ def protobuf_to_expression(pb_expr):
                     else _restore_quantifier_text(
                         pb_expr.for_of_expression.quantifier,
                         "ForOfExpression quantifier",
+                        allow_percentage=True,
                     )
                 ),
                 string_set=_protobuf_string_set_to_ast(
@@ -2673,6 +2678,7 @@ def protobuf_to_expression(pb_expr):
                     _restore_quantifier_text(
                         pb_expr.of_expression.quantifier_text,
                         "OfExpression quantifier",
+                        allow_percentage=True,
                     )
                     if pb_expr.of_expression.HasField("quantifier_text")
                     else protobuf_to_expression(pb_expr.of_expression.quantifier)

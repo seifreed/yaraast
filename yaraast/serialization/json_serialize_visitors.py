@@ -16,6 +16,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_loop_variable_text,
+    _validate_quantifier_value,
     _validate_string_reference_text,
     _validate_unique_extern_rule_identifiers,
     _validate_unique_rule_identifiers,
@@ -238,23 +239,13 @@ def _serialize_expression_list(serializer, values, context: str):
     ]
 
 
-def _serialize_quantifier(serializer, value, context: str):
+def _serialize_quantifier(serializer, value, context: str, *, allow_percentage: bool):
     from yaraast.ast.expressions import Expression
 
-    if isinstance(value, str):
-        return _serialize_required_nonempty_string(value, context)
-    if isinstance(value, bool) or value is None or isinstance(value, list | dict | set | tuple):
-        msg = f"{context} must be a string, number, or expression"
-        raise SerializationError(msg)
-    if isinstance(value, int | float):
-        if isinstance(value, float) and not math.isfinite(value):
-            msg = f"{context} must be finite"
-            raise SerializationError(msg)
-        return value
+    value = _validate_quantifier_value(value, context, allow_percentage=allow_percentage)
     if isinstance(value, Expression):
         return serializer.visit(value)
-    msg = f"{context} must be a string, number, or expression"
-    raise SerializationError(msg)
+    return value
 
 
 def _serialize_string_set_item(serializer, value, context: str):
@@ -830,6 +821,7 @@ def visit_for_expression(serializer, node) -> dict[str, Any]:
             serializer,
             node.quantifier,
             "ForExpression quantifier",
+            allow_percentage=False,
         ),
         "variable": _validate_loop_variable_text(
             _serialize_required_nonempty_string(
@@ -853,6 +845,7 @@ def visit_for_of_expression(serializer, node) -> dict[str, Any]:
             serializer,
             node.quantifier,
             "ForOfExpression quantifier",
+            allow_percentage=True,
         ),
         "string_set": _serialize_string_set(serializer, node.string_set, "ForOfExpression"),
         "condition": _serialize_optional_expression(
@@ -897,6 +890,7 @@ def visit_of_expression(serializer, node) -> dict[str, Any]:
             serializer,
             node.quantifier,
             "OfExpression quantifier",
+            allow_percentage=True,
         ),
         "string_set": _serialize_string_set(serializer, node.string_set, "OfExpression"),
     }

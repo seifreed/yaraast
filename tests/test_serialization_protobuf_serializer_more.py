@@ -1106,7 +1106,7 @@ def test_protobuf_deserialize_rejects_empty_quantifier_text(expression_kind: str
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
-def test_protobuf_deserializes_legacy_boolean_quantifier_text_as_text() -> None:
+def test_protobuf_deserialize_rejects_legacy_boolean_quantifier_text() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     pb_file: Any = yara_ast_pb2.YaraFile()
     pb_rule = pb_file.rules.add()
@@ -1114,14 +1114,11 @@ def test_protobuf_deserializes_legacy_boolean_quantifier_text_as_text() -> None:
     pb_rule.condition.of_expression.quantifier_text = "true"
     pb_rule.condition.of_expression.string_set_text = "them"
 
-    restored = serializer.deserialize(binary_data=pb_file.SerializeToString())
-    condition = restored.rules[0].condition
-
-    assert isinstance(condition, OfExpression)
-    assert condition.quantifier == "true"
+    with pytest.raises(SerializationError, match="Invalid OfExpression quantifier"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
-def test_protobuf_deserializes_malformed_signed_legacy_quantifier_text_as_text() -> None:
+def test_protobuf_deserialize_rejects_malformed_signed_legacy_quantifier_text() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     pb_file: Any = yara_ast_pb2.YaraFile()
     pb_rule = pb_file.rules.add()
@@ -1129,11 +1126,8 @@ def test_protobuf_deserializes_malformed_signed_legacy_quantifier_text_as_text()
     pb_rule.condition.of_expression.quantifier_text = "--1"
     pb_rule.condition.of_expression.string_set_text = "them"
 
-    restored = serializer.deserialize(binary_data=pb_file.SerializeToString())
-    condition = restored.rules[0].condition
-
-    assert isinstance(condition, OfExpression)
-    assert condition.quantifier == "--1"
+    with pytest.raises(SerializationError, match="Invalid OfExpression quantifier"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
 def test_protobuf_deserialize_rejects_empty_expression_payload() -> None:

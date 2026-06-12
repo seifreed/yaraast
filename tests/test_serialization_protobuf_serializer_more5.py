@@ -2201,6 +2201,22 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             "Invalid local variable identifier: bad-name",
         ),
         (
+            ForExpression("50%", "i", SetExpression([IntegerLiteral(1)]), BooleanLiteral(True)),
+            "Invalid ForExpression quantifier",
+        ),
+        (
+            ForExpression("-1", "i", SetExpression([IntegerLiteral(1)]), BooleanLiteral(True)),
+            "Invalid ForExpression quantifier",
+        ),
+        (
+            OfExpression("0%", ["$a"]),
+            "Invalid OfExpression quantifier",
+        ),
+        (
+            OfExpression(101.0, ["$a"]),
+            "Invalid OfExpression quantifier",
+        ),
+        (
             AtExpression(cast(Any, 123), IntegerLiteral(0)),
             "AtExpression string_id must be a string or expression",
         ),
@@ -2630,6 +2646,39 @@ def test_protobuf_deserializer_rejects_invalid_module_reference_names() -> None:
     pb_rule.condition.module_reference.module = "bad-name"
 
     with pytest.raises(SerializationError, match="Invalid module identifier"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("expression_kind", "quantifier", "message"),
+    [
+        ("for_expression", "50%", "Invalid ForExpression quantifier"),
+        ("for_expression", "-1", "Invalid ForExpression quantifier"),
+        ("of_expression", "0%", "Invalid OfExpression quantifier"),
+        ("of_expression", "101%", "Invalid OfExpression quantifier"),
+    ],
+)
+def test_protobuf_deserializer_rejects_invalid_quantifiers(
+    expression_kind: str,
+    quantifier: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_quantifier"
+    if expression_kind == "for_expression":
+        pb_rule.condition.for_expression.quantifier = quantifier
+        pb_rule.condition.for_expression.variable = "i"
+        pb_rule.condition.for_expression.iterable.set_expression.elements.add().integer_literal.value = (
+            1
+        )
+        pb_rule.condition.for_expression.body.boolean_literal.value = True
+    else:
+        pb_rule.condition.of_expression.quantifier_text = quantifier
+        pb_rule.condition.of_expression.string_set_text = "them"
+
+    with pytest.raises(SerializationError, match=message):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 

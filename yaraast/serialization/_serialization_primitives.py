@@ -198,6 +198,84 @@ def _validate_string_identifier_text(value: str) -> str:
         raise SerializationError(str(exc)) from exc
 
 
+def _invalid_quantifier(value: object, context: str) -> None:
+    msg = f"Invalid {context} '{value}' for libyara output"
+    raise SerializationError(msg)
+
+
+def _validate_percentage_quantifier_value(percent: int, raw_value: object, context: str) -> None:
+    if 1 <= percent <= 100:
+        return
+    _invalid_quantifier(raw_value, context)
+
+
+def _validate_quantifier_text(value: str, context: str, *, allow_percentage: bool) -> str:
+    if not value.strip():
+        msg = f"{context} must not be empty"
+        raise SerializationError(msg)
+    if value in {"all", "any", "none"}:
+        return value
+    try:
+        parsed_integer = int(value, 10)
+    except ValueError:
+        pass
+    else:
+        if str(parsed_integer) == value or (
+            value.startswith("+") and str(parsed_integer) == value[1:]
+        ):
+            if parsed_integer < 0:
+                _invalid_quantifier(value, context)
+            return value
+    if value.endswith("%"):
+        percentage_text = value[:-1]
+        if percentage_text.isdecimal():
+            if not allow_percentage:
+                _invalid_quantifier(value, context)
+            _validate_percentage_quantifier_value(int(percentage_text), value, context)
+            return value
+    if any(marker in value for marker in (".", "e", "E")):
+        try:
+            parsed_float = float(value)
+        except ValueError:
+            pass
+        else:
+            if not math.isfinite(parsed_float):
+                msg = f"{context} must be finite"
+                raise SerializationError(msg)
+            _invalid_quantifier(value, context)
+    try:
+        return validate_yara_identifier(value, context)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+
+
+def _validate_quantifier_value(value: Any, context: str, *, allow_percentage: bool) -> Any:
+    from yaraast.ast.expressions import Expression
+
+    if isinstance(value, Expression):
+        return value
+    if isinstance(value, str):
+        return _validate_quantifier_text(value, context, allow_percentage=allow_percentage)
+    if isinstance(value, bool) or value is None or isinstance(value, list | dict | set | tuple):
+        msg = f"{context} must be a string, number, or expression"
+        raise SerializationError(msg)
+    if isinstance(value, int):
+        if value < 0:
+            _invalid_quantifier(value, context)
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            msg = f"{context} must be finite"
+            raise SerializationError(msg)
+        if not allow_percentage:
+            _invalid_quantifier(value, context)
+        percent = round(value * 100)
+        _validate_percentage_quantifier_value(percent, value, context)
+        return value
+    msg = f"{context} must be a string, number, or expression"
+    raise SerializationError(msg)
+
+
 def _validate_location_metadata(
     location: Any,
     *,

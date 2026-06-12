@@ -106,6 +106,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_loop_variable_text,
     _validate_namespace_identifier_text,
     _validate_optional_namespace_identifier_text,
+    _validate_quantifier_value,
     _validate_string_reference_text,
     _validate_unique_extern_rule_identifiers,
     _validate_unique_rule_identifiers,
@@ -875,21 +876,11 @@ def _serialize_ast_value(value: Any) -> Any:
     return value
 
 
-def _serialize_quantifier(value: Any, context: str) -> Any:
-    if isinstance(value, str):
-        return _serialize_required_nonempty_string(value, context)
-    if isinstance(value, bool | list | dict | set | tuple) or value is None:
-        msg = f"{context} must be a string, number, or expression"
-        raise SerializationError(msg)
-    if isinstance(value, int | float):
-        if isinstance(value, float) and not math.isfinite(value):
-            msg = f"{context} must be finite"
-            raise SerializationError(msg)
-        return value
+def _serialize_quantifier(value: Any, context: str, *, allow_percentage: bool) -> Any:
+    value = _validate_quantifier_value(value, context, allow_percentage=allow_percentage)
     if isinstance(value, Expression):
         return serialize_node(value)
-    msg = f"{context} must be a string, number, or expression"
-    raise SerializationError(msg)
+    return value
 
 
 def _serialize_string_set_item(value: Any, context: str) -> str | dict[str, Any]:
@@ -956,7 +947,13 @@ def _deserialize_required_ast_value(data: dict[str, Any], field: str, context: s
     )
 
 
-def _deserialize_required_quantifier(data: dict[str, Any], field: str, context: str) -> Any:
+def _deserialize_required_quantifier(
+    data: dict[str, Any],
+    field: str,
+    context: str,
+    *,
+    allow_percentage: bool,
+) -> Any:
     value = _deserialize_required_field(data, field, context)
     if isinstance(value, bool | list):
         msg = f"{context} {field} must be a string, number, or expression"
@@ -967,7 +964,11 @@ def _deserialize_required_quantifier(data: dict[str, Any], field: str, context: 
     if isinstance(value, float) and not math.isfinite(value):
         msg = f"{context} {field} must be finite"
         raise SerializationError(msg)
-    return _deserialize_ast_value(value, f"{context} {field}")
+    return _validate_quantifier_value(
+        _deserialize_ast_value(value, f"{context} {field}"),
+        f"{context} {field}",
+        allow_percentage=allow_percentage,
+    )
 
 
 def _deserialize_string_set_item(value: Any, context: str) -> Any:
@@ -1417,6 +1418,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "quantifier": _serialize_quantifier(
                 node.quantifier,
                 "ForExpression quantifier",
+                allow_percentage=False,
             ),
             "variable": _validate_loop_variable_text(
                 _serialize_required_nonempty_string(
@@ -1433,6 +1435,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "quantifier": _serialize_quantifier(
                 node.quantifier,
                 "ForOfExpression quantifier",
+                allow_percentage=True,
             ),
             "string_set": _serialize_string_set(node.string_set, "ForOfExpression"),
             "condition": serialize_node(node.condition) if node.condition is not None else None,
@@ -1463,6 +1466,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "quantifier": _serialize_quantifier(
                 node.quantifier,
                 "OfExpression quantifier",
+                allow_percentage=True,
             ),
             "string_set": _serialize_string_set(node.string_set, "OfExpression"),
         }
@@ -2186,7 +2190,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ForExpression":
         return ForExpression(
-            _deserialize_required_quantifier(data, "quantifier", "ForExpression"),
+            _deserialize_required_quantifier(
+                data,
+                "quantifier",
+                "ForExpression",
+                allow_percentage=False,
+            ),
             _validate_loop_variable_text(
                 _deserialize_nonempty_string_field(data, "variable", "ForExpression")
             ),
@@ -2195,7 +2204,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ForOfExpression":
         return ForOfExpression(
-            _deserialize_required_quantifier(data, "quantifier", "ForOfExpression"),
+            _deserialize_required_quantifier(
+                data,
+                "quantifier",
+                "ForOfExpression",
+                allow_percentage=True,
+            ),
             _deserialize_required_string_set(data, "string_set", "ForOfExpression"),
             _deserialize_nullable_node_field(data, "condition", "ForOfExpression"),
         )
@@ -2230,7 +2244,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return InExpression(subject, _deserialize_required_node(data, "range", "InExpression"))
     if node_type == "OfExpression":
         return OfExpression(
-            _deserialize_required_quantifier(data, "quantifier", "OfExpression"),
+            _deserialize_required_quantifier(
+                data,
+                "quantifier",
+                "OfExpression",
+                allow_percentage=True,
+            ),
             _deserialize_required_string_set(data, "string_set", "OfExpression"),
         )
     if node_type == "ModuleReference":

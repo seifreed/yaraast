@@ -1736,6 +1736,48 @@ def test_json_deserialize_quantifiers_reject_invalid_raw_values() -> None:
         with pytest.raises(SerializationError, match=message):
             s._deserialize_expression(payload)
 
+    semantic_quantifier_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": "50%",
+                "variable": "i",
+                "iterable": int_expr,
+                "body": int_expr,
+            },
+            "Invalid ForExpression quantifier",
+        ),
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": "-1",
+                "variable": "i",
+                "iterable": int_expr,
+                "body": int_expr,
+            },
+            "Invalid ForExpression quantifier",
+        ),
+        (
+            {
+                "type": "OfExpression",
+                "quantifier": "0%",
+                "string_set": "them",
+            },
+            "Invalid OfExpression quantifier",
+        ),
+        (
+            {
+                "type": "OfExpression",
+                "quantifier": 101.0,
+                "string_set": "them",
+            },
+            "Invalid OfExpression quantifier",
+        ),
+    )
+    for payload, message in semantic_quantifier_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
 
 def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()

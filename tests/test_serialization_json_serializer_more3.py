@@ -935,6 +935,22 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
             "ForExpression variable must be a string",
         ),
         (
+            ForExpression("50%", "i", SetExpression([IntegerLiteral(1)]), BooleanLiteral(True)),
+            "Invalid ForExpression quantifier",
+        ),
+        (
+            ForExpression("-1", "i", SetExpression([IntegerLiteral(1)]), BooleanLiteral(True)),
+            "Invalid ForExpression quantifier",
+        ),
+        (
+            OfExpression("0%", ["$a"]),
+            "Invalid OfExpression quantifier",
+        ),
+        (
+            OfExpression(101.0, ["$a"]),
+            "Invalid OfExpression quantifier",
+        ),
+        (
             StringOperatorExpression(StringLiteral("a"), invalid_text, StringLiteral("b")),
             "StringOperatorExpression operator must be a string",
         ),

@@ -38,6 +38,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_loop_variable_text,
     _validate_namespace_identifier_text,
     _validate_optional_namespace_identifier_text,
+    _validate_quantifier_value,
     _validate_string_reference_text,
     _validate_unique_rule_tags,
     _validate_yara_identifier_text,
@@ -134,7 +135,14 @@ def _deserialize_required_ast_value(self, data: dict[str, Any], field: str, cont
     raise SerializationError(msg)
 
 
-def _deserialize_required_quantifier(self, data: dict[str, Any], field: str, context: str) -> Any:
+def _deserialize_required_quantifier(
+    self,
+    data: dict[str, Any],
+    field: str,
+    context: str,
+    *,
+    allow_percentage: bool,
+) -> Any:
     value = _deserialize_required_field(data, field, context)
     if isinstance(value, bool | list):
         msg = f"{context} {field} must be a string, number, or expression"
@@ -147,7 +155,11 @@ def _deserialize_required_quantifier(self, data: dict[str, Any], field: str, con
         raise SerializationError(msg)
     quantifier = _deserialize_ast_value(self, value, f"{context} {field}")
     if quantifier is not None:
-        return quantifier
+        return _validate_quantifier_value(
+            quantifier,
+            f"{context} {field}",
+            allow_percentage=allow_percentage,
+        )
     msg = f"{context} {field} is required"
     raise SerializationError(msg)
 
@@ -637,7 +649,13 @@ def _deser_for_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import ForExpression
 
     return ForExpression(
-        quantifier=_deserialize_required_quantifier(self, data, "quantifier", "ForExpression"),
+        quantifier=_deserialize_required_quantifier(
+            self,
+            data,
+            "quantifier",
+            "ForExpression",
+            allow_percentage=False,
+        ),
         variable=_validate_loop_variable_text(
             _deserialize_nonempty_string_field(data, "variable", "ForExpression")
         ),
@@ -650,7 +668,13 @@ def _deser_for_of_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import ForOfExpression
 
     return ForOfExpression(
-        quantifier=_deserialize_required_quantifier(self, data, "quantifier", "ForOfExpression"),
+        quantifier=_deserialize_required_quantifier(
+            self,
+            data,
+            "quantifier",
+            "ForOfExpression",
+            allow_percentage=True,
+        ),
         string_set=_deserialize_required_string_set(self, data, "string_set", "ForOfExpression"),
         condition=_deserialize_nullable_expression_field(
             self, data, "condition", "ForOfExpression"
@@ -700,7 +724,13 @@ def _deser_of_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import OfExpression
 
     return OfExpression(
-        quantifier=_deserialize_required_quantifier(self, data, "quantifier", "OfExpression"),
+        quantifier=_deserialize_required_quantifier(
+            self,
+            data,
+            "quantifier",
+            "OfExpression",
+            allow_percentage=True,
+        ),
         string_set=_deserialize_required_string_set(self, data, "string_set", "OfExpression"),
     )
 
