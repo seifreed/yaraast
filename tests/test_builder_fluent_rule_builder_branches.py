@@ -7,7 +7,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.conditions import OfExpression
-from yaraast.ast.expressions import BinaryExpression
+from yaraast.ast.expressions import BinaryExpression, BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.builder.fluent_file_builder import yara_file
@@ -196,6 +196,15 @@ def test_fluent_file_builder_rejects_invalid_rule_inputs_without_partial_update(
 
     with pytest.raises(TypeError, match="Rule input must be a Rule"):
         builder.with_rule(cast(Any, object()))
+
+    assert [built_rule.name for built_rule in builder.build().rules] == ["valid_rule"]
+
+
+def test_fluent_file_builder_rejects_invalid_rule_structure_without_partial_update() -> None:
+    builder = yara_file().with_rule(Rule(name="valid_rule", condition=BooleanLiteral(True)))
+
+    with pytest.raises(TypeError, match=r"Rule\.condition must be an AST node"):
+        builder.with_rule(Rule(name="bad_rule", condition=cast(Any, object())))
 
     assert [built_rule.name for built_rule in builder.build().rules] == ["valid_rule"]
 

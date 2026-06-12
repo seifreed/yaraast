@@ -50,8 +50,7 @@ class YaraFileBuilder:
     def with_rule(self, rule: Rule | RuleBuilder) -> Self:
         """Add a rule."""
         built_rule = self._build_rule(rule)
-        validate_rule_names([built_rule])
-        validate_unique_rule_names(self._rules, [built_rule])
+        self._validate_rules([built_rule])
         self._rules.append(built_rule)
         return self
 
@@ -63,16 +62,14 @@ class YaraFileBuilder:
         builder = RuleBuilder()
         builder_func(builder)
         built_rule = builder.build()
-        validate_rule_names([built_rule])
-        validate_unique_rule_names(self._rules, [built_rule])
+        self._validate_rules([built_rule])
         self._rules.append(built_rule)
         return self
 
     def with_rules(self, *rules: Rule | RuleBuilder) -> Self:
         """Add multiple rules."""
         built_rules = [self._build_rule(rule) for rule in rules]
-        validate_rule_names(built_rules)
-        validate_unique_rule_names(self._rules, built_rules)
+        self._validate_rules(built_rules)
         self._rules.extend(built_rules)
         return self
 
@@ -83,6 +80,12 @@ class YaraFileBuilder:
             return deepcopy(rule)
         msg = "Rule input must be a Rule or RuleBuilder"
         raise TypeError(msg)
+
+    def _validate_rules(self, rules: list[Rule]) -> None:
+        validate_rule_names(rules)
+        for rule in rules:
+            rule.validate_structure()
+        validate_unique_rule_names(self._rules, rules)
 
     def build(self) -> YaraFile:
         """Build the YaraFile AST node."""

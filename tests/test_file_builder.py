@@ -12,7 +12,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import Identifier
+from yaraast.ast.expressions import BooleanLiteral, Identifier
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import PlainString
 from yaraast.builder.file_builder import YaraFileBuilder
@@ -302,6 +302,29 @@ class TestYaraFileBuilderRules:
         empty_builder = YaraFileBuilder()
         with pytest.raises(TypeError, match="Rule input must be a Rule or RuleBuilder"):
             empty_builder.with_rules(Rule(name="BatchRule"), cast(Any, object()))
+        assert empty_builder.build().rules == []
+
+    def test_reject_invalid_rule_structure_without_partial_update(self) -> None:
+        """Structurally invalid rules should not enter builder state."""
+        builder = YaraFileBuilder().with_rule(
+            Rule(name="StableRule", condition=BooleanLiteral(True))
+        )
+        bad_rule = Rule(name="BadRule", condition=cast(Any, object()))
+
+        with pytest.raises(TypeError, match=r"Rule\.condition must be an AST node"):
+            builder.with_rule(bad_rule)
+
+        with pytest.raises(TypeError, match=r"Rule\.condition must be an AST node"):
+            builder.with_rules(Rule(name="NewRule"), bad_rule)
+
+        assert [rule.name for rule in builder.build().rules] == ["StableRule"]
+
+        empty_builder = YaraFileBuilder()
+        with pytest.raises(TypeError, match=r"Rule\.condition must be an AST node"):
+            empty_builder.with_rules(
+                Rule(name="BatchRule", condition=BooleanLiteral(True)),
+                bad_rule,
+            )
         assert empty_builder.build().rules == []
 
     def test_direct_rule_inputs_are_copied_when_added(self) -> None:

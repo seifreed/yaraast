@@ -49,6 +49,7 @@ class FluentYaraFileBuilder:
             msg = "Rule input must be a Rule"
             raise TypeError(msg)
         validate_rule_names([rule])
+        rule.validate_structure()
         validate_unique_rule_names(self.rules, [rule])
         self.rules.append(deepcopy(rule))
         return self
