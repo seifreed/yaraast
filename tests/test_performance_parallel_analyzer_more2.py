@@ -129,6 +129,22 @@ def test_parallel_analyzer_rejects_invalid_utf8_file(tmp_path: Path) -> None:
     assert jobs[0].result[0].error == "YARA file must contain valid UTF-8 text"
 
 
+@pytest.mark.parametrize("file_path", [None, False, 123, object(), b"sample.yar"])
+def test_parallel_analyzer_rejects_invalid_direct_file_path_types(file_path: Any) -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+
+    with pytest.raises(TypeError, match="file_path must be a file path"):
+        analyzer._analyze_file_path(cast(Any, file_path))
+
+
+@pytest.mark.parametrize("file_path", ["", "   "])
+def test_parallel_analyzer_rejects_empty_direct_file_paths(file_path: str) -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        analyzer._analyze_file_path(file_path)
+
+
 def test_parallel_analyzer_batch_analyze_files_preserves_input_order(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

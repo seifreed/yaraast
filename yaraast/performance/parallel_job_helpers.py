@@ -22,6 +22,7 @@ GRAPH_TYPES_TYPE_ERROR = "graph_types must be a sequence of strings"
 GRAPH_TYPE_ENTRY_ERROR = "graph_types must contain non-empty strings"
 YARA_FILE_SEQUENCE_TYPE_ERROR = "asts must be a sequence of YaraFile objects"
 OUTPUT_DIR_TYPE_ERROR = "output_dir must be a directory path"
+FILE_PATH_TYPE_ERROR = "file_path must be a file path"
 
 
 def default_parallel_stats() -> dict[str, float | int]:
@@ -100,22 +101,40 @@ def require_output_dir_path(output_dir: object) -> Path:
     return path
 
 
-def _read_yara_text_file(path: str | Path) -> str:
+def _require_file_path(path: object) -> Path:
+    if isinstance(path, bool | bytes) or not isinstance(path, str | PathLike):
+        raise TypeError(FILE_PATH_TYPE_ERROR)
+    raw_path = fspath(path)
+    if not isinstance(raw_path, str):
+        raise TypeError(FILE_PATH_TYPE_ERROR)
+    if not raw_path.strip():
+        msg = "file_path must not be empty"
+        raise ValueError(msg)
+    path_obj = Path(raw_path)
+    if path_obj.exists() and path_obj.is_dir():
+        msg = "file_path must not be a directory"
+        raise ValueError(msg)
+    return path_obj
+
+
+def _read_yara_text_file(path: object) -> str:
+    path_obj = _require_file_path(path)
     try:
-        return Path(path).read_text(encoding="utf-8")
+        return path_obj.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
         msg = "YARA file must contain valid UTF-8 text"
         raise ValueError(msg) from exc
 
 
-def analyze_file_path(path: str, analyzer: Any) -> dict[str, Any]:
+def analyze_file_path(path: object, analyzer: Any) -> dict[str, Any]:
     """Parse and analyze a file path using a provided analyzer instance."""
     from yaraast.parser.source import parse_yara_source
 
-    content = _read_yara_text_file(path)
+    path_obj = _require_file_path(path)
+    content = _read_yara_text_file(path_obj)
     yara_file = parse_yara_source(content)
     analysis: dict[str, Any] = dict(analyzer.analyze_file(yara_file))
-    analysis["file"] = path
+    analysis["file"] = str(path_obj)
     return analysis
 
 
