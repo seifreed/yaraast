@@ -146,6 +146,26 @@ def test_simple_nodes_strings_and_rule() -> None:
     assert rule.accept(visitor) == "rule:r1"
 
 
+def test_string_nodes_accept_positional_payload_arguments() -> None:
+    plain = PlainString("$a", "hello")
+    assert plain.identifier == "$a"
+    assert plain.value == "hello"
+    assert plain.modifiers == []
+    plain.validate_structure()
+
+    regex = RegexString("$r", "ab.*")
+    assert regex.identifier == "$r"
+    assert regex.regex == "ab.*"
+    assert regex.modifiers == []
+    regex.validate_structure()
+
+    hex_string = HexString("$h", [HexByte(0x90)])
+    assert hex_string.identifier == "$h"
+    assert hex_string.tokens == [HexByte(0x90)]
+    assert hex_string.modifiers == []
+    hex_string.validate_structure()
+
+
 def test_simple_hex_nodes_accept() -> None:
     visitor = _Visitor()
 

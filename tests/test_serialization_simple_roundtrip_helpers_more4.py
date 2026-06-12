@@ -3020,10 +3020,9 @@ def test_simple_roundtrip_helpers_preserve_direct_misc_ast_nodes() -> None:
             value="abc",
             modifiers=[StringModifier.from_name_value("wide")],
         ),
-        RegexString("$r", [StringModifier.from_name_value("nocase")], "ab.*"),
+        RegexString("$r", "ab.*", [StringModifier.from_name_value("nocase")]),
         HexString(
             "$h",
-            [],
             [
                 HexByte(0x41),
                 HexNegatedByte(0x42),
@@ -3031,6 +3030,7 @@ def test_simple_roundtrip_helpers_preserve_direct_misc_ast_nodes() -> None:
                 HexJump(1, 3),
                 HexAlternative([[HexByte(0x43)], [HexNibble(False, 0xF)]]),
             ],
+            [],
         ),
         HexByte(0x41),
         HexNegatedByte(0x42),

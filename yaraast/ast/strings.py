@@ -14,6 +14,7 @@ from yaraast.ast.base import (
 )
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+_MISSING = object()
 
 
 def _is_byte_value(value: Any) -> bool:
@@ -112,7 +113,7 @@ class StringDefinition(ASTNode):
         return visitor.visit_string_definition(self)
 
 
-@dataclass
+@dataclass(init=False)
 class PlainString(StringDefinition):
     """Plain text string definition."""
 
@@ -121,6 +122,24 @@ class PlainString(StringDefinition):
     # (\xHH, 0x80-0xFF) survive a parse -> generate round trip. None when the
     # node was built outside the lexer (e.g. programmatically).
     raw_bytes: bytes | None = None
+
+    def __init__(
+        self,
+        identifier: str,
+        value: str | bytes = "",
+        modifiers: Any = _MISSING,
+        *,
+        is_anonymous: bool = False,
+        raw_bytes: bytes | None = None,
+    ) -> None:
+        modifier_values = [] if modifiers is _MISSING else modifiers
+        super().__init__(
+            identifier=identifier,
+            modifiers=modifier_values,
+            is_anonymous=is_anonymous,
+        )
+        self.value = value
+        self.raw_bytes = raw_bytes
 
     def validate_structure(self) -> None:
         """Validate plain string scalar fields before direct analysis."""
@@ -136,11 +155,27 @@ class PlainString(StringDefinition):
         return visitor.visit_plain_string(self)
 
 
-@dataclass
+@dataclass(init=False)
 class HexString(StringDefinition):
     """Hex string definition."""
 
     tokens: list[Any] = field(default_factory=list)
+
+    def __init__(
+        self,
+        identifier: str,
+        tokens: Any = _MISSING,
+        modifiers: Any = _MISSING,
+        *,
+        is_anonymous: bool = False,
+    ) -> None:
+        modifier_values = [] if modifiers is _MISSING else modifiers
+        super().__init__(
+            identifier=identifier,
+            modifiers=modifier_values,
+            is_anonymous=is_anonymous,
+        )
+        self.tokens = [] if tokens is _MISSING else tokens
 
     def validate_structure(self) -> None:
         """Validate hex token containers before direct analysis."""
@@ -272,11 +307,27 @@ class HexNibble(HexToken):
         return visitor.visit_hex_nibble(self)
 
 
-@dataclass
+@dataclass(init=False)
 class RegexString(StringDefinition):
     """Regular expression string."""
 
     regex: str = ""  # Add default
+
+    def __init__(
+        self,
+        identifier: str,
+        regex: str = "",
+        modifiers: Any = _MISSING,
+        *,
+        is_anonymous: bool = False,
+    ) -> None:
+        modifier_values = [] if modifiers is _MISSING else modifiers
+        super().__init__(
+            identifier=identifier,
+            modifiers=modifier_values,
+            is_anonymous=is_anonymous,
+        )
+        self.regex = regex
 
     def validate_structure(self) -> None:
         """Validate regex string scalar fields before direct analysis."""
