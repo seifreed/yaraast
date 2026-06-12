@@ -696,6 +696,9 @@ def _validate_known_module_function_call(node: Any) -> None:
         if function_name in {"exports", "exports_index"}:
             _validate_pe_export_module_function_arguments(function_name, arguments)
             return
+        if function_name in {"import_rva", "delayed_import_rva"}:
+            _validate_pe_import_rva_module_function_arguments(function_name, arguments)
+            return
         if function_name == "section_index":
             _validate_pe_section_index_module_function_arguments(arguments)
             return
@@ -857,6 +860,19 @@ def _validate_pe_section_index_module_function_arguments(
     if argument_types[0] in {"string", "integer"}:
         return
     msg = "Module function 'pe.section_index' does not accept these argument types"
+    raise ValueError(msg)
+
+
+def _validate_pe_import_rva_module_function_arguments(
+    function_name: str,
+    arguments: list[Any] | tuple[Any, ...],
+) -> None:
+    argument_types = [_obvious_argument_type(argument) for argument in arguments]
+    if any(argument_type is None for argument_type in argument_types):
+        return
+    if argument_types == ["string", "string"] or argument_types == ["string", "integer"]:
+        return
+    msg = f"Module function 'pe.{function_name}' does not accept these argument types"
     raise ValueError(msg)
 
 

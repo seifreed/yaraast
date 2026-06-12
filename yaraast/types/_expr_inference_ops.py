@@ -460,8 +460,23 @@ def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
                 module_def = loader.get_module(actual_module)
                 if module_def and func_name in module_def.functions:
                     func_def = module_def.functions[func_name]
+                    if (
+                        actual_module == "pe"
+                        and func_name == "signatures.valid_on"
+                        and receiver is None
+                    ):
+                        ctx.errors.append(
+                            "Function 'signatures.valid_on' requires an indexed receiver"
+                        )
+                        return func_def.return_type
                     if actual_module == "pe" and func_name == "imports":
                         _validate_pe_imports_arguments(ctx, arguments)
+                        return func_def.return_type
+                    if actual_module == "pe" and func_name in {
+                        "import_rva",
+                        "delayed_import_rva",
+                    }:
+                        _validate_pe_import_rva_arguments(ctx, func_name, arguments)
                         return func_def.return_type
                     if actual_module == "pe" and func_name == "exports":
                         _validate_pe_exports_arguments(ctx, arguments)
@@ -719,6 +734,22 @@ def _validate_pe_section_index_arguments(ctx: Any, arguments: list[Any]) -> None
     if _all_known(arg_types) and not isinstance(arg_types[0], StringType | IntegerType):
         ctx.errors.append(
             "Function 'section_index' does not accept argument type "
+            f"({_format_argument_types(arg_types)})"
+        )
+
+
+def _validate_pe_import_rva_arguments(ctx: Any, func_name: str, arguments: list[Any]) -> None:
+    arg_types = _argument_types(ctx, arguments)
+    if len(arg_types) != 2:
+        ctx.errors.append(f"Function '{func_name}' expects 2 arguments, got {len(arg_types)}")
+        return
+    if not _all_known(arg_types):
+        return
+    if not (
+        isinstance(arg_types[0], StringType) and isinstance(arg_types[1], StringType | IntegerType)
+    ):
+        ctx.errors.append(
+            f"Function '{func_name}' does not accept argument types "
             f"({_format_argument_types(arg_types)})"
         )
 

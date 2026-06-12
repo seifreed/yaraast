@@ -3865,6 +3865,17 @@ def test_codegen_libyara_generators_reject_unknown_unqualified_function_calls() 
             "Module function 'pe\\.imports' does not accept these argument types",
         ),
         (
+            FunctionCall("pe.import_rva", [StringLiteral("kernel32.dll"), DoubleLiteral(1.5)]),
+            "Module function 'pe\\.import_rva' does not accept these argument types",
+        ),
+        (
+            FunctionCall(
+                "pe.delayed_import_rva",
+                [StringLiteral("kernel32.dll"), DoubleLiteral(1.5)],
+            ),
+            "Module function 'pe\\.delayed_import_rva' does not accept these argument types",
+        ),
+        (
             FunctionCall("pe.section_index", [DoubleLiteral(1.5)]),
             "Module function 'pe\\.section_index' does not accept these argument types",
         ),

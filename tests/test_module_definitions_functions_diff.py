@@ -66,9 +66,12 @@ ACCEPTED_CALLS: list[tuple[str, str]] = [
 REJECTED_CALLS: list[tuple[str, str]] = [
     ("pe", "pe.calculate_checksum(1) == 0"),
     ("pe", "pe.imports(/kernel32/)"),
+    ("pe", 'pe.import_rva("kernel32.dll", 1.5) == 0'),
+    ("pe", 'pe.delayed_import_rva("kernel32.dll", 1.5) == 0'),
     ("pe", 'pe.imphash("x") == "x"'),
     ("pe", 'pe.rva_to_offset("x") == 0'),
     ("pe", "pe.section_index(/r/) == 0"),
+    ("pe", "pe.signatures.valid_on(0)"),
     ("hash", 'hash.md5(0, 1, 2) == "x"'),
     ("hash", 'hash.crc32("a", "b") == 0'),
     ("math", 'math.abs("x") > 0'),
