@@ -23,6 +23,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_quantifier_value,
     _validate_range_expression_bounds,
     _validate_set_expression_elements,
+    _validate_string_occurrence_index_expression,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -690,7 +691,7 @@ def _coerce_hex_alternative_token(token):
 def visit_string_offset(serializer, node) -> dict[str, Any]:
     index = _serialize_optional_expression(serializer, node.index, "StringOffset index")
     if node.index is not None:
-        _validate_integer_expression(node.index, "String offset index")
+        _validate_string_occurrence_index_expression(node.index, "String offset index")
     return {
         "type": "StringOffset",
         "string_id": _validate_string_reference_text(
@@ -707,7 +708,7 @@ def visit_string_offset(serializer, node) -> dict[str, Any]:
 def visit_string_length(serializer, node) -> dict[str, Any]:
     index = _serialize_optional_expression(serializer, node.index, "StringLength index")
     if node.index is not None:
-        _validate_integer_expression(node.index, "String length index")
+        _validate_string_occurrence_index_expression(node.index, "String length index")
     return {
         "type": "StringLength",
         "string_id": _validate_string_reference_text(

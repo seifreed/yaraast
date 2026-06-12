@@ -115,9 +115,7 @@ def infer_string_count_like(
 ) -> YaraType:
     if string_id in {"", "$"} and ctx.env.lookup("$"):
         if index is not None:
-            index_type = ctx.visit(index)
-            if not isinstance(index_type, IntegerType):
-                ctx.errors.append(f"{label} index must be integer, got {index_type}")
+            _validate_string_occurrence_index(ctx, index, label)
         return IntegerType()
     try:
         normalized = ctx._normalize_string_id(string_id)
@@ -126,12 +124,16 @@ def infer_string_count_like(
         return UnknownType()
     if ctx.env.has_string(normalized) or ctx.env.has_string_pattern(normalized):
         if index is not None:
-            index_type = ctx.visit(index)
-            if not isinstance(index_type, IntegerType):
-                ctx.errors.append(f"{label} index must be integer, got {index_type}")
+            _validate_string_occurrence_index(ctx, index, label)
         return IntegerType()
     ctx.errors.append(f"Undefined string: {normalized}")
     return UnknownType()
+
+
+def _validate_string_occurrence_index(ctx: Any, index: Any, label: str) -> None:
+    index_type = ctx.visit(index)
+    if isinstance(index_type, BooleanType):
+        ctx.errors.append(f"{label} index must not be boolean, got {index_type}")
 
 
 def infer_binary_expression(ctx: Any, node: BinaryExpression) -> YaraType:

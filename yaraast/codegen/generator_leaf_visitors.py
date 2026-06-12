@@ -104,9 +104,7 @@ def visit_string_offset(generator: Any, node: Any) -> str:
         allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
     )
     if node.index is not None:
-        _reject_non_integer_expression(
-            node.index, "String offset index must be integer for libyara output"
-        )
+        _reject_string_occurrence_index(node.index, "String offset index")
         return f"@{suffix}[{generator.visit(node.index)}]"
     return f"@{suffix}"
 
@@ -117,9 +115,7 @@ def visit_string_length(generator: Any, node: Any) -> str:
         allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
     )
     if node.index is not None:
-        _reject_non_integer_expression(
-            node.index, "String length index must be integer for libyara output"
-        )
+        _reject_string_occurrence_index(node.index, "String length index")
         return f"!{suffix}[{generator.visit(node.index)}]"
     return f"!{suffix}"
 
@@ -157,6 +153,14 @@ def _reject_non_integer_expression(value: Any, message: str) -> None:
 
     if _is_definitely_non_integer_expression(value):
         raise ValueError(message)
+
+
+def _reject_string_occurrence_index(value: Any, field_name: str) -> None:
+    from yaraast.codegen.generator_expression_visitors import _is_definitely_boolean_expression
+
+    if _is_definitely_boolean_expression(value):
+        msg = f"{field_name} must not be boolean for libyara output"
+        raise ValueError(msg)
 
 
 def _reject_non_string_dictionary_key(value: Any) -> None:

@@ -28,6 +28,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_quantifier_value,
     _validate_range_expression_bounds,
     _validate_set_expression_elements,
+    _validate_string_occurrence_index_expression,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -1510,7 +1511,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         )
         if expr.index is not None:
             convert_expression_to_protobuf(
-                _validate_integer_expression(expr.index, "String offset index"),
+                _validate_string_occurrence_index_expression(expr.index, "String offset index"),
                 pb_expr.string_offset.index,
             )
     elif isinstance(expr, StringLength):
@@ -1523,7 +1524,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         )
         if expr.index is not None:
             convert_expression_to_protobuf(
-                _validate_integer_expression(expr.index, "String length index"),
+                _validate_string_occurrence_index_expression(expr.index, "String length index"),
                 pb_expr.string_length.index,
             )
     elif isinstance(expr, IntegerLiteral):
@@ -2494,7 +2495,7 @@ def protobuf_to_expression(pb_expr):
                     allow_placeholder=True,
                 ),
                 index=(
-                    _validate_integer_expression(
+                    _validate_string_occurrence_index_expression(
                         protobuf_to_expression(pb_expr.string_offset.index),
                         "String offset index",
                     )
@@ -2514,7 +2515,7 @@ def protobuf_to_expression(pb_expr):
                     allow_placeholder=True,
                 ),
                 index=(
-                    _validate_integer_expression(
+                    _validate_string_occurrence_index_expression(
                         protobuf_to_expression(pb_expr.string_length.index),
                         "String length index",
                     )

@@ -113,6 +113,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_quantifier_value,
     _validate_range_expression_bounds,
     _validate_set_expression_elements,
+    _validate_string_occurrence_index_expression,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -1327,7 +1328,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, StringOffset):
         index = serialize_node(node.index) if node.index is not None else None
         if node.index is not None:
-            _validate_integer_expression(node.index, "String offset index")
+            _validate_string_occurrence_index_expression(node.index, "String offset index")
         return {
             "type": "StringOffset",
             "string_id": _validate_string_reference_text(
@@ -1342,7 +1343,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, StringLength):
         index = serialize_node(node.index) if node.index is not None else None
         if node.index is not None:
-            _validate_integer_expression(node.index, "String length index")
+            _validate_string_occurrence_index_expression(node.index, "String length index")
         return {
             "type": "StringLength",
             "string_id": _validate_string_reference_text(
@@ -2150,7 +2151,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
         index = _deserialize_nullable_node_field(data, "index", "StringOffset")
         if index is not None:
-            _validate_integer_expression(index, "String offset index")
+            _validate_string_occurrence_index_expression(index, "String offset index")
         return StringOffset(string_id, index)
     if node_type == "StringLength":
         string_id = _validate_string_reference_text(
@@ -2159,7 +2160,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
         index = _deserialize_nullable_node_field(data, "index", "StringLength")
         if index is not None:
-            _validate_integer_expression(index, "String length index")
+            _validate_string_occurrence_index_expression(index, "String length index")
         return StringLength(string_id, index)
     if node_type == "BinaryExpression":
         return BinaryExpression(

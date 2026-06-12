@@ -1889,16 +1889,25 @@ class TestTypeInferenceEdgeCases:
         result = inference.infer(node)
         assert isinstance(result, IntegerType)
 
-    def test_infer_string_offset_with_invalid_index_type(self) -> None:
-        """Test inferring string offset with invalid index type."""
+    def test_infer_string_offset_accepts_libyara_occurrence_index_types(self) -> None:
+        """Test inferring string offset accepts libyara occurrence index types."""
         env = TypeEnvironment()
         env.add_string("$str1")
         inference = TypeInference(env)
         node = StringOffset(string_id="str1", index=StringLiteral(value="invalid"))
         result = inference.infer(node)
         assert isinstance(result, IntegerType)
-        assert len(inference.errors) > 0
-        assert "String offset index must be integer" in inference.errors[0]
+        assert inference.errors == []
+
+    def test_infer_string_offset_rejects_boolean_index_type(self) -> None:
+        """Test inferring string offset rejects boolean occurrence indexes."""
+        env = TypeEnvironment()
+        env.add_string("$str1")
+        inference = TypeInference(env)
+        node = StringOffset(string_id="str1", index=BooleanLiteral(value=True))
+        result = inference.infer(node)
+        assert isinstance(result, IntegerType)
+        assert "String offset index must not be boolean" in inference.errors[0]
 
     def test_infer_string_length_with_index(self) -> None:
         """Test inferring type of string length with index."""

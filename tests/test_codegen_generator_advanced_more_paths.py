@@ -126,14 +126,20 @@ def test_codegen_generator_additional_visit_paths() -> None:
     )
     assert gen.visit_string_offset(StringOffset(string_id="a", index=None)) == "@a"
     assert gen.visit_string_length(StringLength(string_id="a", index=None)) == "!a"
-    with pytest.raises(ValueError, match="String offset index must be integer"):
+    assert gen.visit_string_offset(StringOffset("a", DoubleLiteral(1.5))) == "@a[1.5]"
+    assert gen.visit_string_offset(StringOffset("a", StringLiteral("x"))) == '@a["x"]'
+    assert gen.visit_string_offset(StringOffset("a", RegexLiteral("x"))) == "@a[/x/]"
+    assert gen.visit_string_length(StringLength("a", DoubleLiteral(1.5))) == "!a[1.5]"
+    assert gen.visit_string_length(StringLength("a", StringLiteral("x"))) == '!a["x"]'
+    assert gen.visit_string_length(StringLength("a", RegexLiteral("x"))) == "!a[/x/]"
+    with pytest.raises(ValueError, match="String offset index must not be boolean"):
         gen.visit_string_offset(StringOffset("a", BooleanLiteral(True)))
-    with pytest.raises(ValueError, match="String offset index must be integer"):
-        gen.visit_string_offset(StringOffset("a", StringLiteral("x")))
-    with pytest.raises(ValueError, match="String length index must be integer"):
+    with pytest.raises(ValueError, match="String offset index must not be boolean"):
+        gen.visit_string_offset(
+            StringOffset("a", BinaryExpression(IntegerLiteral(1), "==", IntegerLiteral(1)))
+        )
+    with pytest.raises(ValueError, match="String length index must not be boolean"):
         gen.visit_string_length(StringLength("a", ParenthesesExpression(BooleanLiteral(False))))
-    with pytest.raises(ValueError, match="String length index must be integer"):
-        gen.visit_string_length(StringLength("a", ParenthesesExpression(StringLiteral("x"))))
     assert gen.visit_unary_expression(UnaryExpression("-", IntegerLiteral(1))) == "-1"
     assert (
         gen.visit_in_expression(

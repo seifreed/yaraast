@@ -1745,16 +1745,23 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     ):
         deserialize_node({"type": "SetExpression", "elements": []})
 
+    boolean_expr = {"type": "BooleanLiteral", "value": True}
+    occurrence_index_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "StringOffset", "string_id": "$a", "index": boolean_expr},
+            "String offset index must not be boolean",
+        ),
+        (
+            {"type": "StringLength", "string_id": "$a", "index": boolean_expr},
+            "String length index must not be boolean",
+        ),
+    )
+    for payload, message in occurrence_index_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
     string_expr = {"type": "StringLiteral", "value": "x"}
     integer_expression_cases: tuple[tuple[dict[str, Any], str], ...] = (
-        (
-            {"type": "StringOffset", "string_id": "$a", "index": string_expr},
-            "String offset index must be integer",
-        ),
-        (
-            {"type": "StringLength", "string_id": "$a", "index": string_expr},
-            "String length index must be integer",
-        ),
         (
             {"type": "AtExpression", "string_id": "$a", "offset": string_expr},
             "At expression offset must be integer",
@@ -2003,12 +2010,12 @@ def test_simple_roundtrip_serialize_string_reference_nodes_reject_wrong_scalar_t
         (StringOffset(cast(Any, 7)), "StringOffset string_id must be a string"),
         (StringOffset("@a"), "Invalid string reference"),
         (StringOffset("$bad-name"), "Invalid string reference"),
-        (StringOffset("$a", StringLiteral("x")), "String offset index must be integer"),
+        (StringOffset("$a", BooleanLiteral(True)), "String offset index must not be boolean"),
         (StringLength(""), "StringLength string_id must not be empty"),
         (StringLength(cast(Any, 7)), "StringLength string_id must be a string"),
         (StringLength("!a"), "Invalid string reference"),
         (StringLength("$bad-name"), "Invalid string reference"),
-        (StringLength("$a", StringLiteral("x")), "String length index must be integer"),
+        (StringLength("$a", BooleanLiteral(False)), "String length index must not be boolean"),
     )
 
     for node, message in invalid_cases:
@@ -3668,7 +3675,9 @@ def test_simple_roundtrip_helpers_preserve_extended_expression_nodes() -> None:
     nodes = [
         StringWildcard("$a*"),
         StringOffset("$a", IntegerLiteral(1)),
+        StringOffset("$a", StringLiteral("x")),
         StringLength("$a", IntegerLiteral(2)),
+        StringLength("$a", StringLiteral("x")),
         RegexLiteral("ab.*", "i"),
         ParenthesesExpression(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2))),
         SetExpression([StringIdentifier("$a"), StringWildcard("$b*")]),

@@ -554,12 +554,12 @@ def test_json_serializer_rejects_invalid_leaf_values() -> None:
         (StringOffset(invalid_text), "StringOffset string_id must be a string"),
         (StringOffset("@a"), "Invalid string reference"),
         (StringOffset("$bad-name"), "Invalid string reference"),
-        (StringOffset("$a", StringLiteral("x")), "String offset index must be integer"),
+        (StringOffset("$a", BooleanLiteral(True)), "String offset index must not be boolean"),
         (StringLength(""), "StringLength string_id must not be empty"),
         (StringLength(invalid_text), "StringLength string_id must be a string"),
         (StringLength("!a"), "Invalid string reference"),
         (StringLength("$bad-name"), "Invalid string reference"),
-        (StringLength("$a", StringLiteral("x")), "String length index must be integer"),
+        (StringLength("$a", BooleanLiteral(False)), "String length index must not be boolean"),
         (IntegerLiteral(True), "IntegerLiteral value must be an integer"),
         (IntegerLiteral(invalid_integer), "IntegerLiteral value must be an integer"),
         (DoubleLiteral(invalid_number), "DoubleLiteral value must be numeric"),
@@ -622,6 +622,22 @@ def test_json_serializer_accepts_placeholder_string_references() -> None:
 
     conditions = [rule["condition"] for rule in payload["ast"]["rules"]]
     assert [condition["string_id"] for condition in conditions] == ["$", "$", "$"]
+
+
+def test_json_serializer_accepts_libyara_string_occurrence_index_types() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(name="offset_string_index", condition=StringOffset("$a", StringLiteral("x"))),
+            Rule(name="length_string_index", condition=StringLength("$a", StringLiteral("x"))),
+        ]
+    )
+
+    payload = json.loads(serializer.serialize(ast))
+
+    conditions = [rule["condition"] for rule in payload["ast"]["rules"]]
+    assert conditions[0]["index"] == {"type": "StringLiteral", "value": "x"}
+    assert conditions[1]["index"] == {"type": "StringLiteral", "value": "x"}
 
 
 def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:

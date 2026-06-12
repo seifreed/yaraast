@@ -113,6 +113,21 @@ def test_protobuf_serializer_preserves_string_modifier_aliases() -> None:
     assert modifiers[2].name == "fullword"
 
 
+def test_protobuf_serializer_accepts_libyara_string_occurrence_index_types() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(name="offset_string_index", condition=StringOffset("$a", StringLiteral("x"))),
+            Rule(name="length_string_index", condition=StringLength("$a", StringLiteral("x"))),
+        ],
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert restored.rules[0].condition == StringOffset("$a", StringLiteral("x"))
+    assert restored.rules[1].condition == StringLength("$a", StringLiteral("x"))
+
+
 def test_protobuf_conversion_escapes_unknown_modifier_string_values() -> None:
     pb_string = yara_ast_pb2.StringDefinition()
     pb_string.identifier = "$a"
@@ -2181,8 +2196,8 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             UnaryExpression("???", BooleanLiteral(True)),
             "Invalid unary operator",
         ),
-        (StringOffset("$a", StringLiteral("x")), "String offset index must be integer"),
-        (StringLength("$a", StringLiteral("x")), "String length index must be integer"),
+        (StringOffset("$a", BooleanLiteral(True)), "String offset index must not be boolean"),
+        (StringLength("$a", BooleanLiteral(False)), "String length index must not be boolean"),
         (
             SetExpression([]),
             "Set expression must contain at least one element",
@@ -2684,12 +2699,12 @@ def test_protobuf_deserializer_rejects_empty_set_expression() -> None:
 @pytest.mark.parametrize(
     ("expression_kind", "message"),
     [
-        ("string_offset", "String offset index must be integer"),
-        ("string_length", "String length index must be integer"),
+        ("string_offset", "String offset index must not be boolean"),
+        ("string_length", "String length index must not be boolean"),
         ("at_expression", "At expression offset must be integer"),
     ],
 )
-def test_protobuf_deserializer_rejects_non_integer_index_expressions(
+def test_protobuf_deserializer_rejects_invalid_index_expressions(
     expression_kind: str,
     message: str,
 ) -> None:
@@ -2701,10 +2716,10 @@ def test_protobuf_deserializer_rejects_non_integer_index_expressions(
 
     if expression_kind == "string_offset":
         condition.string_offset.string_id = "$a"
-        condition.string_offset.index.string_literal.value = "x"
+        condition.string_offset.index.boolean_literal.value = True
     elif expression_kind == "string_length":
         condition.string_length.string_id = "$a"
-        condition.string_length.index.string_literal.value = "x"
+        condition.string_length.index.boolean_literal.value = False
     elif expression_kind == "at_expression":
         condition.at_expression.string_id = "$a"
         condition.at_expression.offset.string_literal.value = "x"

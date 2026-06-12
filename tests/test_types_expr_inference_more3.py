@@ -500,14 +500,24 @@ def test_expr_inference_accepts_parenthesized_string_set_items() -> None:
     assert for_of_inf.errors == []
 
 
-def test_expr_inference_string_length_invalid_index_reports_error() -> None:
+def test_expr_inference_string_length_accepts_string_index() -> None:
     env = TypeEnvironment()
     env.add_string("$a")
     inf = ExpressionTypeInference(env)
 
     out = inf.infer(StringLength(string_id="a", index=StringLiteral(value="bad")))
     assert isinstance(out, IntegerType)
-    assert "String length index must be integer" in inf.errors[0]
+    assert inf.errors == []
+
+
+def test_expr_inference_string_length_boolean_index_reports_error() -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(StringLength(string_id="a", index=BooleanLiteral(value=False)))
+    assert isinstance(out, IntegerType)
+    assert "String length index must not be boolean" in inf.errors[0]
 
 
 def test_expr_inference_validates_plain_dictionary_key_type() -> None:

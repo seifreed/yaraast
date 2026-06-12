@@ -45,6 +45,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_quantifier_value,
     _validate_range_expression_bounds,
     _validate_set_expression_elements,
+    _validate_string_occurrence_index_expression,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -609,7 +610,7 @@ def _deser_string_offset(self, data: dict[str, Any]):
     )
     index = _deserialize_nullable_expression_field(self, data, "index", "StringOffset")
     if index is not None:
-        _validate_integer_expression(index, "String offset index")
+        _validate_string_occurrence_index_expression(index, "String offset index")
     return StringOffset(string_id=string_id, index=index)
 
 
@@ -622,7 +623,7 @@ def _deser_string_length(self, data: dict[str, Any]):
     )
     index = _deserialize_nullable_expression_field(self, data, "index", "StringLength")
     if index is not None:
-        _validate_integer_expression(index, "String length index")
+        _validate_string_occurrence_index_expression(index, "String length index")
     return StringLength(string_id=string_id, index=index)
 
 

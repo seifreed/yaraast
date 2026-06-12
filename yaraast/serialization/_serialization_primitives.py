@@ -15,6 +15,7 @@ from typing import Any
 from yaraast.ast.base import Location
 from yaraast.ast.modifiers import RuleModifier, require_rule_modifier_identifier
 from yaraast.codegen.generator_expression_visitors import (
+    _is_definitely_boolean_expression,
     _is_definitely_non_iterable_expression,
     _is_invalid_for_iterable_set_item,
     _reject_non_integer_expression,
@@ -264,6 +265,13 @@ def _validate_integer_expression(value: Any, context: str) -> Any:
         _reject_non_integer_expression(value, context)
     except (TypeError, ValueError) as exc:
         raise SerializationError(str(exc)) from exc
+    return value
+
+
+def _validate_string_occurrence_index_expression(value: Any, context: str) -> Any:
+    if _is_definitely_boolean_expression(value):
+        msg = f"{context} must not be boolean"
+        raise SerializationError(msg)
     return value
 
 
