@@ -312,15 +312,18 @@ class AstHasher(ASTVisitor[str]):
         return f"Member({self.visit(node.object)},{node.member})"
 
     def visit_condition(self, node) -> str:
+        _validate_real_expression(node)
         return "Condition()"
 
     def visit_for_expression(self, node) -> str:
+        _validate_real_expression(node)
         quantifier = self._hash_value(node.quantifier)
         return (
             f"For({quantifier},{node.variable},{self.visit(node.iterable)},{self.visit(node.body)})"
         )
 
     def visit_for_of_expression(self, node) -> str:
+        _validate_real_expression(node)
         cond = self.visit(node.condition) if node.condition is not None else ""
         return (
             f"ForOf({self._hash_value(node.quantifier)},"
@@ -328,13 +331,16 @@ class AstHasher(ASTVisitor[str]):
         )
 
     def visit_at_expression(self, node) -> str:
+        _validate_real_expression(node)
         return f"At({self._hash_value(node.string_id)},{self.visit(node.offset)})"
 
     def visit_in_expression(self, node) -> str:
+        _validate_real_expression(node)
         subject = getattr(node, "subject", getattr(node, "string_id", None))
         return f"In({self._hash_value(subject)},{self.visit(node.range)})"
 
     def visit_of_expression(self, node) -> str:
+        _validate_real_expression(node)
         return f"Of({self._hash_value(node.quantifier)},{self._hash_string_set(node.string_set)})"
 
     def visit_with_statement(self, node) -> str:

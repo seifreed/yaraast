@@ -9,7 +9,13 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -514,15 +520,18 @@ def test_ast_hasher_rejects_invalid_real_hex_token_state(
 
 
 @pytest.mark.parametrize(
-    "string_set",
+    ("string_set", "message"),
     [
-        StringLiteral(cast(Any, False)),
-        StringIdentifier(cast(Any, False)),
-        StringWildcard(cast(Any, False)),
+        (StringLiteral(cast(Any, False)), "String literal value must be a string"),
+        (StringIdentifier(cast(Any, False)), "String identifier must be a string"),
+        (StringWildcard(cast(Any, False)), "String wildcard pattern must be a string"),
     ],
 )
-def test_ast_hasher_rejects_non_string_string_set_values(string_set: Any) -> None:
-    with pytest.raises(TypeError, match="String reference must be a string"):
+def test_ast_hasher_rejects_non_string_string_set_values(
+    string_set: Any,
+    message: str,
+) -> None:
+    with pytest.raises(TypeError, match=message):
         AstHasher().visit(OfExpression("any", [string_set]))
 
 
@@ -570,6 +579,45 @@ def test_ast_hasher_rejects_non_string_string_set_values(string_set: Any) -> Non
     ],
 )
 def test_ast_hasher_rejects_invalid_real_expression_state(
+    node: Any,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
+        AstHasher().visit(node)
+
+
+@pytest.mark.parametrize(
+    ("node", "error_type", "message"),
+    [
+        (
+            ForExpression("any", "", Identifier("xs"), BooleanLiteral(True)),
+            ValueError,
+            "ForExpression variable must not be empty",
+        ),
+        (
+            ForOfExpression("", ["$a"]),
+            ValueError,
+            "ForOfExpression quantifier must not be empty",
+        ),
+        (
+            AtExpression("", IntegerLiteral(1)),
+            ValueError,
+            "AtExpression string_id must not be empty",
+        ),
+        (
+            InExpression("$a", cast(Any, "bad")),
+            TypeError,
+            "'in' range must be an AST node",
+        ),
+        (
+            OfExpression("any", []),
+            ValueError,
+            "OfExpression string_set must contain values",
+        ),
+    ],
+)
+def test_ast_hasher_rejects_invalid_real_condition_state(
     node: Any,
     error_type: type[Exception],
     message: str,
