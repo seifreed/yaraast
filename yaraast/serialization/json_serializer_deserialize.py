@@ -185,6 +185,9 @@ def _deserialize_dictionary_key(self, data: dict[str, Any]) -> str | ASTNode:
         raise SerializationError(msg)
     key = data["key"]
     if isinstance(key, str):
+        if not key.strip():
+            msg = "DictionaryAccess key must not be empty"
+            raise SerializationError(msg)
         return key
     if isinstance(key, dict):
         expression = self._deserialize_expression(key)
@@ -645,6 +648,9 @@ def _deser_in_expression(self, data: dict[str, Any]):
     if isinstance(raw_subject, dict):
         subject = _deserialize_required_expression_value(self, raw_subject, "InExpression subject")
     elif isinstance(raw_subject, str):
+        if not raw_subject.strip():
+            msg = "InExpression subject must not be empty"
+            raise SerializationError(msg)
         subject = raw_subject
     else:
         msg = "InExpression subject must be a string or expression"

@@ -507,6 +507,9 @@ def _deserialize_dictionary_key(data: dict[str, Any]) -> str | ASTNode:
         raise SerializationError(msg)
     value = data["key"]
     if isinstance(value, str):
+        if _is_empty_nonempty_text(value, "DictionaryAccess key"):
+            msg = "DictionaryAccess key must not be empty"
+            raise SerializationError(msg)
         return value
     if isinstance(value, dict):
         return _deserialize_required_node_value(value, "DictionaryAccess key")
@@ -2065,6 +2068,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         if isinstance(raw_subject, dict):
             subject = _deserialize_required_node_value(raw_subject, "InExpression subject")
         elif isinstance(raw_subject, str):
+            if _is_empty_nonempty_text(raw_subject, "InExpression subject"):
+                msg = "InExpression subject must not be empty"
+                raise SerializationError(msg)
             subject = raw_subject
         else:
             msg = "InExpression subject must be a string or expression"

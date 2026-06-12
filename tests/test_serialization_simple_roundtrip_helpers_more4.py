@@ -1666,6 +1666,24 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
             }
         )
 
+    with pytest.raises(SerializationError, match="DictionaryAccess key must not be empty"):
+        deserialize_node(
+            {
+                "type": "DictionaryAccess",
+                "object": {"type": "ModuleReference", "module": "pe"},
+                "key": "",
+            }
+        )
+
+    with pytest.raises(SerializationError, match="DictionaryAccess key must not be empty"):
+        deserialize_node(
+            {
+                "type": "DictionaryAccess",
+                "object": {"type": "ModuleReference", "module": "pe"},
+                "key": "   ",
+            }
+        )
+
     with pytest.raises(SerializationError, match="RegexLiteral pattern must be a string"):
         deserialize_node({"type": "RegexLiteral", "pattern": 123})
 
@@ -2680,6 +2698,12 @@ def test_simple_roundtrip_condition_fields_reject_wrong_scalar_types() -> None:
                 "range": true_expr,
             }
         )
+
+    with pytest.raises(SerializationError, match="InExpression subject must not be empty"):
+        deserialize_node({"type": "InExpression", "subject": "", "range": true_expr})
+
+    with pytest.raises(SerializationError, match="InExpression subject must not be empty"):
+        deserialize_node({"type": "InExpression", "subject": "   ", "range": true_expr})
 
 
 def test_simple_roundtrip_optional_expression_fields_reject_empty_objects() -> None:
