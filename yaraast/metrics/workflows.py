@@ -44,6 +44,16 @@ def build_complexity_payload(metrics: ComplexityMetrics) -> dict[str, Any]:
     return result
 
 
+def _require_non_empty_text(value: object, name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{name} must be a string"
+        raise TypeError(msg)
+    if not value.strip():
+        msg = f"{name} must not be empty"
+        raise ValueError(msg)
+    return value
+
+
 def generate_dependency_graphs(
     ast: YaraFile,
     output_dir: Path,
@@ -154,6 +164,9 @@ def build_report(
 
 
 def determine_graph_output_path(yara_file: str, output: object, graph_type: str, fmt: str) -> str:
+    yara_file = _require_non_empty_text(yara_file, "yara_file")
+    graph_type = _require_non_empty_text(graph_type, "graph_type")
+    fmt = _require_non_empty_text(fmt, "output format")
     if output is not None:
         return str(require_output_path(output))
     base_name = Path(yara_file).stem
@@ -200,6 +213,9 @@ def generate_dependency_graph_with_generator(
 def determine_pattern_output_path(
     yara_file: str, output: object, pattern_type: str, fmt: str
 ) -> str:
+    yara_file = _require_non_empty_text(yara_file, "yara_file")
+    pattern_type = _require_non_empty_text(pattern_type, "pattern_type")
+    fmt = _require_non_empty_text(fmt, "output format")
     if output is not None:
         return str(require_output_path(output))
     base_name = Path(yara_file).stem

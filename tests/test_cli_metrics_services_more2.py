@@ -166,6 +166,48 @@ def test_metrics_services_path_helpers_reject_invalid_output_path_types(output: 
         ms.determine_pattern_output_path("/tmp/rules.yar", cast(Any, output), "flow", "dot")
 
 
+@pytest.mark.parametrize("value", [None, False, 123, object(), b"rules.yar", "", "   "])
+def test_metrics_services_path_helpers_reject_invalid_yara_file_values(value: Any) -> None:
+    error_type = ValueError if isinstance(value, str) else TypeError
+    with pytest.raises(error_type, match="yara_file must"):
+        ms.determine_graph_output_path(cast(Any, value), None, "full", "svg")
+    with pytest.raises(error_type, match="yara_file must"):
+        ms.determine_pattern_output_path(cast(Any, value), None, "flow", "dot")
+
+
+@pytest.mark.parametrize("graph_type", [None, False, 123, object(), b"full", "", "   "])
+def test_metrics_services_path_helpers_reject_invalid_graph_types(graph_type: Any) -> None:
+    error_type = ValueError if isinstance(graph_type, str) else TypeError
+    with pytest.raises(error_type, match="graph_type must"):
+        ms.determine_graph_output_path(
+            "/tmp/rules.yar",
+            None,
+            cast(Any, graph_type),
+            "svg",
+        )
+
+
+@pytest.mark.parametrize("pattern_type", [None, False, 123, object(), b"flow", "", "   "])
+def test_metrics_services_path_helpers_reject_invalid_pattern_types(pattern_type: Any) -> None:
+    error_type = ValueError if isinstance(pattern_type, str) else TypeError
+    with pytest.raises(error_type, match="pattern_type must"):
+        ms.determine_pattern_output_path(
+            "/tmp/rules.yar",
+            None,
+            cast(Any, pattern_type),
+            "svg",
+        )
+
+
+@pytest.mark.parametrize("fmt", [None, False, 123, object(), b"svg", "", "   "])
+def test_metrics_services_path_helpers_reject_invalid_output_formats(fmt: Any) -> None:
+    error_type = ValueError if isinstance(fmt, str) else TypeError
+    with pytest.raises(error_type, match="output format must"):
+        ms.determine_graph_output_path("/tmp/rules.yar", None, "full", cast(Any, fmt))
+    with pytest.raises(error_type, match="output format must"):
+        ms.determine_pattern_output_path("/tmp/rules.yar", None, "flow", cast(Any, fmt))
+
+
 def test_metrics_services_graph_and_pattern_generation_with_generators(tmp_path: Path) -> None:
     ast = _ast()
     dep = _DepGen()
