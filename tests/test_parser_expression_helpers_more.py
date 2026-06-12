@@ -478,6 +478,27 @@ def test_classic_parsers_reject_rule_sets_in_for_of_string_sets() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "condition",
+    [
+        "any of $a",
+        "any of $a*",
+        "any of helper",
+        "any of helper*",
+        "for any of $a : ($)",
+        "for any of $a* : ($)",
+    ],
+)
+def test_classic_parsers_reject_bare_of_string_set_items(condition: str) -> None:
+    source = (
+        f'rule helper {{ condition: true }} rule r {{ strings: $a = "x" condition: {condition} }}'
+    )
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match="Expected parenthesized"):
+            parser_factory().parse(source)
+
+
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:
     p = _parser_with_tokens([_t(TokenType.INTEGER, 7)])
     assert isinstance(p._parse_primary_expression(), IntegerLiteral)

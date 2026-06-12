@@ -251,11 +251,19 @@ class ExpressionForMixin:
         return expr
 
     def _validate_of_string_set(self, expr: Expression) -> None:
+        if self._is_bare_of_string_set_item(expr):
+            msg = "Expected parenthesized string set item or 'them' in of string set"
+            raise ParserError(msg, self._previous())
         kind = self._of_string_set_kind(expr, top_level=True)
         if kind is not None:
             return
         msg = "Expected string or rule identifier in of string set"
         raise ParserError(msg, self._previous())
+
+    def _is_bare_of_string_set_item(self, expr: Expression) -> bool:
+        return isinstance(expr, StringIdentifier | StringWildcard) or (
+            isinstance(expr, Identifier) and expr.name != "them"
+        )
 
     def _validate_for_of_string_set(self, expr: Expression) -> None:
         kind = self._of_string_set_kind(expr, top_level=True)

@@ -185,7 +185,7 @@ def test_parser_rejects_for_of_without_body(source: str) -> None:
 
 
 def test_parse_of_string_set_and_function_name_resolution_paths() -> None:
-    parser = _expr_parser("abc")
+    parser = _expr_parser("(abc)")
     of_expr = parser._parse_of_expression("any")
     assert isinstance(of_expr.quantifier, StringLiteral)
     assert of_expr.quantifier.value == "any"
