@@ -1733,6 +1733,15 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
             {"type": "MemberAccess", "object": {"type": "Identifier", "name": "pe"}, "member": ""}
         )
 
+    with pytest.raises(SerializationError, match="Invalid member identifier"):
+        deserialize_node(
+            {
+                "type": "MemberAccess",
+                "object": {"type": "Identifier", "name": "pe"},
+                "member": "bad-name",
+            }
+        )
+
     with pytest.raises(SerializationError, match="AtExpression string_id must be a string"):
         deserialize_node(
             {
@@ -1986,6 +1995,10 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
         (
             MemberAccess(Identifier("pe"), cast(Any, ["machine"])),
             "MemberAccess member must be a string",
+        ),
+        (
+            MemberAccess(Identifier("pe"), "bad-name"),
+            "Invalid member identifier",
         ),
         (
             DictionaryAccess(Identifier("pe"), cast(Any, ["machine"])),

@@ -1308,6 +1308,15 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             {"type": "MemberAccess", "object": {"type": "Identifier", "name": "pe"}, "member": ""}
         )
 
+    with pytest.raises(SerializationError, match="Invalid member identifier"):
+        s._deserialize_expression(
+            {
+                "type": "MemberAccess",
+                "object": {"type": "Identifier", "name": "pe"},
+                "member": "bad-name",
+            }
+        )
+
     with pytest.raises(SerializationError, match="AtExpression string_id must be a string"):
         s._deserialize_expression(
             {

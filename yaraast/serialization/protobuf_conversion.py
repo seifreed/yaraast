@@ -1547,9 +1547,12 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.index, pb_expr.array_access.index)
     elif isinstance(expr, MemberAccess):
         convert_expression_to_protobuf(expr.object, pb_expr.member_access.object)
-        pb_expr.member_access.member = _protobuf_required_nonempty_string(
-            expr.member,
-            "MemberAccess member",
+        pb_expr.member_access.member = _validate_yara_identifier_text(
+            _protobuf_required_nonempty_string(
+                expr.member,
+                "MemberAccess member",
+            ),
+            "member",
         )
     elif isinstance(expr, ModuleReference):
         pb_expr.module_reference.module = _validate_yara_identifier_text(
@@ -2529,9 +2532,12 @@ def protobuf_to_expression(pb_expr):
         return with_metadata(
             MemberAccess(
                 object=protobuf_to_expression(pb_expr.member_access.object),
-                member=_protobuf_required_nonempty_string(
-                    pb_expr.member_access.member,
-                    "MemberAccess member",
+                member=_validate_yara_identifier_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.member_access.member,
+                        "MemberAccess member",
+                    ),
+                    "member",
                 ),
             ),
         )

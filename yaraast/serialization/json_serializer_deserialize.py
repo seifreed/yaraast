@@ -531,7 +531,10 @@ def _deser_member_access(self, data: dict[str, Any]):
     obj = _deserialize_required_expression(self, data, "object", "MemberAccess")
     return MemberAccess(
         object=obj,
-        member=_deserialize_nonempty_string_field(data, "member", "MemberAccess"),
+        member=_validate_yara_identifier_text(
+            _deserialize_nonempty_string_field(data, "member", "MemberAccess"),
+            "member",
+        ),
     )
 
 

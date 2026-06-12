@@ -923,6 +923,10 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
             "MemberAccess member must be a string",
         ),
         (
+            MemberAccess(Identifier("pe"), "bad-name"),
+            "Invalid member identifier",
+        ),
+        (
             ForExpression("any", "", Identifier("items"), BooleanLiteral(True)),
             "ForExpression variable must not be empty",
         ),

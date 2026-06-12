@@ -1406,7 +1406,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "MemberAccess",
             "object": serialize_node(node.object),
-            "member": _serialize_required_nonempty_string(node.member, "MemberAccess member"),
+            "member": _validate_yara_identifier_text(
+                _serialize_required_nonempty_string(node.member, "MemberAccess member"),
+                "member",
+            ),
         }
     if isinstance(node, ForExpression):
         return {
@@ -2173,7 +2176,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "MemberAccess":
         return MemberAccess(
             _deserialize_required_node(data, "object", "MemberAccess"),
-            _deserialize_nonempty_string_field(data, "member", "MemberAccess"),
+            _validate_yara_identifier_text(
+                _deserialize_nonempty_string_field(data, "member", "MemberAccess"),
+                "member",
+            ),
         )
     if node_type == "ForExpression":
         return ForExpression(

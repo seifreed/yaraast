@@ -813,7 +813,10 @@ def visit_member_access(serializer, node) -> dict[str, Any]:
             node.object,
             "MemberAccess object",
         ),
-        "member": _serialize_required_nonempty_string(node.member, "MemberAccess member"),
+        "member": _validate_yara_identifier_text(
+            _serialize_required_nonempty_string(node.member, "MemberAccess member"),
+            "member",
+        ),
     }
 
 
