@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 from rich.console import Console
+from rich.markup import escape
 
 from yaraast.cli.optimize_reporting import (
     display_analysis,
@@ -106,7 +107,7 @@ def optimize(input_file: Path, output_file: str, dry_run: bool, analyze: bool) -
             display_dry_run(console)
 
     except Exception as e:
-        console.print(f"[red]❌ Error: {e}[/red]")
+        console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from e
 
 

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 from rich.console import Console
+from rich.markup import escape
 from rich.progress import track
 
 from yaraast.cli.performance_check_reporting import (
@@ -83,7 +84,7 @@ def performance_check(input_file: Path, severity: str, limit: int, summary: bool
         display_issue_totals(console, all_issues)
 
     except Exception as e:
-        console.print(f"[red]❌ Error: {e}[/red]")
+        console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from e
 
 

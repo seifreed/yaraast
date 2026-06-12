@@ -12,6 +12,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.cli.benchmark_tools import ASTBenchmarker
+import yaraast.cli.commands.performance_check as performance_check_module
 from yaraast.cli.commands.performance_check import performance_check
 from yaraast.cli.metrics_reporting import (
     _display_graph_statistics,
@@ -100,6 +101,26 @@ rule ev {
     $e
 }
 """
+
+
+def test_performance_check_command_escapes_error_markup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = CliRunner()
+    yara_path = tmp_path / "perf.yar"
+    yara_path.write_text("rule sample { condition: true }\n", encoding="utf-8")
+
+    def raise_markup_error(_input_file: Path) -> object:
+        raise ValueError("bad[/red][broken")
+
+    monkeypatch.setattr(performance_check_module, "parse_performance_file", raise_markup_error)
+
+    result = runner.invoke(performance_check, [str(yara_path)])
+
+    assert result.exit_code != 0
+    assert "bad[/red][broken" in result.output
+    assert "closing tag" not in result.output
 
 
 def test_ast_benchmarker_success_error_and_summary(tmp_path: Path) -> None:

@@ -3,7 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from click.testing import CliRunner
+import pytest
 
+import yaraast.cli.commands.optimize as optimize_module
 from yaraast.cli.commands.optimize import optimize
 
 
@@ -103,3 +105,24 @@ rule sample {
     assert "path could not be accessed" in result.output
     assert "Errno" not in result.output
     assert "Optimizing" not in result.output
+
+
+def test_optimize_command_escapes_error_markup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = CliRunner()
+    src = tmp_path / "rule.yar"
+    out = tmp_path / "optimized.yar"
+    _write(src, "rule sample { condition: true }")
+
+    def raise_markup_error(_content: str) -> object:
+        raise ValueError("bad[/red][broken")
+
+    monkeypatch.setattr(optimize_module, "parse_yara_with_tolerance", raise_markup_error)
+
+    result = runner.invoke(optimize, [str(src), str(out)])
+
+    assert result.exit_code != 0
+    assert "bad[/red][broken" in result.output
+    assert "closing tag" not in result.output

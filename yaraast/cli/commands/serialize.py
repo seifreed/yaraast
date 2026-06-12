@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 from rich.console import Console
+from rich.markup import escape
 
 from yaraast.cli.serialize_command_services import (
     build_ast_info_payload,
@@ -65,7 +66,7 @@ def export(input_file: str, output: str | None, format: str, minimal: bool, pret
         display_export_result(console, result, format, output, pretty, stats)
 
     except Exception as e:  # CLI error boundary
-        console.print(f"[red]❌ Error: {e}[/red]")
+        console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from e
 
 
@@ -97,7 +98,7 @@ def import_ast(input_file: str, format: str, output: str | None) -> None:
         display_import_result(console, input_file, format, ast, output)
 
     except Exception as e:  # CLI error boundary
-        console.print(f"[red]❌ Error: {e}[/red]")
+        console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from e
 
 
@@ -156,10 +157,10 @@ def diff(
     except ImportError as e:
         if format != "yaml" or e.name != "yaml":
             raise
-        console.print(f"[red]❌ Error: {e}[/red]")
+        console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from e
     except Exception as e:  # CLI error boundary
-        console.print(f"[red]❌ Error: {e}[/red]")
+        console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from e
 
 
@@ -214,7 +215,7 @@ def info(input_file: str) -> None:
         display_info(console, input_file, info_data)
 
     except Exception as e:  # CLI error boundary
-        console.print(f"[red]❌ Error: {e}[/red]")
+        console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from e
 
 
