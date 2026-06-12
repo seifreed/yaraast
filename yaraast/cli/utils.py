@@ -97,8 +97,20 @@ def _path_is_dir(path: Path) -> bool:
         raise ValueError(msg) from exc
 
 
+def _path_is_file(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except OSError as exc:
+        msg = f"path could not be accessed: {path}"
+        raise ValueError(msg) from exc
+
+
 def _path_exists_and_is_dir(path: Path) -> bool:
     return _path_exists(path) and _path_is_dir(path)
+
+
+def _path_exists_and_is_file(path: Path) -> bool:
+    return _path_exists(path) and _path_is_file(path)
 
 
 def _path_exists_and_not_dir(path: Path) -> bool:

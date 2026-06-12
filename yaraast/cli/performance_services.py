@@ -8,6 +8,7 @@ from pathlib import Path
 import time
 from typing import Any
 
+from yaraast.cli.utils import _path_exists_and_is_dir, _path_exists_and_is_file
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor
 from yaraast.performance.memory_optimizer import MemoryOptimizer
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
@@ -57,7 +58,7 @@ def run_batch_processing(
     recursive: bool,
 ) -> tuple[dict, float]:
     start_time = time.time()
-    if input_path.is_file():
+    if _path_exists_and_is_file(input_path):
         results = processor.process_large_file(
             input_path,
             batch_operations,
@@ -112,7 +113,7 @@ def get_parse_iterator(
     pattern: FilePatterns,
     recursive: bool,
 ):
-    if input_path.is_file():
+    if _path_exists_and_is_file(input_path):
         if split_rules:
             return parser.parse_rules_from_file(input_path)
         return parser.parse_files([input_path])
@@ -165,9 +166,9 @@ def collect_file_paths(input_paths: tuple) -> list[Path]:
     for raw_path in input_paths:
         path = _require_collect_input_path(raw_path)
         candidates: Iterable[Path]
-        if path.is_file():
+        if _path_exists_and_is_file(path):
             candidates = [path]
-        elif path.is_dir():
+        elif _path_exists_and_is_dir(path):
             candidates = iter_matching_files(path, recursive=True)
         else:
             candidates = []

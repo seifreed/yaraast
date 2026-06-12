@@ -11,6 +11,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.cli import performance_services as ps
 from yaraast.parser import Parser
+from yaraast.performance.batch_processor import BatchOperation
 from yaraast.performance.streaming_parser import StreamingParser
 
 
@@ -81,6 +82,26 @@ def test_collect_file_paths_rejects_invalid_path_types(raw_path: Any) -> None:
 def test_collect_file_paths_rejects_empty_path(raw_path: str) -> None:
     with pytest.raises(ValueError, match="input path must not be empty"):
         ps.collect_file_paths((raw_path,))
+
+
+def test_performance_services_reject_inaccessible_paths(tmp_path: Path) -> None:
+    inaccessible = Path("a" * 5000)
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        ps.collect_file_paths((inaccessible,))
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        list(ps.get_parse_iterator(StreamingParser(), inaccessible, False, None, False))
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        ps.run_batch_processing(
+            inaccessible,
+            tmp_path,
+            [BatchOperation.PARSE],
+            cast(Any, object()),
+            None,
+            False,
+        )
 
 
 def test_extract_successful_asts_and_file_name_mapping_paths(tmp_path: Path) -> None:

@@ -242,6 +242,25 @@ def test_ast_benchmarker_reports_invalid_file_paths(tmp_path: Path) -> None:
     assert roundtrip_invalid_type.error == "file_path must be a string or path-like object"
 
 
+def test_ast_benchmarker_reports_inaccessible_file_paths() -> None:
+    benchmarker = ASTBenchmarker()
+    inaccessible = "a" * 5000
+
+    parsing = benchmarker.benchmark_parsing(inaccessible, iterations=1)
+    codegen = benchmarker.benchmark_codegen(inaccessible, iterations=1)
+    roundtrip = benchmarker.benchmark_roundtrip(inaccessible, iterations=1)[0]
+
+    assert parsing.success is False
+    assert parsing.error is not None
+    assert parsing.error.startswith("path could not be accessed")
+    assert codegen.success is False
+    assert codegen.error is not None
+    assert codegen.error.startswith("path could not be accessed")
+    assert roundtrip.success is False
+    assert roundtrip.error is not None
+    assert roundtrip.error.startswith("path could not be accessed")
+
+
 def test_ast_benchmarker_reports_invalid_utf8_inputs(tmp_path: Path) -> None:
     bad = tmp_path / "bad.yar"
     bad.write_bytes(b"\xff")
