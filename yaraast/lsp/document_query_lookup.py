@@ -34,6 +34,20 @@ def _require_include_path(include_path: object) -> str:
     return include_path
 
 
+def _require_module_member_name(qualified_name: object) -> str:
+    if not isinstance(qualified_name, str):
+        msg = "Module member name must be a string"
+        raise TypeError(msg)
+    return qualified_name
+
+
+def _require_document_position(position: object) -> Position:
+    if not isinstance(position, Position):
+        msg = "Document position must be an LSP Position"
+        raise TypeError(msg)
+    return position
+
+
 def get_meta_value(ctx: DocumentContext, key: str) -> Any | None:
     cache_key = f"meta_value:{key}"
     cached = ctx.get_cached(cache_key)
@@ -108,6 +122,7 @@ def get_string_definition_info(ctx: DocumentContext, identifier: str) -> dict[st
 
 
 def get_module_member_info(ctx: DocumentContext, qualified_name: str) -> dict[str, Any] | None:
+    qualified_name = _require_module_member_name(qualified_name)
     cache_key = f"module_member_info:{qualified_name}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
@@ -173,6 +188,7 @@ def get_include_target_uri(ctx: DocumentContext, include_path: str) -> str | Non
 def get_dotted_symbol_at_position(
     ctx: DocumentContext, position: Position
 ) -> tuple[str, Range] | None:
+    position = _require_document_position(position)
     if position.line < 0 or position.line >= len(ctx.lines):
         return None
     line = ctx.lines[position.line]

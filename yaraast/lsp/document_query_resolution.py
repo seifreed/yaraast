@@ -21,7 +21,15 @@ if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
 
 
+def _require_document_position(position: object) -> Position:
+    if not isinstance(position, Position):
+        msg = "Document position must be an LSP Position"
+        raise TypeError(msg)
+    return position
+
+
 def resolve_symbol(ctx: DocumentContext, position: Position) -> ResolvedSymbol | None:
+    position = _require_document_position(position)
     cache_key = f"resolve_symbol:{position.line}:{position.character}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:

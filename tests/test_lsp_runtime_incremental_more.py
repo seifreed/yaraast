@@ -874,6 +874,20 @@ def test_document_context_exposes_module_member_info_for_imported_modules() -> N
     assert cached_info["member"] == "imphash"
 
 
+def test_document_context_rejects_invalid_query_inputs() -> None:
+    doc = DocumentContext(
+        "file:///sample.yar",
+        'import "pe"\nrule sample { condition: pe.imphash() }\n',
+    )
+
+    with pytest.raises(TypeError, match="Module member name must be a string"):
+        doc.get_module_member_info(cast(Any, object()))
+    with pytest.raises(TypeError, match="Document position must be an LSP Position"):
+        doc.get_dotted_symbol_at_position(cast(Any, object()))
+    with pytest.raises(TypeError, match="Document position must be an LSP Position"):
+        doc.resolve_symbol(cast(Any, object()))
+
+
 def test_document_context_exposes_include_info(tmp_path: Path) -> None:
     include_file = tmp_path / "common.yar"
     include_file.write_text("rule common { condition: true }\n", encoding="utf-8")
