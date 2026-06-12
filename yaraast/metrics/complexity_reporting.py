@@ -12,6 +12,29 @@ from yaraast.parser.source import parse_yara_source
 __all__ = ["analyze_file_complexity", "generate_complexity_report"]
 
 
+def _path_access_error(path: Path) -> ValueError:
+    msg = f"path could not be accessed: {path}"
+    return ValueError(msg)
+
+
+def _path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_exists_and_is_dir(path: Path) -> bool:
+    return _path_exists(path) and _path_is_dir(path)
+
+
 def _require_file_path(file_path: object) -> Path:
     if isinstance(file_path, bool) or not isinstance(file_path, str | PathLike):
         msg = "file_path must be a file path"
@@ -24,7 +47,7 @@ def _require_file_path(file_path: object) -> Path:
         msg = "file_path must not be empty"
         raise ValueError(msg)
     path = Path(raw_path)
-    if path.exists() and path.is_dir():
+    if _path_exists_and_is_dir(path):
         msg = "file_path must not be a directory"
         raise ValueError(msg)
     return path

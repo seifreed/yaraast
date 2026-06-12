@@ -121,3 +121,8 @@ def test_analyze_file_complexity_rejects_invalid_utf8(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
         analyze_file_complexity(file_path)
+
+
+def test_analyze_file_complexity_rejects_inaccessible_path() -> None:
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        analyze_file_complexity("a" * 5000)

@@ -121,6 +121,11 @@ def test_dependency_graph_render_rejects_directory_output_path(tmp_path: Path) -
         render_graph(SimpleNamespace(source="digraph G {}"), tmp_path, "dot")
 
 
+def test_dependency_graph_render_rejects_inaccessible_output_path() -> None:
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        render_graph(SimpleNamespace(source="digraph G {}"), "a" * 5000, "dot")
+
+
 @pytest.mark.parametrize("output_path", [False, 0, object()])
 def test_dependency_graph_render_rejects_invalid_output_path_types(output_path: Any) -> None:
     with pytest.raises(TypeError, match="output_path must be a file path"):
