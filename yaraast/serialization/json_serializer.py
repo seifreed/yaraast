@@ -122,8 +122,8 @@ def _serialize_modifier_value(value: Any) -> str | int | float | list[int] | Non
 
 def _serialize_enum_value(value: Any, context: str) -> str:
     if isinstance(value, str):
-        return value
-    return _serialize_required_string(getattr(value, "value", None), context)
+        return _serialize_required_nonempty_string(value, context)
+    return _serialize_required_nonempty_string(getattr(value, "value", None), context)
 
 
 def _require_utf8_json_text(text: str) -> str:

@@ -267,7 +267,7 @@ def _deserialize_nonempty_string_list_field(
 def _deserialize_pragma_type(data: dict[str, Any]):
     from yaraast.ast.pragmas import PragmaType
 
-    value = _deserialize_string_field(data, "pragma_type", "Pragma")
+    value = _deserialize_nonempty_string_field(data, "pragma_type", "Pragma")
     try:
         return PragmaType(value.lower())
     except ValueError as exc:

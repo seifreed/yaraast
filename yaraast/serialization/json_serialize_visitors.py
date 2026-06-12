@@ -405,8 +405,8 @@ def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
 
 def _serialize_enum_value(value, context: str) -> str:
     if isinstance(value, str):
-        return value
-    return _serialize_required_string(getattr(value, "value", None), context)
+        return _serialize_required_nonempty_string(value, context)
+    return _serialize_required_nonempty_string(getattr(value, "value", None), context)
 
 
 def _serialize_node_list(

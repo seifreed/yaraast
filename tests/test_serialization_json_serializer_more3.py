@@ -1029,6 +1029,8 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
 
     pragma_with_bad_type = Pragma(PragmaType.CUSTOM, "custom")
     cast(Any, pragma_with_bad_type).pragma_type = invalid_text
+    pragma_with_empty_type = Pragma(PragmaType.CUSTOM, "custom")
+    cast(Any, pragma_with_empty_type).pragma_type = ""
     pragma_with_bad_scope = Pragma(PragmaType.CUSTOM, "custom")
     cast(Any, pragma_with_bad_scope).scope = invalid_text
     pragma_with_unknown_scope = Pragma(PragmaType.CUSTOM, "custom")
@@ -1052,6 +1054,10 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
         (
             YaraFile(pragmas=[pragma_with_bad_type]),
             "Pragma pragma_type must be a string",
+        ),
+        (
+            YaraFile(pragmas=[pragma_with_empty_type]),
+            "Pragma pragma_type must not be empty",
         ),
         (
             YaraFile(pragmas=[pragma_with_bad_scope]),

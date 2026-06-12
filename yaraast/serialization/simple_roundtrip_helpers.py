@@ -600,8 +600,8 @@ def _serialize_pragma_parameter_value(value: Any) -> str | int | bool | float:
 
 def _serialize_enum_value(value: Any, context: str) -> str:
     if isinstance(value, str):
-        return value
-    return _serialize_required_string(getattr(value, "value", None), context)
+        return _serialize_required_nonempty_string(value, context)
+    return _serialize_required_nonempty_string(getattr(value, "value", None), context)
 
 
 def _serialize_required_int(value: Any, context: str) -> int:
@@ -635,7 +635,7 @@ def _serialize_required_bool(value: Any, context: str) -> bool:
 
 
 def _deserialize_pragma_type(data: dict[str, Any]) -> PragmaType:
-    value = _deserialize_string_field(data, "pragma_type", "Pragma")
+    value = _deserialize_nonempty_string_field(data, "pragma_type", "Pragma")
     try:
         return PragmaType(value.lower())
     except ValueError as exc:

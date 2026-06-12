@@ -580,6 +580,11 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma pragma_type must be a string"):
         serialize_pragma(pragma_with_bad_type)
 
+    pragma_with_empty_type = Pragma(PragmaType.CUSTOM, "vendor")
+    cast(Any, pragma_with_empty_type).pragma_type = ""
+    with pytest.raises(SerializationError, match="Pragma pragma_type must not be empty"):
+        serialize_pragma(pragma_with_empty_type)
+
     with pytest.raises(SerializationError, match="Pragma name must be a string"):
         serialize_pragma(Pragma(PragmaType.CUSTOM, invalid_text))
 
@@ -642,6 +647,12 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="Pragma pragma_type is required"):
         deserialize_node({"type": "Pragma", "name": "vendor", "arguments": []})
+
+    with pytest.raises(SerializationError, match="Pragma pragma_type must not be empty"):
+        deserialize_node(_serialized_simple_pragma(pragma_type=""))
+
+    with pytest.raises(SerializationError, match="Pragma pragma_type must not be empty"):
+        deserialize_node(_serialized_simple_pragma(pragma_type="   "))
 
     with pytest.raises(SerializationError, match="Pragma pragma_type must be a valid pragma type"):
         deserialize_node(_serialized_simple_pragma(pragma_type="vendor"))

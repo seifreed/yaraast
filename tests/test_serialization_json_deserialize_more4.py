@@ -434,6 +434,12 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma pragma_type is required"):
         s._deserialize_pragma({"type": "Pragma", "name": "vendor", "arguments": []})
 
+    with pytest.raises(SerializationError, match="Pragma pragma_type must not be empty"):
+        s._deserialize_pragma(_serialized_json_pragma(pragma_type=""))
+
+    with pytest.raises(SerializationError, match="Pragma pragma_type must not be empty"):
+        s._deserialize_pragma(_serialized_json_pragma(pragma_type="   "))
+
     with pytest.raises(SerializationError, match="Pragma pragma_type must be a valid pragma type"):
         s._deserialize_pragma(_serialized_json_pragma(pragma_type="vendor"))
 
