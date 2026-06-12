@@ -8,8 +8,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
 
+import pytest
+
 from yaraast.lsp import server_features as sf
-from yaraast.lsp.document_types import uri_to_path
+from yaraast.lsp.document_types import path_to_uri, uri_to_path
 from yaraast.lsp.server_feature_helpers import get_workspace_folders
 
 
@@ -380,6 +382,12 @@ def test_lsp_path_helpers_reject_empty_workspace_paths() -> None:
         workspace_folders=[SimpleNamespace(uri="file:/tmp/ws")],
     )
     assert get_workspace_folders(cast(Any, params)) == ["/tmp/ws"]
+
+
+def test_path_to_uri_rejects_invalid_path_values() -> None:
+    for path in [None, False, 123, object(), b"/tmp/sample.yar", "", "   "]:
+        with pytest.raises(TypeError, match=r"path must be a pathlib\.Path"):
+            path_to_uri(cast(Any, path))
 
 
 def test_did_change_uses_workspace_source_for_incremental_updates() -> None:

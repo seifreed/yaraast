@@ -83,6 +83,9 @@ def uri_to_path(uri: object) -> Path | None:
 
 
 def path_to_uri(path: Path) -> str:
+    if not isinstance(path, Path):
+        msg = "path must be a pathlib.Path"
+        raise TypeError(msg)
     return path.resolve().as_uri()
 
 
