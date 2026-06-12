@@ -32,6 +32,20 @@ def _require_workspace_root(root_path: object) -> Path:
     return path
 
 
+def _require_cache_file_path(file_path: object) -> str:
+    if isinstance(file_path, bool | bytes) or not isinstance(file_path, str | PathLike):
+        msg = "file_path must be a string or path-like object"
+        raise TypeError(msg)
+    raw_path = fspath(file_path)
+    if not isinstance(raw_path, str):
+        msg = "file_path must be a string or path-like object"
+        raise TypeError(msg)
+    if not raw_path.strip():
+        msg = "file_path must not be empty"
+        raise ValueError(msg)
+    return raw_path
+
+
 class WorkspaceSymbolsProvider:
     """Provide workspace-wide symbol search."""
 
@@ -139,10 +153,11 @@ class WorkspaceSymbolsProvider:
             return
         self.symbol_cache.clear()
 
-    def invalidate_file(self, file_path: str) -> None:
+    def invalidate_file(self, file_path: str | PathLike[str]) -> None:
         """Invalidate cache for a specific file."""
+        cache_key = _require_cache_file_path(file_path)
         if self.runtime:
             self.runtime.cache.workspace_symbol_cache.clear()
             return
-        if file_path in self.symbol_cache:
-            del self.symbol_cache[file_path]
+        if cache_key in self.symbol_cache:
+            del self.symbol_cache[cache_key]

@@ -115,10 +115,26 @@ rule sample {
         # Cache mutation helpers
         key = str(f)
         assert key in provider.symbol_cache
-        provider.invalidate_file(key)
+        provider.invalidate_file(Path(key))
         assert key not in provider.symbol_cache
         provider.clear_cache()
         assert provider.symbol_cache == {}
+
+
+@pytest.mark.parametrize("file_path", ["", "   ", "\t"])
+def test_workspace_symbols_rejects_empty_invalidate_file_path(file_path: str) -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    with pytest.raises(ValueError, match="file_path must not be empty"):
+        provider.invalidate_file(file_path)
+
+
+@pytest.mark.parametrize("file_path", [None, False, 123, object(), b"sample.yar"])
+def test_workspace_symbols_rejects_invalid_invalidate_file_path_types(file_path: Any) -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
+        provider.invalidate_file(cast(Any, file_path))
 
 
 def test_workspace_symbols_rejects_non_string_query_before_scanning(tmp_path: Path) -> None:
