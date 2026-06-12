@@ -69,6 +69,27 @@ def test_pragma_string_reprs_reject_invalid_arguments() -> None:
         str(custom)
 
 
+@pytest.mark.parametrize(
+    ("pragma_type", "condition", "error_type", "message"),
+    [
+        (PragmaType.IFDEF, "", ValueError, "Pragma condition cannot be empty"),
+        (PragmaType.IFNDEF, "   ", ValueError, "Pragma condition cannot be empty"),
+        (PragmaType.IFDEF, False, TypeError, "Pragma condition must be a string"),
+        (PragmaType.IFNDEF, 0, TypeError, "Pragma condition must be a string"),
+    ],
+)
+def test_conditional_directive_string_rejects_invalid_required_conditions(
+    pragma_type: PragmaType,
+    condition: Any,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    directive = ConditionalDirective(pragma_type, cast(Any, condition))
+
+    with pytest.raises(error_type, match=message):
+        str(directive)
+
+
 @pytest.mark.parametrize("arguments", ["", (), False])
 def test_custom_pragma_preserves_invalid_falsy_arguments(arguments: Any) -> None:
     custom = CustomPragma("vendor", arguments=cast(Any, arguments))

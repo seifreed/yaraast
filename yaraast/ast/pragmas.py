@@ -239,8 +239,13 @@ class ConditionalDirective(Pragma):
         return cls(PragmaType.ENDIF)
 
     def __str__(self) -> str:
-        if self.condition:
-            return f"#{self.pragma_type.value} {self.condition}"
+        if self.pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}:
+            condition = _require_nonempty_string(self.condition, "Pragma condition")
+            return f"#{self.pragma_type.value} {condition}"
+        if self.condition is not None:
+            condition = require_string(self.condition, "Pragma condition")
+            if condition:
+                return f"#{self.pragma_type.value} {condition}"
         return f"#{self.pragma_type.value}"
 
 
