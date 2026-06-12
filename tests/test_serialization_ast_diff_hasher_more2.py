@@ -367,6 +367,31 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
 
 
 @pytest.mark.parametrize(
+    ("pragma", "error_type", "message"),
+    [
+        (Pragma(cast(Any, "bad"), "vendor"), TypeError, "Pragma type must be a PragmaType"),
+        (
+            Pragma(PragmaType.PRAGMA, "vendor", scope=cast(Any, "file")),
+            TypeError,
+            "Pragma scope must be a PragmaScope",
+        ),
+        (
+            CustomPragma("vendor", parameters=cast(Any, [])),
+            TypeError,
+            "Pragma parameters must be a dictionary",
+        ),
+    ],
+)
+def test_ast_hasher_rejects_invalid_real_pragma_state(
+    pragma: Pragma,
+    error_type: type[Exception],
+    message: str,
+) -> None:
+    with pytest.raises(error_type, match=message):
+        AstHasher().visit_pragma(pragma)
+
+
+@pytest.mark.parametrize(
     "string_set",
     [
         StringLiteral(cast(Any, False)),

@@ -500,8 +500,12 @@ class AstHasher(ASTVisitor[str]):
         return f"InRulePragma({pragma_hash},{position})"
 
     def visit_pragma(self, node) -> str:
+        from yaraast.ast.pragmas import Pragma
+
         if not hasattr(node, "pragma_type"):
             return f"Pragma({getattr(node, 'directive', '')})"
+        if isinstance(node, Pragma):
+            node.validate_structure()
         args = "|".join(getattr(node, "arguments", []))
         extra_parts = []
         for field_name in ("macro_name", "macro_value", "condition"):
