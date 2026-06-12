@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import logging
 from typing import Any
 
@@ -26,14 +27,23 @@ from yaraast.lsp.server_protocol import FeatureRegistrationServer
 logger = logging.getLogger(__name__)
 
 
+def _latest_change_text(changes: Any) -> str | None:
+    if not changes:
+        return None
+    try:
+        latest = changes[-1]
+    except (IndexError, KeyError, TypeError):
+        return None
+    value = latest.get("text") if isinstance(latest, Mapping) else getattr(latest, "text", None)
+    return value if isinstance(value, str) else None
+
+
 def _changed_document_text(ls: Any, uri: str, changes: Any) -> str:
     try:
         return str(ls.workspace.get_text_document(uri).source)
     except Exception:
         logger.debug("Operation failed in %s", __name__, exc_info=True)
-    if changes:
-        return str(changes[-1].text)
-    return ""
+    return _latest_change_text(changes) or ""
 
 
 def register_document_handlers(server: FeatureRegistrationServer) -> None:

@@ -407,6 +407,28 @@ def test_did_change_uses_workspace_source_for_incremental_updates() -> None:
     assert server.published == [(uri, [f"diag:{len(full_text)}"])]
 
 
+def test_did_change_ignores_malformed_change_without_workspace_source() -> None:
+    server = FakeServer()
+    sf.register_server_features(server)
+    runtime = _RecordingRuntime()
+    server.runtime = runtime
+    uri = "file:///missing.yar"
+
+    asyncio.run(
+        _call(
+            server,
+            sf.TEXT_DOCUMENT_DID_CHANGE,
+            SimpleNamespace(
+                text_document=SimpleNamespace(uri=uri, version=2),
+                content_changes=[object()],
+            ),
+        )
+    )
+
+    assert runtime.updated == [(uri, "", 2)]
+    assert server.published == [(uri, ["diag:0"])]
+
+
 def test_initialize_decodes_workspace_folder_file_uris(tmp_path: Path) -> None:
     server = FakeServer()
     sf.register_initialize(server)
