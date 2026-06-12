@@ -12,11 +12,16 @@ from yaraast.serialization._serialization_primitives import (
     _is_empty_nonempty_text,
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
+    _validate_extern_import_rule_identifiers,
+    _validate_extern_rule_identifier_text,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_location_metadata,
     _validate_loop_variable_text,
+    _validate_namespace_identifier_text,
+    _validate_optional_namespace_identifier_text,
     _validate_string_reference_text,
+    _validate_unique_extern_rule_identifiers,
     _validate_unique_rule_identifiers,
     _validate_unique_rule_tags,
     _validate_yara_identifier_text,
@@ -300,6 +305,8 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
     for rule in rules:
         pb_rule = pb_file.rules.add()
         convert_rule_to_protobuf(rule, pb_rule)
+
+    _validate_unique_extern_rule_identifiers(rules, extern_rules, namespaces)
 
     if include_metadata:
         pb_file.metadata.format = "yaraast-protobuf"
@@ -640,9 +647,11 @@ def protobuf_to_rule_meta_entry(pb_meta_entry):
 
 
 def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
-    pb_extern_rule.name = _protobuf_required_nonempty_string(
-        extern_rule.name,
-        "ExternRule name",
+    pb_extern_rule.name = _validate_extern_rule_identifier_text(
+        _protobuf_required_nonempty_string(
+            extern_rule.name,
+            "ExternRule name",
+        )
     )
     pb_extern_rule.modifiers.extend(
         _protobuf_modifier_name(modifier, "ExternRule modifier")
@@ -652,9 +661,11 @@ def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
         )
     )
     if extern_rule.namespace is not None:
-        pb_extern_rule.namespace = _protobuf_required_nonempty_string(
-            extern_rule.namespace,
-            "ExternRule namespace",
+        pb_extern_rule.namespace = _validate_namespace_identifier_text(
+            _protobuf_required_nonempty_string(
+                extern_rule.namespace,
+                "ExternRule namespace",
+            )
         )
     _copy_node_metadata_to_protobuf(extern_rule, pb_extern_rule)
 
@@ -677,7 +688,9 @@ def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
             msg = "ExternImport alias must not be empty"
             raise SerializationError(msg)
         pb_extern_import.alias = alias
-    rules = _protobuf_nonempty_string_list(extern_import.rules, "ExternImport rules")
+    rules = _validate_extern_import_rule_identifiers(
+        _protobuf_nonempty_string_list(extern_import.rules, "ExternImport rules")
+    )
     if any(not rule.strip() for rule in rules):
         msg = "ExternImport rules item must not be empty"
         raise SerializationError(msg)
@@ -688,9 +701,11 @@ def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
 def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
     from yaraast.ast.extern import ExternRule
 
-    pb_namespace.name = _protobuf_required_nonempty_string(
-        namespace.name,
-        "ExternNamespace name",
+    pb_namespace.name = _validate_namespace_identifier_text(
+        _protobuf_required_nonempty_string(
+            namespace.name,
+            "ExternNamespace name",
+        )
     )
     _copy_node_metadata_to_protobuf(namespace, pb_namespace)
     for extern_rule in _protobuf_node_list(
@@ -1876,6 +1891,7 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
         rules.append(_apply_node_metadata_from_protobuf(pb_rule, rule))
 
     _validate_unique_rule_identifiers(rules)
+    _validate_unique_extern_rule_identifiers(rules, extern_rules, namespaces)
     ast = YaraFile(
         imports=imports,
         includes=includes,
@@ -1906,14 +1922,18 @@ def protobuf_to_extern_rule(pb_extern_rule):
     return _apply_node_metadata_from_protobuf(
         pb_extern_rule,
         ExternRule(
-            name=_protobuf_required_nonempty_string(
-                pb_extern_rule.name,
-                "ExternRule name",
+            name=_validate_extern_rule_identifier_text(
+                _protobuf_required_nonempty_string(
+                    pb_extern_rule.name,
+                    "ExternRule name",
+                )
             ),
             modifiers=modifiers,
-            namespace=_protobuf_optional_nonempty_scalar(
-                pb_extern_rule.namespace,
-                "ExternRule namespace",
+            namespace=_validate_optional_namespace_identifier_text(
+                _protobuf_optional_nonempty_scalar(
+                    pb_extern_rule.namespace,
+                    "ExternRule namespace",
+                )
             ),
         ),
     )
@@ -1940,6 +1960,7 @@ def protobuf_to_extern_import(pb_extern_import):
     if any(not rule.strip() for rule in rules):
         msg = "ExternImport rules item must not be empty"
         raise SerializationError(msg)
+    rules = _validate_extern_import_rule_identifiers(rules)
     return _apply_node_metadata_from_protobuf(
         pb_extern_import,
         ExternImport(
@@ -1956,9 +1977,11 @@ def protobuf_to_extern_namespace(pb_namespace):
     return _apply_node_metadata_from_protobuf(
         pb_namespace,
         ExternNamespace(
-            name=_protobuf_required_nonempty_string(
-                pb_namespace.name,
-                "ExternNamespace name",
+            name=_validate_namespace_identifier_text(
+                _protobuf_required_nonempty_string(
+                    pb_namespace.name,
+                    "ExternNamespace name",
+                )
             ),
             extern_rules=[
                 protobuf_to_extern_rule(pb_rule) for pb_rule in pb_namespace.extern_rules

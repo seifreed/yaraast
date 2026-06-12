@@ -551,11 +551,24 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
                 }
             )
 
+    with pytest.raises(SerializationError, match="Invalid extern rule identifier"):
+        deserialize_node(
+            {
+                "type": "ExternImport",
+                "module_path": "external",
+                "alias": None,
+                "rules": ["bad-name"],
+            }
+        )
+
     with pytest.raises(SerializationError, match="ExternRule name must be a string"):
         deserialize_extern_rule({"name": ["RuleA"]})
 
     with pytest.raises(SerializationError, match="ExternRule name must not be empty"):
         deserialize_extern_rule({"name": ""})
+
+    with pytest.raises(SerializationError, match="Invalid extern rule identifier"):
+        deserialize_extern_rule({"name": "bad-name", "modifiers": [], "namespace": None})
 
     with pytest.raises(SerializationError, match="ExternRule namespace must be a string"):
         deserialize_extern_rule({"name": "RuleA", "namespace": True})
@@ -566,11 +579,43 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternRule namespace must not be empty"):
         deserialize_extern_rule({"name": "RuleA", "namespace": ""})
 
+    with pytest.raises(SerializationError, match="Invalid namespace identifier"):
+        deserialize_extern_rule({"name": "RuleA", "modifiers": [], "namespace": "bad-name"})
+
     with pytest.raises(SerializationError, match="ExternNamespace name must be a string"):
         deserialize_node({"type": "ExternNamespace", "name": ["ns"]})
 
     with pytest.raises(SerializationError, match="ExternNamespace name must not be empty"):
         deserialize_node({"type": "ExternNamespace", "name": ""})
+
+    with pytest.raises(SerializationError, match="Invalid namespace identifier"):
+        deserialize_node({"type": "ExternNamespace", "name": "bad-name", "extern_rules": []})
+
+    with pytest.raises(SerializationError, match="Duplicate extern rule identifier"):
+        deserialize_node(
+            _serialized_simple_yarafile(
+                extern_rules=[
+                    {"name": "RemoteRule", "modifiers": [], "namespace": None},
+                    {"name": "RemoteRule", "modifiers": [], "namespace": None},
+                ]
+            )
+        )
+
+    with pytest.raises(SerializationError, match="Duplicate extern rule identifier"):
+        deserialize_node(
+            _serialized_simple_yarafile(
+                namespaces=[
+                    {
+                        "type": "ExternNamespace",
+                        "name": "corp",
+                        "extern_rules": [
+                            {"name": "RemoteRule", "modifiers": [], "namespace": None},
+                            {"name": "RemoteRule", "modifiers": [], "namespace": None},
+                        ],
+                    }
+                ]
+            )
+        )
 
     with pytest.raises(SerializationError, match="ExternRuleReference rule_name must be a string"):
         deserialize_node({"type": "ExternRuleReference", "rule_name": ["RuleA"]})
@@ -2064,8 +2109,10 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
         (Rule("bad-name", condition=BooleanLiteral(True)), "Invalid rule identifier"),
         (ExternRule(""), "ExternRule name must not be empty"),
         (ExternRule(cast(Any, 123)), "ExternRule name must be a string"),
+        (ExternRule("bad-name"), "Invalid extern rule identifier"),
         (ExternRule("remote", namespace=""), "ExternRule namespace must not be empty"),
         (ExternRule("remote", namespace=cast(Any, 123)), "ExternRule namespace must be a string"),
+        (ExternRule("remote", namespace="bad-name"), "Invalid namespace identifier"),
         (
             ExternRuleReference(""),
             "ExternRuleReference rule_name must not be empty",
@@ -2100,8 +2147,28 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
             ExternImport("external", rules=cast(Any, "RemoteRule")),
             "ExternImport rules must be a list of strings",
         ),
+        (
+            ExternImport("external", rules=["bad-name"]),
+            "Invalid extern rule identifier",
+        ),
         (ExternNamespace(""), "ExternNamespace name must not be empty"),
         (ExternNamespace(cast(Any, 123)), "ExternNamespace name must be a string"),
+        (ExternNamespace("bad-name"), "Invalid namespace identifier"),
+        (
+            YaraFile(extern_rules=[ExternRule("RemoteRule"), ExternRule("RemoteRule")]),
+            "Duplicate extern rule identifier",
+        ),
+        (
+            YaraFile(
+                namespaces=[
+                    ExternNamespace(
+                        "corp",
+                        extern_rules=[ExternRule("RemoteRule"), ExternRule("RemoteRule")],
+                    )
+                ],
+            ),
+            "Duplicate extern rule identifier",
+        ),
     )
 
     for node, message in invalid_cases:

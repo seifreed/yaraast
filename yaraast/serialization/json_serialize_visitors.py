@@ -16,6 +16,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_text,
     _validate_loop_variable_text,
     _validate_string_reference_text,
+    _validate_unique_extern_rule_identifiers,
     _validate_unique_rule_identifiers,
     _validate_unique_rule_tags,
     _validate_yara_identifier_text,
@@ -530,6 +531,7 @@ def visit_yara_file(serializer, node) -> dict[str, Any]:
         "YaraFile namespaces",
         ExternNamespace,
     )
+    _validate_unique_extern_rule_identifiers(node.rules, node.extern_rules, node.namespaces)
 
     result: dict[str, Any] = {
         "type": "YaraFile",

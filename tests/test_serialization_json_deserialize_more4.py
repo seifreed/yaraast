@@ -401,11 +401,19 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
                 {"module_path": "external", "alias": None, "rules": [rule_name]}
             )
 
+    with pytest.raises(SerializationError, match="Invalid extern rule identifier"):
+        s._deserialize_extern_import(
+            {"module_path": "external", "alias": None, "rules": ["bad-name"]}
+        )
+
     with pytest.raises(SerializationError, match="ExternRule name must be a string"):
         s._deserialize_extern_rule({"name": ["RuleA"]})
 
     with pytest.raises(SerializationError, match="ExternRule name must not be empty"):
         s._deserialize_extern_rule({"name": ""})
+
+    with pytest.raises(SerializationError, match="Invalid extern rule identifier"):
+        s._deserialize_extern_rule({"name": "bad-name", "modifiers": [], "namespace": None})
 
     with pytest.raises(SerializationError, match="ExternRule namespace must be a string"):
         s._deserialize_extern_rule({"name": "RuleA", "namespace": True})
@@ -416,11 +424,42 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternRule namespace must not be empty"):
         s._deserialize_extern_rule({"name": "RuleA", "namespace": ""})
 
+    with pytest.raises(SerializationError, match="Invalid namespace identifier"):
+        s._deserialize_extern_rule({"name": "RuleA", "modifiers": [], "namespace": "bad-name"})
+
     with pytest.raises(SerializationError, match="ExternNamespace name must be a string"):
         s._deserialize_extern_namespace({"name": ["ns"]})
 
     with pytest.raises(SerializationError, match="ExternNamespace name must not be empty"):
         s._deserialize_extern_namespace({"name": ""})
+
+    with pytest.raises(SerializationError, match="Invalid namespace identifier"):
+        s._deserialize_extern_namespace({"name": "bad-name", "extern_rules": []})
+
+    with pytest.raises(SerializationError, match="Duplicate extern rule identifier"):
+        s._deserialize_ast(
+            _serialized_json_yarafile(
+                extern_rules=[
+                    {"name": "RemoteRule", "modifiers": [], "namespace": None},
+                    {"name": "RemoteRule", "modifiers": [], "namespace": None},
+                ]
+            )
+        )
+
+    with pytest.raises(SerializationError, match="Duplicate extern rule identifier"):
+        s._deserialize_ast(
+            _serialized_json_yarafile(
+                namespaces=[
+                    {
+                        "name": "corp",
+                        "extern_rules": [
+                            {"name": "RemoteRule", "modifiers": [], "namespace": None},
+                            {"name": "RemoteRule", "modifiers": [], "namespace": None},
+                        ],
+                    }
+                ]
+            )
+        )
 
     with pytest.raises(SerializationError, match="ExternRuleReference rule_name must be a string"):
         s._deserialize_expression({"type": "ExternRuleReference", "rule_name": ["RuleA"]})

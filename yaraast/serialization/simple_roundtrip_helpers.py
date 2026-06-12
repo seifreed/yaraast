@@ -97,11 +97,16 @@ from yaraast.serialization._serialization_primitives import (
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
     _serialize_modifier_value,
+    _validate_extern_import_rule_identifiers,
+    _validate_extern_rule_identifier_text,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_location_metadata,
     _validate_loop_variable_text,
+    _validate_namespace_identifier_text,
+    _validate_optional_namespace_identifier_text,
     _validate_string_reference_text,
+    _validate_unique_extern_rule_identifiers,
     _validate_unique_rule_identifiers,
     _validate_unique_rule_tags,
     _validate_yara_identifier_text,
@@ -1199,7 +1204,9 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         if alias is not None and not alias.strip():
             msg = "ExternImport alias must not be empty"
             raise SerializationError(msg)
-        rules = _serialize_nonempty_string_list(node.rules, "ExternImport rules")
+        rules = _validate_extern_import_rule_identifiers(
+            _serialize_nonempty_string_list(node.rules, "ExternImport rules")
+        )
         if any(not rule.strip() for rule in rules):
             msg = "ExternImport rules must contain non-empty strings"
             raise SerializationError(msg)
@@ -1217,7 +1224,9 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         )
         return {
             "type": "ExternNamespace",
-            "name": _serialize_required_nonempty_string(node.name, "ExternNamespace name"),
+            "name": _validate_namespace_identifier_text(
+                _serialize_required_nonempty_string(node.name, "ExternNamespace name")
+            ),
             "extern_rules": [serialize_extern_rule(rule) for rule in extern_rules],
         }
     if isinstance(node, InRulePragma):
@@ -1640,15 +1649,23 @@ def serialize_yarafile(yf: YaraFile) -> dict[str, Any]:
         "YaraFile namespaces",
         ExternNamespace,
     )
+    serialized_imports = [serialize_node(imp) for imp in imports]
+    serialized_includes = [serialize_node(inc) for inc in includes]
+    serialized_rules = [serialize_node(rule) for rule in rules]
+    serialized_extern_rules = [serialize_extern_rule(rule) for rule in extern_rules]
+    serialized_extern_imports = [serialize_node(imp) for imp in extern_imports]
+    serialized_pragmas = [serialize_pragma(pragma) for pragma in pragmas]
+    serialized_namespaces = [serialize_node(namespace) for namespace in namespaces]
+    _validate_unique_extern_rule_identifiers(rules, extern_rules, namespaces)
     data = {
         "type": "YaraFile",
-        "imports": [serialize_node(imp) for imp in imports],
-        "includes": [serialize_node(inc) for inc in includes],
-        "rules": [serialize_node(rule) for rule in rules],
-        "extern_rules": [serialize_extern_rule(rule) for rule in extern_rules],
-        "extern_imports": [serialize_node(imp) for imp in extern_imports],
-        "pragmas": [serialize_pragma(pragma) for pragma in pragmas],
-        "namespaces": [serialize_node(namespace) for namespace in namespaces],
+        "imports": serialized_imports,
+        "includes": serialized_includes,
+        "rules": serialized_rules,
+        "extern_rules": serialized_extern_rules,
+        "extern_imports": serialized_extern_imports,
+        "pragmas": serialized_pragmas,
+        "namespaces": serialized_namespaces,
     }
     return data
 
@@ -1684,11 +1701,15 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
 def serialize_extern_rule(extern_rule: ExternRule) -> dict[str, Any]:
     data = {
         "type": "ExternRule",
-        "name": _serialize_required_nonempty_string(extern_rule.name, "ExternRule name"),
+        "name": _validate_extern_rule_identifier_text(
+            _serialize_required_nonempty_string(extern_rule.name, "ExternRule name")
+        ),
         "modifiers": _serialize_rule_modifiers(extern_rule.modifiers, "ExternRule"),
-        "namespace": _serialize_nullable_nonempty_string(
-            extern_rule.namespace,
-            "ExternRule namespace",
+        "namespace": _validate_optional_namespace_identifier_text(
+            _serialize_nullable_nonempty_string(
+                extern_rule.namespace,
+                "ExternRule namespace",
+            )
         ),
     }
     return _with_node_metadata(extern_rule, data)
@@ -1985,13 +2006,16 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         if any(not rule.strip() for rule in rules):
             msg = "ExternImport rules must contain non-empty strings"
             raise SerializationError(msg)
+        rules = _validate_extern_import_rule_identifiers(rules)
         return ExternImport(
             module_path=module_path,
             alias=alias,
             rules=rules,
         )
     if node_type == "ExternNamespace":
-        name = _deserialize_nonempty_string_field(data, "name", "ExternNamespace")
+        name = _validate_namespace_identifier_text(
+            _deserialize_nonempty_string_field(data, "name", "ExternNamespace")
+        )
         raw_extern_rules = _deserialize_required_field(
             data,
             "extern_rules",
@@ -2461,6 +2485,7 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
         )
         for namespace in _deserialize_required_list_field(data, "namespaces", "YaraFile")
     ]
+    _validate_unique_extern_rule_identifiers(yf.rules, yf.extern_rules, yf.namespaces)
     return yf
 
 
@@ -2519,13 +2544,19 @@ def _deserialize_rule_modifiers(modifiers: list[Any], context: str) -> list[Any]
 def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
     return _apply_node_metadata(
         ExternRule(
-            name=_deserialize_nonempty_string_field(data, "name", "ExternRule"),
+            name=_validate_extern_rule_identifier_text(
+                _deserialize_nonempty_string_field(data, "name", "ExternRule")
+            ),
             modifiers=_deserialize_rule_modifiers(
                 _deserialize_nonempty_string_list_field(data, "modifiers", "ExternRule"),
                 "ExternRule",
             ),
-            namespace=_deserialize_required_nullable_nonempty_string_field(
-                data, "namespace", "ExternRule"
+            namespace=_validate_optional_namespace_identifier_text(
+                _deserialize_required_nullable_nonempty_string_field(
+                    data,
+                    "namespace",
+                    "ExternRule",
+                )
             ),
         ),
         data,

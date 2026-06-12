@@ -11,8 +11,13 @@ from yaraast.ast.base import ASTNode, Location
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
+    _validate_extern_import_rule_identifiers,
+    _validate_extern_rule_identifier_text,
     _validate_location_metadata,
+    _validate_namespace_identifier_text,
+    _validate_optional_namespace_identifier_text,
     _validate_string_reference_text,
+    _validate_unique_extern_rule_identifiers,
     _validate_unique_rule_identifiers,
     _validate_yara_identifier_text,
 )
@@ -305,6 +310,11 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             self._deserialize_extern_namespace(namespace)
             for namespace in _deserialize_required_list_field(ast_data, "namespaces", "YaraFile")
         ]
+        _validate_unique_extern_rule_identifiers(
+            rules,
+            kwargs["extern_rules"],
+            kwargs["namespaces"],
+        )
         return self._apply_node_metadata(YaraFile(**kwargs), ast_data)
 
     def _simple_node(self, type_name: str, **fields: Any) -> dict[str, Any]:
@@ -600,7 +610,9 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         if alias is not None and not alias.strip():
             msg = "ExternImport alias must not be empty"
             raise SerializationError(msg)
-        rules = _serialize_nonempty_string_list(node.rules, "ExternImport rules")
+        rules = _validate_extern_import_rule_identifiers(
+            _serialize_nonempty_string_list(node.rules, "ExternImport rules")
+        )
         if any(not rule.strip() for rule in rules):
             msg = "ExternImport rules must contain non-empty strings"
             raise SerializationError(msg)
@@ -616,7 +628,9 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
 
         return self._simple_node(
             "ExternNamespace",
-            name=_serialize_required_nonempty_string(node.name, "ExternNamespace name"),
+            name=_validate_namespace_identifier_text(
+                _serialize_required_nonempty_string(node.name, "ExternNamespace name")
+            ),
             extern_rules=_serialize_node_list(
                 self,
                 node.extern_rules,
@@ -628,11 +642,15 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_extern_rule(self, node) -> dict[str, Any]:
         return {
             "type": "ExternRule",
-            "name": _serialize_required_nonempty_string(node.name, "ExternRule name"),
+            "name": _validate_extern_rule_identifier_text(
+                _serialize_required_nonempty_string(node.name, "ExternRule name")
+            ),
             "modifiers": _serialize_rule_modifiers(node.modifiers, "ExternRule"),
-            "namespace": _serialize_nullable_nonempty_string(
-                node.namespace,
-                "ExternRule namespace",
+            "namespace": _validate_optional_namespace_identifier_text(
+                _serialize_nullable_nonempty_string(
+                    node.namespace,
+                    "ExternRule namespace",
+                )
             ),
         }
 

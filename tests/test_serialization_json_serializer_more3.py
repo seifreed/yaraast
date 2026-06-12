@@ -1183,8 +1183,16 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
             "ExternImport rules must be a list of strings",
         ),
         (
+            YaraFile(extern_imports=[ExternImport("external", rules=["bad-name"])]),
+            "Invalid extern rule identifier",
+        ),
+        (
             YaraFile(extern_rules=[ExternRule("")]),
             "ExternRule name must not be empty",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("bad-name")]),
+            "Invalid extern rule identifier",
         ),
         (
             YaraFile(extern_rules=[ExternRule(invalid_text)]),
@@ -1197,6 +1205,10 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
         (
             YaraFile(extern_rules=[ExternRule("external_rule", namespace=invalid_text)]),
             "ExternRule namespace must be a string",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("external_rule", namespace="bad-name")]),
+            "Invalid namespace identifier",
         ),
         (
             YaraFile(extern_rules=[invalid_extern_rule_modifier_list]),
@@ -1219,12 +1231,38 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
             "ExternNamespace name must not be empty",
         ),
         (
+            YaraFile(namespaces=[ExternNamespace("bad-name")]),
+            "Invalid namespace identifier",
+        ),
+        (
             YaraFile(namespaces=[invalid_namespace_rules_list]),
             "ExternNamespace extern_rules must be a list",
         ),
         (
             YaraFile(namespaces=[invalid_namespace_rules_item]),
             "ExternNamespace extern_rules item must be",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("ExternalRule"), ExternRule("ExternalRule")]),
+            "Duplicate extern rule identifier",
+        ),
+        (
+            YaraFile(
+                rules=[Rule("ExternalRule", condition=BooleanLiteral(True))],
+                extern_rules=[ExternRule("ExternalRule")],
+            ),
+            "Duplicate rule identifier",
+        ),
+        (
+            YaraFile(
+                namespaces=[
+                    ExternNamespace(
+                        "corp",
+                        extern_rules=[ExternRule("Remote"), ExternRule("Remote")],
+                    )
+                ],
+            ),
+            "Duplicate extern rule identifier",
         ),
     ]
 

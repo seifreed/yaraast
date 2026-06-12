@@ -1594,6 +1594,31 @@ def test_protobuf_serializer_rejects_unknown_pragma_type() -> None:
             YaraFile(namespaces=[ExternNamespace("")]),
             "ExternNamespace name must not be empty",
         ),
+        (YaraFile(extern_rules=[ExternRule("bad-name")]), "Invalid extern rule identifier"),
+        (
+            YaraFile(extern_rules=[ExternRule("ExternalRule", namespace="bad-name")]),
+            "Invalid namespace identifier",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("external", rules=["bad-name"])]),
+            "Invalid extern rule identifier",
+        ),
+        (YaraFile(namespaces=[ExternNamespace("bad-name")]), "Invalid namespace identifier"),
+        (
+            YaraFile(extern_rules=[ExternRule("ExternalRule"), ExternRule("ExternalRule")]),
+            "Duplicate extern rule identifier",
+        ),
+        (
+            YaraFile(
+                namespaces=[
+                    ExternNamespace(
+                        "corp",
+                        extern_rules=[ExternRule("ExternalRule"), ExternRule("ExternalRule")],
+                    )
+                ],
+            ),
+            "Duplicate extern rule identifier",
+        ),
     ],
 )
 def test_protobuf_serializer_rejects_empty_top_level_identifier_fields(
@@ -1624,9 +1649,15 @@ def test_protobuf_serializer_rejects_empty_top_level_identifier_fields(
         ("string", "PlainString identifier must not be empty"),
         ("string_whitespace", "PlainString identifier must not be empty"),
         ("extern_rule", "ExternRule name must not be empty"),
+        ("extern_rule_invalid", "Invalid extern rule identifier"),
+        ("extern_rule_namespace_invalid", "Invalid namespace identifier"),
+        ("extern_rule_duplicate", "Duplicate extern rule identifier"),
         ("extern_import", "ExternImport module_path must not be empty"),
         ("extern_import_whitespace", "ExternImport module_path must not be empty"),
+        ("extern_import_rule_invalid", "Invalid extern rule identifier"),
         ("namespace", "ExternNamespace name must not be empty"),
+        ("namespace_invalid", "Invalid namespace identifier"),
+        ("namespace_extern_duplicate", "Duplicate extern rule identifier"),
     ],
 )
 def test_protobuf_deserializer_rejects_empty_top_level_identifier_fields(
@@ -1695,12 +1726,32 @@ def test_protobuf_deserializer_rejects_empty_top_level_identifier_fields(
         pb_string.plain.value = "abc"
     elif payload_kind == "extern_rule":
         pb_file.extern_rules.add()
+    elif payload_kind == "extern_rule_invalid":
+        pb_file.extern_rules.add().name = "bad-name"
+    elif payload_kind == "extern_rule_namespace_invalid":
+        pb_extern_rule = pb_file.extern_rules.add()
+        pb_extern_rule.name = "ExternalRule"
+        pb_extern_rule.namespace = "bad-name"
+    elif payload_kind == "extern_rule_duplicate":
+        pb_file.extern_rules.add().name = "ExternalRule"
+        pb_file.extern_rules.add().name = "ExternalRule"
     elif payload_kind == "extern_import":
         pb_file.extern_imports.add()
     elif payload_kind == "extern_import_whitespace":
         pb_file.extern_imports.add().module_path = "   "
+    elif payload_kind == "extern_import_rule_invalid":
+        pb_import = pb_file.extern_imports.add()
+        pb_import.module_path = "external"
+        pb_import.rules.append("bad-name")
     elif payload_kind == "namespace":
         pb_file.namespaces.add()
+    elif payload_kind == "namespace_invalid":
+        pb_file.namespaces.add().name = "bad-name"
+    elif payload_kind == "namespace_extern_duplicate":
+        pb_namespace = pb_file.namespaces.add()
+        pb_namespace.name = "corp"
+        pb_namespace.extern_rules.add().name = "ExternalRule"
+        pb_namespace.extern_rules.add().name = "ExternalRule"
 
     with pytest.raises(SerializationError, match=message):
         serializer.deserialize(binary_data=pb_file.SerializeToString())

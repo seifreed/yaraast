@@ -30,9 +30,13 @@ from yaraast.serialization._serialization_primitives import (
     _deserialize_string_list_field,
     _is_negated_nibble_pattern,
     _normalize_rule_modifier_text,
+    _validate_extern_import_rule_identifiers,
+    _validate_extern_rule_identifier_text,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_loop_variable_text,
+    _validate_namespace_identifier_text,
+    _validate_optional_namespace_identifier_text,
     _validate_string_reference_text,
     _validate_unique_rule_tags,
     _validate_yara_identifier_text,
@@ -1502,6 +1506,7 @@ class JsonSerializerDeserializeMixin:
         if any(not rule.strip() for rule in rules):
             msg = "ExternImport rules must contain non-empty strings"
             raise SerializationError(msg)
+        rules = _validate_extern_import_rule_identifiers(rules)
         return self._apply_node_metadata(
             ExternImport(
                 module_path=module_path,
@@ -1517,7 +1522,9 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             ExternRule(
-                name=_deserialize_nonempty_string_field(data, "name", "ExternRule"),
+                name=_validate_extern_rule_identifier_text(
+                    _deserialize_nonempty_string_field(data, "name", "ExternRule")
+                ),
                 modifiers=Rule._normalize_modifiers(
                     [
                         _normalize_rule_modifier_text(modifier, "ExternRule")
@@ -1526,10 +1533,12 @@ class JsonSerializerDeserializeMixin:
                         )
                     ]
                 ),
-                namespace=_deserialize_required_nullable_nonempty_string_field(
-                    data,
-                    "namespace",
-                    "ExternRule",
+                namespace=_validate_optional_namespace_identifier_text(
+                    _deserialize_required_nullable_nonempty_string_field(
+                        data,
+                        "namespace",
+                        "ExternRule",
+                    )
                 ),
             ),
             data,
@@ -1538,7 +1547,9 @@ class JsonSerializerDeserializeMixin:
     def _deserialize_extern_namespace(self, data: dict[str, Any]):
         from yaraast.ast.extern import ExternNamespace
 
-        name = _deserialize_nonempty_string_field(data, "name", "ExternNamespace")
+        name = _validate_namespace_identifier_text(
+            _deserialize_nonempty_string_field(data, "name", "ExternNamespace")
+        )
         raw_extern_rules = _deserialize_required_field(
             data,
             "extern_rules",

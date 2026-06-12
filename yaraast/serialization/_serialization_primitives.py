@@ -14,7 +14,12 @@ from typing import Any
 
 from yaraast.ast.base import Location
 from yaraast.ast.modifiers import RuleModifier, require_rule_modifier_identifier
-from yaraast.codegen.generator_formatting import validate_yara_identifier
+from yaraast.codegen.generator_formatting import (
+    validate_extern_rule_identifiers,
+    validate_optional_namespace,
+    validate_yara_identifier,
+    validate_yara_identifier_path,
+)
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.shared.local_scope import local_name_variants, validate_local_identifier
 from yaraast.string_references import normalize_string_reference_id
@@ -92,6 +97,30 @@ def _validate_yara_identifier_text(value: str, kind: str) -> str:
         raise SerializationError(str(exc)) from exc
 
 
+def _validate_extern_rule_identifier_text(value: str) -> str:
+    return _validate_yara_identifier_text(value, "extern rule")
+
+
+def _validate_namespace_identifier_text(value: str) -> str:
+    try:
+        return validate_yara_identifier_path(value, "namespace")
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+
+
+def _validate_optional_namespace_identifier_text(value: str | None) -> str | None:
+    try:
+        return validate_optional_namespace(value)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+
+
+def _validate_extern_import_rule_identifiers(values: list[str]) -> list[str]:
+    for value in values:
+        _validate_extern_rule_identifier_text(value)
+    return values
+
+
 def _validate_unique_rule_identifiers(rules: list[Any] | tuple[Any, ...]) -> None:
     seen: set[str] = set()
     for rule in rules:
@@ -103,6 +132,17 @@ def _validate_unique_rule_identifiers(rules: list[Any] | tuple[Any, ...]) -> Non
             msg = f"Duplicate rule identifier '{name}' for libyara output"
             raise SerializationError(msg)
         seen.add(name)
+
+
+def _validate_unique_extern_rule_identifiers(
+    rules: list[Any] | tuple[Any, ...],
+    extern_rules: list[Any] | tuple[Any, ...],
+    namespaces: list[Any] | tuple[Any, ...],
+) -> None:
+    try:
+        validate_extern_rule_identifiers(rules, extern_rules, namespaces)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
 
 
 def _validate_unique_rule_tags(tags: list[Any] | tuple[Any, ...]) -> None:
