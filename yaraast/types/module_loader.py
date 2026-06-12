@@ -17,6 +17,32 @@ class ModuleSpecError(ValueError):
     """Raised when a module specification file cannot be loaded."""
 
 
+def _path_access_error(path: Path) -> ModuleSpecError:
+    msg = f"path could not be accessed: {path}"
+    return ModuleSpecError(msg)
+
+
+def _path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_is_file(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
 def _normalize_module_name(name: object) -> str:
     if not isinstance(name, str) or not name.strip():
         raise ValueError("Module name must be a non-empty string")
@@ -124,15 +150,15 @@ class ModuleLoader:
         # Default location (only if not in exclusive mode)
         if not exclusive_mode:
             default_path = Path(__file__).parent / "modules"
-            if default_path.exists() and str(default_path) not in module_paths:
+            if _path_exists(default_path) and str(default_path) not in module_paths:
                 module_paths.append(str(default_path))
 
         # Load modules from all paths
         for path_str in module_paths:
             path = Path(path_str)
-            if path.is_file() and path.suffix == ".json":
+            if _path_is_file(path) and path.suffix == ".json":
                 self._load_module_file(path)
-            elif path.is_dir():
+            elif _path_is_dir(path):
                 for json_file in path.glob("*.json"):
                     self._load_module_file(json_file)
             else:

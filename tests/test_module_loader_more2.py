@@ -102,6 +102,20 @@ def test_module_loader_rejects_missing_env_spec_paths(
     "env_name",
     ["YARAAST_MODULE_SPEC_PATH", "YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"],
 )
+def test_module_loader_rejects_inaccessible_env_spec_paths(
+    monkeypatch: pytest.MonkeyPatch,
+    env_name: str,
+) -> None:
+    monkeypatch.setenv(env_name, "a" * 5000)
+
+    with pytest.raises(ModuleSpecError, match="path could not be accessed"):
+        ModuleLoader()
+
+
+@pytest.mark.parametrize(
+    "env_name",
+    ["YARAAST_MODULE_SPEC_PATH", "YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"],
+)
 def test_module_loader_rejects_non_json_env_spec_files(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
