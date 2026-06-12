@@ -8,7 +8,7 @@ import pytest
 from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import Identifier, SetExpression
 from yaraast.lsp.authoring import AuthoringActions
-from yaraast.lsp.authoring_rewriters import OfThemTransformer
+from yaraast.lsp.authoring_rewriters import OfThemTransformer, StringReferenceRewriter
 from yaraast.lsp.code_actions import CodeActionsProvider
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
@@ -298,6 +298,23 @@ rule demo {
     edit = _first_edit(action)
     assert '$b = "abc"' not in edit.new_text
     assert "$a or $a" in edit.new_text
+
+
+def test_string_reference_rewriter_updates_identifier_string_references() -> None:
+    rewriter = StringReferenceRewriter({"$b": "$a"})
+
+    direct = rewriter.visit_of_expression(OfExpression("any", Identifier("$b")))
+    in_set = rewriter.visit_of_expression(
+        OfExpression("any", SetExpression([Identifier("$b"), Identifier("rule_b")]))
+    )
+
+    assert isinstance(direct.string_set, Identifier)
+    assert direct.string_set.name == "$a"
+    assert isinstance(in_set.string_set, SetExpression)
+    rewritten_elements = in_set.string_set.elements
+    assert all(isinstance(element, Identifier) for element in rewritten_elements)
+    identifier_elements = cast(list[Identifier], rewritten_elements)
+    assert [element.name for element in identifier_elements] == ["$a", "rule_b"]
 
 
 def test_deduplicate_identical_strings_hidden_for_string_set_quantifiers() -> None:

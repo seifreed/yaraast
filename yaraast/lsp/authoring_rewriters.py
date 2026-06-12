@@ -36,6 +36,12 @@ class StringReferenceRewriter(ASTTransformer):
             return string_id
         return replacement.removeprefix("$")
 
+    def visit_identifier(self, node: Identifier) -> Any:
+        node = self._transform_node(node)
+        if node.name.startswith("$"):
+            node.name = self._replace_id(node.name)
+        return node
+
     def visit_string_identifier(self, node: StringIdentifier) -> Any:
         node = self._transform_node(node)
         node.name = self._replace_id(node.name)
