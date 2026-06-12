@@ -951,6 +951,31 @@ class TestTypeEnvironment:
         assert env.anonymous_strings == set()
         assert env.rules == {"rule1"}
 
+    @pytest.mark.parametrize("variable_name", ["bad-name", "for", "1bad"])
+    def test_type_environment_rejects_invalid_variable_names_without_partial_update(
+        self,
+        variable_name: str,
+    ) -> None:
+        env = TypeEnvironment()
+        env.define("x", IntegerType())
+
+        with pytest.raises(ValueError, match="Invalid variable identifier"):
+            env.define(variable_name, IntegerType())
+
+        assert list(env.scopes[0]) == ["x"]
+        assert isinstance(env.lookup("x"), IntegerType)
+
+    @pytest.mark.parametrize("variable_name", ["as", "include", "$"])
+    def test_type_environment_accepts_contextual_and_anonymous_local_variables(
+        self,
+        variable_name: str,
+    ) -> None:
+        env = TypeEnvironment()
+
+        env.define(variable_name, IntegerType())
+
+        assert isinstance(env.lookup(variable_name), IntegerType)
+
     @pytest.mark.parametrize("pattern", ["bad-name*", "1bad*", "for*"])
     def test_type_environment_has_rule_pattern_rejects_invalid_prefixes(
         self,

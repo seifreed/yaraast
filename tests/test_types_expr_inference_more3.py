@@ -128,7 +128,7 @@ def test_expr_inference_rejects_invalid_identifier_names_before_environment_look
 ) -> None:
     env = TypeEnvironment()
     if name:
-        env.define(name, IntegerType())
+        env.scopes[-1][name] = IntegerType()
     inf = ExpressionTypeInference(env)
 
     out = inf.infer(Identifier(name))
@@ -239,7 +239,7 @@ def test_expr_inference_treats_boolean_keyword_identifiers_as_booleans(name: str
 def test_expr_inference_rejects_invalid_string_identifiers_before_lookup(name: Any) -> None:
     env = TypeEnvironment()
     if isinstance(name, str) and name:
-        env.define(name, StringIdentifierType())
+        env.scopes[-1][name] = StringIdentifierType()
     inf = ExpressionTypeInference(env)
 
     out = inf.infer(StringIdentifier(name))

@@ -39,7 +39,9 @@ def _normalize_concrete_string_id(
 
 def _normalize_identifier(value: str, field_name: str, kind: str) -> str:
     value = _require_nonempty_string(value, field_name)
-    keyword_allowed = kind == "loop variable" and value in _YARA_CONTEXTUAL_LOCAL_KEYWORDS
+    keyword_allowed = (
+        kind in {"loop variable", "variable"} and value in _YARA_CONTEXTUAL_LOCAL_KEYWORDS
+    )
     if (
         len(value) <= YARA_IDENTIFIER_MAX_LENGTH
         and _YARA_IDENTIFIER_RE.fullmatch(value) is not None
@@ -56,6 +58,15 @@ def _normalize_rule_name(rule_name: str) -> str:
 
 def _normalize_rule_pattern_prefix(prefix: str) -> str:
     return _normalize_identifier(prefix, "TypeEnvironment rule pattern", "rule pattern")
+
+
+def _normalize_variable_name(name: str) -> str:
+    variable_name = _require_nonempty_string(name, "TypeEnvironment variable name")
+    if variable_name == "$":
+        return variable_name
+    if variable_name.startswith("$"):
+        return _normalize_concrete_string_id(variable_name, "TypeEnvironment variable name")
+    return _normalize_identifier(variable_name, "TypeEnvironment variable name", "variable")
 
 
 class TypeEnvironment:
@@ -77,7 +88,7 @@ class TypeEnvironment:
             self.scopes.pop()
 
     def define(self, name: str, type: YaraType) -> None:
-        variable_name = _require_nonempty_string(name, "TypeEnvironment variable name")
+        variable_name = _normalize_variable_name(name)
         if not isinstance(type, YaraType):
             msg = "TypeEnvironment type must be a YaraType"
             raise TypeError(msg)
