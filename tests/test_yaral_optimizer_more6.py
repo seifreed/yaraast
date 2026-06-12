@@ -19,6 +19,8 @@ from yaraast.yaral.ast_nodes import (
     JoinCondition,
     MatchSection,
     MatchVariable,
+    MetaEntry,
+    MetaSection,
     NOfCondition,
     NullCheckCondition,
     OptionsSection,
@@ -68,6 +70,11 @@ def test_optimizer_optimize_and_direct_visitors() -> None:
     assert len(optimized.rules) == 1
     assert isinstance(stats, OptimizationStats)
     assert "Optimizations:" in str(stats)
+
+    meta_entry = MetaEntry(key="author", value="analyst")
+    meta_section = MetaSection(entries=[meta_entry])
+    assert opt.visit_yaral_meta_entry(meta_entry) == meta_entry
+    assert opt.visit_yaral_meta_section(meta_section) == meta_section
 
     ev = EventVariable(name="$e")
     path = UDMFieldPath(parts=["principal", "ip"])

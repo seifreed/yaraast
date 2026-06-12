@@ -40,6 +40,8 @@ if TYPE_CHECKING:
         JoinCondition,
         MatchSection,
         MatchVariable,
+        MetaEntry,
+        MetaSection,
         NOfCondition,
         NullCheckCondition,
         OptionsSection,
@@ -138,6 +140,12 @@ class YaraLOptimizer(
             outcome=optimized_outcome,
             options=self._optimize_options(node.options),
         )
+
+    def visit_yaral_meta_section(self, node: MetaSection) -> MetaSection:
+        return node
+
+    def visit_yaral_meta_entry(self, node: MetaEntry) -> MetaEntry:
+        return node
 
     def visit_yaral_events_section(self, node: EventsSection) -> EventsSection:
         return self.visit_events_section(node)
