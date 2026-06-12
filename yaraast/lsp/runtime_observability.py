@@ -3,11 +3,45 @@
 from __future__ import annotations
 
 from collections import deque
+import math
 import time
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from yaraast.lsp.runtime import LspRuntime
+
+
+def _require_observability_text(value: object, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
+def _require_debounce_threshold(value: object) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        msg = "Debounce threshold must be an integer or None"
+        raise TypeError(msg)
+    if value < 0:
+        msg = "Debounce threshold must be non-negative"
+        raise ValueError(msg)
+    return value
+
+
+def _require_latency_duration(value: object) -> float:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        msg = "Latency duration must be numeric"
+        raise TypeError(msg)
+    duration = float(value)
+    if not math.isfinite(duration):
+        msg = "Latency duration must be finite"
+        raise ValueError(msg)
+    if duration < 0:
+        msg = "Latency duration must be non-negative"
+        raise ValueError(msg)
+    return duration
 
 
 def should_debounce(
@@ -17,7 +51,12 @@ def should_debounce(
     *,
     debounce_ms: int | None = None,
 ) -> bool:
-    threshold = runtime.config.diagnostics_debounce_ms if debounce_ms is None else debounce_ms
+    uri = _require_observability_text(uri, "Debounce URI")
+    task = _require_observability_text(task, "Debounce task")
+    explicit_threshold = _require_debounce_threshold(debounce_ms)
+    threshold = (
+        runtime.config.diagnostics_debounce_ms if explicit_threshold is None else explicit_threshold
+    )
     if threshold <= 0:
         return False
     key = (uri, task)
@@ -28,8 +67,10 @@ def should_debounce(
 
 
 def record_latency(runtime: LspRuntime, operation: str, duration_ms: float) -> None:
+    operation = _require_observability_text(operation, "Latency operation")
+    duration = _require_latency_duration(duration_ms)
     samples = runtime._latency.setdefault(operation, deque(maxlen=50))
-    samples.append(duration_ms)
+    samples.append(duration)
 
 
 def get_latency_metrics(runtime: LspRuntime) -> dict[str, dict[str, float]]:

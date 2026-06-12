@@ -173,6 +173,40 @@ def test_runtime_latency_metrics_and_debounce() -> None:
     assert cache_stats["document_analysis_entries"] == 0
 
 
+def test_runtime_rejects_invalid_latency_inputs() -> None:
+    runtime = LspRuntime()
+
+    with pytest.raises(TypeError, match="Latency operation must be a string"):
+        runtime.record_latency(cast(Any, object()), 1.0)
+    with pytest.raises(TypeError, match="Latency duration must be numeric"):
+        runtime.record_latency("diagnostics", cast(Any, object()))
+    with pytest.raises(TypeError, match="Latency duration must be numeric"):
+        runtime.record_latency("diagnostics", cast(Any, True))
+    with pytest.raises(ValueError, match="Latency duration must be finite"):
+        runtime.record_latency("diagnostics", float("nan"))
+    with pytest.raises(ValueError, match="Latency duration must be non-negative"):
+        runtime.record_latency("diagnostics", -1.0)
+
+    assert runtime.get_latency_metrics() == {}
+
+
+def test_runtime_rejects_invalid_debounce_inputs() -> None:
+    runtime = LspRuntime()
+
+    with pytest.raises(TypeError, match="Debounce URI must be a string"):
+        runtime.should_debounce(cast(Any, object()), "task")
+    with pytest.raises(TypeError, match="Debounce task must be a string"):
+        runtime.should_debounce("file:///sample.yar", cast(Any, object()))
+    with pytest.raises(TypeError, match="Debounce threshold must be an integer or None"):
+        runtime.should_debounce("file:///sample.yar", "task", debounce_ms=cast(Any, object()))
+    with pytest.raises(TypeError, match="Debounce threshold must be an integer or None"):
+        runtime.should_debounce("file:///sample.yar", "task", debounce_ms=cast(Any, True))
+    with pytest.raises(ValueError, match="Debounce threshold must be non-negative"):
+        runtime.should_debounce("file:///sample.yar", "task", debounce_ms=-1)
+
+    assert runtime.should_debounce("file:///sample.yar", "task", debounce_ms=0) is False
+
+
 def test_runtime_status_and_workspace_symbols_handle_dirty_open_document(tmp_path: Path) -> None:
     rule_file = tmp_path / "sample.yar"
     rule_file.write_text(
