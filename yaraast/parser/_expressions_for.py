@@ -254,6 +254,7 @@ class ExpressionForMixin:
         if self._is_bare_of_string_set_item(expr):
             msg = "Expected parenthesized string set item or 'them' in of string set"
             raise ParserError(msg, self._previous())
+        self._reject_nested_parenthesized_of_string_set(expr)
         kind = self._of_string_set_kind(expr, top_level=True)
         if kind is not None:
             return
@@ -264,6 +265,31 @@ class ExpressionForMixin:
         return isinstance(expr, StringIdentifier | StringWildcard) or (
             isinstance(expr, Identifier) and expr.name != "them"
         )
+
+    def _reject_nested_parenthesized_of_string_set(
+        self,
+        expr: Expression,
+        *,
+        top_level: bool = True,
+    ) -> None:
+        if isinstance(expr, ParenthesesExpression):
+            if not top_level or isinstance(
+                expr.expression,
+                ParenthesesExpression | SetExpression,
+            ):
+                msg = "Nested parenthesized of string set items are not valid"
+                raise ParserError(msg, self._previous())
+            self._reject_nested_parenthesized_of_string_set(
+                expr.expression,
+                top_level=False,
+            )
+            return
+        if isinstance(expr, SetExpression):
+            for element in expr.elements:
+                self._reject_nested_parenthesized_of_string_set(
+                    element,
+                    top_level=False,
+                )
 
     def _validate_for_of_string_set(self, expr: Expression) -> None:
         kind = self._of_string_set_kind(expr, top_level=True)

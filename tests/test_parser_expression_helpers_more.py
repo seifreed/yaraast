@@ -499,6 +499,33 @@ def test_classic_parsers_reject_bare_of_string_set_items(condition: str) -> None
             parser_factory().parse(source)
 
 
+@pytest.mark.parametrize(
+    "condition",
+    [
+        "any of (($a))",
+        "any of (($a, $b))",
+        "any of (($a), $b)",
+        "any of ($a, ($b))",
+        "any of ((helper))",
+        "any of ((helper, other))",
+        "any of ((helper), other)",
+        "for any of (($a)) : ($)",
+        "for any of (($a, $b)) : ($)",
+        "for any of (($a), $b) : ($)",
+    ],
+)
+def test_classic_parsers_reject_nested_parenthesized_of_string_sets(condition: str) -> None:
+    source = (
+        "rule helper { condition: true } "
+        "rule other { condition: true } "
+        f'rule r {{ strings: $a = "x" $b = "y" condition: {condition} }}'
+    )
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match="Nested parenthesized"):
+            parser_factory().parse(source)
+
+
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:
     p = _parser_with_tokens([_t(TokenType.INTEGER, 7)])
     assert isinstance(p._parse_primary_expression(), IntegerLiteral)
