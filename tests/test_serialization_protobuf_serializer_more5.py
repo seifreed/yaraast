@@ -1433,6 +1433,13 @@ def _custom_pragma_with_parameters(parameters: Any) -> CustomPragma:
             ConditionalDirective(PragmaType.IFDEF, condition=cast(Any, 123)),
             "Pragma condition must be a string",
         ),
+        (CustomPragma("bad-name"), "Invalid pragma identifier"),
+        (DefineDirective("bad-name"), "Invalid pragma macro identifier"),
+        (UndefDirective("bad-name"), "Invalid pragma macro identifier"),
+        (
+            ConditionalDirective(PragmaType.IFDEF, "bad-name"),
+            "Invalid pragma condition identifier",
+        ),
     ],
 )
 def test_protobuf_serializer_rejects_invalid_pragma_fields(
@@ -1443,6 +1450,35 @@ def test_protobuf_serializer_rejects_invalid_pragma_fields(
 
     with pytest.raises(SerializationError, match=message):
         serializer.serialize(YaraFile(pragmas=[pragma]))
+
+
+@pytest.mark.parametrize(
+    ("pragma_type", "field_name", "field_value", "message"),
+    [
+        ("custom", "name", "bad-name", "Invalid pragma identifier"),
+        ("define", "macro_name", "bad-name", "Invalid pragma macro identifier"),
+        ("undef", "macro_name", "bad-name", "Invalid pragma macro identifier"),
+        ("ifdef", "condition", "bad-name", "Invalid pragma condition identifier"),
+    ],
+)
+def test_protobuf_deserializer_rejects_invalid_pragma_identifiers(
+    pragma_type: str,
+    field_name: str,
+    field_value: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_pragma = pb_file.pragmas.add()
+    pb_pragma.pragma_type = pragma_type
+    pb_pragma.name = pragma_type
+    pb_pragma.scope = "file"
+    setattr(pb_pragma, field_name, field_value)
+    if pragma_type == "define":
+        pb_pragma.macro_value = "1"
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
 def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:

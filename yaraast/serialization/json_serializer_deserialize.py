@@ -1586,28 +1586,42 @@ class JsonSerializerDeserializeMixin:
         scope = _deserialize_pragma_scope(
             _deserialize_required_field(data, "scope", "Pragma"), "Pragma"
         )
-        name = _deserialize_nonempty_string_field(data, "name", "Pragma")
+        name = _validate_yara_identifier_text(
+            _deserialize_nonempty_string_field(data, "name", "Pragma"),
+            "pragma",
+        )
         arguments = _deserialize_required_string_list_field(data, "arguments", "Pragma")
 
         if pragma_type == PragmaType.INCLUDE_ONCE:
             pragma = IncludeOncePragma()
         elif pragma_type == PragmaType.DEFINE:
             pragma = DefineDirective(
-                macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma"),
+                macro_name=_validate_yara_identifier_text(
+                    _deserialize_nonempty_string_field(data, "macro_name", "Pragma"),
+                    "pragma macro",
+                ),
                 macro_value=_deserialize_required_nullable_string_field(
                     data, "macro_value", "Pragma"
                 ),
             )
         elif pragma_type == PragmaType.UNDEF:
             pragma = UndefDirective(
-                macro_name=_deserialize_nonempty_string_field(data, "macro_name", "Pragma")
+                macro_name=_validate_yara_identifier_text(
+                    _deserialize_nonempty_string_field(data, "macro_name", "Pragma"),
+                    "pragma macro",
+                )
             )
         elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
             condition = (
-                _deserialize_nonempty_string_field(data, "condition", "Pragma")
+                _validate_yara_identifier_text(
+                    _deserialize_nonempty_string_field(data, "condition", "Pragma"),
+                    "pragma condition",
+                )
                 if pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}
                 else _deserialize_nullable_nonempty_string_field(data, "condition", "Pragma")
             )
+            if pragma_type == PragmaType.ENDIF and condition is not None:
+                condition = _validate_yara_identifier_text(condition, "pragma condition")
             pragma = ConditionalDirective(
                 pragma_type,
                 condition=condition,

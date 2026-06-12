@@ -720,15 +720,21 @@ def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
 def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
     scope = getattr(pragma, "scope", None)
     pb_pragma.pragma_type = _protobuf_pragma_type(pragma)
-    pb_pragma.name = _protobuf_required_nonempty_string(pragma.name, "Pragma name")
+    pb_pragma.name = _validate_yara_identifier_text(
+        _protobuf_required_nonempty_string(pragma.name, "Pragma name"),
+        "pragma",
+    )
     pb_pragma.scope = serialize_pragma_scope(scope) if scope is not None else ""
 
     macro_name_value = getattr(pragma, "macro_name", None)
     macro_name = None
     if macro_name_value is not None:
-        macro_name = _protobuf_required_nonempty_string(
-            macro_name_value,
-            "Pragma macro_name",
+        macro_name = _validate_yara_identifier_text(
+            _protobuf_required_nonempty_string(
+                macro_name_value,
+                "Pragma macro_name",
+            ),
+            "pragma macro",
         )
         pb_pragma.macro_name = macro_name
     macro_value = _protobuf_optional_string(
@@ -739,7 +745,10 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
         pb_pragma.macro_value = macro_value
     condition_value = getattr(pragma, "condition", None)
     condition = (
-        _protobuf_required_nonempty_string(condition_value, "Pragma condition")
+        _validate_yara_identifier_text(
+            _protobuf_required_nonempty_string(condition_value, "Pragma condition"),
+            "pragma condition",
+        )
         if condition_value is not None
         else None
     )
@@ -2030,32 +2039,44 @@ def protobuf_to_pragma(pb_pragma):
         pragma = IncludeOncePragma()
     elif pragma_type == PragmaType.DEFINE:
         pragma = DefineDirective(
-            macro_name=_protobuf_required_nonempty_string(
-                pb_pragma.macro_name,
-                "Pragma macro_name",
+            macro_name=_validate_yara_identifier_text(
+                _protobuf_required_nonempty_string(
+                    pb_pragma.macro_name,
+                    "Pragma macro_name",
+                ),
+                "pragma macro",
             ),
             macro_value=pb_pragma.macro_value if pb_pragma.HasField("macro_value") else None,
         )
     elif pragma_type == PragmaType.UNDEF:
         pragma = UndefDirective(
-            macro_name=_protobuf_required_nonempty_string(
-                pb_pragma.macro_name,
-                "Pragma macro_name",
+            macro_name=_validate_yara_identifier_text(
+                _protobuf_required_nonempty_string(
+                    pb_pragma.macro_name,
+                    "Pragma macro_name",
+                ),
+                "pragma macro",
             )
         )
     elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}:
         pragma = ConditionalDirective(
             pragma_type,
-            condition=_protobuf_required_nonempty_string(
-                pb_pragma.condition if pb_pragma.HasField("condition") else "",
-                "Pragma condition",
+            condition=_validate_yara_identifier_text(
+                _protobuf_required_nonempty_string(
+                    pb_pragma.condition if pb_pragma.HasField("condition") else "",
+                    "Pragma condition",
+                ),
+                "pragma condition",
             ),
         )
     elif pragma_type == PragmaType.ENDIF:
         pragma = ConditionalDirective(pragma_type)
     elif pragma_type == PragmaType.CUSTOM:
         pragma = CustomPragma(
-            name=_protobuf_required_nonempty_string(pb_pragma.name, "Pragma name"),
+            name=_validate_yara_identifier_text(
+                _protobuf_required_nonempty_string(pb_pragma.name, "Pragma name"),
+                "pragma",
+            ),
             arguments=list(pb_pragma.arguments),
             parameters=parameters,
             scope=scope,
@@ -2063,7 +2084,10 @@ def protobuf_to_pragma(pb_pragma):
     else:
         pragma = Pragma(
             pragma_type=pragma_type,
-            name=_protobuf_required_nonempty_string(pb_pragma.name, "Pragma name"),
+            name=_validate_yara_identifier_text(
+                _protobuf_required_nonempty_string(pb_pragma.name, "Pragma name"),
+                "pragma",
+            ),
             arguments=list(pb_pragma.arguments),
             scope=scope,
         )

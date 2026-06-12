@@ -1345,6 +1345,10 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
             "Pragma name must not be empty",
         ),
         (
+            YaraFile(pragmas=[CustomPragma("bad-name")]),
+            "Invalid pragma identifier",
+        ),
+        (
             YaraFile(pragmas=[pragma_with_bad_type]),
             "Pragma pragma_type must be a string",
         ),
@@ -1393,8 +1397,16 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
             "Pragma macro_name must not be empty",
         ),
         (
+            YaraFile(pragmas=[DefineDirective("bad-name")]),
+            "Invalid pragma macro identifier",
+        ),
+        (
             YaraFile(pragmas=[UndefDirective("")]),
             "Pragma macro_name must not be empty",
+        ),
+        (
+            YaraFile(pragmas=[UndefDirective("bad-name")]),
+            "Invalid pragma macro identifier",
         ),
         (
             YaraFile(pragmas=[define_with_bad_macro_value]),
@@ -1407,6 +1419,10 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
         (
             YaraFile(pragmas=[ConditionalDirective(PragmaType.IFDEF, "")]),
             "Pragma condition must not be empty",
+        ),
+        (
+            YaraFile(pragmas=[ConditionalDirective(PragmaType.IFDEF, "bad-name")]),
+            "Invalid pragma condition identifier",
         ),
         (
             YaraFile(pragmas=[ConditionalDirective(PragmaType.IFDEF)]),

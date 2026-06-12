@@ -668,11 +668,23 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma name must not be empty"):
         serialize_pragma(Pragma(PragmaType.CUSTOM, ""))
 
+    with pytest.raises(SerializationError, match="Invalid pragma identifier"):
+        serialize_pragma(CustomPragma("bad-name"))
+
     with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
         serialize_pragma(DefineDirective(""))
 
+    with pytest.raises(SerializationError, match="Invalid pragma macro identifier"):
+        serialize_pragma(DefineDirective("bad-name"))
+
     with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
         serialize_pragma(UndefDirective(""))
+
+    with pytest.raises(SerializationError, match="Invalid pragma macro identifier"):
+        serialize_pragma(UndefDirective("bad-name"))
+
+    with pytest.raises(SerializationError, match="Invalid pragma condition identifier"):
+        serialize_pragma(ConditionalDirective(PragmaType.IFDEF, "bad-name"))
 
     for invalid_value in (invalid_arguments, invalid_argument_item):
         pragma_with_bad_arguments = Pragma(PragmaType.CUSTOM, "vendor")
@@ -787,6 +799,9 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma name must not be empty"):
         deserialize_node(_serialized_simple_pragma(name="   "))
 
+    with pytest.raises(SerializationError, match="Invalid pragma identifier"):
+        deserialize_node(_serialized_simple_pragma(name="bad-name"))
+
     with pytest.raises(SerializationError, match="Pragma arguments must be a list of strings"):
         deserialize_node(_serialized_simple_pragma(arguments="on"))
 
@@ -809,12 +824,22 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
             _serialized_simple_pragma(pragma_type="define", name="define", macro_name="")
         )
 
+    with pytest.raises(SerializationError, match="Invalid pragma macro identifier"):
+        deserialize_node(
+            _serialized_simple_pragma(pragma_type="define", name="define", macro_name="bad-name")
+        )
+
     with pytest.raises(SerializationError, match="Pragma macro_name is required"):
         deserialize_node(_serialized_simple_pragma(pragma_type="undef", name="undef"))
 
     with pytest.raises(SerializationError, match="Pragma macro_name must not be empty"):
         deserialize_node(
             _serialized_simple_pragma(pragma_type="undef", name="undef", macro_name="")
+        )
+
+    with pytest.raises(SerializationError, match="Invalid pragma macro identifier"):
+        deserialize_node(
+            _serialized_simple_pragma(pragma_type="undef", name="undef", macro_name="bad-name")
         )
 
     with pytest.raises(SerializationError, match="Pragma macro_value is required"):
@@ -843,6 +868,11 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma condition must not be empty"):
         deserialize_node(
             _serialized_simple_pragma(pragma_type="ifndef", name="ifndef", condition="")
+        )
+
+    with pytest.raises(SerializationError, match="Invalid pragma condition identifier"):
+        deserialize_node(
+            _serialized_simple_pragma(pragma_type="ifdef", name="ifdef", condition="bad-name")
         )
 
     with pytest.raises(SerializationError, match="Pragma condition is required"):

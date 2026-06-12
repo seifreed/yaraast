@@ -683,14 +683,20 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         data: dict[str, Any] = {
             "type": "Pragma",
             "pragma_type": _serialize_enum_value(node.pragma_type, "Pragma pragma_type"),
-            "name": _serialize_required_nonempty_string(node.name, "Pragma name"),
+            "name": _validate_yara_identifier_text(
+                _serialize_required_nonempty_string(node.name, "Pragma name"),
+                "pragma",
+            ),
             "arguments": _serialize_string_list(node.arguments, "Pragma arguments"),
             "scope": serialize_pragma_scope(node.scope),
         }
         if hasattr(node, "macro_name"):
-            data["macro_name"] = _serialize_required_nonempty_string(
-                node.macro_name,
-                "Pragma macro_name",
+            data["macro_name"] = _validate_yara_identifier_text(
+                _serialize_required_nonempty_string(
+                    node.macro_name,
+                    "Pragma macro_name",
+                ),
+                "pragma macro",
             )
         if hasattr(node, "macro_value"):
             data["macro_value"] = _serialize_nullable_string(
@@ -699,14 +705,22 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             )
         if hasattr(node, "condition"):
             if node.pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}:
-                data["condition"] = _serialize_required_nonempty_string(
+                data["condition"] = _validate_yara_identifier_text(
+                    _serialize_required_nonempty_string(
+                        node.condition,
+                        "Pragma condition",
+                    ),
+                    "pragma condition",
+                )
+            else:
+                condition = _serialize_nullable_nonempty_string(
                     node.condition,
                     "Pragma condition",
                 )
-            else:
-                data["condition"] = _serialize_nullable_nonempty_string(
-                    node.condition,
-                    "Pragma condition",
+                data["condition"] = (
+                    _validate_yara_identifier_text(condition, "pragma condition")
+                    if condition is not None
+                    else None
                 )
         if hasattr(node, "parameters"):
             data["parameters"] = _serialize_string_key_dict(
