@@ -35,7 +35,16 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaEntry
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
-from yaraast.ast.pragmas import IncludeOncePragma
+from yaraast.ast.pragmas import (
+    ConditionalDirective,
+    CustomPragma,
+    DefineDirective,
+    IncludeOncePragma,
+    InRulePragma,
+    Pragma,
+    PragmaType,
+    UndefDirective,
+)
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexAlternative,
@@ -459,6 +468,103 @@ def test_direct_yarafile_analysis_rejects_invalid_meta_entry_scope() -> None:
 
     with pytest.raises(TypeError, match="Meta scope must be a MetaScope"):
         ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("pragma", "message"),
+    [
+        (
+            Pragma(cast(Any, "bad"), "name"),
+            "Pragma type must be a PragmaType",
+        ),
+        (Pragma(PragmaType.CUSTOM, ""), "Pragma name cannot be empty"),
+        (
+            Pragma(PragmaType.CUSTOM, "vendor", arguments=cast(Any, "arg")),
+            "Pragma arguments must be a list of strings",
+        ),
+        (
+            Pragma(PragmaType.CUSTOM, "vendor", arguments=[cast(Any, 1)]),
+            "Pragma arguments must be a list of strings",
+        ),
+        (
+            Pragma(PragmaType.CUSTOM, "vendor", scope=cast(Any, "file")),
+            "Pragma scope must be a PragmaScope",
+        ),
+        (CustomPragma("", arguments=["x"]), "Pragma name cannot be empty"),
+        (
+            CustomPragma("vendor", parameters=cast(Any, [("key", "value")])),
+            "Pragma parameters must be a dictionary",
+        ),
+        (
+            CustomPragma("vendor", parameters={cast(Any, 1): "value"}),
+            "Pragma parameters keys must be strings",
+        ),
+        (
+            CustomPragma("vendor", parameters={"config": cast(Any, object())}),
+            "Pragma parameter value must be a string",
+        ),
+        (
+            CustomPragma("vendor", parameters={"score": float("nan")}),
+            "Pragma parameter value must be a string",
+        ),
+        (DefineDirective(""), "Pragma macro_name cannot be empty"),
+        (UndefDirective(""), "Pragma macro_name cannot be empty"),
+        (ConditionalDirective(PragmaType.IFDEF, ""), "Pragma condition cannot be empty"),
+        (ConditionalDirective(PragmaType.IFDEF), "Pragma condition must be a string"),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_pragma_fields(
+    pragma: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(pragmas=[pragma])
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("in_rule_pragma", "message"),
+    [
+        (
+            InRulePragma(cast(Any, object())),
+            "InRulePragma pragma must be a Pragma",
+        ),
+        (
+            InRulePragma(Pragma(PragmaType.CUSTOM, "vendor"), ""),
+            "InRulePragma position cannot be empty",
+        ),
+        (
+            InRulePragma(Pragma(PragmaType.CUSTOM, "vendor"), cast(Any, 123)),
+            "InRulePragma position must be a string",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_in_rule_pragmas(
+    in_rule_pragma: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(
+        rules=[
+            Rule(
+                "bad_in_rule_pragma",
+                pragmas=[in_rule_pragma],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+def test_direct_yarafile_analysis_rejects_invalid_pragma_block_fields() -> None:
+    from yaraast.ast.pragmas import PragmaBlock
+
+    block = PragmaBlock([Pragma(PragmaType.CUSTOM, "vendor")], scope=cast(Any, "file"))
+
+    with pytest.raises(TypeError, match="Pragma scope must be a PragmaScope"):
+        block.validate_structure()
 
 
 def test_yarafile_helpers() -> None:

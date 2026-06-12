@@ -200,6 +200,8 @@ class Rule(ASTNode):
                 validate_structure = getattr(meta, "validate_structure", None)
                 if callable(validate_structure):
                     validate_structure()
+        for pragma in self.pragmas:
+            pragma.validate_structure()
         for string in self.strings:
             validate_structure = getattr(string, "validate_structure", None)
             if callable(validate_structure):

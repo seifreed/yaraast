@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+import math
 from typing import Any
 
-from yaraast.ast.base import ASTNode, _VisitorType, require_string
+from yaraast.ast.base import ASTNode, _require_nonempty_string, _VisitorType, require_string
 
 
 def _normalize_arguments(arguments: list[str] | None) -> list[str]:
@@ -25,6 +26,26 @@ def _require_scope(scope: PragmaScope) -> PragmaScope:
         msg = "Pragma scope must be a PragmaScope"
         raise TypeError(msg)
     return scope
+
+
+def _validate_pragma_parameter_value(value: Any) -> None:
+    if isinstance(value, str | bool | int):
+        return
+    if isinstance(value, float) and math.isfinite(value):
+        return
+    msg = "Pragma parameter value must be a string, integer, boolean, or finite float"
+    raise TypeError(msg)
+
+
+def _validate_pragma_parameters(parameters: Any) -> None:
+    if not isinstance(parameters, dict):
+        msg = "Pragma parameters must be a dictionary"
+        raise TypeError(msg)
+    for key, value in parameters.items():
+        if not isinstance(key, str):
+            msg = "Pragma parameters keys must be strings"
+            raise TypeError(msg)
+        _validate_pragma_parameter_value(value)
 
 
 class PragmaType(Enum):
@@ -82,6 +103,13 @@ class Pragma(ASTNode):
     arguments: list[str] = field(default_factory=list)
     scope: PragmaScope = PragmaScope.FILE
 
+    def validate_structure(self) -> None:
+        """Validate pragma scalar fields before direct analysis."""
+        _require_pragma_type(self.pragma_type)
+        _require_nonempty_string(self.name, "Pragma name")
+        _normalize_arguments(self.arguments)
+        _require_scope(self.scope)
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_pragma(self)
 
@@ -135,6 +163,13 @@ class DefineDirective(Pragma):
         self.macro_name = macro_name
         self.macro_value = macro_value
 
+    def validate_structure(self) -> None:
+        """Validate define directive fields before direct analysis."""
+        super().validate_structure()
+        _require_nonempty_string(self.macro_name, "Pragma macro_name")
+        if self.macro_value is not None:
+            require_string(self.macro_value, "Pragma macro_value")
+
     def __str__(self) -> str:
         if self.macro_value:
             return f"#define {self.macro_name} {self.macro_value}"
@@ -155,6 +190,11 @@ class UndefDirective(Pragma):
         )
         self.macro_name = macro_name
 
+    def validate_structure(self) -> None:
+        """Validate undef directive fields before direct analysis."""
+        super().validate_structure()
+        _require_nonempty_string(self.macro_name, "Pragma macro_name")
+
     def __str__(self) -> str:
         return f"#undef {self.macro_name}"
 
@@ -170,6 +210,17 @@ class ConditionalDirective(Pragma):
         args = [condition] if condition else []
         super().__init__(pragma_type=pragma_type, name=name, arguments=args)
         self.condition = condition
+
+    def validate_structure(self) -> None:
+        """Validate conditional directive fields before direct analysis."""
+        super().validate_structure()
+        if self.pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF}:
+            if self.condition is None:
+                msg = "Pragma condition must be a string"
+                raise TypeError(msg)
+            _require_nonempty_string(self.condition, "Pragma condition")
+        elif self.condition is not None:
+            require_string(self.condition, "Pragma condition")
 
     @classmethod
     def ifdef(cls, condition: str) -> ConditionalDirective:
@@ -213,6 +264,11 @@ class CustomPragma(Pragma):
         )
         self.parameters = parameters or {}
 
+    def validate_structure(self) -> None:
+        """Validate custom pragma fields before direct analysis."""
+        super().validate_structure()
+        _validate_pragma_parameters(self.parameters)
+
     def get_parameter(self, key: str, default: Any = None) -> Any:
         """Get a parameter value by key."""
         return self.parameters.get(require_string(key, "Pragma parameter key"), default)
@@ -232,6 +288,14 @@ class InRulePragma(ASTNode):
 
     pragma: Pragma
     position: str = "before_strings"  # "before_strings", "after_strings", "before_condition"
+
+    def validate_structure(self) -> None:
+        """Validate nested pragma and position before direct analysis."""
+        if not isinstance(self.pragma, Pragma):
+            msg = "InRulePragma pragma must be a Pragma"
+            raise TypeError(msg)
+        self.pragma.validate_structure()
+        _require_nonempty_string(self.position, "InRulePragma position")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_in_rule_pragma(self)
@@ -261,6 +325,18 @@ class PragmaBlock(ASTNode):
 
     pragmas: list[Pragma] = field(default_factory=list)
     scope: PragmaScope = PragmaScope.FILE
+
+    def validate_structure(self) -> None:
+        """Validate block pragma container before direct analysis."""
+        if not isinstance(self.pragmas, list | tuple):
+            msg = "PragmaBlock pragmas must be a list or tuple"
+            raise TypeError(msg)
+        _require_scope(self.scope)
+        for pragma in self.pragmas:
+            if not isinstance(pragma, Pragma):
+                msg = "PragmaBlock pragmas must contain Pragma nodes"
+                raise TypeError(msg)
+            pragma.validate_structure()
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_pragma_block(self)
