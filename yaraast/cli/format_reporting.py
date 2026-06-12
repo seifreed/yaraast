@@ -5,11 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 
 
 def display_format_success(console: Console, output_file: str) -> None:
-    console.print(f"Formatted YARA file written to {output_file}")
+    console.print(f"Formatted YARA file written to {escape(output_file)}")
 
 
 def display_validation_success(console: Console, input_file: str, stats: dict[str, int]) -> None:
@@ -19,7 +20,7 @@ def display_validation_success(console: Console, input_file: str, stats: dict[st
             f"Statistics:\n"
             f"  - Rules: {stats['rules']}\n"
             f"  - Imports: {stats['imports']}",
-            title=f"Validation Result: {Path(input_file).name}",
+            title=f"Validation Result: {escape(Path(input_file).name)}",
             border_style="green",
         ),
     )
@@ -28,8 +29,8 @@ def display_validation_success(console: Console, input_file: str, stats: dict[st
 def display_validation_error(console: Console, input_file: str, error: Exception) -> None:
     console.print(
         Panel(
-            f"[red]Invalid YARA file[/red]\n\nError: {error}",
-            title=f"Validation Result: {Path(input_file).name}",
+            f"[red]Invalid YARA file[/red]\n\nError: {escape(str(error))}",
+            title=f"Validation Result: {escape(Path(input_file).name)}",
             border_style="red",
         ),
     )

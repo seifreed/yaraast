@@ -106,3 +106,39 @@ def test_build_validation_panel_success_and_failure() -> None:
     assert "Rules: 2" in ok_text
     assert "Invalid JSON serialization" in err_text
     assert "bad" in err_text
+
+
+def test_serialize_display_services_escape_markup_in_dynamic_values() -> None:
+    console = Console(record=True, width=120)
+    orig_console = sds.console
+    bad = "bad[/red][broken"
+    sds.console = console
+    try:
+        diff_result = SimpleNamespace(
+            differences=[
+                SimpleNamespace(
+                    diff_type=DiffType.MODIFIED,
+                    path=bad,
+                    node_type=bad,
+                    old_value=bad,
+                    new_value=bad,
+                )
+            ],
+            statistics={
+                "old_rules_count": 1,
+                "new_rules_count": 1,
+                "old_imports_count": 0,
+                "new_imports_count": 0,
+            },
+            old_ast_hash=bad,
+            new_ast_hash=bad,
+        )
+
+        sds._display_detailed_changes(diff_result)
+        sds._display_diff_statistics(diff_result)
+        console.print(sds.build_validation_panel(bad, "json", None, ValueError(bad)))
+
+        output = console.export_text()
+        assert bad in output
+    finally:
+        sds.console = orig_console

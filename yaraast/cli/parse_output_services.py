@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 from rich.console import Console
+from rich.markup import escape
 from rich.syntax import Syntax
 
 from yaraast.cli.utils import format_json, write_text
@@ -60,7 +61,7 @@ def _display_lexer_errors(lexer_errors: list, output_console: Console = console)
     """Display lexer errors."""
     output_console.print(f"\n[yellow]Lexer Issues ({len(lexer_errors)}):[/yellow]")
     for error in lexer_errors[:5]:
-        output_console.print(error.format_error())
+        output_console.print(escape(error.format_error()))
 
     if len(lexer_errors) > 5:
         output_console.print(f"\n[dim]... and {len(lexer_errors) - 5} more lexer issues[/dim]")
@@ -70,7 +71,7 @@ def _display_parser_errors(parser_errors: list, output_console: Console = consol
     """Display parser errors."""
     output_console.print(f"\n[yellow]Parser Issues ({len(parser_errors)}):[/yellow]")
     for error in parser_errors[:5]:
-        output_console.print(error.format_error())
+        output_console.print(escape(error.format_error()))
 
     if len(parser_errors) > 5:
         output_console.print(f"\n[dim]... and {len(parser_errors) - 5} more parser issues[/dim]")
@@ -98,7 +99,7 @@ def _generate_yara_output(ast, output: str | None) -> None:
 
     if output is not None:
         write_text(output, result)
-        console.print(f"Generated YARA code written to {output}")
+        console.print(f"Generated YARA code written to {escape(output)}")
     else:
         syntax = Syntax(result, "yara", theme="monokai", line_numbers=True)
         console.print(syntax)
@@ -112,7 +113,7 @@ def _generate_json_output(ast, output: str | None) -> None:
 
     if output is not None:
         write_text(output, json_str)
-        console.print(f"AST JSON written to {output}")
+        console.print(f"AST JSON written to {escape(output)}")
     else:
         click.echo(json_str)
 
@@ -140,7 +141,7 @@ def _generate_yaml_output(ast, output: str | None) -> None:
 
     if output is not None:
         write_text(output, yaml_str)
-        console.print(f"AST YAML written to {output}")
+        console.print(f"AST YAML written to {escape(output)}")
     else:
         click.echo(yaml_str)
 
@@ -156,6 +157,6 @@ def _generate_tree_output(ast, output: str | None) -> None:
         file_console = RichConsole(record=True, width=80)
         file_console.print(tree)
         write_text(output, file_console.export_text())
-        console.print(f"AST tree written to {output}")
+        console.print(f"AST tree written to {escape(output)}")
     else:
         console.print(tree)

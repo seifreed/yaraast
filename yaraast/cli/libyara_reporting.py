@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from rich.markup import escape
 from rich.syntax import Syntax
 
 
@@ -17,7 +18,7 @@ def display_compilation_errors(console: Any, errors: list[Any]) -> None:
     """Display compilation errors."""
     console.print("[red]Compilation failed[/red]")
     for error in errors:
-        console.print(f"[red]  - {error}[/red]")
+        console.print(f"[red]  - {escape(str(error))}[/red]")
 
 
 def display_compilation_success(console: Any) -> None:
@@ -51,19 +52,19 @@ def display_compilation_stats(console: Any, result: Any, compiler: Any) -> None:
 
 def display_compiled_rules_saved(console: Any, output: str) -> None:
     """Display saved compiled rules message."""
-    console.print(f"[green]Compiled rules saved to {output}[/green]")
+    console.print(f"[green]Compiled rules saved to {escape(output)}[/green]")
 
 
 def display_generated_source_preview(console: Any, source: str) -> None:
     """Display generated source preview."""
     console.print("[dim]Generated source (first 200 chars):[/dim]")
-    console.print(f"[dim]{source[:200]}...[/dim]")
+    console.print(f"[dim]{escape(source[:200])}...[/dim]")
 
 
 def display_scan_failure(console: Any, scan_result: dict[str, Any]) -> None:
     """Display scan failure details."""
     console.print(
-        f"[red]Scan failed: {scan_result.get('error', 'Unknown error')}[/red]",
+        f"[red]Scan failed: {escape(str(scan_result.get('error', 'Unknown error')))}[/red]",
     )
 
 
@@ -95,17 +96,19 @@ def display_matches(console: Any, matches: list[dict[str, Any]]) -> None:
 
 def _display_single_match(console: Any, match: dict[str, Any]) -> None:
     """Display a single match with its details."""
-    console.print(f"  [bold]{match['rule']}[/bold]")
+    console.print(f"  [bold]{escape(str(match['rule']))}[/bold]")
 
     if match.get("tags"):
-        console.print(f"     Tags: {', '.join(match['tags'])}")
+        tags = ", ".join(escape(str(tag)) for tag in match["tags"])
+        console.print(f"     Tags: {tags}")
 
     if match.get("strings"):
         console.print(f"     Strings: {len(match['strings'])} found")
 
     if match.get("ast_context"):
         ctx = match["ast_context"]
-        console.print(f"     Complexity: {ctx.get('condition_complexity', 'N/A')}")
+        complexity = escape(str(ctx.get("condition_complexity", "N/A")))
+        console.print(f"     Complexity: {complexity}")
 
 
 def display_optimization_hints(console: Any, scan_result: dict[str, Any]) -> None:
@@ -116,7 +119,7 @@ def display_optimization_hints(console: Any, scan_result: dict[str, Any]) -> Non
 
     console.print("\n[dim]Optimization Hints:[/dim]")
     for hint in hints:
-        console.print(f"[dim]  - {hint}[/dim]")
+        console.print(f"[dim]  - {escape(str(hint))}[/dim]")
 
 
 def display_scan_stats(console: Any, matcher: Any) -> None:
@@ -148,7 +151,7 @@ def display_optimize_results(
     if show_optimizations and optimizer.optimizations_applied:
         console.print("\n[yellow]Applied Optimizations:[/yellow]")
         for opt in optimizer.optimizations_applied:
-            console.print(f"  - {opt}")
+            console.print(f"  - {escape(str(opt))}")
 
     console.print("\n[dim]Optimized YARA code:[/dim]")
     syntax = Syntax(optimized_code, "yara", theme="monokai", line_numbers=True)
@@ -161,8 +164,6 @@ class LibYaraCommandError(Exception):
 
 def handle_libyara_error(console: Any, error: Exception) -> None:
     """Handle libyara command errors uniformly."""
-    from rich.markup import escape
-
     if isinstance(error, RuntimeError):
         _handle_runtime_error(console, error)
         raise LibYaraCommandError
@@ -178,8 +179,8 @@ def _handle_runtime_error(console: Any, error: RuntimeError) -> None:
     if str(error) == "yara-python is not installed":
         display_missing_yara(console)
     else:
-        console.print(f"[red]{error}[/red]")
+        console.print(f"[red]{escape(str(error))}[/red]")
 
 
 def _handle_import_error(console: Any, error: ImportError) -> None:
-    console.print(f"[red]Import error: {error}[/red]")
+    console.print(f"[red]Import error: {escape(str(error))}[/red]")

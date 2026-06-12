@@ -85,3 +85,24 @@ def test_diff_reporting_respects_logical_only_and_no_style_flags(
     dr.show_change_details(result, logical_only=False, no_style=True)
     out = capsys.readouterr().out
     assert "Style-Only Changes" not in out
+
+
+def test_diff_reporting_escapes_markup_in_dynamic_values(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bad = "bad[/red][broken"
+
+    dr.show_diff_summary(_result(change_summary={bad: 1}))
+    dr.show_rule_changes(_result(added_rules=[bad], removed_rules=[bad], modified_rules=[bad]))
+    dr.show_change_details(
+        _result(
+            logical_changes=[bad],
+            structural_changes=[bad],
+            style_only_changes=[bad],
+        ),
+        logical_only=False,
+        no_style=False,
+    )
+
+    out = capsys.readouterr().out
+    assert bad in out

@@ -51,6 +51,17 @@ def test_format_reporting_helpers_render_messages() -> None:
     assert "bad syntax" in output
 
 
+def test_format_reporting_escapes_markup_in_dynamic_values() -> None:
+    console = Console(record=True, width=120)
+    bad = "bad[/red][broken"
+
+    display_format_success(console, bad)
+    display_validation_error(console, "broken.yar", ValueError(bad))
+
+    output = console.export_text()
+    assert bad in output
+
+
 def test_format_services_format_ast_and_stats() -> None:
     ast = Parser().parse("""
         import "pe"

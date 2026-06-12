@@ -75,7 +75,7 @@ def optimize(input_file: Path, output_file: str, dry_run: bool, analyze: bool) -
                 "the optimized rules may not faithfully represent the input.[/yellow]"
             )
             for error in parse_errors[:5]:
-                console.print(f"[yellow]  • {error.message}[/yellow]")
+                console.print(f"[yellow]  • {escape(str(error.message))}[/yellow]")
 
         # Analyze performance before optimization
         if analyze:

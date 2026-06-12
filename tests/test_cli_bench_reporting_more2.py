@@ -30,6 +30,41 @@ def test_display_operation_result_and_none_case(capsys: pytest.CaptureFixture[st
     assert out3 == ""
 
 
+def test_benchmark_reporting_escapes_markup_in_dynamic_values(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bad = "bad[/red][broken"
+    bad_filename = "bad[red][broken"
+
+    br.display_benchmark_file(tmp_path / f"{bad_filename}.yar")
+    br.display_operation_result(bad, SimpleNamespace(success=False, error=bad))
+    br.display_benchmark_summary(
+        {
+            bad: {
+                "avg_time": 0.1,
+                "min_time": 0.1,
+                "max_time": 0.1,
+                "total_files_processed": 1,
+                "total_rules_processed": 1,
+                "avg_rules_per_second": 1.0,
+            }
+        }
+    )
+    br.display_performance_comparison(
+        [
+            {
+                "file_name": bad,
+                "results": {"parse": SimpleNamespace(execution_time=0.1, rules_count=1)},
+            }
+        ]
+    )
+    br.save_benchmark_results(str(tmp_path / "bench.json"), 1, "parse", [], {})
+
+    out = capsys.readouterr().out
+    assert bad in out
+
+
 def test_display_performance_comparison_paths(capsys: pytest.CaptureFixture[str]) -> None:
     br.display_performance_comparison([{"file_name": "a", "results": {"codegen": object()}}])
     out = capsys.readouterr().out

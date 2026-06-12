@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 from yaraast.performance.string_analyzer import StringPerformanceIssue
@@ -35,11 +36,11 @@ def display_issues(console: Console, issues: list[StringPerformanceIssue]) -> No
     for issue in issues:
         severity_style = "red bold" if issue.severity == "critical" else "yellow"
         table.add_row(
-            issue.rule_name,
-            issue.string_id,
-            issue.issue_type,
-            f"[{severity_style}]{issue.severity}[/{severity_style}]",
-            issue.description,
+            escape(issue.rule_name),
+            escape(issue.string_id),
+            escape(issue.issue_type),
+            f"[{severity_style}]{escape(issue.severity)}[/{severity_style}]",
+            escape(issue.description),
         )
 
     console.print(table)
@@ -47,7 +48,7 @@ def display_issues(console: Console, issues: list[StringPerformanceIssue]) -> No
     console.print("\n[cyan]Suggestions:[/cyan]")
     unique_suggestions = {i.suggestion for i in issues if i.suggestion}
     for suggestion in sorted(unique_suggestions):
-        console.print(f"  • {suggestion}")
+        console.print(f"  • {escape(suggestion)}")
 
 
 def display_summary(
@@ -74,7 +75,7 @@ def display_summary(
         reverse=True,
     ):
         table.add_row(
-            issue_type.replace("_", " ").title(),
+            escape(issue_type.replace("_", " ").title()),
             str(stats["count"]),
             str(stats["critical"]) if stats["critical"] > 0 else "-",
             str(len(stats["rules"])),

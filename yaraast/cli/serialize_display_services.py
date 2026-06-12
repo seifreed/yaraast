@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
@@ -45,7 +46,7 @@ def _display_diff_summary(diff_result: Any) -> None:
                 "moved": "↔️",
                 "unchanged": "✅",
             }.get(change_type, "•")
-            table.add_row(f"{icon} {change_type.title()}", str(count))
+            table.add_row(f"{icon} {escape(change_type.title())}", str(count))
 
     console.print(table)
 
@@ -62,10 +63,12 @@ def _display_detailed_changes(diff_result: Any) -> None:
                 DiffType.MOVED: "[blue]↔️[/blue]",
             }.get(diff_node.diff_type, "•")
 
-            console.print(f"  {icon} {diff_node.path} ({diff_node.node_type})")
+            console.print(
+                f"  {icon} {escape(str(diff_node.path))} " f"({escape(str(diff_node.node_type))})"
+            )
             if diff_node.diff_type == DiffType.MODIFIED:
-                console.print(f"    [dim]Old:[/dim] {diff_node.old_value}")
-                console.print(f"    [dim]New:[/dim] {diff_node.new_value}")
+                console.print(f"    [dim]Old:[/dim] {escape(str(diff_node.old_value))}")
+                console.print(f"    [dim]New:[/dim] {escape(str(diff_node.new_value))}")
     else:
         console.print(
             f"\n[dim]Use --output to save detailed changes ({len(diff_result.differences)} total)[/dim]",
@@ -89,7 +92,11 @@ def _display_diff_statistics(diff_result: Any) -> None:
         str(diff_result.statistics["old_imports_count"]),
         str(diff_result.statistics["new_imports_count"]),
     )
-    stats_table.add_row("AST Hash", diff_result.old_ast_hash, diff_result.new_ast_hash)
+    stats_table.add_row(
+        "AST Hash",
+        escape(str(diff_result.old_ast_hash)),
+        escape(str(diff_result.new_ast_hash)),
+    )
 
     console.print(stats_table)
 
@@ -102,18 +109,18 @@ def build_validation_panel(
 ) -> Panel:
     if error is None and ast is not None:
         return Panel(
-            f"[green]✅ Valid {format.upper()} serialization[/green]\n\n"
+            f"[green]✅ Valid {escape(format.upper())} serialization[/green]\n\n"
             f"📊 Structure:\n"
             f"  • Rules: {len(ast.rules)}\n"
             f"  • Imports: {len(ast.imports)}\n"
             f"  • Includes: {len(ast.includes)}",
-            title=f"Validation Result: {input_file}",
+            title=f"Validation Result: {escape(input_file)}",
             border_style="green",
         )
 
-    error_text = str(error) if error else "Unknown error"
+    error_text = escape(str(error) if error else "Unknown error")
     return Panel(
-        f"[red]❌ Invalid {format.upper()} serialization[/red]\n\nError: {error_text}",
-        title=f"Validation Result: {input_file}",
+        f"[red]❌ Invalid {escape(format.upper())} serialization[/red]\n\nError: {error_text}",
+        title=f"Validation Result: {escape(input_file)}",
         border_style="red",
     )

@@ -6,6 +6,7 @@ from pathlib import Path
 import time
 
 from rich.console import Console
+from rich.markup import escape
 
 from yaraast.cli.utils import format_json, write_text
 
@@ -21,18 +22,20 @@ def print_benchmark_header(file_paths: list[Path], iterations: int) -> None:
 
 def display_benchmark_file(file_path: Path) -> None:
     """Display file heading for benchmark run."""
-    console.print(f"\n[yellow]Benchmarking {file_path.name}...[/yellow]")
+    console.print(f"\n[yellow]Benchmarking {escape(file_path.name)}...[/yellow]")
 
 
 def display_operation_result(op: str, result) -> None:
     """Display result of a single operation."""
     if result and result.success:
+        escaped_op = escape(op)
         console.print(
-            f"  [green]OK[/green] {op:10s}: {result.execution_time * 1000:6.2f}ms "
+            f"  [green]OK[/green] {escaped_op:10s}: {result.execution_time * 1000:6.2f}ms "
             f"({result.rules_count} rules, {result.ast_nodes} nodes)",
         )
     elif result:
-        console.print(f"  [red]FAIL[/red] {op:10s}: {result.error}")
+        escaped_op = escape(op)
+        console.print(f"  [red]FAIL[/red] {escaped_op:10s}: {escape(str(result.error))}")
 
 
 def display_benchmark_summary(summary: dict) -> None:
@@ -41,7 +44,7 @@ def display_benchmark_summary(summary: dict) -> None:
     console.print("=" * 60)
 
     for operation, stats in summary.items():
-        console.print(f"\n[bold]{operation.upper()}:[/bold]")
+        console.print(f"\n[bold]{escape(str(operation).upper())}:[/bold]")
         console.print(f"  - Average time: {stats['avg_time'] * 1000:.2f}ms")
         console.print(f"  - Min time: {stats['min_time'] * 1000:.2f}ms")
         console.print(f"  - Max time: {stats['max_time'] * 1000:.2f}ms")
@@ -75,8 +78,9 @@ def _display_parsing_comparison(parse_results: list[tuple]) -> None:
             throughput = (
                 result.rules_count / result.execution_time if result.execution_time > 0 else 0
             )
+            escaped_filename = escape(str(filename))
             console.print(
-                f"  {i + 1:2d}. {filename:20s} "
+                f"  {i + 1:2d}. {escaped_filename:20s} "
                 f"{result.execution_time * 1000:6.2f}ms "
                 f"({throughput:.1f} rules/sec)",
             )
@@ -100,4 +104,4 @@ def save_benchmark_results(
 
     write_text(output, format_json(benchmark_data, default=str))
 
-    console.print(f"\n[green]Benchmark results saved to {output}[/green]")
+    console.print(f"\n[green]Benchmark results saved to {escape(output)}[/green]")

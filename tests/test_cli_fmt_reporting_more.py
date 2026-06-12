@@ -54,3 +54,15 @@ def test_display_format_error_and_diff_fallback_line() -> None:
     output = console.export_text()
     assert "boom" in output
     assert "unchanged line" in output
+
+
+def test_fmt_reporting_escapes_markup_in_dynamic_values() -> None:
+    console = Console(record=True, width=120)
+    bad = "bad[/red][broken"
+
+    fr.display_format_issues(console, [bad])
+    fr.display_format_error(console, bad)
+    fr._print_diff_lines(console, [f"+{bad}", f"-{bad}", f" {bad}"])
+
+    output = console.export_text()
+    assert bad in output

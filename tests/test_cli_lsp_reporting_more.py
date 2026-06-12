@@ -36,3 +36,15 @@ def test_reporting_helpers_render_expected_messages() -> None:
     assert "pip install 'yaraast'" in output
     assert "pip install pygls lsprotocol" in output
     assert "Error starting LSP server: boom" in output
+
+
+def test_reporting_helpers_escape_markup_in_dynamic_values() -> None:
+    console = Console(record=True, width=120)
+
+    display_listening_tcp(console, "bad[/blue][broken", 9000)
+    display_missing_dependency(console, ImportError("bad[/red][broken"))
+    display_start_error(console, RuntimeError("bad[/red][broken"))
+
+    output = console.export_text()
+    assert "bad[/blue][broken" in output
+    assert "bad[/red][broken" in output

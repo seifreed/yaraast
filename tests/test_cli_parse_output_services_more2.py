@@ -65,6 +65,17 @@ def test_parse_output_report_parsing_errors(capsys: pytest.CaptureFixture[str]) 
         po._report_parsing_errors([_Err("x")], [], ast=None)
 
 
+def test_parse_output_escapes_markup_in_error_messages(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bad = "bad[/red][broken"
+
+    po._report_parsing_errors([_Err(bad)], [_Err(bad)], ast=_ast())
+
+    out = capsys.readouterr().out
+    assert bad in out
+
+
 def test_parse_output_generators_for_all_formats(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

@@ -113,3 +113,26 @@ def test_optimize_display_helpers_skip_empty_levels_and_unknown_style(
     out = capsys.readouterr().out
     assert "Optimization" in out and "Opportunities" in out
     assert "other issue" in out
+
+
+def test_analyze_reporting_escapes_markup_in_dynamic_values(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    bad = "bad[/red][broken"
+    best_practices = AnalysisReport(
+        suggestions=[Suggestion(bad, bad, "error", bad, bad)],
+        statistics={},
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        ar.display_best_practices_report(bad, best_practices, verbose=True, category="all")
+    assert exc.value.code == 2
+
+    optimization = OptimizationReport(
+        suggestions=[OptimizationSuggestion(bad, bad, bad, "high", bad, bad)],
+        statistics={},
+    )
+    ar.display_optimization_report(bad, optimization, verbose=True)
+
+    out = capsys.readouterr().out
+    assert bad in out

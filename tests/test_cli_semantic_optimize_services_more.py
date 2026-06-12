@@ -79,3 +79,17 @@ def test_optimize_reporting_emits_reporting_messages() -> None:
     assert "Performance improved by 12.5%" in output
     assert "Writing optimized rules to optimized.yar" in output
     assert "Optimized YARA file written to optimized.yar" in output
+
+
+def test_optimize_reporting_escapes_markup_in_dynamic_values() -> None:
+    console = Console(record=True, width=120)
+    analysis = OptimizationAnalysis(total_issues=1, critical_issues=0)
+    bad = "bad[/red][broken"
+
+    orpt.display_analysis(console, bad, analysis)
+    orpt.display_changes(console, [bad])
+    orpt.display_write_start(console, bad)
+    orpt.display_write_success(console, bad)
+
+    output = console.export_text()
+    assert bad in output

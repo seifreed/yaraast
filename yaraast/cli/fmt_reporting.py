@@ -5,21 +5,24 @@ from __future__ import annotations
 from difflib import unified_diff
 from pathlib import Path
 
+from rich.markup import escape
+
 
 def display_format_check(console, input_path: Path, needs_format: bool, issues: list) -> None:
     """Display format check status and issues."""
+    input_name = escape(input_path.name)
     if needs_format:
-        console.print(f"[yellow]{input_path.name} needs formatting[/yellow]")
+        console.print(f"[yellow]{input_name} needs formatting[/yellow]")
         if issues:
             display_format_issues(console, issues)
         return
-    console.print(f"[green]{input_path.name} is already formatted[/green]")
+    console.print(f"[green]{input_name} is already formatted[/green]")
 
 
 def display_format_issues(console, issues: list) -> None:
     """Display formatting issues."""
     for issue in issues[:5]:
-        console.print(f"[dim]  - {issue}[/dim]")
+        console.print(f"[dim]  - {escape(str(issue))}[/dim]")
     if len(issues) > 5:
         console.print(f"[dim]  - ... and {len(issues) - 5} more issues[/dim]")
 
@@ -35,7 +38,7 @@ def display_format_diff(
         console.print("[green]No formatting changes needed[/green]")
         return
 
-    console.print(f"[blue]Formatting changes for {input_path.name}:[/blue]")
+    console.print(f"[blue]Formatting changes for {escape(input_path.name)}:[/blue]")
 
     diff_lines = unified_diff(
         original.splitlines(keepends=True),
@@ -56,26 +59,26 @@ def display_format_result(
 ) -> None:
     """Display format success output."""
     if output_path == input_path:
-        console.print(f"[green]Formatted {input_path.name} ({style} style)[/green]")
+        console.print(f"[green]Formatted {escape(input_path.name)} ({escape(style)} style)[/green]")
     else:
-        console.print(f"[green]Formatted file written to {output_path}[/green]")
+        console.print(f"[green]Formatted file written to {escape(str(output_path))}[/green]")
 
 
 def display_format_error(console, message: str) -> None:
     """Display formatting failure."""
-    console.print(f"[red]{message}[/red]")
+    console.print(f"[red]{escape(message)}[/red]")
 
 
 def _print_diff_lines(console, diff_lines) -> None:
     """Print diff lines with colors."""
     for line in diff_lines:
         if line.startswith(("+++", "---")):
-            console.print(f"[bold]{line.rstrip()}[/bold]")
+            console.print(f"[bold]{escape(line.rstrip())}[/bold]")
         elif line.startswith("@@"):
-            console.print(f"[cyan]{line.rstrip()}[/cyan]")
+            console.print(f"[cyan]{escape(line.rstrip())}[/cyan]")
         elif line.startswith("+"):
-            console.print(f"[green]{line.rstrip()}[/green]")
+            console.print(f"[green]{escape(line.rstrip())}[/green]")
         elif line.startswith("-"):
-            console.print(f"[red]{line.rstrip()}[/red]")
+            console.print(f"[red]{escape(line.rstrip())}[/red]")
         else:
-            console.print(f"[dim]{line.rstrip()}[/dim]")
+            console.print(f"[dim]{escape(line.rstrip())}[/dim]")

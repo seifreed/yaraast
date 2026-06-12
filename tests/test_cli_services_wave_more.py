@@ -298,3 +298,29 @@ def test_performance_check_suggestions_are_sorted() -> None:
     assert out.index("a suggestion") < out.index("b suggestion")
     assert out.index("b suggestion") < out.index("m suggestion")
     assert out.index("m suggestion") < out.index("z suggestion")
+
+
+def test_performance_check_reporting_escapes_markup_in_dynamic_values() -> None:
+    console = Console(record=True, width=120)
+    bad = "bad[/red][broken"
+    issues = [
+        StringPerformanceIssue(
+            rule_name=bad,
+            string_id=bad,
+            issue_type=bad,
+            severity=bad,
+            description=bad,
+            suggestion=bad,
+        )
+    ]
+
+    pcr.display_issues(console, issues)
+    pcr.display_summary(
+        console,
+        issue_types={bad: {"count": 1, "critical": 0, "rules": {bad}}},
+        total_rules=1,
+        issues=issues,
+    )
+
+    out = console.export_text()
+    assert bad in out

@@ -6,6 +6,7 @@ import sys
 from typing import Any
 
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
@@ -22,7 +23,7 @@ def display_best_practices_report(
     verbose: bool,
     category: str,
 ) -> None:
-    console.print(f"\n[bold]Best Practices Analysis:[/bold] {rule_file}\n")
+    console.print(f"\n[bold]Best Practices Analysis:[/bold] {escape(rule_file)}\n")
     errors, warnings, info = _get_severity_counts(report)
     display_summary(errors, warnings, info)
     suggestions = _filter_suggestions(report.suggestions, category)
@@ -45,7 +46,7 @@ def display_issues(suggestions: list[Any]) -> None:
     if important:
         console.print("\n[bold red]Issues:[/bold red]")
         for suggestion in important:
-            console.print(f"  {suggestion.format()}")
+            console.print(f"  {escape(suggestion.format())}")
 
 
 def display_verbose_info(suggestions: list[Any], report: AnalysisReport) -> None:
@@ -53,11 +54,11 @@ def display_verbose_info(suggestions: list[Any], report: AnalysisReport) -> None
     if info_items:
         console.print("\n[bold blue]Suggestions:[/bold blue]")
         for suggestion in info_items:
-            console.print(f"  {suggestion.format()}")
+            console.print(f"  {escape(suggestion.format())}")
     if report.statistics:
         console.print("\n[dim]Statistics:[/dim]")
         for key, value in report.statistics.items():
-            console.print(f"  {key}: {value}")
+            console.print(f"  {escape(str(key))}: {escape(str(value))}")
 
 
 def handle_exit_code(
@@ -73,7 +74,7 @@ def handle_exit_code(
 
 
 def display_optimization_report(rule_file: str, report: OptimizationReport, verbose: bool) -> None:
-    console.print(f"\n[bold]Optimization Analysis:[/bold] {rule_file}\n")
+    console.print(f"\n[bold]Optimization Analysis:[/bold] {escape(rule_file)}\n")
     optimize_display_impact_summary(report)
     optimize_display_suggestions(report.suggestions, verbose)
 
@@ -108,13 +109,13 @@ def display_suggestions_by_level(level_suggestions: list[Any], level: str, verbo
     style = _get_level_style(level)
     console.print(f"\n[bold {style}]{level.capitalize()} Impact:[/bold {style}]")
     for suggestion in level_suggestions:
-        console.print(f"  {suggestion.format()}")
+        console.print(f"  {escape(suggestion.format())}")
         if verbose:
             display_code_examples(suggestion)
 
 
 def display_code_examples(suggestion: OptimizationSuggestion) -> None:
     if suggestion.code_before:
-        console.print(f"    Before: [dim]{suggestion.code_before}[/dim]")
+        console.print(f"    Before: [dim]{escape(suggestion.code_before)}[/dim]")
     if suggestion.code_after:
-        console.print(f"    After:  [green]{suggestion.code_after}[/green]")
+        console.print(f"    After:  [green]{escape(suggestion.code_after)}[/green]")

@@ -61,7 +61,7 @@ def export(input_file: str, output: str | None, format: str, minimal: bool, pret
     """
     output = _validate_output_path(output)
     try:
-        with console.status(f"[bold green]Parsing {input_file}..."):
+        with console.status(f"[bold green]Parsing {escape(input_file)}..."):
             result, stats = export_serialized(input_file, format, output, minimal)
         display_export_result(console, result, format, output, pretty, stats)
 

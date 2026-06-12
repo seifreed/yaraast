@@ -165,6 +165,34 @@ def test_write_diff_output_and_display_info(tmp_path: Path) -> None:
     assert "hash123" in text
 
 
+def test_serialize_reporting_escapes_markup_in_dynamic_values() -> None:
+    console = Console(record=True, width=120)
+    bad = "bad[/red][broken"
+
+    sr.display_export_result(console, None, bad, output=bad, pretty=False, stats=None)
+    sr.display_import_result(console, bad, bad, _Ast(), output=bad)
+    sr.display_diff_saved(console, bad, patch=True)
+    sr.display_diff_saved(console, bad, patch=False)
+    sr.display_info(
+        console,
+        bad,
+        {
+            "rule_samples": [bad],
+            "rule_count": 1,
+            "import_count": 1,
+            "include_count": 1,
+            "import_list": [bad],
+            "include_list": [bad],
+            "rule_details": [{"name": bad, "strings": 1, "tags": 0, "meta": 1, "modifiers": bad}],
+            "has_more_rules": False,
+            "ast_hash": bad,
+        },
+    )
+
+    output = console.export_text()
+    assert bad in output
+
+
 def test_write_diff_output_rejects_non_utf8_json(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="content must be UTF-8 encodable"):
         sr.write_diff_output(str(tmp_path / "diff.json"), "json", {"name": "\ud800"})

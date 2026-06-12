@@ -112,3 +112,33 @@ def test_libyara_error_handler_paths() -> None:
     assert "runtime explode" in out
     assert "Import error: bad import" in out
     assert "Error: <unsafe>" in out
+
+
+def test_libyara_reporting_escapes_markup_in_dynamic_values() -> None:
+    c = _console()
+    bad = "bad[/red][broken"
+
+    lr.display_compilation_errors(c, [bad])
+    lr.display_compiled_rules_saved(c, bad)
+    lr.display_generated_source_preview(c, bad)
+    lr.display_scan_failure(c, {"error": bad})
+    lr.display_matches(
+        c,
+        [
+            {
+                "rule": bad,
+                "tags": [bad],
+                "strings": ["$a"],
+                "ast_context": {"condition_complexity": bad},
+            },
+        ],
+    )
+    lr.display_optimization_hints(c, {"optimization_hints": [bad]})
+
+    with pytest.raises(lr.LibYaraCommandError):
+        lr.handle_libyara_error(c, RuntimeError(bad))
+    with pytest.raises(lr.LibYaraCommandError):
+        lr.handle_libyara_error(c, ImportError(bad))
+
+    out = c.export_text()
+    assert bad in out

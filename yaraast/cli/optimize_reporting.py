@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from rich.console import Console
+from rich.markup import escape
 
 from yaraast.cli.optimize_services import OptimizationAnalysis
 
@@ -12,7 +13,7 @@ def display_parse_failure(console: Console) -> None:
 
 
 def display_analysis(console: Console, title: str, analysis: OptimizationAnalysis) -> None:
-    console.print(f"\n[yellow]{title}:[/yellow]")
+    console.print(f"\n[yellow]{escape(title)}:[/yellow]")
     console.print(f"  • Total issues: {analysis.total_issues}")
     console.print(f"  • Critical issues: {analysis.critical_issues}")
 
@@ -20,7 +21,7 @@ def display_analysis(console: Console, title: str, analysis: OptimizationAnalysi
 def display_changes(console: Console, changes: list[str]) -> None:
     console.print(f"\n[yellow]Applied {len(changes)} optimizations:[/yellow]")
     for change in changes[:10]:
-        console.print(f"  • {change}")
+        console.print(f"  • {escape(change)}")
     if len(changes) > 10:
         console.print(f"  ... and {len(changes) - 10} more")
 
@@ -38,12 +39,12 @@ def display_improvement(console: Console, improvement: float) -> None:
 
 
 def display_write_start(console: Console, output_file) -> None:
-    console.print(f"\n[cyan]Writing optimized rules to {output_file}...[/cyan]")
+    console.print(f"\n[cyan]Writing optimized rules to {escape(str(output_file))}...[/cyan]")
 
 
 def display_write_success(console: Console, output_file) -> None:
     console.print(
-        f"[green]✅ Optimized YARA file written to {output_file}[/green]",
+        f"[green]✅ Optimized YARA file written to {escape(str(output_file))}[/green]",
     )
 
 
