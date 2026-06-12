@@ -57,6 +57,9 @@ class RenameProvider:
         if not isinstance(new_name, str):
             msg = "Rename new_name must be a string"
             raise TypeError(msg)
+        if not new_name.strip():
+            msg = "Rename new_name must not be empty"
+            raise ValueError(msg)
 
         doc = (
             self.runtime.ensure_document(uri, text)

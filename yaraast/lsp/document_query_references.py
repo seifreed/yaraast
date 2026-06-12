@@ -41,6 +41,25 @@ def _copy_rule_link_records(records: list[RuleLinkRecord]) -> list[RuleLinkRecor
     return [copy_rule_link_record(record) for record in records]
 
 
+def _require_symbol_name(value: object, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    if not value.strip():
+        msg = f"{field_name} must not be empty"
+        raise ValueError(msg)
+    return value
+
+
+def _require_string_rename_name(new_name: object) -> str:
+    new_name = _require_symbol_name(new_name, "String rename new_name")
+    bare_name = new_name[1:] if new_name.startswith("$") else new_name
+    if not bare_name.strip():
+        msg = "String rename new_name must not be empty"
+        raise ValueError(msg)
+    return new_name
+
+
 def find_string_references(
     ctx: DocumentContext,
     identifier: str,
@@ -127,6 +146,8 @@ def build_string_rename_edits(
     *,
     rule_scope: str | None = None,
 ) -> list[TextEdit]:
+    identifier = _require_symbol_name(identifier, "String identifier")
+    new_name = _require_string_rename_name(new_name)
     if not new_name.startswith("$"):
         new_name = f"${new_name}"
     ast_edits = build_string_rename_edits_from_ast(ctx, identifier, new_name, rule_scope=rule_scope)
@@ -160,6 +181,8 @@ def build_string_rename_edits(
 
 
 def rename_rule_edits(ctx: DocumentContext, rule_name: str, new_name: str) -> list[TextEdit]:
+    rule_name = _require_symbol_name(rule_name, "Rule name")
+    new_name = _require_symbol_name(new_name, "Rule rename new_name")
     return [
         TextEdit(range=location.range, new_text=new_name)
         for location in ctx.rule_occurrences(rule_name)

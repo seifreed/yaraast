@@ -888,6 +888,35 @@ def test_document_context_rejects_invalid_query_inputs() -> None:
         doc.resolve_symbol(cast(Any, object()))
 
 
+def test_document_context_rejects_invalid_rename_inputs() -> None:
+    doc = DocumentContext(
+        "file:///sample.yar",
+        """
+rule sample {
+  strings:
+    $a = "x"
+  condition:
+    $a
+}
+""".lstrip(),
+    )
+
+    with pytest.raises(TypeError, match="String identifier must be a string"):
+        doc.build_string_rename_edits(cast(Any, object()), "$b")
+    with pytest.raises(TypeError, match="String rename new_name must be a string"):
+        doc.build_string_rename_edits("$a", cast(Any, object()))
+    with pytest.raises(ValueError, match="String rename new_name must not be empty"):
+        doc.build_string_rename_edits("$a", "")
+    with pytest.raises(ValueError, match="String rename new_name must not be empty"):
+        doc.build_string_rename_edits("$a", "$")
+    with pytest.raises(TypeError, match="Rule name must be a string"):
+        doc.rename_rule_edits(cast(Any, object()), "renamed")
+    with pytest.raises(TypeError, match="Rule rename new_name must be a string"):
+        doc.rename_rule_edits("sample", cast(Any, object()))
+    with pytest.raises(ValueError, match="Rule rename new_name must not be empty"):
+        doc.rename_rule_edits("sample", "")
+
+
 def test_document_context_exposes_include_info(tmp_path: Path) -> None:
     include_file = tmp_path / "common.yar"
     include_file.write_text("rule common { condition: true }\n", encoding="utf-8")

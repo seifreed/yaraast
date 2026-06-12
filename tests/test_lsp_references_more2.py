@@ -73,6 +73,14 @@ def test_rename_rejects_non_string_new_name() -> None:
         )
 
 
+@pytest.mark.parametrize("new_name", ["", "   ", "\t"])
+def test_rename_rejects_empty_new_name(new_name: str) -> None:
+    provider = RenameProvider()
+
+    with pytest.raises(ValueError, match="Rename new_name must not be empty"):
+        provider.rename("rule a { condition: true }", _pos(0, 5), new_name, "file://test.yar")
+
+
 def test_references_string_variants() -> None:
     text = """
 rule a {
