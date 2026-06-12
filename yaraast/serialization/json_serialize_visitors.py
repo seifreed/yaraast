@@ -19,6 +19,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_text,
     _validate_loop_variable_text,
     _validate_quantifier_value,
+    _validate_range_expression_bounds,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -769,10 +770,13 @@ def visit_set_expression(serializer, node) -> dict[str, Any]:
 
 
 def visit_range_expression(serializer, node) -> dict[str, Any]:
+    low = _serialize_required_expression(serializer, node.low, "RangeExpression low")
+    high = _serialize_required_expression(serializer, node.high, "RangeExpression high")
+    _validate_range_expression_bounds(node)
     return {
         "type": "RangeExpression",
-        "low": _serialize_required_expression(serializer, node.low, "RangeExpression low"),
-        "high": _serialize_required_expression(serializer, node.high, "RangeExpression high"),
+        "low": low,
+        "high": high,
     }
 
 

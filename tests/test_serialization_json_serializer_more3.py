@@ -566,6 +566,14 @@ def test_json_serializer_rejects_invalid_leaf_values() -> None:
         (RegexLiteral(""), "RegexLiteral pattern must not be empty"),
         (RegexLiteral("abc", invalid_regex_modifiers), "RegexLiteral modifiers must be a string"),
         (BooleanLiteral(invalid_bool), "BooleanLiteral value must be a boolean"),
+        (
+            RangeExpression(IntegerLiteral(-1), IntegerLiteral(3)),
+            "Range low bound cannot be negative",
+        ),
+        (
+            RangeExpression(IntegerLiteral(5), IntegerLiteral(3)),
+            "Range low bound cannot exceed high bound",
+        ),
         (ModuleReference(""), "ModuleReference module must not be empty"),
         (ModuleReference(invalid_list), "ModuleReference module must be a string"),
         (ModuleReference("bad-name"), "Invalid module identifier"),

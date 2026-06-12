@@ -15,8 +15,10 @@ from typing import Any
 from yaraast.ast.base import Location
 from yaraast.ast.modifiers import RuleModifier, require_rule_modifier_identifier
 from yaraast.codegen.generator_expression_visitors import (
+    _reject_non_integer_expression,
     _render_binary_operator,
     _render_unary_operator,
+    validate_constant_range_bounds,
 )
 from yaraast.codegen.generator_formatting import (
     validate_extern_rule_identifiers,
@@ -234,6 +236,16 @@ def _validate_in_expression_range(value: Any) -> Any:
         return value
     msg = "InExpression range must be a range expression"
     raise SerializationError(msg)
+
+
+def _validate_range_expression_bounds(value: Any) -> Any:
+    try:
+        _reject_non_integer_expression(value.low, "Range low bound")
+        _reject_non_integer_expression(value.high, "Range high bound")
+        validate_constant_range_bounds(value)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return value
 
 
 def _invalid_quantifier(value: object, context: str) -> None:

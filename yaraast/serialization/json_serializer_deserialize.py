@@ -41,6 +41,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_namespace_identifier_text,
     _validate_optional_namespace_identifier_text,
     _validate_quantifier_value,
+    _validate_range_expression_bounds,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -511,7 +512,7 @@ def _deser_range_expression(self, data: dict[str, Any]):
 
     low = _deserialize_required_expression(self, data, "low", "RangeExpression")
     high = _deserialize_required_expression(self, data, "high", "RangeExpression")
-    return RangeExpression(low=low, high=high)
+    return _validate_range_expression_bounds(RangeExpression(low=low, high=high))
 
 
 def _deser_function_call(self, data: dict[str, Any]):

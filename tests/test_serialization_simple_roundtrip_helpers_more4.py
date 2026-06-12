@@ -1718,6 +1718,28 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
             }
         )
 
+    invalid_range_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {
+                "type": "RangeExpression",
+                "low": {"type": "IntegerLiteral", "value": -1},
+                "high": {"type": "IntegerLiteral", "value": 3},
+            },
+            "Range low bound cannot be negative",
+        ),
+        (
+            {
+                "type": "RangeExpression",
+                "low": {"type": "IntegerLiteral", "value": 5},
+                "high": {"type": "IntegerLiteral", "value": 3},
+            },
+            "Range low bound cannot exceed high bound",
+        ),
+    )
+    for payload, message in invalid_range_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
     with pytest.raises(SerializationError, match="UnaryExpression operator must be a string"):
         deserialize_node({"type": "UnaryExpression", "operator": ["not"], "operand": true_expr})
 
@@ -1995,6 +2017,14 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
         (
             BinaryExpression(true_expr, cast(Any, ["and"]), BooleanLiteral(False)),
             "BinaryExpression operator must be a string",
+        ),
+        (
+            RangeExpression(IntegerLiteral(-1), IntegerLiteral(3)),
+            "Range low bound cannot be negative",
+        ),
+        (
+            RangeExpression(IntegerLiteral(5), IntegerLiteral(3)),
+            "Range low bound cannot exceed high bound",
         ),
         (
             UnaryExpression(cast(Any, ["not"]), true_expr),

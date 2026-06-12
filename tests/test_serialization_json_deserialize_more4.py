@@ -1244,6 +1244,28 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
         with pytest.raises(SerializationError, match=message):
             s._deserialize_expression(null_payload)
 
+    invalid_range_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {
+                "type": "RangeExpression",
+                "low": {"type": "IntegerLiteral", "value": -1},
+                "high": {"type": "IntegerLiteral", "value": 3},
+            },
+            "Range low bound cannot be negative",
+        ),
+        (
+            {
+                "type": "RangeExpression",
+                "low": {"type": "IntegerLiteral", "value": 5},
+                "high": {"type": "IntegerLiteral", "value": 3},
+            },
+            "Range low bound cannot exceed high bound",
+        ),
+    )
+    for payload, message in invalid_range_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
     with pytest.raises(SerializationError, match="BinaryExpression operator must be a string"):
         s._deserialize_expression(
             {

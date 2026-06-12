@@ -109,6 +109,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_namespace_identifier_text,
     _validate_optional_namespace_identifier_text,
     _validate_quantifier_value,
+    _validate_range_expression_bounds,
     _validate_string_operator_text,
     _validate_string_reference_text,
     _validate_unary_operator_text,
@@ -1376,10 +1377,13 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "elements": [serialize_node(element) for element in elements],
         }
     if isinstance(node, RangeExpression):
+        low = serialize_node(node.low)
+        high = serialize_node(node.high)
+        _validate_range_expression_bounds(node)
         return {
             "type": "RangeExpression",
-            "low": serialize_node(node.low),
-            "high": serialize_node(node.high),
+            "low": low,
+            "high": high,
         }
     if isinstance(node, FunctionCall):
         arguments = _validated_node_collection(
@@ -2170,9 +2174,11 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             elements.append(_deserialize_required_node_value(element, "SetExpression elements"))
         return SetExpression(elements)
     if node_type == "RangeExpression":
-        return RangeExpression(
-            _deserialize_required_node(data, "low", "RangeExpression"),
-            _deserialize_required_node(data, "high", "RangeExpression"),
+        return _validate_range_expression_bounds(
+            RangeExpression(
+                _deserialize_required_node(data, "low", "RangeExpression"),
+                _deserialize_required_node(data, "high", "RangeExpression"),
+            )
         )
     if node_type == "FunctionCall":
         raw_arguments = _deserialize_required_field(data, "arguments", "FunctionCall")

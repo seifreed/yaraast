@@ -2181,6 +2181,14 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             UnaryExpression("???", BooleanLiteral(True)),
             "Invalid unary operator",
         ),
+        (
+            RangeExpression(IntegerLiteral(-1), IntegerLiteral(3)),
+            "Range low bound cannot be negative",
+        ),
+        (
+            RangeExpression(IntegerLiteral(5), IntegerLiteral(3)),
+            "Range low bound cannot exceed high bound",
+        ),
         (FunctionCall(cast(Any, 123), []), "FunctionCall function must be a string"),
         (FunctionCall("", []), "FunctionCall function must not be empty"),
         (FunctionCall("bad-name", []), "Invalid function identifier"),
@@ -2619,6 +2627,29 @@ def test_protobuf_deserializer_rejects_invalid_in_expression_range() -> None:
     condition.in_expression.range.integer_literal.value = 0
 
     with pytest.raises(SerializationError, match="InExpression range must be a range expression"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("low", "high", "message"),
+    [
+        (-1, 3, "Range low bound cannot be negative"),
+        (5, 3, "Range low bound cannot exceed high bound"),
+    ],
+)
+def test_protobuf_deserializer_rejects_invalid_range_bounds(
+    low: int,
+    high: int,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_range_bounds"
+    pb_rule.condition.range_expression.low.integer_literal.value = low
+    pb_rule.condition.range_expression.high.integer_literal.value = high
+
+    with pytest.raises(SerializationError, match=message):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
