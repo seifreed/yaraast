@@ -155,6 +155,7 @@ class RuleTransformer:
 
                 self.rule.modifiers.append(RuleModifier.from_string(modifier))
             except (ValueError, ValidationError):
+                validate_identifier(modifier, "rule modifier")
                 self.rule.modifiers.append(modifier)
         return self
 

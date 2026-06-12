@@ -824,6 +824,19 @@ def test_rule_transformer_rejects_empty_modifiers_without_partial_update(
     assert [str(modifier) for modifier in transformed.modifiers] == ["global"]
 
 
+@pytest.mark.parametrize("modifier", ["bad modifier", "bad-modifier", "1modifier"])
+def test_rule_transformer_rejects_invalid_custom_modifiers_without_partial_update(
+    modifier: str,
+) -> None:
+    transformer = RuleTransformer(_sample_rule("valid_name"))
+
+    with pytest.raises(ValidationError, match="Invalid rule modifier identifier"):
+        transformer.add_modifier(modifier)
+
+    transformed = transformer.build()
+    assert [str(modifier) for modifier in transformed.modifiers] == ["global"]
+
+
 def test_rule_transformer_rejects_non_string_old_replacement_tag_without_partial_update() -> None:
     transformer = RuleTransformer(_sample_rule("tagged"))
 
