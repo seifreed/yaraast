@@ -102,6 +102,8 @@ from yaraast.serialization._serialization_primitives import (
     _validate_location_metadata,
     _validate_loop_variable_text,
     _validate_string_reference_text,
+    _validate_unique_rule_identifiers,
+    _validate_unique_rule_tags,
     _validate_yara_identifier_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
@@ -1621,6 +1623,7 @@ def serialize_yarafile(yf: YaraFile) -> dict[str, Any]:
     imports = _validated_node_collection(yf.imports, "YaraFile imports", Import)
     includes = _validated_node_collection(yf.includes, "YaraFile includes", Include)
     rules = _validated_node_collection(yf.rules, "YaraFile rules", Rule)
+    _validate_unique_rule_identifiers(rules)
     extern_rules = _validated_node_collection(
         yf.extern_rules,
         "YaraFile extern_rules",
@@ -1663,6 +1666,7 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
     }
 
     tags = _serialize_rule_tags(rule.tags)
+    _validate_unique_rule_tags(rule.tags)
     data["tags"] = tags
 
     meta = _serialize_meta_entries(rule.meta)
@@ -2435,6 +2439,7 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
         _deserialize_expected_node(rule, Rule, "YaraFile rules", "Rule")
         for rule in _deserialize_required_list_field(data, "rules", "YaraFile")
     ]
+    _validate_unique_rule_identifiers(yf.rules)
     yf.extern_rules = [
         _deserialize_extern_rule_item(rule, "YaraFile extern_rules")
         for rule in _deserialize_required_list_field(data, "extern_rules", "YaraFile")
@@ -2479,6 +2484,7 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     rule.tags = [
         _deserialize_rule_tag(tag) for tag in _deserialize_required_list_field(data, "tags", "Rule")
     ]
+    _validate_unique_rule_tags(rule.tags)
 
     rule.meta = [
         deserialize_meta(m) for m in _deserialize_required_list_field(data, "meta", "Rule")

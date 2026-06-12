@@ -92,6 +92,33 @@ def _validate_yara_identifier_text(value: str, kind: str) -> str:
         raise SerializationError(str(exc)) from exc
 
 
+def _validate_unique_rule_identifiers(rules: list[Any] | tuple[Any, ...]) -> None:
+    seen: set[str] = set()
+    for rule in rules:
+        try:
+            name = validate_yara_identifier(getattr(rule, "name", None), "rule")
+        except (TypeError, ValueError):
+            continue
+        if name in seen:
+            msg = f"Duplicate rule identifier '{name}' for libyara output"
+            raise SerializationError(msg)
+        seen.add(name)
+
+
+def _validate_unique_rule_tags(tags: list[Any] | tuple[Any, ...]) -> None:
+    seen: set[str] = set()
+    for tag in tags:
+        name = tag if isinstance(tag, str) else getattr(tag, "name", None)
+        try:
+            validated_name = validate_yara_identifier(name, "tag")
+        except (TypeError, ValueError):
+            continue
+        if validated_name in seen:
+            msg = f"Duplicate tag identifier '{validated_name}' for libyara output"
+            raise SerializationError(msg)
+        seen.add(validated_name)
+
+
 def _validate_string_reference_text(
     value: str,
     *,

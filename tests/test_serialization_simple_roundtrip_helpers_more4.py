@@ -301,6 +301,16 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Invalid rule identifier"):
         deserialize_rule(_serialized_simple_rule(name="bad-name"))
 
+    with pytest.raises(SerializationError, match="Duplicate rule identifier"):
+        deserialize_node(
+            _serialized_simple_yarafile(
+                rules=[
+                    _serialized_simple_rule(name="duplicate"),
+                    _serialized_simple_rule(name="duplicate"),
+                ]
+            )
+        )
+
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         deserialize_node({"type": "Tag", "name": 7})
 
@@ -346,6 +356,9 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
 
     with pytest.raises(SerializationError, match="Invalid tag identifier"):
         deserialize_rule(_serialized_simple_rule(tags=[{"name": "bad-name"}]))
+
+    with pytest.raises(SerializationError, match="Duplicate tag identifier"):
+        deserialize_rule(_serialized_simple_rule(tags=[{"name": "packed"}, {"name": "packed"}]))
 
 
 def test_simple_roundtrip_unknown_node_payloads_are_rejected() -> None:
@@ -1265,6 +1278,10 @@ def test_simple_roundtrip_serializers_reject_non_list_collections() -> None:
     with pytest.raises(SerializationError, match="Tag name must not be empty"):
         serialize_rule(rule)
 
+    cast(Any, rule).tags = [Tag("packed"), Tag("packed")]
+    with pytest.raises(SerializationError, match="Duplicate tag identifier"):
+        serialize_rule(rule)
+
     cast(Any, rule).tags = []
     cast(Any, rule).modifiers = [""]
     with pytest.raises(SerializationError, match="Rule modifiers must contain non-empty strings"):
@@ -1304,6 +1321,13 @@ def test_simple_roundtrip_serializers_reject_non_list_ast_collections() -> None:
     cast(Any, yara_file).imports = []
     cast(Any, yara_file).rules = "rule"
     with pytest.raises(SerializationError, match="YaraFile rules must be a list"):
+        serialize_yarafile(yara_file)
+
+    cast(Any, yara_file).rules = [
+        Rule("duplicate", condition=BooleanLiteral(True)),
+        Rule("duplicate", condition=BooleanLiteral(False)),
+    ]
+    with pytest.raises(SerializationError, match="Duplicate rule identifier"):
         serialize_yarafile(yara_file)
 
     rule = Rule(name="r1", condition=BooleanLiteral(True))

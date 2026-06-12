@@ -183,6 +183,16 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Invalid rule identifier"):
         s._deserialize_rule(_serialized_json_rule(name="bad-name", condition=true_expr))
 
+    with pytest.raises(SerializationError, match="Duplicate rule identifier"):
+        s._deserialize_ast(
+            _serialized_json_yarafile(
+                rules=[
+                    _serialized_json_rule(name="duplicate", condition=true_expr),
+                    _serialized_json_rule(name="duplicate", condition=true_expr),
+                ]
+            )
+        )
+
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         s._deserialize_tag({"name": 7})
 
@@ -194,6 +204,15 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
 
     with pytest.raises(SerializationError, match="Invalid tag identifier"):
         s._deserialize_tag({"name": "bad-name"})
+
+    with pytest.raises(SerializationError, match="Duplicate tag identifier"):
+        s._deserialize_rule(
+            _serialized_json_rule(
+                name="duplicate_tag",
+                tags=[{"name": "packed"}, {"name": "packed"}],
+                condition=true_expr,
+            )
+        )
 
     with pytest.raises(SerializationError, match="Meta key must be a string"):
         s._deserialize_meta({"key": ["author"], "value": "me"})

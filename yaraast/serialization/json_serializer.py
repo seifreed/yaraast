@@ -13,6 +13,7 @@ from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
     _validate_location_metadata,
     _validate_string_reference_text,
+    _validate_unique_rule_identifiers,
     _validate_yara_identifier_text,
 )
 from yaraast.serialization.json_serialize_visitors import (
@@ -285,6 +286,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             self._deserialize_rule(rule)
             for rule in _deserialize_required_list_field(ast_data, "rules", "YaraFile")
         ]
+        _validate_unique_rule_identifiers(rules)
 
         kwargs: dict = {"imports": imports, "includes": includes, "rules": rules}
         kwargs["extern_rules"] = [

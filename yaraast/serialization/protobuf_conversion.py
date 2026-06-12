@@ -17,6 +17,8 @@ from yaraast.serialization._serialization_primitives import (
     _validate_location_metadata,
     _validate_loop_variable_text,
     _validate_string_reference_text,
+    _validate_unique_rule_identifiers,
+    _validate_unique_rule_tags,
     _validate_yara_identifier_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
@@ -269,6 +271,7 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
         ExternNamespace,
     )
     rules = _protobuf_node_list(ast.rules, "YaraFile rules", Rule)
+    _validate_unique_rule_identifiers(rules)
 
     for imp in imports:
         pb_import = pb_file.imports.add()
@@ -328,7 +331,9 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
     )
     _copy_node_metadata_to_protobuf(rule, pb_rule)
 
-    for tag in _protobuf_node_list(rule.tags, "Rule tags", Tag):
+    tags = _protobuf_node_list(rule.tags, "Rule tags", Tag)
+    _validate_unique_rule_tags(tags)
+    for tag in tags:
         pb_tag = pb_rule.tags.add()
         pb_tag.name = _validate_yara_identifier_text(
             _protobuf_required_nonempty_string(tag.name, "Tag name"),
@@ -1867,8 +1872,10 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
             condition=condition,
             pragmas=pragmas_for_rule,
         )
+        _validate_unique_rule_tags(tags)
         rules.append(_apply_node_metadata_from_protobuf(pb_rule, rule))
 
+    _validate_unique_rule_identifiers(rules)
     ast = YaraFile(
         imports=imports,
         includes=includes,

@@ -34,6 +34,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_text,
     _validate_loop_variable_text,
     _validate_string_reference_text,
+    _validate_unique_rule_tags,
     _validate_yara_identifier_text,
 )
 from yaraast.serialization.meta_scopes import deserialize_meta_scope
@@ -1165,6 +1166,7 @@ class JsonSerializerDeserializeMixin:
         tags = [
             self._deserialize_tag(t) for t in _deserialize_required_list_field(data, "tags", "Rule")
         ]
+        _validate_unique_rule_tags(tags)
         pragmas = [
             self._deserialize_in_rule_pragma(p)
             for p in _deserialize_required_list_field(data, "pragmas", "Rule")

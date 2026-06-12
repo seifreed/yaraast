@@ -1489,6 +1489,15 @@ def test_protobuf_serializer_rejects_unknown_pragma_type() -> None:
             "Invalid rule identifier",
         ),
         (
+            YaraFile(
+                rules=[
+                    Rule("duplicate", condition=BooleanLiteral(True)),
+                    Rule("duplicate", condition=BooleanLiteral(False)),
+                ]
+            ),
+            "Duplicate rule identifier",
+        ),
+        (
             YaraFile(rules=[Rule("r", tags=[Tag("")], condition=BooleanLiteral(True))]),
             "Tag name must not be empty",
         ),
@@ -1499,6 +1508,18 @@ def test_protobuf_serializer_rejects_unknown_pragma_type() -> None:
         (
             YaraFile(rules=[Rule("r", tags=[Tag("bad-name")], condition=BooleanLiteral(True))]),
             "Invalid tag identifier",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "duplicate_tag",
+                        tags=[Tag("packed"), Tag("packed")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Duplicate tag identifier",
         ),
         (
             YaraFile(
@@ -1595,9 +1616,11 @@ def test_protobuf_serializer_rejects_empty_top_level_identifier_fields(
         ("rule", "Rule name must not be empty"),
         ("rule_whitespace", "Rule name must not be empty"),
         ("rule_invalid", "Invalid rule identifier"),
+        ("rule_duplicate", "Duplicate rule identifier"),
         ("tag", "Tag name must not be empty"),
         ("tag_whitespace", "Tag name must not be empty"),
         ("tag_invalid", "Invalid tag identifier"),
+        ("tag_duplicate", "Duplicate tag identifier"),
         ("string", "PlainString identifier must not be empty"),
         ("string_whitespace", "PlainString identifier must not be empty"),
         ("extern_rule", "ExternRule name must not be empty"),
@@ -1630,6 +1653,13 @@ def test_protobuf_deserializer_rejects_empty_top_level_identifier_fields(
         pb_rule = pb_file.rules.add()
         pb_rule.name = "bad-name"
         pb_rule.condition.boolean_literal.value = True
+    elif payload_kind == "rule_duplicate":
+        first_rule = pb_file.rules.add()
+        first_rule.name = "duplicate"
+        first_rule.condition.boolean_literal.value = True
+        second_rule = pb_file.rules.add()
+        second_rule.name = "duplicate"
+        second_rule.condition.boolean_literal.value = False
     elif payload_kind == "tag":
         pb_rule = pb_file.rules.add()
         pb_rule.name = "r"
@@ -1645,6 +1675,12 @@ def test_protobuf_deserializer_rejects_empty_top_level_identifier_fields(
         pb_rule.name = "r"
         pb_rule.condition.boolean_literal.value = True
         pb_rule.tags.add().name = "bad-name"
+    elif payload_kind == "tag_duplicate":
+        pb_rule = pb_file.rules.add()
+        pb_rule.name = "duplicate_tag"
+        pb_rule.condition.boolean_literal.value = True
+        pb_rule.tags.add().name = "packed"
+        pb_rule.tags.add().name = "packed"
     elif payload_kind == "string":
         pb_rule = pb_file.rules.add()
         pb_rule.name = "r"

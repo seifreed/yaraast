@@ -16,6 +16,8 @@ from yaraast.serialization._serialization_primitives import (
     _validate_local_identifier_text,
     _validate_loop_variable_text,
     _validate_string_reference_text,
+    _validate_unique_rule_identifiers,
+    _validate_unique_rule_tags,
     _validate_yara_identifier_text,
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
@@ -508,6 +510,7 @@ def visit_yara_file(serializer, node) -> dict[str, Any]:
     imports = _serialize_node_list(serializer, node.imports, "YaraFile imports", Import)
     includes = _serialize_node_list(serializer, node.includes, "YaraFile includes", Include)
     rules = _serialize_node_list(serializer, node.rules, "YaraFile rules", Rule)
+    _validate_unique_rule_identifiers(node.rules)
     extern_rules = _serialize_node_list(
         serializer,
         node.extern_rules,
@@ -546,6 +549,8 @@ def visit_rule(serializer, node) -> dict[str, Any]:
     from yaraast.ast.rules import Tag
     from yaraast.ast.strings import StringDefinition
 
+    tags = _serialize_node_list(serializer, node.tags, "Rule tags", Tag)
+    _validate_unique_rule_tags(node.tags)
     return {
         "type": "Rule",
         "name": _validate_yara_identifier_text(
@@ -553,7 +558,7 @@ def visit_rule(serializer, node) -> dict[str, Any]:
             "rule",
         ),
         "modifiers": _serialize_rule_modifiers(node.modifiers),
-        "tags": _serialize_node_list(serializer, node.tags, "Rule tags", Tag),
+        "tags": tags,
         "meta": _serialize_meta_list(serializer, node.meta),
         "strings": _serialize_node_list(
             serializer,

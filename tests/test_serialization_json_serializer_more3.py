@@ -661,6 +661,15 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
         (
             YaraFile(
                 rules=[
+                    Rule(name="duplicate", condition=BooleanLiteral(True)),
+                    Rule(name="duplicate", condition=BooleanLiteral(False)),
+                ]
+            ),
+            "Duplicate rule identifier",
+        ),
+        (
+            YaraFile(
+                rules=[
                     Rule(
                         name="invalid_tag",
                         tags=[Tag(name=invalid_text)],
@@ -693,6 +702,18 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
                 ]
             ),
             "Invalid tag identifier",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="duplicate_tag",
+                        tags=[Tag(name="packed"), Tag(name="packed")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Duplicate tag identifier",
         ),
         (
             YaraFile(
