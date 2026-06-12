@@ -1633,6 +1633,10 @@ def test_json_serializer_rejects_invalid_location_fields() -> None:
             Location(1, 1, end_column=invalid_bool),
             "Location end_column must be an integer",
         ),
+        (
+            Location(0, 1),
+            "Location line must be at least 1",
+        ),
     ]
 
     for location, message in invalid_locations:

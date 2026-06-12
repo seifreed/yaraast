@@ -2642,6 +2642,7 @@ def test_protobuf_serializer_rejects_invalid_comment_metadata(
             Location(1, 1, end_column=-(2**31) - 1),
             "Location end_column must fit in protobuf int32",
         ),
+        (Location(0, 1), "Location line must be at least 1"),
     ],
 )
 def test_protobuf_serializer_rejects_invalid_location_metadata(

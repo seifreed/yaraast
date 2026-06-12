@@ -60,17 +60,32 @@ def _node_has_metadata(node) -> bool:
 
 
 def _copy_location_to_protobuf(location, pb_location) -> None:
-    pb_location.line = _protobuf_int32_value(location.line, "Location line")
-    pb_location.column = _protobuf_int32_value(location.column, "Location column")
+    line = _protobuf_int32_value(location.line, "Location line")
+    column = _protobuf_int32_value(location.column, "Location column")
+    file = None
     if location.file is not None:
-        pb_location.file = _protobuf_required_string(location.file, "Location file")
+        file = _protobuf_required_string(location.file, "Location file")
+    end_line = None
     if location.end_line is not None:
-        pb_location.end_line = _protobuf_int32_value(location.end_line, "Location end_line")
+        end_line = _protobuf_int32_value(location.end_line, "Location end_line")
+    end_column = None
     if location.end_column is not None:
-        pb_location.end_column = _protobuf_int32_value(
+        end_column = _protobuf_int32_value(
             location.end_column,
             "Location end_column",
         )
+    try:
+        location.validate_structure()
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    pb_location.line = line
+    pb_location.column = column
+    if file is not None:
+        pb_location.file = file
+    if end_line is not None:
+        pb_location.end_line = end_line
+    if end_column is not None:
+        pb_location.end_column = end_column
 
 
 def _protobuf_location_to_ast(pb_location):

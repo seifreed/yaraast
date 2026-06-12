@@ -2079,6 +2079,11 @@ def test_simple_roundtrip_serialize_hex_tokens_and_location_reject_wrong_types()
     with pytest.raises(SerializationError, match="Location line must be an integer"):
         serialize_node(import_with_bad_line)
 
+    import_with_non_positive_line = Import("pe")
+    import_with_non_positive_line.location = Location(0, 1)
+    with pytest.raises(SerializationError, match="Location line must be at least 1"):
+        serialize_node(import_with_non_positive_line)
+
     import_with_bad_file = Import("pe")
     import_with_bad_file.location = Location(1, 1, file=cast(Any, []))
     with pytest.raises(SerializationError, match="Location file must be a string"):

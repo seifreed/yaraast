@@ -977,6 +977,10 @@ def _deserialize_required_string_set(data: dict[str, Any], field: str, context: 
 
 
 def _serialize_location(location: Location) -> dict[str, Any]:
+    try:
+        location.validate_structure()
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
     data: dict[str, Any] = {
         "line": _serialize_required_int(location.line, "Location line"),
         "column": _serialize_required_int(location.column, "Location column"),
