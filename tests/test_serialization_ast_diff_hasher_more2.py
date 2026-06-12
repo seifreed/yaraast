@@ -626,6 +626,57 @@ def test_ast_hasher_rejects_invalid_real_condition_state(
         AstHasher().visit(node)
 
 
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (
+            WithStatement([cast(Any, object())], BooleanLiteral(True)),
+            "WithStatement declarations must contain WithDeclaration nodes",
+        ),
+        (
+            WithDeclaration(cast(Any, object()), IntegerLiteral(1)),
+            "Local variable name must be a string",
+        ),
+        (
+            ArrayComprehension(variable=cast(Any, object())),
+            "Local variable name must be a string",
+        ),
+        (
+            ListExpression([cast(Any, object())]),
+            "ListExpression elements must contain Expression nodes",
+        ),
+        (
+            DictExpression([cast(Any, object())]),
+            "DictExpression items must contain DictItem nodes",
+        ),
+        (DictItem(cast(Any, object()), StringLiteral("v")), "DictItem.key must be an AST node"),
+        (
+            SliceExpression(cast(Any, object())),
+            "SliceExpression.target must be an AST node",
+        ),
+        (
+            LambdaExpression(cast(Any, "x"), Identifier("x")),
+            "LambdaExpression parameters must be a list or tuple",
+        ),
+        (
+            PatternMatch(Identifier("x"), [cast(Any, object())]),
+            "PatternMatch cases must contain MatchCase nodes",
+        ),
+        (
+            MatchCase(cast(Any, object()), BooleanLiteral(True)),
+            "MatchCase.pattern must be an AST node",
+        ),
+        (
+            SpreadOperator(Identifier("items"), cast(Any, "dict")),
+            "SpreadOperator is_dict must be a boolean",
+        ),
+    ],
+)
+def test_ast_hasher_rejects_invalid_real_yarax_state(node: Any, message: str) -> None:
+    with pytest.raises(TypeError, match=message):
+        AstHasher().visit(node)
+
+
 def test_ast_hasher_yarax_expression_nodes() -> None:
     hasher = AstHasher()
 

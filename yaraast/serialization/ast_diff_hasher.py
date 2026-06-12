@@ -5,12 +5,13 @@ from __future__ import annotations
 import hashlib
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.base import ASTNode
 from yaraast.ast.expressions import Expression
 from yaraast.ast.strings import HexAlternative, HexByte, HexToken
 from yaraast.visitor import ASTVisitor
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import ASTNode, YaraFile
+    from yaraast.ast.base import YaraFile
 
 
 def _meta_value_repr(value: Any) -> str:
@@ -37,6 +38,13 @@ def _validate_real_hex_token(node: Any) -> None:
 
 def _validate_real_expression(node: Any) -> None:
     if isinstance(node, Expression):
+        validate_structure = getattr(node, "validate_structure", None)
+        if callable(validate_structure):
+            validate_structure()
+
+
+def _validate_real_ast_node(node: Any) -> None:
+    if isinstance(node, ASTNode):
         validate_structure = getattr(node, "validate_structure", None)
         if callable(validate_structure):
             validate_structure()
@@ -344,19 +352,23 @@ class AstHasher(ASTVisitor[str]):
         return f"Of({self._hash_value(node.quantifier)},{self._hash_string_set(node.string_set)})"
 
     def visit_with_statement(self, node) -> str:
+        _validate_real_expression(node)
         declarations = "|".join(self.visit(declaration) for declaration in node.declarations)
         return f"With({declarations},{self.visit(node.body)})"
 
     def visit_with_declaration(self, node) -> str:
+        _validate_real_ast_node(node)
         return f"WithDecl({node.identifier},{self.visit(node.value)})"
 
     def visit_array_comprehension(self, node) -> str:
+        _validate_real_expression(node)
         return (
             f"ArrayComp({self._hash_value(node.expression)},{node.variable},"
             f"{self._hash_value(node.iterable)},{self._hash_value(node.condition)})"
         )
 
     def visit_dict_comprehension(self, node) -> str:
+        _validate_real_expression(node)
         return (
             f"DictComp({self._hash_value(node.key_expression)},"
             f"{self._hash_value(node.value_expression)},{node.key_variable},"
@@ -365,41 +377,51 @@ class AstHasher(ASTVisitor[str]):
         )
 
     def visit_tuple_expression(self, node) -> str:
+        _validate_real_expression(node)
         elements = "|".join(self.visit(element) for element in node.elements)
         return f"Tuple({elements})"
 
     def visit_tuple_indexing(self, node) -> str:
+        _validate_real_expression(node)
         return f"TupleIndex({self.visit(node.tuple_expr)},{self.visit(node.index)})"
 
     def visit_list_expression(self, node) -> str:
+        _validate_real_expression(node)
         elements = "|".join(self.visit(element) for element in node.elements)
         return f"List({elements})"
 
     def visit_dict_expression(self, node) -> str:
+        _validate_real_expression(node)
         items = "|".join(self.visit(item) for item in node.items)
         return f"DictExpr({items})"
 
     def visit_dict_item(self, node) -> str:
+        _validate_real_ast_node(node)
         return f"DictItem({self.visit(node.key)},{self.visit(node.value)})"
 
     def visit_slice_expression(self, node) -> str:
+        _validate_real_expression(node)
         return (
             f"Slice({self.visit(node.target)},{self._hash_value(node.start)},"
             f"{self._hash_value(node.stop)},{self._hash_value(node.step)})"
         )
 
     def visit_lambda_expression(self, node) -> str:
+        _validate_real_expression(node)
         parameters = "|".join(node.parameters)
         return f"Lambda({parameters},{self.visit(node.body)})"
 
     def visit_pattern_match(self, node) -> str:
+        _validate_real_expression(node)
         cases = "|".join(self.visit(case) for case in node.cases)
         return f"Match({self.visit(node.value)},{cases},{self._hash_value(node.default)})"
 
     def visit_match_case(self, node) -> str:
+        _validate_real_ast_node(node)
         return f"Case({self.visit(node.pattern)},{self.visit(node.result)})"
 
     def visit_spread_operator(self, node) -> str:
+        _validate_real_expression(node)
         return f"Spread({self.visit(node.expression)},{node.is_dict})"
 
     def _hash_value(self, value) -> str:
