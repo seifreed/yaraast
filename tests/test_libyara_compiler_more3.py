@@ -56,6 +56,15 @@ def test_libyara_compiler_compile_file_rejects_invalid_filepath_types(filepath: 
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_libyara_compiler_compile_file_rejects_inaccessible_filepath() -> None:
+    result = LibyaraCompiler().compile_file("a" * 5000)
+
+    assert result.success is False
+    assert result.errors
+    assert result.errors[0].startswith("path could not be accessed")
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 def test_libyara_compiler_compile_file_rejects_invalid_utf8(tmp_path: Path) -> None:
     rule_path = tmp_path / "invalid.yar"
     rule_path.write_bytes(b"\xff")

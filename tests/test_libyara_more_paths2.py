@@ -167,6 +167,11 @@ def test_libyara_scanner_file_process_and_error_paths(tmp_path: Path) -> None:
     assert missing_result.success is False
     assert any("File not found:" in err for err in missing_result.errors)
 
+    inaccessible_result = scanner.scan_file(compilation.compiled_rules, "a" * 5000)
+    assert inaccessible_result.success is False
+    assert inaccessible_result.errors
+    assert inaccessible_result.errors[0].startswith("path could not be accessed")
+
     dir_result = scanner.scan_file(compilation.compiled_rules, tmp_path)
     assert dir_result.success is False
     assert dir_result.errors
@@ -267,6 +272,10 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
     bad_type = matcher.scan(cast(Any, ["bad-data"]))
     assert bad_type["success"] is False
     assert "Unsupported data type" in bad_type["error"]
+
+    inaccessible = matcher.scan("a" * 5000)
+    assert inaccessible["success"] is False
+    assert inaccessible["error"].startswith("path could not be accessed")
 
     bool_data = matcher.scan(cast(Any, True))
     assert bool_data["success"] is False

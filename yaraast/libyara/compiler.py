@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.libyara._availability import is_missing_yara_import
-from yaraast.libyara._paths import require_file_path
+from yaraast.libyara._paths import path_exists, require_file_path
 
 try:
     import yara
@@ -275,7 +275,12 @@ class LibyaraCompiler:
         except (TypeError, ValueError) as exc:
             return CompilationResult(success=False, errors=[str(exc)])
 
-        if not filepath.exists():
+        try:
+            file_exists = path_exists(filepath)
+        except ValueError as exc:
+            return CompilationResult(success=False, errors=[str(exc)])
+
+        if not file_exists:
             return CompilationResult(
                 success=False,
                 errors=[f"File not found: {filepath}"],

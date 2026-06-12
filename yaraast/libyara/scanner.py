@@ -8,7 +8,7 @@ import time
 from typing import Any
 
 from yaraast.libyara._availability import is_missing_yara_import
-from yaraast.libyara._paths import require_file_path
+from yaraast.libyara._paths import path_exists, path_stat, require_file_path
 
 try:
     import yara
@@ -168,7 +168,12 @@ class LibyaraScanner:
         except (TypeError, ValueError) as exc:
             return ScanResult(success=False, errors=[str(exc)])
 
-        if not filepath.exists():
+        try:
+            file_exists = path_exists(filepath)
+        except ValueError as exc:
+            return ScanResult(success=False, errors=[str(exc)])
+
+        if not file_exists:
             return ScanResult(success=False, errors=[f"File not found: {filepath}"])
 
         start_time = time.time()
@@ -177,7 +182,7 @@ class LibyaraScanner:
 
         try:
             # Get file size
-            file_size = filepath.stat().st_size
+            file_size = path_stat(filepath).st_size
 
             # Perform scan - only pass timeout if it's not None
             match_kwargs = {"filepath": str(filepath), "fast": fast_mode}
