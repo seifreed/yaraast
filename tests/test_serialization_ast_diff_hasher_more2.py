@@ -20,7 +20,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
-from yaraast.ast.modifiers import RuleModifier
+from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaType
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexAlternative, HexByte
@@ -389,6 +389,14 @@ def test_ast_hasher_rejects_invalid_real_pragma_state(
 ) -> None:
     with pytest.raises(error_type, match=message):
         AstHasher().visit_pragma(pragma)
+
+
+def test_ast_hasher_rejects_invalid_real_string_modifier_state() -> None:
+    modifier = StringModifier.from_name_value("base64", "alphabet")
+    modifier.value = cast(Any, object())
+
+    with pytest.raises(TypeError, match="StringModifier value must be"):
+        AstHasher().visit_string_modifier(modifier)
 
 
 @pytest.mark.parametrize(

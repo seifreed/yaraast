@@ -120,6 +120,10 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_string_modifier(self, node) -> str:
         """Hash StringModifier node."""
+        from yaraast.ast.modifiers import StringModifier
+
+        if isinstance(node, StringModifier):
+            node.validate_structure()
         return f"Mod({node.name},{node.value})"
 
     def visit_hex_byte(self, node) -> str:
