@@ -63,6 +63,9 @@ class TypeChecker(BaseVisitor[None]):
             if env.lookup(constant_name) is None:
                 env.define(constant_name, constant_type)
 
+    def _base_env_has_variable(self, name: str) -> bool:
+        return self._base_env is not None and self._base_env.lookup(name) is not None
+
     def check_compatibility(self, type1: object, type2: object) -> bool:
         """Check if two types are compatible."""
         if isinstance(type1, YaraType) and isinstance(type2, YaraType):
@@ -99,6 +102,9 @@ class TypeChecker(BaseVisitor[None]):
                 self.env.add_rule(rule.name)
             except ValueError as exc:
                 self.errors.append(str(exc))
+                continue
+            if self._base_env_has_variable(rule.name):
+                self.errors.append(f"Duplicate rule identifier: {rule.name}")
                 continue
             self.visit(rule)
 
