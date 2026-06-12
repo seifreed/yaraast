@@ -28,12 +28,12 @@ def token_to_range(token: Token) -> Range:
 def location_to_range(location: Location, source_text: str | None = None) -> Range:
     """Convert an AST Location to an LSP range with best-effort end estimation."""
     lines = source_text.split("\n") if source_text is not None else []
-    start_line = location.line - 1
+    start_line = max(0, location.line - 1)
     start_python = max(0, location.column - 1)
     start_character = _python_column_to_lsp(lines, start_line, start_python)
     start = Position(line=start_line, character=start_character)
     if location.end_line is not None and location.end_column is not None:
-        end_line = location.end_line - 1
+        end_line = max(0, location.end_line - 1)
         end_python = max(0, location.end_column - 1)
         end_character = _python_column_to_lsp(lines, end_line, end_python)
         if end_line == start_line:

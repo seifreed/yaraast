@@ -84,6 +84,15 @@ def test_location_to_range_ignores_invalid_utf8_location_file(tmp_path: Path) ->
     assert loc_range.end.character == 3
 
 
+def test_location_to_range_clamps_zero_based_location_line() -> None:
+    loc_range = location_to_range(Location(line=0, column=1), source_text="abc")
+
+    assert loc_range.start.line == 0
+    assert loc_range.start.character == 0
+    assert loc_range.end.line == 0
+    assert loc_range.end.character == 1
+
+
 def test_position_offset_roundtrip() -> None:
     text = "one\ntwo\nthree"
     pos = Position(line=1, character=2)
