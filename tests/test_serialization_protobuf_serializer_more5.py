@@ -2185,6 +2185,7 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
         ),
         (ModuleReference(cast(Any, ["pe"])), "ModuleReference module must be a string"),
         (ModuleReference(""), "ModuleReference module must not be empty"),
+        (ModuleReference("bad-name"), "Invalid module identifier"),
         (
             DictionaryAccess(Identifier("items"), cast(Any, 123)),
             "DictionaryAccess key must be a string or expression",
@@ -2583,6 +2584,17 @@ def test_protobuf_deserializer_rejects_invalid_function_call_names() -> None:
     pb_rule.condition.function_call.function = "bad-name"
 
     with pytest.raises(SerializationError, match="Invalid function identifier"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserializer_rejects_invalid_module_reference_names() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_module_reference"
+    pb_rule.condition.module_reference.module = "bad-name"
+
+    with pytest.raises(SerializationError, match="Invalid module identifier"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 

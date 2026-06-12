@@ -568,7 +568,10 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_module_reference(self, node) -> dict[str, Any]:
         return self._simple_node(
             "ModuleReference",
-            module=_serialize_required_nonempty_string(node.module, "ModuleReference module"),
+            module=_validate_yara_identifier_text(
+                _serialize_required_nonempty_string(node.module, "ModuleReference module"),
+                "module",
+            ),
         )
 
     def visit_dictionary_access(self, node) -> dict[str, Any]:

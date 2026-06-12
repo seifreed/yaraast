@@ -1844,6 +1844,9 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="ModuleReference module is required"):
         deserialize_node({"type": "ModuleReference"})
 
+    with pytest.raises(SerializationError, match="Invalid module identifier"):
+        deserialize_node({"type": "ModuleReference", "module": "bad-name"})
+
     with pytest.raises(SerializationError, match="DictionaryAccess key must be a string"):
         deserialize_node(
             {"type": "DictionaryAccess", "object": {"type": "ModuleReference", "module": "pe"}}
@@ -2021,6 +2024,7 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
         ),
         (ModuleReference(""), "ModuleReference module must not be empty"),
         (ModuleReference(cast(Any, ["pe"])), "ModuleReference module must be a string"),
+        (ModuleReference("bad-name"), "Invalid module identifier"),
         (
             WithDeclaration(cast(Any, ["x"]), IntegerLiteral(1)),
             "WithDeclaration identifier must be a string",

@@ -1466,7 +1466,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, ModuleReference):
         return {
             "type": "ModuleReference",
-            "module": _serialize_required_nonempty_string(node.module, "ModuleReference module"),
+            "module": _validate_yara_identifier_text(
+                _serialize_required_nonempty_string(node.module, "ModuleReference module"),
+                "module",
+            ),
         }
     if isinstance(node, DictionaryAccess):
         return {
@@ -2223,7 +2226,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ModuleReference":
         return ModuleReference(
-            _deserialize_nonempty_string_field(data, "module", "ModuleReference")
+            _validate_yara_identifier_text(
+                _deserialize_nonempty_string_field(data, "module", "ModuleReference"),
+                "module",
+            )
         )
     if node_type == "DictionaryAccess":
         return DictionaryAccess(

@@ -1552,9 +1552,12 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             "MemberAccess member",
         )
     elif isinstance(expr, ModuleReference):
-        pb_expr.module_reference.module = _protobuf_required_nonempty_string(
-            expr.module,
-            "ModuleReference module",
+        pb_expr.module_reference.module = _validate_yara_identifier_text(
+            _protobuf_required_nonempty_string(
+                expr.module,
+                "ModuleReference module",
+            ),
+            "module",
         )
     elif isinstance(expr, DictionaryAccess):
         convert_expression_to_protobuf(expr.object, pb_expr.dictionary_access.object)
@@ -2535,9 +2538,12 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("module_reference"):
         return with_metadata(
             ModuleReference(
-                module=_protobuf_required_nonempty_string(
-                    pb_expr.module_reference.module,
-                    "ModuleReference module",
+                module=_validate_yara_identifier_text(
+                    _protobuf_required_nonempty_string(
+                        pb_expr.module_reference.module,
+                        "ModuleReference module",
+                    ),
+                    "module",
                 )
             )
         )

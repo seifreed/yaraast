@@ -706,7 +706,10 @@ def _deser_module_reference(self, data: dict[str, Any]):
     from yaraast.ast.modules import ModuleReference
 
     return ModuleReference(
-        module=_deserialize_nonempty_string_field(data, "module", "ModuleReference")
+        module=_validate_yara_identifier_text(
+            _deserialize_nonempty_string_field(data, "module", "ModuleReference"),
+            "module",
+        )
     )
 
 

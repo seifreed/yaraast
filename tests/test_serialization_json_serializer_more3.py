@@ -565,6 +565,7 @@ def test_json_serializer_rejects_invalid_leaf_values() -> None:
         (BooleanLiteral(invalid_bool), "BooleanLiteral value must be a boolean"),
         (ModuleReference(""), "ModuleReference module must not be empty"),
         (ModuleReference(invalid_list), "ModuleReference module must be a string"),
+        (ModuleReference("bad-name"), "Invalid module identifier"),
         (AtExpression("", IntegerLiteral(0)), "AtExpression string_id must not be empty"),
         (AtExpression(invalid_text, IntegerLiteral(0)), "AtExpression string_id must be a string"),
         (AtExpression("@a", IntegerLiteral(0)), "Invalid string reference"),
