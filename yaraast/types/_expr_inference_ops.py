@@ -1250,9 +1250,7 @@ def _lookup_string_set_local(ctx: Any, name: str) -> YaraType | None:
         ctx.errors.append("String reference must be a string")
         return None
     names = [name]
-    if name.startswith("$"):
-        names.append(name.lstrip("$"))
-    else:
+    if not name.startswith("$"):
         names.append(f"${name}")
 
     for local_name in names:

@@ -639,6 +639,22 @@ def test_semantic_validator_counts_identifier_string_set_items_as_references() -
         assert result.errors == []
 
 
+def test_semantic_validator_does_not_shadow_explicit_string_ref_with_external() -> None:
+    ast = Parser().parse("""
+        rule explicit_string_ref {
+            strings:
+                $a = "a"
+                $b = "b"
+            condition:
+                1 of ($a, $b)
+        }
+        """)
+
+    result = SemanticValidator(externals={"b": 1}).validate(ast)
+
+    assert result.is_valid is True, [error.message for error in result.errors]
+
+
 def test_semantic_validator_accepts_bare_string_literal_string_set_items() -> None:
     ast = YaraFile(
         rules=[
