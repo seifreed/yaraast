@@ -122,6 +122,17 @@ def test_optimize_yara_file_rejects_directory_paths(tmp_path: Path) -> None:
         optimize_yara_file(path, output_path=output_dir)
 
 
+def test_optimize_yara_file_rejects_inaccessible_paths(tmp_path: Path) -> None:
+    path = tmp_path / "perf.yar"
+    path.write_text("rule perf { condition: true }", encoding="utf-8")
+    inaccessible = "a" * 5000
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        optimize_yara_file(inaccessible)
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        optimize_yara_file(path, output_path=inaccessible)
+
+
 def test_optimize_yara_file_rejects_invalid_utf8(tmp_path: Path) -> None:
     path = tmp_path / "bad.yar"
     path.write_bytes(b"\xff")

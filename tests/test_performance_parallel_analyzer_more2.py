@@ -145,6 +145,13 @@ def test_parallel_analyzer_rejects_empty_direct_file_paths(file_path: str) -> No
         analyzer._analyze_file_path(file_path)
 
 
+def test_parallel_analyzer_rejects_inaccessible_direct_file_path() -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        analyzer._analyze_file_path("a" * 5000)
+
+
 def test_parallel_analyzer_batch_analyze_files_preserves_input_order(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -396,6 +403,14 @@ def test_parallel_graph_export_rejects_file_output_dir(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="output_dir must not be a file"):
         analyzer.generate_graphs_parallel([ast], output_dir)
+
+
+def test_parallel_graph_export_rejects_inaccessible_output_dir() -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+    ast = _parsed_ast("graph_rule")
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        analyzer.generate_graphs_parallel([ast], "a" * 5000)
 
 
 def test_parallel_parse_mixed_chunk_preserves_successful_files(tmp_path: Path) -> None:

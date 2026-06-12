@@ -13,6 +13,8 @@ from yaraast.ast.base import YaraFile
 from yaraast.errors import YaraASTError
 from yaraast.performance.parallel_models import Job, JobStatus, ParseErrorMarker
 from yaraast.performance.validation import (
+    path_exists_and_is_dir,
+    path_exists_and_not_dir,
     validate_file_path_sequence,
     validate_positive_int_setting,
 )
@@ -95,7 +97,7 @@ def require_output_dir_path(output_dir: object) -> Path:
         msg = "output_dir must not be empty"
         raise ValueError(msg)
     path = Path(raw_path)
-    if path.exists() and not path.is_dir():
+    if path_exists_and_not_dir(path):
         msg = "output_dir must not be a file"
         raise ValueError(msg)
     return path
@@ -111,7 +113,7 @@ def _require_file_path(path: object) -> Path:
         msg = "file_path must not be empty"
         raise ValueError(msg)
     path_obj = Path(raw_path)
-    if path_obj.exists() and path_obj.is_dir():
+    if path_exists_and_is_dir(path_obj):
         msg = "file_path must not be a directory"
         raise ValueError(msg)
     return path_obj

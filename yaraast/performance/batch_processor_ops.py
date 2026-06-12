@@ -14,6 +14,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.errors import YaraASTError
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.parser.source import parse_yara_source
+from yaraast.performance.validation import path_exists_and_not_dir
 from yaraast.serialization.json_serializer import JsonSerializer
 
 if TYPE_CHECKING:
@@ -206,7 +207,7 @@ def require_output_dir_path(output_dir: object) -> Path | None:
         msg = "output_dir must not be empty"
         raise ValueError(msg)
     path = Path(raw_path)
-    if path.exists() and not path.is_dir():
+    if path_exists_and_not_dir(path):
         msg = "output_dir must not be a file"
         raise ValueError(msg)
     return path

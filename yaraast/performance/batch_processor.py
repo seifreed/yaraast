@@ -18,6 +18,7 @@ from yaraast.performance.batch_processor_ops import (
     validate_item,
 )
 from yaraast.performance.validation import (
+    path_exists_and_not_dir,
     validate_file_path_sequence,
     validate_positive_int_setting,
 )
@@ -135,7 +136,7 @@ class BatchProcessor:
             msg = "temp_dir must not be empty"
             raise ValueError(msg)
         path = Path(raw_path)
-        if path.exists() and not path.is_dir():
+        if path_exists_and_not_dir(path):
             msg = "temp_dir must be a directory"
             raise ValueError(msg)
         return path

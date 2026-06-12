@@ -132,6 +132,11 @@ def test_batch_processor_rejects_file_temp_dir(tmp_path: Path) -> None:
         BatchProcessor(temp_dir=temp_dir)
 
 
+def test_batch_processor_rejects_inaccessible_temp_dir() -> None:
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        BatchProcessor(temp_dir="a" * 5000)
+
+
 def test_batch_processor_rejects_single_string_file_paths(tmp_path: Path) -> None:
     path = tmp_path / "single.yar"
     path.write_text("rule single { condition: true }", encoding="utf-8")
@@ -176,6 +181,16 @@ def test_batch_processor_process_files_rejects_file_output_dir(tmp_path: Path) -
 
     with pytest.raises(ValueError, match="output_dir must not be a file"):
         BatchProcessor().process_files([path], BatchOperation.HTML_TREE, output_dir=output_dir)
+
+
+def test_batch_processor_process_files_rejects_inaccessible_output_dir(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "single.yar"
+    path.write_text("rule single { condition: true }", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        BatchProcessor().process_files([path], BatchOperation.HTML_TREE, output_dir="a" * 5000)
 
 
 @pytest.mark.parametrize("output_dir", ["", "   ", "\t"])
