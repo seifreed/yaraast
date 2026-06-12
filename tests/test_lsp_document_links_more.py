@@ -22,6 +22,14 @@ def test_document_links_rejects_non_string_text(text: Any) -> None:
         provider.get_document_links(cast(str, text), "file://test.yar")
 
 
+@pytest.mark.parametrize("document_uri", [None, 1, b"file://test.yar", object()])
+def test_document_links_rejects_non_string_uri(document_uri: Any) -> None:
+    provider = DocumentLinksProvider()
+
+    with pytest.raises(TypeError, match="Document links URI must be a string"):
+        provider.get_document_links('import "pe"\n', cast(str, document_uri))
+
+
 def test_document_links_import_and_include(tmp_path: Path) -> None:
     include_path = tmp_path / "inc.yar"
     include_path.write_text("rule inc { condition: true }", encoding="utf-8")

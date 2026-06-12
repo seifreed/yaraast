@@ -40,6 +40,9 @@ class DocumentLinksProvider:
         if not isinstance(text, str):
             msg = "Document links text must be a string"
             raise TypeError(msg)
+        if not isinstance(document_uri, str):
+            msg = "Document links URI must be a string"
+            raise TypeError(msg)
 
         links = []
 
