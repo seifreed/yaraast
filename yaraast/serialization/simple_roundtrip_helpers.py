@@ -1608,7 +1608,11 @@ def _serialize_rule_modifiers(modifiers: Any, context: str) -> list[str]:
     serialized = []
     for modifier in modifiers:
         if isinstance(modifier, RuleModifier):
-            serialized.append(str(modifier))
+            try:
+                serialized.append(str(modifier))
+            except (AttributeError, TypeError, ValueError) as exc:
+                msg = f"{context} modifier name must be a string"
+                raise SerializationError(msg) from exc
             continue
         if isinstance(modifier, str):
             serialized.append(modifier)

@@ -1031,6 +1031,21 @@ def test_simple_roundtrip_helpers_preserve_string_modifier_aliases() -> None:
     assert escaped_plain.modifiers == ['vendor_modifier("a\\"\\\\b\\n")']
 
 
+def test_simple_roundtrip_serialize_rejects_malformed_rule_modifier_name() -> None:
+    malformed_file = YaraFile(
+        rules=[
+            Rule(
+                "bad_modifier",
+                modifiers=[RuleModifier(cast(Any, object()))],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(SerializationError, match="Rule modifier name must be a string"):
+        serialize_node(malformed_file)
+
+
 def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Rule modifiers must be a list"):
         deserialize_rule(_serialized_simple_rule(modifiers="private"))
