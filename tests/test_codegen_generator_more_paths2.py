@@ -3103,6 +3103,21 @@ def test_codegen_rejects_known_module_function_comparison_type_mismatches(
         CodeGenerator().generate(ast)
 
 
+def test_codegen_rejects_known_module_string_as_matches_rhs() -> None:
+    condition = BinaryExpression(
+        StringLiteral("abc"),
+        "matches",
+        FunctionCall("pe.imphash", []),
+    )
+    ast = YaraFile(
+        imports=[Import("pe")],
+        rules=[Rule(name="invalid_matches_rhs", condition=condition)],
+    )
+
+    with pytest.raises(ValueError, match="Right operand of 'matches' must be regex"):
+        CodeGenerator().generate(ast)
+
+
 @pytest.mark.parametrize(
     ("module_name", "condition", "message"),
     [

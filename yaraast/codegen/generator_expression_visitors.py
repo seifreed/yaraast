@@ -358,7 +358,7 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
                 StringLiteral | BooleanLiteral | IntegerLiteral | DoubleLiteral | StringIdentifier,
             )
             or _is_definitely_boolean_expression(right)
-            or right_type in {"integer", "double"}
+            or (right_type is not None and right_type != "regex")
         ):
             msg = "Right operand of 'matches' must be regex for libyara output"
             raise ValueError(msg)
