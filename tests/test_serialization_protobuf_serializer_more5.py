@@ -2181,6 +2181,8 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             UnaryExpression("???", BooleanLiteral(True)),
             "Invalid unary operator",
         ),
+        (StringOffset("$a", StringLiteral("x")), "String offset index must be integer"),
+        (StringLength("$a", StringLiteral("x")), "String length index must be integer"),
         (
             SetExpression([]),
             "Set expression must contain at least one element",
@@ -2244,6 +2246,7 @@ def test_protobuf_deserializer_rejects_invalid_rule_modifier_names(
             AtExpression("", IntegerLiteral(0)),
             "AtExpression string_id must not be empty",
         ),
+        (AtExpression("$a", StringLiteral("x")), "At expression offset must be integer"),
         (AtExpression("@a", IntegerLiteral(0)), "Invalid string reference"),
         (AtExpression("$bad-name", IntegerLiteral(0)), "Invalid string reference"),
         (
@@ -2667,6 +2670,38 @@ def test_protobuf_deserializer_rejects_empty_set_expression() -> None:
     with pytest.raises(
         SerializationError, match="Set expression must contain at least one element"
     ):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+@pytest.mark.parametrize(
+    ("expression_kind", "message"),
+    [
+        ("string_offset", "String offset index must be integer"),
+        ("string_length", "String length index must be integer"),
+        ("at_expression", "At expression offset must be integer"),
+    ],
+)
+def test_protobuf_deserializer_rejects_non_integer_index_expressions(
+    expression_kind: str,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "non_integer_index_expression"
+    condition = pb_rule.condition
+
+    if expression_kind == "string_offset":
+        condition.string_offset.string_id = "$a"
+        condition.string_offset.index.string_literal.value = "x"
+    elif expression_kind == "string_length":
+        condition.string_length.string_id = "$a"
+        condition.string_length.index.string_literal.value = "x"
+    elif expression_kind == "at_expression":
+        condition.at_expression.string_id = "$a"
+        condition.at_expression.offset.string_literal.value = "x"
+
+    with pytest.raises(SerializationError, match=message):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 

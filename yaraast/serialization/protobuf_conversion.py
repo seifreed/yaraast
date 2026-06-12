@@ -17,6 +17,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_extern_rule_identifier_text,
     _validate_function_identifier_text,
     _validate_in_expression_range,
+    _validate_integer_expression,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_location_metadata,
@@ -1483,7 +1484,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             allow_placeholder=True,
         )
         if expr.index is not None:
-            convert_expression_to_protobuf(expr.index, pb_expr.string_offset.index)
+            convert_expression_to_protobuf(
+                _validate_integer_expression(expr.index, "String offset index"),
+                pb_expr.string_offset.index,
+            )
     elif isinstance(expr, StringLength):
         pb_expr.string_length.string_id = _validate_string_reference_text(
             _protobuf_required_nonempty_string(
@@ -1493,7 +1497,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             allow_placeholder=True,
         )
         if expr.index is not None:
-            convert_expression_to_protobuf(expr.index, pb_expr.string_length.index)
+            convert_expression_to_protobuf(
+                _validate_integer_expression(expr.index, "String length index"),
+                pb_expr.string_length.index,
+            )
     elif isinstance(expr, IntegerLiteral):
         pb_expr.integer_literal.value = _protobuf_int64_value(
             expr.value,
@@ -1652,7 +1659,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         else:
             msg = "AtExpression string_id must be a string or expression"
             raise SerializationError(msg)
-        convert_expression_to_protobuf(expr.offset, pb_expr.at_expression.offset)
+        convert_expression_to_protobuf(
+            _validate_integer_expression(expr.offset, "At expression offset"),
+            pb_expr.at_expression.offset,
+        )
     elif isinstance(expr, InExpression):
         if isinstance(expr.subject, str):
             pb_expr.in_expression.string_id = _validate_string_reference_text(
@@ -2445,7 +2455,10 @@ def protobuf_to_expression(pb_expr):
                     allow_placeholder=True,
                 ),
                 index=(
-                    protobuf_to_expression(pb_expr.string_offset.index)
+                    _validate_integer_expression(
+                        protobuf_to_expression(pb_expr.string_offset.index),
+                        "String offset index",
+                    )
                     if pb_expr.string_offset.HasField("index")
                     else None
                 ),
@@ -2462,7 +2475,10 @@ def protobuf_to_expression(pb_expr):
                     allow_placeholder=True,
                 ),
                 index=(
-                    protobuf_to_expression(pb_expr.string_length.index)
+                    _validate_integer_expression(
+                        protobuf_to_expression(pb_expr.string_length.index),
+                        "String length index",
+                    )
                     if pb_expr.string_length.HasField("index")
                     else None
                 ),
@@ -2678,7 +2694,10 @@ def protobuf_to_expression(pb_expr):
         return with_metadata(
             AtExpression(
                 string_id=subject,
-                offset=protobuf_to_expression(pb_expr.at_expression.offset),
+                offset=_validate_integer_expression(
+                    protobuf_to_expression(pb_expr.at_expression.offset),
+                    "At expression offset",
+                ),
             ),
         )
     if pb_expr.HasField("in_expression"):

@@ -1340,6 +1340,25 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     ):
         s._deserialize_expression({"type": "SetExpression", "elements": []})
 
+    string_expr: dict[str, Any] = {"type": "StringLiteral", "value": "x"}
+    integer_expression_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "StringOffset", "string_id": "$a", "index": string_expr},
+            "String offset index must be integer",
+        ),
+        (
+            {"type": "StringLength", "string_id": "$a", "index": string_expr},
+            "String length index must be integer",
+        ),
+        (
+            {"type": "AtExpression", "string_id": "$a", "offset": string_expr},
+            "At expression offset must be integer",
+        ),
+    )
+    for payload, message in integer_expression_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
     with pytest.raises(SerializationError, match="FunctionCall arguments must contain expressions"):
         s._deserialize_expression({"type": "FunctionCall", "function": "fn", "arguments": [None]})
 

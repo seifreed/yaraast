@@ -257,6 +257,14 @@ def _validate_set_expression_elements(value: Any) -> Any:
     return value
 
 
+def _validate_integer_expression(value: Any, context: str) -> Any:
+    try:
+        _reject_non_integer_expression(value, context)
+    except (TypeError, ValueError) as exc:
+        raise SerializationError(str(exc)) from exc
+    return value
+
+
 def _invalid_quantifier(value: object, context: str) -> None:
     msg = f"Invalid {context} '{value}' for libyara output"
     raise SerializationError(msg)

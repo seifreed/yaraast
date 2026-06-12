@@ -1745,6 +1745,25 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     ):
         deserialize_node({"type": "SetExpression", "elements": []})
 
+    string_expr = {"type": "StringLiteral", "value": "x"}
+    integer_expression_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "StringOffset", "string_id": "$a", "index": string_expr},
+            "String offset index must be integer",
+        ),
+        (
+            {"type": "StringLength", "string_id": "$a", "index": string_expr},
+            "String length index must be integer",
+        ),
+        (
+            {"type": "AtExpression", "string_id": "$a", "offset": string_expr},
+            "At expression offset must be integer",
+        ),
+    )
+    for payload, message in integer_expression_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
     with pytest.raises(SerializationError, match="UnaryExpression operator must be a string"):
         deserialize_node({"type": "UnaryExpression", "operator": ["not"], "operand": true_expr})
 
@@ -1984,10 +2003,12 @@ def test_simple_roundtrip_serialize_string_reference_nodes_reject_wrong_scalar_t
         (StringOffset(cast(Any, 7)), "StringOffset string_id must be a string"),
         (StringOffset("@a"), "Invalid string reference"),
         (StringOffset("$bad-name"), "Invalid string reference"),
+        (StringOffset("$a", StringLiteral("x")), "String offset index must be integer"),
         (StringLength(""), "StringLength string_id must not be empty"),
         (StringLength(cast(Any, 7)), "StringLength string_id must be a string"),
         (StringLength("!a"), "Invalid string reference"),
         (StringLength("$bad-name"), "Invalid string reference"),
+        (StringLength("$a", StringLiteral("x")), "String length index must be integer"),
     )
 
     for node, message in invalid_cases:
@@ -2023,6 +2044,7 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             BinaryExpression(true_expr, cast(Any, ["and"]), BooleanLiteral(False)),
             "BinaryExpression operator must be a string",
         ),
+        (AtExpression("$a", StringLiteral("x")), "At expression offset must be integer"),
         (
             SetExpression([]),
             "Set expression must contain at least one element",

@@ -15,6 +15,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_binary_operator_text,
     _validate_function_identifier_text,
     _validate_in_expression_range,
+    _validate_integer_expression,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_loop_variable_text,
@@ -686,6 +687,9 @@ def _coerce_hex_alternative_token(token):
 
 
 def visit_string_offset(serializer, node) -> dict[str, Any]:
+    index = _serialize_optional_expression(serializer, node.index, "StringOffset index")
+    if node.index is not None:
+        _validate_integer_expression(node.index, "String offset index")
     return {
         "type": "StringOffset",
         "string_id": _validate_string_reference_text(
@@ -695,11 +699,14 @@ def visit_string_offset(serializer, node) -> dict[str, Any]:
             ),
             allow_placeholder=True,
         ),
-        "index": _serialize_optional_expression(serializer, node.index, "StringOffset index"),
+        "index": index,
     }
 
 
 def visit_string_length(serializer, node) -> dict[str, Any]:
+    index = _serialize_optional_expression(serializer, node.index, "StringLength index")
+    if node.index is not None:
+        _validate_integer_expression(node.index, "String length index")
     return {
         "type": "StringLength",
         "string_id": _validate_string_reference_text(
@@ -709,7 +716,7 @@ def visit_string_length(serializer, node) -> dict[str, Any]:
             ),
             allow_placeholder=True,
         ),
-        "index": _serialize_optional_expression(serializer, node.index, "StringLength index"),
+        "index": index,
     }
 
 
@@ -872,6 +879,8 @@ def visit_for_of_expression(serializer, node) -> dict[str, Any]:
 
 
 def visit_at_expression(serializer, node) -> dict[str, Any]:
+    offset = _serialize_required_expression(serializer, node.offset, "AtExpression offset")
+    _validate_integer_expression(node.offset, "At expression offset")
     return {
         "type": "AtExpression",
         "string_id": _serialize_string_or_expression(
@@ -880,7 +889,7 @@ def visit_at_expression(serializer, node) -> dict[str, Any]:
             "AtExpression string_id",
             validate_string_reference=True,
         ),
-        "offset": _serialize_required_expression(serializer, node.offset, "AtExpression offset"),
+        "offset": offset,
     }
 
 

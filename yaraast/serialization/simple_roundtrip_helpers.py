@@ -102,6 +102,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_extern_rule_identifier_text,
     _validate_function_identifier_text,
     _validate_in_expression_range,
+    _validate_integer_expression,
     _validate_local_identifier_list,
     _validate_local_identifier_text,
     _validate_location_metadata,
@@ -1323,6 +1324,9 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             ),
         }
     if isinstance(node, StringOffset):
+        index = serialize_node(node.index) if node.index is not None else None
+        if node.index is not None:
+            _validate_integer_expression(node.index, "String offset index")
         return {
             "type": "StringOffset",
             "string_id": _validate_string_reference_text(
@@ -1332,9 +1336,12 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
                 ),
                 allow_placeholder=True,
             ),
-            "index": serialize_node(node.index) if node.index is not None else None,
+            "index": index,
         }
     if isinstance(node, StringLength):
+        index = serialize_node(node.index) if node.index is not None else None
+        if node.index is not None:
+            _validate_integer_expression(node.index, "String length index")
         return {
             "type": "StringLength",
             "string_id": _validate_string_reference_text(
@@ -1344,7 +1351,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
                 ),
                 allow_placeholder=True,
             ),
-            "index": serialize_node(node.index) if node.index is not None else None,
+            "index": index,
         }
     if isinstance(node, BinaryExpression):
         return {
@@ -1455,6 +1462,8 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "condition": serialize_node(node.condition) if node.condition is not None else None,
         }
     if isinstance(node, AtExpression):
+        offset = serialize_node(node.offset)
+        _validate_integer_expression(node.offset, "At expression offset")
         return {
             "type": "AtExpression",
             "string_id": _serialize_string_or_expression(
@@ -1462,7 +1471,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
                 "AtExpression string_id",
                 validate_string_reference=True,
             ),
-            "offset": serialize_node(node.offset),
+            "offset": offset,
         }
     if isinstance(node, InExpression):
         subject = _serialize_string_or_expression(
@@ -2129,21 +2138,23 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             )
         )
     if node_type == "StringOffset":
-        return StringOffset(
-            _validate_string_reference_text(
-                _deserialize_nonempty_string_field(data, "string_id", "StringOffset"),
-                allow_placeholder=True,
-            ),
-            _deserialize_nullable_node_field(data, "index", "StringOffset"),
+        string_id = _validate_string_reference_text(
+            _deserialize_nonempty_string_field(data, "string_id", "StringOffset"),
+            allow_placeholder=True,
         )
+        index = _deserialize_nullable_node_field(data, "index", "StringOffset")
+        if index is not None:
+            _validate_integer_expression(index, "String offset index")
+        return StringOffset(string_id, index)
     if node_type == "StringLength":
-        return StringLength(
-            _validate_string_reference_text(
-                _deserialize_nonempty_string_field(data, "string_id", "StringLength"),
-                allow_placeholder=True,
-            ),
-            _deserialize_nullable_node_field(data, "index", "StringLength"),
+        string_id = _validate_string_reference_text(
+            _deserialize_nonempty_string_field(data, "string_id", "StringLength"),
+            allow_placeholder=True,
         )
+        index = _deserialize_nullable_node_field(data, "index", "StringLength")
+        if index is not None:
+            _validate_integer_expression(index, "String length index")
+        return StringLength(string_id, index)
     if node_type == "BinaryExpression":
         return BinaryExpression(
             _deserialize_required_node(data, "left", "BinaryExpression"),
@@ -2248,10 +2259,8 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             )
         else:
             subject = _deserialize_string_field(data, "string_id", "AtExpression")
-        return AtExpression(
-            subject,
-            _deserialize_required_node(data, "offset", "AtExpression"),
-        )
+        offset = _deserialize_required_node(data, "offset", "AtExpression")
+        return AtExpression(subject, _validate_integer_expression(offset, "At expression offset"))
     if node_type == "InExpression":
         raw_subject = data.get("subject")
         if raw_subject is None and "string_id" in data:
