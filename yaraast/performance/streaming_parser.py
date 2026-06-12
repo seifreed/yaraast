@@ -55,9 +55,36 @@ def _require_pathlike(value: object, name: str) -> Path:
     return Path(raw_path)
 
 
+def _path_access_error(path: Path) -> ValueError:
+    msg = f"path could not be accessed: {path}"
+    return ValueError(msg)
+
+
+def _path_exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
+def _path_exists_and_is_dir(path: Path) -> bool:
+    return _path_exists(path) and _path_is_dir(path)
+
+
+def _path_exists_and_not_dir(path: Path) -> bool:
+    return _path_exists(path) and not _path_is_dir(path)
+
+
 def _require_file_path(value: object, name: str = "file_path") -> Path:
     path = _require_pathlike(value, name)
-    if path.exists() and path.is_dir():
+    if _path_exists_and_is_dir(path):
         msg = f"{name} must not be a directory"
         raise IsADirectoryError(msg)
     return path
@@ -73,7 +100,7 @@ def _read_yara_text_file(path: str | Path) -> str:
 
 def _require_directory_path(value: object, name: str = "dir_path") -> Path:
     path = _require_pathlike(value, name)
-    if path.exists() and not path.is_dir():
+    if _path_exists_and_not_dir(path):
         msg = f"{name} must be a directory"
         raise NotADirectoryError(msg)
     return path

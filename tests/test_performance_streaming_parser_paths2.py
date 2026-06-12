@@ -104,6 +104,11 @@ def test_streaming_parser_parse_with_progress_rejects_directory_path(tmp_path: P
         StreamingParser().parse_with_progress(tmp_path, lambda _processed, _total: None)
 
 
+def test_streaming_parser_parse_with_progress_rejects_inaccessible_file_path() -> None:
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        StreamingParser().parse_with_progress("a" * 5000, lambda _processed, _total: None)
+
+
 def test_streaming_parser_emits_falsy_present_rule(monkeypatch: pytest.MonkeyPatch) -> None:
     class FalsyRule(Rule):
         def __bool__(self) -> bool:
@@ -291,6 +296,11 @@ def test_streaming_parser_parse_file_rejects_empty_path(file_path: str) -> None:
 def test_streaming_parser_parse_file_rejects_directory_path(tmp_path: Path) -> None:
     with pytest.raises(IsADirectoryError, match="file_path must not be a directory"):
         list(StreamingParser().parse_file(tmp_path))
+
+
+def test_streaming_parser_parse_file_rejects_inaccessible_file_path() -> None:
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        list(StreamingParser().parse_file("a" * 5000))
 
 
 def test_streaming_parser_chunk_residual_callbacks_and_cancellation(tmp_path: Path) -> None:
@@ -481,6 +491,11 @@ def test_streaming_parser_parse_directory_rejects_file_path(tmp_path: Path) -> N
 
     with pytest.raises(NotADirectoryError, match="dir_path must be a directory"):
         list(StreamingParser().parse_directory(rule_file))
+
+
+def test_streaming_parser_parse_directory_rejects_inaccessible_directory_path() -> None:
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        list(StreamingParser().parse_directory("a" * 5000))
 
 
 @pytest.mark.parametrize("dir_path", [None, 123, object()])
