@@ -218,6 +218,9 @@ class DialectRegistry:
 
     @classmethod
     def register(cls, spec: DialectSpec) -> None:
+        if not isinstance(spec, DialectSpec):
+            msg = "Dialect spec must be a DialectSpec"
+            raise TypeError(msg)
         with cls._lock:
             cls._specs.append(spec)
             cls._specs.sort(key=lambda s: -s.priority)
@@ -235,6 +238,9 @@ class DialectRegistry:
 
     @classmethod
     def get_parser_factory(cls, dialect: YaraDialect) -> Callable[[str], Any] | None:
+        if not isinstance(dialect, YaraDialect):
+            msg = "Parser factory dialect must be a YaraDialect"
+            raise TypeError(msg)
         with cls._lock:
             specs = list(cls._specs)
         for spec in specs:

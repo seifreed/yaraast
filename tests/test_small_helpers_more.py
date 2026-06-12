@@ -12,7 +12,7 @@ from yaraast.codegen.generator_helpers import (
     format_integer_literal,
     format_modifiers,
 )
-from yaraast.dialects import YaraDialect, detect_dialect
+from yaraast.dialects import DialectRegistry, YaraDialect, detect_dialect
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.lexer_helpers import (
     _skip_block_comment,
@@ -160,6 +160,23 @@ rule login_event {
 def test_detect_dialect_rejects_non_string_content(content: Any) -> None:
     with pytest.raises(TypeError, match="dialect content must be a string"):
         detect_dialect(cast(str, content))
+
+
+@pytest.mark.parametrize("spec", [None, object(), "not-a-spec"])
+def test_dialect_registry_rejects_invalid_specs_without_mutating_registry(spec: Any) -> None:
+    original_specs = list(DialectRegistry._specs)
+    try:
+        with pytest.raises(TypeError, match="Dialect spec must be a DialectSpec"):
+            DialectRegistry.register(cast(Any, spec))
+        assert DialectRegistry._specs == original_specs
+    finally:
+        DialectRegistry._specs = original_specs
+
+
+@pytest.mark.parametrize("dialect", [object(), "yara", False, 0])
+def test_dialect_registry_rejects_invalid_parser_factory_dialects(dialect: Any) -> None:
+    with pytest.raises(TypeError, match="Parser factory dialect must be a YaraDialect"):
+        DialectRegistry.get_parser_factory(cast(Any, dialect))
 
 
 def test_detect_dialect_yarax_signals() -> None:
