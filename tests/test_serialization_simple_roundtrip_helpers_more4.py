@@ -1046,6 +1046,27 @@ def test_simple_roundtrip_serialize_rejects_malformed_rule_modifier_name() -> No
         serialize_node(malformed_file)
 
 
+def test_simple_roundtrip_serialize_rejects_malformed_string_modifier_name() -> None:
+    malformed_file = YaraFile(
+        rules=[
+            Rule(
+                "bad_string_modifier",
+                strings=[
+                    PlainString(
+                        "$a",
+                        "x",
+                        modifiers=[RuleModifier(cast(Any, object()))],
+                    )
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(SerializationError, match="StringModifier name must be a string"):
+        serialize_node(malformed_file)
+
+
 def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Rule modifiers must be a list"):
         deserialize_rule(_serialized_simple_rule(modifiers="private"))

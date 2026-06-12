@@ -727,7 +727,7 @@ def _serialize_string_modifier_name(modifier: Any) -> str:
         )
     try:
         name = modifier.name
-    except AttributeError:
+    except (AttributeError, TypeError, ValueError):
         name = None
     return _serialize_required_nonempty_string(name, "StringModifier name")
 
