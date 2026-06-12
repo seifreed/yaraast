@@ -481,7 +481,10 @@ class YaraFileTransformer:
     """Specialized transformer for YARA file modifications."""
 
     def __init__(self, yara_file: YaraFile) -> None:
-        self.yara_file = CloneTransformer.clone_yara_file(yara_file)
+        cloned_file = CloneTransformer.clone_yara_file(yara_file)
+        cloned_file.validate_structure()
+        self._validate_rule_list(cloned_file.rules)
+        self.yara_file = cloned_file
 
     @staticmethod
     def _require_rule(value: object) -> Rule:

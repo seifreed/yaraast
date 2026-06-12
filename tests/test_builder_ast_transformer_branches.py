@@ -615,6 +615,17 @@ def test_yara_file_transformer_rejects_invalid_added_rule_structure_without_part
     assert [rule.name for rule in transformer.build().rules] == ["valid"]
 
 
+def test_yara_file_transformer_rejects_invalid_initial_file_structure() -> None:
+    invalid_file = YaraFile(rules=[Rule(name="bad", condition=StringIdentifier(name=""))])
+    duplicate_file = YaraFile(rules=[_sample_rule("same"), _sample_rule("same")])
+
+    with pytest.raises(ValueError, match="String identifier cannot be empty"):
+        YaraFileTransformer(invalid_file)
+
+    with pytest.raises(ValidationError, match="Duplicate rule identifier"):
+        YaraFileTransformer(duplicate_file)
+
+
 def test_yara_file_transformer_rejects_duplicate_transformed_rule_names_without_partial_update() -> (
     None
 ):
