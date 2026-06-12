@@ -47,6 +47,10 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_yara_file(self, node: YaraFile) -> str:
         """Hash YaraFile node."""
+        from yaraast.ast.base import YaraFile
+
+        if isinstance(node, YaraFile):
+            node.validate_structure(deep=False)
         imports_hash = "|".join(sorted(self.visit(imp) for imp in node.imports))
         includes_hash = "|".join(sorted(self.visit(inc) for inc in node.includes))
         rules_hash = "|".join(sorted(self.visit(rule) for rule in node.rules))
@@ -72,6 +76,10 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_rule(self, node) -> str:
         """Hash Rule node."""
+        from yaraast.ast.rules import Rule
+
+        if isinstance(node, Rule):
+            node.validate_structure()
         name = _required_string_attr(node, "name", "Rule name")
         modifiers = "|".join(sorted(str(m) for m in node.modifiers))
         tags = "|".join(sorted(self.visit(tag) for tag in node.tags))

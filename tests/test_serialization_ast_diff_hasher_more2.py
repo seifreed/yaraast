@@ -400,6 +400,46 @@ def test_ast_hasher_rejects_invalid_real_string_modifier_state() -> None:
 
 
 @pytest.mark.parametrize(
+    ("field_name", "value", "message"),
+    [
+        ("rules", cast(Any, "bad"), "YaraFile rules must be a list or tuple"),
+        ("rules", [cast(Any, object())], "YaraFile rules must contain Rule nodes"),
+    ],
+)
+def test_ast_hasher_rejects_invalid_real_yarafile_state(
+    field_name: str,
+    value: Any,
+    message: str,
+) -> None:
+    ast = YaraFile()
+    setattr(ast, field_name, value)
+
+    with pytest.raises(TypeError, match=message):
+        AstHasher().visit_yara_file(ast)
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value", "message"),
+    [
+        ("modifiers", cast(Any, False), "Rule modifiers must be a list"),
+        ("tags", [cast(Any, object())], "Rule tags must contain Tag nodes"),
+        ("meta", cast(Any, False), "Rule meta must be a list or tuple"),
+        ("strings", [cast(Any, object())], "Rule strings must contain StringDefinition nodes"),
+    ],
+)
+def test_ast_hasher_rejects_invalid_real_rule_state(
+    field_name: str,
+    value: Any,
+    message: str,
+) -> None:
+    rule = Rule("bad")
+    setattr(rule, field_name, value)
+
+    with pytest.raises(TypeError, match=message):
+        AstHasher().visit_rule(rule)
+
+
+@pytest.mark.parametrize(
     "string_set",
     [
         StringLiteral(cast(Any, False)),
