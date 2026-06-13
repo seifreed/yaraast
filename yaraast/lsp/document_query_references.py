@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from lsprotocol.types import Location, Position, TextEdit
 
+from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.lsp.document_query_reference_ast import (
     build_string_rename_edits_from_ast,
     collect_rule_reference_locations_from_ast,
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
 
 _STRING_RENAME_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
+_RULE_RENAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def _copy_locations(locations: list[Location]) -> list[Location]:
@@ -62,6 +64,14 @@ def _require_string_rename_name(new_name: object) -> str:
         raise ValueError(msg)
     if _STRING_RENAME_BODY_RE.fullmatch(bare_name) is None:
         msg = "String rename new_name must be a valid identifier"
+        raise ValueError(msg)
+    return new_name
+
+
+def _require_rule_rename_name(new_name: object) -> str:
+    new_name = _require_symbol_name(new_name, "Rule rename new_name")
+    if len(new_name) > YARA_IDENTIFIER_MAX_LENGTH or _RULE_RENAME_RE.fullmatch(new_name) is None:
+        msg = "Rule rename new_name must be a valid identifier"
         raise ValueError(msg)
     return new_name
 
@@ -215,7 +225,7 @@ def build_string_rename_edits(
 
 def rename_rule_edits(ctx: DocumentContext, rule_name: str, new_name: str) -> list[TextEdit]:
     rule_name = _require_symbol_name(rule_name, "Rule name")
-    new_name = _require_symbol_name(new_name, "Rule rename new_name")
+    new_name = _require_rule_rename_name(new_name)
     return [
         TextEdit(range=location.range, new_text=new_name)
         for location in ctx.rule_occurrences(rule_name)
