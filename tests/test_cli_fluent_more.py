@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import NoReturn
 
-from click.testing import CliRunner
+import click
+from click.testing import CliRunner, Result
+import pytest
 
+import yaraast.cli.commands.fluent as fluent_command
 from yaraast.cli.commands.fluent import fluent
 
 
@@ -64,3 +68,40 @@ def test_fluent_commands_reject_invalid_output_paths(tmp_path: Path) -> None:
             assert result.exit_code == 2
             assert message in result.output
             assert "Error generating" not in result.output
+
+
+def _assert_abort_preserves_cause(result: Result, cause: BaseException) -> None:
+    exception = result.exception
+    assert isinstance(exception, click.Abort)
+    assert exception.__cause__ is cause
+
+
+@pytest.mark.parametrize(
+    ("command", "service_name", "error_fragment"),
+    [
+        (["examples"], "create_example_rules", "examples"),
+        (["string-patterns"], "create_string_patterns_rule", "string patterns"),
+        (["conditions"], "create_condition_demo_rules", "conditions"),
+        (["transformations"], "create_transformation_rules", "transformations"),
+        (["template", "sentinel_rule"], "create_template_rule", "template"),
+    ],
+)
+def test_fluent_commands_abort_preserves_original_cause(
+    command: list[str],
+    service_name: str,
+    error_fragment: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sentinel = RuntimeError(f"{service_name} sentinel")
+
+    def fail_service(*_args: object, **_kwargs: object) -> NoReturn:
+        raise sentinel
+
+    monkeypatch.setattr(fluent_command, service_name, fail_service)
+
+    result = CliRunner().invoke(fluent, command, standalone_mode=False)
+
+    assert result.exit_code != 0
+    assert f"Error generating {error_fragment}" in result.output
+    assert str(sentinel) in result.output
+    _assert_abort_preserves_cause(result, sentinel)

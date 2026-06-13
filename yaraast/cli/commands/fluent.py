@@ -48,7 +48,7 @@ def examples(output: str | None) -> None:
         write_output(output_path, yara_code, f"✅ Example rules written to {output_path}")
     except Exception as e:
         display_error(f"❌ Error generating examples: {e}")
-        raise click.Abort from None
+        raise click.Abort from e
 
 
 @fluent.command()
@@ -72,7 +72,7 @@ def string_patterns(output: str | None) -> None:
 
     except Exception as e:
         display_error(f"❌ Error generating string patterns: {e}")
-        raise click.Abort from None
+        raise click.Abort from e
 
 
 @fluent.command()
@@ -96,7 +96,7 @@ def conditions(output: str | None) -> None:
 
     except Exception as e:
         display_error(f"❌ Error generating conditions: {e}")
-        raise click.Abort from None
+        raise click.Abort from e
 
 
 @fluent.command()
@@ -120,7 +120,7 @@ def transformations(output: str | None) -> None:
 
     except Exception as e:
         display_error(f"❌ Error generating transformations: {e}")
-        raise click.Abort from None
+        raise click.Abort from e
 
 
 @fluent.command()
@@ -166,7 +166,7 @@ def template(
 
     except Exception as e:
         display_error(f"❌ Error generating template: {e}")
-        raise click.Abort from None
+        raise click.Abort from e
 
 
 if __name__ == "__main__":
