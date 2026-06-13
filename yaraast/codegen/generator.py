@@ -614,12 +614,14 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_tuple_indexing(self, node: TupleIndexing) -> str:
         if self._custom_expressions:
             return self._layout.yarax_expression(self, node)
-        from yaraast.ast.expressions import FunctionCall, Identifier
+        from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import TupleExpression
 
         tuple_str = self.visit(node.tuple_expr)
         index_str = self.visit(node.index)
-        if isinstance(node.tuple_expr, FunctionCall | Identifier | TupleExpression):
+        if isinstance(
+            node.tuple_expr, FunctionCall | Identifier | TupleExpression | ParenthesesExpression
+        ):
             return f"{tuple_str}[{index_str}]"
         return f"({tuple_str})[{index_str}]"
 

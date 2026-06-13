@@ -631,6 +631,11 @@ def visit_unary_expression(generator: Any, node: Any) -> str:
 
 
 def visit_parentheses_expression(generator: Any, node: Any) -> str:
+    from yaraast.ast.expressions import SetExpression
+    from yaraast.yarax.ast_nodes import TupleExpression
+
+    if isinstance(node.expression, TupleExpression | SetExpression):
+        return cast(str, generator.visit(node.expression))
     return f"({generator.visit(node.expression)})"
 
 

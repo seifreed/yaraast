@@ -72,6 +72,7 @@ from yaraast.codegen.pretty_printer import PrettyPrintOptions
 from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
 from yaraast.yarax.ast_nodes import (
@@ -81,7 +82,9 @@ from yaraast.yarax.ast_nodes import (
     ListExpression,
     MatchCase,
     PatternMatch,
+    SliceExpression,
     TupleExpression,
+    TupleIndexing,
     WithStatement,
 )
 from yaraast.yarax.generator import YaraXGenerator
@@ -4473,6 +4476,23 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
     assert gen.visit_parentheses_expression(ParenthesesExpression(IntegerLiteral(1))) == "(1)"
     assert (
         gen.visit_set_expression(SetExpression([IntegerLiteral(1), IntegerLiteral(2)])) == "(1, 2)"
+    )
+    tuple_target = ParenthesesExpression(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]))
+    indexed = TupleIndexing(tuple_target, IntegerLiteral(0))
+    sliced = SliceExpression(tuple_target, start=IntegerLiteral(0), stop=IntegerLiteral(1))
+    assert gen.visit_tuple_indexing(indexed) == "(1, 2)[0]"
+    assert gen.visit_slice_expression(sliced) == "(1, 2)[0:1]"
+    assert isinstance(
+        parse_yara_source(f"rule r {{ condition: {gen.visit_tuple_indexing(indexed)} }}")
+        .rules[0]
+        .condition,
+        TupleIndexing,
+    )
+    assert isinstance(
+        parse_yara_source(f"rule r {{ condition: {gen.visit_slice_expression(sliced)} }}")
+        .rules[0]
+        .condition,
+        SliceExpression,
     )
     assert (
         gen.visit_range_expression(RangeExpression(IntegerLiteral(1), IntegerLiteral(3))) == "1..3"
