@@ -57,6 +57,10 @@ class YaraXParserHelpersMixin:
     def _local_identifier_scope_names(self: Any, *names: object) -> set[str]:
         return {name for name in names if isinstance(name, str) and not name.startswith("$")}
 
+    def _is_contextual_local_identifier_bound(self: Any, name: str) -> bool:
+        local_frames = getattr(self, "_contextual_local_identifiers", [])
+        return any(name in frame for frame in reversed(local_frames))
+
     @contextmanager
     def _contextual_local_identifier_scope(self: Any, local_names: set[str]) -> Iterator[None]:
         self._contextual_local_identifiers.append(local_names)

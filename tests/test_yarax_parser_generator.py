@@ -198,6 +198,18 @@ def test_yarax_comprehension_rejects_unbound_contextual_keyword_expression() -> 
         _parse_expr("{x: include for as in data}")
 
 
+def test_yarax_comprehension_preserves_nested_contextual_lambda_scope() -> None:
+    array_expr = _parse_expr("[lambda include: include for as in items]")
+
+    assert isinstance(array_expr, ArrayComprehension)
+    assert array_expr.variable == "as"
+
+    dict_expr = _parse_expr("{lambda include: include: 1 for as in items}")
+
+    assert isinstance(dict_expr, DictComprehension)
+    assert dict_expr.key_variable == "as"
+
+
 def test_yarax_tuple_and_indexing() -> None:
     expr = _parse_expr("(1, 2, 3)")
     assert isinstance(expr, TupleExpression)

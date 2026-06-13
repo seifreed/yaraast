@@ -69,8 +69,10 @@ class YaraXParserExpressionsMixin:
         if self._check_keyword("match"):
             return cast(Expression, self._parse_pattern_match())
 
-        if getattr(self, "_allow_contextual_keyword_expression", False) and self._check_any(
-            TokenType.AS, TokenType.INCLUDE
+        if (
+            getattr(self, "_allow_contextual_keyword_expression", False)
+            and self._check_any(TokenType.AS, TokenType.INCLUDE)
+            and not self._is_contextual_local_identifier_bound(str(self._peek().value))
         ):
             token = self._advance()
             self._used_contextual_keyword_expression.add(str(token.value))
