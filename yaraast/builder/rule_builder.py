@@ -39,6 +39,8 @@ if TYPE_CHECKING:
 _SIMPLE_STRING_IDENTIFIER_RE = re.compile(r"^\$[A-Za-z0-9_]+$")
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
+_YARA_CONTEXTUAL_IDENTIFIER_KEYWORDS = frozenset({"as", "include"})
+_YARA_CONTEXTUAL_IDENTIFIER_KINDS = frozenset({"meta", "rule", "tag"})
 
 
 def _parse_condition_text(condition: str) -> Expression:
@@ -68,10 +70,13 @@ def _validate_yara_identifier(name: str, kind: str) -> None:
     if not isinstance(name, str):
         msg = f"Invalid {kind} identifier: {name}"
         raise TypeError(msg)
+    keyword_allowed = (
+        kind in _YARA_CONTEXTUAL_IDENTIFIER_KINDS and name in _YARA_CONTEXTUAL_IDENTIFIER_KEYWORDS
+    )
     if (
         len(name) <= YARA_IDENTIFIER_MAX_LENGTH
         and _YARA_IDENTIFIER_RE.fullmatch(name) is not None
-        and name not in _YARA_KEYWORDS
+        and (name not in _YARA_KEYWORDS or keyword_allowed)
     ):
         return
     msg = f"Invalid {kind} identifier: {name}"

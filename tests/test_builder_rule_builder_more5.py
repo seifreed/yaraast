@@ -66,6 +66,26 @@ def test_rule_builder_rejects_invalid_rule_tags(tag_name: str) -> None:
         RuleBuilder("tags").with_tags("known_good", tag_name)
 
 
+@pytest.mark.parametrize("identifier", ["as", "include"])
+def test_rule_builder_allows_contextual_identifier_keywords(identifier: str) -> None:
+    rule = (
+        RuleBuilder(identifier)
+        .with_tag(identifier)
+        .with_meta(identifier, 1)
+        .with_condition("true")
+        .build()
+    )
+
+    generated = CodeGenerator().generate(rule)
+
+    assert rule.name == identifier
+    assert [tag.name for tag in rule.tags] == [identifier]
+    assert [(entry.key, entry.value) for entry in rule.meta] == [(identifier, 1)]
+    assert f"rule {identifier}" in generated
+    assert f": {identifier}" in generated
+    assert f"{identifier} = 1" in generated
+
+
 def test_rule_builder_rejects_duplicate_rule_tags_without_partial_update() -> None:
     with pytest.raises(ValidationError, match="Duplicate tag identifier"):
         RuleBuilder("tags").with_tag("duplicate").with_tag("duplicate")
