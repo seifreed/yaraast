@@ -233,59 +233,80 @@ class SignatureHelpProvider:
         if position.line >= len(lines):
             return None
 
-        line = lines[position.line]
-        char_pos = utf16_col_to_utf8(line, position.character)
         stack: list[tuple[str, int]] = []
-        in_string = False
-        in_regex = False
-        escaped = False
-        index = 0
-        while index < char_pos:
-            char = line[index]
-            nxt = line[index + 1] if index + 1 < len(line) else ""
+        in_block_comment = False
 
-            if escaped:
-                escaped = False
-                index += 1
-                continue
-            if char == "\\" and (in_string or in_regex):
-                escaped = True
-                index += 1
-                continue
-            if in_string:
+        for line_number, line in enumerate(lines[: position.line + 1]):
+            char_pos = (
+                utf16_col_to_utf8(line, position.character)
+                if line_number == position.line
+                else len(line)
+            )
+            in_string = False
+            in_regex = False
+            escaped = False
+            index = 0
+
+            while index < char_pos:
+                char = line[index]
+                nxt = line[index + 1] if index + 1 < len(line) else ""
+
+                if in_block_comment:
+                    end = line.find("*/", index)
+                    if end < 0 or end >= char_pos:
+                        if line_number == position.line:
+                            return None
+                        break
+                    in_block_comment = False
+                    index = end + 2
+                    continue
+                if escaped:
+                    escaped = False
+                    index += 1
+                    continue
+                if char == "\\" and (in_string or in_regex):
+                    escaped = True
+                    index += 1
+                    continue
+                if in_string:
+                    if char == '"':
+                        in_string = False
+                    index += 1
+                    continue
+                if in_regex:
+                    if char == "/":
+                        in_regex = False
+                    index += 1
+                    continue
+                if char == "/" and nxt == "/":
+                    if line_number == position.line:
+                        return None
+                    break
+                if char == "/" and nxt == "*":
+                    end = line.find("*/", index + 2)
+                    if end < 0 or end >= char_pos:
+                        if line_number == position.line:
+                            return None
+                        in_block_comment = True
+                        break
+                    index = end + 2
+                    continue
                 if char == '"':
-                    in_string = False
+                    in_string = True
+                elif char == "/" and _starts_regex_literal(line, index):
+                    in_regex = True
+                elif char in {";", "{", "}"}:
+                    stack = []
+                elif char == "(":
+                    function_name = _function_name_before_open_paren(line, index)
+                    stack.append((function_name or "", 0))
+                elif char == ")":
+                    if stack:
+                        stack.pop()
+                elif char == "," and stack:
+                    function_name, active_parameter = stack[-1]
+                    stack[-1] = (function_name, active_parameter + 1)
                 index += 1
-                continue
-            if in_regex:
-                if char == "/":
-                    in_regex = False
-                index += 1
-                continue
-            if char == "/" and nxt == "/":
-                return None
-            if char == "/" and nxt == "*":
-                end = line.find("*/", index + 2)
-                if end < 0 or end >= char_pos:
-                    return None
-                index = end + 2
-                continue
-            if char == '"':
-                in_string = True
-            elif char == "/" and _starts_regex_literal(line, index):
-                in_regex = True
-            elif char in {";", "{", "}"}:
-                stack = []
-            elif char == "(":
-                function_name = _function_name_before_open_paren(line, index)
-                stack.append((function_name or "", 0))
-            elif char == ")":
-                if stack:
-                    stack.pop()
-            elif char == "," and stack:
-                function_name, active_parameter = stack[-1]
-                stack[-1] = (function_name, active_parameter + 1)
-            index += 1
 
         if not stack:
             return None

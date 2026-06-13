@@ -180,3 +180,22 @@ def test_signature_help_uses_utf16_cursor_for_active_parameter() -> None:
     assert provider._calculate_active_parameter("uint32(1,", _pos(1, 0)) == 0
     assert provider._calculate_active_parameter("uint32(1", _pos(0, 99)) == 0
     assert provider._calculate_active_parameter("uint32(1)", _pos(0, len("uint32(1)"))) == 0
+
+
+def test_signature_help_tracks_multiline_function_calls() -> None:
+    provider = SignatureHelpProvider()
+    text = "\n".join(
+        [
+            "rule a {",
+            "  condition:",
+            "    pe.imports(",
+            '      "kernel32.dll",',
+            "      ",
+        ]
+    )
+
+    signature = provider.get_signature_help(text, _pos(4, 6))
+
+    assert signature is not None
+    assert signature.active_parameter == 1
+    assert "imports" in signature.signatures[0].label
