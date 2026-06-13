@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import (
@@ -14,10 +15,41 @@ from yaraast.ast.base import (
 from yaraast.ast.expressions import Expression
 from yaraast.ast.modifiers import require_rule_modifier_identifier
 from yaraast.errors import ValidationError
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.string_escaping import escape_string_source_value
 
 if TYPE_CHECKING:
     from yaraast.ast.modifiers import RuleModifier
+
+_YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
+
+
+def _validate_yara_identifier(name: object, kind: str) -> str:
+    if not isinstance(name, str):
+        msg = f"{kind.capitalize()} identifier must be a string for libyara output"
+        raise TypeError(msg)
+    if (
+        len(name) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _YARA_IDENTIFIER_RE.fullmatch(name) is not None
+        and name not in _YARA_KEYWORDS
+    ):
+        return name
+    msg = f"Invalid {kind} identifier '{name}' for libyara output"
+    raise ValueError(msg)
+
+
+def _validate_yara_identifier_path(path: object, kind: str) -> str:
+    if not isinstance(path, str):
+        msg = f"{kind.capitalize()} identifier must be a string for libyara output"
+        raise TypeError(msg)
+    parts = path.split(".")
+    if not parts or any(part == "" for part in parts):
+        msg = f"Invalid {kind} identifier '{path}' for libyara output"
+        raise ValueError(msg)
+    for part in parts:
+        _validate_yara_identifier(part, kind)
+    return path
 
 
 def _normalize_string_list(values: list[str] | None, field_name: str) -> list[str]:
@@ -30,6 +62,11 @@ def _normalize_string_list(values: list[str] | None, field_name: str) -> list[st
         msg = f"{field_name} must contain non-empty strings"
         raise ValueError(msg)
     return list(values)
+
+
+def _validate_rule_identifiers(values: list[str], field_name: str) -> None:
+    for value in values:
+        _validate_yara_identifier_path(value, field_name)
 
 
 def _normalize_extern_rule_modifiers(modifiers: Any) -> list[str]:
@@ -70,8 +107,11 @@ class ExternRule(ASTNode):
     def validate_structure(self) -> None:
         """Validate extern rule fields before direct analysis."""
         _require_nonempty_string(self.name, "ExternRule name")
+        _validate_yara_identifier(self.name, "extern rule")
         _normalize_extern_rule_modifiers(self.modifiers)
-        _require_optional_nonempty_string(self.namespace, "ExternRule namespace")
+        if self.namespace is not None:
+            _require_optional_nonempty_string(self.namespace, "ExternRule namespace")
+            _validate_yara_identifier_path(self.namespace, "namespace")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_rule(self)
@@ -113,7 +153,10 @@ class ExternRuleReference(Expression):
     def validate_structure(self) -> None:
         """Validate extern rule reference fields before direct analysis."""
         _require_nonempty_string(self.rule_name, "ExternRuleReference rule_name")
-        _require_optional_nonempty_string(self.namespace, "ExternRuleReference namespace")
+        _validate_yara_identifier(self.rule_name, "extern rule")
+        if self.namespace is not None:
+            _require_optional_nonempty_string(self.namespace, "ExternRuleReference namespace")
+            _validate_yara_identifier_path(self.namespace, "namespace")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_rule_reference(self)
@@ -154,6 +197,7 @@ class ExternImport(ASTNode):
         _require_nonempty_string(self.module_path, "ExternImport module_path")
         _require_optional_nonempty_string(self.alias, "ExternImport alias")
         _normalize_string_list(self.rules, "ExternImport rules")
+        _validate_rule_identifiers(self.rules, "extern rule")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_import(self)
@@ -195,6 +239,7 @@ class ExternNamespace(ASTNode):
     def validate_structure(self) -> None:
         """Validate namespace fields before direct analysis."""
         _require_nonempty_string(self.name, "ExternNamespace name")
+        _validate_yara_identifier(self.name, "namespace")
         self._validated_extern_rules()
 
     def _validated_extern_rules(self) -> list[ExternRule]:

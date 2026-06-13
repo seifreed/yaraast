@@ -426,6 +426,28 @@ def test_expression_validation_rejects_invalid_postfix_receivers(
         node.validate_structure()
 
 
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (ExternNamespace("bad-name"), "Invalid namespace identifier"),
+        (ExternRule("bad-name"), "Invalid extern rule identifier"),
+        (ExternRule("Remote", namespace="bad-name"), "Invalid namespace identifier"),
+        (ExternRuleReference("bad-rule"), "Invalid extern rule identifier"),
+        (
+            ExternRuleReference("Remote", namespace="bad-name"),
+            "Invalid namespace identifier",
+        ),
+        (
+            ExternImport("mods.yar", rules=["bad-rule"]),
+            "Invalid extern rule identifier",
+        ),
+    ],
+)
+def test_extern_validation_rejects_invalid_identifiers(node: Any, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        node.validate_structure()
+
+
 def test_string_definition_validate_structure_rejects_invalid_identifier() -> None:
     with pytest.raises(ValueError, match="Invalid string identifier"):
         PlainString("$bad-name", value="needle").validate_structure()
