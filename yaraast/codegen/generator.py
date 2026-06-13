@@ -55,6 +55,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.codegen.generator_expression_visitors import (
+    render_postfix_index_target,
     validate_condition_expression,
     validate_expression_collection,
     visit_array_access as render_array_access,
@@ -614,11 +615,11 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_tuple_indexing(self, node: TupleIndexing) -> str:
         if self._custom_expressions:
             return self._layout.yarax_expression(self, node)
+        tuple_str = render_postfix_index_target(self, node.tuple_expr)
+        index_str = self.visit(node.index)
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import TupleExpression
 
-        tuple_str = self.visit(node.tuple_expr)
-        index_str = self.visit(node.index)
         if isinstance(
             node.tuple_expr, FunctionCall | Identifier | TupleExpression | ParenthesesExpression
         ):
@@ -651,10 +652,10 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_slice_expression(self, node: SliceExpression) -> str:
         if self._custom_expressions:
             return self._layout.yarax_expression(self, node)
+        target = render_postfix_index_target(self, node.target)
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import ListExpression, TupleExpression
 
-        target = self.visit(node.target)
         if not isinstance(
             node.target,
             FunctionCall | Identifier | ListExpression | ParenthesesExpression | TupleExpression,

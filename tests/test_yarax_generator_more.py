@@ -5,6 +5,7 @@ from __future__ import annotations
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import (
     BooleanLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
@@ -72,6 +73,14 @@ def test_yarax_generator_various_nodes() -> None:
     slice_expr = SliceExpression(target=Identifier("arr"), start=None, stop=IntegerLiteral(2))
     tuple_expr = TupleExpression(elements=[IntegerLiteral(1), IntegerLiteral(2)])
     tuple_index = TupleIndexing(tuple_expr=tuple_expr, index=IntegerLiteral(0))
+    call_index = TupleIndexing(
+        tuple_expr=ParenthesesExpression(FunctionCall("foo", [])), index=IntegerLiteral(0)
+    )
+    call_slice = SliceExpression(
+        target=ParenthesesExpression(FunctionCall("foo", [])),
+        start=IntegerLiteral(0),
+        stop=IntegerLiteral(1),
+    )
 
     rule = Rule(
         name="yarax_rule",
@@ -93,6 +102,8 @@ def test_yarax_generator_various_nodes() -> None:
     assert "[" in gen.visit(slice_expr)
     assert "(" in gen.visit(tuple_expr)
     assert "[" in gen.visit(tuple_index)
+    assert gen.visit(call_index) == "foo()[0]"
+    assert gen.visit(call_slice) == "foo()[0:1]"
 
 
 def test_yarax_generator_tuple_indexing_with_parenthesized_tuple_round_trips() -> None:
@@ -108,4 +119,30 @@ def test_yarax_generator_tuple_indexing_with_parenthesized_tuple_round_trips() -
     assert isinstance(
         parse_yara_source(f"rule r {{ condition: {code} }}").rules[0].condition,
         TupleIndexing,
+    )
+
+
+def test_yarax_generator_function_call_parentheses_round_trip() -> None:
+    gen = YaraXGenerator()
+    index = TupleIndexing(
+        tuple_expr=ParenthesesExpression(FunctionCall("foo", [])), index=IntegerLiteral(0)
+    )
+    slice_expr = SliceExpression(
+        target=ParenthesesExpression(FunctionCall("foo", [])),
+        start=IntegerLiteral(0),
+        stop=IntegerLiteral(1),
+    )
+
+    index_code = gen.visit(index)
+    slice_code = gen.visit(slice_expr)
+
+    assert index_code == "foo()[0]"
+    assert slice_code == "foo()[0:1]"
+    assert isinstance(
+        parse_yara_source(f"rule r {{ condition: {index_code} }}").rules[0].condition,
+        TupleIndexing,
+    )
+    assert isinstance(
+        parse_yara_source(f"rule r {{ condition: {slice_code} }}").rules[0].condition,
+        SliceExpression,
     )

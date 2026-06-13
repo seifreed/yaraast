@@ -1198,6 +1198,14 @@ def render_postfix_target(generator: Any, target: Any) -> str:
     return f"({target_str})"
 
 
+def render_postfix_index_target(generator: Any, target: Any) -> str:
+    from yaraast.ast.expressions import FunctionCall, ParenthesesExpression
+
+    if isinstance(target, ParenthesesExpression) and isinstance(target.expression, FunctionCall):
+        return cast(str, generator.visit(target.expression))
+    return cast(str, generator.visit(target))
+
+
 def _is_simple_postfix_target(target: Any) -> bool:
     from yaraast.ast.expressions import (
         ArrayAccess,

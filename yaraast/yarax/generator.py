@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from yaraast import CodeGenerator as BaseGenerator
 from yaraast.codegen.generator_expression_visitors import (
     render_function_call_callee,
+    render_postfix_index_target,
     validate_expression_collection,
 )
 from yaraast.codegen.generator_formatting import (
@@ -141,10 +142,8 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_tuple_indexing(self, node: TupleIndexing) -> str:
         """Generate code for tuple indexing."""
-        tuple_str = self.visit(node.tuple_expr)
+        tuple_str = render_postfix_index_target(self, node.tuple_expr)
         index_str = self.visit(node.index)
-
-        # If tuple_expr is a function call or identifier, don't add extra parens
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import TupleExpression
 
@@ -152,8 +151,6 @@ class YaraXGenerator(BaseGenerator):
             node.tuple_expr, FunctionCall | Identifier | TupleExpression | ParenthesesExpression
         ):
             return f"{tuple_str}[{index_str}]"
-
-        # Otherwise wrap in parens to be safe
         return f"({tuple_str})[{index_str}]"
 
     def visit_function_call(self, node: Any) -> str:
@@ -196,8 +193,7 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_slice_expression(self, node: SliceExpression) -> str:
         """Generate code for slice expression."""
-        target_str = self.visit(node.target)
-
+        target_str = render_postfix_index_target(self, node.target)
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import ListExpression, TupleExpression
 

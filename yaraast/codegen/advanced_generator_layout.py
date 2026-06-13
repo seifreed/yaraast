@@ -10,6 +10,7 @@ from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
     _visit_binary_operand,
     render_function_call_callee,
+    render_postfix_index_target,
     require_present_expression,
     validate_binary_expression_operands,
     validate_expression_collection,
@@ -307,11 +308,11 @@ class _AdvancedConditionGenerator(CodeGenerator):
         return f"({self._comma_separator().join(elements)})"
 
     def visit_tuple_indexing(self, node: Any) -> str:
+        tuple_str = render_postfix_index_target(self, node.tuple_expr)
+        index_str = self.visit(node.index)
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import TupleExpression
 
-        tuple_str = self.visit(node.tuple_expr)
-        index_str = self.visit(node.index)
         if isinstance(
             node.tuple_expr, FunctionCall | Identifier | TupleExpression | ParenthesesExpression
         ):
@@ -339,10 +340,10 @@ class _AdvancedConditionGenerator(CodeGenerator):
         return f"{self.visit(node.key)}: {self.visit(node.value)}"
 
     def visit_slice_expression(self, node: Any) -> str:
+        target = render_postfix_index_target(self, node.target)
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import ListExpression, TupleExpression
 
-        target = self.visit(node.target)
         if not isinstance(
             node.target,
             FunctionCall | Identifier | ListExpression | ParenthesesExpression | TupleExpression,
