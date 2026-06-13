@@ -80,6 +80,28 @@ rule a {
     )
 
 
+def test_code_action_rename_duplicate_ignores_suffixes_in_comments_and_literals() -> None:
+    provider = CodeActionsProvider()
+    uri = "file://test.yar"
+    text = """
+rule a {
+  strings:
+    $note = "$a_2 = not a definition"
+    // $a_2 = "not a definition"
+    $a = "x"
+    $a = "y"
+  condition:
+    $a
+}
+""".lstrip()
+    diag = Diagnostic(range=_range(5, 4, 6), message="Duplicate string identifier '$a'")
+
+    actions = provider._create_rename_duplicate_actions(text, diag, uri)
+
+    assert actions
+    assert actions[0].title == "Rename to $a_2"
+
+
 def test_code_action_rename_duplicate_targets_diagnostic_occurrence_on_same_line() -> None:
     provider = CodeActionsProvider()
     uri = "file://test.yar"

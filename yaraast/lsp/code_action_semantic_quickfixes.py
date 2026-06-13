@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from types import SimpleNamespace
 
 from lsprotocol.types import (
     CodeAction,
@@ -14,6 +15,7 @@ from lsprotocol.types import (
     WorkspaceEdit,
 )
 
+from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.structure import _starts_regex_literal
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 
@@ -399,9 +401,18 @@ def create_rename_duplicate_action(
         return []
 
     lines = text.split("\n")
+    ctx = SimpleNamespace(lines=lines)
     existing_ids = set()
-    for line in lines:
+    for line_num, line in enumerate(lines):
         for id_match in re.finditer(r"\$(\w+)\s*=", line):
+            if position_is_in_non_code_segment(
+                ctx,
+                Position(
+                    line=line_num,
+                    character=utf8_col_to_utf16(line, id_match.start()),
+                ),
+            ):
+                continue
             existing_ids.add(id_match.group(1))
 
     counter = 2
