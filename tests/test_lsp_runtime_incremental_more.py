@@ -998,9 +998,10 @@ rule sample {
         doc.rename_rule_edits("sample", cast(Any, object()))
     with pytest.raises(ValueError, match="Rule rename new_name must not be empty"):
         doc.rename_rule_edits("sample", "")
-    for new_name in ("bad-name", "1bad"):
+    for new_name in ("bad-name", "1bad", "condition", "and"):
         with pytest.raises(ValueError, match="Rule rename new_name must be a valid identifier"):
             doc.rename_rule_edits("sample", new_name)
+    assert doc.rename_rule_edits("sample", "as")
 
 
 def test_document_context_rejects_invalid_reference_inputs() -> None:

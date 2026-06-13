@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from lsprotocol.types import Location, Position, TextEdit
 
-from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.lsp.document_query_reference_ast import (
     build_string_rename_edits_from_ast,
     collect_rule_reference_locations_from_ast,
@@ -32,6 +32,8 @@ if TYPE_CHECKING:
 
 _STRING_RENAME_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 _RULE_RENAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
+_YARA_CONTEXTUAL_RULE_KEYWORDS = frozenset({"as", "include"})
 
 
 def _copy_locations(locations: list[Location]) -> list[Location]:
@@ -70,7 +72,12 @@ def _require_string_rename_name(new_name: object) -> str:
 
 def _require_rule_rename_name(new_name: object) -> str:
     new_name = _require_symbol_name(new_name, "Rule rename new_name")
-    if len(new_name) > YARA_IDENTIFIER_MAX_LENGTH or _RULE_RENAME_RE.fullmatch(new_name) is None:
+    keyword_allowed = new_name in _YARA_CONTEXTUAL_RULE_KEYWORDS
+    if (
+        len(new_name) > YARA_IDENTIFIER_MAX_LENGTH
+        or _RULE_RENAME_RE.fullmatch(new_name) is None
+        or (new_name in _YARA_KEYWORDS and not keyword_allowed)
+    ):
         msg = "Rule rename new_name must be a valid identifier"
         raise ValueError(msg)
     return new_name
