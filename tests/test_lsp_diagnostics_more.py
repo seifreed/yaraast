@@ -10,11 +10,21 @@ from lsprotocol.types import Diagnostic, DiagnosticSeverity
 import pytest
 
 from yaraast.ast.base import Location
+import yaraast.lsp.diagnostics as diagnostics_module
 from yaraast.lsp.diagnostics import DiagnosticData, DiagnosticsProvider, _location_source_line
 from yaraast.lsp.diagnostics_helpers import parser_error_to_diagnostic
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.types.semantic_validator_core import ValidationError
+from yaraast.unified_parser import UnifiedParser as RealUnifiedParser
+
+
+class _FailingUnifiedParser:
+    def __init__(self, _text: str, *, dialect: object = None) -> None:
+        pass
+
+    def parse(self) -> NoReturn:
+        raise RuntimeError("transient parser failure")
 
 
 def _diagnostic_data(diagnostic: Diagnostic) -> dict[str, Any]:
@@ -59,6 +69,26 @@ def test_diagnostics_parser_error() -> None:
     assert diags[0].source in {"yaraast-parser", "yaraast"}
     assert diags[0].code == "parser.syntax_error"
     assert _diagnostic_data(diags[0])["code"] == "parser.syntax_error"
+
+
+def test_diagnostics_do_not_cache_internal_parser_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = LspRuntime()
+    provider = DiagnosticsProvider(runtime)
+    text = "rule sample { condition: true }\n"
+    uri = "file:///sample.yar"
+
+    monkeypatch.setattr(diagnostics_module, "UnifiedParser", _FailingUnifiedParser)
+    failed = provider.get_diagnostics(text, uri)
+    assert len(failed) == 1
+    assert failed[0].source == "yaraast"
+    assert failed[0].message == "Unexpected error: transient parser failure"
+
+    monkeypatch.setattr(diagnostics_module, "UnifiedParser", RealUnifiedParser)
+    recovered = provider.get_diagnostics(text, uri)
+
+    assert recovered == []
 
 
 def test_parser_error_diagnostic_end_uses_utf16_columns() -> None:

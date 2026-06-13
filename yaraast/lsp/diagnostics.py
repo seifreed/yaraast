@@ -74,6 +74,15 @@ class DiagnosticData:
         }
 
 
+def _contains_internal_diagnostic_error(diagnostics: list[Diagnostic]) -> bool:
+    return any(
+        diagnostic.severity == DiagnosticSeverity.Error
+        and diagnostic.source in {"yaraast", "yaraast-config"}
+        and diagnostic.message.startswith("Unexpected ")
+        for diagnostic in diagnostics
+    )
+
+
 class DiagnosticsProvider:
     """Provides real-time diagnostics for YARA files."""
 
@@ -111,7 +120,7 @@ class DiagnosticsProvider:
         ast = self._parse_and_validate(text, ctx, diagnostics)
         self._run_configurable_checks(ast, diagnostics)
 
-        if ctx is not None:
+        if ctx is not None and not _contains_internal_diagnostic_error(diagnostics):
             ctx.set_cached("diagnostics", list(diagnostics))
         if self.runtime is not None:
             self.runtime.record_latency("diagnostics", (time.perf_counter() - started) * 1000.0)
