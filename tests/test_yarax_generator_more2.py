@@ -14,6 +14,7 @@ from yaraast.ast.expressions import (
     ParenthesesExpression,
     StringLiteral,
 )
+from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
@@ -119,6 +120,18 @@ def test_yarax_generator_parenthesizes_compound_function_call_receivers() -> Non
     assert YaraXGenerator().visit(call) == "(a + b).map()"
     assert YaraXGenerator().visit(ArrayAccess(compound_receiver, IntegerLiteral(0))) == (
         "(a + b)[0]"
+    )
+    function_index = ArrayAccess(FunctionCall("foo", []), IntegerLiteral(0))
+    assert YaraXGenerator().visit(function_index) == "(foo())[0]"
+    assert isinstance(
+        parse_yara_source("rule r { condition: (foo())[0] }").rules[0].condition,
+        ArrayAccess,
+    )
+    assert (
+        YaraXGenerator().visit(
+            ArrayAccess(ParenthesesExpression(FunctionCall("foo", [])), IntegerLiteral(0))
+        )
+        == "(foo())[0]"
     )
     assert YaraXGenerator().visit(MemberAccess(compound_receiver, "field")) == "(a + b).field"
 

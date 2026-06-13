@@ -1291,10 +1291,15 @@ def visit_function_call(generator: Any, node: Any) -> str:
 
 
 def visit_array_access(generator: Any, node: Any) -> str:
+    from yaraast.ast.expressions import FunctionCall
+
     _reject_non_integer_expression(node.index, "Array index")
     validate_module_root_array_access(node)
     validate_known_module_array_access(generator, node)
-    return f"{render_postfix_target(generator, node.array)}[{generator.visit(node.index)}]"
+    target = render_postfix_target(generator, node.array)
+    if isinstance(node.array, FunctionCall):
+        target = f"({target})"
+    return f"{target}[{generator.visit(node.index)}]"
 
 
 def validate_module_root_array_access(node: Any) -> None:
