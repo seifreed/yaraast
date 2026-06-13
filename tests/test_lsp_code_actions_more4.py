@@ -920,6 +920,38 @@ rule sample {
     assert _change_set(action.edit, "file://test.yar")[0].new_text == '"a,b"'
 
 
+def test_code_action_trim_arguments_preserves_commas_inside_comments() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        custom(1 /* , */, 2)
+}
+""".lstrip()
+    diag = Diagnostic(
+        range=_range(2, 8, 29),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "custom",
+                "arity_kind": "max",
+                "actual_args": 2,
+                "expected_max": 1,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(text, _range(2, 8, 29), [diag], "file://test.yar")
+    action = next(
+        action for action in actions if action.title == "Remove extra argument(s) from custom()"
+    )
+    assert action.edit is not None
+    assert _change_set(action.edit, "file://test.yar")[0].new_text == "1 /* , */"
+
+
 def test_code_action_trim_arguments_preserves_commas_inside_matches_regex() -> None:
     provider = CodeActionsProvider()
     text = """

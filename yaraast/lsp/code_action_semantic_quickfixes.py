@@ -217,6 +217,19 @@ def _split_top_level_arguments(args_text: str) -> list[str]:
     index = 0
     while index < len(args_text):
         char = args_text[index]
+        nxt = args_text[index + 1] if index + 1 < len(args_text) else ""
+        if char == "/" and nxt == "/":
+            line_end = args_text.find("\n", index + 2)
+            if line_end < 0:
+                break
+            index = line_end + 1
+            continue
+        if char == "/" and nxt == "*":
+            comment_end = args_text.find("*/", index + 2)
+            if comment_end < 0:
+                break
+            index = comment_end + 2
+            continue
         if char == '"':
             index = _scan_quoted_end(args_text, index, '"') + 1
             continue
