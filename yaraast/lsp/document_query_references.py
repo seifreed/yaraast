@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 from lsprotocol.types import Location, Position, TextEdit
@@ -27,6 +28,8 @@ from yaraast.lsp.structure import make_range
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
+
+_STRING_RENAME_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 def _copy_locations(locations: list[Location]) -> list[Location]:
@@ -56,6 +59,9 @@ def _require_string_rename_name(new_name: object) -> str:
     bare_name = new_name[1:] if new_name.startswith("$") else new_name
     if not bare_name.strip():
         msg = "String rename new_name must not be empty"
+        raise ValueError(msg)
+    if _STRING_RENAME_BODY_RE.fullmatch(bare_name) is None:
+        msg = "String rename new_name must be a valid identifier"
         raise ValueError(msg)
     return new_name
 

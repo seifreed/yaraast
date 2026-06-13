@@ -975,6 +975,9 @@ rule sample {
         doc.build_string_rename_edits("$a", "")
     with pytest.raises(ValueError, match="String rename new_name must not be empty"):
         doc.build_string_rename_edits("$a", "$")
+    for new_name in ("#b", "@b", "!b", "bad-name"):
+        with pytest.raises(ValueError, match="String rename new_name must be a valid identifier"):
+            doc.build_string_rename_edits("$a", new_name)
     with pytest.raises(TypeError, match="Rule name must be a string"):
         doc.rename_rule_edits(cast(Any, object()), "renamed")
     with pytest.raises(TypeError, match="Rule rename new_name must be a string"):
