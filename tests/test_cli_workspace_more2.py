@@ -2,13 +2,20 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from click.testing import CliRunner
+import click
+from click.testing import CliRunner, Result
 
 from yaraast.cli.commands.workspace import workspace
 
 
 def _write(path: Path, content: str) -> None:
     path.write_text(content.strip() + "\n", encoding="utf-8")
+
+
+def _assert_abort_preserves_cause(result: Result, cause_type: type[BaseException]) -> None:
+    exception = result.exception
+    assert isinstance(exception, click.Abort)
+    assert isinstance(exception.__cause__, cause_type)
 
 
 def test_workspace_resolve_error_paths_and_no_tree(tmp_path: Path) -> None:
@@ -46,6 +53,27 @@ include "a.yar"
     recursive = runner.invoke(workspace, ["resolve", str(recursive_a)])
     assert recursive.exit_code != 0
     assert "Error:" in recursive.output
+
+
+def test_workspace_resolve_abort_preserves_missing_include_cause(tmp_path: Path) -> None:
+    missing_include = tmp_path / "missing_include.yar"
+    _write(
+        missing_include,
+        """
+include "nope.yar"
+rule a { condition: true }
+""",
+    )
+
+    result = CliRunner().invoke(
+        workspace,
+        ["resolve", str(missing_include), "--no-tree"],
+        standalone_mode=False,
+    )
+
+    assert result.exit_code != 0
+    assert "Cannot find include file 'nope.yar'" in result.output
+    _assert_abort_preserves_cause(result, FileNotFoundError)
 
 
 def test_workspace_graph_stdout_dot_path(tmp_path: Path) -> None:

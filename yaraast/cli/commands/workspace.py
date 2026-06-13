@@ -96,7 +96,7 @@ def resolve(file, search_path, show_tree) -> None:
 
     except (FileNotFoundError, RecursionError) as e:
         click.echo(f"Error: {e}", err=True)
-        raise click.Abort() from None
+        raise click.Abort() from e
 
 
 @workspace.command()
