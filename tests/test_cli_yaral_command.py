@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import builtins
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from textwrap import dedent
+from typing import NoReturn
 
-from click.testing import CliRunner
+import click
+from click.testing import CliRunner, Result
+import pytest
 
+import yaraast.cli.commands.yaral as yaral_command
 from yaraast.cli.commands.yaral import yaral
 
 
@@ -14,6 +20,24 @@ def _write_yaral(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
     path.write_text(dedent(content).strip() + "\n", encoding="utf-8")
     return str(path)
+
+
+def _assert_abort_preserves_cause(result: Result, cause: BaseException) -> None:
+    exception = result.exception
+    assert isinstance(exception, click.Abort)
+    assert exception.__cause__ is cause
+
+
+def _basic_yaral_rule() -> str:
+    return """
+    rule login_attempts {
+        events:
+            $e.metadata.event_type = "LOGIN"
+
+        condition:
+            #e > 1
+    }
+    """
 
 
 def test_yaral_parse_validate_and_info(tmp_path: Path) -> None:
@@ -153,3 +177,71 @@ def test_yaral_generate_rejects_recovered_parser_errors(tmp_path: Path) -> None:
     assert result.exit_code != 0
     assert "YARA-L parse failed" in result.output
     assert "Successfully generated code for 0 rules" not in result.output
+
+
+@pytest.mark.parametrize(
+    ("command_factory", "message"),
+    [
+        (lambda first, _second: ["parse", first], "Error parsing YARA-L file"),
+        (lambda first, _second: ["validate", first], "Error validating YARA-L file"),
+        (lambda first, _second: ["optimize", first], "Error optimizing YARA-L file"),
+        (lambda first, _second: ["generate", first], "Error generating YARA-L code"),
+        (lambda first, second: ["compare", first, second], "Error comparing YARA-L files"),
+    ],
+)
+def test_yaral_commands_abort_preserves_original_cause(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command_factory: Callable[[str, str], list[str]],
+    message: str,
+) -> None:
+    first = _write_yaral(tmp_path, "first.yaral", _basic_yaral_rule())
+    second = _write_yaral(tmp_path, "second.yaral", _basic_yaral_rule())
+    sentinel = RuntimeError("yaral sentinel")
+
+    def fail_parse_yaral(*_args: object, **_kwargs: object) -> NoReturn:
+        raise sentinel
+
+    monkeypatch.setattr(yaral_command, "parse_yaral", fail_parse_yaral)
+
+    result = CliRunner().invoke(
+        yaral,
+        command_factory(first, second),
+        standalone_mode=False,
+    )
+
+    assert result.exit_code != 0
+    assert message in result.output
+    assert "yaral sentinel" in result.output
+    _assert_abort_preserves_cause(result, sentinel)
+
+
+def test_yaral_parse_yaml_import_error_preserves_original_cause(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = _write_yaral(tmp_path, "rule.yaral", _basic_yaral_rule())
+    original_import = builtins.__import__
+    sentinel = ImportError("No module named yaml", name="yaml")
+
+    def fail_yaml_import(
+        name: str,
+        globals_: Mapping[str, object] | None = None,
+        locals_: Mapping[str, object] | None = None,
+        fromlist: tuple[str, ...] = (),
+        level: int = 0,
+    ) -> object:
+        if name == "yaml":
+            raise sentinel
+        return original_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_yaml_import)
+
+    result = CliRunner().invoke(
+        yaral,
+        ["parse", source, "--format", "yaml"],
+        standalone_mode=False,
+    )
+
+    assert result.exit_code != 0
+    assert "Error parsing YARA-L file" in result.output
+    _assert_abort_preserves_cause(result, sentinel)

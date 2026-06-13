@@ -89,10 +89,10 @@ def parse(file: str, enhanced: bool, output: str | None, format: str) -> None:
         if format != "yaml" or e.name != "yaml":
             raise
         click.echo(f"❌ Error parsing YARA-L file: {e}", err=True)
-        raise click.Abort() from None
+        raise click.Abort() from e
     except Exception as e:
         click.echo(f"❌ Error parsing YARA-L file: {e}", err=True)
-        raise click.Abort() from None
+        raise click.Abort() from e
 
 
 @yaral.command()
@@ -113,7 +113,7 @@ def validate(file: str, strict: bool, output_json: bool) -> None:
         raise
     except Exception as e:
         click.echo(f"❌ Error validating YARA-L file: {e}", err=True)
-        raise click.Abort() from None
+        raise click.Abort() from e
 
 
 @yaral.command()
@@ -144,7 +144,7 @@ def optimize(file: str, output: str | None, stats: bool, dry_run: bool) -> None:
 
     except Exception as e:
         click.echo(f"❌ Error optimizing YARA-L file: {e}", err=True)
-        raise click.Abort() from None
+        raise click.Abort() from e
 
 
 @yaral.command()
@@ -165,7 +165,7 @@ def generate(file: str, output: str | None, format: bool) -> None:
 
     except Exception as e:
         click.echo(f"❌ Error generating YARA-L code: {e}", err=True)
-        raise click.Abort() from None
+        raise click.Abort() from e
 
 
 @yaral.command()
@@ -184,7 +184,7 @@ def compare(file1: str, file2: str, semantic: bool) -> None:
 
     except Exception as e:
         click.echo(f"❌ Error comparing YARA-L files: {e}", err=True)
-        raise click.Abort() from None
+        raise click.Abort() from e
 
 
 @yaral.command()
