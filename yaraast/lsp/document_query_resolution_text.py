@@ -15,6 +15,11 @@ if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
 
 
+def _is_complete_dotted_word(word: str) -> bool:
+    parts = word.split(".")
+    return len(parts) > 1 and all(parts)
+
+
 def resolve_symbol_from_text_fallback(
     ctx: DocumentContext,
     position: Position,
@@ -34,8 +39,10 @@ def resolve_symbol_from_text_fallback(
         if not base_identifier.startswith("$"):
             base_identifier = f"${base_identifier}"
         return ResolvedSymbol(ctx.uri, word, base_identifier, "string", word_range)
-    if "." in word:
+    if _is_complete_dotted_word(word):
         return ResolvedSymbol(ctx.uri, word, word, "module_member", word_range)
+    if "." in word:
+        return None
     if ctx.find_rule_definition(word) is not None:
         return ResolvedSymbol(ctx.uri, word, word, "rule", word_range)
     if not allow_generic_identifier:
@@ -165,7 +172,7 @@ def find_module_member_at_position(
 def resolve_dotted_word(
     ctx: DocumentContext, word: str, word_range: Range
 ) -> ResolvedSymbol | None:
-    if "." not in word:
+    if not _is_complete_dotted_word(word):
         return None
     root, _sep, _rest = word.partition(".")
     imported_modules = {symbol.name for symbol in ctx.symbols() if symbol.kind == "import"}

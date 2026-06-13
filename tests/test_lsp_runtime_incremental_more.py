@@ -1240,6 +1240,17 @@ def test_runtime_resolve_symbol_checks_non_code_segments_with_utf16_columns() ->
     assert resolved.normalized_name == "pe.imphash"
 
 
+def test_runtime_resolve_symbol_ignores_incomplete_module_member() -> None:
+    text = 'import "pe"\nrule sample { condition: pe. }\n'
+    line = text.splitlines()[1]
+    dot_end = line.index(".") + 1
+    doc = DocumentContext("file://incomplete-module-member.yar", text)
+
+    resolved = doc.resolve_symbol(Position(line=1, character=dot_end))
+
+    assert resolved is None
+
+
 def test_runtime_resolve_ast_symbol_ranges_use_utf16_columns() -> None:
     text = """
 import "pe"
