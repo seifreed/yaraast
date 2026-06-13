@@ -688,6 +688,46 @@ rule sample {
     assert change.new_text == "0"
 
 
+def test_code_action_add_placeholder_handles_multiline_empty_call() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        uint8(
+        )
+}
+""".lstrip()
+    call_line = text.splitlines()[2]
+    call_start = call_line.index("uint8(")
+    diag = Diagnostic(
+        range=_range(2, call_start, len(call_line)),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "uint8",
+                "arity_kind": "min",
+                "actual_args": 0,
+                "expected_min": 1,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(
+        text, _range(2, call_start, len(call_line)), [diag], "file://test.yar"
+    )
+    action = next(
+        action for action in actions if action.title == "Add placeholder argument to uint8()"
+    )
+    assert action.edit is not None
+    change = _change_set(action.edit, "file://test.yar")[0]
+    assert change.range.start.line == 2
+    assert change.range.start.character == call_start + len("uint8(")
+    assert change.new_text == "0"
+
+
 def test_code_action_uses_structured_metadata_to_trim_extra_arguments() -> None:
     provider = CodeActionsProvider()
     text = """

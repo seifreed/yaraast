@@ -335,11 +335,12 @@ def create_add_placeholder_argument_action(
     if line_num >= len(lines):
         return []
     line = lines[line_num]
-    call_span = _find_diagnostic_call(line, function_name, diagnostic)
+    call_span = _find_diagnostic_call_close(lines, function_name, diagnostic)
     if call_span is None:
         return []
-    _start_col, open_paren, close_paren = call_span
-    if close_paren != open_paren + 1:
+    _start_col, open_paren, close_line, close_paren = call_span
+    args_text = _call_arguments_text(lines, line_num, open_paren, close_line, close_paren)
+    if args_text.strip():
         return []
 
     edit = TextEdit(
