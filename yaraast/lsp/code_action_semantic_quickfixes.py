@@ -56,8 +56,23 @@ def _scan_quoted_end(text: str, start: int, delimiter: str) -> int:
 def _find_matching_call_close(line: str, open_paren: int) -> int | None:
     depth = 0
     index = open_paren
+    in_block_comment = False
     while index < len(line):
         char = line[index]
+        nxt = line[index + 1] if index + 1 < len(line) else ""
+        if in_block_comment:
+            end = line.find("*/", index)
+            if end < 0:
+                return None
+            in_block_comment = False
+            index = end + 2
+            continue
+        if char == "/" and nxt == "/":
+            return None
+        if char == "/" and nxt == "*":
+            in_block_comment = True
+            index += 2
+            continue
         if char == '"':
             index = _scan_quoted_end(line, index, '"') + 1
             continue
@@ -78,11 +93,26 @@ def _find_matching_call_close_in_lines(
     lines: list[str], open_line: int, open_paren: int
 ) -> tuple[int, int] | None:
     depth = 0
+    in_block_comment = False
     for line_num in range(open_line, len(lines)):
         line = lines[line_num]
         index = open_paren if line_num == open_line else 0
         while index < len(line):
             char = line[index]
+            nxt = line[index + 1] if index + 1 < len(line) else ""
+            if in_block_comment:
+                end = line.find("*/", index)
+                if end < 0:
+                    break
+                in_block_comment = False
+                index = end + 2
+                continue
+            if char == "/" and nxt == "/":
+                break
+            if char == "/" and nxt == "*":
+                in_block_comment = True
+                index += 2
+                continue
             if char == '"':
                 index = _scan_quoted_end(line, index, '"') + 1
                 continue
