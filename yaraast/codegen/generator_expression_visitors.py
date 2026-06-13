@@ -1191,8 +1191,18 @@ def render_function_call_callee(generator: Any, node: Any) -> str:
     return validate_yara_identifier_path(node.function, "function")
 
 
+def _normalize_postfix_target(target: Any) -> Any:
+    from yaraast.ast.expressions import ParenthesesExpression
+
+    while isinstance(target, ParenthesesExpression) and isinstance(
+        target.expression, ParenthesesExpression
+    ):
+        target = target.expression
+    return target
+
+
 def render_postfix_target(generator: Any, target: Any) -> str:
-    target_str = cast(str, generator.visit(target))
+    target_str = cast(str, generator.visit(_normalize_postfix_target(target)))
     if _is_simple_postfix_target(target):
         return target_str
     return f"({target_str})"

@@ -133,6 +133,21 @@ def test_yarax_generator_parenthesizes_compound_function_call_receivers() -> Non
         )
         == "(foo())[0]"
     )
+    nested_tuple = ParenthesesExpression(
+        ParenthesesExpression(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]))
+    )
+    member_code = YaraXGenerator().visit(MemberAccess(nested_tuple, "field"))
+    array_code = YaraXGenerator().visit(ArrayAccess(nested_tuple, IntegerLiteral(0)))
+    assert member_code == "(1, 2).field"
+    assert array_code == "(1, 2)[0]"
+    assert isinstance(
+        parse_yara_source(f"rule r {{ condition: {member_code} }}").rules[0].condition,
+        MemberAccess,
+    )
+    assert isinstance(
+        parse_yara_source(f"rule r {{ condition: {array_code} }}").rules[0].condition,
+        TupleIndexing,
+    )
     assert YaraXGenerator().visit(MemberAccess(compound_receiver, "field")) == "(a + b).field"
 
 
