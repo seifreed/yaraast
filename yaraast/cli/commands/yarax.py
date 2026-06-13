@@ -53,7 +53,7 @@ def parse(file: str, output: str | None, show_features: bool):
 
     except Exception as e:
         click.echo(f"❌ Error parsing YARA-X file: {e}", err=True)
-        raise click.Abort() from None
+        raise click.Abort() from e
 
 
 @yarax.command()
@@ -76,7 +76,7 @@ def check(file: str, strict: bool, fix: bool):
 
     except Exception as e:
         click.echo(f"❌ Error checking YARA-X compatibility: {e}", err=True)
-        raise click.Abort() from None
+        raise click.Abort() from e
 
 
 @yarax.command()
@@ -113,7 +113,7 @@ def convert(file: str, output: str | None, target: str):
 
     except Exception as e:
         click.echo(f"❌ Error converting file: {e}", err=True)
-        raise click.Abort() from None
+        raise click.Abort() from e
 
 
 @yarax.command()
