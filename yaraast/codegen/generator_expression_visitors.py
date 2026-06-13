@@ -1221,7 +1221,9 @@ def validate_tuple_indexing_target(target: Any) -> None:
 def validate_slice_target(target: Any) -> None:
     from yaraast.ast.expressions import FunctionCall, ParenthesesExpression
 
-    if isinstance(target, ParenthesesExpression) and isinstance(target.expression, FunctionCall):
+    while isinstance(target, ParenthesesExpression):
+        target = target.expression
+    if isinstance(target, FunctionCall):
         msg = "Slice target must not be a parenthesized function call for YARA-X output"
         raise ValueError(msg)
 

@@ -326,9 +326,10 @@ class SliceExpression(Expression):
             _validate_child_structure(_require_ast_node(self.stop, "SliceExpression.stop"))
         if self.step is not None:
             _validate_child_structure(_require_ast_node(self.step, "SliceExpression.step"))
-        if isinstance(self.target, ParenthesesExpression) and isinstance(
-            self.target.expression, FunctionCall
-        ):
+        target = self.target
+        while isinstance(target, ParenthesesExpression):
+            target = target.expression
+        if isinstance(target, FunctionCall):
             msg = "SliceExpression.target must not be a parenthesized function call"
             raise ValueError(msg)
 

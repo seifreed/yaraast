@@ -4506,6 +4506,29 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
                 stop=IntegerLiteral(1),
             )
         )
+
+    with pytest.raises(
+        ValueError,
+        match=r"Slice target must not be a parenthesized function call for YARA-X output",
+    ):
+        gen.visit_slice_expression(
+            SliceExpression(
+                ParenthesesExpression(ParenthesesExpression(FunctionCall("foo", []))),
+                start=IntegerLiteral(0),
+                stop=IntegerLiteral(1),
+            )
+        )
+    with pytest.raises(
+        ValueError,
+        match=r"Slice target must not be a parenthesized function call for YARA-X output",
+    ):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).visit_slice_expression(
+            SliceExpression(
+                ParenthesesExpression(ParenthesesExpression(FunctionCall("foo", []))),
+                start=IntegerLiteral(0),
+                stop=IntegerLiteral(1),
+            )
+        )
     assert (
         gen.visit_range_expression(RangeExpression(IntegerLiteral(1), IntegerLiteral(3))) == "1..3"
     )
