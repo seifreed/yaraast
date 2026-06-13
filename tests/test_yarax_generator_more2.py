@@ -163,7 +163,11 @@ def test_yarax_generator_covers_tuple_indexing_slice_and_parenthesized_target() 
         tuple_expr=MemberAccess(object=Identifier(name="obj"), member="tuple"),
         index=IntegerLiteral(0),
     )
-    assert gen.visit(wrapped) == "(obj.tuple)[0]"
+    with pytest.raises(
+        ValueError,
+        match="Tuple indexing target must be an identifier, function call, or tuple expression",
+    ):
+        gen.visit(wrapped)
 
     no_stop = SliceExpression(
         target=Identifier(name="arr"), start=IntegerLiteral(1), stop=None, step=None

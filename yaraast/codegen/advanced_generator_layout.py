@@ -16,6 +16,7 @@ from yaraast.codegen.generator_expression_visitors import (
     validate_expression_collection,
     validate_function_call_arguments,
     validate_set_expression_elements,
+    validate_tuple_indexing_target,
 )
 from yaraast.codegen.generator_formatting import (
     contextual_local_identifier_names,
@@ -308,6 +309,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
         return f"({self._comma_separator().join(elements)})"
 
     def visit_tuple_indexing(self, node: Any) -> str:
+        validate_tuple_indexing_target(node.tuple_expr)
         tuple_str = render_postfix_index_target(self, node.tuple_expr)
         index_str = self.visit(node.index)
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression

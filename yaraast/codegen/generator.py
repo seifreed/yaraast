@@ -58,6 +58,7 @@ from yaraast.codegen.generator_expression_visitors import (
     render_postfix_index_target,
     validate_condition_expression,
     validate_expression_collection,
+    validate_tuple_indexing_target,
     visit_array_access as render_array_access,
     visit_at_expression as render_at_expression,
     visit_binary_expression as render_binary_expression,
@@ -615,6 +616,7 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_tuple_indexing(self, node: TupleIndexing) -> str:
         if self._custom_expressions:
             return self._layout.yarax_expression(self, node)
+        validate_tuple_indexing_target(node.tuple_expr)
         tuple_str = render_postfix_index_target(self, node.tuple_expr)
         index_str = self.visit(node.index)
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
