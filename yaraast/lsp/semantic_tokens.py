@@ -118,19 +118,20 @@ class SemanticTokensProvider:
 
         tokens_data = []
         started = time.perf_counter()
+        tokenization_succeeded = False
 
         try:
             lexer: Lexer[list[Token]] = Lexer[list[Token]](text)
             tokens = lexer.tokenize()
             tokens_data = encode_tokens(tokens, self._map_token_type, TOKEN_TYPES, text)
+            tokenization_succeeded = True
 
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
             # If tokenization fails, return empty tokens
-            pass
 
         result = SemanticTokens(data=tokens_data)
-        if ctx is not None:
+        if ctx is not None and tokenization_succeeded:
             ctx.set_cached("semantic_tokens:full", result)
         if self.runtime is not None:
             self.runtime.record_latency(
@@ -158,6 +159,7 @@ class SemanticTokensProvider:
 
         tokens_data = []
         started = time.perf_counter()
+        tokenization_succeeded = False
 
         try:
             lexer: Lexer[list[Token]] = Lexer[list[Token]](text)
@@ -165,12 +167,13 @@ class SemanticTokensProvider:
             tokens_data = encode_tokens_in_range(
                 tokens, range_, self._map_token_type, TOKEN_TYPES, text
             )
+            tokenization_succeeded = True
 
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
 
         result = SemanticTokens(data=tokens_data)
-        if ctx is not None and cache_key is not None:
+        if ctx is not None and cache_key is not None and tokenization_succeeded:
             ctx.set_cached(cache_key, result)
         if self.runtime is not None:
             self.runtime.record_latency(

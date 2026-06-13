@@ -2,14 +2,29 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 
 from lsprotocol.types import Position, Range
 import pytest
 
+from yaraast.lexer.lexer import Lexer as RealLexer
 from yaraast.lexer.lexer_tables import KEYWORDS
+from yaraast.lsp.runtime import LspRuntime
+import yaraast.lsp.semantic_tokens as semantic_tokens_module
 from yaraast.lsp.semantic_tokens import TOKEN_TYPES, SemanticTokensProvider
 from yaraast.lsp.semantic_tokens_helpers import map_token_type
+
+
+class _FailingLexer:
+    @classmethod
+    def __class_getitem__(cls, _item: object) -> type[_FailingLexer]:
+        return cls
+
+    def __init__(self, _text: str) -> None:
+        pass
+
+    def tokenize(self) -> NoReturn:
+        raise RuntimeError("transient lexer failure")
 
 
 def test_semantic_tokens_range_returns_tokens_within_requested_window() -> None:
@@ -43,6 +58,43 @@ def test_semantic_tokens_range_returns_empty_on_lexer_failure() -> None:
         Range(start=Position(line=0, character=0), end=Position(line=1, character=20)),
     )
     assert tokens.data == []
+
+
+def test_semantic_tokens_do_not_cache_full_result_after_lexer_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = LspRuntime()
+    provider = SemanticTokensProvider(runtime)
+    text = "rule sample { condition: true }\n"
+    uri = "file:///sample.yar"
+
+    monkeypatch.setattr(semantic_tokens_module, "Lexer", _FailingLexer)
+    failed = provider.get_semantic_tokens(text, uri)
+    assert failed.data == []
+
+    monkeypatch.setattr(semantic_tokens_module, "Lexer", RealLexer)
+    recovered = provider.get_semantic_tokens(text, uri)
+
+    assert recovered.data
+
+
+def test_semantic_tokens_do_not_cache_range_result_after_lexer_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = LspRuntime()
+    provider = SemanticTokensProvider(runtime)
+    text = "rule sample { condition: true }\n"
+    uri = "file:///sample.yar"
+    range_ = Range(start=Position(line=0, character=0), end=Position(line=0, character=30))
+
+    monkeypatch.setattr(semantic_tokens_module, "Lexer", _FailingLexer)
+    failed = provider.get_semantic_tokens_range(text, range_, uri)
+    assert failed.data == []
+
+    monkeypatch.setattr(semantic_tokens_module, "Lexer", RealLexer)
+    recovered = provider.get_semantic_tokens_range(text, range_, uri)
+
+    assert recovered.data
 
 
 def test_semantic_tokens_range_rejects_non_range_inputs() -> None:
