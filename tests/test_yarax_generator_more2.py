@@ -219,3 +219,7 @@ def test_yarax_tuple_indexing_validate_structure_rejects_non_tuple_targets() -> 
         match=r"TupleIndexing\.tuple_expr must be a function call or tuple expression",
     ):
         invalid.validate_structure()
+
+
+def test_yarax_tuple_indexing_validate_structure_accepts_identifier_targets() -> None:
+    TupleIndexing(tuple_expr=Identifier(name="foo"), index=IntegerLiteral(0)).validate_structure()
