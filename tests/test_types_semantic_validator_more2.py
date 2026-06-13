@@ -684,6 +684,42 @@ def test_validate_expression_allows_contextual_keyword_for_expression_variables(
     assert not any(f"Invalid identifier identifier: {variable}" in message for message in messages)
 
 
+def test_validate_expression_allows_contextual_yarax_local_identifiers() -> None:
+    expressions = [
+        WithStatement(
+            declarations=[WithDeclaration("as", IntegerLiteral(1))],
+            body=BinaryExpression(Identifier("as"), ">", IntegerLiteral(0)),
+        ),
+        ArrayComprehension(
+            expression=BinaryExpression(Identifier("as"), ">", IntegerLiteral(0)),
+            variable="as",
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        DictComprehension(
+            key_expression=Identifier("as"),
+            value_expression=BinaryExpression(Identifier("include"), ">", IntegerLiteral(0)),
+            key_variable="as",
+            value_variable="include",
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        LambdaExpression(
+            parameters=["as", "include"],
+            body=BinaryExpression(Identifier("as"), "==", Identifier("include")),
+        ),
+    ]
+
+    for expr in expressions:
+        result = SemanticValidator().validate_expression(expr)
+        messages = [error.message for error in result.errors]
+
+        assert not any("Invalid local variable identifier: as" in message for message in messages)
+        assert not any(
+            "Invalid local variable identifier: include" in message for message in messages
+        )
+        assert not any("Invalid identifier identifier: as" in message for message in messages)
+        assert not any("Invalid identifier identifier: include" in message for message in messages)
+
+
 @pytest.mark.parametrize(
     ("expr", "variable"),
     [

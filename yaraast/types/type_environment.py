@@ -40,7 +40,8 @@ def _normalize_concrete_string_id(
 def _normalize_identifier(value: str, field_name: str, kind: str) -> str:
     value = _require_nonempty_string(value, field_name)
     keyword_allowed = (
-        kind in {"loop variable", "variable"} and value in _YARA_CONTEXTUAL_LOCAL_KEYWORDS
+        kind in {"local variable", "loop variable", "variable"}
+        and value in _YARA_CONTEXTUAL_LOCAL_KEYWORDS
     )
     if (
         len(value) <= YARA_IDENTIFIER_MAX_LENGTH
