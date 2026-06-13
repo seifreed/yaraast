@@ -1,14 +1,24 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import NoReturn
 
-from click.testing import CliRunner
+import click
+from click.testing import CliRunner, Result
+import pytest
 
+from yaraast.cli import diff_services
 from yaraast.cli.commands.diff_cmd import diff
 
 
 def _write(path: Path, content: str) -> None:
     path.write_text(content.strip() + "\n", encoding="utf-8")
+
+
+def _assert_abort_preserves_cause(result: Result, cause: BaseException) -> None:
+    exception = result.exception
+    assert isinstance(exception, click.Abort)
+    assert exception.__cause__ is cause
 
 
 def test_diff_cmd_no_changes_summary_and_full_output(tmp_path: Path) -> None:
@@ -83,3 +93,24 @@ rule ok {
     result = runner.invoke(diff, [str(valid), str(invalid)])
     assert result.exit_code != 0
     assert "Error:" in result.output
+
+
+def test_diff_cmd_abort_preserves_original_cause(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    file_a = tmp_path / "a.yar"
+    file_b = tmp_path / "b.yar"
+    _write(file_a, "rule a { condition: true }")
+    _write(file_b, "rule b { condition: true }")
+    sentinel = RuntimeError("diff sentinel")
+
+    def fail_diff_files(_file_a: Path, _file_b: Path) -> NoReturn:
+        raise sentinel
+
+    monkeypatch.setattr(diff_services, "diff_files", fail_diff_files)
+
+    result = CliRunner().invoke(diff, [str(file_a), str(file_b)], standalone_mode=False)
+
+    assert result.exit_code != 0
+    assert "diff sentinel" in result.output
+    _assert_abort_preserves_cause(result, sentinel)
