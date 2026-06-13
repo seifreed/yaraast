@@ -426,6 +426,15 @@ def test_expression_validation_rejects_invalid_postfix_receivers(
         node.validate_structure()
 
 
+def test_string_definition_validate_structure_rejects_invalid_identifier() -> None:
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        PlainString("$bad-name", value="needle").validate_structure()
+
+
+def test_string_definition_validate_structure_allows_anonymous_placeholder() -> None:
+    PlainString("$", value="needle", is_anonymous=True).validate_structure()
+
+
 @pytest.mark.parametrize(
     ("condition", "message"),
     [

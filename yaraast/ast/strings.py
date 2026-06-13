@@ -12,6 +12,7 @@ from yaraast.ast.base import (
     _VisitorType,
     require_string,
 )
+from yaraast.string_references import validate_string_identifier_text
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 _MISSING = object()
@@ -99,7 +100,11 @@ class StringDefinition(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate string definition scalar fields before direct analysis."""
-        _require_string_identifier(self.identifier, type(self).__name__)
+        identifier = _require_string_identifier(self.identifier, type(self).__name__)
+        if self.is_anonymous:
+            validate_string_identifier_text(identifier, allow_placeholder=True)
+        else:
+            validate_string_identifier_text(identifier)
         if not isinstance(self.modifiers, list):
             msg = f"{type(self).__name__} modifiers must be a list"
             raise TypeError(msg)
