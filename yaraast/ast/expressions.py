@@ -37,6 +37,12 @@ def _validate_expression(value: Any, field_name: str) -> Expression:
     return expression
 
 
+def _unwrap_parentheses_expression(value: Any) -> Any:
+    while isinstance(value, ParenthesesExpression):
+        value = value.expression
+    return value
+
+
 @dataclass
 class Identifier(Expression):
     """Identifier expression."""
@@ -331,6 +337,12 @@ class FunctionCall(Expression):
             _validate_expression(argument, "FunctionCall.arguments")
         if self.receiver is not None:
             _validate_expression(self.receiver, "FunctionCall.receiver")
+            from yaraast.ast.conditions import AtExpression
+            from yaraast.yarax.ast_nodes import WithStatement
+
+            receiver = _unwrap_parentheses_expression(self.receiver)
+            if isinstance(receiver, AtExpression | WithStatement):
+                raise ValueError("FunctionCall.receiver must not be an 'at' or 'with' expression")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_function_call(self)
@@ -403,6 +415,14 @@ class ArrayAccess(Expression):
         """Validate array and index expressions before direct analysis."""
         _validate_expression(self.array, "ArrayAccess.array")
         _validate_expression(self.index, "ArrayAccess.index")
+        from yaraast.ast.conditions import AtExpression
+        from yaraast.yarax.ast_nodes import TupleExpression, WithStatement
+
+        array = _unwrap_parentheses_expression(self.array)
+        if isinstance(array, TupleExpression):
+            raise ValueError("ArrayAccess.array must not be a tuple expression")
+        if isinstance(array, AtExpression | WithStatement):
+            raise ValueError("ArrayAccess.array must not be an 'at' or 'with' expression")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_array_access(self)
@@ -419,6 +439,12 @@ class MemberAccess(Expression):
         """Validate object expression and member name before direct analysis."""
         _validate_expression(self.object, "MemberAccess.object")
         _require_nonempty_string(self.member, "MemberAccess member")
+        from yaraast.ast.conditions import AtExpression
+        from yaraast.yarax.ast_nodes import WithStatement
+
+        obj = _unwrap_parentheses_expression(self.object)
+        if isinstance(obj, AtExpression | WithStatement):
+            raise ValueError("MemberAccess.object must not be an 'at' or 'with' expression")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_member_access(self)

@@ -17,12 +17,14 @@ from yaraast.ast.conditions import (
     OfExpression,
 )
 from yaraast.ast.expressions import (
+    ArrayAccess,
     BooleanLiteral,
     DoubleLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
     MemberAccess,
+    ParenthesesExpression,
     RegexLiteral,
     SetExpression,
     StringCount,
@@ -66,6 +68,7 @@ from yaraast.yarax.ast_nodes import (
     DictExpression,
     LambdaExpression,
     PatternMatch,
+    TupleExpression,
     WithDeclaration,
     WithStatement,
 )
@@ -355,6 +358,60 @@ def test_direct_yarafile_analysis_rejects_empty_expression_scalars(
 
     with pytest.raises((TypeError, ValueError), match=message):
         ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (
+            MemberAccess(AtExpression(IntegerLiteral(1), IntegerLiteral(2)), "x"),
+            "MemberAccess.object must not be an 'at' or 'with' expression",
+        ),
+        (
+            MemberAccess(
+                ParenthesesExpression(AtExpression(IntegerLiteral(1), IntegerLiteral(2))),
+                "x",
+            ),
+            "MemberAccess.object must not be an 'at' or 'with' expression",
+        ),
+        (
+            MemberAccess(
+                WithStatement([WithDeclaration("a", IntegerLiteral(1))], Identifier("a")),
+                "x",
+            ),
+            "MemberAccess.object must not be an 'at' or 'with' expression",
+        ),
+        (
+            ArrayAccess(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]), IntegerLiteral(0)),
+            "ArrayAccess.array must not be a tuple expression",
+        ),
+        (
+            ArrayAccess(
+                ParenthesesExpression(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)])),
+                IntegerLiteral(0),
+            ),
+            "ArrayAccess.array must not be a tuple expression",
+        ),
+        (
+            FunctionCall("map", [], receiver=AtExpression(IntegerLiteral(1), IntegerLiteral(2))),
+            "FunctionCall.receiver must not be an 'at' or 'with' expression",
+        ),
+        (
+            FunctionCall(
+                "map",
+                [],
+                receiver=WithStatement([WithDeclaration("a", IntegerLiteral(1))], Identifier("a")),
+            ),
+            "FunctionCall.receiver must not be an 'at' or 'with' expression",
+        ),
+    ],
+)
+def test_expression_validation_rejects_invalid_postfix_receivers(
+    node: Any,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        node.validate_structure()
 
 
 @pytest.mark.parametrize(
