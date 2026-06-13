@@ -22,6 +22,7 @@ from yaraast.ast.strings import PlainString, RegexString
 from yaraast.codegen.formatting import BraceStyle, FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
+from yaraast.yarax.ast_nodes import SliceExpression
 
 
 def test_advanced_generator_brace_styles_and_section_layout() -> None:
@@ -240,3 +241,21 @@ def test_advanced_generator_binary_and_set_spacing() -> None:
     assert "(true and false)" in compact.visit_binary_expression(expr)
     assert "(1==2)" in compact.visit_binary_expression(equality)
     assert "(5\\2)" in compact.visit_binary_expression(division)
+
+
+def test_code_generator_parenthesizes_compound_slice_targets() -> None:
+    expr = SliceExpression(
+        target=BinaryExpression(
+            left=Identifier("a"),
+            operator="+",
+            right=Identifier("b"),
+        ),
+        start=IntegerLiteral(0),
+        stop=IntegerLiteral(1),
+    )
+
+    assert CodeGenerator().visit(expr) == "(a + b)[0:1]"
+    assert (
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).visit(expr)
+        == "(a + b)[0:1]"
+    )

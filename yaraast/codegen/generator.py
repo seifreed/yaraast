@@ -649,13 +649,22 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_slice_expression(self, node: SliceExpression) -> str:
         if self._custom_expressions:
             return self._layout.yarax_expression(self, node)
+        from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
+        from yaraast.yarax.ast_nodes import ListExpression, TupleExpression
+
+        target = self.visit(node.target)
+        if not isinstance(
+            node.target,
+            FunctionCall | Identifier | ListExpression | ParenthesesExpression | TupleExpression,
+        ):
+            target = f"({target})"
         parts = [
             self.visit(node.start) if node.start is not None else "",
             self.visit(node.stop) if node.stop is not None else "",
         ]
         if node.step is not None:
             parts.append(self.visit(node.step))
-        return f"{self.visit(node.target)}[{':'.join(parts)}]"
+        return f"{target}[{':'.join(parts)}]"
 
     def visit_lambda_expression(self, node: LambdaExpression) -> str:
         if self._custom_expressions:

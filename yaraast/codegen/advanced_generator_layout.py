@@ -337,13 +337,22 @@ class _AdvancedConditionGenerator(CodeGenerator):
         return f"{self.visit(node.key)}: {self.visit(node.value)}"
 
     def visit_slice_expression(self, node: Any) -> str:
+        from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
+        from yaraast.yarax.ast_nodes import ListExpression, TupleExpression
+
+        target = self.visit(node.target)
+        if not isinstance(
+            node.target,
+            FunctionCall | Identifier | ListExpression | ParenthesesExpression | TupleExpression,
+        ):
+            target = f"({target})"
         parts = [
             self.visit(node.start) if node.start is not None else "",
             self.visit(node.stop) if node.stop is not None else "",
         ]
         if node.step is not None:
             parts.append(self.visit(node.step))
-        return f"{self.visit(node.target)}[{':'.join(parts)}]"
+        return f"{target}[{':'.join(parts)}]"
 
     def visit_lambda_expression(self, node: Any) -> str:
         validate_expression_collection(node.parameters, "LambdaExpression parameters")
