@@ -51,6 +51,16 @@ def test_auto_detects_yarax_collection_only_syntax() -> None:
     assert '{"a": true}["a"]' in CodeGenerator().generate(dict_ast)
 
 
+def test_auto_detects_yarax_slice_after_parenthesized_target() -> None:
+    source = "rule x { condition: (a + b)[0:1] }"
+
+    assert detect_dialect(source) == YaraDialect.YARA_X
+
+    condition = parse_yara_source(source).rules[0].condition
+
+    assert isinstance(condition, SliceExpression)
+
+
 def test_auto_detects_yarax_leading_dict_spread_syntax() -> None:
     source = 'rule x { condition: {**base}["a"] }'
 
