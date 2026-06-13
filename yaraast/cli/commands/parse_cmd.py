@@ -54,4 +54,4 @@ def parse(input_file: str, output: str | None, output_format: str, dialect: str)
 
     except Exception as e:
         display_cli_error(console, e)
-        raise click.Abort from None
+        raise click.Abort from e

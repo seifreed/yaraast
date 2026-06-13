@@ -1,14 +1,25 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
+from typing import NoReturn
 
-from click.testing import CliRunner
+import click
+from click.testing import CliRunner, Result
+import pytest
 
+import yaraast.cli.commands.parse_cmd as parse_command
 from yaraast.cli.commands.parse_cmd import parse
 
 
 def _write(path: Path, content: str) -> None:
     path.write_text(content.strip() + "\n", encoding="utf-8")
+
+
+def _assert_abort_preserves_cause(result: Result, cause: BaseException) -> None:
+    exception = result.exception
+    assert isinstance(exception, click.Abort)
+    assert exception.__cause__ is cause
 
 
 def test_parse_cmd_writes_tree_output_and_handles_output_error(tmp_path: Path) -> None:
@@ -164,3 +175,27 @@ def test_parse_cmd_json_reports_parse_errors_on_stderr(tmp_path: Path) -> None:
     assert result.exit_code == 1
     assert "Parser Issues" in result.stderr
     assert 'rule "broken" has no condition' in result.stderr
+
+
+def test_parse_cmd_abort_preserves_original_cause(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "ok.yar"
+    _write(source, "rule ok { condition: true }")
+    sentinel = RuntimeError("parse sentinel")
+
+    def fail_parse_content(
+        _content: str,
+        _dialect: str,
+        _show_status: bool,
+        _status_callback: Callable[[str], None],
+    ) -> NoReturn:
+        raise sentinel
+
+    monkeypatch.setattr(parse_command, "parse_content_by_dialect", fail_parse_content)
+
+    result = CliRunner().invoke(parse, [str(source)], standalone_mode=False)
+
+    assert result.exit_code != 0
+    assert "parse sentinel" in result.output
+    _assert_abort_preserves_cause(result, sentinel)
