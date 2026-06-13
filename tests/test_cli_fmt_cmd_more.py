@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import NoReturn
 
-from click.testing import CliRunner
+import click
+from click.testing import CliRunner, Result
+import pytest
 
+import yaraast.cli.commands.fmt_cmd as fmt_command
 from yaraast.cli.commands.fmt_cmd import fmt
 
 
@@ -13,6 +17,12 @@ def _write(path: Path, content: str) -> None:
 
 def _yarax_rule() -> str:
     return "rule x { condition: with xs = [1]: match xs { _ => true } }"
+
+
+def _assert_abort_preserves_cause(result: Result, cause: BaseException) -> None:
+    exception = result.exception
+    assert isinstance(exception, click.Abort)
+    assert exception.__cause__ is cause
 
 
 def test_fmt_cmd_check_and_diff_paths(tmp_path: Path) -> None:
@@ -153,3 +163,22 @@ def test_fmt_cmd_formats_yarax(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert output.exists()
     assert "match xs" in output.read_text(encoding="utf-8")
+
+
+def test_fmt_cmd_abort_preserves_original_cause(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "source.yar"
+    _write(source, "rule x { condition: true }")
+    sentinel = RuntimeError("formatter sentinel")
+
+    def fail_get_formatter() -> NoReturn:
+        raise sentinel
+
+    monkeypatch.setattr(fmt_command, "get_formatter", fail_get_formatter)
+
+    result = CliRunner().invoke(fmt, [str(source)], standalone_mode=False)
+
+    assert result.exit_code != 0
+    assert "formatter sentinel" in result.output
+    _assert_abort_preserves_cause(result, sentinel)

@@ -76,7 +76,7 @@ def fmt(
 
     except Exception as e:
         print_cli_error(console, e)
-        raise click.Abort from None
+        raise click.Abort from e
 
 
 def _handle_format_check(formatter, input_path: Path) -> None:
