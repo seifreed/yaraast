@@ -58,7 +58,6 @@ from yaraast.codegen.generator_expression_visitors import (
     render_postfix_index_target,
     validate_condition_expression,
     validate_expression_collection,
-    validate_slice_target,
     validate_tuple_indexing_target,
     visit_array_access as render_array_access,
     visit_at_expression as render_at_expression,
@@ -655,7 +654,6 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_slice_expression(self, node: SliceExpression) -> str:
         if self._custom_expressions:
             return self._layout.yarax_expression(self, node)
-        validate_slice_target(node.target)
         target = render_postfix_index_target(self, node.target)
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import ListExpression, TupleExpression

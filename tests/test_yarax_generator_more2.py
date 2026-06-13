@@ -246,12 +246,6 @@ def test_yarax_slice_rejects_parenthesized_function_call() -> None:
         start=IntegerLiteral(0),
         stop=IntegerLiteral(1),
     )
-
-    with pytest.raises(
-        ValueError,
-        match=r"SliceExpression\.target must not be a parenthesized function call",
-    ):
-        node.validate_structure()
     with pytest.raises(
         ValueError,
         match=r"Slice target must not be a parenthesized function call for YARA-X output",
@@ -259,20 +253,13 @@ def test_yarax_slice_rejects_parenthesized_function_call() -> None:
         YaraXGenerator().visit(node)
 
 
-def test_yarax_slice_rejects_nested_parenthesized_function_call() -> None:
+def test_yarax_slice_normalizes_nested_parenthesized_tuple_expression() -> None:
     node = SliceExpression(
-        target=ParenthesesExpression(ParenthesesExpression(FunctionCall("foo", []))),
+        target=ParenthesesExpression(
+            ParenthesesExpression(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]))
+        ),
         start=IntegerLiteral(0),
         stop=IntegerLiteral(1),
     )
-
-    with pytest.raises(
-        ValueError,
-        match=r"SliceExpression\.target must not be a parenthesized function call",
-    ):
-        node.validate_structure()
-    with pytest.raises(
-        ValueError,
-        match=r"Slice target must not be a parenthesized function call for YARA-X output",
-    ):
-        YaraXGenerator().visit(node)
+    node.validate_structure()
+    assert YaraXGenerator().visit(node) == "(1, 2)[0:1]"

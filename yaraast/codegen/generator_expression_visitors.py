@@ -1198,21 +1198,31 @@ def render_postfix_target(generator: Any, target: Any) -> str:
     return f"({target_str})"
 
 
-def render_postfix_index_target(generator: Any, target: Any) -> str:
-    from yaraast.ast.expressions import FunctionCall, ParenthesesExpression
+def _normalize_postfix_index_target(target: Any) -> Any:
+    from yaraast.ast.expressions import ParenthesesExpression
+    from yaraast.yarax.ast_nodes import TupleExpression
 
-    if isinstance(target, ParenthesesExpression) and isinstance(target.expression, FunctionCall):
-        return cast(str, generator.visit(target.expression))
-    return cast(str, generator.visit(target))
+    while isinstance(target, ParenthesesExpression):
+        inner = target.expression
+        if isinstance(inner, ParenthesesExpression):
+            target = inner
+            continue
+        if isinstance(inner, TupleExpression):
+            return inner
+        return target
+    return target
+
+
+def render_postfix_index_target(generator: Any, target: Any) -> str:
+    return cast(str, generator.visit(_normalize_postfix_index_target(target)))
 
 
 def validate_tuple_indexing_target(target: Any) -> None:
-    from yaraast.ast.expressions import FunctionCall, ParenthesesExpression
+    from yaraast.ast.expressions import FunctionCall
     from yaraast.yarax.ast_nodes import TupleExpression
 
-    if isinstance(target, FunctionCall | TupleExpression):
-        return
-    if isinstance(target, ParenthesesExpression) and isinstance(target.expression, TupleExpression):
+    normalized = _normalize_postfix_index_target(target)
+    if isinstance(normalized, FunctionCall | TupleExpression):
         return
     msg = "Tuple indexing target must be a function call or tuple expression " "for YARA-X output"
     raise ValueError(msg)
@@ -1222,10 +1232,10 @@ def validate_slice_target(target: Any) -> None:
     from yaraast.ast.expressions import FunctionCall, ParenthesesExpression
 
     while isinstance(target, ParenthesesExpression):
+        if isinstance(target.expression, FunctionCall):
+            msg = "Slice target must not be a parenthesized function call for YARA-X output"
+            raise ValueError(msg)
         target = target.expression
-    if isinstance(target, FunctionCall):
-        msg = "Slice target must not be a parenthesized function call for YARA-X output"
-        raise ValueError(msg)
 
 
 def _is_simple_postfix_target(target: Any) -> bool:
