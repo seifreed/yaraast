@@ -36,10 +36,13 @@ class YaraXParserExpressionsMixin:
         previous_allow: bool = getattr(self, "_allow_contextual_keyword_expression", False)
         previous_used: set[str] = getattr(self, "_used_contextual_keyword_expression", set())
         self._allow_contextual_keyword_expression = True
-        self._used_contextual_keyword_expression: set[str] = set()
+        before_used = set(previous_used)
+        if not previous_allow:
+            self._used_contextual_keyword_expression: set[str] = set()
+            before_used = set()
         try:
             expression = self._parse_expression()
-            used_contextual = set(self._used_contextual_keyword_expression)
+            used_contextual = set(self._used_contextual_keyword_expression) - before_used
             return expression, used_contextual
         finally:
             self._allow_contextual_keyword_expression = previous_allow

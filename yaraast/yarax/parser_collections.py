@@ -40,6 +40,7 @@ class YaraXParserCollectionsMixin:
         if self._is_spread_operator():
             return cast(Expression, self._parse_spread_list())
 
+        nested_contextual = getattr(self, "_allow_contextual_keyword_expression", False)
         first_expr, used_contextual = self._parse_expression_allowing_contextual_keywords()
 
         if self._check(TokenType.FOR) or self._check_keyword("for"):
@@ -47,7 +48,7 @@ class YaraXParserCollectionsMixin:
                 Expression,
                 self._parse_array_comprehension_body(first_expr, used_contextual),
             )
-        if used_contextual:
+        if used_contextual and not nested_contextual:
             raise ParserError("Unexpected token", self._peek())
 
         return cast(Expression, self._parse_regular_list(first_expr))
@@ -164,6 +165,7 @@ class YaraXParserCollectionsMixin:
         if self._is_dict_spread_operator():
             return cast(Expression, self._parse_dict_with_spread())
 
+        nested_contextual = getattr(self, "_allow_contextual_keyword_expression", False)
         first_key, used_contextual_key = self._parse_expression_allowing_contextual_keywords()
         self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
         first_value, used_contextual_value = self._parse_expression_allowing_contextual_keywords()
@@ -178,7 +180,7 @@ class YaraXParserCollectionsMixin:
                     used_contextual_value,
                 ),
             )
-        if used_contextual_key or used_contextual_value:
+        if (used_contextual_key or used_contextual_value) and not nested_contextual:
             raise ParserError("Unexpected token", self._peek())
 
         return cast(Expression, self._parse_regular_dict(first_key, first_value))

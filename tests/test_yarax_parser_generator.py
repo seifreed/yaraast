@@ -210,6 +210,27 @@ def test_yarax_comprehension_preserves_nested_contextual_lambda_scope() -> None:
     assert dict_expr.key_variable == "as"
 
 
+def test_yarax_comprehension_allows_nested_contextual_keyword_expressions() -> None:
+    array_expr = _parse_expr("[[as] for as in items]")
+
+    assert isinstance(array_expr, ArrayComprehension)
+    assert array_expr.variable == "as"
+
+    dict_expr = _parse_expr("{[as]: {include: 1} for as, include in items}")
+
+    assert isinstance(dict_expr, DictComprehension)
+    assert dict_expr.key_variable == "as"
+    assert dict_expr.value_variable == "include"
+
+
+def test_yarax_collection_rejects_unbound_nested_contextual_keyword_expression() -> None:
+    with pytest.raises(ParserError, match="Unexpected token"):
+        _parse_expr("[[as]]")
+
+    with pytest.raises(ParserError, match="Unexpected token"):
+        _parse_expr("{[as]: 1}")
+
+
 def test_yarax_tuple_and_indexing() -> None:
     expr = _parse_expr("(1, 2, 3)")
     assert isinstance(expr, TupleExpression)
