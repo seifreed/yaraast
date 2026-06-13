@@ -386,6 +386,14 @@ def test_direct_yarafile_analysis_rejects_empty_expression_scalars(
             "ArrayAccess.array must not be a tuple expression",
         ),
         (
+            ArrayAccess(ModuleReference("pe"), IntegerLiteral(0)),
+            "ArrayAccess.array must not be a module reference",
+        ),
+        (
+            ArrayAccess(ParenthesesExpression(ModuleReference("pe")), IntegerLiteral(0)),
+            "ArrayAccess.array must not be a module reference",
+        ),
+        (
             ArrayAccess(
                 ParenthesesExpression(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)])),
                 IntegerLiteral(0),

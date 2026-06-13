@@ -416,9 +416,12 @@ class ArrayAccess(Expression):
         _validate_expression(self.array, "ArrayAccess.array")
         _validate_expression(self.index, "ArrayAccess.index")
         from yaraast.ast.conditions import AtExpression
+        from yaraast.ast.modules import ModuleReference
         from yaraast.yarax.ast_nodes import TupleExpression, WithStatement
 
         array = _unwrap_parentheses_expression(self.array)
+        if isinstance(array, ModuleReference):
+            raise ValueError("ArrayAccess.array must not be a module reference")
         if isinstance(array, TupleExpression):
             raise ValueError("ArrayAccess.array must not be a tuple expression")
         if isinstance(array, AtExpression | WithStatement):
