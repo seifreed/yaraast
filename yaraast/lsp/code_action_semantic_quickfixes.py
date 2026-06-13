@@ -74,6 +74,31 @@ def _find_matching_call_close(line: str, open_paren: int) -> int | None:
     return None
 
 
+def _find_matching_call_close_in_lines(
+    lines: list[str], open_line: int, open_paren: int
+) -> tuple[int, int] | None:
+    depth = 0
+    for line_num in range(open_line, len(lines)):
+        line = lines[line_num]
+        index = open_paren if line_num == open_line else 0
+        while index < len(line):
+            char = line[index]
+            if char == '"':
+                index = _scan_quoted_end(line, index, '"') + 1
+                continue
+            if char == "/" and _starts_regex_literal(line, index):
+                index = _scan_quoted_end(line, index, "/") + 1
+                continue
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    return line_num, index
+            index += 1
+    return None
+
+
 def _find_diagnostic_call(
     line: str,
     function_name: str,
@@ -94,6 +119,41 @@ def _find_diagnostic_call(
             if fallback is None:
                 fallback = call_span
             if start_col < range_end and close_paren + 1 > range_start:
+                return call_span
+        search_start = start_col + len(needle)
+    return fallback
+
+
+def _find_diagnostic_call_close(
+    lines: list[str],
+    function_name: str,
+    diagnostic: Diagnostic,
+) -> tuple[int, int, int, int] | None:
+    line_num = diagnostic.range.start.line
+    if line_num >= len(lines):
+        return None
+    line = lines[line_num]
+    needle = f"{function_name}("
+    range_start = utf16_col_to_utf8(line, diagnostic.range.start.character)
+    range_end = (
+        utf16_col_to_utf8(line, diagnostic.range.end.character)
+        if diagnostic.range.end.line == line_num
+        else len(line)
+    )
+    fallback: tuple[int, int, int, int] | None = None
+    search_start = 0
+    while True:
+        start_col = line.find(needle, search_start)
+        if start_col < 0:
+            break
+        open_paren = start_col + len(function_name)
+        close = _find_matching_call_close_in_lines(lines, line_num, open_paren)
+        if close is not None:
+            close_line, close_col = close
+            call_span = (start_col, open_paren, close_line, close_col)
+            if fallback is None:
+                fallback = call_span
+            if start_col < range_end and (close_line > line_num or close_col + 1 > range_start):
                 return call_span
         search_start = start_col + len(needle)
     return fallback
@@ -297,14 +357,14 @@ def create_add_missing_arguments_action(
     line_num = diagnostic.range.start.line
     if line_num >= len(lines):
         return []
-    line = lines[line_num]
-    call_span = _find_diagnostic_call(line, function_name, diagnostic)
+    call_span = _find_diagnostic_call_close(lines, function_name, diagnostic)
     if call_span is None:
         return []
-    _start_col, open_paren, close_paren = call_span
+    _start_col, open_paren, close_line, close_paren = call_span
     insertion = ("0, " * missing_count).rstrip(", ")
-    if close_paren > open_paren + 1:
+    if close_line > line_num or close_paren > open_paren + 1:
         insertion = ", " + insertion
+    close_line_text = lines[close_line]
     return [
         CodeAction(
             title=f"Add {missing_count} missing argument(s) to {function_name}()",
@@ -314,8 +374,8 @@ def create_add_missing_arguments_action(
                     uri: [
                         TextEdit(
                             range=Range(
-                                start=_same_line_position(line_num, line, close_paren),
-                                end=_same_line_position(line_num, line, close_paren),
+                                start=_same_line_position(close_line, close_line_text, close_paren),
+                                end=_same_line_position(close_line, close_line_text, close_paren),
                             ),
                             new_text=insertion,
                         )

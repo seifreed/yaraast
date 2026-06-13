@@ -606,6 +606,49 @@ rule sample {
     assert change.new_text == ", 0"
 
 
+def test_code_action_add_missing_argument_targets_multiline_call_close() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        custom(
+            inner(1)
+        )
+}
+""".lstrip()
+    call_line = text.splitlines()[2]
+    close_line = text.splitlines()[4]
+    call_start = call_line.index("custom(")
+    close_col = close_line.index(")")
+    diag = Diagnostic(
+        range=_range(2, call_start, len(call_line)),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "custom",
+                "arity_kind": "exact",
+                "actual_args": 1,
+                "expected_args": 2,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(
+        text, _range(2, call_start, len(call_line)), [diag], "file://test.yar"
+    )
+    action = next(
+        action for action in actions if action.title == "Add 1 missing argument(s) to custom()"
+    )
+    assert action.edit is not None
+    change = _change_set(action.edit, "file://test.yar")[0]
+    assert change.range.start.line == 4
+    assert change.range.start.character == close_col
+    assert change.new_text == ", 0"
+
+
 def test_code_action_add_placeholder_targets_diagnostic_call() -> None:
     provider = CodeActionsProvider()
     text = """
