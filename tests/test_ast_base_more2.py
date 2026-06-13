@@ -495,6 +495,19 @@ def test_in_rule_pragma_validate_structure_rejects_invalid_position() -> None:
         InRulePragma(CustomPragma("vendor"), "sideways").validate_structure()
 
 
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (Pragma(PragmaType.PRAGMA, "vendor", arguments=[""]), "Pragma argument must not be empty"),
+        (CustomPragma("vendor", arguments=[""]), "Pragma argument must not be empty"),
+        (DefineDirective("FLAG", ""), "Pragma value must not be empty"),
+    ],
+)
+def test_pragma_validate_structure_rejects_empty_values(node: Any, message: str) -> None:
+    with pytest.raises(ValueError, match=message):
+        node.validate_structure()
+
+
 def test_string_definition_validate_structure_rejects_invalid_identifier() -> None:
     with pytest.raises(ValueError, match="Invalid string identifier"):
         PlainString("$bad-name", value="needle").validate_structure()
@@ -793,7 +806,7 @@ def test_direct_yarafile_analysis_rejects_invalid_meta_entry_scope() -> None:
             "Pragma parameter value must be a string",
         ),
         (DefineDirective(""), "Pragma macro_name cannot be empty"),
-        (UndefDirective(""), "Pragma macro_name cannot be empty"),
+        (UndefDirective(""), "Pragma argument must not be empty"),
         (ConditionalDirective(PragmaType.IFDEF, ""), "Pragma condition cannot be empty"),
         (ConditionalDirective(PragmaType.IFDEF), "Pragma condition must be a string"),
     ],

@@ -27,6 +27,15 @@ def _normalize_arguments(arguments: list[str] | None) -> list[str]:
     return arguments
 
 
+def _validate_pragma_arguments(arguments: list[str], *, allow_trailing_empty: bool = False) -> None:
+    for index, argument in enumerate(arguments):
+        if allow_trailing_empty and index == len(arguments) - 1 and argument == "":
+            continue
+        if argument == "":
+            msg = "Pragma argument must not be empty"
+            raise ValueError(msg)
+
+
 def _require_scope(scope: PragmaScope) -> PragmaScope:
     if not isinstance(scope, PragmaScope):
         msg = "Pragma scope must be a PragmaScope"
@@ -128,7 +137,9 @@ class Pragma(ASTNode):
         _require_pragma_type(self.pragma_type)
         _require_nonempty_string(self.name, "Pragma name")
         _validate_yara_identifier(self.name, "pragma")
-        _normalize_arguments(self.arguments)
+        arguments = _normalize_arguments(self.arguments)
+        if type(self).__name__ != "DefineDirective":
+            _validate_pragma_arguments(arguments)
         _require_scope(self.scope)
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -193,6 +204,9 @@ class DefineDirective(Pragma):
         _validate_yara_identifier(self.macro_name, "pragma macro")
         if self.macro_value is not None:
             require_string(self.macro_value, "Pragma macro_value")
+            if self.macro_value == "":
+                msg = "Pragma value must not be empty"
+                raise ValueError(msg)
 
     def __str__(self) -> str:
         macro_name = _require_nonempty_string(self.macro_name, "Pragma macro_name")
