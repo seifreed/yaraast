@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-import contextlib
 from dataclasses import dataclass
 from pathlib import Path
 import re
@@ -172,13 +171,27 @@ class DiagnosticsProvider:
         if ast is None or not self.runtime:
             return
         if self.runtime.config.metadata_validation:
-            with contextlib.suppress(Exception):
+            try:
                 diagnostics.extend(self._validate_metadata(ast, self.runtime.config))
+            except Exception as exc:
+                diagnostics.append(self._configurable_check_error_to_diagnostic("metadata", exc))
         if self.runtime.config.rule_name_validation:
-            with contextlib.suppress(Exception):
+            try:
                 diagnostics.extend(
                     self._validate_rule_names(ast, self.runtime.config.rule_name_validation)
                 )
+            except Exception as exc:
+                diagnostics.append(self._configurable_check_error_to_diagnostic("rule name", exc))
+
+    def _configurable_check_error_to_diagnostic(
+        self, check_name: str, error: Exception
+    ) -> Diagnostic:
+        return Diagnostic(
+            range=Range(start=Position(line=0, character=0), end=Position(line=0, character=1)),
+            message=f"Unexpected {check_name} validation error: {error!s}",
+            severity=DiagnosticSeverity.Error,
+            source="yaraast-config",
+        )
 
     def _parser_error_to_diagnostic(
         self,

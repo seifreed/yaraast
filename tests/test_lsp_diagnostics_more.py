@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 
 from lsprotocol.types import Diagnostic, DiagnosticSeverity
 import pytest
@@ -376,6 +376,47 @@ def test_rule_name_validation_ignores_malformed_config_value() -> None:
     diags = provider.get_diagnostics("rule bad_name { condition: true }\n", "file:///x.yar")
 
     assert any(d.source == "yaraast-naming" for d in diags)
+
+
+@pytest.mark.parametrize(
+    ("config", "method_name", "message"),
+    [
+        (
+            {"metadataValidation": [{"identifier": "author", "required": True}]},
+            "_validate_metadata",
+            "Unexpected metadata validation error: metadata sentinel",
+        ),
+        (
+            {"ruleNameValidation": "^GOOD_"},
+            "_validate_rule_names",
+            "Unexpected rule name validation error: naming sentinel",
+        ),
+    ],
+)
+def test_configurable_diagnostics_report_internal_validation_errors(
+    config: dict[str, object],
+    method_name: str,
+    message: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = LspRuntime()
+    runtime.update_config({"YARA": config})
+    provider = DiagnosticsProvider(runtime)
+    sentinel = RuntimeError("metadata sentinel" if "metadata" in message else "naming sentinel")
+
+    def fail_validation(*_args: object, **_kwargs: object) -> NoReturn:
+        raise sentinel
+
+    monkeypatch.setattr(provider, method_name, fail_validation)
+
+    diags = provider.get_diagnostics("rule sample { condition: true }\n", "file:///x.yar")
+
+    assert any(
+        diagnostic.source == "yaraast-config"
+        and diagnostic.severity == DiagnosticSeverity.Error
+        and diagnostic.message == message
+        for diagnostic in diags
+    )
 
 
 def test_compiler_include_error_is_structured() -> None:
