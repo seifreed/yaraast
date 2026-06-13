@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import click
 import pytest
 from rich.console import Console
 
-from yaraast.cli import libyara_reporting as lr
+from yaraast.cli import libyara_handlers_common as handlers, libyara_reporting as lr
 
 
 def _console() -> Console:
@@ -112,6 +113,33 @@ def test_libyara_error_handler_paths() -> None:
     assert "runtime explode" in out
     assert "Import error: bad import" in out
     assert "Error: <unsafe>" in out
+
+
+def test_libyara_run_or_abort_preserves_reported_error_cause() -> None:
+    c = _console()
+    sentinel = lr.LibYaraCommandError("reported")
+
+    def fail_with_reported_error() -> None:
+        raise sentinel
+
+    with pytest.raises(click.Abort) as exc:
+        handlers.run_or_abort(fail_with_reported_error, c)
+
+    assert exc.value.__cause__ is sentinel
+
+
+def test_libyara_run_or_abort_preserves_generic_error_cause() -> None:
+    c = _console()
+    sentinel = RuntimeError("runtime explode")
+
+    def fail_with_generic_error() -> None:
+        raise sentinel
+
+    with pytest.raises(click.Abort) as exc:
+        handlers.run_or_abort(fail_with_generic_error, c)
+
+    assert exc.value.__cause__ is sentinel
+    assert "runtime explode" in c.export_text()
 
 
 def test_libyara_reporting_escapes_markup_in_dynamic_values() -> None:
