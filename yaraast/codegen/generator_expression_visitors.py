@@ -1212,7 +1212,20 @@ def validate_array_access_target(target: Any) -> None:
         raise ValueError(msg)
 
 
+def validate_postfix_target(target: Any) -> None:
+    from yaraast.ast.conditions import AtExpression
+    from yaraast.ast.expressions import ParenthesesExpression
+    from yaraast.yarax.ast_nodes import WithStatement
+
+    while isinstance(target, ParenthesesExpression):
+        target = target.expression
+    if isinstance(target, AtExpression | WithStatement):
+        msg = "Postfix target must be a condition that can be parenthesized for YARA-X output"
+        raise ValueError(msg)
+
+
 def render_postfix_target(generator: Any, target: Any) -> str:
+    validate_postfix_target(target)
     target_str = cast(str, generator.visit(_normalize_postfix_target(target)))
     if _is_simple_postfix_target(target):
         return target_str
@@ -1315,6 +1328,7 @@ def visit_array_access(generator: Any, node: Any) -> str:
     from yaraast.ast.expressions import FunctionCall
 
     _reject_non_integer_expression(node.index, "Array index")
+    validate_postfix_target(node.array)
     validate_array_access_target(node.array)
     validate_module_root_array_access(node)
     validate_known_module_array_access(generator, node)

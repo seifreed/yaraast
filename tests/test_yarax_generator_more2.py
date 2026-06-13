@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from yaraast.ast.base import ASTNode
+from yaraast.ast.conditions import AtExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
@@ -153,6 +154,23 @@ def test_yarax_generator_parenthesizes_compound_function_call_receivers() -> Non
     ):
         YaraXGenerator().visit(
             ArrayAccess(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]), IntegerLiteral(0))
+        )
+    with pytest.raises(
+        ValueError,
+        match=r"Postfix target must be a condition that can be parenthesized for YARA-X output",
+    ):
+        YaraXGenerator().visit(
+            MemberAccess(AtExpression(IntegerLiteral(1), IntegerLiteral(2)), "x")
+        )
+    with pytest.raises(
+        ValueError,
+        match=r"Postfix target must be a condition that can be parenthesized for YARA-X output",
+    ):
+        YaraXGenerator().visit(
+            MemberAccess(
+                WithStatement([WithDeclaration("a", IntegerLiteral(1))], Identifier("a")),
+                "x",
+            )
         )
     assert YaraXGenerator().visit(MemberAccess(compound_receiver, "field")) == "(a + b).field"
 

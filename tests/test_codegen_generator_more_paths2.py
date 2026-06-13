@@ -4549,6 +4549,13 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         gen.visit_array_access(
             ArrayAccess(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]), IntegerLiteral(0))
         )
+    with pytest.raises(
+        ValueError,
+        match=r"Postfix target must be a condition that can be parenthesized for YARA-X output",
+    ):
+        CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).visit_member_access(
+            MemberAccess(AtExpression(IntegerLiteral(1), IntegerLiteral(2)), "x")
+        )
     assert (
         gen.visit_for_of_expression(
             ForOfExpression("all", Identifier("them"), _FalsyIntegerLiteral(0))
