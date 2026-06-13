@@ -43,7 +43,10 @@ class YaraXParserCollectionsMixin:
         first_expr, used_contextual = self._parse_expression_allowing_contextual_keywords()
 
         if self._check(TokenType.FOR) or self._check_keyword("for"):
-            return cast(Expression, self._parse_array_comprehension_body(first_expr))
+            return cast(
+                Expression,
+                self._parse_array_comprehension_body(first_expr, used_contextual),
+            )
         if used_contextual:
             raise ParserError("Unexpected token", self._peek())
 
@@ -114,7 +117,9 @@ class YaraXParserCollectionsMixin:
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
         return ListExpression(elements=elements)
 
-    def _parse_array_comprehension_body(self: Any, expression: Expression) -> ArrayComprehension:
+    def _parse_array_comprehension_body(
+        self: Any, expression: Expression, used_contextual: set[str]
+    ) -> ArrayComprehension:
         """Parse array comprehension after initial expression."""
         if self._check(TokenType.FOR):
             self._advance()
@@ -122,6 +127,9 @@ class YaraXParserCollectionsMixin:
             self._consume_keyword("for")
 
         variable = self._consume_local_identifier(ERROR_EXPECTED_VARIABLE).value
+        local_names = self._local_identifier_scope_names(variable)
+        if not used_contextual.issubset(local_names):
+            raise ParserError("Unexpected token", self._peek())
 
         if self._check(TokenType.IN):
             self._advance()
@@ -133,7 +141,6 @@ class YaraXParserCollectionsMixin:
         condition = None
         if self._check_keyword("if"):
             self._advance()
-            local_names = self._local_identifier_scope_names(variable)
             with self._contextual_local_identifier_scope(local_names):
                 condition = self._parse_expression()
 
@@ -162,7 +169,15 @@ class YaraXParserCollectionsMixin:
         first_value, used_contextual_value = self._parse_expression_allowing_contextual_keywords()
 
         if self._check(TokenType.FOR) or self._check_keyword("for"):
-            return cast(Expression, self._parse_dict_comprehension_body(first_key, first_value))
+            return cast(
+                Expression,
+                self._parse_dict_comprehension_body(
+                    first_key,
+                    first_value,
+                    used_contextual_key,
+                    used_contextual_value,
+                ),
+            )
         if used_contextual_key or used_contextual_value:
             raise ParserError("Unexpected token", self._peek())
 
@@ -228,7 +243,11 @@ class YaraXParserCollectionsMixin:
         return DictExpression(items=items)
 
     def _parse_dict_comprehension_body(
-        self: Any, key_expr: Expression, value_expr: Expression
+        self: Any,
+        key_expr: Expression,
+        value_expr: Expression,
+        used_contextual_key: set[str],
+        used_contextual_value: set[str],
     ) -> DictComprehension:
         """Parse dict comprehension after initial key-value pair."""
         if self._check(TokenType.FOR):
@@ -245,6 +264,10 @@ class YaraXParserCollectionsMixin:
             self._advance()
             value_variable = self._consume_local_identifier("Expected second variable").value
             key_variable = first_var
+        local_names = self._local_identifier_scope_names(key_variable, value_variable)
+        used_contextual = used_contextual_key | used_contextual_value
+        if not used_contextual.issubset(local_names):
+            raise ParserError("Unexpected token", self._peek())
 
         if self._check(TokenType.IN):
             self._advance()
@@ -256,7 +279,6 @@ class YaraXParserCollectionsMixin:
         condition = None
         if self._check_keyword("if"):
             self._advance()
-            local_names = self._local_identifier_scope_names(key_variable, value_variable)
             with self._contextual_local_identifier_scope(local_names):
                 condition = self._parse_expression()
 

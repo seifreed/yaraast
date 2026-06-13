@@ -32,14 +32,14 @@ class YaraXParserExpressionsMixin:
         """Parse a full expression with YARA-X primary expressions."""
         return cast(Expression, cast(Any, super())._parse_expression())
 
-    def _parse_expression_allowing_contextual_keywords(self: Any) -> tuple[Expression, bool]:
-        previous_allow = getattr(self, "_allow_contextual_keyword_expression", False)
-        previous_used = getattr(self, "_used_contextual_keyword_expression", False)
+    def _parse_expression_allowing_contextual_keywords(self: Any) -> tuple[Expression, set[str]]:
+        previous_allow: bool = getattr(self, "_allow_contextual_keyword_expression", False)
+        previous_used: set[str] = getattr(self, "_used_contextual_keyword_expression", set())
         self._allow_contextual_keyword_expression = True
-        self._used_contextual_keyword_expression = False
+        self._used_contextual_keyword_expression: set[str] = set()
         try:
             expression = self._parse_expression()
-            used_contextual = bool(self._used_contextual_keyword_expression)
+            used_contextual = set(self._used_contextual_keyword_expression)
             return expression, used_contextual
         finally:
             self._allow_contextual_keyword_expression = previous_allow
@@ -73,7 +73,7 @@ class YaraXParserExpressionsMixin:
             TokenType.AS, TokenType.INCLUDE
         ):
             token = self._advance()
-            self._used_contextual_keyword_expression = True
+            self._used_contextual_keyword_expression.add(str(token.value))
             return cast(
                 Expression,
                 self._set_node_location_from_token(Identifier(name=str(token.value)), token),

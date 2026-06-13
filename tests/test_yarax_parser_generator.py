@@ -190,6 +190,14 @@ def test_yarax_dict_comprehension_allows_contextual_local_identifiers() -> None:
     assert YaraXGenerator().visit(expr) == "{as: include for as, include in data if include}"
 
 
+def test_yarax_comprehension_rejects_unbound_contextual_keyword_expression() -> None:
+    with pytest.raises(ParserError, match="Unexpected token"):
+        _parse_expr("[include for as in items]")
+
+    with pytest.raises(ParserError, match="Unexpected token"):
+        _parse_expr("{x: include for as in data}")
+
+
 def test_yarax_tuple_and_indexing() -> None:
     expr = _parse_expr("(1, 2, 3)")
     assert isinstance(expr, TupleExpression)
