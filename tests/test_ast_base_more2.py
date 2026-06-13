@@ -490,6 +490,11 @@ def test_pragma_validate_structure_rejects_invalid_identifiers(
         node.validate_structure()
 
 
+def test_in_rule_pragma_validate_structure_rejects_invalid_position() -> None:
+    with pytest.raises(ValueError, match="Invalid InRulePragma position"):
+        InRulePragma(CustomPragma("vendor"), "sideways").validate_structure()
+
+
 def test_string_definition_validate_structure_rejects_invalid_identifier() -> None:
     with pytest.raises(ValueError, match="Invalid string identifier"):
         PlainString("$bad-name", value="needle").validate_structure()

@@ -13,6 +13,7 @@ from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
+_VALID_IN_RULE_PRAGMA_POSITIONS = frozenset({"before_strings", "after_strings", "before_condition"})
 
 
 def _normalize_arguments(arguments: list[str] | None) -> list[str]:
@@ -342,7 +343,11 @@ class InRulePragma(ASTNode):
         return self.pragma
 
     def _validated_position(self) -> str:
-        return _require_nonempty_string(self.position, "InRulePragma position")
+        position = _require_nonempty_string(self.position, "InRulePragma position")
+        if position not in _VALID_IN_RULE_PRAGMA_POSITIONS:
+            msg = f"Invalid InRulePragma position '{position}'"
+            raise ValueError(msg)
+        return position
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_in_rule_pragma(self)
