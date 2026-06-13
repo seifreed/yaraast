@@ -11,6 +11,7 @@ from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
     MemberAccess,
+    ParenthesesExpression,
     StringLiteral,
 )
 from yaraast.yarax.ast_nodes import (
@@ -216,6 +217,13 @@ def test_yarax_tuple_indexing_validate_structure_rejects_non_tuple_targets() -> 
 
     with pytest.raises(
         ValueError,
-        match=r"TupleIndexing\.tuple_expr must be a function call or tuple expression",
+        match=r"TupleIndexing\.tuple_expr must be a function call, tuple expression, or parenthesized function call/tuple expression",
     ):
         invalid.validate_structure()
+
+
+def test_yarax_tuple_indexing_validate_structure_accepts_parenthesized_function_call() -> None:
+    TupleIndexing(
+        tuple_expr=ParenthesesExpression(FunctionCall("foo", [])),
+        index=IntegerLiteral(0),
+    ).validate_structure()

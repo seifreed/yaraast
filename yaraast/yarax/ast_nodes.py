@@ -228,7 +228,8 @@ class TupleIndexing(Expression):
         ):
             return
         msg = (
-            "TupleIndexing.tuple_expr must be a function call or tuple expression "
+            "TupleIndexing.tuple_expr must be a function call, tuple expression, "
+            "or parenthesized function call/tuple expression "
             "for YARA-X output"
         )
         raise ValueError(msg)
