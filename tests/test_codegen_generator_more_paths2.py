@@ -3541,6 +3541,15 @@ def test_codegen_generators_reject_bare_contextual_expressions(
         ),
         (
             ForExpression(
+                "any",
+                "i",
+                ListExpression([IntegerLiteral(1), IntegerLiteral(2)]),
+                StringIdentifier("$a"),
+            ),
+            "For expression iterable must be a range, set, or iterable expression",
+        ),
+        (
+            ForExpression(
                 "any", "i", SetExpression([BooleanLiteral(True)]), StringIdentifier("$a")
             ),
             "For expression iterable set items must be integer or string expressions",

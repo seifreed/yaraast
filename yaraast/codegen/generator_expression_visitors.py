@@ -1389,6 +1389,31 @@ def _known_builtin_module_scalar_type_name(expression: Any) -> str | None:
 def visit_for_expression(generator: Any, node: Any) -> str:
     from yaraast.ast.expressions import RangeExpression, SetExpression
     from yaraast.codegen.generator_expressions import _render_quantifier
+    from yaraast.yarax.ast_nodes import (
+        ArrayComprehension,
+        DictComprehension,
+        DictExpression,
+        LambdaExpression,
+        ListExpression,
+        PatternMatch,
+        WithStatement,
+    )
+
+    if isinstance(
+        node.iterable,
+        ListExpression
+        | DictExpression
+        | ArrayComprehension
+        | DictComprehension
+        | LambdaExpression
+        | PatternMatch
+        | WithStatement,
+    ):
+        msg = (
+            "For expression iterable must be a range, set, or iterable expression "
+            "for libyara output"
+        )
+        raise ValueError(msg)
 
     if _is_definitely_non_iterable_expression(node.iterable):
         msg = (
