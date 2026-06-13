@@ -70,5 +70,5 @@ def _symbol_contains_position(symbol: Any, position: Position) -> bool:
     ):
         return False
     return not (
-        position.line == symbol.range.end.line and position.character > symbol.range.end.character
+        position.line == symbol.range.end.line and position.character >= symbol.range.end.character
     )

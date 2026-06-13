@@ -18,8 +18,9 @@ from yaraast.lsp.document_query_resolution_ranges import (
     narrow_range_to_name,
     range_contains_position,
 )
+from yaraast.lsp.document_query_resolution_symbol_records import _symbol_contains_position
 from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
-from yaraast.lsp.document_types import LanguageMode
+from yaraast.lsp.document_types import LanguageMode, SymbolRecord
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, RuntimeConfig, path_to_uri
 from yaraast.lsp.semantic_tokens import SemanticTokensProvider
 from yaraast.lsp.utf16 import utf8_col_to_utf16
@@ -446,6 +447,19 @@ def test_lsp_range_contains_position_uses_exclusive_end() -> None:
     assert range_contains_position(range_, Position(line=0, character=5)) is True
     assert range_contains_position(range_, Position(line=0, character=10)) is True
     assert range_contains_position(range_, Position(line=0, character=11)) is False
+
+
+def test_symbol_record_contains_position_uses_exclusive_end() -> None:
+    symbol = SymbolRecord(
+        "sample",
+        "rule",
+        "file:///sample.yar",
+        Range(start=Position(line=0, character=5), end=Position(line=0, character=11)),
+    )
+
+    assert _symbol_contains_position(symbol, Position(line=0, character=5)) is True
+    assert _symbol_contains_position(symbol, Position(line=0, character=10)) is True
+    assert _symbol_contains_position(symbol, Position(line=0, character=11)) is False
 
 
 def test_runtime_indexes_yaral_sections_as_section_symbols(tmp_path: Path) -> None:
