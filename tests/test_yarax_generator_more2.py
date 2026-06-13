@@ -206,3 +206,16 @@ def test_yarax_generator_covers_tuple_indexing_slice_and_parenthesized_target() 
 
     case = MatchCase(pattern=StringLiteral("a"), result=StringLiteral("b"))
     assert gen.visit(case) == '"a" => "b"'
+
+
+def test_yarax_tuple_indexing_validate_structure_rejects_non_tuple_targets() -> None:
+    invalid = TupleIndexing(
+        tuple_expr=MemberAccess(object=Identifier(name="obj"), member="tuple"),
+        index=IntegerLiteral(0),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"TupleIndexing\.tuple_expr must be a function call or tuple expression",
+    ):
+        invalid.validate_structure()
