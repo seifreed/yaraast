@@ -44,6 +44,7 @@ class SymbolsProvider:
         started = time.perf_counter()
         doc = None
         symbols: list[DocumentSymbol]
+        symbol_build_succeeded = False
 
         try:
             if self.runtime and uri:
@@ -58,13 +59,14 @@ class SymbolsProvider:
                 return []
             lines = text.split("\n")
             symbols = build_document_symbols(doc, lines)
+            symbol_build_succeeded = True
 
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
             # If parsing fails, return empty symbols
             symbols = []
 
-        if doc is not None:
+        if doc is not None and symbol_build_succeeded:
             doc.set_cached("lsp:document_symbols", list(symbols))
         if self.runtime is not None:
             self.runtime.record_latency(
