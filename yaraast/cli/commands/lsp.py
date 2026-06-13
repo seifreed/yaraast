@@ -52,7 +52,7 @@ def lsp(tcp: int | None, host: str) -> None:
         if not is_missing_lsp_dependency(exc):
             raise
         display_missing_dependency(console, exc)
-        raise click.Abort from None
+        raise click.Abort from exc
     except Exception as exc:
         display_start_error(console, exc)
-        raise click.Abort from None
+        raise click.Abort from exc
