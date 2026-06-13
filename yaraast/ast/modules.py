@@ -18,6 +18,9 @@ class ModuleReference(Expression):
     def validate_structure(self) -> None:
         """Validate module name before direct analysis."""
         _require_nonempty_string(self.module, "ModuleReference module")
+        from yaraast.codegen.generator_formatting import validate_yara_identifier
+
+        validate_yara_identifier(self.module, "module")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_module_reference(self)

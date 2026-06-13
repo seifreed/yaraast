@@ -401,6 +401,10 @@ def test_direct_yarafile_analysis_rejects_empty_expression_scalars(
             "ArrayAccess.array must not be a tuple expression",
         ),
         (
+            ModuleReference("bad-name"),
+            "Invalid module identifier",
+        ),
+        (
             FunctionCall("map", [], receiver=AtExpression(IntegerLiteral(1), IntegerLiteral(2))),
             "FunctionCall.receiver must not be an 'at' or 'with' expression",
         ),
