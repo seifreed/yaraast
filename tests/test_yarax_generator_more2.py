@@ -238,3 +238,22 @@ def test_yarax_tuple_indexing_rejects_parenthesized_function_call() -> None:
         match="Tuple indexing target must be a function call or tuple expression",
     ):
         YaraXGenerator().visit(node)
+
+
+def test_yarax_slice_rejects_parenthesized_function_call() -> None:
+    node = SliceExpression(
+        target=ParenthesesExpression(FunctionCall("foo", [])),
+        start=IntegerLiteral(0),
+        stop=IntegerLiteral(1),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"SliceExpression\.target must not be a parenthesized function call",
+    ):
+        node.validate_structure()
+    with pytest.raises(
+        ValueError,
+        match=r"Slice target must not be a parenthesized function call for YARA-X output",
+    ):
+        YaraXGenerator().visit(node)

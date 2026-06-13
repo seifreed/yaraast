@@ -16,6 +16,7 @@ from yaraast.codegen.generator_expression_visitors import (
     validate_expression_collection,
     validate_function_call_arguments,
     validate_set_expression_elements,
+    validate_slice_target,
     validate_tuple_indexing_target,
 )
 from yaraast.codegen.generator_formatting import (
@@ -342,6 +343,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
         return f"{self.visit(node.key)}: {self.visit(node.value)}"
 
     def visit_slice_expression(self, node: Any) -> str:
+        validate_slice_target(node.target)
         target = render_postfix_index_target(self, node.target)
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import ListExpression, TupleExpression

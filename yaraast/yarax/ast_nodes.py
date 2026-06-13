@@ -317,6 +317,8 @@ class SliceExpression(Expression):
     step: Expression | None = None
 
     def validate_structure(self) -> None:
+        from yaraast.ast.expressions import FunctionCall, ParenthesesExpression
+
         _validate_child_structure(_require_ast_node(self.target, "SliceExpression.target"))
         if self.start is not None:
             _validate_child_structure(_require_ast_node(self.start, "SliceExpression.start"))
@@ -324,6 +326,11 @@ class SliceExpression(Expression):
             _validate_child_structure(_require_ast_node(self.stop, "SliceExpression.stop"))
         if self.step is not None:
             _validate_child_structure(_require_ast_node(self.step, "SliceExpression.step"))
+        if isinstance(self.target, ParenthesesExpression) and isinstance(
+            self.target.expression, FunctionCall
+        ):
+            msg = "SliceExpression.target must not be a parenthesized function call"
+            raise ValueError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_slice_expression(self)

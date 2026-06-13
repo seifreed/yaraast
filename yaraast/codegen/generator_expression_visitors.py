@@ -1218,6 +1218,14 @@ def validate_tuple_indexing_target(target: Any) -> None:
     raise ValueError(msg)
 
 
+def validate_slice_target(target: Any) -> None:
+    from yaraast.ast.expressions import FunctionCall, ParenthesesExpression
+
+    if isinstance(target, ParenthesesExpression) and isinstance(target.expression, FunctionCall):
+        msg = "Slice target must not be a parenthesized function call for YARA-X output"
+        raise ValueError(msg)
+
+
 def _is_simple_postfix_target(target: Any) -> bool:
     from yaraast.ast.expressions import (
         ArrayAccess,

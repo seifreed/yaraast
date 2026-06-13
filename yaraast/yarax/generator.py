@@ -9,6 +9,7 @@ from yaraast.codegen.generator_expression_visitors import (
     render_function_call_callee,
     render_postfix_index_target,
     validate_expression_collection,
+    validate_slice_target,
     validate_tuple_indexing_target,
 )
 from yaraast.codegen.generator_formatting import (
@@ -195,6 +196,7 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_slice_expression(self, node: SliceExpression) -> str:
         """Generate code for slice expression."""
+        validate_slice_target(node.target)
         target_str = render_postfix_index_target(self, node.target)
         from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import ListExpression, TupleExpression
