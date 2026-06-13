@@ -469,6 +469,27 @@ def test_rule_validate_structure_rejects_keyword_names() -> None:
         Rule("strings").validate_structure()
 
 
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (Pragma(PragmaType.PRAGMA, "bad-name"), "Invalid pragma identifier"),
+        (CustomPragma("bad-name"), "Invalid pragma identifier"),
+        (DefineDirective("bad-name"), "Invalid pragma macro identifier"),
+        (UndefDirective("bad-name"), "Invalid pragma macro identifier"),
+        (
+            ConditionalDirective(PragmaType.IFDEF, "bad-name"),
+            "Invalid pragma condition identifier",
+        ),
+    ],
+)
+def test_pragma_validate_structure_rejects_invalid_identifiers(
+    node: Any,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        node.validate_structure()
+
+
 def test_string_definition_validate_structure_rejects_invalid_identifier() -> None:
     with pytest.raises(ValueError, match="Invalid string identifier"):
         PlainString("$bad-name", value="needle").validate_structure()

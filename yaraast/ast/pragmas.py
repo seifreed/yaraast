@@ -5,9 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 import math
+import re
 from typing import Any
 
 from yaraast.ast.base import ASTNode, _require_nonempty_string, _VisitorType, require_string
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
+
+_YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
 
 
 def _normalize_arguments(arguments: list[str] | None) -> list[str]:
@@ -94,6 +99,20 @@ def _require_pragma_type(pragma_type: PragmaType) -> PragmaType:
     return pragma_type
 
 
+def _validate_yara_identifier(name: object, kind: str) -> str:
+    if not isinstance(name, str):
+        msg = f"{kind.capitalize()} identifier must be a string for libyara output"
+        raise TypeError(msg)
+    if (
+        len(name) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _YARA_IDENTIFIER_RE.fullmatch(name) is not None
+        and name not in _YARA_KEYWORDS
+    ):
+        return name
+    msg = f"Invalid {kind} identifier '{name}' for libyara output"
+    raise ValueError(msg)
+
+
 @dataclass
 class Pragma(ASTNode):
     """Base pragma/directive node."""
@@ -107,6 +126,7 @@ class Pragma(ASTNode):
         """Validate pragma scalar fields before direct analysis."""
         _require_pragma_type(self.pragma_type)
         _require_nonempty_string(self.name, "Pragma name")
+        _validate_yara_identifier(self.name, "pragma")
         _normalize_arguments(self.arguments)
         _require_scope(self.scope)
 
@@ -169,6 +189,7 @@ class DefineDirective(Pragma):
         """Validate define directive fields before direct analysis."""
         super().validate_structure()
         _require_nonempty_string(self.macro_name, "Pragma macro_name")
+        _validate_yara_identifier(self.macro_name, "pragma macro")
         if self.macro_value is not None:
             require_string(self.macro_value, "Pragma macro_value")
 
@@ -199,6 +220,7 @@ class UndefDirective(Pragma):
         """Validate undef directive fields before direct analysis."""
         super().validate_structure()
         _require_nonempty_string(self.macro_name, "Pragma macro_name")
+        _validate_yara_identifier(self.macro_name, "pragma macro")
 
     def __str__(self) -> str:
         macro_name = _require_nonempty_string(self.macro_name, "Pragma macro_name")
@@ -225,6 +247,7 @@ class ConditionalDirective(Pragma):
                 msg = "Pragma condition must be a string"
                 raise TypeError(msg)
             _require_nonempty_string(self.condition, "Pragma condition")
+            _validate_yara_identifier(self.condition, "pragma condition")
         elif self.condition is not None:
             require_string(self.condition, "Pragma condition")
 
