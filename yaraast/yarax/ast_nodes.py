@@ -217,11 +217,11 @@ class TupleIndexing(Expression):
     index: Expression  # Index (can be negative)
 
     def validate_structure(self) -> None:
-        from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
+        from yaraast.ast.expressions import FunctionCall, ParenthesesExpression
 
         _validate_child_structure(_require_ast_node(self.tuple_expr, "TupleIndexing.tuple_expr"))
         _validate_child_structure(_require_ast_node(self.index, "TupleIndexing.index"))
-        if isinstance(self.tuple_expr, FunctionCall | Identifier | TupleExpression):
+        if isinstance(self.tuple_expr, FunctionCall | TupleExpression):
             return
         if isinstance(self.tuple_expr, ParenthesesExpression) and isinstance(
             self.tuple_expr.expression, FunctionCall | TupleExpression

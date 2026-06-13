@@ -344,11 +344,14 @@ def test_yarax_generator_indents_nested_match_case_results() -> None:
 
 
 def test_yarax_generator_tuple_indexing_parens() -> None:
-    condition = TupleIndexing(tuple_expr=Identifier(name="foo"), index=IntegerLiteral(0))
+    condition = TupleIndexing(
+        tuple_expr=TupleExpression(elements=[IntegerLiteral(1), IntegerLiteral(2)]),
+        index=IntegerLiteral(0),
+    )
     yarax_file = YaraFile(rules=[Rule(name="tuple_rule", condition=condition)])
     output = YaraXGenerator().generate(yarax_file)
 
-    assert "foo[0]" in output
+    assert "(1, 2)[0]" in output
 
 
 def test_yarax_generator_preserves_function_call_indexing() -> None:

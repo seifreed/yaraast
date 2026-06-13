@@ -1207,19 +1207,16 @@ def render_postfix_index_target(generator: Any, target: Any) -> str:
 
 
 def validate_tuple_indexing_target(target: Any) -> None:
-    from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
+    from yaraast.ast.expressions import FunctionCall, ParenthesesExpression
     from yaraast.yarax.ast_nodes import TupleExpression
 
-    if isinstance(target, Identifier | FunctionCall | TupleExpression):
+    if isinstance(target, FunctionCall | TupleExpression):
         return
     if isinstance(target, ParenthesesExpression) and isinstance(
         target.expression, FunctionCall | TupleExpression
     ):
         return
-    msg = (
-        "Tuple indexing target must be an identifier, function call, or tuple expression "
-        "for YARA-X output"
-    )
+    msg = "Tuple indexing target must be a function call or tuple expression " "for YARA-X output"
     raise ValueError(msg)
 
 
