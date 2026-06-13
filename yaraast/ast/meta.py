@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+import re
 from typing import Any
 
 from yaraast.ast.base import ASTNode, _require_nonempty_string, _VisitorType
+from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
+
+_YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def _require_meta_value(value: Any, *, allow_float: bool) -> str | int | bool | float:
@@ -31,6 +35,12 @@ class Meta(ASTNode):
     def validate_structure(self) -> None:
         """Validate meta scalar fields before direct analysis."""
         _require_nonempty_string(self.key, "Meta key")
+        if (
+            len(self.key) > YARA_IDENTIFIER_MAX_LENGTH
+            or _YARA_IDENTIFIER_RE.fullmatch(self.key) is None
+        ):
+            msg = f"Invalid meta identifier '{self.key}' for libyara output"
+            raise ValueError(msg)
         _require_meta_value(self.value, allow_float=hasattr(self, "scope"))
 
     def accept(self, visitor: _VisitorType) -> Any:

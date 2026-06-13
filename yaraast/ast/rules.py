@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+import re
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import (
@@ -17,11 +18,24 @@ from yaraast.ast.base import (
 )
 from yaraast.ast.modifiers import MetaEntry, RuleModifier, require_rule_modifier_identifier
 from yaraast.errors import ValidationError
+from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 
 if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
     from yaraast.ast.pragmas import InRulePragma
     from yaraast.ast.strings import StringDefinition
+
+_YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _validate_yara_identifier(name: object, kind: str) -> str:
+    if not isinstance(name, str):
+        msg = f"{kind.capitalize()} identifier must be a string for libyara output"
+        raise TypeError(msg)
+    if len(name) <= YARA_IDENTIFIER_MAX_LENGTH and _YARA_IDENTIFIER_RE.fullmatch(name) is not None:
+        return name
+    msg = f"Invalid {kind} identifier '{name}' for libyara output"
+    raise ValueError(msg)
 
 
 @dataclass
@@ -64,6 +78,7 @@ class Tag(ASTNode):
     def validate_structure(self) -> None:
         """Validate tag scalar fields before direct analysis."""
         _require_nonempty_string(self.name, "Tag name")
+        _validate_yara_identifier(self.name, "tag")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_tag(self)
@@ -156,6 +171,7 @@ class Rule(ASTNode):
     def validate_structure(self) -> None:
         """Validate child containers before traversal."""
         _require_nonempty_string(self.name, "Rule name")
+        _validate_yara_identifier(self.name, "rule")
         from yaraast.ast.strings import StringDefinition
 
         _require_ast_node_sequence_type(

@@ -448,6 +448,26 @@ def test_extern_validation_rejects_invalid_identifiers(node: Any, message: str) 
         node.validate_structure()
 
 
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (Rule("bad-name"), "Invalid rule identifier"),
+        (Tag("bad-name"), "Invalid tag identifier"),
+        (Meta("bad-name", "value"), "Invalid meta identifier"),
+    ],
+)
+def test_rule_metadata_validate_structure_rejects_invalid_identifiers(
+    node: Any,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        node.validate_structure()
+
+
+def test_rule_validate_structure_allows_keyword_names_for_internal_ast() -> None:
+    Rule("strings").validate_structure()
+
+
 def test_string_definition_validate_structure_rejects_invalid_identifier() -> None:
     with pytest.raises(ValueError, match="Invalid string identifier"):
         PlainString("$bad-name", value="needle").validate_structure()
