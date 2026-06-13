@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 
 from lsprotocol.types import Position, Range
 import pytest
@@ -13,6 +13,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.lsp.diagnostics import DiagnosticsProvider
+import yaraast.lsp.document_context as document_context_module
 from yaraast.lsp.document_query_resolution_ranges import (
     narrow_range_to_name,
     range_contains_position,
@@ -22,6 +23,7 @@ from yaraast.lsp.document_types import LanguageMode
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, RuntimeConfig, path_to_uri
 from yaraast.lsp.semantic_tokens import SemanticTokensProvider
 from yaraast.lsp.utf16 import utf8_col_to_utf16
+from yaraast.unified_parser import UnifiedParser as RealUnifiedParser
 
 
 def _cache_stats(status: dict[str, object]) -> dict[str, Any]:
@@ -46,6 +48,14 @@ class _ByteStringDocument(DocumentContext):
                 )
             ]
         )
+
+
+class _FailingUnifiedParser:
+    def __init__(self, _text: str, *, dialect: object = None) -> None:
+        pass
+
+    def parse(self) -> NoReturn:
+        raise RuntimeError("transient document parser failure")
 
 
 def test_runtime_persists_workspace_symbol_index(tmp_path: Path) -> None:
@@ -579,6 +589,23 @@ def test_document_context_returns_line_and_symbol_snapshots() -> None:
 
     assert doc.lines
     assert doc.symbols()
+
+
+def test_document_context_does_not_cache_internal_parser_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    text = "rule sample { condition: true }\n"
+    doc = DocumentContext("file://sample.yar", text)
+
+    monkeypatch.setattr(document_context_module, "UnifiedParser", _FailingUnifiedParser)
+    assert doc.ast() is None
+    assert doc.parse_error() is None
+    assert doc.symbols() == []
+
+    monkeypatch.setattr(document_context_module, "UnifiedParser", RealUnifiedParser)
+    recovered_symbols = doc.symbols()
+
+    assert [symbol.name for symbol in recovered_symbols if symbol.kind == "rule"] == ["sample"]
 
 
 def test_document_context_caches_structural_helpers_per_revision(tmp_path: Path) -> None:

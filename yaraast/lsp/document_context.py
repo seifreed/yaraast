@@ -33,6 +33,7 @@ from yaraast.lsp.document_types import (
     SymbolRecord,
     uri_to_path,
 )
+from yaraast.parser._shared import ParserError
 from yaraast.unified_parser import UnifiedParser
 
 
@@ -69,8 +70,10 @@ class _SymbolIndex:
             return self._symbols
         ast = doc.ast()
         if ast is None:
-            self._symbols = []
-            return self._symbols
+            if doc.parse_error() is not None:
+                self._symbols = []
+                return self._symbols
+            return []
         self._symbols = build_symbols(doc, ast, doc.lines)
         self._symbols_by_kind = None
         self._symbol_lookup = None
@@ -198,8 +201,10 @@ class DocumentContext:
             dialect = self.language_mode.to_dialect(self.text)
             self._dialect = dialect
             self._ast = UnifiedParser(self.text, dialect=dialect).parse()
-        except Exception as exc:
+        except ParserError as exc:
             self._parse_error = exc
+            self._ast = None
+        except Exception:
             self._ast = None
         return self._ast
 
