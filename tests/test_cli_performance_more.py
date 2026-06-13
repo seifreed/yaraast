@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import json
 import os
 from pathlib import Path
@@ -10,10 +11,13 @@ import stat
 import sys
 from textwrap import dedent
 import threading
+from typing import NoReturn
 
-from click.testing import CliRunner
+import click
+from click.testing import CliRunner, Result
 import pytest
 
+import yaraast.cli.commands.performance as performance_command
 from yaraast.cli.commands.performance import performance
 
 
@@ -32,6 +36,12 @@ def _sample_yara() -> str:
             $a
     }
     """
+
+
+def _assert_abort_preserves_cause(result: Result, cause: BaseException) -> None:
+    exception = result.exception
+    assert isinstance(exception, click.Abort)
+    assert exception.__cause__ is cause
 
 
 def test_performance_batch_file(tmp_path: Path) -> None:
@@ -502,6 +512,61 @@ def test_performance_parallel_creates_nested_output_dir(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert (output_dir / "complexity_analysis.json").exists()
+
+
+@pytest.mark.parametrize(
+    ("command_factory", "service_name", "message"),
+    [
+        (
+            lambda rule_path, output_path: [
+                "batch",
+                rule_path,
+                "--output-dir",
+                output_path,
+                "--operations",
+                "parse",
+            ],
+            "run_batch_processing",
+            "Error during batch processing",
+        ),
+        (
+            lambda rule_path, _output_path: ["stream", rule_path],
+            "get_parse_iterator",
+            "Error during streaming parse",
+        ),
+        (
+            lambda rule_path, _output_path: ["parallel", rule_path],
+            "collect_file_paths",
+            "Error during parallel analysis",
+        ),
+    ],
+)
+def test_performance_commands_abort_preserves_original_cause(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command_factory: Callable[[str, str], list[str]],
+    service_name: str,
+    message: str,
+) -> None:
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    output_path = str(tmp_path / "out")
+    sentinel = RuntimeError("performance sentinel")
+
+    def fail_service(*_args: object, **_kwargs: object) -> NoReturn:
+        raise sentinel
+
+    monkeypatch.setattr(performance_command, service_name, fail_service)
+
+    result = CliRunner().invoke(
+        performance,
+        command_factory(file_path, output_path),
+        standalone_mode=False,
+    )
+
+    assert result.exit_code != 0
+    assert message in result.output
+    assert "performance sentinel" in result.output
+    _assert_abort_preserves_cause(result, sentinel)
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="chmod read-only not effective on Windows")

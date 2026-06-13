@@ -140,7 +140,7 @@ def batch(
         click.echo(f"\n✅ Results saved to: {output_dir_path}")
     except Exception as e:
         click.echo(f"\n❌ Error during batch processing: {e}", err=True)
-        raise click.Abort from None
+        raise click.Abort from e
 
 
 @performance.command()
@@ -229,7 +229,7 @@ def stream(
         click.echo("\n⏹️  Parsing cancelled by user")
     except Exception as e:
         click.echo(f"\n❌ Error during streaming parse: {e}", err=True)
-        raise click.Abort from None
+        raise click.Abort from e
 
 
 def _display_stream_results(
@@ -349,7 +349,7 @@ def parallel(
         click.echo("\n⏹️  Analysis cancelled by user")
     except Exception as e:
         click.echo(f"\n❌ Error during parallel analysis: {e}", err=True)
-        raise click.Abort from None
+        raise click.Abort from e
 
 
 @performance.command()
