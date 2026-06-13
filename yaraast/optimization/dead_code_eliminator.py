@@ -346,7 +346,7 @@ class DeadCodeEliminator(ASTTransformer):
     ) -> bool:
         """Check if expression contains rule reference."""
         if isinstance(expr, ForExpression):
-            nested_locals = {*local_variables, expr.variable}
+            nested_locals = {*local_variables, *local_name_variants(expr.variable)}
             return (
                 (
                     isinstance(expr.quantifier, ASTNode)

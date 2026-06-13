@@ -387,6 +387,42 @@ def test_dead_code_eliminator_ignores_for_loop_variables_as_rule_references() ->
     assert [rule.name for rule in optimized.rules] == ["main"]
 
 
+def test_dead_code_eliminator_ignores_multi_variable_for_locals_as_rule_references() -> None:
+    condition = ForExpression(
+        quantifier="all",
+        variable="k, v",
+        iterable=SetExpression(
+            [
+                IntegerLiteral(1),
+                IntegerLiteral(2),
+                IntegerLiteral(3),
+            ]
+        ),
+        body=BinaryExpression(
+            BinaryExpression(Identifier("k"), ">", IntegerLiteral(0)),
+            "and",
+            BinaryExpression(Identifier("v"), ">", IntegerLiteral(0)),
+        ),
+    )
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="main",
+                condition=condition,
+            ),
+            Rule(name="k", modifiers=["private"], condition=BooleanLiteral(True)),
+            Rule(name="v", modifiers=["private"], condition=BooleanLiteral(True)),
+        ]
+    )
+    dce = DeadCodeEliminator()
+
+    assert dce._has_external_references(ast.rules[0]) is False
+    optimized, count = dce.eliminate(ast)
+
+    assert count == 2
+    assert [rule.name for rule in optimized.rules] == ["main"]
+
+
 def test_dead_code_eliminator_ignores_yarax_locals_as_rule_references() -> None:
     cases = [
         (
