@@ -100,4 +100,4 @@ def bench(
         from rich.markup import escape
 
         console.print(f"[red]Error: {escape(str(e))}[/red]")
-        raise click.Abort from None
+        raise click.Abort from e

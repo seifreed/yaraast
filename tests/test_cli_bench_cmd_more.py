@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import NoReturn
 
-from click.testing import CliRunner
+import click
+from click.testing import CliRunner, Result
+import pytest
 
+import yaraast.cli.commands.bench_cmd as bench_command
 from yaraast.cli.commands.bench_cmd import bench
 
 
@@ -20,6 +24,12 @@ rule {name} {{
 """.strip(),
         encoding="utf-8",
     )
+
+
+def _assert_abort_preserves_cause(result: Result, cause: BaseException) -> None:
+    exception = result.exception
+    assert isinstance(exception, click.Abort)
+    assert exception.__cause__ is cause
 
 
 def test_bench_command_compare_multiple_files_and_output_json(tmp_path: Path) -> None:
@@ -82,3 +92,26 @@ def test_bench_command_rejects_zero_iterations(tmp_path: Path) -> None:
 
     assert result.exit_code == 2
     assert "Invalid value for '--iterations'" in result.output
+
+
+def test_bench_command_abort_preserves_original_cause(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    file_a = tmp_path / "a.yar"
+    _write_rule(file_a, "a")
+    sentinel = RuntimeError("bench sentinel")
+
+    def fail_determine_operations(_operations: str) -> NoReturn:
+        raise sentinel
+
+    monkeypatch.setattr(bench_command, "_determine_operations_to_run", fail_determine_operations)
+
+    result = CliRunner().invoke(
+        bench,
+        [str(file_a), "--iterations", "1"],
+        standalone_mode=False,
+    )
+
+    assert result.exit_code != 0
+    assert "bench sentinel" in result.output
+    _assert_abort_preserves_cause(result, sentinel)
