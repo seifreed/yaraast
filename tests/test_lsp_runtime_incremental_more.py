@@ -758,6 +758,25 @@ rule a {
     assert {record.role for record in refs_third} == {"declaration", "read"}
 
 
+def test_string_reference_records_normalize_bare_identifier_for_declaration_role() -> None:
+    runtime = LspRuntime()
+    text = """
+rule a {
+  strings:
+    $a = "x"
+  condition:
+    $a
+}
+""".lstrip()
+    doc = runtime.ensure_document("file:///sample.yar", text)
+
+    prefixed_records = doc.find_string_reference_records("$a")
+    bare_records = doc.find_string_reference_records("a")
+
+    assert bare_records == prefixed_records
+    assert {record.role for record in bare_records} == {"declaration", "read"}
+
+
 def test_document_context_exposes_top_level_modules_includes_and_rules(tmp_path: Path) -> None:
     doc_path = tmp_path / "doc.yar"
     text = """

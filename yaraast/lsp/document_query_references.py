@@ -89,17 +89,18 @@ def find_string_references(
     identifier = _require_symbol_name(identifier, "String identifier")
     include_declaration = _require_bool_flag(include_declaration, "include_declaration")
     rule_scope = _require_optional_rule_scope(rule_scope)
-    cache_key = f"string_references:{identifier}:{int(include_declaration)}:{rule_scope}"
+    normalized = identifier if identifier.startswith("$") else f"${identifier}"
+    cache_key = f"string_references:{normalized}:{int(include_declaration)}:{rule_scope}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
         return _copy_locations(cached)
     ast_locations = collect_string_reference_locations_from_ast(
-        ctx, identifier, include_declaration=include_declaration, rule_scope=rule_scope
+        ctx, normalized, include_declaration=include_declaration, rule_scope=rule_scope
     )
     if ast_locations is not None:
         ctx.set_cached(cache_key, list(ast_locations))
         return _copy_locations(ast_locations)
-    base_name = identifier[1:] if identifier.startswith("$") else identifier
+    base_name = normalized[1:]
     variants = [f"${base_name}", f"#{base_name}", f"@{base_name}", f"!{base_name}"]
     locations: list[Location] = []
     definition = ctx.find_string_definition(variants[0], rule_scope=rule_scope)
@@ -143,11 +144,12 @@ def find_string_reference_records(
     identifier = _require_symbol_name(identifier, "String identifier")
     include_declaration = _require_bool_flag(include_declaration, "include_declaration")
     rule_scope = _require_optional_rule_scope(rule_scope)
-    cache_key = f"string_reference_records:{identifier}:{int(include_declaration)}:{rule_scope}"
+    normalized = identifier if identifier.startswith("$") else f"${identifier}"
+    cache_key = f"string_reference_records:{normalized}:{int(include_declaration)}:{rule_scope}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
         return _copy_reference_records(cached)
-    definition = ctx.find_string_definition(identifier, rule_scope=rule_scope)
+    definition = ctx.find_string_definition(normalized, rule_scope=rule_scope)
     records = [
         ReferenceRecord(
             location=location,
@@ -155,7 +157,7 @@ def find_string_reference_records(
             symbol_kind="string",
         )
         for location in ctx.find_string_references(
-            identifier,
+            normalized,
             include_declaration=include_declaration,
             rule_scope=rule_scope,
         )
