@@ -145,10 +145,12 @@ class YaraXGenerator(BaseGenerator):
         index_str = self.visit(node.index)
 
         # If tuple_expr is a function call or identifier, don't add extra parens
-        from yaraast.ast.expressions import FunctionCall, Identifier
+        from yaraast.ast.expressions import FunctionCall, Identifier, ParenthesesExpression
         from yaraast.yarax.ast_nodes import TupleExpression
 
-        if isinstance(node.tuple_expr, FunctionCall | Identifier | TupleExpression):
+        if isinstance(
+            node.tuple_expr, FunctionCall | Identifier | TupleExpression | ParenthesesExpression
+        ):
             return f"{tuple_str}[{index_str}]"
 
         # Otherwise wrap in parens to be safe

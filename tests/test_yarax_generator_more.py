@@ -3,8 +3,15 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import BooleanLiteral, Identifier, IntegerLiteral, StringLiteral
+from yaraast.ast.expressions import (
+    BooleanLiteral,
+    Identifier,
+    IntegerLiteral,
+    ParenthesesExpression,
+    StringLiteral,
+)
 from yaraast.ast.rules import Rule
+from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
@@ -86,3 +93,19 @@ def test_yarax_generator_various_nodes() -> None:
     assert "[" in gen.visit(slice_expr)
     assert "(" in gen.visit(tuple_expr)
     assert "[" in gen.visit(tuple_index)
+
+
+def test_yarax_generator_tuple_indexing_with_parenthesized_tuple_round_trips() -> None:
+    gen = YaraXGenerator()
+    expr = TupleIndexing(
+        tuple_expr=ParenthesesExpression(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)])),
+        index=IntegerLiteral(0),
+    )
+
+    code = gen.visit(expr)
+
+    assert code == "(1, 2)[0]"
+    assert isinstance(
+        parse_yara_source(f"rule r {{ condition: {code} }}").rules[0].condition,
+        TupleIndexing,
+    )
