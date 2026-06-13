@@ -55,7 +55,7 @@ def format_yara(input_file: str, output_file: str) -> None:
 
     except Exception as e:
         print_cli_error(console, e)
-        raise click.Abort from None
+        raise click.Abort from e
 
 
 @click.command("validate-syntax")
@@ -72,4 +72,4 @@ def validate_syntax(input_file: str) -> None:
 
     except Exception as e:
         display_validation_error(console, input_file, e)
-        raise click.Abort from None
+        raise click.Abort from e

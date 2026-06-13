@@ -3,11 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 import runpy
 import sys
+from typing import NoReturn
 
-from click.testing import CliRunner
+import click
+from click.testing import CliRunner, Result
 import pytest
 from rich.console import Console
 
+import yaraast.cli.commands.format_cmd as format_command
 from yaraast.cli.commands.format_cmd import format_yara, validate_syntax
 from yaraast.cli.format_reporting import (
     display_format_success,
@@ -21,6 +24,12 @@ from yaraast.parser.source import parse_yara_source
 
 def _yarax_rule() -> str:
     return "rule x { condition: with xs = [1]: match xs { _ => true } }"
+
+
+def _assert_abort_preserves_cause(result: Result, cause: BaseException) -> None:
+    exception = result.exception
+    assert isinstance(exception, click.Abort)
+    assert exception.__cause__ is cause
 
 
 def test_package_main_module_runs_without_error() -> None:
@@ -173,6 +182,55 @@ def test_format_commands_reject_directory_input(tmp_path: Path) -> None:
     assert validate_result.exit_code == 2
     assert "is a directory" in validate_result.output
     assert "Invalid YARA file" not in validate_result.output
+
+
+def test_format_command_abort_preserves_original_cause(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_file = tmp_path / "input.yar"
+    output_file = tmp_path / "output.yar"
+    input_file.write_text("rule fmt { condition: true }", encoding="utf-8")
+    sentinel = RuntimeError("format sentinel")
+
+    def fail_parse(_source: str) -> NoReturn:
+        raise sentinel
+
+    monkeypatch.setattr(format_command, "parse_yara_source_with_comments", fail_parse)
+
+    result = CliRunner().invoke(
+        format_yara,
+        [str(input_file), str(output_file)],
+        standalone_mode=False,
+    )
+
+    assert result.exit_code != 0
+    assert "format sentinel" in result.output
+    assert not output_file.exists()
+    _assert_abort_preserves_cause(result, sentinel)
+
+
+def test_validate_syntax_abort_preserves_original_cause(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_file = tmp_path / "input.yar"
+    input_file.write_text("rule fmt { condition: true }", encoding="utf-8")
+    sentinel = RuntimeError("validate sentinel")
+
+    def fail_parse(_source: str) -> NoReturn:
+        raise sentinel
+
+    monkeypatch.setattr(format_command, "parse_yara_source_with_comments", fail_parse)
+
+    result = CliRunner().invoke(
+        validate_syntax,
+        [str(input_file)],
+        standalone_mode=False,
+    )
+
+    assert result.exit_code != 0
+    assert "Invalid YARA file" in result.output
+    assert "validate sentinel" in result.output
+    _assert_abort_preserves_cause(result, sentinel)
 
 
 def test_format_command_reports_parse_error(tmp_path: Path) -> None:
