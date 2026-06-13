@@ -1201,6 +1201,17 @@ def _normalize_postfix_target(target: Any) -> Any:
     return target
 
 
+def validate_array_access_target(target: Any) -> None:
+    from yaraast.ast.expressions import ParenthesesExpression
+    from yaraast.yarax.ast_nodes import TupleExpression
+
+    while isinstance(target, ParenthesesExpression):
+        target = target.expression
+    if isinstance(target, TupleExpression):
+        msg = "Array access target must not be a tuple expression for YARA-X output"
+        raise ValueError(msg)
+
+
 def render_postfix_target(generator: Any, target: Any) -> str:
     target_str = cast(str, generator.visit(_normalize_postfix_target(target)))
     if _is_simple_postfix_target(target):
@@ -1304,6 +1315,7 @@ def visit_array_access(generator: Any, node: Any) -> str:
     from yaraast.ast.expressions import FunctionCall
 
     _reject_non_integer_expression(node.index, "Array index")
+    validate_array_access_target(node.array)
     validate_module_root_array_access(node)
     validate_known_module_array_access(generator, node)
     target = render_postfix_target(generator, node.array)

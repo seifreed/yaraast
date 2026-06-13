@@ -137,17 +137,23 @@ def test_yarax_generator_parenthesizes_compound_function_call_receivers() -> Non
         ParenthesesExpression(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]))
     )
     member_code = YaraXGenerator().visit(MemberAccess(nested_tuple, "field"))
-    array_code = YaraXGenerator().visit(ArrayAccess(nested_tuple, IntegerLiteral(0)))
     assert member_code == "(1, 2).field"
-    assert array_code == "(1, 2)[0]"
+    with pytest.raises(
+        ValueError,
+        match=r"Array access target must not be a tuple expression for YARA-X output",
+    ):
+        YaraXGenerator().visit(ArrayAccess(nested_tuple, IntegerLiteral(0)))
     assert isinstance(
         parse_yara_source(f"rule r {{ condition: {member_code} }}").rules[0].condition,
         MemberAccess,
     )
-    assert isinstance(
-        parse_yara_source(f"rule r {{ condition: {array_code} }}").rules[0].condition,
-        TupleIndexing,
-    )
+    with pytest.raises(
+        ValueError,
+        match=r"Array access target must not be a tuple expression for YARA-X output",
+    ):
+        YaraXGenerator().visit(
+            ArrayAccess(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]), IntegerLiteral(0))
+        )
     assert YaraXGenerator().visit(MemberAccess(compound_receiver, "field")) == "(a + b).field"
 
 

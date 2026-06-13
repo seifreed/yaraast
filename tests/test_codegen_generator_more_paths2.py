@@ -4542,6 +4542,13 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         )
         == "for all of them : ($a)"
     )
+    with pytest.raises(
+        ValueError,
+        match=r"Array access target must not be a tuple expression for YARA-X output",
+    ):
+        gen.visit_array_access(
+            ArrayAccess(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]), IntegerLiteral(0))
+        )
     assert (
         gen.visit_for_of_expression(
             ForOfExpression("all", Identifier("them"), _FalsyIntegerLiteral(0))
