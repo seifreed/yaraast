@@ -208,6 +208,8 @@ def _reject_non_string_dictionary_key(value: Any) -> None:
 
 
 def visit_dictionary_access(generator: Any, node: Any) -> str:
+    from yaraast.codegen.generator_expression_visitors import render_postfix_target
+
     if isinstance(node.key, str):
         key = f'"{escape_string_literal(node.key)}"'
     else:
@@ -215,7 +217,7 @@ def visit_dictionary_access(generator: Any, node: Any) -> str:
         key = generator.visit(node.key)
     _reject_module_root_dictionary_access(node)
     _reject_non_dictionary_module_expression(generator, node)
-    obj = generator.visit(node.object)
+    obj = render_postfix_target(generator, node.object)
     return f"{obj}[{key}]"
 
 

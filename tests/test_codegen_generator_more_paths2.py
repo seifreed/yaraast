@@ -4593,7 +4593,13 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         gen.visit_dictionary_access(DictionaryAccess(Identifier("items"), 'Company"\\Path'))
         == 'items["Company\\"\\\\Path"]'
     )
+    compound_dictionary = DictionaryAccess(
+        BinaryExpression(Identifier("a"), "+", Identifier("b")),
+        "key",
+    )
+    assert gen.visit_dictionary_access(compound_dictionary) == '(a + b)["key"]'
     yarax = YaraXGenerator()
+    assert yarax.visit_dictionary_access(compound_dictionary) == '(a + b)["key"]'
     array_comp = ArrayComprehension(
         expression=IntegerLiteral(1),
         variable="x",
