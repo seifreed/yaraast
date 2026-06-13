@@ -161,3 +161,28 @@ def test_parse_output_yaml_propagates_internal_import_errors(
 
     with pytest.raises(ImportError, match="broken yaml internals"):
         po._generate_yaml_output(_ast(), None)
+
+
+def test_parse_output_yaml_missing_dependency_abort_preserves_original_cause(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_import: ImportFunction = builtins.__import__
+    sentinel = ImportError("No module named yaml", name="yaml")
+
+    def fail_yaml_import(
+        name: str,
+        globals_: Any = None,
+        locals_: Any = None,
+        fromlist: Any = (),
+        level: int = 0,
+    ) -> ModuleType:
+        if name == "yaml":
+            raise sentinel
+        return real_import(name, globals_, locals_, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", fail_yaml_import)
+
+    with pytest.raises(click.Abort) as exc:
+        po._generate_yaml_output(_ast(), None)
+
+    assert exc.value.__cause__ is sentinel

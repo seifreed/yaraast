@@ -128,7 +128,7 @@ def _generate_yaml_output(ast, output: str | None) -> None:
         console.print(
             "[red]Error: PyYAML is not installed. Install it with: pip install pyyaml[/red]"
         )
-        raise click.Abort from None
+        raise click.Abort from exc
 
     dumper = ASTDumper()
     result = dumper.visit(ast)
