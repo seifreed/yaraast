@@ -4478,15 +4478,10 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         gen.visit_set_expression(SetExpression([IntegerLiteral(1), IntegerLiteral(2)])) == "(1, 2)"
     )
     tuple_target = ParenthesesExpression(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]))
-    call_target = ParenthesesExpression(FunctionCall("math.entropy", [StringLiteral("abc")]))
     indexed = TupleIndexing(tuple_target, IntegerLiteral(0))
-    call_indexed = TupleIndexing(call_target, IntegerLiteral(0))
     sliced = SliceExpression(tuple_target, start=IntegerLiteral(0), stop=IntegerLiteral(1))
-    call_sliced = SliceExpression(call_target, start=IntegerLiteral(0), stop=IntegerLiteral(1))
     assert gen.visit_tuple_indexing(indexed) == "(1, 2)[0]"
-    assert gen.visit_tuple_indexing(call_indexed) == 'math.entropy("abc")[0]'
     assert gen.visit_slice_expression(sliced) == "(1, 2)[0:1]"
-    assert gen.visit_slice_expression(call_sliced) == 'math.entropy("abc")[0:1]'
     assert isinstance(
         parse_yara_source(f"rule r {{ condition: {gen.visit_tuple_indexing(indexed)} }}")
         .rules[0]
@@ -4494,19 +4489,7 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         TupleIndexing,
     )
     assert isinstance(
-        parse_yara_source(f"rule r {{ condition: {gen.visit_tuple_indexing(call_indexed)} }}")
-        .rules[0]
-        .condition,
-        TupleIndexing,
-    )
-    assert isinstance(
         parse_yara_source(f"rule r {{ condition: {gen.visit_slice_expression(sliced)} }}")
-        .rules[0]
-        .condition,
-        SliceExpression,
-    )
-    assert isinstance(
-        parse_yara_source(f"rule r {{ condition: {gen.visit_slice_expression(call_sliced)} }}")
         .rules[0]
         .condition,
         SliceExpression,

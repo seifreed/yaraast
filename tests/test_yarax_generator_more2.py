@@ -217,13 +217,24 @@ def test_yarax_tuple_indexing_validate_structure_rejects_non_tuple_targets() -> 
 
     with pytest.raises(
         ValueError,
-        match=r"TupleIndexing\.tuple_expr must be a function call, tuple expression, or parenthesized function call/tuple expression",
+        match=r"TupleIndexing\.tuple_expr must be a function call, tuple expression, or parenthesized tuple expression",
     ):
         invalid.validate_structure()
 
 
-def test_yarax_tuple_indexing_validate_structure_accepts_parenthesized_function_call() -> None:
-    TupleIndexing(
+def test_yarax_tuple_indexing_rejects_parenthesized_function_call() -> None:
+    node = TupleIndexing(
         tuple_expr=ParenthesesExpression(FunctionCall("foo", [])),
         index=IntegerLiteral(0),
-    ).validate_structure()
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"TupleIndexing\.tuple_expr must be a function call, tuple expression, or parenthesized tuple expression",
+    ):
+        node.validate_structure()
+    with pytest.raises(
+        ValueError,
+        match="Tuple indexing target must be a function call or tuple expression",
+    ):
+        YaraXGenerator().visit(node)

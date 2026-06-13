@@ -224,12 +224,12 @@ class TupleIndexing(Expression):
         if isinstance(self.tuple_expr, FunctionCall | TupleExpression):
             return
         if isinstance(self.tuple_expr, ParenthesesExpression) and isinstance(
-            self.tuple_expr.expression, FunctionCall | TupleExpression
+            self.tuple_expr.expression, TupleExpression
         ):
             return
         msg = (
             "TupleIndexing.tuple_expr must be a function call, tuple expression, "
-            "or parenthesized function call/tuple expression "
+            "or parenthesized tuple expression "
             "for YARA-X output"
         )
         raise ValueError(msg)

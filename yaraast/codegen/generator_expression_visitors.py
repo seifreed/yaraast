@@ -1212,9 +1212,7 @@ def validate_tuple_indexing_target(target: Any) -> None:
 
     if isinstance(target, FunctionCall | TupleExpression):
         return
-    if isinstance(target, ParenthesesExpression) and isinstance(
-        target.expression, FunctionCall | TupleExpression
-    ):
+    if isinstance(target, ParenthesesExpression) and isinstance(target.expression, TupleExpression):
         return
     msg = "Tuple indexing target must be a function call or tuple expression " "for YARA-X output"
     raise ValueError(msg)
