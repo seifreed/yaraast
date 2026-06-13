@@ -215,6 +215,21 @@ def _split_top_level_arguments(args_text: str) -> list[str]:
     return parts
 
 
+def _call_arguments_text(
+    lines: list[str],
+    open_line: int,
+    open_paren: int,
+    close_line: int,
+    close_paren: int,
+) -> str:
+    if open_line == close_line:
+        return lines[open_line][open_paren + 1 : close_paren]
+    parts = [lines[open_line][open_paren + 1 :]]
+    parts.extend(lines[open_line + 1 : close_line])
+    parts.append(lines[close_line][:close_paren])
+    return "\n".join(parts)
+
+
 def create_replace_module_function_actions(
     text: str,
     diagnostic: Diagnostic,
@@ -399,12 +414,12 @@ def create_trim_arguments_action(
     if line_num >= len(lines) or keep_args < 0:
         return []
     line = lines[line_num]
-    call_span = _find_diagnostic_call(line, function_name, diagnostic)
+    call_span = _find_diagnostic_call_close(lines, function_name, diagnostic)
     if call_span is None:
         return []
-    _start_col, open_paren, close_paren = call_span
+    _start_col, open_paren, close_line, close_paren = call_span
 
-    args_text = line[open_paren + 1 : close_paren]
+    args_text = _call_arguments_text(lines, line_num, open_paren, close_line, close_paren)
     parts = _split_top_level_arguments(args_text)
     if len(parts) <= keep_args:
         return []
@@ -418,11 +433,13 @@ def create_trim_arguments_action(
                 changes={
                     uri: [
                         TextEdit(
-                            range=_same_line_range(
-                                line_num,
-                                line,
-                                open_paren + 1,
-                                close_paren,
+                            range=Range(
+                                start=_same_line_position(line_num, line, open_paren + 1),
+                                end=_same_line_position(
+                                    close_line,
+                                    lines[close_line],
+                                    close_paren,
+                                ),
                             ),
                             new_text=replacement,
                         )

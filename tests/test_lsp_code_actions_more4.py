@@ -759,6 +759,52 @@ rule sample {
     assert change.new_text == "3"
 
 
+def test_code_action_trim_arguments_handles_multiline_call() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        custom(
+            "a,b",
+            1
+        )
+}
+""".lstrip()
+    call_line = text.splitlines()[2]
+    close_line = text.splitlines()[5]
+    call_start = call_line.index("custom(")
+    close_col = close_line.index(")")
+    diag = Diagnostic(
+        range=_range(2, call_start, len(call_line)),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "custom",
+                "arity_kind": "max",
+                "actual_args": 2,
+                "expected_max": 1,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(
+        text, _range(2, call_start, len(call_line)), [diag], "file://test.yar"
+    )
+    action = next(
+        action for action in actions if action.title == "Remove extra argument(s) from custom()"
+    )
+    assert action.edit is not None
+    change = _change_set(action.edit, "file://test.yar")[0]
+    assert change.range.start.line == 2
+    assert change.range.start.character == call_start + len("custom(")
+    assert change.range.end.line == 5
+    assert change.range.end.character == close_col
+    assert change.new_text == '"a,b"'
+
+
 def test_code_action_trim_arguments_preserves_commas_inside_strings() -> None:
     provider = CodeActionsProvider()
     text = """
