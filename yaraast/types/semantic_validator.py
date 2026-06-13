@@ -26,6 +26,7 @@ from yaraast.types.semantic_validator_strings import (
     UndefinedStringDetector,
 )
 from yaraast.types.type_system import (
+    BooleanType,
     DoubleType,
     IntegerType,
     StringType,
@@ -225,7 +226,7 @@ def _normalize_externals(externals: Mapping[str, object] | None) -> dict[str, ob
 
 def _external_type(value: object) -> YaraType:
     if isinstance(value, bool):
-        return IntegerType()
+        return BooleanType()
     if isinstance(value, int):
         return IntegerType()
     if isinstance(value, float):
@@ -294,6 +295,7 @@ def _validate_external_quantifier_value(
     if value is None:
         return
     if isinstance(value, bool):
+        result.add_error(f"Invalid {context} quantifier external '{quantifier.name}'")
         return
     if isinstance(value, int) and value >= 0:
         return
@@ -333,7 +335,7 @@ def _static_external_integer_value(
         return None
     external_value = externals[name]
     if isinstance(external_value, bool):
-        return int(external_value)
+        return None
     if isinstance(external_value, int):
         return external_value
     return None

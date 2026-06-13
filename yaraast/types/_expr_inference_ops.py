@@ -226,7 +226,7 @@ def _infer_comparison_op(
         ctx.errors.append(f"Boolean operands cannot be used with '{operator}' comparisons")
         return BooleanType()
 
-    if isinstance(left_type, BooleanType) and isinstance(right_type, BooleanType):
+    if isinstance(left_type, BooleanType) or isinstance(right_type, BooleanType):
         ctx.errors.append(f"Boolean operands cannot be used with '{operator}' comparisons")
         return BooleanType()
 
@@ -235,8 +235,8 @@ def _infer_comparison_op(
         return BooleanType()
 
     if (
-        isinstance(left_type, BooleanType | IntegerType | DoubleType | FloatType)
-        and isinstance(right_type, BooleanType | IntegerType | DoubleType | FloatType)
+        isinstance(left_type, IntegerType | DoubleType | FloatType)
+        and isinstance(right_type, IntegerType | DoubleType | FloatType)
     ) or left_type.is_compatible_with(right_type):
         return BooleanType()
     ctx.errors.append(f"Incompatible types for '{operator}': {left_type} and {right_type}")

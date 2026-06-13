@@ -666,7 +666,7 @@ def test_semantic_validator_rejects_invalid_external_of_quantifiers() -> None:
         }
         """)
 
-    for value in (-1, 1.0, "any"):
+    for value in (-1, False, 1.0, "any"):
         result = SemanticValidator(externals={"q": value}).validate(ast)
 
         assert result.is_valid is False
@@ -684,7 +684,7 @@ def test_semantic_validator_accepts_integer_external_of_quantifiers() -> None:
         }
         """)
 
-    for value in (0, False, 1):
+    for value in (0, 1):
         result = SemanticValidator(externals={"q": value}).validate(ast)
 
         assert result.is_valid is True, [error.message for error in result.errors]
@@ -701,7 +701,7 @@ def test_semantic_validator_rejects_invalid_external_for_of_quantifiers() -> Non
         }
         """)
 
-    for value in (-1, 1.0, "any"):
+    for value in (-1, False, 1.0, "any"):
         result = SemanticValidator(externals={"q": value}).validate(ast)
 
         assert result.is_valid is False
@@ -746,9 +746,27 @@ def test_semantic_validator_accepts_valid_external_range_bounds() -> None:
         }
         """)
 
-    result = SemanticValidator(externals={"low": False, "high": 1}).validate(ast)
+    result = SemanticValidator(externals={"low": 0, "high": 1}).validate(ast)
 
     assert result.is_valid is True, [error.message for error in result.errors]
+
+
+def test_semantic_validator_rejects_boolean_external_range_bounds() -> None:
+    ast = Parser().parse("""
+        rule external_range {
+            strings:
+                $a = "a"
+            condition:
+                $a in (low..high)
+        }
+        """)
+
+    result = SemanticValidator(externals={"low": False, "high": 1}).validate(ast)
+
+    assert result.is_valid is False
+    assert any(
+        "Range low bound must be integer, got boolean" in error.message for error in result.errors
+    )
 
 
 def test_semantic_validator_accepts_bare_string_literal_string_set_items() -> None:
