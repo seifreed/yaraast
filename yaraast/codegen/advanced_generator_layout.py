@@ -17,6 +17,8 @@ from yaraast.codegen.generator_expression_visitors import (
     validate_set_expression_elements,
 )
 from yaraast.codegen.generator_formatting import (
+    contextual_local_identifier_names,
+    contextual_local_identifiers,
     format_rule_modifiers,
     format_rule_tags,
     format_yarax_local_identifier,
@@ -249,7 +251,12 @@ class _AdvancedConditionGenerator(CodeGenerator):
         separator = self._comma_separator()
         validate_expression_collection(node.declarations, "WithStatement declarations")
         declarations = separator.join(self.visit(declaration) for declaration in node.declarations)
-        return f"with {declarations}: {self.visit(node.body)}"
+        local_names = contextual_local_identifier_names(
+            *(declaration.identifier for declaration in node.declarations)
+        )
+        with contextual_local_identifiers(self, local_names):
+            body = self.visit(node.body)
+        return f"with {declarations}: {body}"
 
     def visit_with_declaration(self, node: Any) -> str:
         identifier = format_yarax_local_identifier(node.identifier, "local variable")
@@ -259,9 +266,12 @@ class _AdvancedConditionGenerator(CodeGenerator):
         expression = require_present_expression(node.expression, "ArrayComprehension expression")
         iterable = require_present_expression(node.iterable, "ArrayComprehension iterable")
         variable = validate_yara_identifier(node.variable, "local variable")
-        result = f"[{self.visit(expression)} for {variable} in {self.visit(iterable)}"
-        if node.condition is not None:
-            result += f" if {self.visit(node.condition)}"
+        iterable_text = self.visit(iterable)
+        local_names = contextual_local_identifier_names(node.variable)
+        with contextual_local_identifiers(self, local_names):
+            result = f"[{self.visit(expression)} for {variable} in {iterable_text}"
+            if node.condition is not None:
+                result += f" if {self.visit(node.condition)}"
         return f"{result}]"
 
     def visit_dict_comprehension(self, node: Any) -> str:
@@ -276,12 +286,15 @@ class _AdvancedConditionGenerator(CodeGenerator):
         if node.value_variable is not None:
             value_variable = validate_yara_identifier(node.value_variable, "local variable")
             variables = f"{variables}, {value_variable}"
-        result = (
-            f"{{{self.visit(key_expression)}: {self.visit(value_expression)} "
-            f"for {variables} in {self.visit(iterable)}"
-        )
-        if node.condition is not None:
-            result += f" if {self.visit(node.condition)}"
+        iterable_text = self.visit(iterable)
+        local_names = contextual_local_identifier_names(node.key_variable, node.value_variable)
+        with contextual_local_identifiers(self, local_names):
+            key_text = self.visit(key_expression)
+            value_text = self.visit(value_expression)
+            condition = self.visit(node.condition) if node.condition is not None else None
+        result = f"{{{key_text}: {value_text} " f"for {variables} in {iterable_text}"
+        if condition is not None:
+            result += f" if {condition}"
         return f"{result}}}"
 
     def visit_tuple_expression(self, node: Any) -> str:
@@ -337,9 +350,12 @@ class _AdvancedConditionGenerator(CodeGenerator):
         parameters = ", ".join(
             validate_yara_identifier(parameter, "local variable") for parameter in node.parameters
         )
+        local_names = contextual_local_identifier_names(*node.parameters)
+        with contextual_local_identifiers(self, local_names):
+            body = self.visit(node.body)
         if parameters:
-            return f"lambda {parameters}: {self.visit(node.body)}"
-        return f"lambda: {self.visit(node.body)}"
+            return f"lambda {parameters}: {body}"
+        return f"lambda: {body}"
 
     def visit_pattern_match(self, node: Any) -> str:
         validate_expression_collection(node.cases, "PatternMatch cases")

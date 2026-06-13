@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 import re
 from typing import Any
 
@@ -23,7 +25,9 @@ _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
 _YARA_META_INTEGER_MIN = -(2**63)
 _YARA_CONTEXTUAL_IDENTIFIER_KEYWORDS = frozenset({"as", "include"})
-_YARA_CONTEXTUAL_IDENTIFIER_KINDS = frozenset({"loop variable", "meta", "rule", "tag"})
+_YARA_CONTEXTUAL_IDENTIFIER_KINDS = frozenset(
+    {"local variable", "loop variable", "meta", "rule", "tag", "variable"}
+)
 _YARA_RULE_MODIFIERS = frozenset({"global", "private"})
 _YARA_EXPRESSION_KEYWORDS = frozenset({"entrypoint", "false", "filesize", "true"})
 _YARA_FILE_COLLECTION_FIELDS = (
@@ -228,6 +232,23 @@ def validate_yara_identifier(name: object, kind: str) -> str:
 
     msg = f"Invalid {kind} identifier '{name}' for libyara output"
     raise ValueError(msg)
+
+
+def contextual_local_identifier_names(*names: object) -> frozenset[str]:
+    return frozenset(name for name in names if isinstance(name, str) and not name.startswith("$"))
+
+
+@contextmanager
+def contextual_local_identifiers(
+    generator: Any,
+    local_names: frozenset[str],
+) -> Iterator[None]:
+    previous_locals = getattr(generator, "_contextual_local_identifiers", ())
+    generator._contextual_local_identifiers = (*previous_locals, local_names)
+    try:
+        yield
+    finally:
+        generator._contextual_local_identifiers = previous_locals
 
 
 def format_yarax_local_identifier(identifier: object, field_name: str) -> str:

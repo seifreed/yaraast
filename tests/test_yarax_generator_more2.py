@@ -69,6 +69,40 @@ def test_yarax_generator_covers_empty_single_and_optional_sections() -> None:
     assert gen.visit(LambdaExpression(parameters=[], body=IntegerLiteral(1))) == "lambda: 1"
 
 
+def test_yarax_generator_allows_contextual_local_identifiers() -> None:
+    gen = YaraXGenerator()
+
+    with_stmt = WithStatement(
+        declarations=[WithDeclaration(identifier="as", value=IntegerLiteral(1))],
+        body=Identifier("as"),
+    )
+    assert gen.visit(with_stmt) == "with as = 1: as"
+
+    array_comp = ArrayComprehension(
+        expression=Identifier("as"),
+        variable="as",
+        iterable=Identifier("items"),
+        condition=Identifier("as"),
+    )
+    assert gen.visit(array_comp) == "[as for as in items if as]"
+
+    dict_comp = DictComprehension(
+        key_expression=Identifier("as"),
+        value_expression=Identifier("include"),
+        key_variable="as",
+        value_variable="include",
+        iterable=Identifier("items"),
+        condition=Identifier("include"),
+    )
+    assert gen.visit(dict_comp) == "{as: include for as, include in items if include}"
+
+    lambda_expr = LambdaExpression(
+        parameters=["as", "include"],
+        body=BinaryExpression(Identifier("as"), "+", Identifier("include")),
+    )
+    assert gen.visit(lambda_expr) == "lambda as, include: as + include"
+
+
 def test_yarax_generator_parenthesizes_compound_function_call_receivers() -> None:
     compound_receiver = BinaryExpression(
         left=Identifier(name="a"),

@@ -10,6 +10,8 @@ from yaraast.codegen.generator_expression_visitors import (
     validate_expression_collection,
 )
 from yaraast.codegen.generator_formatting import (
+    contextual_local_identifier_names,
+    contextual_local_identifiers,
     format_yarax_local_identifier,
     validate_yara_identifier,
 )
@@ -40,11 +42,14 @@ class YaraXGenerator(BaseGenerator):
     def _render_local_identifier(self, identifier: str, field_name: str) -> str:
         return format_yarax_local_identifier(identifier, field_name)
 
-    def _visit_required_expression(self, expression: Expression | None, field_name: str) -> str:
+    def _require_expression(self, expression: Expression | None, field_name: str) -> Expression:
         if expression is None:
             msg = f"{field_name} is required for YARA-X code generation"
             raise ValueError(msg)
-        return self.visit(expression)
+        return expression
+
+    def _visit_required_expression(self, expression: Expression | None, field_name: str) -> str:
+        return self.visit(self._require_expression(expression, field_name))
 
     def visit_with_statement(self, node: WithStatement) -> str:
         """Generate code for with statement."""
@@ -57,7 +62,11 @@ class YaraXGenerator(BaseGenerator):
         decl_str = ", ".join(declarations)
 
         # Generate body
-        body_str = self.visit(node.body)
+        local_names = contextual_local_identifier_names(
+            *(declaration.identifier for declaration in node.declarations)
+        )
+        with contextual_local_identifiers(self, local_names):
+            body_str = self.visit(node.body)
 
         return f"with {decl_str}: {body_str}"
 
@@ -69,17 +78,18 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_array_comprehension(self, node: ArrayComprehension) -> str:
         """Generate code for array comprehension."""
-        expr_str = self._visit_required_expression(
-            node.expression, "Array comprehension expression"
-        )
+        expression = self._require_expression(node.expression, "Array comprehension expression")
         iter_str = self._visit_required_expression(node.iterable, "Array comprehension iterable")
 
         variable = validate_yara_identifier(node.variable, "local variable")
+        local_names = contextual_local_identifier_names(node.variable)
+        with contextual_local_identifiers(self, local_names):
+            expr_str = self.visit(expression)
+            cond_str = self.visit(node.condition) if node.condition is not None else None
 
         result = f"[{expr_str} for {variable} in {iter_str}"
 
-        if node.condition is not None:
-            cond_str = self.visit(node.condition)
+        if cond_str is not None:
             result += f" if {cond_str}"
 
         result += "]"
@@ -87,8 +97,8 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_dict_comprehension(self, node: DictComprehension) -> str:
         """Generate code for dict comprehension."""
-        key_str = self._visit_required_expression(node.key_expression, "Dict comprehension key")
-        value_str = self._visit_required_expression(
+        key_expression = self._require_expression(node.key_expression, "Dict comprehension key")
+        value_expression = self._require_expression(
             node.value_expression, "Dict comprehension value"
         )
         iter_str = self._visit_required_expression(node.iterable, "Dict comprehension iterable")
@@ -101,11 +111,15 @@ class YaraXGenerator(BaseGenerator):
         else:
             # Single variable
             var_str = key_variable
+        local_names = contextual_local_identifier_names(node.key_variable, node.value_variable)
+        with contextual_local_identifiers(self, local_names):
+            key_str = self.visit(key_expression)
+            value_str = self.visit(value_expression)
+            cond_str = self.visit(node.condition) if node.condition is not None else None
 
         result = f"{{{key_str}: {value_str} for {var_str} in {iter_str}"
 
-        if node.condition is not None:
-            cond_str = self.visit(node.condition)
+        if cond_str is not None:
             result += f" if {cond_str}"
 
         result += "}"
@@ -209,7 +223,9 @@ class YaraXGenerator(BaseGenerator):
         params = ", ".join(
             validate_yara_identifier(parameter, "local variable") for parameter in node.parameters
         )
-        body_str = self.visit(node.body)
+        local_names = contextual_local_identifier_names(*node.parameters)
+        with contextual_local_identifiers(self, local_names):
+            body_str = self.visit(node.body)
 
         if params:
             return f"lambda {params}: {body_str}"

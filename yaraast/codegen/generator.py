@@ -74,6 +74,8 @@ from yaraast.codegen.generator_expressions import (
     render_of_expression,
 )
 from yaraast.codegen.generator_formatting import (
+    contextual_local_identifier_names,
+    contextual_local_identifiers,
     format_meta_key,
     format_meta_literal,
     format_meta_value,
@@ -547,7 +549,12 @@ class CodeGenerator(ASTVisitor[str]):
             return self._layout.yarax_expression(self, node)
         validate_expression_collection(node.declarations, "WithStatement declarations")
         declarations = ", ".join(self.visit(declaration) for declaration in node.declarations)
-        return f"with {declarations}: {self.visit(node.body)}"
+        local_names = contextual_local_identifier_names(
+            *(declaration.identifier for declaration in node.declarations)
+        )
+        with contextual_local_identifiers(self, local_names):
+            body = self.visit(node.body)
+        return f"with {declarations}: {body}"
 
     def visit_with_declaration(self, node: WithDeclaration) -> str:
         if self._custom_expressions:
@@ -562,9 +569,12 @@ class CodeGenerator(ASTVisitor[str]):
             msg = "Array comprehension requires expression and iterable for libyara output"
             raise ValueError(msg)
         variable = validate_yara_identifier(node.variable, "local variable")
-        result = f"[{self.visit(node.expression)} for {variable} in {self.visit(node.iterable)}"
-        if node.condition is not None:
-            result += f" if {self.visit(node.condition)}"
+        iterable = self.visit(node.iterable)
+        local_names = contextual_local_identifier_names(node.variable)
+        with contextual_local_identifiers(self, local_names):
+            result = f"[{self.visit(node.expression)} for {variable} in {iterable}"
+            if node.condition is not None:
+                result += f" if {self.visit(node.condition)}"
         return result + "]"
 
     def visit_dict_comprehension(self, node: DictComprehension) -> str:
@@ -579,12 +589,15 @@ class CodeGenerator(ASTVisitor[str]):
             variables = f"{key_variable}, {value_variable}"
         else:
             variables = key_variable
-        result = (
-            f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
-            f"for {variables} in {self.visit(node.iterable)}"
-        )
-        if node.condition is not None:
-            result += f" if {self.visit(node.condition)}"
+        iterable = self.visit(node.iterable)
+        local_names = contextual_local_identifier_names(node.key_variable, node.value_variable)
+        with contextual_local_identifiers(self, local_names):
+            key_expression = self.visit(node.key_expression)
+            value_expression = self.visit(node.value_expression)
+            condition = self.visit(node.condition) if node.condition is not None else None
+        result = f"{{{key_expression}: {value_expression} " f"for {variables} in {iterable}"
+        if condition is not None:
+            result += f" if {condition}"
         return result + "}"
 
     def visit_tuple_expression(self, node: TupleExpression) -> str:
@@ -651,9 +664,12 @@ class CodeGenerator(ASTVisitor[str]):
         parameters = ", ".join(
             validate_yara_identifier(parameter, "local variable") for parameter in node.parameters
         )
+        local_names = contextual_local_identifier_names(*node.parameters)
+        with contextual_local_identifiers(self, local_names):
+            body = self.visit(node.body)
         if parameters:
-            return f"lambda {parameters}: {self.visit(node.body)}"
-        return f"lambda: {self.visit(node.body)}"
+            return f"lambda {parameters}: {body}"
+        return f"lambda: {body}"
 
     def visit_pattern_match(self, node: PatternMatch) -> str:
         if self._custom_expressions:

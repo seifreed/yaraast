@@ -8,7 +8,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import ASTNode
-from yaraast.ast.expressions import BooleanLiteral, Identifier, IntegerLiteral
+from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, Identifier, IntegerLiteral
 from yaraast.codegen import CodeGenerator
 from yaraast.codegen.formatting import FormattingConfig
 from yaraast.codegen.options import GeneratorOptions
@@ -18,6 +18,7 @@ from yaraast.yarax.ast_nodes import (
     DictComprehension,
     LambdaExpression,
     WithDeclaration,
+    WithStatement,
 )
 from yaraast.yarax.generator import YaraXGenerator
 
@@ -111,3 +112,43 @@ def test_codegen_preserves_yarax_with_string_reference_local_identifier(
     generator_factory: Callable[[], CodeGenerator],
 ) -> None:
     assert generator_factory().visit(WithDeclaration("$x", IntegerLiteral(1))) == "$x = 1"
+
+
+@pytest.mark.parametrize(
+    "generator_factory",
+    [_plain_generator, _pretty_generator, _advanced_generator, _yarax_generator],
+)
+def test_codegen_allows_contextual_yarax_local_identifiers(
+    generator_factory: Callable[[], CodeGenerator],
+) -> None:
+    generator = generator_factory()
+
+    with_stmt = WithStatement(
+        declarations=[WithDeclaration(identifier="as", value=IntegerLiteral(1))],
+        body=Identifier("as"),
+    )
+    assert generator.visit(with_stmt) == "with as = 1: as"
+
+    array_comp = ArrayComprehension(
+        expression=Identifier("as"),
+        variable="as",
+        iterable=Identifier("items"),
+        condition=Identifier("as"),
+    )
+    assert generator.visit(array_comp) == "[as for as in items if as]"
+
+    dict_comp = DictComprehension(
+        key_expression=Identifier("as"),
+        value_expression=Identifier("include"),
+        key_variable="as",
+        value_variable="include",
+        iterable=Identifier("items"),
+        condition=Identifier("include"),
+    )
+    assert generator.visit(dict_comp) == "{as: include for as, include in items if include}"
+
+    lambda_expr = LambdaExpression(
+        parameters=["as", "include"],
+        body=BinaryExpression(Identifier("as"), "+", Identifier("include")),
+    )
+    assert generator.visit(lambda_expr) == "lambda as, include: as + include"
