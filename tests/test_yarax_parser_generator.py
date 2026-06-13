@@ -173,6 +173,23 @@ def test_yarax_dict_comprehension_two_vars() -> None:
     assert expr.condition is not None
 
 
+def test_yarax_array_comprehension_allows_contextual_local_identifier() -> None:
+    expr = _parse_expr("[as for as in items if as]")
+
+    assert isinstance(expr, ArrayComprehension)
+    assert expr.variable == "as"
+    assert YaraXGenerator().visit(expr) == "[as for as in items if as]"
+
+
+def test_yarax_dict_comprehension_allows_contextual_local_identifiers() -> None:
+    expr = _parse_expr("{as: include for as, include in data if include}")
+
+    assert isinstance(expr, DictComprehension)
+    assert expr.key_variable == "as"
+    assert expr.value_variable == "include"
+    assert YaraXGenerator().visit(expr) == "{as: include for as, include in data if include}"
+
+
 def test_yarax_tuple_and_indexing() -> None:
     expr = _parse_expr("(1, 2, 3)")
     assert isinstance(expr, TupleExpression)
@@ -195,6 +212,22 @@ def test_yarax_lambda_and_match_expression() -> None:
     match_expr = _parse_expr("match x { 1 => 2, _ => 3 }")
     assert isinstance(match_expr, PatternMatch)
     assert match_expr.default is not None
+
+
+def test_yarax_lambda_allows_contextual_local_identifiers() -> None:
+    expr = _parse_expr("lambda as, include: as + include")
+
+    assert isinstance(expr, LambdaExpression)
+    assert expr.parameters == ["as", "include"]
+    assert YaraXGenerator().visit(expr) == "lambda as, include: as + include"
+
+
+def test_yarax_with_allows_contextual_local_identifier() -> None:
+    condition = YaraXParser("with as = 1: as").parse_condition()
+
+    assert isinstance(condition, WithStatement)
+    assert condition.declarations[0].identifier == "as"
+    assert YaraXGenerator().visit(condition) == "with as = 1: as"
 
 
 def test_yarax_generator_outputs_match() -> None:

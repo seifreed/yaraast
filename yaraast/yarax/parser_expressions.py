@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from yaraast.ast.expressions import Expression, FunctionCall
+from yaraast.ast.expressions import Expression, FunctionCall, Identifier
 from yaraast.lexer.tokens import TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.yarax.ast_nodes import (
@@ -32,6 +32,19 @@ class YaraXParserExpressionsMixin:
         """Parse a full expression with YARA-X primary expressions."""
         return cast(Expression, cast(Any, super())._parse_expression())
 
+    def _parse_expression_allowing_contextual_keywords(self: Any) -> tuple[Expression, bool]:
+        previous_allow = getattr(self, "_allow_contextual_keyword_expression", False)
+        previous_used = getattr(self, "_used_contextual_keyword_expression", False)
+        self._allow_contextual_keyword_expression = True
+        self._used_contextual_keyword_expression = False
+        try:
+            expression = self._parse_expression()
+            used_contextual = bool(self._used_contextual_keyword_expression)
+            return expression, used_contextual
+        finally:
+            self._allow_contextual_keyword_expression = previous_allow
+            self._used_contextual_keyword_expression = previous_used
+
     def _require_expression_end(self: Any, context: str) -> None:
         if not self._is_at_end():
             raise ParserError(f"Unexpected token after {context}", self._peek())
@@ -56,6 +69,16 @@ class YaraXParserExpressionsMixin:
         if self._check_keyword("match"):
             return cast(Expression, self._parse_pattern_match())
 
+        if getattr(self, "_allow_contextual_keyword_expression", False) and self._check_any(
+            TokenType.AS, TokenType.INCLUDE
+        ):
+            token = self._advance()
+            self._used_contextual_keyword_expression = True
+            return cast(
+                Expression,
+                self._set_node_location_from_token(Identifier(name=str(token.value)), token),
+            )
+
         return cast(Expression, cast(Any, super())._parse_primary_expression())
 
     def parse_primary_expression(self: Any) -> Expression:
@@ -77,15 +100,17 @@ class YaraXParserExpressionsMixin:
 
         parameters: list[str] = []
         if not self._check(TokenType.COLON):
-            parameters.append(self._consume(TokenType.IDENTIFIER, "Expected parameter").value)
+            parameters.append(self._consume_local_identifier("Expected parameter").value)
 
             while self._check(TokenType.COMMA):
                 self._advance()
-                parameters.append(self._consume(TokenType.IDENTIFIER, "Expected parameter").value)
+                parameters.append(self._consume_local_identifier("Expected parameter").value)
 
         self._consume(TokenType.COLON, "Expected ':' after lambda parameters")
 
-        body = self._parse_expression()
+        local_names = self._local_identifier_scope_names(*parameters)
+        with self._contextual_local_identifier_scope(local_names):
+            body = self._parse_expression()
         return LambdaExpression(parameters=parameters, body=body)
 
     def _parse_pattern_match(self: Any) -> PatternMatch:

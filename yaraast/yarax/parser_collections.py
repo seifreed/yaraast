@@ -6,6 +6,7 @@ from typing import Any, cast
 
 from yaraast.ast.expressions import Expression, StringLiteral
 from yaraast.lexer.tokens import TokenType
+from yaraast.parser._shared import ParserError
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
@@ -39,10 +40,12 @@ class YaraXParserCollectionsMixin:
         if self._is_spread_operator():
             return cast(Expression, self._parse_spread_list())
 
-        first_expr = self._parse_expression()
+        first_expr, used_contextual = self._parse_expression_allowing_contextual_keywords()
 
         if self._check(TokenType.FOR) or self._check_keyword("for"):
             return cast(Expression, self._parse_array_comprehension_body(first_expr))
+        if used_contextual:
+            raise ParserError("Unexpected token", self._peek())
 
         return cast(Expression, self._parse_regular_list(first_expr))
 
@@ -118,7 +121,7 @@ class YaraXParserCollectionsMixin:
         else:
             self._consume_keyword("for")
 
-        variable = self._consume(TokenType.IDENTIFIER, ERROR_EXPECTED_VARIABLE).value
+        variable = self._consume_local_identifier(ERROR_EXPECTED_VARIABLE).value
 
         if self._check(TokenType.IN):
             self._advance()
@@ -130,7 +133,9 @@ class YaraXParserCollectionsMixin:
         condition = None
         if self._check_keyword("if"):
             self._advance()
-            condition = self._parse_expression()
+            local_names = self._local_identifier_scope_names(variable)
+            with self._contextual_local_identifier_scope(local_names):
+                condition = self._parse_expression()
 
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
 
@@ -152,12 +157,14 @@ class YaraXParserCollectionsMixin:
         if self._is_dict_spread_operator():
             return cast(Expression, self._parse_dict_with_spread())
 
-        first_key = self._parse_expression()
+        first_key, used_contextual_key = self._parse_expression_allowing_contextual_keywords()
         self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
-        first_value = self._parse_expression()
+        first_value, used_contextual_value = self._parse_expression_allowing_contextual_keywords()
 
         if self._check(TokenType.FOR) or self._check_keyword("for"):
             return cast(Expression, self._parse_dict_comprehension_body(first_key, first_value))
+        if used_contextual_key or used_contextual_value:
+            raise ParserError("Unexpected token", self._peek())
 
         return cast(Expression, self._parse_regular_dict(first_key, first_value))
 
@@ -229,14 +236,14 @@ class YaraXParserCollectionsMixin:
         else:
             self._consume_keyword("for")
 
-        first_var = self._consume(TokenType.IDENTIFIER, ERROR_EXPECTED_VARIABLE).value
+        first_var = self._consume_local_identifier(ERROR_EXPECTED_VARIABLE).value
 
         key_variable = first_var
         value_variable = None
 
         if self._check(TokenType.COMMA):
             self._advance()
-            value_variable = self._consume(TokenType.IDENTIFIER, "Expected second variable").value
+            value_variable = self._consume_local_identifier("Expected second variable").value
             key_variable = first_var
 
         if self._check(TokenType.IN):
@@ -249,7 +256,9 @@ class YaraXParserCollectionsMixin:
         condition = None
         if self._check_keyword("if"):
             self._advance()
-            condition = self._parse_expression()
+            local_names = self._local_identifier_scope_names(key_variable, value_variable)
+            with self._contextual_local_identifier_scope(local_names):
+                condition = self._parse_expression()
 
         self._consume(TokenType.RBRACE, ERROR_EXPECTED_BRACE_CLOSE)
 
