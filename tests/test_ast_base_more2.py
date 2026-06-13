@@ -464,8 +464,9 @@ def test_rule_metadata_validate_structure_rejects_invalid_identifiers(
         node.validate_structure()
 
 
-def test_rule_validate_structure_allows_keyword_names_for_internal_ast() -> None:
-    Rule("strings").validate_structure()
+def test_rule_validate_structure_rejects_keyword_names() -> None:
+    with pytest.raises(ValueError, match="Invalid rule identifier"):
+        Rule("strings").validate_structure()
 
 
 def test_string_definition_validate_structure_rejects_invalid_identifier() -> None:

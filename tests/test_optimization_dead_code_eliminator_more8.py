@@ -806,7 +806,7 @@ def test_dead_code_eliminator_does_not_mutate_source_rules() -> None:
     ast = YaraFile(
         rules=[
             Rule(
-                name="strings",
+                name="strings_rule",
                 strings=[
                     PlainString(identifier="$used", value="used"),
                     PlainString(identifier="$unused", value="unused"),

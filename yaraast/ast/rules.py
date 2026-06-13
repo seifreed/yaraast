@@ -18,7 +18,7 @@ from yaraast.ast.base import (
 )
 from yaraast.ast.modifiers import MetaEntry, RuleModifier, require_rule_modifier_identifier
 from yaraast.errors import ValidationError
-from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 
 if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
@@ -26,13 +26,18 @@ if TYPE_CHECKING:
     from yaraast.ast.strings import StringDefinition
 
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
 
 
 def _validate_yara_identifier(name: object, kind: str) -> str:
     if not isinstance(name, str):
         msg = f"{kind.capitalize()} identifier must be a string for libyara output"
         raise TypeError(msg)
-    if len(name) <= YARA_IDENTIFIER_MAX_LENGTH and _YARA_IDENTIFIER_RE.fullmatch(name) is not None:
+    if (
+        len(name) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _YARA_IDENTIFIER_RE.fullmatch(name) is not None
+        and name not in _YARA_KEYWORDS
+    ):
         return name
     msg = f"Invalid {kind} identifier '{name}' for libyara output"
     raise ValueError(msg)

@@ -89,7 +89,7 @@ def test_rule_optimizer_report_uses_original_string_count() -> None:
     ast = YaraFile(
         rules=[
             Rule(
-                name="strings",
+                name="strings_rule",
                 strings=[
                     PlainString(identifier="$used", value="used"),
                     PlainString(identifier="$unused", value="unused"),

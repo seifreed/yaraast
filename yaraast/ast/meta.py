@@ -8,9 +8,10 @@ import re
 from typing import Any
 
 from yaraast.ast.base import ASTNode, _require_nonempty_string, _VisitorType
-from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
+from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
 
 
 def _require_meta_value(value: Any, *, allow_float: bool) -> str | int | bool | float:
@@ -38,6 +39,7 @@ class Meta(ASTNode):
         if (
             len(self.key) > YARA_IDENTIFIER_MAX_LENGTH
             or _YARA_IDENTIFIER_RE.fullmatch(self.key) is None
+            or self.key in _YARA_KEYWORDS
         ):
             msg = f"Invalid meta identifier '{self.key}' for libyara output"
             raise ValueError(msg)
