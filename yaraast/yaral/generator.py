@@ -220,10 +220,17 @@ class YaraLGenerator(YaraLVisitor[str]):
         variable = node.variable
         if not variable.startswith("$"):
             variable = f"${variable}"
+        time_str = self.visit(node.time_window)
+        anchor_str = ""
+        if node.temporal_anchor and node.anchor_variable:
+            anchor_var = node.anchor_variable
+            if not anchor_var.startswith("$"):
+                anchor_var = f"${anchor_var}"
+            anchor_str = f" {node.temporal_anchor} {anchor_var}"
         if node.grouping_field is not None:
             grouping = self.visit(node.grouping_field)
-            return f"{self._indent()}{variable} = {grouping} over {self.visit(node.time_window)}"
-        return f"{self._indent()}{variable} over {self.visit(node.time_window)}"
+            return f"{self._indent()}{variable} = {grouping} over {time_str}{anchor_str}"
+        return f"{self._indent()}{variable} over {time_str}{anchor_str}"
 
     def visit_time_window(self, node: TimeWindow) -> str:
         """Generate code for time window."""

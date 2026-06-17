@@ -54,12 +54,21 @@ class YaraLMatchParsingMixin:
 
                 time_window = self._parse_time_window(modifier)
 
+                temporal_anchor = None
+                anchor_variable = None
+                if self._check_keyword("after") or self._check_keyword("before"):
+                    temporal_anchor = self._advance().value
+                    anchor_token = self._advance()
+                    anchor_variable = anchor_token.value.lstrip("$")
+
                 for var_name in var_names:
                     variables.append(
                         MatchVariable(
                             variable=var_name,
                             time_window=time_window,
                             grouping_field=grouping_field,
+                            temporal_anchor=temporal_anchor,
+                            anchor_variable=anchor_variable,
                         )
                     )
             else:

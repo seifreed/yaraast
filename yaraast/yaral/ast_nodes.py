@@ -401,6 +401,8 @@ class MatchVariable(ASTNode):
     variable: str  # Variable name (without $)
     time_window: TimeWindow
     grouping_field: UDMFieldAccess | None = None  # Field used for grouping
+    temporal_anchor: str | None = None  # 'after' or 'before'
+    anchor_variable: str | None = None  # Variable name for temporal anchor (without $)
 
     def validate_structure(self) -> None:
         """Validate match variable fields."""

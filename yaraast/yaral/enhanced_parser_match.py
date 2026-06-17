@@ -43,11 +43,21 @@ class EnhancedYaraLParserMatchMixin:
 
         grouping_field = self._parse_match_grouping_field(len(names))
         time_window = self._parse_optional_match_time_window()
+
+        temporal_anchor = None
+        anchor_variable = None
+        if self._check_keyword("after") or self._check_keyword("before"):
+            temporal_anchor = str(self._advance().value)
+            anchor_token = self._advance()
+            anchor_variable = str(anchor_token.value).lstrip("$")
+
         return [
             MatchVariable(
                 variable=name.lstrip("$"),
                 time_window=time_window,
                 grouping_field=grouping_field,
+                temporal_anchor=temporal_anchor,
+                anchor_variable=anchor_variable,
             )
             for name in names
         ]
