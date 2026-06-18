@@ -9,6 +9,7 @@ from lsprotocol.types import CompletionItem, CompletionItemKind, InsertTextForma
 
 from yaraast.ast.conditions import ForExpression
 from yaraast.errors import ParseError
+from yaraast.lsp.document_context import DocumentContext
 from yaraast.lsp.language_services import parse_source
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import LanguageMode
@@ -331,6 +332,7 @@ def build_condition_completions(text: str, keywords: list[str]) -> list[Completi
         items.extend(_string_identifier_completions(ast))
     except Exception:
         logger.debug("Operation failed in %s", __name__, exc_info=True)
+        items.extend(_text_condition_completions(text))
 
     try:
         if ast is not None:
@@ -342,6 +344,17 @@ def build_condition_completions(text: str, keywords: list[str]) -> list[Completi
     return items
 
 
+def _text_condition_completions(text: str) -> list[CompletionItem]:
+    doc = DocumentContext("file:///completion.yar", text)
+    items: list[CompletionItem] = []
+    seen: set[str] = set()
+    for symbol in doc.symbols():
+        if symbol.kind != "string":
+            continue
+        items.extend(_string_identifier_completion_items(symbol.name, seen))
+    return items
+
+
 def _string_identifier_completions(ast: Any) -> list[CompletionItem]:
     """Build completions for string identifiers defined in the rule."""
     items: list[CompletionItem] = []
@@ -349,39 +362,50 @@ def _string_identifier_completions(ast: Any) -> list[CompletionItem]:
         for string_def in rule.strings:
             if getattr(string_def, "is_anonymous", False):
                 continue
-            identifier = string_def.identifier
-            items.append(
+            items.extend(_string_identifier_completion_items(string_def.identifier))
+    return items
+
+
+def _string_identifier_completion_items(
+    identifier: str, seen: set[str] | None = None
+) -> list[CompletionItem]:
+    items: list[CompletionItem] = []
+    if seen is not None and identifier in seen:
+        return items
+    if seen is not None:
+        seen.add(identifier)
+    items.append(
+        CompletionItem(
+            label=identifier,
+            kind=CompletionItemKind.Variable,
+            detail="String identifier",
+            insert_text=identifier,
+        )
+    )
+    if identifier.startswith("$"):
+        base_name = identifier[1:]
+        items.extend(
+            [
                 CompletionItem(
-                    label=identifier,
+                    label=f"#{base_name}",
                     kind=CompletionItemKind.Variable,
-                    detail="String identifier",
-                    insert_text=identifier,
-                )
-            )
-            if identifier.startswith("$"):
-                base_name = identifier[1:]
-                items.extend(
-                    [
-                        CompletionItem(
-                            label=f"#{base_name}",
-                            kind=CompletionItemKind.Variable,
-                            detail="String count",
-                            insert_text=f"#{base_name}",
-                        ),
-                        CompletionItem(
-                            label=f"@{base_name}",
-                            kind=CompletionItemKind.Variable,
-                            detail="String offset",
-                            insert_text=f"@{base_name}",
-                        ),
-                        CompletionItem(
-                            label=f"!{base_name}",
-                            kind=CompletionItemKind.Variable,
-                            detail="String length",
-                            insert_text=f"!{base_name}",
-                        ),
-                    ]
-                )
+                    detail="String count",
+                    insert_text=f"#{base_name}",
+                ),
+                CompletionItem(
+                    label=f"@{base_name}",
+                    kind=CompletionItemKind.Variable,
+                    detail="String offset",
+                    insert_text=f"@{base_name}",
+                ),
+                CompletionItem(
+                    label=f"!{base_name}",
+                    kind=CompletionItemKind.Variable,
+                    detail="String length",
+                    insert_text=f"!{base_name}",
+                ),
+            ]
+        )
     return items
 
 
