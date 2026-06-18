@@ -37,7 +37,7 @@ class SelectionRangeProvider:
             raise TypeError(msg)
 
         lines = text.split("\n")
-        doc = self.runtime.get_document(uri) if self.runtime and uri else None
+        doc = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
 
         result: list[SelectionRange] = []
         for position in positions:

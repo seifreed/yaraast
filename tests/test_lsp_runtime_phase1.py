@@ -616,6 +616,44 @@ rule sample {
     assert selection.parent.parent is not None
 
 
+def test_selection_range_provider_uses_buffer_text_over_disk_contents(
+    tmp_path: Path,
+) -> None:
+    sample = tmp_path / "sample.yar"
+    sample.write_text(
+        """
+rule sample {
+  condition:
+    true
+}
+""".lstrip(),
+        encoding="utf-8",
+    )
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    provider = SelectionRangeProvider(runtime)
+    uri = path_to_uri(sample)
+    buffer_text = """
+rule sample {
+  meta:
+    one = 1
+    two = 2
+  condition:
+    true
+}
+""".lstrip()
+
+    selections = provider.get_selection_ranges(buffer_text, [Position(line=2, character=6)], uri)
+    assert len(selections) == 1
+    selection = selections[0]
+    assert selection.parent is not None
+    assert selection.parent.parent is not None
+    assert selection.parent.parent.range == Range(
+        start=Position(line=1, character=0),
+        end=Position(line=3, character=11),
+    )
+
+
 def test_runtime_resolve_symbol_classifies_string_rule_and_module_member(tmp_path: Path) -> None:
     sample = tmp_path / "sample.yar"
     sample.write_text(
