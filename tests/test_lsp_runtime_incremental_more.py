@@ -13,6 +13,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
+from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.diagnostics import DiagnosticsProvider
 import yaraast.lsp.document_context as document_context_module
 from yaraast.lsp.document_query_resolution_ranges import (
@@ -340,6 +341,48 @@ def test_runtime_document_lifecycle_and_config_prune_cached_documents(
     assert runtime.config.cache_workspace is False
     assert runtime.config.diagnostics_debounce_ms == 7
     assert runtime.documents == {}
+
+
+def test_runtime_cache_disabled_invalidates_definition_cache_on_close_and_reload(
+    tmp_path: Path,
+) -> None:
+    common = tmp_path / "common.yar"
+    user = tmp_path / "user.yar"
+    common.write_text("rule shared_rule { condition: true }\n", encoding="utf-8")
+    user.write_text(
+        """
+rule local_rule {
+  condition:
+    shared_rule
+}
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    runtime = LspRuntime()
+    runtime.update_config({"YARA": {"cacheWorkspace": False}})
+    runtime.set_workspace_folders([str(tmp_path)])
+    common_uri = path_to_uri(common)
+    user_uri = path_to_uri(user)
+    common_text = common.read_text(encoding="utf-8")
+    user_text = user.read_text(encoding="utf-8")
+    runtime.open_document(common_uri, common_text)
+    runtime.open_document(user_uri, user_text)
+
+    definition = DefinitionProvider(runtime).get_definition(
+        user_text, Position(line=2, character=6), user_uri
+    )
+    assert definition is not None
+
+    runtime.close_document(common_uri)
+    common.write_text("rule other_rule { condition: true }\n", encoding="utf-8")
+
+    definition_after_close = DefinitionProvider(runtime).get_definition(
+        user_text,
+        Position(line=2, character=6),
+        user_uri,
+    )
+    assert definition_after_close is None
 
 
 def test_runtime_observability_covers_default_debounce_and_empty_latency() -> None:

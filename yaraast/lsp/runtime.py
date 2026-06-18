@@ -186,7 +186,7 @@ class LspRuntime:
     def _mark_dirty(self, uri: str) -> None:
         if self.config.cache_workspace:
             self._dirty_documents.add(uri)
-            self.cache.bump_generation()
+        self.cache.bump_generation()
 
     def _sync_document_to_index(self, uri: str) -> None:
         if not self.config.cache_workspace:
@@ -246,6 +246,7 @@ class LspRuntime:
             self._sync_document_to_index(uri)
         else:
             self.documents.pop(uri, None)
+            self.cache.bump_generation()
 
     def get_document(self, uri: str, *, load_workspace: bool = True) -> DocumentContext | None:
         uri = _require_document_uri(uri)
@@ -266,7 +267,7 @@ class LspRuntime:
         if self.config.cache_workspace:
             self.documents[uri] = ctx
             self.index.update_document(ctx)
-            self.cache.bump_generation()
+        self.cache.bump_generation()
         return ctx
 
     def ensure_document(self, uri: str, text: str) -> DocumentContext:
@@ -369,6 +370,7 @@ class LspRuntime:
                     self._sync_document_to_index(uri)
                 else:
                     self.documents.pop(uri, None)
+                    self.cache.bump_generation()
             else:
                 self.documents.pop(uri, None)
                 self.index.remove_document(uri)
