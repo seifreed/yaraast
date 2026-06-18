@@ -277,6 +277,34 @@ def _validate_non_boolean_expression(value: Any, field_name: str) -> None:
         raise ValueError(msg)
 
 
+def _is_invalid_string_binary_left_operand(value: Any) -> bool:
+    while isinstance(value, ParenthesesExpression):
+        value = value.expression
+    return isinstance(
+        value,
+        BooleanLiteral | IntegerLiteral | DoubleLiteral | RegexLiteral | StringIdentifier,
+    ) or _is_definitely_boolean_expression(value)
+
+
+def _is_invalid_string_binary_right_operand(value: Any, operator: str) -> bool:
+    was_parenthesized = isinstance(value, ParenthesesExpression)
+    while isinstance(value, ParenthesesExpression):
+        value = value.expression
+    if operator == "matches":
+        return (
+            (was_parenthesized and isinstance(value, RegexLiteral))
+            or isinstance(
+                value,
+                BooleanLiteral | IntegerLiteral | DoubleLiteral | StringIdentifier | StringLiteral,
+            )
+            or _is_definitely_boolean_expression(value)
+        )
+    return isinstance(
+        value,
+        BooleanLiteral | IntegerLiteral | DoubleLiteral | RegexLiteral | StringIdentifier,
+    ) or _is_definitely_boolean_expression(value)
+
+
 def _validate_constant_range_bounds(low: Any, high: Any) -> None:
     low_value = _constant_range_integer_value(low)
     high_value = _constant_range_integer_value(high)
@@ -539,6 +567,14 @@ class BinaryExpression(Expression):
                 raise ValueError(msg)
             if _is_definitely_non_integer_range_bound(self.right):
                 msg = f"Right operand of '{self.operator}' must be integer"
+                raise ValueError(msg)
+        if self.operator in _STRING_BINARY_OPERATORS:
+            if _is_invalid_string_binary_left_operand(self.left):
+                msg = f"Left operand of '{self.operator}' must be string-like or array"
+                raise ValueError(msg)
+            if _is_invalid_string_binary_right_operand(self.right, self.operator):
+                right_type = "regex" if self.operator == "matches" else "string"
+                msg = f"Right operand of '{self.operator}' must be {right_type}"
                 raise ValueError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:

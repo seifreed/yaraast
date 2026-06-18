@@ -23,6 +23,7 @@ from yaraast.ast.expressions import (
     MemberAccess,
     ParenthesesExpression,
     RangeExpression,
+    RegexLiteral,
     SetExpression,
     StringIdentifier,
     StringLiteral,
@@ -439,6 +440,7 @@ class TestConditionBuilderStringOperators:
 
         assert isinstance(expr, BinaryExpression)
         assert expr.operator == "matches"
+        assert isinstance(expr.right, RegexLiteral)
 
     def test_startswith_creates_prefix_check(self) -> None:
         """Startswith should create prefix check."""

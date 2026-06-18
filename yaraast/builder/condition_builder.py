@@ -16,6 +16,7 @@ from yaraast.ast.expressions import (
     MemberAccess,
     ParenthesesExpression,
     RangeExpression,
+    RegexLiteral,
     SetExpression,
     StringCount,
     StringIdentifier,
@@ -433,7 +434,11 @@ class ConditionBuilder:
             msg = f"Cannot apply {op} to empty expression"
             raise ValidationError(msg)
 
-        right = self._to_string_pattern(pattern)
+        right = (
+            RegexLiteral(pattern)
+            if op == "matches" and isinstance(pattern, str)
+            else self._to_string_pattern(pattern)
+        )
         return ConditionBuilder(
             BinaryExpression(left=self._expression, operator=op, right=right),
         )

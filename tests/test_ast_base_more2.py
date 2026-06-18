@@ -968,6 +968,22 @@ def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
             BinaryExpression(IntegerLiteral(1), "&", BooleanLiteral(False)),
             "Right operand of '&' must be integer",
         ),
+        (
+            BinaryExpression(IntegerLiteral(1), "contains", StringLiteral("x")),
+            "Left operand of 'contains' must be string-like or array",
+        ),
+        (
+            BinaryExpression(StringLiteral("abc"), "contains", IntegerLiteral(1)),
+            "Right operand of 'contains' must be string",
+        ),
+        (
+            BinaryExpression(BooleanLiteral(True), "startswith", StringLiteral("a")),
+            "Left operand of 'startswith' must be string-like or array",
+        ),
+        (
+            BinaryExpression(StringLiteral("abc"), "matches", StringLiteral("a.*")),
+            "Right operand of 'matches' must be regex",
+        ),
         (UnaryExpression("!", BooleanLiteral(True)), "Invalid unary operator"),
         (UnaryExpression("-", BooleanLiteral(True)), "Operand of '-' must be numeric"),
         (UnaryExpression("-", StringLiteral("x")), "Operand of '-' must be numeric"),
@@ -1012,6 +1028,19 @@ def test_direct_yarafile_analysis_allows_percentage_unary_quantifier_expression(
                 "percentage_quantifier",
                 strings=[PlainString("$a", "needle")],
                 condition=OfExpression(UnaryExpression("%", IntegerLiteral(50)), "$a"),
+            )
+        ]
+    )
+
+    ExpressionOptimizer().optimize(valid_file)
+
+
+def test_direct_yarafile_analysis_allows_string_binary_regex_match() -> None:
+    valid_file = YaraFile(
+        rules=[
+            Rule(
+                "regex_match",
+                condition=BinaryExpression(StringLiteral("abc"), "matches", RegexLiteral("a.*")),
             )
         ]
     )
