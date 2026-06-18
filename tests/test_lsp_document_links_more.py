@@ -225,6 +225,43 @@ def test_document_links_keep_runtime_rule_links_when_symbol_scan_fails(
     assert common.as_uri() in targets
 
 
+def test_document_links_keep_local_rule_links_when_symbol_scan_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    doc_path = tmp_path / "doc.yar"
+    text = dedent("""
+        rule local_rule {
+          condition:
+            true
+        }
+
+        rule use_local {
+          condition:
+            local_rule
+        }
+
+        rule broken {
+          condition:
+        """).lstrip()
+    doc_path.write_text(text, encoding="utf-8")
+
+    original_symbols = DocumentContext.symbols
+
+    def broken_symbols(self: DocumentContext) -> list[SymbolRecord]:
+        if self.uri == path_to_uri(doc_path):
+            raise RuntimeError("boom")
+        return original_symbols(self)
+
+    monkeypatch.setattr(DocumentContext, "symbols", broken_symbols)
+
+    links = DocumentLinksProvider(LspRuntime()).get_document_links(text, path_to_uri(doc_path))
+
+    local_rule_links = [link for link in links if link.tooltip == "Go to rule local_rule"]
+    assert len(local_rule_links) == 1
+    assert local_rule_links[0].target == path_to_uri(doc_path)
+
+
 def test_document_links_without_runtime_include_local_rule_links() -> None:
     text = """
 rule shared_rule {

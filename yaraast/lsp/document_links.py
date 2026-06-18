@@ -4,17 +4,25 @@ from __future__ import annotations
 
 import logging
 import re
+from types import SimpleNamespace
 from typing import Any
 
 from lsprotocol.types import DocumentLink, Position, Range
 
+from yaraast.lsp.document_query_common import whole_word_positions
+import yaraast.lsp.document_query_reference_text as reference_text
+import yaraast.lsp.document_query_resolution_text as resolution_text
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, SymbolRecord
+from yaraast.lsp.structure import find_rule_end
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 logger = logging.getLogger(__name__)
 
 IMPORT_DIRECTIVE_RE = re.compile(r'^\s*import\s+"(?P<value>(?:\\.|[^"\\])*)"')
 INCLUDE_DIRECTIVE_RE = re.compile(r'^\s*include\s+"(?P<value>(?:\\.|[^"\\])*)"')
+RULE_DECLARATION_RE = re.compile(
+    r"^\s*(?:(?:global|private)\s+)*rule\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\b"
+)
 
 
 def _link_key(link: DocumentLink) -> tuple[int, int, int, int, str | None, str | None]:
@@ -67,12 +75,14 @@ class DocumentLinksProvider:
                     symbol_records = []
                 links.extend(self._create_runtime_symbol_links(doc, symbol_records))
                 links.extend(self._create_rule_reference_links(document_uri))
+                self._append_text_rule_links(links, text, document_uri)
                 self._append_fallback_links(links, text, document_uri)
                 return links
             doc = DocumentContext(document_uri, text)
             symbol_records = doc.symbols()
             links.extend(self._create_runtime_symbol_links(doc, symbol_records))
             links.extend(self._create_local_rule_reference_links(doc))
+            self._append_text_rule_links(links, text, document_uri)
             self._append_fallback_links(links, text, document_uri)
 
         except Exception:
@@ -151,6 +161,58 @@ class DocumentLinksProvider:
                 continue
             links.append(link)
             seen.add(key)
+
+    def _append_text_rule_links(
+        self,
+        links: list[DocumentLink],
+        text: str,
+        document_uri: str,
+    ) -> None:
+        seen = {_link_key(link) for link in links}
+        lines = text.split("\n")
+        doc = SimpleNamespace(lines=lines)
+        declarations: list[tuple[str, int, int]] = []
+        for line_num, line in enumerate(lines):
+            declaration = RULE_DECLARATION_RE.match(line)
+            if declaration is None:
+                continue
+            declarations.append(
+                (declaration.group("name"), line_num, find_rule_end(lines, line_num))
+            )
+
+        rule_names = [name for name, _line_num, _end_line in declarations]
+        for _source_rule_name, line_num, end_line in declarations:
+            for body_line in range(line_num + 1, end_line + 1):
+                masked_line = reference_text.mask_non_code_segments(lines[body_line])
+                for rule_name in rule_names:
+                    for col in whole_word_positions(masked_line, rule_name):
+                        position = Position(
+                            line=body_line,
+                            character=utf8_col_to_utf16(lines[body_line], col),
+                        )
+                        if resolution_text.position_is_in_non_code_segment(doc, position):
+                            continue
+                        link = DocumentLink(
+                            range=Range(
+                                start=Position(
+                                    line=body_line,
+                                    character=utf8_col_to_utf16(lines[body_line], col),
+                                ),
+                                end=Position(
+                                    line=body_line,
+                                    character=utf8_col_to_utf16(
+                                        lines[body_line], col + len(rule_name)
+                                    ),
+                                ),
+                            ),
+                            target=document_uri,
+                            tooltip=f"Go to rule {rule_name}",
+                        )
+                        key = _link_key(link)
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        links.append(link)
 
     def _fallback_links(self, text: str, document_uri: str) -> list[DocumentLink]:
         """Fallback regex-based link detection."""
