@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 
 
 def build_document_symbols(doc: DocumentContext, lines: list[str]) -> list[DocumentSymbol]:
+    ast = doc.ast()
+    if ast is None:
+        return _build_text_document_symbols(doc, lines)
+
     symbols: list[DocumentSymbol] = []
     _append_import_symbols(symbols, doc, lines)
     _append_include_symbols(symbols, doc, lines)
@@ -160,6 +164,121 @@ def _build_rule_symbol(
     )
     _append_extra_sections(rule_children, doc, lines, rule, rule_name, rule_line, section_names)
     return rule_symbol
+
+
+def _build_text_document_symbols(doc: DocumentContext, lines: list[str]) -> list[DocumentSymbol]:
+    symbols: list[DocumentSymbol] = []
+    records = doc.symbols()
+    by_kind: dict[str, list[SymbolRecord]] = {}
+    lookup: dict[tuple[str, str, str | None], SymbolRecord] = {}
+    for record in records:
+        by_kind.setdefault(record.kind, []).append(record)
+        lookup[(record.kind, record.name, record.container_name)] = record
+
+    for record in by_kind.get("import", []):
+        symbols.append(
+            DocumentSymbol(
+                name=f'import "{record.name}"',
+                kind=SymbolKind.Namespace,
+                range=record.range,
+                selection_range=record.range,
+            )
+        )
+
+    for record in by_kind.get("include", []):
+        symbols.append(
+            DocumentSymbol(
+                name=f'include "{record.name}"',
+                kind=SymbolKind.File,
+                range=record.range,
+                selection_range=record.range,
+            )
+        )
+
+    seen_rules: set[str] = set()
+    for record in by_kind.get("rule", []):
+        if record.name in seen_rules:
+            continue
+        seen_rules.add(record.name)
+        rule_block_record = lookup.get(("rule_block", record.name, None))
+        rule_symbol = _build_text_rule_symbol(doc, lines, records, record, rule_block_record)
+        if rule_symbol is not None:
+            symbols.append(rule_symbol)
+
+    return symbols
+
+
+def _build_text_rule_symbol(
+    doc: DocumentContext,
+    lines: list[str],
+    records: list[SymbolRecord],
+    rule_record: SymbolRecord,
+    rule_block_record: SymbolRecord | None,
+) -> DocumentSymbol | None:
+    rule_name = rule_record.name
+    rule_range = rule_block_record.range if rule_block_record is not None else rule_record.range
+    children: list[DocumentSymbol] = []
+
+    section_records = [
+        record
+        for record in records
+        if record.kind == "section" and record.container_name == rule_name
+    ]
+    for section_record in section_records:
+        section_children = [
+            _document_symbol_from_record(record)
+            for record in records
+            if record.container_name == rule_name
+            and record.kind not in {"section", "section_header", "rule", "rule_block"}
+            and _range_within(record.range, section_record.range)
+        ]
+        children.append(
+            DocumentSymbol(
+                name=section_record.name,
+                kind=_kind_for_record(section_record.kind),
+                range=section_record.range,
+                selection_range=section_record.range,
+                children=section_children or None,
+            )
+        )
+
+    return DocumentSymbol(
+        name=rule_name,
+        kind=SymbolKind.Class,
+        range=rule_range,
+        selection_range=rule_record.range,
+        children=children or None,
+    )
+
+
+def _document_symbol_from_record(record: SymbolRecord) -> DocumentSymbol:
+    return DocumentSymbol(
+        name=record.name,
+        kind=_kind_for_record(record.kind),
+        range=record.range,
+        selection_range=record.range,
+    )
+
+
+def _kind_for_record(kind: str) -> SymbolKind:
+    if kind == "import":
+        return SymbolKind.Namespace
+    if kind == "include":
+        return SymbolKind.File
+    if kind == "rule":
+        return SymbolKind.Class
+    if kind == "meta":
+        return SymbolKind.Property
+    if kind == "condition":
+        return SymbolKind.Function
+    return SymbolKind.Variable
+
+
+def _range_within(inner: Range, outer: Range) -> bool:
+    return (outer.start.line, outer.start.character) <= (
+        inner.start.line,
+        inner.start.character,
+    ) and (inner.end.line, inner.end.character) <= (outer.end.line, outer.end.character)
 
 
 def _append_meta_section(

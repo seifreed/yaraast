@@ -54,9 +54,6 @@ class SymbolsProvider:
             cached = doc.get_cached("lsp:document_symbols")
             if cached is not None:
                 return list(cached)
-            ast = doc.ast()
-            if ast is None:
-                return []
             lines = text.split("\n")
             symbols = build_document_symbols(doc, lines)
             symbol_build_succeeded = True
