@@ -376,6 +376,7 @@ class LspRuntime:
             self.documents = {uri: doc for uri, doc in self.documents.items() if doc.is_open}
         elif previous_cache_workspace is False and self.config.cache_workspace:
             self.index.persisted_symbols = {}
+            self.index.save()
             for doc in self.documents.values():
                 if doc.is_open:
                     self._sync_document_to_index(doc.uri)
