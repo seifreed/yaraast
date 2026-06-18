@@ -22,8 +22,6 @@ __all__ = [
     "DependencyGraphGenerator",
     "MetricsReportData",
     "analyze_complexity",
-    "build_complexity_payload",
-    "build_report",
     "determine_graph_output_path",
     "determine_pattern_output_path",
     "generate_dependency_graph",
@@ -45,10 +43,6 @@ def analyze_complexity(ast: YaraFile) -> Any:
 
 def is_graphviz_error(error: Exception) -> bool:
     return _is_graphviz_error(error)
-
-
-def build_complexity_payload(metrics: Any) -> dict[str, Any]:
-    return _workflows.build_complexity_payload(metrics)
 
 
 def generate_dependency_graphs(
@@ -87,33 +81,6 @@ def generate_pattern_diagrams(
         return _workflows.generate_pattern_diagrams(ast, output_dir, base_name, image_format)
     return _workflows.generate_pattern_diagrams(
         ast, output_dir, base_name, image_format, generator_factory
-    )
-
-
-def build_report(
-    ast: YaraFile, output_dir: Path, base_name: str, image_format: str
-) -> MetricsReportData:
-    metrics = analyze_complexity(ast)
-    payload = build_complexity_payload(metrics)
-
-    generated_files: list[str] = []
-    try:
-        generated_files.extend(generate_dependency_graphs(ast, output_dir, base_name, image_format))
-    except Exception as exc:
-        if not is_graphviz_error(exc):
-            raise
-    generated_files.append(generate_html_tree(ast, output_dir, base_name, interactive=True))
-    try:
-        generated_files.extend(generate_pattern_diagrams(ast, output_dir, base_name, image_format))
-    except Exception as exc:
-        if not is_graphviz_error(exc):
-            raise
-
-    return MetricsReportData(
-        base_name=base_name,
-        complexity_metrics=metrics,
-        complexity_payload=payload,
-        generated_files=generated_files,
     )
 
 

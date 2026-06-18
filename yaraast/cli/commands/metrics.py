@@ -25,7 +25,6 @@ from yaraast.cli.metrics_reporting import (
 from yaraast.cli.metrics_reporting_display import path_size_for_display
 from yaraast.cli.metrics_services import (
     analyze_complexity,
-    build_report,
     determine_graph_output_path,
     determine_pattern_output_path,
     generate_dependency_graph_with_generator,
@@ -37,6 +36,7 @@ from yaraast.cli.metrics_services import (
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.cli.utils import _validate_output_dir_path, _validate_output_path
 from yaraast.metrics import DependencyGraphGenerator
+from yaraast.metrics.workflows import build_report
 
 
 @click.group()

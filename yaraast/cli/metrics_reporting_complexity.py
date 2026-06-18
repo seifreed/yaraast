@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import click
 
-from yaraast.cli.metrics_services import build_complexity_payload
 from yaraast.cli.utils import format_json, write_text
 from yaraast.metrics.complexity_model import ComplexityMetrics
+from yaraast.metrics.workflows import build_complexity_payload
 
 _OUTPUT_FORMATS = frozenset({"json", "text"})
 

@@ -11,6 +11,7 @@ import pytest
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.cli import metrics_services as ms
 from yaraast.errors import ValidationError
+from yaraast.metrics import workflows as metrics_workflows
 from yaraast.parser import Parser
 
 
@@ -325,7 +326,7 @@ def test_metrics_services_build_report_and_generator_none(
 ) -> None:
     ast = _ast()
 
-    report = ms.build_report(ast, tmp_path, "rules", "svg")
+    report = metrics_workflows.build_report(ast, tmp_path, "rules", "svg")
     assert report.base_name == "rules"
     assert "quality_score" in report.complexity_payload
     assert any(name.endswith("_tree.html") for name in report.generated_files)
@@ -346,8 +347,8 @@ def test_metrics_services_error_paths_and_dependency_generator_success(
     with pytest.raises(RuntimeError, match="graphviz"):
         ms.generate_dependency_graphs(ast, tmp_path, "x", "svg", generator_factory=None)
 
-    original_dep = ms.generate_dependency_graphs
-    original_pattern = ms.generate_pattern_diagrams
+    original_dep = metrics_workflows.generate_dependency_graphs
+    original_pattern = metrics_workflows.generate_pattern_diagrams
     try:
 
         def _raise_dep(
@@ -359,9 +360,9 @@ def test_metrics_services_error_paths_and_dependency_generator_success(
         ) -> list[str]:
             raise ValueError("dep boom")
 
-        ms.generate_dependency_graphs = _raise_dep
+        metrics_workflows.generate_dependency_graphs = _raise_dep
         with pytest.raises(ValueError, match="dep boom"):
-            ms.build_report(ast, tmp_path, "x", "svg")
+            metrics_workflows.build_report(ast, tmp_path, "x", "svg")
 
         def _ok_dep(
             ast: YaraFile,
@@ -381,13 +382,13 @@ def test_metrics_services_error_paths_and_dependency_generator_success(
         ) -> list[str]:
             raise ValueError("pat boom")
 
-        ms.generate_dependency_graphs = _ok_dep
-        ms.generate_pattern_diagrams = _raise_pattern
+        metrics_workflows.generate_dependency_graphs = _ok_dep
+        metrics_workflows.generate_pattern_diagrams = _raise_pattern
         with pytest.raises(ValueError, match="pat boom"):
-            ms.build_report(ast, tmp_path, "x", "svg")
+            metrics_workflows.build_report(ast, tmp_path, "x", "svg")
     finally:
-        ms.generate_dependency_graphs = original_dep
-        ms.generate_pattern_diagrams = original_pattern
+        metrics_workflows.generate_dependency_graphs = original_dep
+        metrics_workflows.generate_pattern_diagrams = original_pattern
 
     class _DepGen:
         def generate_graph(
