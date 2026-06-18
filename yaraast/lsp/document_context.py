@@ -113,6 +113,7 @@ class DocumentContext:
         version: int | None = None,
         *,
         is_open: bool = False,
+        backed_by_file: bool = False,
         language_mode: LanguageMode = LanguageMode.AUTO,
     ) -> None:
         self.uri = _require_document_string(uri, "Document URI")
@@ -123,11 +124,15 @@ class DocumentContext:
         if not isinstance(is_open, bool):
             msg = "Document is_open flag must be a boolean"
             raise TypeError(msg)
+        if not isinstance(backed_by_file, bool):
+            msg = "Document backed_by_file flag must be a boolean"
+            raise TypeError(msg)
         if not isinstance(language_mode, LanguageMode):
             msg = "Document language_mode must be a LanguageMode"
             raise TypeError(msg)
         self.version = version
         self.is_open = is_open
+        self.backed_by_file = backed_by_file
         self.language_mode = language_mode
         self._ast: ASTRoot | None = None
         self._parse_error: Exception | None = None

@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any, NoReturn, cast
 
-from lsprotocol.types import Position, Range
+from lsprotocol.types import FileChangeType, FileEvent, Position, Range
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -531,6 +531,24 @@ def test_runtime_watched_files_treats_inaccessible_paths_as_deleted() -> None:
     runtime.handle_watched_files([change])
 
     assert runtime.get_document(uri, load_workspace=False) is None
+
+
+def test_runtime_watched_files_preserve_open_document_on_delete(tmp_path: Path) -> None:
+    sample = tmp_path / "sample.yar"
+    sample.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(sample)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.open_document(uri, sample.read_text(encoding="utf-8"))
+
+    sample.unlink()
+    runtime.handle_watched_files([FileEvent(uri=uri, type=FileChangeType.Deleted)])
+
+    current = runtime.get_document(uri, load_workspace=False)
+    assert current is not None
+    assert current.is_open is True
+    assert current.text.startswith("rule sample")
 
 
 def test_runtime_rejects_invalid_config_inputs() -> None:

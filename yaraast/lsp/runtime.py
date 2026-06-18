@@ -205,11 +205,13 @@ class LspRuntime:
         uri = _require_document_uri(uri)
         ctx = self.documents.get(uri)
         if ctx is None:
+            path = uri_to_path(uri)
             ctx = DocumentContext(
                 uri,
                 text,
                 version,
                 is_open=True,
+                backed_by_file=path is not None and path_exists(path) and path_is_file(path),
                 language_mode=self.config.language_mode,
             )
             self.documents[uri] = ctx
@@ -263,7 +265,13 @@ class LspRuntime:
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
             return None
-        ctx = DocumentContext(uri, text, is_open=False, language_mode=self.config.language_mode)
+        ctx = DocumentContext(
+            uri,
+            text,
+            is_open=False,
+            backed_by_file=True,
+            language_mode=self.config.language_mode,
+        )
         if self.config.cache_workspace:
             self.documents[uri] = ctx
             self.index.update_document(ctx)
@@ -372,6 +380,12 @@ class LspRuntime:
                     self.documents.pop(uri, None)
                     self.cache.bump_generation()
             else:
+                ctx = self.documents.get(uri)
+                if ctx is not None and ctx.is_open and ctx.backed_by_file:
+                    self.index.remove_document(uri)
+                    self._dirty_documents.discard(uri)
+                    self.cache.bump_generation()
+                    continue
                 self.documents.pop(uri, None)
                 self.index.remove_document(uri)
                 self._dirty_documents.discard(uri)
