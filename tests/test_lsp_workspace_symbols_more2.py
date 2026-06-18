@@ -11,12 +11,8 @@ from lsprotocol.types import Position, Range, SymbolInformation
 import pytest
 
 from yaraast.lsp.document_types import SymbolRecord
-from yaraast.lsp.runtime import DocumentContext, LspRuntime
-from yaraast.lsp.workspace_symbols import (
-    WorkspaceSymbolsProvider,
-    _trailing_parse_error_rule_names,
-)
-from yaraast.parser._shared import ParserError
+from yaraast.lsp.runtime import LspRuntime
+from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
 
 
 def test_workspace_symbols_empty_and_exception_paths() -> None:
@@ -140,8 +136,9 @@ rule sample {
         first.clear()
         assert provider._get_symbols_from_file(f) == second
 
-        # Parse failure path inside _get_symbols_from_file should be swallowed.
-        assert provider._get_symbols_from_file(bad) == []
+        # Partial parse errors still surface recovered top-level symbols.
+        bad_symbols = provider._get_symbols_from_file(bad)
+        assert {symbol.name for symbol in bad_symbols} == {"bad"}
         assert provider._get_symbols_from_file(Path("a" * 5000)) == []
 
         # Query filter path
@@ -181,20 +178,7 @@ rule broken {
 
         names = {symbol.name for symbol in provider.get_workspace_symbols("")}
         assert "good" in names
-        assert "broken" not in names
-
-
-def test_workspace_symbols_trailing_rule_helper_handles_nonmatching_cases() -> None:
-    empty_doc = DocumentContext("file:///empty.yar", "}")
-    assert _trailing_parse_error_rule_names(empty_doc.symbols(), empty_doc.parse_error()) == set()
-
-    broken_doc = DocumentContext("file:///broken.yar", "rule ok { condition: true }\n}")
-    assert _trailing_parse_error_rule_names(broken_doc.symbols(), broken_doc.parse_error()) == set()
-
-    err = DocumentContext("file:///line.yar", "}").parse_error()
-    assert isinstance(err, ParserError)
-    cast(Any, err).line = "x"
-    assert _trailing_parse_error_rule_names([], err) == set()
+        assert "broken" in names
 
 
 def test_workspace_symbols_invalidate_file_handles_cache_miss_and_bad_fspath() -> None:
