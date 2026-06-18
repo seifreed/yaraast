@@ -389,6 +389,37 @@ def test_direct_yarafile_analysis_rejects_invalid_expression_identifiers(
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (StringOffset("$a", BooleanLiteral(True)), "String offset index must not be boolean"),
+        (
+            StringOffset(
+                "$a",
+                BinaryExpression(IntegerLiteral(1), "==", IntegerLiteral(1)),
+            ),
+            "String offset index must not be boolean",
+        ),
+        (
+            StringLength("$a", ParenthesesExpression(BooleanLiteral(False))),
+            "String length index must not be boolean",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_boolean_string_occurrence_indexes(
+    condition: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(
+        rules=[
+            Rule("bad_occurrence_index", strings=[PlainString("$a", "needle")], condition=condition)
+        ]
+    )
+
+    with pytest.raises(ValueError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         AtExpression("@a", IntegerLiteral(0)),

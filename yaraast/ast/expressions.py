@@ -171,6 +171,24 @@ def _validate_integer_expression(value: Any, field_name: str) -> None:
         raise ValueError(msg)
 
 
+def _is_definitely_boolean_expression(value: Any) -> bool:
+    if isinstance(value, ParenthesesExpression):
+        return _is_definitely_boolean_expression(value.expression)
+    if isinstance(value, BooleanLiteral):
+        return True
+    if isinstance(value, UnaryExpression):
+        return value.operator == "not"
+    if isinstance(value, BinaryExpression):
+        return value.operator in _RANGE_NON_INTEGER_BINARY_OPERATORS
+    return False
+
+
+def _validate_non_boolean_expression(value: Any, field_name: str) -> None:
+    if _is_definitely_boolean_expression(value):
+        msg = f"{field_name} must not be boolean"
+        raise ValueError(msg)
+
+
 def _validate_constant_range_bounds(low: Any, high: Any) -> None:
     low_value = _constant_range_integer_value(low)
     high_value = _constant_range_integer_value(high)
@@ -287,6 +305,7 @@ class StringOffset(Expression):
         _validate_string_reference_suffix(self.string_id)
         if self.index is not None:
             _validate_expression(self.index, "StringOffset.index")
+            _validate_non_boolean_expression(self.index, "String offset index")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_offset(self)
@@ -305,6 +324,7 @@ class StringLength(Expression):
         _validate_string_reference_suffix(self.string_id)
         if self.index is not None:
             _validate_expression(self.index, "StringLength.index")
+            _validate_non_boolean_expression(self.index, "String length index")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_length(self)
