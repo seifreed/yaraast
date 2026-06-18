@@ -78,6 +78,19 @@ def test_memory_optimizer_recommendations_and_pool() -> None:
     assert ast2 is ast1
 
 
+def test_memory_optimizer_clear_caches_clears_ast_pool() -> None:
+    optimizer = MemoryOptimizer()
+
+    pooled_ast = optimizer.create_memory_efficient_ast()
+    optimizer.return_ast_to_pool(pooled_ast)
+
+    optimizer.clear_caches()
+
+    fresh_ast = optimizer.create_memory_efficient_ast()
+
+    assert fresh_ast is not pooled_ast
+
+
 def test_memory_optimizer_rejects_invalid_numeric_configuration() -> None:
     with pytest.raises(TypeError, match="memory_limit_mb must be an integer"):
         MemoryOptimizer(memory_limit_mb=cast(Any, True))

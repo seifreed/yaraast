@@ -44,6 +44,7 @@ def get_memory_usage() -> dict[str, Any]:
 def clear_caches(optimizer: Any) -> None:
     optimizer._cache.clear()
     optimizer._string_pool.clear()
+    optimizer._ast_pool.clear()
     gc.collect()
 
 
