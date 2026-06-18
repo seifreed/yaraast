@@ -706,6 +706,21 @@ def test_runtime_save_document_promotes_synthetic_buffer_to_file_backed(
     assert runtime.workspace_symbols("sample") == []
 
 
+def test_runtime_close_document_drops_synthetic_buffer_from_index(tmp_path: Path) -> None:
+    sample = tmp_path / "scratch.yar"
+    uri = path_to_uri(sample)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.open_document(uri, "rule scratch { condition: true }\n")
+    runtime.close_document(uri)
+
+    restarted = LspRuntime()
+    restarted.set_workspace_folders([str(tmp_path)])
+
+    assert restarted.workspace_symbols("scratch") == []
+
+
 def test_runtime_set_workspace_folders_promotes_synthetic_buffer_to_file_backed(
     tmp_path: Path,
 ) -> None:

@@ -260,6 +260,12 @@ class LspRuntime:
                 self._dirty_documents.discard(uri)
                 self.cache.bump_generation()
                 return
+            if not ctx.backed_by_file:
+                self.documents.pop(uri, None)
+                self.index.remove_document(uri)
+                self._dirty_documents.discard(uri)
+                self.cache.bump_generation()
+                return
             ctx.is_open = False
             self._sync_document_to_index(uri)
         else:
