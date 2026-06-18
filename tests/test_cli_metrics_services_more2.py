@@ -320,7 +320,9 @@ def test_metrics_services_html_and_wrapper_functions(tmp_path: Path) -> None:
     assert len(pat_files) == 3
 
 
-def test_metrics_services_build_report_and_generator_none(tmp_path: Path) -> None:
+def test_metrics_services_build_report_and_generator_none(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     ast = _ast()
 
     report = ms.build_report(ast, tmp_path, "rules", "svg")
@@ -328,19 +330,17 @@ def test_metrics_services_build_report_and_generator_none(tmp_path: Path) -> Non
     assert "quality_score" in report.complexity_payload
     assert any(name.endswith("_tree.html") for name in report.generated_files)
 
-    orig = ms.DependencyGraphGenerator
-    try:
-        ms.DependencyGraphGenerator = None
-        with pytest.raises(RuntimeError, match="graphviz"):
-            ms.generate_dependency_graph(ast, "full", str(tmp_path / "f.svg"), "svg", "dot")
-    finally:
-        ms.DependencyGraphGenerator = orig
+    monkeypatch.setattr(ms, "DependencyGraphGenerator", None)
+    with pytest.raises(RuntimeError, match="graphviz"):
+        ms.generate_dependency_graph(ast, "full", str(tmp_path / "f.svg"), "svg", "dot")
 
     out = ms.generate_pattern_diagram(ast, "flow", str(tmp_path / "flow_real.svg"), "svg")
     assert out.endswith("flow_real.svg")
 
 
-def test_metrics_services_error_paths_and_dependency_generator_success(tmp_path: Path) -> None:
+def test_metrics_services_error_paths_and_dependency_generator_success(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     ast = _ast()
 
     with pytest.raises(RuntimeError, match="graphviz"):
@@ -424,10 +424,6 @@ def test_metrics_services_error_paths_and_dependency_generator_success(tmp_path:
         ) -> str:
             return output_path
 
-    orig = ms.DependencyGraphGenerator
-    try:
-        ms.DependencyGraphGenerator = _DepGen
-        out = ms.generate_dependency_graph(ast, "full", str(tmp_path / "dep.svg"), "svg", "dot")
-        assert out[0].endswith("dep.svg")
-    finally:
-        ms.DependencyGraphGenerator = orig
+    monkeypatch.setattr(ms, "DependencyGraphGenerator", _DepGen)
+    out = ms.generate_dependency_graph(ast, "full", str(tmp_path / "dep.svg"), "svg", "dot")
+    assert out[0].endswith("dep.svg")

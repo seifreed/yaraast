@@ -2,67 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
-
-from yaraast.ast.base import YaraFile
-from yaraast.metrics.capabilities import CAPABILITIES, MetricsCapability, get_capability
-from yaraast.metrics.complexity import ComplexityAnalyzer
-from yaraast.metrics.html_tree import HtmlTreeGenerator
-from yaraast.metrics.string_diagrams import StringDiagramGenerator
-
-DependencyGraphGenerator: Any
-
 try:
     from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 except ModuleNotFoundError as exc:
     if exc.name != "graphviz":
         raise
     DependencyGraphGenerator = None
-
-
-@dataclass(frozen=True)
-class MetricsSubsystem:
-    """Provide a single conceptual entry point for metrics capabilities."""
-
-    complexity_analyzer: type[ComplexityAnalyzer] = ComplexityAnalyzer
-    dependency_graph_generator: Any = DependencyGraphGenerator
-    html_tree_generator: type[HtmlTreeGenerator] = HtmlTreeGenerator
-    string_diagram_generator: type[StringDiagramGenerator] = StringDiagramGenerator
-
-    def new_complexity_analyzer(self) -> ComplexityAnalyzer:
-        return self.complexity_analyzer()
-
-    def new_dependency_graph_generator(self) -> Any:
-        if self.dependency_graph_generator is None:
-            msg = "Graph visualization requires the 'graphviz' Python package."
-            raise RuntimeError(msg)
-        return self.dependency_graph_generator()
-
-    def new_html_tree_generator(self) -> HtmlTreeGenerator:
-        return self.html_tree_generator()
-
-    def new_string_diagram_generator(self) -> StringDiagramGenerator:
-        return self.string_diagram_generator()
-
-    def list_capabilities(self) -> tuple[MetricsCapability, ...]:
-        return CAPABILITIES
-
-    def get_capability(self, name: str) -> MetricsCapability | None:
-        return get_capability(name)
-
-    def analyze_complexity(self, ast: YaraFile) -> Any:
-        from yaraast.metrics.workflows import analyze_complexity
-
-        return analyze_complexity(ast)
-
-    def build_report(
-        self, ast: YaraFile, output_dir: Path, base_name: str, image_format: str
-    ) -> Any:
-        from yaraast.metrics.workflows import build_report
-
-        return build_report(ast, output_dir, base_name, image_format)
-
-
-METRICS = MetricsSubsystem()

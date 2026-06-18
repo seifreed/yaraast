@@ -20,7 +20,7 @@ from yaraast.lsp.hover_renderers import (
     workspace_rule_hover as render_workspace_rule_hover,
 )
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
-from yaraast.lsp.runtime import DocumentContext, LspRuntime
+from yaraast.lsp.runtime import DocumentContext, LspRuntime, get_document_context
 from yaraast.lsp.safe_handler import lsp_safe_handler
 from yaraast.lsp.utils import get_word_at_position
 from yaraast.types.module_loader import ModuleLoader
@@ -56,11 +56,7 @@ class HoverProvider:
             msg = "position must be an LSP Position"
             raise TypeError(msg)
 
-        doc = (
-            self.runtime.ensure_document(uri, text)
-            if self.runtime and uri
-            else DocumentContext(uri or "file://local.yar", text)
-        )
+        doc = get_document_context(self.runtime, uri, text)
         resolved = doc.resolve_symbol(position)
         word, word_range = get_word_at_position(text, position)
 

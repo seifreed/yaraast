@@ -36,7 +36,7 @@ from yaraast.cli.metrics_services import (
 )
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.cli.utils import _validate_output_dir_path, _validate_output_path
-from yaraast.metrics import METRICS, DependencyGraphGenerator
+from yaraast.metrics import DependencyGraphGenerator
 
 
 @click.group()
@@ -117,7 +117,7 @@ def graph(yara_file: str, output: str | None, format: str, type: str, engine: st
         )
     ast = parse_yara_file(yara_file)
     output_path = determine_graph_output_path(yara_file, output, type, format)
-    generator = METRICS.new_dependency_graph_generator()
+    generator = DependencyGraphGenerator()
 
     try:
         result_path, _generator = generate_dependency_graph_with_generator(
@@ -210,7 +210,9 @@ def patterns(yara_file: str, output: str | None, type: str, format: str, stats: 
     """Generate string pattern analysis diagrams."""
     output = _validate_output_path(output)
     ast = parse_yara_file(yara_file)
-    generator = METRICS.new_string_diagram_generator()
+    from yaraast.metrics.string_diagrams import StringDiagramGenerator
+
+    generator = StringDiagramGenerator()
     output_path = determine_pattern_output_path(yara_file, output, type, format)
 
     try:

@@ -13,7 +13,6 @@ from yaraast.metrics import DependencyGraphGenerator
 from yaraast.metrics.capabilities import get_capability
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.complexity_model import ComplexityMetrics
-from yaraast.metrics.facade import MetricsSubsystem
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.parser import Parser
@@ -79,22 +78,6 @@ def test_metrics_capability_lookup_rejects_non_string_names(name: Any) -> None:
 def test_metrics_capability_lookup_rejects_empty_names(name: str) -> None:
     with pytest.raises(ValueError, match="Metrics capability name cannot be empty"):
         get_capability(name)
-
-
-@pytest.mark.parametrize("name", [None, 1, b"complexity", object()])
-def test_metrics_subsystem_capability_lookup_rejects_non_string_names(name: Any) -> None:
-    metrics = MetricsSubsystem()
-
-    with pytest.raises(TypeError, match="Metrics capability name must be a string"):
-        metrics.get_capability(cast(str, name))
-
-
-@pytest.mark.parametrize("name", ["", "   ", "\t"])
-def test_metrics_subsystem_capability_lookup_rejects_empty_names(name: str) -> None:
-    metrics = MetricsSubsystem()
-
-    with pytest.raises(ValueError, match="Metrics capability name cannot be empty"):
-        metrics.get_capability(name)
 
 
 class TestComplexityAnalyzer:

@@ -34,14 +34,7 @@ builtins.__import__ = import_without_graphviz
 from yaraast import metrics
 
 assert metrics.DependencyGraphGenerator is None
-assert metrics.METRICS.new_complexity_analyzer().__class__.__name__ == "ComplexityAnalyzer"
-
-try:
-    metrics.METRICS.new_dependency_graph_generator()
-except RuntimeError as exc:
-    assert "graphviz" in str(exc)
-else:
-    raise AssertionError("dependency graph generator should require graphviz")
+assert metrics.ComplexityAnalyzer().__class__.__name__ == "ComplexityAnalyzer"
 """,
     )
 

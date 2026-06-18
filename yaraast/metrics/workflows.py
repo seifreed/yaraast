@@ -10,9 +10,10 @@ from typing import Any
 from yaraast.ast.base import YaraFile
 from yaraast.errors import ValidationError
 from yaraast.metrics.capabilities import get_capability
+from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.complexity_model import ComplexityMetrics
 from yaraast.metrics.dependency_graph_helpers import require_output_path
-from yaraast.metrics.facade import METRICS, DependencyGraphGenerator
+from yaraast.metrics.facade import DependencyGraphGenerator
 from yaraast.metrics.graphviz_errors import is_graphviz_error
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
@@ -27,8 +28,7 @@ class MetricsReportData:
 
 
 def analyze_complexity(ast: YaraFile) -> ComplexityMetrics:
-    analyzer = METRICS.new_complexity_analyzer()
-    return analyzer.analyze(ast)
+    return ComplexityAnalyzer().analyze(ast)
 
 
 def build_complexity_payload(metrics: ComplexityMetrics) -> dict[str, Any]:
@@ -67,7 +67,7 @@ def generate_dependency_graphs(
     generator = (
         generator_factory()
         if generator_factory is not DependencyGraphGenerator
-        else METRICS.new_dependency_graph_generator()
+        else DependencyGraphGenerator()
     )
     generated = []
 
@@ -96,9 +96,7 @@ def generate_html_tree(
     generator_factory: Callable[[], Any] = HtmlTreeGenerator,
 ) -> str:
     generator = (
-        generator_factory()
-        if generator_factory is not HtmlTreeGenerator
-        else METRICS.new_html_tree_generator()
+        generator_factory() if generator_factory is not HtmlTreeGenerator else HtmlTreeGenerator()
     )
     output_path = output_dir / f"{base_name}_tree.html"
     if interactive:
@@ -118,7 +116,7 @@ def generate_pattern_diagrams(
     generator = (
         generator_factory()
         if generator_factory is not StringDiagramGenerator
-        else METRICS.new_string_diagram_generator()
+        else StringDiagramGenerator()
     )
     generated = []
 
@@ -179,7 +177,7 @@ def generate_dependency_graph(
     if DependencyGraphGenerator is None:
         msg = "Graph visualization requires the 'graphviz' Python package."
         raise RuntimeError(msg)
-    generator = METRICS.new_dependency_graph_generator()
+    generator = DependencyGraphGenerator()
     return generate_dependency_graph_with_generator(
         generator, ast, graph_type, output_path, fmt, engine
     )
@@ -223,8 +221,9 @@ def determine_pattern_output_path(
 
 
 def generate_pattern_diagram(ast: YaraFile, pattern_type: str, output_path: str, fmt: str) -> str:
-    generator = METRICS.new_string_diagram_generator()
-    return generate_pattern_diagram_with_generator(generator, ast, pattern_type, output_path, fmt)
+    return generate_pattern_diagram_with_generator(
+        StringDiagramGenerator(), ast, pattern_type, output_path, fmt
+    )
 
 
 def generate_pattern_diagram_with_generator(
