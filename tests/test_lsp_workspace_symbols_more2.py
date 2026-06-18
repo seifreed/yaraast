@@ -6,9 +6,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, cast
 
-from lsprotocol.types import SymbolInformation
+from lsprotocol.types import Position, Range, SymbolInformation
 import pytest
 
+from yaraast.lsp.document_types import SymbolRecord
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
 
@@ -160,6 +161,40 @@ def test_workspace_symbols_cache_uses_nanosecond_mtime(
 
     assert "two" in second
     assert "one" not in second
+
+
+def test_workspace_symbols_returns_empty_list_on_mid_file_symbol_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    yara_file = tmp_path / "sample.yar"
+    yara_file.write_text("rule sample { condition: true }\n", encoding="utf-8")
+
+    provider = WorkspaceSymbolsProvider()
+    provider.set_workspace_root(tmp_path)
+
+    class _BrokenSymbol:
+        kind = "rule"
+        name = "broken"
+        container_name = None
+
+        def to_symbol_information(self) -> SymbolInformation:
+            raise RuntimeError("boom")
+
+    def fake_symbols(self: object) -> list[object]:
+        return [
+            SymbolRecord(
+                "sample",
+                "rule",
+                f"file://{yara_file}",
+                Range(Position(line=0, character=0), Position(line=0, character=6)),
+            ),
+            _BrokenSymbol(),
+        ]
+
+    monkeypatch.setattr("yaraast.lsp.document_context.DocumentContext.symbols", fake_symbols)
+
+    assert provider._get_symbols_from_file(yara_file) == []
+    assert provider.symbol_cache == {}
 
 
 @pytest.mark.parametrize("file_path", ["", "   ", "\t"])

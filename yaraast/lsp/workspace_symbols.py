@@ -173,8 +173,7 @@ class WorkspaceSymbolsProvider:
 
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
-            # Return empty list if parsing fails
-            pass
+            return []
 
         return list(symbols)
 
