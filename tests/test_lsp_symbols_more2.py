@@ -64,10 +64,12 @@ def test_symbols_helper_and_fallback_edges() -> None:
 rule bad {
   meta:
     author = "me"
+  strings:
+    $a = "x"
   condition:
 """)
     assert [symbol.name for symbol in broken] == ["bad"]
-    assert [child.name for child in (broken[0].children or [])] == ["meta", "condition"]
+    assert [child.name for child in (broken[0].children or [])] == ["meta", "strings", "condition"]
 
 
 def test_symbols_provider_handles_context_creation_failure(monkeypatch: pytest.MonkeyPatch) -> None:

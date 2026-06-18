@@ -183,12 +183,22 @@ def _build_text_meta_symbols(
     ctx: DocumentContext, lines: list[str], symbols: list[SymbolRecord]
 ) -> None:
     seen: set[tuple[str, str, str]] = set()
+    section_names = ("meta", "strings", "condition", "events", "match", "outcome", "options")
     for rule_name, rule_line, rule_end in _iter_text_rules(lines):
         meta_position = find_section_header_position(lines, "meta", rule_line, rule_end)
         if meta_position is None:
             continue
         meta_line = meta_position[0]
         stop_line = rule_end
+        for section_name in section_names:
+            if section_name == "meta":
+                continue
+            section_position = find_section_header_position(
+                lines, section_name, meta_line + 1, rule_end
+            )
+            if section_position is None:
+                continue
+            stop_line = min(stop_line, section_position[0] - 1)
         for line_num in range(meta_line + 1, stop_line + 1):
             line = lines[line_num]
             stripped = line.strip()
