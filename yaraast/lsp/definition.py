@@ -66,21 +66,6 @@ class DefinitionProvider:
             return None
         return None
 
-    def _find_string_definition(
-        self,
-        text: str,
-        identifier: str,
-        uri: str,
-    ) -> Location | None:
-        """Find the definition of a string identifier."""
-        doc = DocumentContext(uri, text)
-        return doc.find_string_definition(identifier)
-
-    def _find_rule_definition(self, text: str, rule_name: str, uri: str) -> Location | None:
-        """Find the definition of a rule."""
-        doc = DocumentContext(uri, text)
-        return doc.find_rule_definition(rule_name)
-
     def _find_include_definition(self, uri: str, include_path: str) -> Location | None:
         """Find the target file of an include."""
         target_uri = None

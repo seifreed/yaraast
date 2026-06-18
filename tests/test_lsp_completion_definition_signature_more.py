@@ -187,22 +187,6 @@ rule a {
     assert broken_definition is not None
     assert not isinstance(broken_definition, list)
     assert broken_definition.uri == uri
-    assert provider._find_rule_definition(broken, "a", uri) is not None
-
-
-def test_definition_provider_private_helpers_support_parse_errors() -> None:
-    provider = DefinitionProvider()
-    broken = """
-rule a {
-  strings:
-    $a = "unterminated
-  condition:
-    $a
-}
-""".lstrip()
-
-    assert provider._find_string_definition(broken, "$a", "file://test.yar") is not None
-    assert provider._find_rule_definition(broken, "a", "file://test.yar") is not None
 
 
 def test_definition_provider_include_helper_rejects_invalid_uri() -> None:
