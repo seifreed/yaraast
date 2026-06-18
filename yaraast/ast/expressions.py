@@ -24,8 +24,20 @@ _INT64_MAX = (1 << 63) - 1
 _UINT64_MASK = (1 << _INT64_BITS) - 1
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _RANGE_INTEGER_BINARY_OPERATORS = frozenset({"+", "-", "*", "%", "&", "|", "^", "<<", ">>"})
+_STRING_BINARY_OPERATORS = frozenset(
+    {
+        "contains",
+        "matches",
+        "startswith",
+        "endswith",
+        "icontains",
+        "istartswith",
+        "iendswith",
+        "iequals",
+    }
+)
 _RANGE_NON_INTEGER_BINARY_OPERATORS = frozenset(
-    {"<", "<=", ">", ">=", "==", "!=", "and", "or", "contains", "matches", "icontains", "iequals"}
+    {"<", "<=", ">", ">=", "==", "!=", "and", "or"} | _STRING_BINARY_OPERATORS
 )
 _VALID_BINARY_OPERATORS = frozenset(
     {
@@ -58,7 +70,7 @@ _VALID_BINARY_OPERATORS = frozenset(
         "%",
     }
 )
-_VALID_UNARY_OPERATORS = frozenset({"not", "-", "~"})
+_VALID_UNARY_OPERATORS = frozenset({"not", "-", "~", "%"})
 
 
 def _validate_expression_identifier(name: object) -> str:
@@ -124,8 +136,20 @@ def _range_shift_right_int64(left: int, right: int) -> int:
 
 
 def _is_definitely_non_integer_range_bound(value: Any) -> bool:
+    from yaraast.ast.conditions import (
+        AtExpression,
+        ForExpression,
+        ForOfExpression,
+        InExpression,
+        OfExpression,
+    )
+
     if isinstance(value, ParenthesesExpression):
         return _is_definitely_non_integer_range_bound(value.expression)
+    if isinstance(value, AtExpression | ForExpression | ForOfExpression | OfExpression):
+        return True
+    if isinstance(value, InExpression):
+        return not isinstance(value.subject, StringCount)
     if isinstance(value, BinaryExpression):
         if value.operator in _RANGE_NON_INTEGER_BINARY_OPERATORS:
             return True
@@ -143,6 +167,36 @@ def _is_definitely_non_integer_range_bound(value: Any) -> bool:
     return isinstance(
         value, BooleanLiteral | DoubleLiteral | StringLiteral | RegexLiteral | StringIdentifier
     )
+
+
+def _is_definitely_non_numeric_expression(value: Any) -> bool:
+    from yaraast.ast.conditions import (
+        AtExpression,
+        ForExpression,
+        ForOfExpression,
+        InExpression,
+        OfExpression,
+    )
+
+    if isinstance(value, ParenthesesExpression):
+        return _is_definitely_non_numeric_expression(value.expression)
+    if isinstance(value, AtExpression | ForExpression | ForOfExpression | OfExpression):
+        return True
+    if isinstance(value, InExpression):
+        return not isinstance(value.subject, StringCount)
+    if isinstance(value, UnaryExpression):
+        if value.operator in {"not", "%"}:
+            return True
+        return _is_definitely_non_numeric_expression(value.operand)
+    if isinstance(value, BinaryExpression):
+        if value.operator in _RANGE_NON_INTEGER_BINARY_OPERATORS:
+            return True
+        if value.operator in _RANGE_INTEGER_BINARY_OPERATORS | {"/", "\\"}:
+            return _is_definitely_non_numeric_expression(
+                value.left
+            ) or _is_definitely_non_numeric_expression(value.right)
+        return True
+    return isinstance(value, BooleanLiteral | StringLiteral | RegexLiteral | StringIdentifier)
 
 
 def _constant_range_integer_value(value: Any) -> int | None:
@@ -489,6 +543,12 @@ class UnaryExpression(Expression):
             msg = f"Invalid unary operator '{self.operator}'"
             raise ValueError(msg)
         _validate_expression(self.operand, "UnaryExpression.operand")
+        if self.operator == "-" and _is_definitely_non_numeric_expression(self.operand):
+            msg = "Operand of '-' must be numeric"
+            raise ValueError(msg)
+        if self.operator == "~" and _is_definitely_non_integer_range_bound(self.operand):
+            msg = "Operand of '~' must be integer"
+            raise ValueError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_unary_expression(self)

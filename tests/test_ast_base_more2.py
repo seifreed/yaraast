@@ -953,6 +953,10 @@ def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
             "Invalid binary operator",
         ),
         (UnaryExpression("!", BooleanLiteral(True)), "Invalid unary operator"),
+        (UnaryExpression("-", BooleanLiteral(True)), "Operand of '-' must be numeric"),
+        (UnaryExpression("-", StringLiteral("x")), "Operand of '-' must be numeric"),
+        (UnaryExpression("~", DoubleLiteral(1.5)), "Operand of '~' must be integer"),
+        (UnaryExpression("~", StringLiteral("x")), "Operand of '~' must be integer"),
         (
             StringOperatorExpression(StringLiteral("a"), "", StringLiteral("b")),
             "StringOperatorExpression operator must not be empty",
@@ -983,6 +987,20 @@ def test_direct_yarafile_analysis_rejects_invalid_condition_scalars(
 
     with pytest.raises((TypeError, ValueError), match=message):
         ExpressionOptimizer().optimize(malformed_file)
+
+
+def test_direct_yarafile_analysis_allows_percentage_unary_quantifier_expression() -> None:
+    valid_file = YaraFile(
+        rules=[
+            Rule(
+                "percentage_quantifier",
+                strings=[PlainString("$a", "needle")],
+                condition=OfExpression(UnaryExpression("%", IntegerLiteral(50)), "$a"),
+            )
+        ]
+    )
+
+    ExpressionOptimizer().optimize(valid_file)
 
 
 @pytest.mark.parametrize(
