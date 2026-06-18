@@ -551,6 +551,25 @@ def test_runtime_watched_files_preserve_open_document_on_delete(tmp_path: Path) 
     assert current.text.startswith("rule sample")
 
 
+def test_runtime_open_document_promotes_synthetic_buffer_to_file_backed(
+    tmp_path: Path,
+) -> None:
+    sample = tmp_path / "sample.yar"
+    uri = path_to_uri(sample)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.open_document(uri, "rule sample { condition: true }\n")
+
+    sample.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    runtime.open_document(uri, sample.read_text(encoding="utf-8"))
+    sample.unlink()
+    runtime.close_document(uri)
+
+    assert runtime.get_document(uri, load_workspace=False) is None
+    assert runtime.workspace_symbols("sample") == []
+
+
 def test_runtime_closing_deleted_open_file_drops_workspace_entry(tmp_path: Path) -> None:
     sample = tmp_path / "sample.yar"
     sample.write_text("rule sample { condition: true }\n", encoding="utf-8")

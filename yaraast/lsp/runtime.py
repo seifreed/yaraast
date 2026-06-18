@@ -188,6 +188,10 @@ class LspRuntime:
             self._dirty_documents.add(uri)
         self.cache.bump_generation()
 
+    def _document_is_backed_by_file(self, uri: str) -> bool:
+        path = uri_to_path(uri)
+        return path is not None and path_exists(path) and path_is_file(path)
+
     def _sync_document_to_index(self, uri: str) -> None:
         if not self.config.cache_workspace:
             return
@@ -205,19 +209,20 @@ class LspRuntime:
         uri = _require_document_uri(uri)
         ctx = self.documents.get(uri)
         if ctx is None:
-            path = uri_to_path(uri)
             ctx = DocumentContext(
                 uri,
                 text,
                 version,
                 is_open=True,
-                backed_by_file=path is not None and path_exists(path) and path_is_file(path),
+                backed_by_file=self._document_is_backed_by_file(uri),
                 language_mode=self.config.language_mode,
             )
             self.documents[uri] = ctx
         else:
             ctx.set_language_mode(self.config.language_mode)
             ctx.update(text, version, is_open=True)
+            if self._document_is_backed_by_file(uri):
+                ctx.backed_by_file = True
         self._mark_dirty(uri)
         return ctx
 
@@ -234,6 +239,8 @@ class LspRuntime:
             return self.open_document(uri, text)
         if text is not None:
             ctx.update(text, ctx.version, is_open=True)
+            if self._document_is_backed_by_file(uri):
+                ctx.backed_by_file = True
             self._mark_dirty(uri)
         self._sync_document_to_index(uri)
         return ctx
@@ -373,6 +380,8 @@ class LspRuntime:
             if path_exists(path) and path_is_file(path):
                 ctx = self.documents.get(uri)
                 if ctx is not None and ctx.is_open:
+                    if self._document_is_backed_by_file(uri):
+                        ctx.backed_by_file = True
                     self._sync_document_to_index(uri)
                     continue
                 try:
