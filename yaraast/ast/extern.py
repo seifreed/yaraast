@@ -39,6 +39,12 @@ def _validate_yara_identifier(name: object, kind: str) -> str:
     raise ValueError(msg)
 
 
+def _validate_quoted_field_text(value: str, field_name: str) -> None:
+    if '"' in value or any(ord(character) < 0x20 or ord(character) == 0x7F for character in value):
+        msg = f"{field_name} must not contain quotes or control characters"
+        raise ValueError(msg)
+
+
 def _validate_yara_identifier_path(path: object, kind: str) -> str:
     if not isinstance(path, str):
         msg = f"{kind.capitalize()} identifier must be a string for libyara output"
@@ -194,7 +200,8 @@ class ExternImport(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate extern import fields before direct analysis."""
-        _require_nonempty_string(self.module_path, "ExternImport module_path")
+        module_path = _require_nonempty_string(self.module_path, "ExternImport module_path")
+        _validate_quoted_field_text(module_path, "ExternImport module_path")
         _require_optional_nonempty_string(self.alias, "ExternImport alias")
         if self.alias is not None:
             _validate_yara_identifier(self.alias, "import alias")

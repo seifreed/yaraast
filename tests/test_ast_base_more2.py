@@ -488,6 +488,49 @@ def test_import_validate_structure_rejects_invalid_alias(alias: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("malformed_file", "message"),
+    [
+        (
+            YaraFile(imports=[Import('bad"module')], rules=[Rule("bad_import")]),
+            "Import module must not contain quotes or control characters",
+        ),
+        (
+            YaraFile(imports=[Import("bad\nmodule")], rules=[Rule("bad_import")]),
+            "Import module must not contain quotes or control characters",
+        ),
+        (
+            YaraFile(includes=[Include('bad"path')], rules=[Rule("bad_include")]),
+            "Include path must not contain quotes or control characters",
+        ),
+        (
+            YaraFile(includes=[Include("bad\x00path")], rules=[Rule("bad_include")]),
+            "Include path must not contain quotes or control characters",
+        ),
+        (
+            YaraFile(
+                extern_imports=[ExternImport('bad"module')],
+                rules=[Rule("bad_extern_import")],
+            ),
+            "ExternImport module_path must not contain quotes or control characters",
+        ),
+        (
+            YaraFile(
+                extern_imports=[ExternImport("bad\x7fmodule")],
+                rules=[Rule("bad_extern_import")],
+            ),
+            "ExternImport module_path must not contain quotes or control characters",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_quoted_fields(
+    malformed_file: YaraFile,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
     ("node", "message"),
     [
         (Rule("bad-name"), "Invalid rule identifier"),

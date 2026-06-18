@@ -43,6 +43,12 @@ def _validate_yara_identifier(name: object, kind: str) -> str:
     raise ValueError(msg)
 
 
+def _validate_quoted_field_text(value: str, field_name: str) -> None:
+    if '"' in value or any(ord(character) < 0x20 or ord(character) == 0x7F for character in value):
+        msg = f"{field_name} must not contain quotes or control characters"
+        raise ValueError(msg)
+
+
 @dataclass
 class Import(ASTNode):
     """Import statement node."""
@@ -52,7 +58,8 @@ class Import(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate import scalar fields before direct analysis."""
-        _require_nonempty_string(self.module, "Import module")
+        module = _require_nonempty_string(self.module, "Import module")
+        _validate_quoted_field_text(module, "Import module")
         if self.alias is not None:
             _require_optional_nonempty_string(self.alias, "Import alias")
             _validate_yara_identifier(self.alias, "import alias")
@@ -69,7 +76,8 @@ class Include(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate include scalar fields before direct analysis."""
-        _require_nonempty_string(self.path, "Include path")
+        path = _require_nonempty_string(self.path, "Include path")
+        _validate_quoted_field_text(path, "Include path")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_include(self)
