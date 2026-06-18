@@ -55,6 +55,7 @@ class Import(ASTNode):
         _require_nonempty_string(self.module, "Import module")
         if self.alias is not None:
             _require_optional_nonempty_string(self.alias, "Import alias")
+            _validate_yara_identifier(self.alias, "import alias")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_import(self)

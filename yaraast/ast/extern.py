@@ -196,6 +196,8 @@ class ExternImport(ASTNode):
         """Validate extern import fields before direct analysis."""
         _require_nonempty_string(self.module_path, "ExternImport module_path")
         _require_optional_nonempty_string(self.alias, "ExternImport alias")
+        if self.alias is not None:
+            _validate_yara_identifier(self.alias, "import alias")
         _normalize_string_list(self.rules, "ExternImport rules")
         _validate_rule_identifiers(self.rules, "extern rule")
 

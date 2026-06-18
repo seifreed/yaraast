@@ -466,11 +466,25 @@ def test_expression_validation_rejects_invalid_postfix_receivers(
             ExternImport("mods.yar", rules=["bad-rule"]),
             "Invalid extern rule identifier",
         ),
+        (
+            ExternImport("mods.yar", alias="bad-name"),
+            "Invalid import alias identifier",
+        ),
+        (
+            ExternImport("mods.yar", alias="for"),
+            "Invalid import alias identifier",
+        ),
     ],
 )
 def test_extern_validation_rejects_invalid_identifiers(node: Any, message: str) -> None:
     with pytest.raises(ValueError, match=message):
         node.validate_structure()
+
+
+@pytest.mark.parametrize("alias", ["bad-name", "for"])
+def test_import_validate_structure_rejects_invalid_alias(alias: str) -> None:
+    with pytest.raises(ValueError, match="Invalid import alias identifier"):
+        Import("pe", alias=alias).validate_structure()
 
 
 @pytest.mark.parametrize(
