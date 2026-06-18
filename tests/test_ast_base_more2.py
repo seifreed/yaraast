@@ -952,6 +952,22 @@ def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
             BinaryExpression(IntegerLiteral(1), "???", IntegerLiteral(2)),
             "Invalid binary operator",
         ),
+        (
+            BinaryExpression(BooleanLiteral(True), "+", IntegerLiteral(1)),
+            r"Left operand of '\+' must be numeric",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), "+", StringLiteral("x")),
+            r"Right operand of '\+' must be numeric",
+        ),
+        (
+            BinaryExpression(DoubleLiteral(1.5), "%", IntegerLiteral(2)),
+            "Left operand of '%' must be integer",
+        ),
+        (
+            BinaryExpression(IntegerLiteral(1), "&", BooleanLiteral(False)),
+            "Right operand of '&' must be integer",
+        ),
         (UnaryExpression("!", BooleanLiteral(True)), "Invalid unary operator"),
         (UnaryExpression("-", BooleanLiteral(True)), "Operand of '-' must be numeric"),
         (UnaryExpression("-", StringLiteral("x")), "Operand of '-' must be numeric"),

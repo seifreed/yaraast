@@ -24,6 +24,8 @@ _INT64_MAX = (1 << 63) - 1
 _UINT64_MASK = (1 << _INT64_BITS) - 1
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _RANGE_INTEGER_BINARY_OPERATORS = frozenset({"+", "-", "*", "%", "&", "|", "^", "<<", ">>"})
+_NUMERIC_BINARY_OPERATORS = frozenset({"+", "-", "*", "/", "\\"})
+_INTEGER_BINARY_OPERATORS = frozenset({"%", "&", "|", "^", "<<", ">>"})
 _STRING_BINARY_OPERATORS = frozenset(
     {
         "contains",
@@ -524,6 +526,20 @@ class BinaryExpression(Expression):
             msg = f"Invalid binary operator '{self.operator}'"
             raise ValueError(msg)
         _validate_expression(self.right, "BinaryExpression.right")
+        if self.operator in _NUMERIC_BINARY_OPERATORS:
+            if _is_definitely_non_numeric_expression(self.left):
+                msg = f"Left operand of '{self.operator}' must be numeric"
+                raise ValueError(msg)
+            if _is_definitely_non_numeric_expression(self.right):
+                msg = f"Right operand of '{self.operator}' must be numeric"
+                raise ValueError(msg)
+        if self.operator in _INTEGER_BINARY_OPERATORS:
+            if _is_definitely_non_integer_range_bound(self.left):
+                msg = f"Left operand of '{self.operator}' must be integer"
+                raise ValueError(msg)
+            if _is_definitely_non_integer_range_bound(self.right):
+                msg = f"Right operand of '{self.operator}' must be integer"
+                raise ValueError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_binary_expression(self)
