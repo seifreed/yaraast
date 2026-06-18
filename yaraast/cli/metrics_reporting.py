@@ -144,21 +144,18 @@ def _display_text_pattern_analysis(
 
 def _display_pattern_statistics(generator: Any) -> None:  # generator typing: protocol-compatible
     """Display pattern statistics if available."""
-    try:
-        pattern_stats = generator.get_pattern_statistics()
-        if pattern_stats:
-            click.echo("\n📊 Pattern Statistics:")
-            click.echo(f"  Total patterns: {pattern_stats['total_patterns']}")
-            click.echo(f"  By type: {pattern_stats['by_type']}")
-            click.echo(f"  Complexity distribution: {pattern_stats['complexity_distribution']}")
+    pattern_stats = generator.get_pattern_statistics()
+    if pattern_stats:
+        click.echo("\n📊 Pattern Statistics:")
+        click.echo(f"  Total patterns: {pattern_stats['total_patterns']}")
+        click.echo(f"  By type: {pattern_stats['by_type']}")
+        click.echo(f"  Complexity distribution: {pattern_stats['complexity_distribution']}")
 
-            if pattern_stats.get("pattern_lengths"):
-                lengths = pattern_stats["pattern_lengths"]
-                click.echo(
-                    f"  Length stats: min={lengths['min']}, max={lengths['max']}, avg={lengths['avg']:.1f}",
-                )
-    except (ValueError, TypeError, AttributeError):
-        pass
+        if pattern_stats.get("pattern_lengths"):
+            lengths = pattern_stats["pattern_lengths"]
+            click.echo(
+                f"  Length stats: min={lengths['min']}, max={lengths['max']}, avg={lengths['avg']:.1f}",
+            )
 
 
 def _require_string_output_format(format: object) -> str:

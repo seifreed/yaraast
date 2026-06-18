@@ -568,13 +568,18 @@ def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[
     _display_pattern_statistics(
         type("NoStats", (), {"get_pattern_statistics": lambda self: None})()
     )
-    _display_pattern_statistics(
-        type(
-            "BadStats",
-            (),
-            {"get_pattern_statistics": lambda self: (_ for _ in ()).throw(AttributeError("boom"))},
-        )(),
-    )
+    with pytest.raises(AttributeError):
+        _display_pattern_statistics(
+            type(
+                "BadStats",
+                (),
+                {
+                    "get_pattern_statistics": lambda self: (_ for _ in ()).throw(
+                        AttributeError("boom"),
+                    ),
+                },
+            )(),
+        )
     with pytest.raises(KeyError):
         _display_pattern_statistics(
             type(
