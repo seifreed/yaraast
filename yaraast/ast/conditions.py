@@ -75,6 +75,58 @@ def _validate_string_set_text(value: str, field_name: str) -> None:
     normalize_string_reference_id(value, allow_wildcard=True)
 
 
+def _classify_string_set_value(value: Any) -> str | None:
+    from yaraast.ast.expressions import (
+        Identifier,
+        ParenthesesExpression,
+        SetExpression,
+        StringIdentifier,
+        StringLiteral,
+        StringWildcard,
+    )
+
+    if isinstance(value, ParenthesesExpression):
+        return _classify_string_set_value(value.expression)
+    if isinstance(value, SetExpression):
+        return _classify_string_set_items(value.elements)
+    if isinstance(value, list | tuple | set | frozenset):
+        return _classify_string_set_items(value)
+    if isinstance(value, StringIdentifier):
+        return "string"
+    if isinstance(value, StringWildcard):
+        if isinstance(value.pattern, str) and not value.pattern.startswith("$"):
+            return "rule"
+        return "string"
+    if isinstance(value, StringLiteral):
+        return "string" if isinstance(value.value, str) else None
+    if isinstance(value, Identifier):
+        if isinstance(value.name, str) and value.name != "them" and not value.name.startswith("$"):
+            return "rule"
+        return "string"
+    if isinstance(value, str):
+        return "string"
+    return None
+
+
+def _classify_string_set_items(values: Any) -> str | None:
+    kind: str | None = None
+    for value in values:
+        value_kind = _classify_string_set_value(value)
+        if value_kind is None:
+            return None
+        if kind is None:
+            kind = value_kind
+        elif kind != value_kind:
+            return "mixed"
+    return kind
+
+
+def _validate_consistent_string_set_kind(value: Any) -> None:
+    if _classify_string_set_value(value) == "mixed":
+        msg = "Mixed string and rule set items are not valid"
+        raise ValueError(msg)
+
+
 def _validate_string_set(value: Any, field_name: str) -> None:
     if value is None or isinstance(value, dict):
         msg = f"{field_name} is required"
@@ -159,6 +211,7 @@ class ForOfExpression(Condition):
         """Validate for-of fields before direct analysis."""
         _validate_quantifier(self.quantifier, "ForOfExpression quantifier")
         _validate_string_set(self.string_set, "ForOfExpression string_set")
+        _validate_consistent_string_set_kind(self.string_set)
         if self.condition is not None:
             _validate_required_expression(
                 self.condition,
@@ -231,6 +284,7 @@ class OfExpression(Condition):
         """Validate of-expression fields before direct analysis."""
         _validate_quantifier(self.quantifier, "OfExpression quantifier")
         _validate_string_set(self.string_set, "OfExpression string_set")
+        _validate_consistent_string_set_kind(self.string_set)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_of_expression(self)

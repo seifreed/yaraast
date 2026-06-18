@@ -409,6 +409,47 @@ def test_direct_yarafile_analysis_rejects_invalid_raw_condition_string_reference
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (OfExpression("any", [Identifier("helper"), "$a"]), "Mixed string and rule set"),
+        (
+            OfExpression("any", SetExpression([Identifier("helper"), Identifier("$a")])),
+            "Mixed string and rule set",
+        ),
+        (OfExpression("any", [StringWildcard("helper*"), "$a"]), "Mixed string and rule set"),
+        (
+            ForOfExpression("any", [Identifier("helper"), "$a"], None),
+            "Mixed string and rule set",
+        ),
+        (
+            ForOfExpression(
+                "any",
+                SetExpression([StringWildcard("helper*"), Identifier("$a")]),
+                BooleanLiteral(True),
+            ),
+            "Mixed string and rule set",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_rule_set_condition_combinations(
+    condition: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(
+        rules=[
+            Rule(
+                "bad_rule_set_condition",
+                strings=[PlainString("$a", "needle")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
     ("node", "message"),
     [
         (
