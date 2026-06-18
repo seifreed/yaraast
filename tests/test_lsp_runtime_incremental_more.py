@@ -176,6 +176,24 @@ def test_runtime_update_config_refreshes_closed_docs_when_cache_reenabled(
     assert "old_name" not in names
 
 
+def test_runtime_update_config_drops_deleted_docs_when_cache_reenabled(
+    tmp_path: Path,
+) -> None:
+    sample = tmp_path / "sample.yar"
+    sample.write_text("rule old_name { condition: true }\n", encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.get_document(path_to_uri(sample))
+
+    runtime.update_config({"YARA": {"cacheWorkspace": False}})
+    sample.unlink()
+    runtime.update_config({"YARA": {"cacheWorkspace": True}})
+
+    names = {symbol.name for symbol in runtime.workspace_symbols("")}
+    assert "old_name" not in names
+
+
 def test_runtime_get_document_invalidates_workspace_symbol_cache(tmp_path: Path) -> None:
     rule_file = tmp_path / "sample.yar"
     rule_file.write_text("rule loaded_later { condition: true }\n", encoding="utf-8")
