@@ -164,6 +164,31 @@ def test_simple_roundtrip_rejects_invalid_xor_modifier_strings() -> None:
         serializer.serialize(ast)
 
 
+def test_simple_roundtrip_rejects_utf8_surrogate_modifier_strings() -> None:
+    serializer = SimpleRoundtripSerializer()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_modifier",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("base64", "\ud800")],
+                    )
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    with pytest.raises(
+        SerializationError,
+        match="String modifier value text must be UTF-8 encodable",
+    ):
+        serializer.serialize(ast)
+
+
 def test_simple_roundtrip_validator() -> None:
     serializer = SimpleRoundtripSerializer()
     rule = Rule(name="r1", condition=IntegerLiteral(value=1))

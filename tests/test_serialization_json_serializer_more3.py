@@ -1747,7 +1747,7 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
                     )
                 ]
             ),
-            "StringModifier value must be a string, number, tuple, or null",
+            "String modifier value must be a string, number, tuple, or null",
         ),
         (
             YaraFile(
@@ -1765,7 +1765,7 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
                     )
                 ]
             ),
-            "StringModifier tuple value must contain two integers",
+            "String modifier tuple value must contain two integers",
         ),
         (
             YaraFile(
@@ -1783,7 +1783,7 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
                     )
                 ]
             ),
-            "StringModifier value must be finite",
+            "String modifier value must be finite",
         ),
         (
             YaraFile(
@@ -2428,6 +2428,31 @@ def test_json_serializer_rejects_invalid_string_modifier_values() -> None:
     )
 
     with pytest.raises(SerializationError, match="xor value must be a byte"):
+        serializer.serialize(ast)
+
+
+def test_json_serializer_rejects_utf8_surrogate_modifier_strings() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_modifier",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("base64", "\ud800")],
+                    )
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(
+        SerializationError,
+        match="String modifier value text must be UTF-8 encodable",
+    ):
         serializer.serialize(ast)
 
 

@@ -148,6 +148,8 @@ class WorkspaceSymbolsProvider:
 
             file_uri = path_to_uri(file_path)
             doc = DocumentContext(file_uri, content)
+            if doc.parse_error() is not None:
+                return []
             for record in doc.symbols():
                 if record.kind not in {"rule", "string"}:
                     continue

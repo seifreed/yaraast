@@ -707,7 +707,7 @@ def test_protobuf_serializer_rejects_non_string_file_and_rule_fields(
                     ),
                 ],
             ),
-            "xor value must be a byte",
+            "String modifier value text must be UTF-8 encodable",
         ),
         (
             YaraFile(

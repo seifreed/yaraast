@@ -187,6 +187,27 @@ rule a {
     assert provider._find_rule_definition(broken, "a", uri) is None
 
 
+def test_definition_provider_private_helpers_reject_parse_errors() -> None:
+    provider = DefinitionProvider()
+    broken = """
+rule a {
+  strings:
+    $a = "unterminated
+  condition:
+    $a
+}
+""".lstrip()
+
+    assert provider._find_string_definition(broken, "$a", "file://test.yar") is None
+    assert provider._find_rule_definition(broken, "a", "file://test.yar") is None
+
+
+def test_definition_provider_include_helper_rejects_invalid_uri() -> None:
+    provider = DefinitionProvider()
+
+    assert provider._find_include_definition("file://", "common.yar") is None
+
+
 @pytest.mark.parametrize("text", [None, 1, b"rule a", object()])
 def test_definition_rejects_non_string_text(text: Any) -> None:
     provider = DefinitionProvider()

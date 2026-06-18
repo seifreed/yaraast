@@ -107,16 +107,21 @@ if TYPE_CHECKING:
 
 
 def _serialize_modifier_value(value: Any) -> str | int | float | list[int] | None:
-    if value is None or isinstance(value, str):
+    if value is None:
+        return value
+    if isinstance(value, str):
+        if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+            msg = "String modifier value text must be UTF-8 encodable"
+            raise SerializationError(msg)
         return value
     if isinstance(value, bool):
-        msg = "StringModifier value must be a string, number, tuple, or null"
+        msg = "String modifier value must be a string, number, tuple, or null"
         raise SerializationError(msg)
     if isinstance(value, int):
         return value
     if isinstance(value, float):
         if not math.isfinite(value):
-            msg = "StringModifier value must be finite"
+            msg = "String modifier value must be finite"
             raise SerializationError(msg)
         return value
     if isinstance(value, tuple):
@@ -125,10 +130,10 @@ def _serialize_modifier_value(value: Any) -> str | int | float | list[int] | Non
             or not all(isinstance(item, int) for item in value)
             or any(isinstance(item, bool) for item in value)
         ):
-            msg = "StringModifier tuple value must contain two integers"
+            msg = "String modifier tuple value must contain two integers"
             raise SerializationError(msg)
         return list(value)
-    msg = "StringModifier value must be a string, number, tuple, or null"
+    msg = "String modifier value must be a string, number, tuple, or null"
     raise SerializationError(msg)
 
 
@@ -375,9 +380,10 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_string_modifier(self, node) -> dict[str, Any]:
         modifier_type = getattr(node, "modifier_type", None)
         value = getattr(node, "value", None)
-        if modifier_type == StringModifierType.XOR and isinstance(value, str):
+        serialized_value = _serialize_modifier_value(value)
+        if modifier_type == StringModifierType.XOR and isinstance(serialized_value, str):
             try:
-                _validate_xor_modifier_value(value)
+                _validate_xor_modifier_value(serialized_value)
             except (TypeError, ValueError) as exc:
                 raise SerializationError(str(exc)) from exc
         name = getattr(modifier_type, "value", None)
@@ -389,7 +395,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node(
             "StringModifier",
             name=_serialize_required_nonempty_string(name, "StringModifier name"),
-            value=_serialize_modifier_value(value),
+            value=serialized_value,
         )
 
     def visit_hex_token(self, node) -> dict[str, Any]:

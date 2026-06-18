@@ -66,6 +66,31 @@ def test_workspace_symbols_rejects_inaccessible_workspace_root() -> None:
         provider.set_workspace_root("a" * 5000)
 
 
+def test_workspace_symbols_rejects_pathlike_with_non_string_fspath() -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    class _BadPathLike:
+        def __fspath__(self) -> bytes:
+            return b"sample"
+
+    with pytest.raises(TypeError, match="root_path must be a string or path-like object"):
+        provider.set_workspace_root(cast(Any, _BadPathLike()))
+
+
+def test_workspace_symbols_handles_is_dir_oserror(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    def fake_is_dir(self: Path) -> bool:
+        raise OSError("boom")
+
+    monkeypatch.setattr(Path, "is_dir", fake_is_dir)
+
+    with pytest.raises(ValueError, match="path could not be accessed"):
+        provider.set_workspace_root(tmp_path)
+
+
 def test_workspace_symbols_accepts_pathlike_workspace_root(tmp_path: Path) -> None:
     provider = WorkspaceSymbolsProvider()
 

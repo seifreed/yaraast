@@ -614,15 +614,15 @@ def _protobuf_string_modifier_list(values, context: str) -> list:
         if not isinstance(item, StringModifier | str):
             msg = f"{context} item must be StringModifier or string"
             raise SerializationError(msg)
-        if (
-            isinstance(item, StringModifier)
-            and item.modifier_type == StringModifierType.XOR
-            and isinstance(item.value, str)
-        ):
-            try:
-                _validate_xor_modifier_value(item.value)
-            except (TypeError, ValueError) as exc:
-                raise SerializationError(str(exc)) from exc
+        if isinstance(item, StringModifier):
+            from yaraast.serialization._serialization_primitives import _serialize_modifier_value
+
+            serialized_value = _serialize_modifier_value(item.value)
+            if item.modifier_type == StringModifierType.XOR and isinstance(serialized_value, str):
+                try:
+                    _validate_xor_modifier_value(serialized_value)
+                except (TypeError, ValueError) as exc:
+                    raise SerializationError(str(exc)) from exc
     return items
 
 

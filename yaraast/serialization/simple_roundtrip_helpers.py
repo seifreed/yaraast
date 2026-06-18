@@ -787,18 +787,20 @@ def _serialize_modifiers(modifiers: Any, context: str) -> list[dict[str, Any]]:
         raise SerializationError(msg)
     serialized = []
     for modifier in modifiers:
+        modifier_value = getattr(modifier, "value", None)
+        _serialize_modifier_value(modifier_value)
         if (
             isinstance(modifier, StringModifier)
             and modifier.modifier_type == StringModifierType.XOR
-            and isinstance(modifier.value, str)
+            and isinstance(modifier_value, str)
         ):
             try:
-                _validate_xor_modifier_value(modifier.value)
+                _validate_xor_modifier_value(modifier_value)
             except (TypeError, ValueError) as exc:
                 raise SerializationError(str(exc)) from exc
         data = {
             "name": _serialize_string_modifier_name(modifier),
-            "value": _serialize_modifier_value(getattr(modifier, "value", None)),
+            "value": _serialize_modifier_value(modifier_value),
         }
         if isinstance(modifier, StringModifier):
             data = _with_node_metadata(modifier, data)

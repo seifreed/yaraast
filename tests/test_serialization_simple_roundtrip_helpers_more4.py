@@ -2376,11 +2376,11 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
         ),
         (
             PlainString(identifier="$a", value="abc", modifiers=[invalid_tuple_modifier]),
-            "StringModifier tuple value must contain two integers",
+            "String modifier tuple value must contain two integers",
         ),
         (
             PlainString(identifier="$a", value="abc", modifiers=[invalid_float_modifier]),
-            "StringModifier value must be finite",
+            "String modifier value must be finite",
         ),
         (
             HexString(identifier=cast(Any, 123), tokens=[]),

@@ -391,16 +391,21 @@ def _validate_location_metadata(
 
 
 def _serialize_modifier_value(value: Any) -> str | int | float | list[int] | None:
-    if value is None or isinstance(value, str):
+    if value is None:
+        return value
+    if isinstance(value, str):
+        if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+            msg = "String modifier value text must be UTF-8 encodable"
+            raise SerializationError(msg)
         return value
     if isinstance(value, bool):
-        msg = "StringModifier value must be a string, number, tuple, or null"
+        msg = "String modifier value must be a string, number, tuple, or null"
         raise SerializationError(msg)
     if isinstance(value, int):
         return value
     if isinstance(value, float):
         if not math.isfinite(value):
-            msg = "StringModifier value must be finite"
+            msg = "String modifier value must be finite"
             raise SerializationError(msg)
         return value
     if isinstance(value, tuple):
@@ -409,10 +414,10 @@ def _serialize_modifier_value(value: Any) -> str | int | float | list[int] | Non
             or not all(isinstance(item, int) for item in value)
             or any(isinstance(item, bool) for item in value)
         ):
-            msg = "StringModifier tuple value must contain two integers"
+            msg = "String modifier tuple value must contain two integers"
             raise SerializationError(msg)
         return list(value)
-    msg = "StringModifier value must be a string, number, tuple, or null"
+    msg = "String modifier value must be a string, number, tuple, or null"
     raise SerializationError(msg)
 
 

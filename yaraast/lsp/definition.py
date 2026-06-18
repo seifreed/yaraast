@@ -43,6 +43,8 @@ class DefinitionProvider:
             if self.runtime and uri
             else DocumentContext(uri, text)
         )
+        if doc.parse_error() is not None:
+            return None
         resolved = (
             self.runtime.resolve_symbol(uri, text, position)
             if self.runtime and uri
@@ -70,11 +72,17 @@ class DefinitionProvider:
         uri: str,
     ) -> Location | None:
         """Find the definition of a string identifier."""
-        return DocumentContext(uri, text).find_string_definition(identifier)
+        doc = DocumentContext(uri, text)
+        if doc.parse_error() is not None:
+            return None
+        return doc.find_string_definition(identifier)
 
     def _find_rule_definition(self, text: str, rule_name: str, uri: str) -> Location | None:
         """Find the definition of a rule."""
-        return DocumentContext(uri, text).find_rule_definition(rule_name)
+        doc = DocumentContext(uri, text)
+        if doc.parse_error() is not None:
+            return None
+        return doc.find_rule_definition(rule_name)
 
     def _find_include_definition(self, uri: str, include_path: str) -> Location | None:
         """Find the target file of an include."""
