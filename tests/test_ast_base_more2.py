@@ -25,6 +25,7 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     MemberAccess,
     ParenthesesExpression,
+    RangeExpression,
     RegexLiteral,
     SetExpression,
     StringCount,
@@ -439,6 +440,51 @@ def test_direct_yarafile_analysis_rejects_invalid_rule_set_condition_combination
         rules=[
             Rule(
                 "bad_rule_set_condition",
+                strings=[PlainString("$a", "needle")],
+                condition=condition,
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            AtExpression(OfExpression("any", Identifier("helper")), IntegerLiteral(0)),
+            "Rule sets cannot use at/in restrictions",
+        ),
+        (
+            InExpression(
+                OfExpression("any", StringWildcard("helper*")),
+                RangeExpression(IntegerLiteral(0), IntegerLiteral(1)),
+            ),
+            "Rule sets cannot use at/in restrictions",
+        ),
+        (
+            AtExpression(OfExpression(DoubleLiteral(0.5), Identifier("them")), IntegerLiteral(0)),
+            "Percentage of-expressions do not support at/in restrictions",
+        ),
+        (
+            InExpression(
+                OfExpression(StringLiteral("50%"), Identifier("them")),
+                RangeExpression(IntegerLiteral(0), IntegerLiteral(1)),
+            ),
+            "Percentage of-expressions do not support at/in restrictions",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_restricted_of_expressions(
+    condition: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(
+        rules=[
+            Rule(
+                "bad_restricted_of",
                 strings=[PlainString("$a", "needle")],
                 condition=condition,
             )

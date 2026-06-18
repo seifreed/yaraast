@@ -127,6 +127,40 @@ def _validate_consistent_string_set_kind(value: Any) -> None:
         raise ValueError(msg)
 
 
+def _is_percentage_quantifier(value: Any) -> bool:
+    from yaraast.ast.expressions import (
+        DoubleLiteral,
+        ParenthesesExpression,
+        StringLiteral,
+        UnaryExpression,
+    )
+
+    if isinstance(value, float):
+        return True
+    if isinstance(value, str):
+        return value.endswith("%")
+    if isinstance(value, DoubleLiteral):
+        return True
+    if isinstance(value, StringLiteral):
+        return isinstance(value.value, str) and value.value.endswith("%")
+    if isinstance(value, UnaryExpression) and value.operator == "%":
+        return True
+    if isinstance(value, ParenthesesExpression):
+        return _is_percentage_quantifier(value.expression)
+    return False
+
+
+def _validate_restricted_of_expression(value: Any) -> None:
+    if not isinstance(value, OfExpression):
+        return
+    if _is_percentage_quantifier(value.quantifier):
+        msg = "Percentage of-expressions do not support at/in restrictions"
+        raise ValueError(msg)
+    if _classify_string_set_value(value.string_set) == "rule":
+        msg = "Rule sets cannot use at/in restrictions"
+        raise ValueError(msg)
+
+
 def _validate_string_set(value: Any, field_name: str) -> None:
     if value is None or isinstance(value, dict):
         msg = f"{field_name} is required"
@@ -236,6 +270,7 @@ class AtExpression(Condition):
             "AtExpression string_id",
             "AtExpression string_id must be a string or expression",
         )
+        _validate_restricted_of_expression(self.string_id)
         _validate_required_expression(self.offset, "'at' offset must be an AST node")
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -267,6 +302,7 @@ class InExpression(Condition):
             "InExpression subject",
             "InExpression subject must be a string or expression",
         )
+        _validate_restricted_of_expression(self.subject)
         _validate_required_expression(self.range, "'in' range must be an AST node")
 
     def accept(self, visitor: _VisitorType) -> Any:
