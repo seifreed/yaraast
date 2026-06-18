@@ -52,9 +52,9 @@ class RuleOptimizer:
             expr_opts = 0
             for rule in current.rules:
                 if rule.condition is not None:
-                    before_count = self.expression_optimizer.optimization_count
+                    self.expression_optimizer.optimization_count = 0
                     rule.condition = self.expression_optimizer.optimize(rule.condition)
-                    expr_opts += self.expression_optimizer.optimization_count - before_count
+                    expr_opts += self.expression_optimizer.optimization_count
             total_expr_opts += expr_opts
 
             # Dead code elimination pass

@@ -143,6 +143,17 @@ def test_parentheses_elimination_counts_as_optimization() -> None:
     assert opt.optimization_count == 1
 
 
+def test_expression_optimizer_resets_count_between_expression_calls() -> None:
+    opt = ExpressionOptimizer()
+
+    first = opt.optimize(BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False)))
+    second = opt.optimize(BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(True)))
+
+    assert first == BooleanLiteral(False)
+    assert second == BooleanLiteral(True)
+    assert opt.optimization_count == 1
+
+
 def test_defined_expression_visits_nested_expression() -> None:
     opt = ExpressionOptimizer()
     expr = DefinedExpression(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)))

@@ -235,9 +235,9 @@ class ExpressionOptimizer(ASTTransformer):
             If Expression: optimized Expression
             If YaraFile: tuple of (optimized YaraFile, optimization count)
         """
+        self.optimization_count = 0
         if isinstance(node, YaraFile):
             node.validate_structure()
-            self.optimization_count = 0
             optimized_rules: list[Rule] = []
             for rule in node.rules:
                 optimized_rule = self._optimize_rule(rule)
