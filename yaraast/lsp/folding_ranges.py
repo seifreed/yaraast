@@ -9,7 +9,12 @@ from lsprotocol.types import FoldingRange, FoldingRangeKind
 
 from yaraast.ast.rules import Rule
 from yaraast.lsp.parsing import parse_for_lsp
-from yaraast.lsp.structure import find_rule_end, find_rule_line, find_section_range
+from yaraast.lsp.structure import (
+    _starts_regex_literal,
+    find_rule_end,
+    find_rule_line,
+    find_section_range,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -163,24 +168,73 @@ class FoldingRangesProvider:
         """Fallback regex-based folding when AST parsing fails."""
         ranges = []
         lines = text.split("\n")
-
-        brace_stack = []
+        brace_stack: list[int] = []
+        in_string = False
+        in_regex = False
+        in_block_comment = False
+        escape = False
 
         for line_num, line in enumerate(lines):
-            line.strip()
+            char_idx = 0
+            while char_idx < len(line):
+                char = line[char_idx]
+                nxt = line[char_idx + 1] if char_idx + 1 < len(line) else ""
 
-            # Track opening braces
-            if "{" in line:
-                brace_stack.append(line_num)
+                if in_block_comment:
+                    if char == "*" and nxt == "/":
+                        in_block_comment = False
+                        char_idx += 2
+                        continue
+                    char_idx += 1
+                    continue
 
-            # Track closing braces
-            if "}" in line and brace_stack:
-                start_line = brace_stack.pop()
-                if line_num - start_line > 0:  # At least 1 line to fold
-                    ranges.append(
-                        FoldingRange(
-                            start_line=start_line, end_line=line_num, kind=FoldingRangeKind.Region
+                if not in_string and not in_regex:
+                    if char == "/" and nxt == "/":
+                        break
+                    if char == "/" and nxt == "*":
+                        in_block_comment = True
+                        char_idx += 2
+                        continue
+
+                if escape:
+                    escape = False
+                    char_idx += 1
+                    continue
+
+                if char == "\\" and (in_string or in_regex):
+                    escape = True
+                    char_idx += 1
+                    continue
+
+                if not in_regex and char == '"':
+                    in_string = not in_string
+                    char_idx += 1
+                    continue
+
+                if not in_string and char == "/":
+                    if in_regex:
+                        in_regex = False
+                    elif _starts_regex_literal(line, char_idx):
+                        in_regex = True
+                    char_idx += 1
+                    continue
+
+                if in_string or in_regex:
+                    char_idx += 1
+                    continue
+
+                if char == "{":
+                    brace_stack.append(line_num)
+                elif char == "}" and brace_stack:
+                    start_line = brace_stack.pop()
+                    if line_num - start_line > 0:
+                        ranges.append(
+                            FoldingRange(
+                                start_line=start_line,
+                                end_line=line_num,
+                                kind=FoldingRangeKind.Region,
+                            )
                         )
-                    )
+                char_idx += 1
 
         return ranges

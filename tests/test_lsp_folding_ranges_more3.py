@@ -175,3 +175,8 @@ rule a {
 
     fallback_nested = provider._fallback_folding_ranges('rule a {\n  strings:\n    $a = "x"\n}\n')
     assert len(fallback_nested) == 1
+
+    fallback_comment = provider._fallback_folding_ranges("rule a {\n  // }\n  condition: true\n}\n")
+    assert len(fallback_comment) == 1
+    assert fallback_comment[0].start_line == 0
+    assert fallback_comment[0].end_line == 3
