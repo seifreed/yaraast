@@ -934,6 +934,33 @@ def test_direct_yarafile_analysis_rejects_invalid_comment_metadata(
 
 
 @pytest.mark.parametrize(
+    ("comment", "message"),
+    [
+        (Comment("line\nbreak"), "Comment text must not contain newlines"),
+        (Comment("line\rbreak"), "Comment text must not contain newlines"),
+        (Comment("bad\x00nul"), "Comment text must not contain embedded NUL"),
+        (
+            Comment("bad\ud800surrogate"),
+            "Comment text must not contain Unicode surrogate code points",
+        ),
+        (
+            Comment("/* a */ b */"),
+            "Block comment text must not contain embedded terminators",
+        ),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_comment_text(
+    comment: Comment,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_comment", condition=BooleanLiteral(True))])
+    malformed_file.leading_comments = [comment]
+
+    with pytest.raises(ValueError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
     ("group", "message"),
     [
         (

@@ -6,6 +6,24 @@ from typing import Any
 from yaraast.ast.base import ASTNode, _VisitorType
 
 
+def _validate_comment_text(text: str) -> None:
+    if any(0xD800 <= ord(character) <= 0xDFFF for character in text):
+        msg = "Comment text must not contain Unicode surrogate code points"
+        raise ValueError(msg)
+    if "\x00" in text:
+        msg = "Comment text must not contain embedded NUL characters"
+        raise ValueError(msg)
+    if text.startswith("/*") and text.endswith("*/"):
+        body = text[2:-2]
+        if "*/" in body:
+            msg = "Block comment text must not contain embedded terminators"
+            raise ValueError(msg)
+        return
+    if "\n" in text or "\r" in text:
+        msg = "Comment text must not contain newlines"
+        raise ValueError(msg)
+
+
 @dataclass
 class Comment(ASTNode):
     """Represents a comment in the source code."""
@@ -18,6 +36,7 @@ class Comment(ASTNode):
         if not isinstance(self.text, str):
             msg = "Comment text must be a string"
             raise TypeError(msg)
+        _validate_comment_text(self.text)
         if not isinstance(self.is_multiline, bool):
             msg = "Comment is_multiline must be a boolean"
             raise TypeError(msg)
