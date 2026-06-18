@@ -13,7 +13,6 @@ from rich.console import Console
 from rich.markup import escape
 
 from yaraast.ast.base import YaraFile
-from yaraast.cli.parser_helpers import parse_yara_source
 
 
 def _validate_output_path(output: str | None) -> str | None:
@@ -170,14 +169,11 @@ def format_json(
     )
 
 
-def parse_yara_text(source: str) -> YaraFile:
-    """Parse YARA source into an AST."""
-    return parse_yara_source(source)
-
-
 def parse_yara_file(path: str | Path) -> YaraFile:
     """Read + parse a YARA file into an AST."""
-    return parse_yara_text(read_text(path))
+    from yaraast.parser.source import parse_yara_source
+
+    return parse_yara_source(read_text(path))
 
 
 def print_cli_error(console: Console, exc: Exception, prefix: str = "Error") -> None:
