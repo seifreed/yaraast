@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, cast
 
 from lsprotocol.types import Position
@@ -9,8 +10,10 @@ import pytest
 
 from yaraast.lsp.completion import CompletionProvider
 from yaraast.lsp.definition import DefinitionProvider
+from yaraast.lsp.runtime import LspRuntime, path_to_uri
 from yaraast.lsp.signature_help import SignatureHelpProvider
 from yaraast.lsp.utf16 import utf8_col_to_utf16
+from yaraast.unified_parser import UnifiedParser
 
 
 def _pos(line: int, char: int) -> Position:
@@ -45,6 +48,49 @@ rule a {
     modifier_labels = {item.label for item in modifier_items}
     assert "nocase" in modifier_labels
     assert "wide" in modifier_labels
+
+
+def test_completion_workspace_rules_use_cached_document_ast(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    shared = tmp_path / "shared.yar"
+    shared.write_text("rule shared_rule { condition: true }\n", encoding="utf-8")
+    local = tmp_path / "local.yar"
+    local.write_text(
+        """
+rule local_rule {
+  condition:
+    shared_
+}
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    shared_uri = path_to_uri(shared)
+    local_uri = path_to_uri(local)
+    shared_text = shared.read_text(encoding="utf-8")
+    local_text = local.read_text(encoding="utf-8")
+    runtime.open_document(shared_uri, shared_text)
+    runtime.open_document(local_uri, local_text)
+    runtime.get_document(shared_uri, load_workspace=False).ast()
+    runtime.get_document(local_uri, load_workspace=False).ast()
+
+    def _fail_parse(self: UnifiedParser) -> Any:
+        raise AssertionError("workspace completions should use cached document ASTs")
+
+    monkeypatch.setattr("yaraast.unified_parser.UnifiedParser.parse", _fail_parse)
+
+    provider = CompletionProvider(runtime)
+    completions = provider.get_completions(
+        local_text,
+        _pos(2, 11),
+        local_uri,
+    ).items
+
+    labels = {item.label for item in completions}
+    assert "shared_rule" in labels
 
 
 def test_completion_unknown_module_member_returns_empty() -> None:

@@ -161,15 +161,7 @@ class CompletionProvider:
                     continue
                 # Extract source filename from URI
                 source_filename = doc.uri.rsplit("/", 1)[-1] if "/" in doc.uri else doc.uri
-                ast = doc.get_cached("ast")
-                if ast is None:
-                    from yaraast.lsp.language_services import parse_source
-
-                    try:
-                        ast = parse_source(doc.text)
-                    except Exception:
-                        logger.debug("Operation failed in %s", __name__, exc_info=True)
-                        continue
+                ast = doc.ast()
                 if ast is None:
                     continue
                 for rule in getattr(ast, "rules", []):
