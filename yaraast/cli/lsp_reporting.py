@@ -6,10 +6,6 @@ from rich.console import Console
 from rich.markup import escape
 
 
-def get_console() -> Console:
-    return Console()
-
-
 def display_starting(console: Console) -> None:
     console.print("[green]🚀 Starting YARAAST Language Server...[/green]")
 

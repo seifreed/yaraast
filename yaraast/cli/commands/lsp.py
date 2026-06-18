@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import click
+from rich.console import Console
 
 from yaraast.cli.lsp_reporting import (
     display_listening_stdio,
@@ -10,7 +11,6 @@ from yaraast.cli.lsp_reporting import (
     display_missing_dependency,
     display_start_error,
     display_starting,
-    get_console,
 )
 from yaraast.lsp.optional_dependencies import is_missing_lsp_dependency
 
@@ -35,7 +35,7 @@ def lsp(tcp: int | None, host: str) -> None:
         yaraast lsp --stdio           # Start with stdio (default)
         yaraast lsp --tcp 5007        # Start on TCP port 5007
     """
-    console = get_console()
+    console = Console()
     try:
         from yaraast.cli.lsp_services import create_lsp_server, start_lsp_server
 

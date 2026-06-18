@@ -10,13 +10,7 @@ from yaraast.cli.lsp_reporting import (
     display_missing_dependency,
     display_start_error,
     display_starting,
-    get_console,
 )
-
-
-def test_get_console_returns_console_instance() -> None:
-    console = get_console()
-    assert isinstance(console, Console)
 
 
 def test_reporting_helpers_render_expected_messages() -> None:
