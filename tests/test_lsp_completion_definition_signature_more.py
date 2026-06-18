@@ -139,6 +139,24 @@ rule broken {
     assert "xs" in labels
 
 
+def test_completion_condition_keeps_lambda_parameters_after_parse_failure() -> None:
+    provider = CompletionProvider()
+    text = """
+rule sample {
+  condition:
+    lambda helper: helper
+}
+
+rule broken {
+  condition:
+""".lstrip()
+
+    completions = provider.get_completions(text, _pos(2, 0))
+    labels = {item.label for item in completions.items}
+
+    assert "helper" in labels
+
+
 def test_definition_provider_handles_missing_symbol_and_parse_failure() -> None:
     provider = DefinitionProvider()
     uri = "file://test.yar"

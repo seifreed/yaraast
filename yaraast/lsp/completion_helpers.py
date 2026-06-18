@@ -52,6 +52,7 @@ TEXT_WITH_LOOP_RE = re.compile(r"\bwith\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*=")
 TEXT_FOR_LOOP_RE = re.compile(
     r"\bfor\s+(?:(?:any|all|none)\s+)?(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s+in\b"
 )
+TEXT_LAMBDA_RE = re.compile(r"\blambda\s+(?P<params>[^:]+):")
 
 
 def _active_module_name(before_cursor: str) -> str | None:
@@ -374,12 +375,13 @@ def _text_loop_variable_completions(doc: DocumentContext, seen: set[str]) -> lis
                 items.extend(_loop_variable_completion_items(match.group("name"), seen))
             for match in TEXT_FOR_LOOP_RE.finditer(masked):
                 items.extend(_loop_variable_completion_items(match.group("name"), seen))
+            for match in TEXT_LAMBDA_RE.finditer(masked):
+                for param in match.group("params").split(","):
+                    items.extend(_loop_variable_completion_items(param.strip(), seen))
     return items
 
 
-def _loop_variable_completion_items(
-    identifier: str, seen: set[str]
-) -> list[CompletionItem]:
+def _loop_variable_completion_items(identifier: str, seen: set[str]) -> list[CompletionItem]:
     if not identifier or identifier in seen:
         return []
     seen.add(identifier)
