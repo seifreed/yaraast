@@ -27,6 +27,38 @@ _RANGE_INTEGER_BINARY_OPERATORS = frozenset({"+", "-", "*", "%", "&", "|", "^", 
 _RANGE_NON_INTEGER_BINARY_OPERATORS = frozenset(
     {"<", "<=", ">", ">=", "==", "!=", "and", "or", "contains", "matches", "icontains", "iequals"}
 )
+_VALID_BINARY_OPERATORS = frozenset(
+    {
+        "or",
+        "and",
+        "==",
+        "!=",
+        "<",
+        "<=",
+        ">",
+        ">=",
+        "contains",
+        "matches",
+        "startswith",
+        "endswith",
+        "icontains",
+        "istartswith",
+        "iendswith",
+        "iequals",
+        "|",
+        "^",
+        "&",
+        "<<",
+        ">>",
+        "+",
+        "-",
+        "*",
+        "/",
+        "\\",
+        "%",
+    }
+)
+_VALID_UNARY_OPERATORS = frozenset({"not", "-", "~"})
 
 
 def _validate_expression_identifier(name: object) -> str:
@@ -434,6 +466,9 @@ class BinaryExpression(Expression):
         """Validate child expressions and operator before direct analysis."""
         _validate_expression(self.left, "BinaryExpression.left")
         _require_nonempty_string(self.operator, "BinaryExpression operator")
+        if self.operator not in _VALID_BINARY_OPERATORS:
+            msg = f"Invalid binary operator '{self.operator}'"
+            raise ValueError(msg)
         _validate_expression(self.right, "BinaryExpression.right")
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -450,6 +485,9 @@ class UnaryExpression(Expression):
     def validate_structure(self) -> None:
         """Validate child expression and operator before direct analysis."""
         _require_nonempty_string(self.operator, "UnaryExpression operator")
+        if self.operator not in _VALID_UNARY_OPERATORS:
+            msg = f"Invalid unary operator '{self.operator}'"
+            raise ValueError(msg)
         _validate_expression(self.operand, "UnaryExpression.operand")
 
     def accept(self, visitor: _VisitorType) -> Any:

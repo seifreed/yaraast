@@ -35,6 +35,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     StringOffset,
     StringWildcard,
+    UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
@@ -948,12 +949,21 @@ def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
             "DefinedExpression expression must be an AST expression",
         ),
         (
+            BinaryExpression(IntegerLiteral(1), "???", IntegerLiteral(2)),
+            "Invalid binary operator",
+        ),
+        (UnaryExpression("!", BooleanLiteral(True)), "Invalid unary operator"),
+        (
             StringOperatorExpression(StringLiteral("a"), "", StringLiteral("b")),
             "StringOperatorExpression operator must not be empty",
         ),
         (
             StringOperatorExpression(StringLiteral("a"), cast(Any, object()), StringLiteral("b")),
             "StringOperatorExpression operator must be a string",
+        ),
+        (
+            StringOperatorExpression(StringLiteral("a"), "badop", StringLiteral("b")),
+            "Invalid string operator",
         ),
         (
             StringOperatorExpression(cast(Any, object()), "contains", StringLiteral("b")),

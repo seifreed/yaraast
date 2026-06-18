@@ -8,6 +8,19 @@ from typing import Any
 from yaraast.ast.base import _VisitorType
 from yaraast.ast.expressions import Expression, _validate_expression
 
+_VALID_STRING_OPERATORS = frozenset(
+    {
+        "contains",
+        "endswith",
+        "icontains",
+        "iendswith",
+        "iequals",
+        "istartswith",
+        "matches",
+        "startswith",
+    }
+)
+
 
 def _validate_required_expression(value: Any, message: str) -> Expression:
     if not isinstance(value, Expression):
@@ -51,6 +64,9 @@ class StringOperatorExpression(Expression):
             raise TypeError(msg)
         if not self.operator.strip():
             msg = "StringOperatorExpression operator must not be empty"
+            raise ValueError(msg)
+        if self.operator not in _VALID_STRING_OPERATORS:
+            msg = f"Invalid string operator '{self.operator}'"
             raise ValueError(msg)
         _validate_required_expression(
             self.right,
