@@ -76,7 +76,7 @@ def _validate_rule_identifiers(values: list[str], field_name: str) -> None:
 
 
 def _normalize_extern_rule_modifiers(modifiers: Any) -> list[str]:
-    from yaraast.ast.modifiers import RuleModifier
+    from yaraast.ast.modifiers import RuleModifier, RuleModifierType
 
     if not isinstance(modifiers, list):
         msg = "ExternRule modifiers must be a list"
@@ -90,8 +90,17 @@ def _normalize_extern_rule_modifiers(modifiers: Any) -> list[str]:
         elif isinstance(modifier, str):
             try:
                 normalized.append(str(RuleModifier.from_string(modifier)))
-            except (ValueError, ValidationError):
-                normalized.append(require_rule_modifier_identifier(modifier, "ExternRule modifier"))
+            except (ValueError, ValidationError) as exc:
+                modifier_name = require_rule_modifier_identifier(
+                    modifier,
+                    "ExternRule modifier",
+                )
+                try:
+                    RuleModifierType.from_string(modifier_name)
+                except ValidationError:
+                    msg = f"Invalid rule modifier '{modifier_name}'"
+                    raise ValueError(msg) from exc
+                normalized.append(modifier_name)
         else:
             msg = "ExternRule modifiers item must be RuleModifier or string"
             raise TypeError(msg)

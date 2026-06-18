@@ -1181,6 +1181,10 @@ def test_direct_yarafile_analysis_rejects_non_positive_location_metadata(
             "ExternRule modifier name cannot be empty",
         ),
         (
+            YaraFile(extern_rules=[ExternRule("ExternalRule", modifiers=cast(Any, ["bad"]))]),
+            "Invalid rule modifier",
+        ),
+        (
             YaraFile(extern_rules=[ExternRule("ExternalRule", namespace=cast(Any, 123))]),
             "ExternRule namespace must be a string",
         ),
