@@ -747,6 +747,11 @@ def test_string_definition_validate_structure_allows_anonymous_placeholder() -> 
     PlainString("$", value="needle", is_anonymous=True).validate_structure()
 
 
+def test_plain_string_validate_structure_rejects_surrogates() -> None:
+    with pytest.raises(ValueError, match="Plain string value must not contain Unicode surrogate"):
+        PlainString("$a", value="\ud800").validate_structure()
+
+
 @pytest.mark.parametrize(
     ("string_def", "message"),
     [

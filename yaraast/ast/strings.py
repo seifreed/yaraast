@@ -218,6 +218,11 @@ class PlainString(StringDefinition):
         if not isinstance(self.value, str | bytes):
             msg = "Plain string value must be a string or bytes"
             raise TypeError(msg)
+        if isinstance(self.value, str) and any(
+            0xD800 <= ord(character) <= 0xDFFF for character in self.value
+        ):
+            msg = "Plain string value must not contain Unicode surrogate code points"
+            raise ValueError(msg)
         if self.raw_bytes is not None and not isinstance(self.raw_bytes, bytes):
             msg = "Plain string raw_bytes must be bytes or None"
             raise TypeError(msg)

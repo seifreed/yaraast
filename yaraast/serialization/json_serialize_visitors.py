@@ -362,6 +362,9 @@ def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> N
     if not isinstance(value, str):
         msg = "PlainString value must be a string or bytes"
         raise SerializationError(msg)
+    if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+        msg = "PlainString value must be UTF-8 encodable"
+        raise SerializationError(msg)
     data["value"] = value
 
 
