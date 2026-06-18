@@ -45,6 +45,15 @@ def test_string_pattern_analyzer_patterns_and_stats() -> None:
     assert analyzer.get_statistics()["total_strings"] == 0
 
 
+def test_string_pattern_analyzer_counts_raw_strings_as_plain() -> None:
+    analyzer = StringPatternAnalyzer()
+
+    result = analyzer.analyze_patterns(["alpha", b"beta"])
+
+    assert result["pattern_types"]["plain"] == 2
+    assert analyzer.get_statistics()["plain_strings"] == 2
+
+
 def test_string_pattern_analyzer_byte_plain_strings_are_json_safe() -> None:
     analyzer = StringPatternAnalyzer()
     strings = [

@@ -80,7 +80,7 @@ def analyze_lengths(strings: Sequence[StringValue]) -> dict[str, Any]:
 def categorize_patterns(analyzer: Any, patterns: Sequence[StringValue | object]) -> dict[str, int]:
     categories = {"plain": 0, "hex": 0, "regex": 0, "other": 0}
     for pattern in patterns:
-        if isinstance(pattern, PlainString):
+        if isinstance(pattern, (str, bytes, PlainString)):
             categories["plain"] += 1
         elif isinstance(pattern, HexString):
             categories["hex"] += 1
