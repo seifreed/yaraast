@@ -59,6 +59,7 @@ from yaraast.ast.strings import (
     HexString,
     HexWildcard,
     PlainString,
+    RegexString,
 )
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
 from yaraast.parser import Parser
@@ -597,6 +598,60 @@ def test_string_definition_validate_structure_rejects_invalid_identifier() -> No
 
 def test_string_definition_validate_structure_allows_anonymous_placeholder() -> None:
     PlainString("$", value="needle", is_anonymous=True).validate_structure()
+
+
+@pytest.mark.parametrize(
+    ("string_def", "message"),
+    [
+        (RegexString("$r", "line\nbreak"), "Regex pattern must not contain line breaks"),
+        (RegexString("$r", "nul\x00byte"), "Regex pattern must not contain NUL bytes"),
+        (
+            RegexString("$r", "bad\ud800surrogate"),
+            "Regex pattern must not contain Unicode surrogate code points",
+        ),
+        (RegexString("$r", "bad["), "Invalid regex pattern"),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_regex_string_patterns(
+    string_def: RegexString,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(
+        rules=[
+            Rule(
+                "bad_regex_string",
+                strings=[string_def],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (RegexLiteral("line\nbreak"), "Regex pattern must not contain line breaks"),
+        (RegexLiteral("nul\x00byte"), "Regex pattern must not contain NUL bytes"),
+        (
+            RegexLiteral("bad\ud800surrogate"),
+            "Regex pattern must not contain Unicode surrogate code points",
+        ),
+        (RegexLiteral("bad["), "Invalid regex pattern"),
+        (RegexLiteral("abc", "ii"), "Duplicate regex modifier"),
+        (RegexLiteral("abc", "si"), "Invalid regex modifier order"),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_regex_literals(
+    condition: RegexLiteral,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_regex_literal", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        ExpressionOptimizer().optimize(malformed_file)
 
 
 @pytest.mark.parametrize(

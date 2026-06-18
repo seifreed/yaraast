@@ -12,6 +12,7 @@ from yaraast.ast.base import (
     _VisitorType,
     require_string,
 )
+from yaraast.regex_literals import validate_regex_pattern
 from yaraast.string_references import validate_string_identifier_text
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
@@ -88,6 +89,19 @@ def _require_string_identifier(value: Any, node_type: str) -> str:
         msg = f"{node_type} identifier must not be empty"
         raise ValueError(msg)
     return identifier
+
+
+def _validate_regex_text(regex: str) -> None:
+    if any(0xD800 <= ord(character) <= 0xDFFF for character in regex):
+        msg = "Regex pattern must not contain Unicode surrogate code points"
+        raise ValueError(msg)
+    if "\n" in regex:
+        msg = "Regex pattern must not contain line breaks"
+        raise ValueError(msg)
+    if "\x00" in regex:
+        msg = "Regex pattern must not contain NUL bytes"
+        raise ValueError(msg)
+    validate_regex_pattern(regex)
 
 
 @dataclass
@@ -349,6 +363,7 @@ class RegexString(StringDefinition):
         if not regex:
             msg = "RegexString regex must not be empty"
             raise ValueError(msg)
+        _validate_regex_text(regex)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_regex_string(self)

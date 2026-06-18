@@ -14,6 +14,7 @@ from yaraast.ast.base import (
     _VisitorType,
 )
 from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
+from yaraast.regex_literals import validate_regex_modifiers, validate_regex_pattern
 from yaraast.string_references import (
     normalize_string_reference_id,
 )
@@ -42,6 +43,19 @@ def _validate_string_reference_suffix(identifier: object) -> None:
     if text == "$":
         return
     normalize_string_reference_id(text, allow_wildcard=False)
+
+
+def _validate_regex_text(pattern: str) -> None:
+    if any(0xD800 <= ord(character) <= 0xDFFF for character in pattern):
+        msg = "Regex pattern must not contain Unicode surrogate code points"
+        raise ValueError(msg)
+    if "\n" in pattern:
+        msg = "Regex pattern must not contain line breaks"
+        raise ValueError(msg)
+    if "\x00" in pattern:
+        msg = "Regex pattern must not contain NUL bytes"
+        raise ValueError(msg)
+    validate_regex_pattern(pattern)
 
 
 @dataclass
@@ -239,6 +253,8 @@ class RegexLiteral(Expression):
         if not isinstance(self.modifiers, str):
             msg = "Regex literal modifiers must be a string"
             raise TypeError(msg)
+        _validate_regex_text(self.pattern)
+        validate_regex_modifiers(self.modifiers)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_regex_literal(self)
