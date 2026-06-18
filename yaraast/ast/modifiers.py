@@ -14,6 +14,7 @@ from yaraast.xor_keys import parse_xor_key_text
 
 _RULE_MODIFIER_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
+_YARA_CONTEXTUAL_IDENTIFIER_KEYWORDS = frozenset({"as", "include"})
 
 
 def _require_meta_value(value: Any) -> str | int | bool | float:
@@ -92,6 +93,18 @@ def require_rule_modifier_identifier(
     identifier_context = name_context if identifier_context is None else identifier_context
     msg = f"Invalid {identifier_context} identifier: {modifier}"
     raise ValidationError(msg)
+
+
+def _validate_meta_identifier(key: object) -> str:
+    meta_key = _require_nonempty_string(key, "Meta key")
+    if (
+        len(meta_key) <= YARA_IDENTIFIER_MAX_LENGTH
+        and _RULE_MODIFIER_IDENTIFIER_RE.fullmatch(meta_key) is not None
+        and (meta_key not in _YARA_KEYWORDS or meta_key in _YARA_CONTEXTUAL_IDENTIFIER_KEYWORDS)
+    ):
+        return meta_key
+    msg = f"Invalid meta identifier '{meta_key}' for libyara output"
+    raise ValueError(msg)
 
 
 def _is_xor_modifier_text(value: str) -> bool:
@@ -348,7 +361,7 @@ class MetaEntry:
 
     def validate_structure(self) -> None:
         """Validate meta entry fields before direct analysis."""
-        _require_nonempty_string(self.key, "Meta key")
+        _validate_meta_identifier(self.key)
         _require_meta_value(self.value)
         _require_meta_scope(self.scope)
 
@@ -360,7 +373,7 @@ class MetaEntry:
         scope: str | None = None,
     ) -> "MetaEntry":
         """Create MetaEntry from key, value, and optional scope."""
-        meta_key = _require_nonempty_string(key, "Meta key")
+        meta_key = _validate_meta_identifier(key)
         meta_value = _require_meta_value(value)
         meta_scope = MetaScope.from_string(scope) if scope is not None else MetaScope.PUBLIC
         return cls(key=meta_key, value=meta_value, scope=meta_scope)

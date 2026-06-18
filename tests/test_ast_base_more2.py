@@ -547,6 +547,11 @@ def test_rule_metadata_validate_structure_rejects_invalid_identifiers(
         node.validate_structure()
 
 
+@pytest.mark.parametrize("key", ["as", "include"])
+def test_meta_entry_validate_structure_allows_contextual_keywords(key: str) -> None:
+    MetaEntry(key, "value").validate_structure()
+
+
 def test_rule_validate_structure_rejects_keyword_names() -> None:
     with pytest.raises(ValueError, match="Invalid rule identifier"):
         Rule("strings").validate_structure()
@@ -849,6 +854,8 @@ def test_direct_yarafile_analysis_rejects_invalid_hex_token_scalars(
         ([Meta("x", cast(Any, object()))], "Meta value must be a string"),
         ([MetaEntry("", "x")], "Meta key cannot be empty"),
         ([MetaEntry(cast(Any, 123), "x")], "Meta key must be a string"),
+        ([MetaEntry("bad-name", "x")], "Invalid meta identifier"),
+        ([MetaEntry("for", "x")], "Invalid meta identifier"),
         ([MetaEntry("x", cast(Any, object()))], "Meta value must be a string"),
         ([MetaEntry("x", float("nan"))], "Meta value must be a string"),
         ([cast(Any, object())], "Rule meta must contain Meta or MetaEntry nodes"),
