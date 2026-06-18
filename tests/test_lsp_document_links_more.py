@@ -10,7 +10,7 @@ import pytest
 
 from yaraast.lsp.document_links import DocumentLinksProvider
 from yaraast.lsp.document_types import path_to_uri
-from yaraast.lsp.runtime import DocumentContext
+from yaraast.lsp.runtime import DocumentContext, LspRuntime
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
@@ -171,6 +171,27 @@ def test_document_links_parser_fallback_and_error_edges(tmp_path: Path) -> None:
     links = provider.get_document_links(broken_text, path_to_uri(tmp_path / "doc.yar"))
     assert len(links) == 2
     assert DocumentContext("file://\0bad", "").get_include_target_uri("missing.yar") is None
+
+
+def test_document_links_fallbacks_when_runtime_symbols_are_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    doc_path = tmp_path / "doc.yar"
+    include_path = tmp_path / "inc.yar"
+    text = 'import "pe"\ninclude "inc.yar"\n'
+    include_path.write_text("rule inc { condition: true }\n", encoding="utf-8")
+    doc_path.write_text(text, encoding="utf-8")
+
+    monkeypatch.setattr(DocumentContext, "ast", lambda self: None)
+
+    provider = DocumentLinksProvider(LspRuntime())
+    links = provider.get_document_links(text, path_to_uri(doc_path))
+
+    assert len(links) == 2
+    targets = {link.target for link in links if link.target is not None}
+    assert any("pe.html" in target for target in targets)
+    assert any(target.startswith("file://") for target in targets)
 
 
 def test_document_links_without_runtime_include_local_rule_links() -> None:

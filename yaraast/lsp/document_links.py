@@ -17,6 +17,17 @@ IMPORT_DIRECTIVE_RE = re.compile(r'^\s*import\s+"(?P<value>(?:\\.|[^"\\])*)"')
 INCLUDE_DIRECTIVE_RE = re.compile(r'^\s*include\s+"(?P<value>(?:\\.|[^"\\])*)"')
 
 
+def _link_key(link: DocumentLink) -> tuple[int, int, int, int, str | None, str | None]:
+    return (
+        link.range.start.line,
+        link.range.start.character,
+        link.range.end.line,
+        link.range.end.character,
+        link.target,
+        link.tooltip,
+    )
+
+
 class DocumentLinksProvider:
     """Provide document links for imports and includes."""
 
@@ -52,13 +63,13 @@ class DocumentLinksProvider:
                 symbol_records = doc.symbols()
                 links.extend(self._create_runtime_symbol_links(doc, symbol_records))
                 links.extend(self._create_rule_reference_links(document_uri))
+                self._append_fallback_links(links, text, document_uri)
                 return links
             doc = DocumentContext(document_uri, text)
             symbol_records = doc.symbols()
-            if not symbol_records and doc.parse_error() is not None:
-                return self._fallback_links(text, document_uri)
             links.extend(self._create_runtime_symbol_links(doc, symbol_records))
             links.extend(self._create_local_rule_reference_links(doc))
+            self._append_fallback_links(links, text, document_uri)
 
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
@@ -122,6 +133,20 @@ class DocumentLinksProvider:
                 )
             )
         return links
+
+    def _append_fallback_links(
+        self,
+        links: list[DocumentLink],
+        text: str,
+        document_uri: str,
+    ) -> None:
+        seen = {_link_key(link) for link in links}
+        for link in self._fallback_links(text, document_uri):
+            key = _link_key(link)
+            if key in seen:
+                continue
+            links.append(link)
+            seen.add(key)
 
     def _fallback_links(self, text: str, document_uri: str) -> list[DocumentLink]:
         """Fallback regex-based link detection."""
