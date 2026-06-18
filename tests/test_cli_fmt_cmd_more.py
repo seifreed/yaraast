@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import NoReturn
 
 import click
 from click.testing import CliRunner, Result
@@ -9,6 +8,7 @@ import pytest
 
 import yaraast.cli.commands.fmt_cmd as fmt_command
 from yaraast.cli.commands.fmt_cmd import fmt
+from yaraast.shared.ast_analysis import ASTFormatter
 
 
 def _write(path: Path, content: str) -> None:
@@ -172,10 +172,10 @@ def test_fmt_cmd_abort_preserves_original_cause(
     _write(source, "rule x { condition: true }")
     sentinel = RuntimeError("formatter sentinel")
 
-    def fail_get_formatter() -> NoReturn:
+    def fail_ast_formatter() -> ASTFormatter:
         raise sentinel
 
-    monkeypatch.setattr(fmt_command, "get_formatter", fail_get_formatter)
+    monkeypatch.setattr(fmt_command, "ASTFormatter", fail_ast_formatter)
 
     result = CliRunner().invoke(fmt, [str(source)], standalone_mode=False)
 

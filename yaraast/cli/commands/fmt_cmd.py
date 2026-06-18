@@ -13,8 +13,9 @@ from yaraast.cli.fmt_reporting import (
     display_format_error,
     display_format_result,
 )
-from yaraast.cli.fmt_services import check_format, format_file, format_for_diff, get_formatter
+from yaraast.cli.fmt_services import check_format, format_file, format_for_diff
 from yaraast.cli.utils import _path_exists_and_is_dir, _require_file_path, print_cli_error
+from yaraast.shared.ast_analysis import ASTFormatter
 
 console = Console()
 
@@ -62,7 +63,7 @@ def fmt(
     input_path = Path(input_file)
     output_path = _validate_output_path(input_path, output)
     try:
-        formatter = get_formatter()
+        formatter = ASTFormatter()
 
         if check:
             _handle_format_check(formatter, input_path)

@@ -8,11 +8,6 @@ from yaraast.cli.utils import read_text
 from yaraast.shared.ast_analysis import ASTFormatter
 
 
-def get_formatter() -> ASTFormatter:
-    """Create an AST formatter instance."""
-    return ASTFormatter()
-
-
 def check_format(formatter: ASTFormatter, input_path: Path):
     """Check whether a file needs formatting."""
     return formatter.check_format(input_path)
