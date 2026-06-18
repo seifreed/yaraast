@@ -74,8 +74,12 @@ rule local_rule {
     local_text = local.read_text(encoding="utf-8")
     runtime.open_document(shared_uri, shared_text)
     runtime.open_document(local_uri, local_text)
-    runtime.get_document(shared_uri, load_workspace=False).ast()
-    runtime.get_document(local_uri, load_workspace=False).ast()
+    shared_doc = runtime.get_document(shared_uri, load_workspace=False)
+    local_doc = runtime.get_document(local_uri, load_workspace=False)
+    assert shared_doc is not None
+    assert local_doc is not None
+    shared_doc.ast()
+    local_doc.ast()
 
     def _fail_parse(self: UnifiedParser) -> Any:
         raise AssertionError("workspace completions should use cached document ASTs")

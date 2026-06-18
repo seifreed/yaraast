@@ -386,8 +386,7 @@ class LspRuntime:
             if path_exists(path) and path_is_file(path):
                 ctx = self.documents.get(uri)
                 if ctx is not None and ctx.is_open:
-                    if self._document_is_backed_by_file(uri):
-                        ctx.backed_by_file = True
+                    ctx.backed_by_file = True
                     self._sync_document_to_index(uri)
                     continue
                 try:
