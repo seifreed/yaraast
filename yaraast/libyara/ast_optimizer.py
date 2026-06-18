@@ -131,26 +131,23 @@ class ASTOptimizer:
         right: IntegerLiteral,
     ) -> IntegerLiteral | None:
         """Fold constant expressions."""
-        try:
-            left_val = _literal_integer_value(left)
-            right_val = _literal_integer_value(right)
+        left_val = _literal_integer_value(left)
+        right_val = _literal_integer_value(right)
 
-            if op == "+":
-                return IntegerLiteral(value=normalize_int64(left_val + right_val))
-            if op == "-":
-                return IntegerLiteral(value=normalize_int64(left_val - right_val))
-            if op == "*":
-                return IntegerLiteral(value=normalize_int64(left_val * right_val))
-            if op in ("/", "\\") and right_val != 0:
-                if left_val == INT64_MIN and right_val == -1:
-                    return None
-                return IntegerLiteral(value=truncate_integer_division(left_val, right_val))
-            if op == "%" and right_val != 0:
-                if left_val == INT64_MIN and right_val == -1:
-                    return None
-                return IntegerLiteral(value=integer_remainder(left_val, right_val))
-        except (TypeError, ValueError, ZeroDivisionError):
-            pass
+        if op == "+":
+            return IntegerLiteral(value=normalize_int64(left_val + right_val))
+        if op == "-":
+            return IntegerLiteral(value=normalize_int64(left_val - right_val))
+        if op == "*":
+            return IntegerLiteral(value=normalize_int64(left_val * right_val))
+        if op in ("/", "\\") and right_val != 0:
+            if left_val == INT64_MIN and right_val == -1:
+                return None
+            return IntegerLiteral(value=truncate_integer_division(left_val, right_val))
+        if op == "%" and right_val != 0:
+            if left_val == INT64_MIN and right_val == -1:
+                return None
+            return IntegerLiteral(value=integer_remainder(left_val, right_val))
 
         return None
 

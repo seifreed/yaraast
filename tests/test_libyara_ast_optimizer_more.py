@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from yaraast.ast.expressions import IntegerLiteral
 from yaraast.libyara.ast_optimizer import ASTOptimizer
 from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE
 from yaraast.parser import Parser
@@ -31,3 +32,12 @@ def test_ast_optimizer_removes_unused_strings_and_simplifies() -> None:
 
     rule = optimized.rules[0]
     assert len(rule.strings) == 1
+
+
+def test_ast_optimizer_surfaces_invalid_integer_literals() -> None:
+    optimizer = ASTOptimizer()
+    left = IntegerLiteral(value=True)
+    right = IntegerLiteral(value=1)
+
+    with pytest.raises(TypeError, match="IntegerLiteral value must be an integer"):
+        optimizer._fold_constants(left, "+", right)

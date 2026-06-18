@@ -102,13 +102,12 @@ def test_ast_optimizer_rule_and_constant_paths() -> None:
     assert folded_large_mod.value == -(large % 3)
 
     assert optimizer._fold_constants(IntegerLiteral(7), "/", IntegerLiteral(0)) is None
-    assert (
-        optimizer._fold_constants(IntegerLiteral(cast(Any, "bad")), "+", IntegerLiteral(1)) is None
-    )
-    assert (
-        optimizer._fold_constants(IntegerLiteral(cast(Any, True)), "+", IntegerLiteral(1)) is None
-    )
-    assert optimizer._fold_constants(IntegerLiteral(cast(Any, 1.5)), "+", IntegerLiteral(1)) is None
+    with pytest.raises(TypeError, match="IntegerLiteral value must be an integer"):
+        optimizer._fold_constants(IntegerLiteral(cast(Any, "bad")), "+", IntegerLiteral(1))
+    with pytest.raises(TypeError, match="IntegerLiteral value must be an integer"):
+        optimizer._fold_constants(IntegerLiteral(cast(Any, True)), "+", IntegerLiteral(1))
+    with pytest.raises(TypeError, match="IntegerLiteral value must be an integer"):
+        optimizer._fold_constants(IntegerLiteral(cast(Any, 1.5)), "+", IntegerLiteral(1))
 
 
 def test_ast_optimizer_rule_removes_unused_strings() -> None:
