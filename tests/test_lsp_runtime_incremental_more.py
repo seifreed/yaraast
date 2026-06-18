@@ -603,6 +603,16 @@ def test_document_context_symbol_indexes_invalidate_on_update() -> None:
     assert doc.find_symbol_record("include", "common.yar") is not None
 
 
+def test_document_context_symbols_fall_back_on_unicode_surrogate_error() -> None:
+    text = 'rule broken {\n  strings:\n    $a = "\ud800"\n  condition:\n    $a\n}\n'
+    doc = DocumentContext("file:///broken-surrogate.yar", text)
+
+    symbols = doc.symbols()
+
+    assert doc.get_rule_names() == ["broken"]
+    assert any(symbol.kind == "string" and symbol.name == "$a" for symbol in symbols)
+
+
 def test_document_context_rejects_invalid_text_inputs() -> None:
     with pytest.raises(TypeError, match="Document text must be a string"):
         DocumentContext("file://sample.yar", cast(Any, object()))

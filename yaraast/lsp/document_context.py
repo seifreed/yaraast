@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from lsprotocol.types import Location, Position, Range, TextEdit
 
 from yaraast.dialects import YaraDialect
+from yaraast.lexer.lexer_errors import LexerError
 import yaraast.lsp.document_queries as document_queries
 
 if TYPE_CHECKING:
@@ -70,7 +71,7 @@ class _SymbolIndex:
             return self._symbols
         ast = doc.ast()
         if ast is None:
-            if isinstance(doc.parse_error(), ParserError):
+            if isinstance(doc.parse_error(), (ParserError, LexerError)):
                 self._symbols = build_text_symbols(doc, doc.lines)
                 self._symbols_by_kind = None
                 self._symbol_lookup = None

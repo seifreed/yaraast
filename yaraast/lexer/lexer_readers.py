@@ -39,7 +39,14 @@ def read_string(lexer: LexerLike) -> Token:
                 break
         else:
             value_chars.append(char)
-            raw_bytes.extend(char.encode("utf-8"))
+            try:
+                raw_bytes.extend(char.encode("utf-8"))
+            except UnicodeEncodeError as e:
+                raise LexerError(
+                    "String literal must not contain Unicode surrogate code points",
+                    lexer.line,
+                    lexer.column,
+                ) from e
         lexer._advance()
         char = lexer._current_char()
     if char is None:
