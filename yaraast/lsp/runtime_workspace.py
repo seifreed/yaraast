@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from lsprotocol.types import SymbolInformation
 
 from yaraast.lsp.document_types import SymbolRecord, require_workspace_symbol_query
+from yaraast.parser._shared import ParserError
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +46,12 @@ def workspace_symbol_records(runtime: LspRuntime, query: object = "") -> list[Sy
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
             continue
+        parse_error = doc.parse_error()
+        trailing_names = _trailing_parse_error_symbol_names(doc_symbols, parse_error)
         for record in doc_symbols:
             if record.kind in hidden_kinds:
+                continue
+            if _skip_trailing_parse_error_symbol(record, parse_error, trailing_names):
                 continue
             if query and query_lower not in record.name.lower():
                 continue
@@ -67,10 +72,52 @@ def _uncached_workspace_symbol_records(runtime: LspRuntime, query: str) -> list[
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
             continue
+        parse_error = doc.parse_error()
+        trailing_names = _trailing_parse_error_symbol_names(doc_symbols, parse_error)
         for record in doc_symbols:
             if record.kind in hidden_kinds:
+                continue
+            if _skip_trailing_parse_error_symbol(record, parse_error, trailing_names):
                 continue
             if query and query_lower not in record.name.lower():
                 continue
             records.append(record)
     return records
+
+
+def _trailing_parse_error_symbol_names(
+    doc_symbols: list[SymbolRecord], parse_error: Exception | None
+) -> set[str]:
+    if not isinstance(parse_error, ParserError):
+        return set()
+    token = getattr(parse_error, "token", None)
+    if getattr(token, "value", object()) is not None:
+        return set()
+    error_line = getattr(parse_error, "line", None)
+    if not isinstance(error_line, int):
+        return set()
+    trailing_names: set[str] = set()
+    for record in doc_symbols:
+        if record.kind == "rule":
+            continue
+        if record.range.end.line >= error_line - 1:
+            trailing_names.add(record.name)
+    return trailing_names
+
+
+def _skip_trailing_parse_error_symbol(
+    record: SymbolRecord,
+    parse_error: Exception | None,
+    trailing_names: set[str],
+) -> bool:
+    if not isinstance(parse_error, ParserError):
+        return False
+    token = getattr(parse_error, "token", None)
+    if getattr(token, "value", object()) is not None:
+        return False
+    error_line = getattr(parse_error, "line", None)
+    if not isinstance(error_line, int):
+        return False
+    if record.kind == "rule":
+        return record.name in trailing_names
+    return record.range.end.line >= error_line - 1 and record.name in trailing_names

@@ -581,6 +581,7 @@ rule broken {
     assert "local_rule" in names
     assert "pe" in names
     assert "$a" in names
+    assert "broken" not in names
 
 
 def test_document_context_symbol_indexes_invalidate_on_update() -> None:
