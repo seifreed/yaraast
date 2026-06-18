@@ -291,6 +291,14 @@ class LspRuntime:
 
     def set_workspace_folders(self, folders: list[str]) -> None:
         self.index.set_workspace_folders(folders)
+        for uri, doc in list(self.documents.items()):
+            if doc.is_open:
+                continue
+            if self.index._workspace_root_for_uri(uri) is not None:
+                continue
+            self.documents.pop(uri, None)
+            self._dirty_documents.discard(uri)
+        self.cache.bump_generation()
         if self.config.cache_workspace:
             for path in self.index.iter_candidate_files():
                 self.get_document(path_to_uri(path))

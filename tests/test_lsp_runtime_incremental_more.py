@@ -289,6 +289,59 @@ def test_runtime_status_reports_all_workspace_index_paths(tmp_path: Path) -> Non
     ]
 
 
+def test_runtime_set_workspace_folders_drops_stale_cached_documents(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    rule_file = root / "sample.yar"
+    rule_file.write_text("rule sample { condition: true }\n", encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(root)])
+    runtime.get_document(path_to_uri(rule_file))
+
+    assert any(symbol.name == "sample" for symbol in runtime.workspace_symbols(""))
+
+    runtime.set_workspace_folders([])
+
+    assert runtime.get_document(path_to_uri(rule_file), load_workspace=False) is None
+    assert runtime.workspace_symbols("") == []
+
+
+def test_runtime_document_lifecycle_and_config_prune_cached_documents(
+    tmp_path: Path,
+) -> None:
+    uri = path_to_uri(tmp_path / "sample.yar")
+    runtime = LspRuntime()
+
+    assert runtime.save_document(uri) is None
+
+    runtime.documents[uri] = DocumentContext(
+        uri,
+        "rule sample { condition: true }\n",
+        is_open=False,
+    )
+    runtime.config.cache_workspace = False
+    runtime.close_document(uri)
+    assert uri not in runtime.documents
+
+    runtime.documents[uri] = DocumentContext(
+        uri,
+        "rule sample { condition: true }\n",
+        is_open=False,
+    )
+    runtime.update_config(
+        {
+            "YARA": {
+                "cacheWorkspace": False,
+                "diagnosticsDebounceMs": "7",
+            }
+        }
+    )
+    assert runtime.config.cache_workspace is False
+    assert runtime.config.diagnostics_debounce_ms == 7
+    assert runtime.documents == {}
+
+
 def test_runtime_observability_covers_default_debounce_and_empty_latency() -> None:
     runtime = LspRuntime()
 
