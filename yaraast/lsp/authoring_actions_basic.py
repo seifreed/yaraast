@@ -159,7 +159,10 @@ def convert_plain_string_to_hex(text: str, selection: Range) -> StructuralEdit |
     if tail:
         return None
     value = plain_match.group("value")
-    hex_bytes = " ".join(f"{byte:02X}" for byte in _plain_string_source_bytes(value))
+    try:
+        hex_bytes = " ".join(f"{byte:02X}" for byte in _plain_string_source_bytes(value))
+    except UnicodeEncodeError:
+        return None
     new_line = f"{match.group('indent')}{match.group('identifier')} = {{ {hex_bytes} }}"
     return StructuralEdit(
         title="Convert string to hex",

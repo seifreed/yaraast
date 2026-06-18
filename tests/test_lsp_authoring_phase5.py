@@ -226,6 +226,22 @@ rule demo {
     assert edit.new_text.strip().endswith("{ 61 22 62 }")
 
 
+def test_convert_plain_string_to_hex_skips_surrogate_text() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule demo {
+    strings:
+        $a = "\ud800"
+    condition:
+        $a
+}
+""".lstrip()
+
+    actions = provider.get_code_actions(text, _range(2, 8, 18), [], "file://test.yar")
+
+    assert not any(action.title == "Convert string to hex" for action in actions)
+
+
 def test_convert_to_hex_not_offered_for_string_with_modifiers() -> None:
     provider = CodeActionsProvider()
     text = """
