@@ -37,10 +37,11 @@ def lsp(tcp: int | None, host: str) -> None:
     """
     console = Console()
     try:
-        from yaraast.cli.lsp_services import create_lsp_server, start_lsp_server
+        from yaraast.cli.lsp_services import start_lsp_server
+        from yaraast.lsp.server import create_server
 
         display_starting(console)
-        server = create_lsp_server()
+        server = create_server()
 
         if tcp is not None:
             display_listening_tcp(console, host, tcp)

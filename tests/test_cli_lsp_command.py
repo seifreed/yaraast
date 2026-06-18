@@ -5,9 +5,6 @@ from __future__ import annotations
 import builtins
 from collections.abc import Mapping
 import importlib
-import sys
-from types import ModuleType
-from typing import NoReturn
 
 import click
 from click.testing import CliRunner, Result
@@ -64,18 +61,12 @@ def test_lsp_missing_dependency_abort_preserves_original_cause(
 def test_lsp_start_error_abort_preserves_original_cause(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_services = ModuleType("yaraast.cli.lsp_services")
     sentinel = RuntimeError("lsp sentinel")
 
-    def fail_create_lsp_server() -> NoReturn:
+    def fail_create_lsp_server() -> object:
         raise sentinel
 
-    def fail_start_lsp_server(_server: object, _tcp: int | None, _host: str) -> None:
-        raise AssertionError("start_lsp_server should not be called")
-
-    fake_services.__dict__["create_lsp_server"] = fail_create_lsp_server
-    fake_services.__dict__["start_lsp_server"] = fail_start_lsp_server
-    monkeypatch.setitem(sys.modules, "yaraast.cli.lsp_services", fake_services)
+    monkeypatch.setattr("yaraast.lsp.server.create_server", fail_create_lsp_server)
 
     result = CliRunner().invoke(lsp, [], standalone_mode=False)
 

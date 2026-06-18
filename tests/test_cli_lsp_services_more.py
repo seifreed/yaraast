@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from yaraast.cli.lsp_services import create_lsp_server, start_lsp_server
+from yaraast.cli.lsp_services import start_lsp_server
+from yaraast.lsp.server import create_server
 
 
-def test_create_lsp_server_real() -> None:
+def test_create_server_real() -> None:
     try:
-        server = create_lsp_server()
+        server = create_server()
     except ImportError:
         # Accept environments without optional LSP dependencies.
         return
