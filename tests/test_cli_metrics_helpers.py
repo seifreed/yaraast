@@ -97,6 +97,29 @@ def test_string_pattern_analysis_preserves_duplicate_rule_names() -> None:
     assert analysis["rules"]["dup#2"]["identifiers"] == ["$b"]
 
 
+def test_string_pattern_analysis_counts_empty_duplicate_rules_in_order() -> None:
+    ast = _parse_yara("""
+        rule dup_first {
+            condition:
+                true
+        }
+
+        rule dup_second {
+            strings:
+                $a = "one"
+            condition:
+                $a
+        }
+        """)
+    ast.rules[0].name = "dup"
+    ast.rules[1].name = "dup"
+
+    analysis = _analyze_string_patterns(ast)
+
+    assert list(analysis["rules"]) == ["dup#2"]
+    assert analysis["rules"]["dup#2"]["identifiers"] == ["$a"]
+
+
 def test_string_pattern_analysis_uses_utf8_byte_lengths() -> None:
     ast = YaraFile(
         rules=[

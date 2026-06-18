@@ -16,8 +16,8 @@ def _analyze_string_patterns(ast: Any) -> dict[str, Any]:
     seen_rules: defaultdict[str, int] = defaultdict(int)
 
     for rule in ast.rules:
+        seen_rules[rule.name] += 1
         if rule.strings:
-            seen_rules[rule.name] += 1
             rule_key = _rule_analysis_key(rule.name, seen_rules[rule.name], rule_counts)
             rule_info = _analyze_rule_strings(rule, analysis, lengths)
             analysis["rules"][rule_key] = rule_info
