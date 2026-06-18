@@ -103,8 +103,8 @@ class WorkspaceSymbolsProvider:
         # Find all YARA files in workspace
         yara_files = [
             path
-            for suffix in YARA_FILE_SUFFIXES
-            for path in self.workspace_root.rglob(f"*{suffix}")
+            for path in self.workspace_root.rglob("*")
+            if path.is_file() and path.suffix.lower() in YARA_FILE_SUFFIXES
         ]
 
         for yara_file in yara_files:

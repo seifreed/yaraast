@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from stat import S_IFREG
 from tempfile import TemporaryDirectory
 from typing import Any, cast
 
@@ -130,6 +131,19 @@ rule sample {
         assert provider.symbol_cache == {}
 
 
+def test_workspace_symbols_discovers_uppercase_suffix_files() -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        upper = root / "UPPER.YAR"
+        upper.write_text("rule upper { condition: true }\n", encoding="utf-8")
+
+        provider = WorkspaceSymbolsProvider()
+        provider.set_workspace_root(tmp)
+
+        names = {symbol.name for symbol in provider.get_workspace_symbols("")}
+        assert "upper" in names
+
+
 def test_workspace_symbols_cache_uses_nanosecond_mtime(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -146,6 +160,7 @@ def test_workspace_symbols_cache_uses_nanosecond_mtime(
     cached_ns = yara_file.stat().st_mtime_ns
 
     class _FixedStat:
+        st_mode = S_IFREG
         st_mtime = 1.0
         st_mtime_ns = cached_ns + 1
 
