@@ -244,6 +244,15 @@ class LspRuntime:
         if ctx is None:
             return
         if self.config.cache_workspace:
+            path = ctx.path
+            if ctx.backed_by_file and (
+                path is None or not path_exists(path) or not path_is_file(path)
+            ):
+                self.documents.pop(uri, None)
+                self.index.remove_document(uri)
+                self._dirty_documents.discard(uri)
+                self.cache.bump_generation()
+                return
             ctx.is_open = False
             self._sync_document_to_index(uri)
         else:

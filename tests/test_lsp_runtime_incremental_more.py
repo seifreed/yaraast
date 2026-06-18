@@ -551,6 +551,23 @@ def test_runtime_watched_files_preserve_open_document_on_delete(tmp_path: Path) 
     assert current.text.startswith("rule sample")
 
 
+def test_runtime_closing_deleted_open_file_drops_workspace_entry(tmp_path: Path) -> None:
+    sample = tmp_path / "sample.yar"
+    sample.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(sample)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.open_document(uri, sample.read_text(encoding="utf-8"))
+
+    sample.unlink()
+    runtime.handle_watched_files([FileEvent(uri=uri, type=FileChangeType.Deleted)])
+    runtime.close_document(uri)
+
+    assert runtime.get_document(uri, load_workspace=False) is None
+    assert runtime.workspace_symbols("sample") == []
+
+
 def test_runtime_rejects_invalid_config_inputs() -> None:
     with pytest.raises(TypeError, match="LSP runtime index must be a WorkspaceIndex"):
         LspRuntime(index=cast(Any, object()))
