@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, cast
 
@@ -193,6 +194,85 @@ def test_workspace_index_rejects_invalid_document_mutation_inputs() -> None:
 
     index.remove_document(uri)
     assert index.search_records("") == []
+
+
+def test_workspace_index_persists_each_workspace_root_independently(
+    tmp_path: Path,
+) -> None:
+    root_one = tmp_path / "one"
+    root_two = tmp_path / "two"
+    root_one.mkdir()
+    root_two.mkdir()
+    one = root_one / "alpha.yar"
+    two = root_two / "beta.yar"
+    one.write_text("rule alpha { condition: true }\n", encoding="utf-8")
+    two.write_text("rule beta { condition: true }\n", encoding="utf-8")
+
+    index = WorkspaceIndex()
+    index.set_workspace_folders([str(root_one), str(root_two)])
+    index.update_document(DocumentContext(path_to_uri(one), one.read_text(encoding="utf-8")))
+    index.update_document(DocumentContext(path_to_uri(two), two.read_text(encoding="utf-8")))
+
+    cache_one = json.loads(
+        (root_one / ".yaraast" / "lsp-workspace-index.json").read_text(encoding="utf-8")
+    )
+    cache_two = json.loads(
+        (root_two / ".yaraast" / "lsp-workspace-index.json").read_text(encoding="utf-8")
+    )
+
+    assert set(cache_one["symbols"]) == {path_to_uri(one)}
+    assert set(cache_two["symbols"]) == {path_to_uri(two)}
+
+    restored = WorkspaceIndex()
+    restored.set_workspace_folders([str(root_one), str(root_two)])
+    assert {record.name for record in restored.search_records("") if record.kind == "rule"} == {
+        "alpha",
+        "beta",
+    }
+
+
+def test_workspace_index_ignores_stale_parent_cache_for_nested_roots(
+    tmp_path: Path,
+) -> None:
+    parent = tmp_path / "parent"
+    child = parent / "child"
+    parent.mkdir()
+    child.mkdir()
+
+    document = child / "alpha.yar"
+    uri = path_to_uri(document)
+    stale_record = SymbolRecord(
+        "alpha_stale",
+        "rule",
+        uri,
+        Range(Position(line=0, character=0), Position(line=0, character=5)),
+    )
+    current_record = SymbolRecord(
+        "alpha",
+        "rule",
+        uri,
+        Range(Position(line=0, character=0), Position(line=0, character=5)),
+    )
+
+    parent_cache = parent / ".yaraast" / "lsp-workspace-index.json"
+    child_cache = child / ".yaraast" / "lsp-workspace-index.json"
+    parent_cache.parent.mkdir(parents=True, exist_ok=True)
+    child_cache.parent.mkdir(parents=True, exist_ok=True)
+    parent_cache.write_text(
+        json.dumps({"symbols": {uri: [stale_record.to_dict()]}}, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    child_cache.write_text(
+        json.dumps({"symbols": {uri: [current_record.to_dict()]}}, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+    index = WorkspaceIndex()
+    index.set_workspace_folders([str(parent), str(child)])
+
+    assert [record.name for record in index.search_records("") if record.kind == "rule"] == [
+        "alpha"
+    ]
 
 
 @pytest.mark.parametrize(

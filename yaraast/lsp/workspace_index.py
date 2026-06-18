@@ -13,6 +13,7 @@ from yaraast.lsp.document_types import (
     YARA_FILE_SUFFIXES,
     SymbolRecord,
     require_workspace_symbol_query,
+    uri_to_path,
 )
 from yaraast.lsp.utils import path_exists, path_is_dir, path_is_file
 
@@ -69,32 +70,92 @@ class WorkspaceIndex:
         self.load()
 
     def _cache_path(self) -> Path | None:
-        if not self.workspace_folders:
+        cache_paths = self._cache_paths()
+        if not cache_paths:
             return None
-        root = self.workspace_folders[0]
+        return cache_paths[0]
+
+    def _cache_paths(self) -> list[Path]:
+        cache_paths: list[Path] = []
+        seen: set[Path] = set()
+        for root in self.workspace_folders:
+            cache_path = self._cache_path_for_root(root)
+            if cache_path in seen:
+                continue
+            seen.add(cache_path)
+            cache_paths.append(cache_path)
+        return cache_paths
+
+    def _cache_path_for_root(self, root: Path) -> Path:
         if path_is_file(root):
             root = root.parent
         return root / ".yaraast" / "lsp-workspace-index.json"
 
-    def load(self) -> None:
-        cache_path = self._cache_path()
-        self.persisted_symbols = {}
-        if cache_path is None or not path_exists(cache_path):
-            return
-        try:
-            payload = json.loads(cache_path.read_text(encoding="utf-8"))
-        except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
-            return
-        if not isinstance(payload, dict):
-            return
-        raw_symbols = payload.get("symbols", {})
-        if not isinstance(raw_symbols, dict):
-            return
-        for uri, symbols in raw_symbols.items():
-            if not isinstance(uri, str) or not isinstance(symbols, list):
+    def _workspace_root_for_uri(self, uri: str) -> Path | None:
+        path = uri_to_path(uri)
+        if path is None:
+            return None
+        return self._workspace_root_for_path(path)
+
+    def _workspace_root_for_path(self, path: Path) -> Path | None:
+        resolved_path = path.resolve()
+        best_root: Path | None = None
+        best_length = -1
+        for root in self.workspace_folders:
+            if not self._workspace_root_matches_path(resolved_path, root):
                 continue
-            self.persisted_symbols[uri] = self._load_symbol_records(uri, symbols)
+            resolved_root = root.resolve()
+            root_length = len(str(resolved_root))
+            if root_length > best_length:
+                best_root = root
+                best_length = root_length
+        return best_root
+
+    def _workspace_root_matches_path(self, path: Path, root: Path) -> bool:
+        try:
+            resolved_root = root.resolve()
+        except OSError:
+            return False
+        if path_is_file(root):
+            return path == resolved_root
+        return path == resolved_root or path.is_relative_to(resolved_root)
+
+    def _cache_payloads(self) -> dict[Path, dict[str, list[SymbolRecord]]]:
+        payloads: dict[Path, dict[str, list[SymbolRecord]]] = {}
+        for uri, symbols in self.persisted_symbols.items():
+            root = self._workspace_root_for_uri(uri)
+            if root is None:
+                continue
+            cache_path = self._cache_path_for_root(root)
+            root_payload = payloads.setdefault(cache_path, {})
+            root_payload[uri] = list(symbols)
+        return payloads
+
+    def load(self) -> None:
+        self.persisted_symbols = {}
+        for cache_path in self._cache_paths():
+            if not path_exists(cache_path):
+                continue
+            try:
+                payload = json.loads(cache_path.read_text(encoding="utf-8"))
+            except Exception:
+                logger.debug("Operation failed in %s", __name__, exc_info=True)
+                continue
+            if not isinstance(payload, dict):
+                continue
+            raw_symbols = payload.get("symbols", {})
+            if not isinstance(raw_symbols, dict):
+                continue
+            for uri, symbols in raw_symbols.items():
+                if not isinstance(uri, str) or not isinstance(symbols, list):
+                    continue
+                root = self._workspace_root_for_uri(uri)
+                if root is not None and self._cache_path_for_root(root) != cache_path:
+                    continue
+                loaded_symbols = self._load_symbol_records(uri, symbols)
+                if not loaded_symbols:
+                    continue
+                self.persisted_symbols.setdefault(uri, []).extend(loaded_symbols)
 
     def _load_symbol_records(self, uri: str, symbols: list[object]) -> list[SymbolRecord]:
         records: list[SymbolRecord] = []
@@ -111,21 +172,25 @@ class WorkspaceIndex:
         return records
 
     def save(self) -> None:
-        cache_path = self._cache_path()
-        if cache_path is None:
-            return
         persisted_symbols = _validated_persisted_symbols(self.persisted_symbols)
-        payload = {
-            "symbols": {
-                uri: [symbol.to_dict() for symbol in symbols]
-                for uri, symbols in persisted_symbols.items()
+        payloads = self._cache_payloads()
+        for cache_path in self._cache_paths():
+            payload_symbols = payloads.get(cache_path, {})
+            payload = {
+                "symbols": {
+                    uri: [symbol.to_dict() for symbol in symbols]
+                    for uri, symbols in payload_symbols.items()
+                    if uri in persisted_symbols
+                }
             }
-        }
-        try:
-            cache_path.parent.mkdir(parents=True, exist_ok=True)
-            cache_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-        except OSError:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            try:
+                cache_path.parent.mkdir(parents=True, exist_ok=True)
+                cache_path.write_text(
+                    json.dumps(payload, indent=2, sort_keys=True),
+                    encoding="utf-8",
+                )
+            except OSError:
+                logger.debug("Operation failed in %s", __name__, exc_info=True)
 
     def update_document(self, document: DocumentContext) -> None:
         if not isinstance(document, DocumentContext):
