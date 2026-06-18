@@ -60,7 +60,11 @@ class DocumentLinksProvider:
         try:
             if self.runtime and document_uri:
                 doc = self.runtime.ensure_document(document_uri, text)
-                symbol_records = doc.symbols()
+                try:
+                    symbol_records = doc.symbols()
+                except Exception:
+                    logger.debug("Operation failed in %s", __name__, exc_info=True)
+                    symbol_records = []
                 links.extend(self._create_runtime_symbol_links(doc, symbol_records))
                 links.extend(self._create_rule_reference_links(document_uri))
                 self._append_fallback_links(links, text, document_uri)

@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from lsprotocol.types import SymbolInformation
 
 from yaraast.lsp.document_types import SymbolRecord, require_workspace_symbol_query
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from yaraast.lsp.runtime import LspRuntime
@@ -37,7 +40,12 @@ def workspace_symbol_records(runtime: LspRuntime, query: object = "") -> list[Sy
     for uri in list(runtime._dirty_documents):
         runtime._sync_document_to_index(uri)
     for doc in runtime.documents.values():
-        for record in doc.symbols():
+        try:
+            doc_symbols = doc.symbols()
+        except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            continue
+        for record in doc_symbols:
             if record.kind in hidden_kinds:
                 continue
             if query and query_lower not in record.name.lower():
@@ -54,7 +62,12 @@ def _uncached_workspace_symbol_records(runtime: LspRuntime, query: str) -> list[
     hidden_kinds = {"rule_block", "section_header"}
     records: list[SymbolRecord] = []
     for doc in runtime.iter_workspace_documents():
-        for record in doc.symbols():
+        try:
+            doc_symbols = doc.symbols()
+        except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            continue
+        for record in doc_symbols:
             if record.kind in hidden_kinds:
                 continue
             if query and query_lower not in record.name.lower():

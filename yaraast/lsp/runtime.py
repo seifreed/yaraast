@@ -205,7 +205,10 @@ class LspRuntime:
             self._dirty_documents.discard(uri)
             self.cache.bump_generation()
             return
-        self.index.update_document(ctx)
+        try:
+            self.index.update_document(ctx)
+        except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
         self._dirty_documents.discard(uri)
         self.cache.bump_generation()
 

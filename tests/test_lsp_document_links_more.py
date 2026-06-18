@@ -9,7 +9,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.lsp.document_links import DocumentLinksProvider
-from yaraast.lsp.document_types import path_to_uri
+from yaraast.lsp.document_types import SymbolRecord, path_to_uri
 from yaraast.lsp.runtime import DocumentContext, LspRuntime
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
@@ -192,6 +192,37 @@ def test_document_links_fallbacks_when_runtime_symbols_are_unavailable(
     targets = {link.target for link in links if link.target is not None}
     assert any("pe.html" in target for target in targets)
     assert any(target.startswith("file://") for target in targets)
+
+
+def test_document_links_keep_runtime_rule_links_when_symbol_scan_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    common = tmp_path / "common.yar"
+    user = tmp_path / "user.yar"
+    common.write_text("rule shared_rule { condition: true }\n", encoding="utf-8")
+    user.write_text('import "pe"\nrule local_rule { condition: shared_rule }\n', encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    text = user.read_text(encoding="utf-8")
+    uri = path_to_uri(user)
+    runtime.open_document(uri, text)
+
+    original_symbols = DocumentContext.symbols
+
+    def broken_symbols(self: DocumentContext) -> list[SymbolRecord]:
+        if self.uri == uri:
+            raise RuntimeError("boom")
+        return original_symbols(self)
+
+    monkeypatch.setattr(DocumentContext, "symbols", broken_symbols)
+
+    links = DocumentLinksProvider(runtime).get_document_links(text, uri)
+
+    targets = {link.target for link in links if link.target is not None}
+    assert any("pe.html" in target for target in targets)
+    assert common.as_uri() in targets
 
 
 def test_document_links_without_runtime_include_local_rule_links() -> None:

@@ -516,6 +516,37 @@ def test_runtime_workspace_symbol_cache_invalidates_on_document_change(tmp_path:
     assert "$a" in [record.name for record in third]
 
 
+def test_runtime_workspace_symbols_skip_broken_documents(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    good_file = tmp_path / "good.yar"
+    broken_file = tmp_path / "broken.yar"
+    good_file.write_text("rule good { condition: true }\n", encoding="utf-8")
+    broken_file.write_text("rule broken { condition: true }\n", encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    good_uri = path_to_uri(good_file)
+    broken_uri = path_to_uri(broken_file)
+    runtime.open_document(good_uri, good_file.read_text(encoding="utf-8"), version=1)
+    runtime.open_document(broken_uri, broken_file.read_text(encoding="utf-8"), version=1)
+
+    original_symbols = DocumentContext.symbols
+
+    def broken_symbols(self: DocumentContext) -> list[SymbolRecord]:
+        if self.uri == broken_uri:
+            raise RuntimeError("boom")
+        return original_symbols(self)
+
+    monkeypatch.setattr(DocumentContext, "symbols", broken_symbols)
+
+    names = [record.name for record in runtime.workspace_symbol_records("")]
+
+    assert "good" in names
+    assert "broken" not in names
+
+
 def test_document_context_symbol_indexes_invalidate_on_update() -> None:
     runtime = LspRuntime()
     uri = "file:///sample.yar"

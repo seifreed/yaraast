@@ -164,10 +164,10 @@ def test_workspace_symbols_cache_uses_nanosecond_mtime(
         st_mtime = 1.0
         st_mtime_ns = cached_ns + 1
 
-    def fake_stat(self: Path, *args: object, **kwargs: object):
+    def fake_stat(self: Path, *, follow_symlinks: bool = True) -> object:
         if self == yara_file:
             return _FixedStat()
-        return original_stat(self, *args, **kwargs)
+        return original_stat(self, follow_symlinks=follow_symlinks)
 
     yara_file.write_text("rule two { condition: true }\n", encoding="utf-8")
     monkeypatch.setattr(Path, "stat", fake_stat)
