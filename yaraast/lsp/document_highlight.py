@@ -94,16 +94,12 @@ class DocumentHighlightProvider:
         self, text: str, identifier: str, *, rule_scope: str | None = None
     ) -> list[ReferenceRecord]:
         ctx = DocumentContext("file:///document-highlight.yar", text)
-        if ctx.ast() is None:
-            return []
         return ctx.find_string_reference_records(
             identifier, include_declaration=True, rule_scope=rule_scope
         )
 
     def _get_rule_reference_records(self, text: str, identifier: str) -> list[ReferenceRecord]:
         ctx = DocumentContext("file:///document-highlight.yar", text)
-        if ctx.ast() is None:
-            return []
         return ctx.rule_reference_records(identifier, include_declaration=True)
 
     def _highlights_from_records(self, records: list[ReferenceRecord]) -> list[DocumentHighlight]:

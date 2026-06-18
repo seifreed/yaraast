@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lsprotocol.types import Position
+from lsprotocol.types import DocumentHighlightKind, Position
 
 from yaraast.lsp.document_highlight import DocumentHighlightProvider
 from yaraast.lsp.document_highlight_helpers import (
@@ -25,10 +25,19 @@ def test_document_highlight_out_of_range_position() -> None:
 
 
 def test_document_highlight_fallback_on_parse_error() -> None:
-    text = "$a $a"
+    text = """
+rule sample {
+  condition:
+    sample
+}
+
+rule broken {
+  condition:
+""".lstrip()
     provider = DocumentHighlightProvider()
-    highlights = provider.get_highlights(text, _pos(0, 1))
-    assert len(highlights) >= 2
+    highlights = provider.get_highlights(text, _pos(0, 5))
+    assert any(highlight.kind == DocumentHighlightKind.Write for highlight in highlights)
+    assert any(highlight.kind == DocumentHighlightKind.Read for highlight in highlights)
 
 
 def test_document_highlight_fallback_returns_utf16_ranges() -> None:
