@@ -8,7 +8,7 @@ import re
 from typing import Any
 
 from yaraast.ast.base import _VisitorType
-from yaraast.ast.expressions import Expression, _validate_expression
+from yaraast.ast.expressions import Expression, _validate_expression, _validate_integer_expression
 from yaraast.string_references import normalize_string_reference_id
 
 type QuantifierValue = Expression | str | int | float
@@ -338,6 +338,7 @@ class AtExpression(Condition):
         )
         _validate_restricted_of_expression(self.string_id)
         _validate_required_expression(self.offset, "'at' offset must be an AST node")
+        _validate_integer_expression(self.offset, "At expression offset")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_at_expression(self)

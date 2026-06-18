@@ -165,7 +165,7 @@ def _constant_range_integer_value(value: Any) -> int | None:
     return None
 
 
-def _validate_range_bound_expression(value: Any, field_name: str) -> None:
+def _validate_integer_expression(value: Any, field_name: str) -> None:
     if _is_definitely_non_integer_range_bound(value):
         msg = f"{field_name} must be integer"
         raise ValueError(msg)
@@ -482,8 +482,8 @@ class RangeExpression(Expression):
         """Validate range bounds before direct analysis."""
         _validate_expression(self.low, "RangeExpression.low")
         _validate_expression(self.high, "RangeExpression.high")
-        _validate_range_bound_expression(self.low, "Range low bound")
-        _validate_range_bound_expression(self.high, "Range high bound")
+        _validate_integer_expression(self.low, "Range low bound")
+        _validate_integer_expression(self.high, "Range high bound")
         _validate_constant_range_bounds(self.low, self.high)
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -597,6 +597,7 @@ class ArrayAccess(Expression):
         """Validate array and index expressions before direct analysis."""
         _validate_expression(self.array, "ArrayAccess.array")
         _validate_expression(self.index, "ArrayAccess.index")
+        _validate_integer_expression(self.index, "Array index")
         from yaraast.ast.conditions import AtExpression
         from yaraast.ast.modules import ModuleReference
         from yaraast.yarax.ast_nodes import TupleExpression, WithStatement

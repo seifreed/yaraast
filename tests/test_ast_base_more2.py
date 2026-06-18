@@ -806,6 +806,9 @@ def test_direct_yarafile_analysis_rejects_invalid_regex_literals(
             ),
             "Range low bound cannot exceed high bound",
         ),
+        (ArrayAccess(Identifier("arr"), BooleanLiteral(True)), "Array index must be integer"),
+        (ArrayAccess(Identifier("arr"), StringLiteral("0")), "Array index must be integer"),
+        (ArrayAccess(Identifier("arr"), DoubleLiteral(1.5)), "Array index must be integer"),
     ],
 )
 def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
@@ -827,6 +830,9 @@ def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
             "AtExpression string_id must be a string or expression",
         ),
         (AtExpression("$a", cast(Any, object())), "'at' offset must be an AST node"),
+        (AtExpression("$a", BooleanLiteral(True)), "At expression offset must be integer"),
+        (AtExpression("$a", StringLiteral("0")), "At expression offset must be integer"),
+        (AtExpression("$a", DoubleLiteral(1.5)), "At expression offset must be integer"),
         (InExpression("", Identifier("filesize")), "InExpression subject must not be empty"),
         (
             InExpression(cast(Any, 7), Identifier("filesize")),
