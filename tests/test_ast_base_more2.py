@@ -1254,30 +1254,49 @@ def test_direct_yarafile_analysis_rejects_invalid_extern_reference_fields(
 
 
 @pytest.mark.parametrize(
-    ("modifiers", "message"),
+    ("string_def", "message"),
     [
-        (cast(Any, "wide"), "PlainString modifiers must be a list"),
-        ([cast(Any, object())], "PlainString modifiers item must be StringModifier or string"),
-        ([""], "PlainString modifier name cannot be empty"),
         (
-            [StringModifier(cast(Any, "xor"))],
+            PlainString("$a", value="abc", modifiers=cast(Any, "wide")),
+            "PlainString modifiers must be a list",
+        ),
+        (
+            PlainString("$a", value="abc", modifiers=[cast(Any, object())]),
+            "PlainString modifiers item must be StringModifier or string",
+        ),
+        (
+            PlainString("$a", value="abc", modifiers=[""]),
+            "PlainString modifier name cannot be empty",
+        ),
+        (PlainString("$a", value="abc", modifiers=["badmod"]), "Unknown string modifier"),
+        (RegexString("$r", regex="abc", modifiers=["badmod"]), "Unknown string modifier"),
+        (
+            HexString("$h", tokens=[HexByte(0x41)], modifiers=["badmod"]),
+            "Unknown string modifier",
+        ),
+        (
+            PlainString("$a", value="abc", modifiers=[StringModifier(cast(Any, "xor"))]),
             "StringModifier modifier_type must be a StringModifierType",
         ),
         (
-            [StringModifier(StringModifierType.XOR, cast(Any, object()))],
+            PlainString(
+                "$a",
+                value="abc",
+                modifiers=[StringModifier(StringModifierType.XOR, cast(Any, object()))],
+            ),
             "StringModifier value must be a string, number, tuple, or null",
         ),
     ],
 )
 def test_direct_yarafile_analysis_rejects_invalid_string_modifiers(
-    modifiers: Any,
+    string_def: Any,
     message: str,
 ) -> None:
     malformed_file = YaraFile(
         rules=[
             Rule(
                 "bad_string_modifier",
-                strings=[PlainString("$a", value="abc", modifiers=modifiers)],
+                strings=[string_def],
                 condition=BooleanLiteral(True),
             )
         ]

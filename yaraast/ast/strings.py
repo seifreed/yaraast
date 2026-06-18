@@ -16,6 +16,7 @@ from yaraast.regex_literals import validate_regex_pattern
 from yaraast.string_references import validate_string_identifier_text
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+_REGEX_SUFFIX_MODIFIER_NAMES = frozenset({"i", "m", "s"})
 _MISSING = object()
 
 
@@ -122,13 +123,25 @@ class StringDefinition(ASTNode):
         if not isinstance(self.modifiers, list):
             msg = f"{type(self).__name__} modifiers must be a list"
             raise TypeError(msg)
-        from yaraast.ast.modifiers import StringModifier
+        from yaraast.ast.modifiers import StringModifier, StringModifierType
+
+        known_modifier_names = {modifier_type.value for modifier_type in StringModifierType}
 
         for modifier in self.modifiers:
             if isinstance(modifier, StringModifier):
                 modifier.validate_structure()
             elif isinstance(modifier, str):
-                _require_nonempty_string(modifier, f"{type(self).__name__} modifier name")
+                modifier_name = _require_nonempty_string(
+                    modifier,
+                    f"{type(self).__name__} modifier name",
+                )
+                normalized_name = modifier_name.lower()
+                if (
+                    normalized_name not in _REGEX_SUFFIX_MODIFIER_NAMES
+                    and normalized_name not in known_modifier_names
+                ):
+                    msg = f"Unknown string modifier: {modifier_name}"
+                    raise ValueError(msg)
             else:
                 msg = f"{type(self).__name__} modifiers item must be StringModifier or string"
                 raise TypeError(msg)
