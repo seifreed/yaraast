@@ -1286,6 +1286,54 @@ def test_direct_yarafile_analysis_rejects_invalid_extern_reference_fields(
             ),
             "StringModifier value must be a string, number, tuple, or null",
         ),
+        (
+            PlainString(
+                "$a",
+                value="abc",
+                modifiers=[StringModifier(StringModifierType.NOCASE, 1)],
+            ),
+            "String modifier 'nocase' does not accept a value",
+        ),
+        (
+            PlainString(
+                "$a",
+                value="abc",
+                modifiers=[StringModifier(StringModifierType.XOR, 999)],
+            ),
+            "xor value must be a byte",
+        ),
+        (
+            PlainString(
+                "$a",
+                value="abc",
+                modifiers=[StringModifier(StringModifierType.XOR, (5, 1))],
+            ),
+            "xor range value must be ascending",
+        ),
+        (
+            PlainString(
+                "$a",
+                value="abc",
+                modifiers=[StringModifier(StringModifierType.XOR, (0, 999))],
+            ),
+            "xor range value must contain byte bounds",
+        ),
+        (
+            PlainString(
+                "$a",
+                value="abc",
+                modifiers=[StringModifier(StringModifierType.BASE64, "short")],
+            ),
+            "base64 alphabet must be 64 bytes",
+        ),
+        (
+            PlainString(
+                "$a",
+                value="abc",
+                modifiers=[StringModifier(StringModifierType.BASE64, 1)],
+            ),
+            "base64 value must be a string",
+        ),
     ],
 )
 def test_direct_yarafile_analysis_rejects_invalid_string_modifiers(

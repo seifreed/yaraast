@@ -112,6 +112,76 @@ def _parse_xor_key_text(value: str) -> int | None:
     return key if 0 <= key <= 0xFF else None
 
 
+def _is_xor_key_value(value: Any) -> bool:
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, int):
+        return 0 <= value <= 0xFF
+    if isinstance(value, str):
+        return _parse_xor_key_text(value.strip()) is not None
+    return False
+
+
+def _validate_xor_modifier_value(value: str | int | float | tuple[int, int] | None) -> None:
+    if value is None:
+        return
+    if isinstance(value, tuple):
+        low, high = value
+        if not (0 <= low <= 0xFF and 0 <= high <= 0xFF):
+            msg = "xor range value must contain byte bounds"
+            raise TypeError(msg)
+        if low > high:
+            msg = "xor range value must be ascending"
+            raise TypeError(msg)
+        return
+    if isinstance(value, str) and "-" in value:
+        low_text, high_text = value.split("-", maxsplit=1)
+        parsed_low = _parse_xor_key_text(low_text.strip())
+        parsed_high = _parse_xor_key_text(high_text.strip())
+        if parsed_low is None or parsed_high is None:
+            msg = "xor range value must contain byte bounds"
+            raise TypeError(msg)
+        if parsed_low > parsed_high:
+            msg = "xor range value must be ascending"
+            raise TypeError(msg)
+        return
+    if _is_xor_key_value(value):
+        return
+    msg = "xor value must be a byte"
+    raise TypeError(msg)
+
+
+def _validate_base64_modifier_value(
+    modifier_type: "StringModifierType",
+    value: str | int | float | tuple[int, int] | None,
+) -> None:
+    if not isinstance(value, str):
+        msg = f"{modifier_type.value} value must be a string"
+        raise TypeError(msg)
+    try:
+        encoded_value = value.encode("ascii")
+    except UnicodeEncodeError:
+        encoded_value = b""
+    if len(encoded_value) != 64:
+        msg = f"{modifier_type.value} alphabet must be 64 bytes"
+        raise TypeError(msg)
+
+
+def _validate_string_modifier_parameter(
+    modifier_type: "StringModifierType",
+    value: str | int | float | tuple[int, int] | None,
+) -> None:
+    if modifier_type == StringModifierType.XOR:
+        _validate_xor_modifier_value(value)
+        return
+    if modifier_type in {StringModifierType.BASE64, StringModifierType.BASE64WIDE}:
+        _validate_base64_modifier_value(modifier_type, value)
+        return
+    if value is not None:
+        msg = f"String modifier '{modifier_type.value}' does not accept a value"
+        raise ValueError(msg)
+
+
 class StringModifierType(Enum):
     """Enumeration of all YARA string modifiers."""
 
@@ -210,8 +280,9 @@ class StringModifier(ASTNode):
 
     def validate_structure(self) -> None:
         """Validate string modifier fields before direct analysis."""
-        _require_string_modifier_type(self.modifier_type)
-        _require_string_modifier_value(self.value)
+        modifier_type = _require_string_modifier_type(self.modifier_type)
+        value = _require_string_modifier_value(self.value)
+        _validate_string_modifier_parameter(modifier_type, value)
 
     @classmethod
     def from_name_value(cls, name: str, value: Any | None = None) -> "StringModifier":
