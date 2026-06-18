@@ -84,6 +84,28 @@ def test_hover_rule_name() -> None:
     assert "Metadata" in hover_rule_text
 
 
+def test_hover_rule_name_survives_parse_failure() -> None:
+    provider = HoverProvider()
+    text = dedent("""
+        rule alpha : tag1 {
+            strings:
+                $a = "abc"
+            condition:
+                true
+        }
+
+        rule broken {
+            condition:
+        """).lstrip()
+
+    hover_rule = provider.get_hover(text, _pos(0, 5))
+    assert hover_rule is not None
+    hover_rule_text = _hover_text(hover_rule)
+    assert "**alpha**" in hover_rule_text
+    assert "Tags: tag1" in hover_rule_text
+    assert "**Strings:** 1 defined" in hover_rule_text
+
+
 def test_hover_module_member_direct() -> None:
     provider = HoverProvider()
     word_hover = provider.get_hover("pe.imphash", _pos(0, 1))

@@ -1035,6 +1035,36 @@ rule sample : a b {
     assert ("author", "me") in info["meta"]
 
 
+def test_document_context_recovers_rule_info_from_parse_failure(tmp_path: Path) -> None:
+    doc_path = tmp_path / "doc.yar"
+    text = """
+rule sample : a b {
+  meta:
+    author = "me"
+  strings:
+    $a = "x"
+  condition:
+    $a
+}
+
+rule broken {
+  condition:
+""".lstrip()
+    uri = path_to_uri(doc_path)
+
+    runtime = LspRuntime()
+    runtime.open_document(uri, text)
+    doc = runtime.ensure_document(uri, text)
+
+    info = doc.get_rule_info("sample")
+    assert info is not None
+    assert info["name"] == "sample"
+    assert info["tags"] == ["a", "b"]
+    assert info["strings_count"] == 1
+    assert doc.get_rule_string_identifiers("sample") == ["$a"]
+    assert doc.get_rule_sections("sample") == ["meta", "strings", "condition"]
+
+
 def test_document_context_exposes_rule_meta_items_and_string_identifiers(tmp_path: Path) -> None:
     doc_path = tmp_path / "doc.yar"
     text = """

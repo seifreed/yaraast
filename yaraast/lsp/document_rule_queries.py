@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Any
+
+from yaraast.lsp.structure import find_rule_end, find_rule_line, find_section_header_position
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
+
+_RULE_HEADER_RE = re.compile(
+    r"^\s*(?P<modifiers>(?:(?:global|private)\s+)*)rule\s+(?P<name>\w+)"
+    r"\s*(?:\:\s*(?P<tags>[^{]+))?\s*\{?"
+)
 
 
 def _copy_rule_info(info: dict[str, Any]) -> dict[str, Any]:
@@ -24,7 +32,37 @@ def get_rule_info(ctx: DocumentContext, rule_name: str) -> dict[str, Any] | None
         return _copy_rule_info(cached)
     rule = ctx.get_rule(rule_name)
     if rule is None:
-        return None
+        rule_line = find_rule_line(ctx.lines, rule_name)
+        if rule_line < 0:
+            return None
+        header = ctx.lines[rule_line]
+        match = _RULE_HEADER_RE.match(header)
+        if match is None:
+            return None
+        modifiers = match.group("modifiers").split()
+        tags = match.group("tags").split() if match.group("tags") else []
+        meta_items: list[tuple[str, Any]] = []
+        strings_count = len(
+            [
+                symbol
+                for symbol in ctx._symbols_of_kind("string")
+                if symbol.container_name == rule_name
+            ]
+        )
+        section_names = get_rule_sections(ctx, rule_name)
+        result = {
+            "name": rule_name,
+            "modifiers": modifiers,
+            "tags": tags,
+            "meta": meta_items,
+            "strings_count": strings_count,
+            "has_events": "events" in section_names,
+            "has_match": "match" in section_names,
+            "has_outcome": "outcome" in section_names,
+            "has_options": "options" in section_names,
+        }
+        ctx.set_cached(cache_key, result)
+        return _copy_rule_info(result)
     modifiers = getattr(rule, "modifiers", None) or []
     tags = getattr(rule, "tags", None) or []
     meta = getattr(rule, "meta", None)
@@ -75,7 +113,13 @@ def get_rule_string_identifiers(ctx: DocumentContext, rule_name: str) -> list[st
         return list(cached)
     rule = ctx.get_rule(rule_name)
     if rule is None:
-        return []
+        result = [
+            symbol.name
+            for symbol in ctx._symbols_of_kind("string")
+            if symbol.container_name == rule_name and symbol.name
+        ]
+        ctx.set_cached(cache_key, result)
+        return list(result)
     result = [
         "$" if getattr(string_def, "is_anonymous", False) else string_def.identifier
         for string_def in getattr(rule, "strings", []) or []
@@ -96,6 +140,13 @@ def get_rule_sections(ctx: DocumentContext, rule_name: str) -> list[str]:
         if symbol.container_name == rule_name and symbol.name not in seen:
             sections.append(symbol.name)
             seen.add(symbol.name)
+    if not sections and ctx.get_rule(rule_name) is None:
+        rule_line = find_rule_line(ctx.lines, rule_name)
+        if rule_line >= 0:
+            rule_end = find_rule_end(ctx.lines, rule_line)
+            for name in ("meta", "strings", "condition", "events", "match", "outcome", "options"):
+                if find_section_header_position(ctx.lines, name, rule_line, rule_end) is not None:
+                    sections.append(name)
     order = {
         name: idx
         for idx, name in enumerate(

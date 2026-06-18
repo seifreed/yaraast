@@ -26,6 +26,7 @@ from yaraast.lsp.structure import (
     find_rule_end,
     find_rule_line,
     find_section_header_position,
+    find_section_header_range,
     find_section_range,
     make_range,
 )
@@ -59,6 +60,7 @@ def build_text_symbols(ctx: DocumentContext, lines: list[str]) -> list[SymbolRec
     _build_text_import_symbols(ctx, lines, symbols)
     _build_text_include_symbols(ctx, lines, symbols)
     _build_text_rule_symbols(ctx, lines, symbols)
+    _build_text_section_symbols(ctx, lines, symbols)
     _build_text_string_symbols(ctx, lines, symbols)
     return symbols
 
@@ -134,6 +136,45 @@ def _build_text_rule_symbols(
         symbols.append(
             SymbolRecord(name=rule_name, kind="rule_block", uri=ctx.uri, range=block_range)
         )
+
+
+def _build_text_section_symbols(
+    ctx: DocumentContext, lines: list[str], symbols: list[SymbolRecord]
+) -> None:
+    section_names = ("meta", "strings", "condition", "events", "match", "outcome", "options")
+    seen: set[tuple[str, str]] = set()
+    for rule_name, rule_line, rule_end in _iter_text_rules(lines):
+        for section_name in section_names:
+            position = find_section_header_position(lines, section_name, rule_line, rule_end)
+            if position is None:
+                continue
+            line_num, column = position
+            key = (rule_name, section_name)
+            if key in seen:
+                continue
+            seen.add(key)
+            section_header_range = find_section_header_range(lines, section_name, line_num, column)
+            section_range = find_section_range(lines, section_name, rule_line, rule_end)
+            if section_range is None:
+                section_range = make_range(line_num, 0, len(lines[line_num]))
+            symbols.append(
+                SymbolRecord(
+                    name=section_name,
+                    kind="section",
+                    uri=ctx.uri,
+                    range=section_range,
+                    container_name=rule_name,
+                )
+            )
+            symbols.append(
+                SymbolRecord(
+                    name=section_name,
+                    kind="section_header",
+                    uri=ctx.uri,
+                    range=section_header_range,
+                    container_name=rule_name,
+                )
+            )
 
 
 def _build_text_string_symbols(
