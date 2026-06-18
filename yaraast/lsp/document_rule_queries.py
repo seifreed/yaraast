@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -41,7 +42,7 @@ def get_rule_info(ctx: DocumentContext, rule_name: str) -> dict[str, Any] | None
             return None
         modifiers = match.group("modifiers").split()
         tags = match.group("tags").split() if match.group("tags") else []
-        meta_items: list[tuple[str, Any]] = []
+        meta_items = get_rule_meta_items(ctx, rule_name)
         strings_count = len(
             [
                 symbol
@@ -94,7 +95,9 @@ def get_rule_meta_items(ctx: DocumentContext, rule_name: str) -> list[tuple[str,
         return list(cached)
     rule = ctx.get_rule(rule_name)
     if rule is None:
-        return []
+        result = _fallback_rule_meta_items(ctx, rule_name)
+        ctx.set_cached(cache_key, result)
+        return list(result)
     meta = getattr(rule, "meta", None)
     if isinstance(meta, list):
         result = [(getattr(m, "key", ""), getattr(m, "value", "")) for m in meta]
@@ -156,3 +159,50 @@ def get_rule_sections(ctx: DocumentContext, rule_name: str) -> list[str]:
     sections.sort(key=lambda name: (order.get(name, 99), name))
     ctx.set_cached(cache_key, sections)
     return list(sections)
+
+
+def _fallback_rule_meta_items(ctx: DocumentContext, rule_name: str) -> list[tuple[str, Any]]:
+    rule_line = find_rule_line(ctx.lines, rule_name)
+    if rule_line < 0:
+        return []
+    rule_end = find_rule_end(ctx.lines, rule_line)
+    header_position = find_section_header_position(ctx.lines, "meta", rule_line, rule_end)
+    if header_position is None:
+        return []
+    meta_line = header_position[0]
+    stop_line = rule_end
+    for section_name in ("strings", "condition", "events", "match", "outcome", "options"):
+        section_position = find_section_header_position(
+            ctx.lines, section_name, meta_line + 1, rule_end
+        )
+        if section_position is not None:
+            stop_line = min(stop_line, section_position[0] - 1)
+    result: list[tuple[str, Any]] = []
+    for line_num in range(meta_line + 1, stop_line + 1):
+        line = ctx.lines[line_num].strip()
+        if not line or line.startswith(("//", "/*")):
+            continue
+        key, value = _parse_meta_assignment(line)
+        if key is None:
+            continue
+        result.append((key, value))
+    return result
+
+
+def _parse_meta_assignment(line: str) -> tuple[str | None, Any]:
+    if "=" not in line:
+        return None, None
+    key_text, value_text = line.split("=", 1)
+    key = key_text.strip()
+    if not key:
+        return None, None
+    raw_value = value_text.strip()
+    if not raw_value:
+        return key, ""
+    try:
+        return key, ast.literal_eval(raw_value)
+    except (SyntaxError, ValueError):
+        lowered = raw_value.lower()
+        if lowered in {"true", "false"}:
+            return key, lowered == "true"
+        return key, raw_value.strip('"')

@@ -88,6 +88,8 @@ def test_hover_rule_name_survives_parse_failure() -> None:
     provider = HoverProvider()
     text = dedent("""
         rule alpha : tag1 {
+            meta:
+                author = "me"
             strings:
                 $a = "abc"
             condition:
@@ -103,6 +105,7 @@ def test_hover_rule_name_survives_parse_failure() -> None:
     hover_rule_text = _hover_text(hover_rule)
     assert "**alpha**" in hover_rule_text
     assert "Tags: tag1" in hover_rule_text
+    assert "Metadata" in hover_rule_text
     assert "**Strings:** 1 defined" in hover_rule_text
 
 

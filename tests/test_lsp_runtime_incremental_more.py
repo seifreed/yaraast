@@ -1060,7 +1060,9 @@ rule broken {
     assert info is not None
     assert info["name"] == "sample"
     assert info["tags"] == ["a", "b"]
+    assert info["meta"] == [("author", "me")]
     assert info["strings_count"] == 1
+    assert doc.get_rule_meta_items("sample") == [("author", "me")]
     assert doc.get_rule_string_identifiers("sample") == ["$a"]
     assert doc.get_rule_sections("sample") == ["meta", "strings", "condition"]
 
