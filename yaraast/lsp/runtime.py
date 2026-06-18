@@ -239,6 +239,10 @@ class LspRuntime:
             return self.open_document(uri, text)
         if self._document_is_backed_by_file(uri):
             ctx.backed_by_file = True
+        elif not ctx.backed_by_file:
+            if text is not None:
+                ctx.update(text, ctx.version, is_open=True)
+            return ctx
         if text is not None:
             ctx.update(text, ctx.version, is_open=True)
             self._mark_dirty(uri)
