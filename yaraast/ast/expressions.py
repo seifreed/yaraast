@@ -19,7 +19,14 @@ from yaraast.string_references import (
     normalize_string_reference_id,
 )
 
+_INT64_BITS = 64
+_INT64_MAX = (1 << 63) - 1
+_UINT64_MASK = (1 << _INT64_BITS) - 1
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_RANGE_INTEGER_BINARY_OPERATORS = frozenset({"+", "-", "*", "%", "&", "|", "^", "<<", ">>"})
+_RANGE_NON_INTEGER_BINARY_OPERATORS = frozenset(
+    {"<", "<=", ">", ">=", "==", "!=", "and", "or", "contains", "matches", "icontains", "iequals"}
+)
 
 
 def _validate_expression_identifier(name: object) -> str:
@@ -56,6 +63,125 @@ def _validate_regex_text(pattern: str) -> None:
         msg = "Regex pattern must not contain NUL bytes"
         raise ValueError(msg)
     validate_regex_pattern(pattern)
+
+
+def _normalize_range_int64(value: int) -> int:
+    unsigned = value & _UINT64_MASK
+    if unsigned > _INT64_MAX:
+        return unsigned - (1 << _INT64_BITS)
+    return unsigned
+
+
+def _range_integer_remainder(left: int, right: int) -> int:
+    quotient = abs(left) // abs(right)
+    if (left < 0) != (right < 0):
+        quotient = -quotient
+    return left - quotient * right
+
+
+def _range_shift_left_int64(left: int, right: int) -> int:
+    if right >= _INT64_BITS:
+        return 0
+    return _normalize_range_int64(left << right)
+
+
+def _range_shift_right_int64(left: int, right: int) -> int:
+    if right >= _INT64_BITS:
+        return 0
+    return _normalize_range_int64(left) >> right
+
+
+def _is_definitely_non_integer_range_bound(value: Any) -> bool:
+    if isinstance(value, ParenthesesExpression):
+        return _is_definitely_non_integer_range_bound(value.expression)
+    if isinstance(value, BinaryExpression):
+        if value.operator in _RANGE_NON_INTEGER_BINARY_OPERATORS:
+            return True
+        if value.operator == "/":
+            return True
+        if value.operator in _RANGE_INTEGER_BINARY_OPERATORS | {"\\"}:
+            return _is_definitely_non_integer_range_bound(
+                value.left
+            ) or _is_definitely_non_integer_range_bound(value.right)
+        return False
+    if isinstance(value, UnaryExpression):
+        if value.operator in {"-", "~"}:
+            return _is_definitely_non_integer_range_bound(value.operand)
+        return True
+    return isinstance(
+        value, BooleanLiteral | DoubleLiteral | StringLiteral | RegexLiteral | StringIdentifier
+    )
+
+
+def _constant_range_integer_value(value: Any) -> int | None:
+    if (
+        isinstance(value, IntegerLiteral)
+        and isinstance(value.value, int)
+        and not isinstance(value.value, bool)
+    ):
+        return value.value
+    if isinstance(value, ParenthesesExpression):
+        return _constant_range_integer_value(value.expression)
+    if isinstance(value, UnaryExpression):
+        operand = _constant_range_integer_value(value.operand)
+        if operand is None:
+            return None
+        if value.operator == "-":
+            return _normalize_range_int64(-operand)
+        if value.operator == "~":
+            return _normalize_range_int64(~operand)
+        return None
+    if (
+        not isinstance(value, BinaryExpression)
+        or value.operator not in _RANGE_INTEGER_BINARY_OPERATORS
+    ):
+        return None
+    left = _constant_range_integer_value(value.left)
+    right = _constant_range_integer_value(value.right)
+    if left is None or right is None:
+        return None
+    if value.operator == "+":
+        return _normalize_range_int64(left + right)
+    if value.operator == "-":
+        return _normalize_range_int64(left - right)
+    if value.operator == "*":
+        return _normalize_range_int64(left * right)
+    if value.operator == "%":
+        if right == 0:
+            return None
+        return _range_integer_remainder(left, right)
+    if value.operator == "&":
+        return _normalize_range_int64(left & right)
+    if value.operator == "|":
+        return _normalize_range_int64(left | right)
+    if value.operator == "^":
+        return _normalize_range_int64(left ^ right)
+    if right < 0:
+        return None
+    if value.operator == "<<":
+        return _range_shift_left_int64(left, right)
+    if value.operator == ">>":
+        return _range_shift_right_int64(left, right)
+    return None
+
+
+def _validate_range_bound_expression(value: Any, field_name: str) -> None:
+    if _is_definitely_non_integer_range_bound(value):
+        msg = f"{field_name} must be integer"
+        raise ValueError(msg)
+
+
+def _validate_constant_range_bounds(low: Any, high: Any) -> None:
+    low_value = _constant_range_integer_value(low)
+    high_value = _constant_range_integer_value(high)
+    if low_value is None or high_value is None:
+        return
+    if low_value < 0:
+        msg = "Range low bound cannot be negative"
+        raise ValueError(msg)
+    if low_value > high_value:
+        msg = "Range low bound cannot exceed high bound"
+        raise ValueError(msg)
 
 
 @dataclass
@@ -356,6 +482,9 @@ class RangeExpression(Expression):
         """Validate range bounds before direct analysis."""
         _validate_expression(self.low, "RangeExpression.low")
         _validate_expression(self.high, "RangeExpression.high")
+        _validate_range_bound_expression(self.low, "Range low bound")
+        _validate_range_bound_expression(self.high, "Range high bound")
+        _validate_constant_range_bounds(self.low, self.high)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_range_expression(self)

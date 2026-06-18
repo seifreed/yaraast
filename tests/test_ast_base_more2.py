@@ -18,6 +18,7 @@ from yaraast.ast.conditions import (
 )
 from yaraast.ast.expressions import (
     ArrayAccess,
+    BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
     FunctionCall,
@@ -782,6 +783,29 @@ def test_direct_yarafile_analysis_rejects_invalid_regex_literals(
         (RegexLiteral(cast(Any, object())), "Regex literal pattern must be a string"),
         (RegexLiteral(""), "RegexLiteral pattern must not be empty"),
         (RegexLiteral("x", cast(Any, object())), "Regex literal modifiers must be a string"),
+        (
+            RangeExpression(BooleanLiteral(True), IntegerLiteral(3)),
+            "Range low bound must be integer",
+        ),
+        (
+            RangeExpression(IntegerLiteral(0), DoubleLiteral(3.5)),
+            "Range high bound must be integer",
+        ),
+        (
+            RangeExpression(IntegerLiteral(-1), IntegerLiteral(3)),
+            "Range low bound cannot be negative",
+        ),
+        (
+            RangeExpression(IntegerLiteral(5), IntegerLiteral(3)),
+            "Range low bound cannot exceed high bound",
+        ),
+        (
+            RangeExpression(
+                ParenthesesExpression(BinaryExpression(IntegerLiteral(2), "+", IntegerLiteral(2))),
+                IntegerLiteral(3),
+            ),
+            "Range low bound cannot exceed high bound",
+        ),
     ],
 )
 def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
