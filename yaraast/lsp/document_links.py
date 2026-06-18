@@ -73,14 +73,14 @@ class DocumentLinksProvider:
                 except Exception:
                     logger.debug("Operation failed in %s", __name__, exc_info=True)
                     symbol_records = []
-                links.extend(self._create_runtime_symbol_links(doc, symbol_records))
+                links.extend(self._create_runtime_symbol_links(doc, symbol_records, document_uri))
                 links.extend(self._create_rule_reference_links(document_uri))
                 self._append_text_rule_links(links, text, document_uri)
                 self._append_fallback_links(links, text, document_uri)
                 return links
             doc = DocumentContext(document_uri, text)
             symbol_records = doc.symbols()
-            links.extend(self._create_runtime_symbol_links(doc, symbol_records))
+            links.extend(self._create_runtime_symbol_links(doc, symbol_records, document_uri))
             links.extend(self._create_local_rule_reference_links(doc))
             self._append_text_rule_links(links, text, document_uri)
             self._append_fallback_links(links, text, document_uri)
@@ -96,6 +96,7 @@ class DocumentLinksProvider:
         self,
         doc: Any,
         symbol_records: list[SymbolRecord],
+        document_uri: str,
     ) -> list[DocumentLink]:
         links: list[DocumentLink] = []
         for record in symbol_records:
@@ -110,7 +111,11 @@ class DocumentLinksProvider:
                         )
                     )
             elif record.kind == "include":
-                target_uri = doc.get_include_target_uri(record.name)
+                target_uri = (
+                    self.runtime.resolve_include_target_uri(document_uri, record.name)
+                    if self.runtime is not None
+                    else doc.get_include_target_uri(record.name)
+                )
                 if target_uri:
                     links.append(
                         DocumentLink(

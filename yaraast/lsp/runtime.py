@@ -192,6 +192,27 @@ class LspRuntime:
         path = uri_to_path(uri)
         return path is not None and path_exists(path) and path_is_file(path)
 
+    def resolve_include_target_uri(self, uri: str, include_path: str) -> str | None:
+        path = uri_to_path(uri)
+        if path is not None:
+            try:
+                direct_candidate = (path.parent / include_path).resolve()
+            except OSError:
+                direct_candidate = None
+            if (
+                direct_candidate is not None
+                and path_exists(direct_candidate)
+                and path_is_file(direct_candidate)
+            ):
+                return path_to_uri(direct_candidate)
+
+        suffix = f"/{include_path}"
+        for candidate in self.index.iter_candidate_files():
+            candidate_text = str(candidate)
+            if candidate.name == include_path or candidate_text.endswith(suffix):
+                return path_to_uri(candidate)
+        return None
+
     def _sync_document_to_index(self, uri: str) -> None:
         if not self.config.cache_workspace:
             return

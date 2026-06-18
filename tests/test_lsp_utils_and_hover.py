@@ -184,6 +184,23 @@ def test_hover_provider_uses_structured_include_resolution_from_runtime(tmp_path
     assert hover_include_range.end.character == 19
 
 
+def test_hover_provider_uses_document_local_include_resolution(tmp_path: Path) -> None:
+    include_file = tmp_path / "common.yar"
+    include_file.write_text("rule common { condition: true }\n", encoding="utf-8")
+    sample = tmp_path / "sample.yar"
+    sample.write_text('include "common.yar"\nrule test { condition: true }\n', encoding="utf-8")
+    text = sample.read_text(encoding="utf-8")
+    provider = HoverProvider()
+    uri = sample.resolve().as_uri()
+
+    hover_include = provider.get_hover(text, Position(line=0, character=10), uri)
+    assert hover_include is not None
+    hover_include_text = _hover_text(hover_include)
+    assert "(include)" in hover_include_text
+    assert "common.yar" in hover_include_text
+    assert str(include_file.resolve()) in hover_include_text
+
+
 def test_hover_provider_uses_structured_module_member_resolution_from_runtime(
     tmp_path: Path,
 ) -> None:

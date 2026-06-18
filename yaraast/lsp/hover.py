@@ -90,7 +90,7 @@ class HoverProvider:
                 else None
             ),
             lambda: (
-                self._get_include_hover(doc, resolved.normalized_name, resolved.range)
+                self._get_include_hover(doc, resolved.normalized_name, resolved.range, uri)
                 if resolved and resolved.kind == "include"
                 else None
             ),
@@ -344,7 +344,14 @@ class HoverProvider:
         doc: DocumentContext,
         include_path: str,
         word_range: Range,
+        uri: str | None,
     ) -> Hover | None:
+        if uri is not None and self.runtime is not None:
+            target_uri = self.runtime.resolve_include_target_uri(uri, include_path)
+            if target_uri is None:
+                return None
+            return render_include_hover(include_path, target_uri, word_range)
+
         include_info = doc.get_include_info(include_path)
         if include_info is None:
             return None

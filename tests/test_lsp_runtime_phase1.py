@@ -6,11 +6,13 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
-from lsprotocol.types import FileChangeType, FileEvent, Location, Position, Range
+from lsprotocol.types import FileChangeType, FileEvent, Location, MarkupContent, Position, Range
 import pytest
 
 from yaraast.lsp.definition import DefinitionProvider
+from yaraast.lsp.document_links import DocumentLinksProvider
 from yaraast.lsp.document_types import SymbolRecord
+from yaraast.lsp.hover import HoverProvider
 from yaraast.lsp.references import ReferencesProvider
 from yaraast.lsp.rename import RenameProvider
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
@@ -137,6 +139,72 @@ rule broken {
     edit = RenameProvider(runtime).rename(text, position, "renamed_good", uri)
     assert edit is not None and edit.changes is not None
     assert set(edit.changes) == {uri}
+
+
+def test_include_navigation_uses_workspace_search_paths(tmp_path: Path) -> None:
+    lib = tmp_path / "lib"
+    src = tmp_path / "src"
+    lib.mkdir()
+    src.mkdir()
+
+    target = lib / "common.yar"
+    target.write_text("rule common { condition: true }\n", encoding="utf-8")
+    main = src / "main.yar"
+    main.write_text('include "common.yar"\nrule main { condition: true }\n', encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+
+    uri = path_to_uri(main)
+    text = main.read_text(encoding="utf-8")
+    position = Position(line=0, character=10)
+    target_uri = path_to_uri(target)
+
+    definition = DefinitionProvider(runtime).get_definition(text, position, uri)
+    assert definition == Location(
+        uri=target_uri,
+        range=Range(Position(line=0, character=0), Position(line=0, character=0)),
+    )
+
+    links = DocumentLinksProvider(runtime).get_document_links(text, uri)
+    assert any(link.target == target_uri for link in links)
+
+    hover = HoverProvider(runtime).get_hover(text, position, uri)
+    assert hover is not None
+    assert isinstance(hover.contents, MarkupContent)
+    assert target_uri in hover.contents.value
+
+
+def test_include_navigation_uses_direct_sibling_resolution(tmp_path: Path) -> None:
+    src = tmp_path / "src"
+    src.mkdir()
+
+    target = src / "common.yar"
+    target.write_text("rule common { condition: true }\n", encoding="utf-8")
+    main = src / "main.yar"
+    main.write_text('include "common.yar"\nrule main { condition: true }\n', encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+
+    uri = path_to_uri(main)
+    text = main.read_text(encoding="utf-8")
+    position = Position(line=0, character=10)
+    target_uri = path_to_uri(target)
+
+    definition = DefinitionProvider(runtime).get_definition(text, position, uri)
+    assert definition == Location(
+        uri=target_uri,
+        range=Range(Position(line=0, character=0), Position(line=0, character=0)),
+    )
+
+    links = DocumentLinksProvider(runtime).get_document_links(text, uri)
+    assert any(link.target == target_uri for link in links)
+
+    hover = HoverProvider(runtime).get_hover(text, position, uri)
+    assert hover is not None
+    assert isinstance(hover.contents, MarkupContent)
+    assert target_uri in hover.contents.value
 
 
 def test_workspace_symbols_provider_uses_runtime_index(tmp_path: Path) -> None:

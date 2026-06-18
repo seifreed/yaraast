@@ -57,7 +57,10 @@ class DefinitionProvider:
                     return self.runtime.find_rule_definition(resolved.normalized_name, uri)
                 return doc.find_rule_definition(resolved.normalized_name)
             if resolved.kind == "include":
-                include_location = self._find_include_definition(uri, resolved.normalized_name)
+                include_location = self._find_include_definition(
+                    uri,
+                    resolved.normalized_name,
+                )
                 if include_location is not None:
                     return include_location
             return None
@@ -80,17 +83,22 @@ class DefinitionProvider:
 
     def _find_include_definition(self, uri: str, include_path: str) -> Location | None:
         """Find the target file of an include."""
-        doc_path = uri_to_path(uri)
-        if doc_path is None:
-            return None
-        try:
-            include_file = (doc_path.parent / include_path).resolve()
-        except OSError:
-            return None
-        if not path_exists(include_file):
-            return None
+        target_uri = None
+        if self.runtime is not None:
+            target_uri = self.runtime.resolve_include_target_uri(uri, include_path)
+        if target_uri is None:
+            doc_path = uri_to_path(uri)
+            if doc_path is None:
+                return None
+            try:
+                include_file = (doc_path.parent / include_path).resolve()
+            except OSError:
+                return None
+            if not path_exists(include_file):
+                return None
+            target_uri = path_to_uri(include_file)
         return Location(
-            uri=path_to_uri(include_file),
+            uri=target_uri,
             range=Range(
                 start=Position(line=0, character=0),
                 end=Position(line=0, character=0),
