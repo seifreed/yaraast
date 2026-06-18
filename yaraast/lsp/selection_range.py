@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from lsprotocol.types import Position, Range, SelectionRange
 
-from yaraast.lsp.runtime import LspRuntime
+from yaraast.lsp.runtime import LspRuntime, get_optional_document_context
 from yaraast.lsp.selection_range_helpers import (
     build_selection_parent,
     find_enclosing_rule_range,
@@ -37,7 +37,7 @@ class SelectionRangeProvider:
             raise TypeError(msg)
 
         lines = text.split("\n")
-        doc = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
+        doc = get_optional_document_context(self.runtime, uri, text)
 
         result: list[SelectionRange] = []
         for position in positions:

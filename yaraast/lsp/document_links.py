@@ -12,7 +12,12 @@ from lsprotocol.types import DocumentLink, Position, Range
 from yaraast.lsp.document_query_common import whole_word_positions
 import yaraast.lsp.document_query_reference_text as reference_text
 import yaraast.lsp.document_query_resolution_text as resolution_text
-from yaraast.lsp.runtime import DocumentContext, LspRuntime, SymbolRecord
+from yaraast.lsp.runtime import (
+    DocumentContext,
+    LspRuntime,
+    SymbolRecord,
+    get_document_context,
+)
 from yaraast.lsp.structure import find_rule_end
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
@@ -67,7 +72,9 @@ class DocumentLinksProvider:
 
         try:
             if self.runtime and document_uri:
-                doc = self.runtime.ensure_document(document_uri, text)
+                doc = get_document_context(
+                    self.runtime, document_uri, text, fallback_uri=document_uri
+                )
                 try:
                     symbol_records = doc.symbols()
                 except Exception:
@@ -78,7 +85,7 @@ class DocumentLinksProvider:
                 self._append_text_rule_links(links, text, document_uri)
                 self._append_fallback_links(links, text, document_uri)
                 return links
-            doc = DocumentContext(document_uri, text)
+            doc = get_document_context(self.runtime, document_uri, text, fallback_uri=document_uri)
             symbol_records = doc.symbols()
             links.extend(self._create_runtime_symbol_links(doc, symbol_records, document_uri))
             links.extend(self._create_local_rule_reference_links(doc))
@@ -223,7 +230,7 @@ class DocumentLinksProvider:
         """Fallback regex-based link detection."""
         links = []
         lines = text.split("\n")
-        doc = DocumentContext(document_uri, text)
+        doc = get_document_context(self.runtime, document_uri, text, fallback_uri=document_uri)
 
         for line_num, line in enumerate(lines):
             import_match = IMPORT_DIRECTIVE_RE.match(line)

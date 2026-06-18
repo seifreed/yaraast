@@ -41,7 +41,9 @@ def _copy_rule_link_records(records: list[RuleLinkRecord]) -> list[RuleLinkRecor
 def resolve_symbol(
     runtime: LspRuntime, uri: str, text: str, position: Position
 ) -> ResolvedSymbol | None:
-    resolved = runtime.ensure_document(uri, text).resolve_symbol(position)
+    from yaraast.lsp.runtime import get_document_context
+
+    resolved = get_document_context(runtime, uri, text, fallback_uri=uri).resolve_symbol(position)
     if (
         resolved is not None
         and resolved.kind == "identifier"

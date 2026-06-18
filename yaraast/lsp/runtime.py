@@ -103,6 +103,8 @@ __all__ = [
     "RuleLinkRecord",
     "RuntimeConfig",
     "SymbolRecord",
+    "get_document_context",
+    "get_optional_document_context",
     "path_to_uri",
     "uri_to_path",
 ]
@@ -538,3 +540,25 @@ class LspRuntime:
 
     def get_status(self) -> dict[str, object]:
         return runtime_get_status(self)
+
+
+def get_document_context(
+    runtime: LspRuntime | None,
+    uri: str | None,
+    text: str,
+    *,
+    fallback_uri: str = "file://local.yar",
+) -> DocumentContext:
+    if runtime is not None and uri:
+        return runtime.ensure_document(uri, text)
+    return DocumentContext(uri or fallback_uri, text)
+
+
+def get_optional_document_context(
+    runtime: LspRuntime | None,
+    uri: str | None,
+    text: str,
+) -> DocumentContext | None:
+    if runtime is not None and uri:
+        return runtime.ensure_document(uri, text)
+    return None

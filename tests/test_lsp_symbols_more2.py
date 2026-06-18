@@ -75,9 +75,15 @@ rule bad {
 def test_symbols_provider_handles_context_creation_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     import yaraast.lsp.symbols as symbols_module
 
-    def fail_document_context(_uri: str, _text: str) -> object:
+    def fail_document_context(
+        _runtime: object,
+        _uri: str | None,
+        _text: str,
+        *,
+        fallback_uri: str = "",
+    ) -> object:
         raise RuntimeError("context failed")
 
-    monkeypatch.setattr(symbols_module, "DocumentContext", fail_document_context)
+    monkeypatch.setattr(symbols_module, "get_document_context", fail_document_context)
 
     assert SymbolsProvider().get_symbols("rule ok { condition: true }") == []

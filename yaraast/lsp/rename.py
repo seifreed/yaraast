@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from lsprotocol.types import Position, Range, WorkspaceEdit
 
-from yaraast.lsp.runtime import DocumentContext, LspRuntime
+from yaraast.lsp.runtime import LspRuntime, get_document_context
 
 
 class RenameProvider:
@@ -25,10 +25,7 @@ class RenameProvider:
             Range of the symbol to rename or None if not renameable
         """
         self._validate_symbol_request(text, position)
-        if self.runtime and uri:
-            doc = self.runtime.ensure_document(uri, text)
-        else:
-            doc = DocumentContext(uri or "file://local.yar", text)
+        doc = get_document_context(self.runtime, uri, text)
         resolved = (
             self.runtime.resolve_symbol(uri, text, position)
             if self.runtime and uri
@@ -65,11 +62,7 @@ class RenameProvider:
             msg = "Rename new_name must not be empty"
             raise ValueError(msg)
 
-        doc = (
-            self.runtime.ensure_document(uri, text)
-            if self.runtime and uri
-            else DocumentContext(uri, text)
-        )
+        doc = get_document_context(self.runtime, uri, text, fallback_uri=uri)
         resolved = (
             self.runtime.resolve_symbol(uri, text, position)
             if self.runtime and uri

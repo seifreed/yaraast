@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.errors import ParseError
 from yaraast.lexer.lexer_errors import LexerError
-from yaraast.lsp.document_context import DocumentContext
+from yaraast.lsp.runtime import get_document_context
 
 if TYPE_CHECKING:
     from yaraast.lsp.runtime import LspRuntime
@@ -14,10 +14,7 @@ if TYPE_CHECKING:
 
 def parse_for_lsp(text: str, uri: str | None = None, runtime: LspRuntime | None = None) -> Any:
     """Parse through the same LSP pipeline used by runtime documents."""
-    if runtime is not None and uri:
-        document = runtime.ensure_document(uri, text)
-    else:
-        document = DocumentContext(uri or "file://local.yar", text)
+    document = get_document_context(runtime, uri, text)
     ast = document.ast()
     if ast is not None:
         return ast

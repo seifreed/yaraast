@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from lsprotocol.types import Location, Position
 
-from yaraast.lsp.runtime import DocumentContext, LspRuntime, ReferenceRecord
+from yaraast.lsp.runtime import LspRuntime, ReferenceRecord, get_document_context
 
 
 class ReferencesProvider:
@@ -52,11 +52,7 @@ class ReferencesProvider:
             msg = "position must be an LSP Position"
             raise TypeError(msg)
 
-        doc = (
-            self.runtime.ensure_document(uri, text)
-            if self.runtime and uri
-            else DocumentContext(uri, text)
-        )
+        doc = get_document_context(self.runtime, uri, text, fallback_uri=uri)
         resolved = (
             self.runtime.resolve_symbol(uri, text, position)
             if self.runtime and uri

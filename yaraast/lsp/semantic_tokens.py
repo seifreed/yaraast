@@ -9,7 +9,7 @@ from lsprotocol.types import Range, SemanticTokens, SemanticTokensLegend
 
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.tokens import Token, TokenType
-from yaraast.lsp.runtime import LspRuntime
+from yaraast.lsp.runtime import LspRuntime, get_optional_document_context
 from yaraast.lsp.semantic_tokens_helpers import (
     encode_tokens,
     encode_tokens_in_range,
@@ -110,7 +110,7 @@ class SemanticTokensProvider:
         """
         text = _require_text(text)
         uri = _require_uri(uri)
-        ctx = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
+        ctx = get_optional_document_context(self.runtime, uri, text)
         if ctx is not None:
             cached = ctx.get_cached("semantic_tokens:full")
             if cached is not None:
@@ -146,7 +146,7 @@ class SemanticTokensProvider:
         text = _require_text(text)
         range_ = _require_range(range_)
         uri = _require_uri(uri)
-        ctx = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
+        ctx = get_optional_document_context(self.runtime, uri, text)
         cache_key = None
         if ctx is not None:
             cache_key = (

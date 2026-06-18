@@ -7,7 +7,7 @@ import time
 
 from lsprotocol.types import DocumentSymbol, Range
 
-from yaraast.lsp.runtime import DocumentContext, LspRuntime
+from yaraast.lsp.runtime import LspRuntime, get_document_context
 from yaraast.lsp.symbol_tree_builder import (
     build_document_symbols,
     find_closing_brace as _find_closing_brace_impl,
@@ -47,10 +47,7 @@ class SymbolsProvider:
         symbol_build_succeeded = False
 
         try:
-            if self.runtime and uri:
-                doc = self.runtime.ensure_document(uri, text)
-            else:
-                doc = DocumentContext(uri or "", text)
+            doc = get_document_context(self.runtime, uri, text, fallback_uri=uri or "")
             cached = doc.get_cached("lsp:document_symbols")
             if cached is not None:
                 return list(cached)

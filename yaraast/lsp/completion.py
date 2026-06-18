@@ -26,7 +26,7 @@ from yaraast.lsp.completion_helpers import (
     get_current_module,
     get_keywords_for_mode,
 )
-from yaraast.lsp.runtime import LspRuntime
+from yaraast.lsp.runtime import LspRuntime, get_document_context
 from yaraast.types.module_loader import ModuleLoader
 
 logger = logging.getLogger(__name__)
@@ -98,7 +98,7 @@ class CompletionProvider:
 
     def _keywords_for_document(self, text: str, uri: str | None) -> list[str]:
         if self.runtime and uri:
-            doc = self.runtime.ensure_document(uri, text)
+            doc = get_document_context(self.runtime, uri, text, fallback_uri=uri)
             mode = doc.language_mode
             detected = doc.dialect()
             if mode.value == "auto":

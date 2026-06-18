@@ -28,7 +28,7 @@ from yaraast.lsp.diagnostics_helpers import (
     related_info,
     suggest_builtin_functions,
 )
-from yaraast.lsp.runtime import LspRuntime
+from yaraast.lsp.runtime import LspRuntime, get_optional_document_context
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.lsp.utils import path_is_file
 from yaraast.parser._shared import ParserError
@@ -108,7 +108,7 @@ class DiagnosticsProvider:
             msg = "Diagnostics URI must be a string or None"
             raise TypeError(msg)
 
-        ctx = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
+        ctx = get_optional_document_context(self.runtime, uri, text)
         if ctx is not None:
             cached = ctx.get_cached("diagnostics")
             if cached is not None:
