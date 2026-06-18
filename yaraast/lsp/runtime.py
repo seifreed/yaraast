@@ -373,6 +373,10 @@ class LspRuntime:
             )
         if not self.config.cache_workspace:
             self.documents = {uri: doc for uri, doc in self.documents.items() if doc.is_open}
+        elif "cacheWorkspace" in settings and self.config.cache_workspace:
+            for doc in self.documents.values():
+                if doc.is_open:
+                    self._sync_document_to_index(doc.uri)
         self.cache.bump_generation()
 
     def handle_watched_files(self, changes: list[Any]) -> None:

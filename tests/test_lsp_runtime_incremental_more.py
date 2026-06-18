@@ -141,6 +141,22 @@ def test_runtime_workspace_symbols_ignore_persisted_index_when_cache_disabled(
     assert "cached_old" not in names
 
 
+def test_runtime_update_config_reenables_index_for_open_docs(tmp_path: Path) -> None:
+    sample = tmp_path / "sample.yar"
+    sample.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(sample)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.update_config({"YARA": {"cacheWorkspace": False}})
+    runtime.open_document(uri, sample.read_text(encoding="utf-8"))
+
+    runtime.update_config({"YARA": {"cacheWorkspace": True}})
+
+    names = {symbol.name for symbol in runtime.workspace_symbols("sample")}
+    assert "sample" in names
+
+
 def test_runtime_get_document_invalidates_workspace_symbol_cache(tmp_path: Path) -> None:
     rule_file = tmp_path / "sample.yar"
     rule_file.write_text("rule loaded_later { condition: true }\n", encoding="utf-8")
