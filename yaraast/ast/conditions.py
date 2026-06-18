@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+import re
 from typing import Any
 
 from yaraast.ast.base import _VisitorType
@@ -21,6 +22,10 @@ type StringSetValue = (
     | frozenset[StringSetItem]
 )
 
+_INTEGER_QUANTIFIER_RE = re.compile(r"^-?\d+$")
+_PERCENTAGE_QUANTIFIER_RE = re.compile(r"^\d+%$")
+_QUANTIFIER_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
 
 def _validate_required_expression(value: Any, message: str) -> Expression:
     if not isinstance(value, Expression):
@@ -31,14 +36,57 @@ def _validate_required_expression(value: Any, message: str) -> Expression:
     return value
 
 
-def _validate_quantifier(value: Any, field_name: str) -> None:
+def _invalid_quantifier(value: Any, field_name: str) -> None:
+    msg = f"Invalid {field_name} '{value}'"
+    raise ValueError(msg)
+
+
+def _validate_percentage_quantifier_text(value: str, field_name: str) -> None:
+    if _PERCENTAGE_QUANTIFIER_RE.fullmatch(value) is None:
+        return
+    percent = int(value.removesuffix("%"))
+    if 1 <= percent <= 100:
+        return
+    _invalid_quantifier(value, field_name)
+
+
+def _validate_quantifier_text(value: str, field_name: str, *, allow_percentage: bool) -> None:
+    if not value.strip():
+        msg = f"{field_name} must not be empty"
+        raise ValueError(msg)
+    if value in {"all", "any", "none"}:
+        return
+    if _INTEGER_QUANTIFIER_RE.fullmatch(value) is not None:
+        if int(value) < 0:
+            _invalid_quantifier(value, field_name)
+        return
+    if value.endswith("%"):
+        if not allow_percentage:
+            _invalid_quantifier(value, field_name)
+        _validate_percentage_quantifier_text(value, field_name)
+        if _PERCENTAGE_QUANTIFIER_RE.fullmatch(value) is not None:
+            return
+    if any(marker in value for marker in (".", "e", "E")):
+        try:
+            parsed_float = float(value)
+        except ValueError:
+            pass
+        else:
+            if not math.isfinite(parsed_float):
+                msg = f"{field_name} must be finite"
+                raise ValueError(msg)
+            _invalid_quantifier(value, field_name)
+    if _QUANTIFIER_IDENTIFIER_RE.fullmatch(value) is not None:
+        return
+    _invalid_quantifier(value, field_name)
+
+
+def _validate_quantifier(value: Any, field_name: str, *, allow_percentage: bool) -> None:
     if isinstance(value, Expression):
         _validate_expression(value, field_name)
         return
     if isinstance(value, str):
-        if not value.strip():
-            msg = f"{field_name} must not be empty"
-            raise ValueError(msg)
+        _validate_quantifier_text(value, field_name, allow_percentage=allow_percentage)
         return
     if isinstance(value, bool) or not isinstance(value, int | float):
         msg = f"{field_name} must be a string, number, or expression"
@@ -46,6 +94,16 @@ def _validate_quantifier(value: Any, field_name: str) -> None:
     if not math.isfinite(value):
         msg = f"{field_name} must be finite"
         raise ValueError(msg)
+    if isinstance(value, int):
+        if value < 0:
+            _invalid_quantifier(value, field_name)
+        return
+    if not allow_percentage:
+        _invalid_quantifier(value, field_name)
+    percent = round(value * 100)
+    if 1 <= percent <= 100:
+        return
+    _invalid_quantifier(value, field_name)
 
 
 def _validate_string_reference_or_expression(
@@ -210,7 +268,11 @@ class ForExpression(Condition):
 
     def validate_structure(self) -> None:
         """Validate loop fields before direct analysis."""
-        _validate_quantifier(self.quantifier, "ForExpression quantifier")
+        _validate_quantifier(
+            self.quantifier,
+            "ForExpression quantifier",
+            allow_percentage=False,
+        )
         if not isinstance(self.variable, str):
             msg = "ForExpression variable must be a string"
             raise TypeError(msg)
@@ -243,7 +305,11 @@ class ForOfExpression(Condition):
 
     def validate_structure(self) -> None:
         """Validate for-of fields before direct analysis."""
-        _validate_quantifier(self.quantifier, "ForOfExpression quantifier")
+        _validate_quantifier(
+            self.quantifier,
+            "ForOfExpression quantifier",
+            allow_percentage=self.condition is None,
+        )
         _validate_string_set(self.string_set, "ForOfExpression string_set")
         _validate_consistent_string_set_kind(self.string_set)
         if self.condition is not None:
@@ -318,7 +384,11 @@ class OfExpression(Condition):
 
     def validate_structure(self) -> None:
         """Validate of-expression fields before direct analysis."""
-        _validate_quantifier(self.quantifier, "OfExpression quantifier")
+        _validate_quantifier(
+            self.quantifier,
+            "OfExpression quantifier",
+            allow_percentage=True,
+        )
         _validate_string_set(self.string_set, "OfExpression string_set")
         _validate_consistent_string_set_kind(self.string_set)
 

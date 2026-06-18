@@ -818,6 +818,18 @@ def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
             "ForExpression quantifier must be finite",
         ),
         (
+            ForExpression("50%", "i", Identifier("items"), BooleanLiteral(True)),
+            "Invalid ForExpression quantifier",
+        ),
+        (
+            ForExpression("-1", "i", Identifier("items"), BooleanLiteral(True)),
+            "Invalid ForExpression quantifier",
+        ),
+        (
+            ForExpression(0.5, "i", Identifier("items"), BooleanLiteral(True)),
+            "Invalid ForExpression quantifier",
+        ),
+        (
             ForExpression("any", "", Identifier("items"), BooleanLiteral(True)),
             "ForExpression variable must not be empty",
         ),
@@ -846,6 +858,18 @@ def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
             "ForOfExpression quantifier must be finite",
         ),
         (
+            ForOfExpression("0%", ["$a"], None),
+            "Invalid ForOfExpression quantifier",
+        ),
+        (
+            ForOfExpression("101%", ["$a"], None),
+            "Invalid ForOfExpression quantifier",
+        ),
+        (
+            ForOfExpression("50%", ["$a"], BooleanLiteral(True)),
+            "Invalid ForOfExpression quantifier",
+        ),
+        (
             ForOfExpression("any", ["$a"], cast(Any, object())),
             "ForOfExpression condition must be an AST expression",
         ),
@@ -853,6 +877,10 @@ def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
             OfExpression(cast(Any, True), ["$a"]),
             "OfExpression quantifier must be a string, number, or expression",
         ),
+        (OfExpression("0%", ["$a"]), "Invalid OfExpression quantifier"),
+        (OfExpression("101%", ["$a"]), "Invalid OfExpression quantifier"),
+        (OfExpression(0.0, ["$a"]), "Invalid OfExpression quantifier"),
+        (OfExpression(1.01, ["$a"]), "Invalid OfExpression quantifier"),
         (OfExpression("any", cast(Any, {})), "OfExpression string_set is required"),
         (
             DefinedExpression(cast(Any, object())),
