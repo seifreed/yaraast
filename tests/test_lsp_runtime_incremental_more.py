@@ -13,6 +13,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
+from yaraast.lsp.completion import CompletionProvider
 from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.diagnostics import DiagnosticsProvider
 import yaraast.lsp.document_context as document_context_module
@@ -563,6 +564,29 @@ def test_runtime_open_document_promotes_synthetic_buffer_to_file_backed(
 
     sample.write_text("rule sample { condition: true }\n", encoding="utf-8")
     runtime.open_document(uri, sample.read_text(encoding="utf-8"))
+    sample.unlink()
+    runtime.close_document(uri)
+
+    assert runtime.get_document(uri, load_workspace=False) is None
+    assert runtime.workspace_symbols("sample") == []
+
+
+def test_runtime_ensure_document_promotes_synthetic_buffer_to_file_backed(
+    tmp_path: Path,
+) -> None:
+    sample = tmp_path / "sample.yar"
+    uri = path_to_uri(sample)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.open_document(uri, "rule sample { condition: true }\n")
+
+    sample.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    CompletionProvider(runtime).get_completions(
+        "rule sample { condition: true }",
+        Position(line=0, character=0),
+        uri,
+    )
     sample.unlink()
     runtime.close_document(uri)
 

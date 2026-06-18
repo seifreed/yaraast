@@ -270,6 +270,8 @@ class LspRuntime:
         uri = _require_document_uri(uri)
         ctx = self.documents.get(uri)
         if ctx is not None:
+            if load_workspace and self._document_is_backed_by_file(uri):
+                ctx.backed_by_file = True
             return ctx
         if not load_workspace:
             return None
@@ -302,6 +304,8 @@ class LspRuntime:
         if ctx.text != text:
             ctx.update(text, ctx.version, is_open=ctx.is_open)
             self._mark_dirty(uri)
+        if self._document_is_backed_by_file(uri):
+            ctx.backed_by_file = True
         return ctx
 
     def iter_workspace_documents(self) -> list[DocumentContext]:
