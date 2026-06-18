@@ -203,7 +203,7 @@
         "name": "condition",
         "range": {
           "end": {
-            "character": 26,
+            "character": 29,
             "line": 0
           },
           "start": {
@@ -235,7 +235,7 @@
         "name": "condition",
         "range": {
           "end": {
-            "character": 26,
+            "character": 29,
             "line": 0
           },
           "start": {
