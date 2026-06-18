@@ -373,6 +373,8 @@ def _validate_quantifier_text(
             msg = f"Invalid {context} '{text}' for libyara output"
             raise ValueError(msg)
         return format_integer_literal(text)
+    if text.startswith("+") and text[1:].isdigit() and str(int(text)) == text[1:]:
+        return format_integer_literal(int(text))
 
     percentage = _PERCENTAGE_QUANTIFIER_RE.fullmatch(text)
     if percentage is not None:

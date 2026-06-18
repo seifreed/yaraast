@@ -60,6 +60,8 @@ def _validate_quantifier_text(value: str, field_name: str, *, allow_percentage: 
         if int(value) < 0:
             _invalid_quantifier(value, field_name)
         return
+    if value.startswith("+") and value[1:].isdigit() and str(int(value)) == value[1:]:
+        return
     if value.endswith("%"):
         if not allow_percentage:
             _invalid_quantifier(value, field_name)

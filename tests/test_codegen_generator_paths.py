@@ -44,6 +44,14 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
     )
     assert gen.visit(for_expr) == "for all i in (1..3) : (i)"
 
+    for_expr_signed = ForExpression(
+        quantifier="+1",
+        variable="i",
+        iterable=RangeExpression(IntegerLiteral(1), IntegerLiteral(3)),
+        body=Identifier("i"),
+    )
+    assert gen.visit(for_expr_signed) == "for 1 i in (1..3) : (i)"
+
     for_of_with_ast_quantifier = ForOfExpression(
         quantifier=IntegerLiteral(2),
         string_set=Identifier("them"),
@@ -75,6 +83,9 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
 
     of_int = OfExpression(quantifier=3, string_set=Identifier("them"))
     assert gen.visit(of_int) == "3 of them"
+
+    of_signed = OfExpression(quantifier="+1", string_set=Identifier("them"))
+    assert gen.visit(of_signed) == "1 of them"
 
     of_string_lit = OfExpression(quantifier=StringLiteral("all"), string_set=Identifier("them"))
     assert gen.visit(of_string_lit) == "all of them"

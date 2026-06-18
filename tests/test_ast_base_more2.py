@@ -1045,6 +1045,12 @@ def test_direct_yarafile_analysis_rejects_invalid_condition_scalars(
         ExpressionOptimizer().optimize(malformed_file)
 
 
+def test_direct_condition_validation_accepts_signed_numeric_quantifiers() -> None:
+    ForExpression("+1", "i", Identifier("items"), BooleanLiteral(True)).validate_structure()
+    ForOfExpression("+1", ["$a"], BooleanLiteral(True)).validate_structure()
+    OfExpression("+1", ["$a"]).validate_structure()
+
+
 def test_direct_yarafile_analysis_allows_percentage_unary_quantifier_expression() -> None:
     valid_file = YaraFile(
         rules=[
