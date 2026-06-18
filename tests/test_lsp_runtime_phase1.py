@@ -99,6 +99,46 @@ rule local_rule {
     assert set(edit.changes) == {path_to_uri(common), user_uri}
 
 
+def test_navigation_and_rename_keep_working_in_partially_broken_documents(
+    tmp_path: Path,
+) -> None:
+    rule_file = tmp_path / "broken_tail.yar"
+    rule_file.write_text(
+        """
+rule good {
+  condition: true
+}
+
+rule broken {
+  condition:
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+
+    uri = path_to_uri(rule_file)
+    text = rule_file.read_text(encoding="utf-8")
+    position = Position(line=0, character=5)
+
+    definition = DefinitionProvider(runtime).get_definition(text, position, uri)
+    assert definition is not None
+    assert not isinstance(definition, list)
+    assert definition.uri == uri
+
+    references = ReferencesProvider(runtime).get_references(text, position, uri)
+    assert references
+    assert {location.uri for location in references} == {uri}
+
+    prepare = RenameProvider(runtime).prepare_rename(text, position, uri)
+    assert prepare == Range(Position(line=0, character=5), Position(line=0, character=9))
+
+    edit = RenameProvider(runtime).rename(text, position, "renamed_good", uri)
+    assert edit is not None and edit.changes is not None
+    assert set(edit.changes) == {uri}
+
+
 def test_workspace_symbols_provider_uses_runtime_index(tmp_path: Path) -> None:
     alpha = tmp_path / "alpha.yar"
     beta = tmp_path / "beta.yara"

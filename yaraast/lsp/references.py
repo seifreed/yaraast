@@ -57,8 +57,6 @@ class ReferencesProvider:
             if self.runtime and uri
             else DocumentContext(uri, text)
         )
-        if doc.parse_error() is not None:
-            return []
         resolved = (
             self.runtime.resolve_symbol(uri, text, position)
             if self.runtime and uri

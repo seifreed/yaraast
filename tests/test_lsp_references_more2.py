@@ -194,7 +194,7 @@ rule a {
     assert provider.get_references(text, _pos(3, 10), "file://test.yar") == []
 
 
-def test_references_rejects_parse_error_documents() -> None:
+def test_references_support_parse_error_documents() -> None:
     provider = ReferencesProvider()
     text = """
 rule a {
@@ -205,8 +205,10 @@ rule a {
 }
 """.lstrip()
 
-    assert provider.get_references(text, _pos(4, 5), "file://test.yar") == []
-    assert provider.get_reference_records(text, _pos(4, 5), "file://test.yar") == []
+    refs = provider.get_references(text, _pos(4, 5), "file://test.yar")
+    assert {location.range.start.line for location in refs} == {2, 4}
+    records = provider.get_reference_records(text, _pos(4, 5), "file://test.yar")
+    assert {record.role for record in records} == {"declaration", "read"}
 
 
 def test_lsp_string_navigation_ignores_yarax_local_string_shadowing() -> None:

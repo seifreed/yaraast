@@ -183,11 +183,14 @@ rule a {
     $a
 }
 """.lstrip()
-    assert provider.get_definition(broken, _pos(4, 5), uri) is None
-    assert provider._find_rule_definition(broken, "a", uri) is None
+    broken_definition = provider.get_definition(broken, _pos(4, 5), uri)
+    assert broken_definition is not None
+    assert not isinstance(broken_definition, list)
+    assert broken_definition.uri == uri
+    assert provider._find_rule_definition(broken, "a", uri) is not None
 
 
-def test_definition_provider_private_helpers_reject_parse_errors() -> None:
+def test_definition_provider_private_helpers_support_parse_errors() -> None:
     provider = DefinitionProvider()
     broken = """
 rule a {
@@ -198,8 +201,8 @@ rule a {
 }
 """.lstrip()
 
-    assert provider._find_string_definition(broken, "$a", "file://test.yar") is None
-    assert provider._find_rule_definition(broken, "a", "file://test.yar") is None
+    assert provider._find_string_definition(broken, "$a", "file://test.yar") is not None
+    assert provider._find_rule_definition(broken, "a", "file://test.yar") is not None
 
 
 def test_definition_provider_include_helper_rejects_invalid_uri() -> None:
