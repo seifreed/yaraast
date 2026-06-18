@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from yaraast.errors import ParseError
+from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lsp.document_context import DocumentContext
 
 if TYPE_CHECKING:
@@ -22,5 +23,7 @@ def parse_for_lsp(text: str, uri: str | None = None, runtime: LspRuntime | None 
         return ast
     error = document.parse_error()
     if error is not None:
+        if isinstance(error, LexerError):
+            raise ParseError(str(error)) from error
         raise error
     raise ParseError("Unable to parse document")
