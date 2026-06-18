@@ -54,6 +54,15 @@ def test_string_pattern_analyzer_counts_raw_strings_as_plain() -> None:
     assert analyzer.get_statistics()["plain_strings"] == 2
 
 
+def test_string_pattern_analyzer_reports_exact_length_common_prefixes_and_suffixes() -> None:
+    analyzer = StringPatternAnalyzer()
+
+    result = analyzer.analyze_patterns(["abc", "abc"])
+
+    assert result["common_prefixes"]["abc"] == ["abc", "abc"]
+    assert result["common_suffixes"]["abc"] == ["abc", "abc"]
+
+
 def test_string_pattern_analyzer_byte_plain_strings_are_json_safe() -> None:
     analyzer = StringPatternAnalyzer()
     strings = [

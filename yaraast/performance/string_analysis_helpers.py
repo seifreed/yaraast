@@ -37,7 +37,7 @@ def find_common_prefixes(
     prefixes = defaultdict(list)
     for string in strings:
         if len(string) >= min_length:
-            for i in range(min_length, min(len(string), 20)):
+            for i in range(min_length, min(len(string), 20) + 1):
                 prefixes[string[:i]].append(string)
     common = {
         _string_report_value(prefix): [_string_report_value(value) for value in values]
@@ -54,7 +54,7 @@ def find_common_suffixes(
     suffixes = defaultdict(list)
     for string in strings:
         if len(string) >= min_length:
-            for i in range(min_length, min(len(string), 20)):
+            for i in range(min_length, min(len(string), 20) + 1):
                 suffixes[string[-i:]].append(string)
     common = {
         _string_report_value(suffix): [_string_report_value(value) for value in values]
