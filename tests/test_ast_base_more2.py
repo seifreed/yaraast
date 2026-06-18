@@ -878,6 +878,7 @@ def test_direct_yarafile_analysis_rejects_invalid_rule_meta_fields(
         (cast(Any, False), "Rule modifiers must be a list"),
         ([cast(Any, object())], "Rule modifiers item must be RuleModifier or string"),
         ([""], "Rule modifier name cannot be empty"),
+        (["bad"], "Invalid rule modifier"),
     ],
 )
 def test_direct_yarafile_analysis_rejects_invalid_rule_modifiers(

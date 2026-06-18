@@ -16,7 +16,12 @@ from yaraast.ast.base import (
     _VisitorType,
     require_string,
 )
-from yaraast.ast.modifiers import MetaEntry, RuleModifier, require_rule_modifier_identifier
+from yaraast.ast.modifiers import (
+    MetaEntry,
+    RuleModifier,
+    RuleModifierType,
+    require_rule_modifier_identifier,
+)
 from yaraast.errors import ValidationError
 from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
 
@@ -228,13 +233,17 @@ class Rule(ASTNode):
                 modifier.validate_structure()
                 modifiers.append(modifier)
             elif isinstance(modifier, str):
-                modifiers.append(
-                    require_rule_modifier_identifier(
-                        modifier,
-                        "Rule modifier",
-                        "rule modifier",
-                    )
+                modifier_name = require_rule_modifier_identifier(
+                    modifier,
+                    "Rule modifier",
+                    "rule modifier",
                 )
+                try:
+                    RuleModifierType.from_string(modifier_name)
+                except ValidationError as exc:
+                    msg = f"Invalid rule modifier '{modifier_name}'"
+                    raise ValueError(msg) from exc
+                modifiers.append(modifier_name)
             else:
                 msg = "Rule modifiers item must be RuleModifier or string"
                 raise TypeError(msg)

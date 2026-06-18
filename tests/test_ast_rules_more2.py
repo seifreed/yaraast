@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.modifiers import RuleModifier, RuleModifierType
 from yaraast.ast.rules import Import, Include, Rule, Tag
 
@@ -53,5 +55,5 @@ def test_rule_modifier_flags_negative_and_mixed_paths() -> None:
     assert string_global.is_private is False
 
     unrelated_string_mods = Rule(name="s", modifiers=["vendor_modifier"])
-    assert unrelated_string_mods.is_private is False
-    assert unrelated_string_mods.is_global is False
+    with pytest.raises(ValueError, match="Invalid rule modifier"):
+        _ = unrelated_string_mods.is_private
