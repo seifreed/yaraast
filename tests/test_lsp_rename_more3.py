@@ -142,6 +142,21 @@ rule a {
     assert provider.prepare_rename(text, _pos(3, 10)) is None
 
 
+def test_rename_rejects_parse_error_documents() -> None:
+    provider = RenameProvider()
+    text = """
+rule a {
+  strings:
+    $a = "unterminated
+  condition:
+    $a
+}
+""".lstrip()
+
+    assert provider.prepare_rename(text, _pos(4, 5)) is None
+    assert provider.rename(text, _pos(4, 5), "b", "file://test.yar") is None
+
+
 def test_rename_string_identifier_with_prefixed_new_name() -> None:
     text = """
 rule a {

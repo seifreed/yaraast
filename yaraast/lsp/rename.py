@@ -25,10 +25,16 @@ class RenameProvider:
             Range of the symbol to rename or None if not renameable
         """
         self._validate_symbol_request(text, position)
+        if self.runtime and uri:
+            doc = self.runtime.ensure_document(uri, text)
+        else:
+            doc = DocumentContext(uri or "file://local.yar", text)
+        if doc.parse_error() is not None:
+            return None
         resolved = (
             self.runtime.resolve_symbol(uri, text, position)
             if self.runtime and uri
-            else DocumentContext(uri or "file://local.yar", text).resolve_symbol(position)
+            else doc.resolve_symbol(position)
         )
         if resolved is not None and resolved.kind in {"string", "rule"}:
             return resolved.range
@@ -66,6 +72,8 @@ class RenameProvider:
             if self.runtime and uri
             else DocumentContext(uri, text)
         )
+        if doc.parse_error() is not None:
+            return None
         resolved = (
             self.runtime.resolve_symbol(uri, text, position)
             if self.runtime and uri
