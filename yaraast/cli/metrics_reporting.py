@@ -157,7 +157,7 @@ def _display_pattern_statistics(generator: Any) -> None:  # generator typing: pr
                 click.echo(
                     f"  Length stats: min={lengths['min']}, max={lengths['max']}, avg={lengths['avg']:.1f}",
                 )
-    except (ValueError, TypeError, AttributeError, KeyError):
+    except (ValueError, TypeError, AttributeError):
         pass
 
 

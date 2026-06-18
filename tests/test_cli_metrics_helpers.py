@@ -174,3 +174,10 @@ def test_metrics_pattern_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     _display_pattern_statistics(generator)
     output = capsys.readouterr().out
     assert "String Pattern Analysis" in output
+
+
+def test_metrics_pattern_statistics_propagates_malformed_stats() -> None:
+    generator = SimpleNamespace(get_pattern_statistics=lambda: {"total_patterns": 1})
+
+    with pytest.raises(KeyError):
+        _display_pattern_statistics(generator)
