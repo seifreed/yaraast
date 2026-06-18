@@ -51,13 +51,10 @@ def test_serialize_export_escapes_error_markup(
 
     def raise_markup_error(
         _input_file: str,
-        _format: str,
-        _output: str | None,
-        _minimal: bool,
     ) -> object:
         raise ValueError("bad[/red][broken")
 
-    monkeypatch.setattr(serialize_module, "export_serialized", raise_markup_error)
+    monkeypatch.setattr(serialize_module, "parse_yara_file", raise_markup_error)
 
     result = runner.invoke(serialize, ["export", str(source), "-f", "json"])
 

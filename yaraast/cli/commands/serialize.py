@@ -10,9 +10,7 @@ from yaraast.cli.serialize_command_services import (
     build_ast_info_payload,
     build_diff_output_path,
     diff_serialized,
-    export_serialized,
     generate_imported_yara,
-    import_serialized,
     validate_serialized_error,
     validate_serialized_input,
 )
@@ -24,6 +22,11 @@ from yaraast.cli.serialize_reporting import (
     display_info,
     display_validation_result,
     write_diff_output,
+)
+from yaraast.cli.serialize_services import (
+    export_ast,
+    import_ast as import_ast_service,
+    parse_yara_file,
 )
 from yaraast.cli.utils import _validate_output_path
 
@@ -62,7 +65,8 @@ def export(input_file: str, output: str | None, format: str, minimal: bool, pret
     output = _validate_output_path(output)
     try:
         with console.status(f"[bold green]Parsing {escape(input_file)}..."):
-            result, stats = export_serialized(input_file, format, output, minimal)
+            ast = parse_yara_file(input_file)
+            result, stats = export_ast(ast, format, output, minimal)
         display_export_result(console, result, format, output, pretty, stats)
 
     except Exception as e:  # CLI error boundary
@@ -91,7 +95,7 @@ def import_ast(input_file: str, format: str, output: str | None) -> None:
     """
     output = _validate_output_path(output)
     try:
-        ast = import_serialized(input_file, format)
+        ast = import_ast_service(input_file, format)
         if output is not None:
             generate_imported_yara(ast, output)
 

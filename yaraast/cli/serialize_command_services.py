@@ -15,28 +15,11 @@ from yaraast.cli.serialize_display_services import (
 from yaraast.cli.serialize_services import (
     build_ast_info,
     compare_yara_files,
-    export_ast,
     generate_yara_from_ast,
-    import_ast as import_ast_service,
     parse_yara_file,
     validate_serialized,
 )
 from yaraast.cli.utils import _path_exists_and_is_dir
-
-
-def export_serialized(
-    input_file: str,
-    format: str,
-    output: str | None,
-    minimal: bool,
-) -> tuple[Any, Any]:
-    ast = parse_yara_file(input_file)
-    result, stats = export_ast(ast, format, output, minimal)
-    return result, stats
-
-
-def import_serialized(input_file: str, format: str) -> Any:
-    return import_ast_service(input_file, format)
 
 
 def generate_imported_yara(ast: Any, output: str) -> str:
