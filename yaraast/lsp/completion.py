@@ -156,17 +156,15 @@ class CompletionProvider:
         if not self.runtime:
             return items
         try:
+            seen: set[str] = set()
             for doc in self.runtime.iter_workspace_documents():
                 if doc.uri == uri:
                     continue
                 # Extract source filename from URI
                 source_filename = doc.uri.rsplit("/", 1)[-1] if "/" in doc.uri else doc.uri
-                ast = doc.ast()
-                if ast is None:
-                    continue
-                for rule in getattr(ast, "rules", []):
-                    rule_name = getattr(rule, "name", None)
-                    if rule_name:
+                for rule_name in doc.get_rule_names():
+                    if rule_name and rule_name not in seen:
+                        seen.add(rule_name)
                         items.append(
                             CompletionItem(
                                 label=rule_name,

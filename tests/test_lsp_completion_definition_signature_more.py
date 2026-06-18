@@ -13,7 +13,6 @@ from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.runtime import LspRuntime, path_to_uri
 from yaraast.lsp.signature_help import SignatureHelpProvider
 from yaraast.lsp.utf16 import utf8_col_to_utf16
-from yaraast.unified_parser import UnifiedParser
 
 
 def _pos(line: int, char: int) -> Position:
@@ -50,11 +49,11 @@ rule a {
     assert "wide" in modifier_labels
 
 
-def test_completion_workspace_rules_use_cached_document_ast(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_completion_workspace_rules_keep_broken_documents_visible(tmp_path: Path) -> None:
     shared = tmp_path / "shared.yar"
     shared.write_text("rule shared_rule { condition: true }\n", encoding="utf-8")
+    broken = tmp_path / "broken.yar"
+    broken.write_text("rule broken_rule { condition: ", encoding="utf-8")
     local = tmp_path / "local.yar"
     local.write_text(
         """
@@ -69,22 +68,14 @@ rule local_rule {
     runtime = LspRuntime()
     runtime.set_workspace_folders([str(tmp_path)])
     shared_uri = path_to_uri(shared)
+    broken_uri = path_to_uri(broken)
     local_uri = path_to_uri(local)
     shared_text = shared.read_text(encoding="utf-8")
+    broken_text = broken.read_text(encoding="utf-8")
     local_text = local.read_text(encoding="utf-8")
     runtime.open_document(shared_uri, shared_text)
+    runtime.open_document(broken_uri, broken_text)
     runtime.open_document(local_uri, local_text)
-    shared_doc = runtime.get_document(shared_uri, load_workspace=False)
-    local_doc = runtime.get_document(local_uri, load_workspace=False)
-    assert shared_doc is not None
-    assert local_doc is not None
-    shared_doc.ast()
-    local_doc.ast()
-
-    def _fail_parse(self: UnifiedParser) -> Any:
-        raise AssertionError("workspace completions should use cached document ASTs")
-
-    monkeypatch.setattr("yaraast.unified_parser.UnifiedParser.parse", _fail_parse)
 
     provider = CompletionProvider(runtime)
     completions = provider.get_completions(
@@ -95,6 +86,7 @@ rule local_rule {
 
     labels = {item.label for item in completions}
     assert "shared_rule" in labels
+    assert "broken_rule" in labels
 
 
 def test_completion_unknown_module_member_returns_empty() -> None:
