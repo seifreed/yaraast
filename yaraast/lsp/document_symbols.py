@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from lsprotocol.types import Position, Range
 
+from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.document_symbol_ranges import (
     node_range,
     node_value_range,
@@ -24,6 +25,8 @@ from yaraast.lsp.structure import (
     find_quoted_value_range,
     find_rule_end,
     find_rule_line,
+    find_section_header_position,
+    find_section_range,
     make_range,
 )
 from yaraast.lsp.utf16 import utf8_col_to_utf16
@@ -36,6 +39,7 @@ INCLUDE_DIRECTIVE_RE = re.compile(r'^\s*include\s+"(?P<value>(?:\\.|[^"\\])*)"')
 RULE_DECLARATION_RE = re.compile(
     r"^\s*(?:(?:global|private)\s+)*rule\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\b"
 )
+STRING_DECLARATION_RE = re.compile(r"^\s*(?P<identifier>\$[A-Za-z_][A-Za-z0-9_]*)\s*=")
 
 
 def build_symbols(ctx: DocumentContext, ast: Any, lines: list[str]) -> list[SymbolRecord]:
@@ -55,6 +59,7 @@ def build_text_symbols(ctx: DocumentContext, lines: list[str]) -> list[SymbolRec
     _build_text_import_symbols(ctx, lines, symbols)
     _build_text_include_symbols(ctx, lines, symbols)
     _build_text_rule_symbols(ctx, lines, symbols)
+    _build_text_string_symbols(ctx, lines, symbols)
     return symbols
 
 
@@ -129,6 +134,67 @@ def _build_text_rule_symbols(
         symbols.append(
             SymbolRecord(name=rule_name, kind="rule_block", uri=ctx.uri, range=block_range)
         )
+
+
+def _build_text_string_symbols(
+    ctx: DocumentContext, lines: list[str], symbols: list[SymbolRecord]
+) -> None:
+    seen: set[tuple[str, str | None]] = set()
+    for rule_name, rule_line, rule_end in _iter_text_rules(lines):
+        section_position = find_section_header_position(lines, "strings", rule_line, rule_end)
+        if section_position is None:
+            continue
+        section_line = section_position[0]
+        section_range = find_section_range(lines, "strings", rule_line, rule_end)
+        stop_line = rule_end if section_range is None else section_range.end.line
+        for line_num in range(section_line + 1, stop_line + 1):
+            line = lines[line_num]
+            match = STRING_DECLARATION_RE.match(line)
+            if match is None:
+                continue
+            identifier = match.group("identifier")
+            key = (identifier, rule_name)
+            if key in seen:
+                continue
+            start_col = match.start("identifier")
+            position = Position(
+                line=line_num,
+                character=utf8_col_to_utf16(line, start_col),
+            )
+            if position_is_in_non_code_segment(ctx, position):
+                continue
+            seen.add(key)
+            end_col = match.end("identifier")
+            symbols.append(
+                SymbolRecord(
+                    name=identifier,
+                    kind="string",
+                    uri=ctx.uri,
+                    range=Range(
+                        start=Position(
+                            line=line_num,
+                            character=utf8_col_to_utf16(line, start_col),
+                        ),
+                        end=Position(
+                            line=line_num,
+                            character=utf8_col_to_utf16(line, end_col),
+                        ),
+                    ),
+                    container_name=rule_name,
+                )
+            )
+
+
+def _iter_text_rules(lines: list[str]) -> list[tuple[str, int, int]]:
+    rules: list[tuple[str, int, int]] = []
+    for line_num, line in enumerate(lines):
+        match = RULE_DECLARATION_RE.match(line)
+        if match is None:
+            continue
+        rule_name = match.group("name")
+        rule_end = find_rule_end(lines, line_num)
+        rules.append((rule_name, line_num, rule_end))
+    return rules
 
 
 def _quoted_text_range(line: str, line_num: int, value: str) -> Range | None:

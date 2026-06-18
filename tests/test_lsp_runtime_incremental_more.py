@@ -555,6 +555,8 @@ def test_runtime_workspace_symbols_keep_text_visible_rules_after_parse_failure(
         """
 import "pe"
 rule local_rule {
+  strings:
+    $a = "x"
   condition:
     true
 }
@@ -578,6 +580,7 @@ rule broken {
 
     assert "local_rule" in names
     assert "pe" in names
+    assert "$a" in names
 
 
 def test_document_context_symbol_indexes_invalidate_on_update() -> None:
