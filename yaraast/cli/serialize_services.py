@@ -7,7 +7,11 @@ from typing import Any
 
 from yaraast.ast.base import YaraFile, require_yara_file
 from yaraast.cli.parser_helpers import parse_yara_source
-from yaraast.cli.serialize_service_helpers import create_serializer, export_with_serializer
+from yaraast.cli.serialize_service_helpers import (
+    _create_serializer,
+    _require_serialization_format,
+    export_with_serializer,
+)
 from yaraast.cli.utils import read_text, write_text
 from yaraast.codegen import CodeGenerator
 from yaraast.serialization.ast_diff import AstDiff, AstHasher
@@ -20,7 +24,8 @@ def export_ast(
 
 
 def import_ast(input_file: str, fmt: str):
-    serializer = create_serializer(fmt, include_metadata=True)
+    fmt = _require_serialization_format(fmt)
+    serializer = _create_serializer(fmt, include_metadata=True)
     return serializer.deserialize(input_path=input_file)
 
 
