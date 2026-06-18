@@ -201,6 +201,10 @@ class LspRuntime:
             self._dirty_documents.discard(uri)
             self.cache.bump_generation()
             return
+        if not ctx.backed_by_file:
+            self._dirty_documents.discard(uri)
+            self.cache.bump_generation()
+            return
         self.index.update_document(ctx)
         self._dirty_documents.discard(uri)
         self.cache.bump_generation()
@@ -242,6 +246,7 @@ class LspRuntime:
         elif not ctx.backed_by_file:
             if text is not None:
                 ctx.update(text, ctx.version, is_open=True)
+            self.cache.bump_generation()
             return ctx
         if text is not None:
             ctx.update(text, ctx.version, is_open=True)

@@ -722,6 +722,40 @@ def test_runtime_save_document_does_not_persist_scratch_buffer(tmp_path: Path) -
     assert restarted.workspace_symbols("scratch") == []
 
 
+def test_runtime_save_document_invalidates_scratch_symbol_cache(
+    tmp_path: Path,
+) -> None:
+    sample = tmp_path / "scratch.yar"
+    uri = path_to_uri(sample)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.open_document(uri, "rule scratch { condition: true }\n")
+    assert runtime.workspace_symbols("scratch")
+
+    runtime.save_document(uri, "rule renamed { condition: true }\n")
+
+    assert runtime.workspace_symbols("scratch") == []
+    assert runtime.workspace_symbols("renamed")
+
+
+def test_runtime_workspace_symbols_do_not_persist_scratch_buffer(
+    tmp_path: Path,
+) -> None:
+    sample = tmp_path / "scratch.yar"
+    uri = path_to_uri(sample)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.open_document(uri, "rule scratch { condition: true }\n")
+    assert runtime.workspace_symbols("scratch")
+
+    restarted = LspRuntime()
+    restarted.set_workspace_folders([str(tmp_path)])
+
+    assert restarted.workspace_symbols("scratch") == []
+
+
 def test_runtime_close_document_drops_synthetic_buffer_from_index(tmp_path: Path) -> None:
     sample = tmp_path / "scratch.yar"
     uri = path_to_uri(sample)
