@@ -904,6 +904,30 @@ def test_direct_yarafile_analysis_rejects_invalid_literal_scalars(
             "ForExpression iterable must be an AST expression",
         ),
         (
+            ForExpression("any", "i", IntegerLiteral(1), BooleanLiteral(True)),
+            "For expression iterable must be a range, set, or iterable expression",
+        ),
+        (
+            ForExpression("any", "i", StringLiteral("abc"), BooleanLiteral(True)),
+            "For expression iterable must be a range, set, or iterable expression",
+        ),
+        (
+            ForExpression("any", "i", RegexLiteral("abc"), BooleanLiteral(True)),
+            "For expression iterable must be a range, set, or iterable expression",
+        ),
+        (
+            ForExpression("any", "i", SetExpression([BooleanLiteral(True)]), BooleanLiteral(True)),
+            "For expression iterable set items must be integer or string expressions",
+        ),
+        (
+            ForExpression("any", "i", SetExpression([DoubleLiteral(1.5)]), BooleanLiteral(True)),
+            "For expression iterable set items must be integer or string expressions",
+        ),
+        (
+            ForExpression("any", "i", SetExpression([RegexLiteral("abc")]), BooleanLiteral(True)),
+            "For expression iterable set items must be integer or string expressions",
+        ),
+        (
             ForExpression("any", "i", Identifier("items"), cast(Any, object())),
             "ForExpression body must be an AST expression",
         ),
@@ -1028,6 +1052,24 @@ def test_direct_yarafile_analysis_allows_percentage_unary_quantifier_expression(
                 "percentage_quantifier",
                 strings=[PlainString("$a", "needle")],
                 condition=OfExpression(UnaryExpression("%", IntegerLiteral(50)), "$a"),
+            )
+        ]
+    )
+
+    ExpressionOptimizer().optimize(valid_file)
+
+
+def test_direct_yarafile_analysis_allows_valid_for_iterable_set_items() -> None:
+    valid_file = YaraFile(
+        rules=[
+            Rule(
+                "valid_for_set",
+                condition=ForExpression(
+                    "any",
+                    "i",
+                    SetExpression([IntegerLiteral(1), StringLiteral("x")]),
+                    BooleanLiteral(True),
+                ),
             )
         ]
     )

@@ -249,6 +249,61 @@ def _validate_string_set(value: Any, field_name: str) -> None:
         raise TypeError(msg)
 
 
+def _is_definitely_non_for_iterable(value: Any) -> bool:
+    from yaraast.ast.expressions import (
+        BooleanLiteral,
+        DoubleLiteral,
+        IntegerLiteral,
+        ParenthesesExpression,
+        RegexLiteral,
+        StringIdentifier,
+        StringLiteral,
+    )
+
+    if isinstance(value, ParenthesesExpression):
+        return _is_definitely_non_for_iterable(value.expression)
+    return isinstance(
+        value,
+        BooleanLiteral
+        | DoubleLiteral
+        | IntegerLiteral
+        | RegexLiteral
+        | StringIdentifier
+        | StringLiteral,
+    )
+
+
+def _is_invalid_for_iterable_set_item(value: Any) -> bool:
+    from yaraast.ast.expressions import (
+        BooleanLiteral,
+        DoubleLiteral,
+        ParenthesesExpression,
+        RegexLiteral,
+        StringIdentifier,
+        StringWildcard,
+    )
+
+    if isinstance(value, ParenthesesExpression):
+        return _is_invalid_for_iterable_set_item(value.expression)
+    return isinstance(
+        value,
+        BooleanLiteral | DoubleLiteral | RegexLiteral | StringIdentifier | StringWildcard,
+    )
+
+
+def _validate_for_iterable(value: Expression) -> None:
+    from yaraast.ast.expressions import SetExpression
+
+    if _is_definitely_non_for_iterable(value):
+        msg = "For expression iterable must be a range, set, or iterable expression"
+        raise ValueError(msg)
+    if isinstance(value, SetExpression) and any(
+        _is_invalid_for_iterable_set_item(item) for item in value.elements
+    ):
+        msg = "For expression iterable set items must be integer or string expressions"
+        raise ValueError(msg)
+
+
 @dataclass
 class Condition(Expression):
     """Base class for conditions."""
@@ -286,6 +341,7 @@ class ForExpression(Condition):
             self.iterable,
             "ForExpression iterable must be an AST expression",
         )
+        _validate_for_iterable(self.iterable)
         _validate_required_expression(
             self.body,
             "ForExpression body must be an AST expression",
