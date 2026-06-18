@@ -739,6 +739,28 @@ def test_runtime_save_document_invalidates_scratch_symbol_cache(
     assert runtime.workspace_symbols("renamed")
 
 
+def test_runtime_save_document_does_not_persist_deleted_open_file(
+    tmp_path: Path,
+) -> None:
+    sample = tmp_path / "sample.yar"
+    sample.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(sample)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.open_document(uri, sample.read_text(encoding="utf-8"))
+
+    sample.unlink()
+    runtime.handle_watched_files([FileEvent(uri=uri, type=FileChangeType.Deleted)])
+    runtime.save_document(uri, "rule renamed { condition: true }\n")
+
+    restarted = LspRuntime()
+    restarted.set_workspace_folders([str(tmp_path)])
+
+    assert restarted.workspace_symbols("renamed") == []
+    assert restarted.workspace_symbols("sample") == []
+
+
 def test_runtime_workspace_symbols_do_not_persist_scratch_buffer(
     tmp_path: Path,
 ) -> None:

@@ -241,9 +241,10 @@ class LspRuntime:
             if text is None:
                 return None
             return self.open_document(uri, text)
-        if self._document_is_backed_by_file(uri):
+        path_backed = self._document_is_backed_by_file(uri)
+        if path_backed:
             ctx.backed_by_file = True
-        elif not ctx.backed_by_file:
+        else:
             if text is not None:
                 ctx.update(text, ctx.version, is_open=True)
             self.cache.bump_generation()
