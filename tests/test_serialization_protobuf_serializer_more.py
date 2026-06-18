@@ -1125,6 +1125,24 @@ def test_protobuf_deserializes_legacy_numeric_quantifier_text() -> None:
     assert condition.quantifier == 2
 
 
+def test_protobuf_deserializes_legacy_signed_numeric_quantifier_text() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "legacy_signed"
+    pb_rule.condition.for_expression.quantifier = "+1"
+    pb_rule.condition.for_expression.variable = "i"
+    pb_rule.condition.for_expression.iterable.range_expression.low.integer_literal.value = 0
+    pb_rule.condition.for_expression.iterable.range_expression.high.integer_literal.value = 3
+    pb_rule.condition.for_expression.body.boolean_literal.value = True
+
+    restored = serializer.deserialize(binary_data=pb_file.SerializeToString())
+    condition = restored.rules[0].condition
+
+    assert isinstance(condition, ForExpression)
+    assert condition.quantifier == 1
+
+
 def test_protobuf_deserialize_rejects_non_finite_legacy_quantifier_text() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     pb_file: Any = yara_ast_pb2.YaraFile()

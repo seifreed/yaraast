@@ -306,7 +306,7 @@ def _validate_percentage_quantifier_value(percent: int, raw_value: object, conte
     _invalid_quantifier(raw_value, context)
 
 
-def _validate_quantifier_text(value: str, context: str, *, allow_percentage: bool) -> str:
+def _validate_quantifier_text(value: str, context: str, *, allow_percentage: bool) -> str | int:
     if not value.strip():
         msg = f"{context} must not be empty"
         raise SerializationError(msg)
@@ -322,7 +322,7 @@ def _validate_quantifier_text(value: str, context: str, *, allow_percentage: boo
         ):
             if parsed_integer < 0:
                 _invalid_quantifier(value, context)
-            return value
+            return parsed_integer
     if value.endswith("%"):
         percentage_text = value[:-1]
         if percentage_text.isdecimal():

@@ -1384,8 +1384,14 @@ def _string_set_item_expression(item, context: str):
 
 
 def _restore_quantifier_text(value: str, context: str, *, allow_percentage: bool):
-    _validate_quantifier_value(value, context, allow_percentage=allow_percentage)
-    integer_text = value[1:] if value.startswith("-") else value
+    restored_value = _validate_quantifier_value(
+        value,
+        context,
+        allow_percentage=allow_percentage,
+    )
+    if isinstance(restored_value, int | float):
+        return restored_value
+    integer_text = value[1:] if value.startswith("+") else value
     if integer_text.isdigit():
         return int(value)
     try:

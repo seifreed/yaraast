@@ -2826,6 +2826,28 @@ def test_simple_roundtrip_quantifiers_reject_invalid_raw_values() -> None:
             deserialize_node(payload)
 
 
+def test_simple_roundtrip_canonicalizes_signed_numeric_quantifiers() -> None:
+    true_expr = BooleanLiteral(True)
+    iterable = SetExpression([IntegerLiteral(1)])
+    string_set = Identifier("them")
+
+    assert deserialize_node(
+        serialize_node(
+            ForExpression("+1", "i", iterable, true_expr),
+        )
+    ) == ForExpression(1, "i", iterable, true_expr)
+    assert deserialize_node(
+        serialize_node(
+            ForOfExpression("+1", string_set, true_expr),
+        )
+    ) == ForOfExpression(1, string_set, true_expr)
+    assert deserialize_node(
+        serialize_node(
+            OfExpression("+1", string_set),
+        )
+    ) == OfExpression(1, string_set)
+
+
 def test_simple_roundtrip_serialize_quantifiers_reject_invalid_values() -> None:
     true_expr = BooleanLiteral(True)
     string_set = SetExpression([StringIdentifier("$a")])
