@@ -9,6 +9,8 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BinaryExpression, IntegerLiteral
+from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString, RegexString
 from yaraast.parser import Parser
 from yaraast.performance.optimizer import PerformanceOptimizer, optimize_yara_file
@@ -54,6 +56,23 @@ def test_performance_optimizer_rule_and_file() -> None:
     assert stats["rules_optimized"] >= 1
     optimizer.reset_statistics()
     assert optimizer.get_statistics()["rules_optimized"] == 0
+
+
+def test_performance_optimizer_counts_condition_simplifications() -> None:
+    rule = Rule(
+        name="cond",
+        condition=BinaryExpression(IntegerLiteral(1), "==", IntegerLiteral(1)),
+    )
+
+    optimizer = PerformanceOptimizer()
+    optimizer.optimize_rule(rule)
+
+    assert optimizer.get_statistics()["conditions_simplified"] == 1
+
+    optimizer2 = PerformanceOptimizer()
+    optimizer2.optimize(YaraFile(rules=[rule]))
+
+    assert optimizer2.get_statistics()["conditions_simplified"] == 1
 
 
 def test_optimize_yara_file(tmp_path: Path) -> None:

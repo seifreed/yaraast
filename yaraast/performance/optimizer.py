@@ -116,6 +116,9 @@ class PerformanceOptimizer:
         strategy = _require_strategy(strategy)
         # Apply rule optimizations
         rule = self.rule_optimizer.optimize_rule(rule)
+        self._stats[
+            "conditions_simplified"
+        ] += self.rule_optimizer.expression_optimizer.optimization_count
 
         # Apply memory optimizations if needed
         if strategy in ("memory", "balanced"):
@@ -137,8 +140,9 @@ class PerformanceOptimizer:
         yara_file = require_yara_file(yara_file, "yara_file")
         strategy = _require_strategy(strategy)
         # Apply file-level optimizations
-        optimized_file, _ = self.rule_optimizer.optimize(yara_file)
+        optimized_file, stats = self.rule_optimizer.optimize(yara_file)
         yara_file = optimized_file
+        self._stats["conditions_simplified"] += stats["expression_optimizations"]
 
         # Apply memory optimizations if needed
         if strategy in ("memory", "balanced"):
