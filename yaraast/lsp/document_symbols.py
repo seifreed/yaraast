@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Any
 
 from lsprotocol.types import Position, Range
@@ -25,9 +26,16 @@ from yaraast.lsp.structure import (
     find_rule_line,
     make_range,
 )
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
+
+IMPORT_DIRECTIVE_RE = re.compile(r'^\s*import\s+"(?P<value>(?:\\.|[^"\\])*)"')
+INCLUDE_DIRECTIVE_RE = re.compile(r'^\s*include\s+"(?P<value>(?:\\.|[^"\\])*)"')
+RULE_DECLARATION_RE = re.compile(
+    r"^\s*(?:(?:global|private)\s+)*rule\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\b"
+)
 
 
 def build_symbols(ctx: DocumentContext, ast: Any, lines: list[str]) -> list[SymbolRecord]:
@@ -40,6 +48,102 @@ def build_symbols(ctx: DocumentContext, ast: Any, lines: list[str]) -> list[Symb
         _build_rule_symbol(ctx, rule, lines, symbols)
 
     return symbols
+
+
+def build_text_symbols(ctx: DocumentContext, lines: list[str]) -> list[SymbolRecord]:
+    symbols: list[SymbolRecord] = []
+    _build_text_import_symbols(ctx, lines, symbols)
+    _build_text_include_symbols(ctx, lines, symbols)
+    _build_text_rule_symbols(ctx, lines, symbols)
+    return symbols
+
+
+def _build_text_import_symbols(
+    ctx: DocumentContext, lines: list[str], symbols: list[SymbolRecord]
+) -> None:
+    for line_num, line in enumerate(lines):
+        match = IMPORT_DIRECTIVE_RE.match(line)
+        if match is None:
+            continue
+        symbol_range = _quoted_text_range(line, line_num, match.group("value"))
+        if symbol_range is not None:
+            symbols.append(
+                SymbolRecord(
+                    name=match.group("value"),
+                    kind="import",
+                    uri=ctx.uri,
+                    range=symbol_range,
+                )
+            )
+
+
+def _build_text_include_symbols(
+    ctx: DocumentContext, lines: list[str], symbols: list[SymbolRecord]
+) -> None:
+    for line_num, line in enumerate(lines):
+        match = INCLUDE_DIRECTIVE_RE.match(line)
+        if match is None:
+            continue
+        symbol_range = _quoted_text_range(line, line_num, match.group("value"))
+        if symbol_range is not None:
+            symbols.append(
+                SymbolRecord(
+                    name=match.group("value"),
+                    kind="include",
+                    uri=ctx.uri,
+                    range=symbol_range,
+                )
+            )
+
+
+def _build_text_rule_symbols(
+    ctx: DocumentContext, lines: list[str], symbols: list[SymbolRecord]
+) -> None:
+    seen: set[str] = set()
+    for line_num, line in enumerate(lines):
+        match = RULE_DECLARATION_RE.match(line)
+        if match is None:
+            continue
+        rule_name = match.group("name")
+        if rule_name in seen:
+            continue
+        seen.add(rule_name)
+        rule_line = line_num
+        rule_end = find_rule_end(lines, rule_line)
+        rule_name_col = line.find(rule_name, match.start("name"), match.end("name"))
+        if rule_name_col < 0:
+            continue
+        name_range = make_range(
+            rule_line,
+            utf8_col_to_utf16(line, rule_name_col),
+            utf8_col_to_utf16(line, rule_name_col + len(rule_name)),
+        )
+        block_range = Range(
+            start=Position(line=rule_line, character=0),
+            end=Position(
+                line=rule_end,
+                character=utf8_col_to_utf16(lines[rule_end], len(lines[rule_end])),
+            ),
+        )
+        symbols.append(SymbolRecord(name=rule_name, kind="rule", uri=ctx.uri, range=name_range))
+        symbols.append(
+            SymbolRecord(name=rule_name, kind="rule_block", uri=ctx.uri, range=block_range)
+        )
+
+
+def _quoted_text_range(line: str, line_num: int, value: str) -> Range | None:
+    quoted = f'"{value}"'
+    start = line.find(quoted)
+    if start < 0:
+        start = line.find(value)
+    if start < 0:
+        return None
+    value_start = start + 1 if start < len(line) and line[start] == '"' else start
+    end = value_start + len(value)
+    return Range(
+        start=Position(line=line_num, character=utf8_col_to_utf16(line, value_start)),
+        end=Position(line=line_num, character=utf8_col_to_utf16(line, end)),
+    )
 
 
 def _build_import_symbols(

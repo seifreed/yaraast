@@ -547,6 +547,39 @@ def test_runtime_workspace_symbols_skip_broken_documents(
     assert "broken" not in names
 
 
+def test_runtime_workspace_symbols_keep_text_visible_rules_after_parse_failure(
+    tmp_path: Path,
+) -> None:
+    doc_file = tmp_path / "broken_tail.yar"
+    doc_file.write_text(
+        """
+import "pe"
+rule local_rule {
+  condition:
+    true
+}
+
+rule use_local {
+  condition:
+    local_rule
+}
+
+rule broken {
+  condition:
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    runtime.open_document(path_to_uri(doc_file), doc_file.read_text(encoding="utf-8"), version=1)
+
+    names = {record.name for record in runtime.workspace_symbol_records("")}
+
+    assert "local_rule" in names
+    assert "pe" in names
+
+
 def test_document_context_symbol_indexes_invalidate_on_update() -> None:
     runtime = LspRuntime()
     uri = "file:///sample.yar"

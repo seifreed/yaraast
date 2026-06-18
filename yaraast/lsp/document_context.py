@@ -24,7 +24,7 @@ from yaraast.lsp.document_rule_queries import (
     get_rule_sections,
     get_rule_string_identifiers,
 )
-from yaraast.lsp.document_symbols import build_symbol_indexes, build_symbols
+from yaraast.lsp.document_symbols import build_symbol_indexes, build_symbols, build_text_symbols
 from yaraast.lsp.document_types import (
     LanguageMode,
     ReferenceRecord,
@@ -70,8 +70,10 @@ class _SymbolIndex:
             return self._symbols
         ast = doc.ast()
         if ast is None:
-            if doc.parse_error() is not None:
-                self._symbols = []
+            if isinstance(doc.parse_error(), ParserError):
+                self._symbols = build_text_symbols(doc, doc.lines)
+                self._symbols_by_kind = None
+                self._symbol_lookup = None
                 return self._symbols
             return []
         self._symbols = build_symbols(doc, ast, doc.lines)
