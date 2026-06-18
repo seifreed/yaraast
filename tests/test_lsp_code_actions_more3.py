@@ -46,6 +46,27 @@ def test_code_action_add_import_module() -> None:
     assert actions[0].edit is not None
 
 
+def test_code_action_add_import_module_accepts_alternate_diagnostic_text() -> None:
+    text = """
+rule a {
+    condition:
+        pe.entry_point == 0
+}
+
+rule broken {
+    condition:
+""".lstrip()
+    provider = CodeActionsProvider()
+    diagnostics = [
+        Diagnostic(
+            range=_range(2, 8, 10),
+            message="not imported: pe",
+        )
+    ]
+    actions = provider.get_code_actions(text, _range(2, 8, 10), diagnostics, "file://test.yar")
+    assert any(action.title == 'Add import "pe"' for action in actions)
+
+
 def test_code_action_rename_duplicate() -> None:
     text = """
 rule a {

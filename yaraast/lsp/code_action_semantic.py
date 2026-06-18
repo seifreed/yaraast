@@ -129,6 +129,10 @@ class SemanticCodeActionMixin:
     ) -> list[CodeAction]:
         """Create actions to import missing module."""
         match = re.search(r"Module '(\w+)' not imported", diagnostic.message)
+        if match is None:
+            match = re.search(r"not imported:\s*(\w+)", diagnostic.message, re.IGNORECASE)
+        if match is None:
+            match = re.search(r"Module\s+(\w+)\s+not imported", diagnostic.message)
         if not match:
             return []
         return cast(
