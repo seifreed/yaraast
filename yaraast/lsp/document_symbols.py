@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -61,6 +62,7 @@ def build_text_symbols(ctx: DocumentContext, lines: list[str]) -> list[SymbolRec
     _build_text_include_symbols(ctx, lines, symbols)
     _build_text_rule_symbols(ctx, lines, symbols)
     _build_text_section_symbols(ctx, lines, symbols)
+    _build_text_meta_symbols(ctx, lines, symbols)
     _build_text_string_symbols(ctx, lines, symbols)
     return symbols
 
@@ -177,6 +179,54 @@ def _build_text_section_symbols(
             )
 
 
+def _build_text_meta_symbols(
+    ctx: DocumentContext, lines: list[str], symbols: list[SymbolRecord]
+) -> None:
+    seen: set[tuple[str, str, str]] = set()
+    for rule_name, rule_line, rule_end in _iter_text_rules(lines):
+        meta_position = find_section_header_position(lines, "meta", rule_line, rule_end)
+        if meta_position is None:
+            continue
+        meta_line = meta_position[0]
+        stop_line = rule_end
+        for line_num in range(meta_line + 1, stop_line + 1):
+            line = lines[line_num]
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if not line.startswith((" ", "\t")):
+                break
+            if "=" not in stripped:
+                continue
+            key_text, raw_value = stripped.split("=", 1)
+            key = key_text.strip()
+            if not key:
+                continue
+            value = _parse_text_meta_value(raw_value.strip())
+            if value is None and raw_value.strip().lower() not in {"null", "none"}:
+                value = raw_value.strip().strip('"')
+            dedupe_key = (rule_name, key, str(value))
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
+            key_start = line.find(key)
+            if key_start < 0:
+                continue
+            symbols.append(
+                SymbolRecord(
+                    name=key,
+                    kind="meta",
+                    uri=ctx.uri,
+                    range=make_range(
+                        line_num,
+                        utf8_col_to_utf16(line, key_start),
+                        utf8_col_to_utf16(line, key_start + len(key)),
+                    ),
+                    container_name=rule_name,
+                )
+            )
+
+
 def _build_text_string_symbols(
     ctx: DocumentContext, lines: list[str], symbols: list[SymbolRecord]
 ) -> None:
@@ -251,6 +301,20 @@ def _quoted_text_range(line: str, line_num: int, value: str) -> Range | None:
         start=Position(line=line_num, character=utf8_col_to_utf16(line, value_start)),
         end=Position(line=line_num, character=utf8_col_to_utf16(line, end)),
     )
+
+
+def _parse_text_meta_value(raw_value: str) -> Any | None:
+    try:
+        return ast.literal_eval(raw_value)
+    except (SyntaxError, ValueError):
+        lowered = raw_value.lower()
+        if lowered == "true":
+            return True
+        if lowered == "false":
+            return False
+        if lowered in {"null", "none"}:
+            return None
+    return None
 
 
 def _build_import_symbols(

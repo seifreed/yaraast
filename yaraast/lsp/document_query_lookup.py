@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -56,7 +57,10 @@ def get_meta_value(ctx: DocumentContext, key: str) -> Any | None:
         return cached
     ast = ctx.ast()
     if ast is None:
-        return None
+        result = _fallback_meta_value(ctx, key)
+        if result is not None:
+            ctx.set_cached(cache_key, result)
+        return result
     for rule in ctx._iter_rules(ast):
         meta = getattr(rule, "meta", None)
         if isinstance(meta, list):
@@ -72,6 +76,42 @@ def get_meta_value(ctx: DocumentContext, key: str) -> Any | None:
                     ctx.set_cached(cache_key, result)
                     return result
     return None
+
+
+def _fallback_meta_value(ctx: DocumentContext, key: str) -> Any | None:
+    lines = ctx.lines
+    for line_num, line in enumerate(lines):
+        if not line.strip().startswith("meta:"):
+            continue
+        for meta_line in lines[line_num + 1 :]:
+            stripped = meta_line.strip()
+            if not stripped:
+                continue
+            if not meta_line.startswith((" ", "\t")):
+                break
+            if "=" not in stripped:
+                continue
+            candidate_key, raw_value = stripped.split("=", 1)
+            if candidate_key.strip() != key:
+                continue
+            parsed = _parse_meta_value(raw_value.strip())
+            if parsed is not None:
+                return parsed
+    return None
+
+
+def _parse_meta_value(raw_value: str) -> Any | None:
+    try:
+        return ast.literal_eval(raw_value)
+    except (SyntaxError, ValueError):
+        lowered = raw_value.lower()
+        if lowered == "true":
+            return True
+        if lowered == "false":
+            return False
+        if lowered == "null":
+            return None
+    return raw_value.strip('"')
 
 
 def get_string_definition_node(ctx: DocumentContext, identifier: str) -> tuple[Any, Any] | None:

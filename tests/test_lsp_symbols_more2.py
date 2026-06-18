@@ -60,9 +60,14 @@ def test_symbols_helper_and_fallback_edges() -> None:
     rng = provider._make_range(1, 2, 3, 4)
     assert rng.start.line == 1 and rng.end.character == 4
 
-    broken = provider.get_symbols("rule bad { condition: ")
+    broken = provider.get_symbols("""
+rule bad {
+  meta:
+    author = "me"
+  condition:
+""")
     assert [symbol.name for symbol in broken] == ["bad"]
-    assert [child.name for child in (broken[0].children or [])] == ["condition"]
+    assert [child.name for child in (broken[0].children or [])] == ["meta", "condition"]
 
 
 def test_symbols_provider_handles_context_creation_failure(monkeypatch: pytest.MonkeyPatch) -> None:

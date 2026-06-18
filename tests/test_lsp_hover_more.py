@@ -108,6 +108,12 @@ def test_hover_rule_name_survives_parse_failure() -> None:
     assert "Metadata" in hover_rule_text
     assert "**Strings:** 1 defined" in hover_rule_text
 
+    hover_meta = provider.get_hover(text, _pos(2, 8))
+    assert hover_meta is not None
+    hover_meta_text = _hover_text(hover_meta)
+    assert "**author** (metadata)" in hover_meta_text
+    assert "me" in hover_meta_text
+
 
 def test_hover_module_member_direct() -> None:
     provider = HoverProvider()
