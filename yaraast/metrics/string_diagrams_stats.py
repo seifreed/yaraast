@@ -19,7 +19,14 @@ class StringDiagramStatsMixin:
     def get_pattern_statistics(self) -> dict[str, Any]:
         """Get comprehensive pattern statistics."""
         if not self.string_patterns:
-            return {"total_patterns": 0}
+            return {
+                "total_patterns": 0,
+                "by_type": {"plain": 0, "hex": 0, "regex": 0},
+                "complexity_distribution": {"low": 0, "medium": 0, "high": 0},
+                "common_patterns": [],
+                "pattern_lengths": {},
+                "modifiers_usage": {},
+            }
 
         return {
             "total_patterns": len(self.string_patterns),

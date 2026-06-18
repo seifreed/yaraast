@@ -191,7 +191,14 @@ def test_graph_stats_and_labels_high_complexity_paths(tmp_path: Path) -> None:
     }
 
     empty_gen = StringDiagramGenerator()
-    assert empty_gen.get_pattern_statistics() == {"total_patterns": 0}
+    assert empty_gen.get_pattern_statistics() == {
+        "total_patterns": 0,
+        "by_type": {"plain": 0, "hex": 0, "regex": 0},
+        "complexity_distribution": {"low": 0, "medium": 0, "high": 0},
+        "common_patterns": [],
+        "pattern_lengths": {},
+        "modifiers_usage": {},
+    }
     assert empty_gen._get_length_statistics() == {}
 
     ast = YaraFile(

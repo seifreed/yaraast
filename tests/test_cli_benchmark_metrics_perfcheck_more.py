@@ -536,6 +536,20 @@ def test_metrics_reporting_graph_and_pattern_helpers(
             },
         )(),
     )
+    _display_pattern_statistics(
+        type(
+            "EmptyPatternStats",
+            (),
+            {
+                "get_pattern_statistics": lambda self: {
+                    "total_patterns": 0,
+                    "by_type": {"plain": 0, "hex": 0, "regex": 0},
+                    "complexity_distribution": {"low": 0, "medium": 0, "high": 0},
+                    "pattern_lengths": {},
+                },
+            },
+        )(),
+    )
 
     out = capsys.readouterr().out
     assert "Graph Statistics:" in out

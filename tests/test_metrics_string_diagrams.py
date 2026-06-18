@@ -72,3 +72,18 @@ def test_hex_diagram_empty(tmp_path: Path) -> None:
     result = gen.generate_hex_pattern_diagram(ast, str(out), format="dot")
     assert result.endswith(".dot")
     assert out.exists()
+
+
+def test_empty_pattern_statistics_have_full_schema() -> None:
+    gen = StringDiagramGenerator()
+
+    stats = gen.get_pattern_statistics()
+
+    assert stats == {
+        "total_patterns": 0,
+        "by_type": {"plain": 0, "hex": 0, "regex": 0},
+        "complexity_distribution": {"low": 0, "medium": 0, "high": 0},
+        "common_patterns": [],
+        "pattern_lengths": {},
+        "modifiers_usage": {},
+    }
