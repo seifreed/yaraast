@@ -129,6 +129,39 @@ rule sample {
         assert provider.symbol_cache == {}
 
 
+def test_workspace_symbols_cache_uses_nanosecond_mtime(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    yara_file = tmp_path / "sample.yar"
+    yara_file.write_text("rule one { condition: true }\n", encoding="utf-8")
+
+    provider = WorkspaceSymbolsProvider()
+    provider.set_workspace_root(tmp_path)
+
+    first = {symbol.name for symbol in provider.get_workspace_symbols("")}
+    assert "one" in first
+
+    original_stat = Path.stat
+    cached_ns = yara_file.stat().st_mtime_ns
+
+    class _FixedStat:
+        st_mtime = 1.0
+        st_mtime_ns = cached_ns + 1
+
+    def fake_stat(self: Path, *args: object, **kwargs: object):
+        if self == yara_file:
+            return _FixedStat()
+        return original_stat(self, *args, **kwargs)
+
+    yara_file.write_text("rule two { condition: true }\n", encoding="utf-8")
+    monkeypatch.setattr(Path, "stat", fake_stat)
+
+    second = {symbol.name for symbol in provider.get_workspace_symbols("")}
+
+    assert "two" in second
+    assert "one" not in second
+
+
 @pytest.mark.parametrize("file_path", ["", "   ", "\t"])
 def test_workspace_symbols_rejects_empty_invalidate_file_path(file_path: str) -> None:
     provider = WorkspaceSymbolsProvider()

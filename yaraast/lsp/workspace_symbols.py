@@ -37,9 +37,9 @@ def _path_exists_and_not_dir(path: Path) -> bool:
     return _path_exists(path) and not _path_is_dir(path)
 
 
-def _path_mtime(path: Path) -> float | None:
+def _path_mtime(path: Path) -> int | None:
     try:
-        return path.stat().st_mtime
+        return path.stat().st_mtime_ns
     except OSError:
         return None
 
@@ -82,7 +82,7 @@ class WorkspaceSymbolsProvider:
     def __init__(self, runtime: LspRuntime | None = None) -> None:
         """Initialize workspace symbols provider."""
         self.runtime = runtime
-        self.symbol_cache: dict[str, tuple[float, list[SymbolInformation]]] = {}
+        self.symbol_cache: dict[str, tuple[int, list[SymbolInformation]]] = {}
         self.workspace_root: Path | None = None
 
     def set_workspace_root(self, root_path: str | PathLike[str]) -> None:
