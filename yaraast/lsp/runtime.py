@@ -321,6 +321,8 @@ class LspRuntime:
     def set_workspace_folders(self, folders: list[str]) -> None:
         self.index.set_workspace_folders(folders)
         for uri, doc in list(self.documents.items()):
+            if self._document_is_backed_by_file(uri):
+                doc.backed_by_file = True
             if doc.is_open:
                 continue
             if self.index._workspace_root_for_uri(uri) is not None:
