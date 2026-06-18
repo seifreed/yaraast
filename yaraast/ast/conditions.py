@@ -8,6 +8,7 @@ from typing import Any
 
 from yaraast.ast.base import _VisitorType
 from yaraast.ast.expressions import Expression, _validate_expression
+from yaraast.string_references import normalize_string_reference_id
 
 type QuantifierValue = Expression | str | int | float
 type StringSetItem = str | Expression
@@ -47,7 +48,11 @@ def _validate_quantifier(value: Any, field_name: str) -> None:
         raise ValueError(msg)
 
 
-def _validate_string_or_expression(value: Any, field_name: str, type_message: str) -> None:
+def _validate_string_reference_or_expression(
+    value: Any,
+    field_name: str,
+    type_message: str,
+) -> None:
     if isinstance(value, Expression):
         _validate_expression(value, field_name)
         return
@@ -56,6 +61,18 @@ def _validate_string_or_expression(value: Any, field_name: str, type_message: st
     if not value.strip():
         msg = f"{field_name} must not be empty"
         raise ValueError(msg)
+    if value == "$":
+        return
+    normalize_string_reference_id(value, allow_wildcard=False)
+
+
+def _validate_string_set_text(value: str, field_name: str) -> None:
+    if not value.strip():
+        msg = f"{field_name} must contain values"
+        raise ValueError(msg)
+    if value == "them":
+        return
+    normalize_string_reference_id(value, allow_wildcard=True)
 
 
 def _validate_string_set(value: Any, field_name: str) -> None:
@@ -66,9 +83,7 @@ def _validate_string_set(value: Any, field_name: str) -> None:
         _validate_expression(value, field_name)
         return
     if isinstance(value, str):
-        if not value.strip():
-            msg = f"{field_name} must contain values"
-            raise ValueError(msg)
+        _validate_string_set_text(value, field_name)
         return
     if not isinstance(value, list | tuple | set | frozenset):
         msg = f"{field_name} must be a string, expression, or collection"
@@ -84,9 +99,7 @@ def _validate_string_set(value: Any, field_name: str) -> None:
             _validate_expression(item, field_name)
             continue
         if isinstance(item, str):
-            if not item.strip():
-                msg = f"{field_name} must contain values"
-                raise ValueError(msg)
+            _validate_string_set_text(item, field_name)
             continue
         msg = f"{field_name} must contain strings or expressions"
         raise TypeError(msg)
@@ -165,7 +178,7 @@ class AtExpression(Condition):
 
     def validate_structure(self) -> None:
         """Validate string reference and offset before direct analysis."""
-        _validate_string_or_expression(
+        _validate_string_reference_or_expression(
             self.string_id,
             "AtExpression string_id",
             "AtExpression string_id must be a string or expression",
@@ -187,7 +200,7 @@ class InExpression(Condition):
     @property
     def string_id(self) -> str | None:
         """Return string_id if subject is a string, None otherwise."""
-        _validate_string_or_expression(
+        _validate_string_reference_or_expression(
             self.subject,
             "InExpression subject",
             "InExpression subject must be a string or expression",
@@ -196,7 +209,7 @@ class InExpression(Condition):
 
     def validate_structure(self) -> None:
         """Validate subject and range before direct analysis."""
-        _validate_string_or_expression(
+        _validate_string_reference_or_expression(
             self.subject,
             "InExpression subject",
             "InExpression subject must be a string or expression",

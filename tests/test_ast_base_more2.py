@@ -387,6 +387,28 @@ def test_direct_yarafile_analysis_rejects_invalid_expression_identifiers(
 
 
 @pytest.mark.parametrize(
+    "condition",
+    [
+        AtExpression("@a", IntegerLiteral(0)),
+        AtExpression("$bad-name", IntegerLiteral(0)),
+        InExpression("@a", Identifier("filesize")),
+        InExpression("$bad-name", Identifier("filesize")),
+        OfExpression("any", "$bad-name"),
+        OfExpression("any", ["$a", "$bad-name"]),
+        ForOfExpression("any", "$bad-name", BooleanLiteral(True)),
+        ForOfExpression("any", ["$a", "$bad-name"], BooleanLiteral(True)),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_raw_condition_string_references(
+    condition: Any,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_condition_reference", condition=condition)])
+
+    with pytest.raises(ValueError, match="Invalid string reference"):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
     ("node", "message"),
     [
         (
