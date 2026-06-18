@@ -6,7 +6,7 @@ from typing import Any
 
 from lsprotocol.types import CodeAction, CodeActionKind, Position, Range, WorkspaceEdit
 
-from yaraast.lsp.utils import get_word_at_position
+from yaraast.lsp.text_utils import get_word_at_position
 
 
 class RefactorCodeActionMixin:

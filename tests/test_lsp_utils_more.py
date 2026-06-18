@@ -12,13 +12,15 @@ from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import BinaryExpression
 from yaraast.ast.rules import Rule
 from yaraast.lexer.tokens import Token, TokenType
+from yaraast.lsp.text_utils import (
+    get_word_at_position,
+    offset_to_position,
+    position_to_offset,
+)
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.lsp.utils import (
     find_node_at_position,
-    get_word_at_position,
     location_to_range,
-    offset_to_position,
-    position_to_offset,
     token_to_range,
 )
 from yaraast.parser import Parser

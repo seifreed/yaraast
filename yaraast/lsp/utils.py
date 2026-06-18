@@ -9,11 +9,6 @@ from lsprotocol.types import Position, Range
 from yaraast.ast.base import ASTNode, Location
 from yaraast.lexer.tokens import Token
 from yaraast.lsp.semantic_tokens_helpers import token_source_length
-from yaraast.lsp.text_utils import (
-    get_word_at_position as text_get_word_at_position,
-    offset_to_position as text_offset_to_position,
-    position_to_offset as text_position_to_offset,
-)
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 
 
@@ -70,21 +65,6 @@ def location_to_range(location: Location, source_text: str | None = None) -> Ran
         character=_python_column_to_lsp(lines, start_line, end_python),
     )
     return Range(start=start, end=end)
-
-
-def position_to_offset(text: str, position: Position) -> int:
-    """Convert an LSP Position to a byte offset in the text."""
-    return text_position_to_offset(text, position)
-
-
-def offset_to_position(text: str, offset: int) -> Position:
-    """Convert a byte offset to an LSP Position."""
-    return text_offset_to_position(text, offset)
-
-
-def get_word_at_position(text: str, position: Position) -> tuple[str, Range]:
-    """Get the word at a given position."""
-    return text_get_word_at_position(text, position)
 
 
 def find_node_at_position(

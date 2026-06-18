@@ -8,8 +8,8 @@ from lsprotocol.types import Position, Range
 
 from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.structure import _starts_regex_literal, make_range
+from yaraast.lsp.text_utils import get_word_at_position
 from yaraast.lsp.utf16 import utf16_col_to_utf8
-from yaraast.lsp.utils import get_word_at_position
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext

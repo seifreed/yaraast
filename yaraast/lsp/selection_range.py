@@ -11,7 +11,7 @@ from yaraast.lsp.selection_range_helpers import (
     find_enclosing_section_range,
     line_range,
 )
-from yaraast.lsp.utils import get_word_at_position
+from yaraast.lsp.text_utils import get_word_at_position
 
 
 class SelectionRangeProvider:

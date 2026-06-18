@@ -26,8 +26,9 @@ from yaraast.lsp.document_query_reference_ast import (
 )
 from yaraast.lsp.document_query_resolution_ranges import narrow_range_to_name, resolved_if_contains
 from yaraast.lsp.document_types import ResolvedSymbol
+from yaraast.lsp.text_utils import get_word_at_position
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
-from yaraast.lsp.utils import find_node_at_position, get_word_at_position, location_to_range
+from yaraast.lsp.utils import find_node_at_position, location_to_range
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,

@@ -22,7 +22,7 @@ from yaraast.lsp.hover_renderers import (
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, get_document_context
 from yaraast.lsp.safe_handler import lsp_safe_handler
-from yaraast.lsp.utils import get_word_at_position
+from yaraast.lsp.text_utils import get_word_at_position
 from yaraast.types.module_loader import ModuleLoader
 
 logger = logging.getLogger(__name__)

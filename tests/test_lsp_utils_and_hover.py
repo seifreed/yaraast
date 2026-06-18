@@ -12,12 +12,14 @@ from yaraast.ast.rules import Rule
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.lsp.hover import HoverProvider
 from yaraast.lsp.runtime import LspRuntime
-from yaraast.lsp.utils import (
-    find_node_at_position,
+from yaraast.lsp.text_utils import (
     get_word_at_position,
-    location_to_range,
     offset_to_position,
     position_to_offset,
+)
+from yaraast.lsp.utils import (
+    find_node_at_position,
+    location_to_range,
     token_to_range,
 )
 

@@ -11,7 +11,7 @@ from yaraast.lsp.document_highlight_helpers import (
     simple_highlight,
 )
 from yaraast.lsp.document_types import ReferenceRecord
-from yaraast.lsp.utils import get_word_at_position
+from yaraast.lsp.text_utils import get_word_at_position
 
 
 class DocumentHighlightProvider:
