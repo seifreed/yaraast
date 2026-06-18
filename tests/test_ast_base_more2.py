@@ -361,6 +361,31 @@ def test_direct_yarafile_analysis_rejects_empty_expression_scalars(
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (Identifier("bad-name"), "Invalid identifier"),
+        (Identifier("$bad-name"), "Invalid string reference"),
+        (StringIdentifier("$bad-name"), "Invalid string reference"),
+        (StringWildcard("$bad-name*"), "Invalid string reference"),
+        (StringCount("#a"), "Invalid string reference"),
+        (StringCount("$bad-name"), "Invalid string reference"),
+        (StringOffset("@a"), "Invalid string reference"),
+        (StringOffset("$bad-name"), "Invalid string reference"),
+        (StringLength("!a"), "Invalid string reference"),
+        (StringLength("$bad-name"), "Invalid string reference"),
+    ],
+)
+def test_direct_yarafile_analysis_rejects_invalid_expression_identifiers(
+    condition: Any,
+    message: str,
+) -> None:
+    malformed_file = YaraFile(rules=[Rule("bad_expression", condition=condition)])
+
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExpressionOptimizer().optimize(malformed_file)
+
+
+@pytest.mark.parametrize(
     ("node", "message"),
     [
         (

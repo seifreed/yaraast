@@ -29,7 +29,7 @@ def test_performance_optimizer_dispatch_and_complexity_paths() -> None:
     assert optimized_rule == empty_rule
 
     yara_file = YaraFile(
-        rules=[Rule(name="a"), Rule(name="b", condition=Identifier(name="for loop and or"))]
+        rules=[Rule(name="a"), Rule(name="b", condition=Identifier(name="for_loop_and_or"))]
     )
     optimized_file = optimizer.optimize(yara_file, strategy="memory")
     assert optimized_file is not yara_file
@@ -47,7 +47,7 @@ def test_performance_optimizer_dispatch_and_complexity_paths() -> None:
             RegexString(identifier="$re", regex="ab.*"),
             HexString(identifier="$hx", tokens=[HexByte(value=0x41), HexByte(value=0x42)]),
         ],
-        condition=Identifier(name="for and or"),
+        condition=Identifier(name="for_and_or"),
     )
     assert optimizer._rule_complexity(rich_rule) > 0
 

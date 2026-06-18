@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+import re
 from typing import Any
 
 from yaraast.ast.base import (
@@ -12,6 +13,35 @@ from yaraast.ast.base import (
     _require_nonempty_string,
     _VisitorType,
 )
+from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
+from yaraast.string_references import (
+    normalize_string_reference_id,
+)
+
+_YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _validate_expression_identifier(name: object) -> str:
+    if not isinstance(name, str):
+        msg = "Identifier name must be a string"
+        raise TypeError(msg)
+    if len(name) <= YARA_IDENTIFIER_MAX_LENGTH and _YARA_IDENTIFIER_RE.fullmatch(name):
+        return name
+    if name.startswith("$"):
+        normalize_string_reference_id(name, allow_wildcard=False)
+        return name
+    msg = f"Invalid identifier '{name}'"
+    raise ValueError(msg)
+
+
+def _validate_string_reference_suffix(identifier: object) -> None:
+    text = _require_nonempty_string(identifier, "String identifier")
+    if text.startswith(("#", "@", "!")):
+        msg = f"Invalid string reference '{text}'"
+        raise ValueError(msg)
+    if text == "$":
+        return
+    normalize_string_reference_id(text, allow_wildcard=False)
 
 
 @dataclass
@@ -52,6 +82,7 @@ class Identifier(Expression):
     def validate_structure(self) -> None:
         """Validate scalar fields before direct analysis."""
         _require_nonempty_string(self.name, "Identifier name")
+        _validate_expression_identifier(self.name)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_identifier(self)
@@ -66,6 +97,8 @@ class StringIdentifier(Expression):
     def validate_structure(self) -> None:
         """Validate scalar fields before direct analysis."""
         _require_nonempty_string(self.name, "String identifier")
+        if self.name != "$":
+            normalize_string_reference_id(self.name, allow_wildcard=False)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_identifier(self)
@@ -80,6 +113,7 @@ class StringWildcard(Expression):
     def validate_structure(self) -> None:
         """Validate scalar fields before direct analysis."""
         _require_nonempty_string(self.pattern, "String wildcard pattern")
+        normalize_string_reference_id(self.pattern, allow_wildcard=True)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_wildcard(self)
@@ -94,6 +128,7 @@ class StringCount(Expression):
     def validate_structure(self) -> None:
         """Validate scalar fields before direct analysis."""
         _require_nonempty_string(self.string_id, "String count identifier")
+        _validate_string_reference_suffix(self.string_id)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_count(self)
@@ -109,6 +144,7 @@ class StringOffset(Expression):
     def validate_structure(self) -> None:
         """Validate scalar fields and optional index before direct analysis."""
         _require_nonempty_string(self.string_id, "String offset identifier")
+        _validate_string_reference_suffix(self.string_id)
         if self.index is not None:
             _validate_expression(self.index, "StringOffset.index")
 
@@ -126,6 +162,7 @@ class StringLength(Expression):
     def validate_structure(self) -> None:
         """Validate scalar fields and optional index before direct analysis."""
         _require_nonempty_string(self.string_id, "String length identifier")
+        _validate_string_reference_suffix(self.string_id)
         if self.index is not None:
             _validate_expression(self.index, "StringLength.index")
 
