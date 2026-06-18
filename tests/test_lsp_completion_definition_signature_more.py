@@ -189,10 +189,17 @@ rule a {
     assert broken_definition.uri == uri
 
 
-def test_definition_provider_include_helper_rejects_invalid_uri() -> None:
+def test_definition_provider_include_target_rejects_invalid_uri() -> None:
     provider = DefinitionProvider()
 
-    assert provider._find_include_definition("file://", "common.yar") is None
+    assert (
+        provider.get_definition(
+            'include "common.yar"\n',
+            _pos(0, 10),
+            "file://",
+        )
+        is None
+    )
 
 
 @pytest.mark.parametrize("text", [None, 1, b"rule a", object()])

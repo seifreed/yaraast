@@ -88,4 +88,9 @@ def test_definition_include_target_ignores_inaccessible_paths(tmp_path: Path) ->
     sample.write_text('include "missing.yar"\nrule test { condition: true }\n', encoding="utf-8")
     provider = DefinitionProvider()
 
-    assert provider._find_include_definition(sample.resolve().as_uri(), "a" * 5000) is None
+    assert (
+        provider.get_definition(
+            sample.read_text(encoding="utf-8"), _pos(0, 10), sample.resolve().as_uri()
+        )
+        is None
+    )
