@@ -45,6 +45,10 @@ def _path_mtime(path: Path) -> int | None:
         return None
 
 
+def _cache_key_for_path(path: Path) -> str:
+    return str(path.resolve())
+
+
 def _require_workspace_root(root_path: object) -> Path:
     if isinstance(root_path, bool | bytes) or not isinstance(root_path, str | PathLike):
         msg = "root_path must be a string or path-like object"
@@ -74,7 +78,7 @@ def _require_cache_file_path(file_path: object) -> str:
     if not raw_path.strip():
         msg = "file_path must not be empty"
         raise ValueError(msg)
-    return raw_path
+    return _cache_key_for_path(Path(raw_path))
 
 
 class WorkspaceSymbolsProvider:
@@ -130,7 +134,7 @@ class WorkspaceSymbolsProvider:
     def _get_symbols_from_file(self, file_path: Path) -> list[SymbolInformation]:
         """Extract all symbols from a YARA file."""
         # Check cache first
-        cache_key = str(file_path)
+        cache_key = _cache_key_for_path(file_path)
         mtime = _path_mtime(file_path)
         if mtime is None:
             return []

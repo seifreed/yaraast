@@ -152,7 +152,7 @@ rule sample {
         assert provider.get_workspace_symbols("missing-symbol") == []
 
         # Cache mutation helpers
-        key = str(f)
+        key = str(f.resolve())
         assert key in provider.symbol_cache
         provider.invalidate_file(Path(key))
         assert key not in provider.symbol_cache
@@ -207,6 +207,20 @@ def test_workspace_symbols_invalidate_file_handles_cache_miss_and_bad_fspath() -
 
     with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
         provider.invalidate_file(cast(Any, _BadPathLike()))
+
+
+def test_workspace_symbols_invalidate_file_normalizes_equivalent_paths() -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        yara_file = root / "sample.yar"
+        yara_file.write_text("rule sample { condition: true }\n", encoding="utf-8")
+
+        provider = WorkspaceSymbolsProvider()
+        provider.set_workspace_root(tmp)
+
+        assert provider.get_workspace_symbols("")
+        provider.invalidate_file(root / "subdir" / ".." / "sample.yar")
+        assert provider.symbol_cache == {}
 
 
 def test_workspace_symbols_discovers_uppercase_suffix_files() -> None:
