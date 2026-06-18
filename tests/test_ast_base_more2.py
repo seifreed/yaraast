@@ -1275,6 +1275,30 @@ def test_direct_yarafile_analysis_rejects_invalid_extern_reference_fields(
             "Unknown string modifier",
         ),
         (
+            PlainString("$a", value="abc", modifiers=["nocase", "nocase"]),
+            "Duplicate string modifier 'nocase'",
+        ),
+        (
+            PlainString("$a", value="abc", modifiers=["base64", "xor"]),
+            "String modifier 'xor' cannot be combined with 'base64'",
+        ),
+        (
+            PlainString("$a", value="abc", modifiers=["xor", "nocase"]),
+            "String modifier 'nocase' cannot be combined with 'xor'",
+        ),
+        (
+            PlainString("$a", value="abc", modifiers=["i"]),
+            "Unsupported string modifier: i",
+        ),
+        (
+            HexString("$h", tokens=[HexByte(0x41)], modifiers=["wide"]),
+            "String modifier 'wide' is not valid on hex strings",
+        ),
+        (
+            RegexString("$r", regex="abc", modifiers=["base64"]),
+            "String modifier 'base64' is not valid on regex strings",
+        ),
+        (
             PlainString("$a", value="abc", modifiers=[StringModifier(cast(Any, "xor"))]),
             "StringModifier modifier_type must be a StringModifierType",
         ),

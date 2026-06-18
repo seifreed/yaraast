@@ -17,6 +17,25 @@ from yaraast.string_references import validate_string_identifier_text
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 _REGEX_SUFFIX_MODIFIER_NAMES = frozenset({"i", "m", "s"})
+_UNSUPPORTED_PLAIN_STRING_MODIFIERS = frozenset(
+    {
+        "case",
+        "dotall",
+        "i",
+        "m",
+        "multiline",
+        "s",
+        "utf8",
+        "utf16",
+        "utf16le",
+        "utf16be",
+    }
+)
+_BASE64_MODIFIER_NAMES = frozenset({"base64", "base64wide"})
+_BASE64_INCOMPATIBLE_MODIFIERS = frozenset({"fullword", "nocase", "xor"})
+_XOR_INCOMPATIBLE_MODIFIERS = frozenset({"base64", "base64wide", "nocase"})
+_HEX_ALLOWED_MODIFIERS = frozenset({"private"})
+_REGEX_DISALLOWED_MODIFIERS = frozenset({"base64", "base64wide", "xor"})
 _MISSING = object()
 
 
@@ -127,9 +146,11 @@ class StringDefinition(ASTNode):
 
         known_modifier_names = {modifier_type.value for modifier_type in StringModifierType}
 
+        modifier_names: list[str] = []
         for modifier in self.modifiers:
             if isinstance(modifier, StringModifier):
                 modifier.validate_structure()
+                modifier_names.append(modifier.name)
             elif isinstance(modifier, str):
                 modifier_name = _require_nonempty_string(
                     modifier,
@@ -142,12 +163,22 @@ class StringDefinition(ASTNode):
                 ):
                     msg = f"Unknown string modifier: {modifier_name}"
                     raise ValueError(msg)
+                modifier_names.append(normalized_name)
             else:
                 msg = f"{type(self).__name__} modifiers item must be StringModifier or string"
                 raise TypeError(msg)
+        self._validate_modifier_names(modifier_names)
         if not isinstance(self.is_anonymous, bool):
             msg = f"{type(self).__name__} is_anonymous must be a boolean"
             raise TypeError(msg)
+
+    def _validate_modifier_names(self, modifier_names: list[str]) -> None:
+        seen: set[str] = set()
+        for modifier_name in modifier_names:
+            if modifier_name in seen:
+                msg = f"Duplicate string modifier '{modifier_name}'"
+                raise ValueError(msg)
+            seen.add(modifier_name)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_definition(self)
@@ -191,6 +222,25 @@ class PlainString(StringDefinition):
             msg = "Plain string raw_bytes must be bytes or None"
             raise TypeError(msg)
 
+    def _validate_modifier_names(self, modifier_names: list[str]) -> None:
+        super()._validate_modifier_names(modifier_names)
+        names = set(modifier_names)
+        for modifier_name in sorted(names & _UNSUPPORTED_PLAIN_STRING_MODIFIERS):
+            msg = f"Unsupported string modifier: {modifier_name}"
+            raise ValueError(msg)
+        for base64_name in sorted(names & _BASE64_MODIFIER_NAMES):
+            for incompatible_name in sorted(names & _BASE64_INCOMPATIBLE_MODIFIERS):
+                msg = (
+                    f"String modifier '{incompatible_name}' cannot be combined "
+                    f"with '{base64_name}'"
+                )
+                raise ValueError(msg)
+        if "xor" not in names:
+            return
+        for incompatible_name in sorted(names & _XOR_INCOMPATIBLE_MODIFIERS):
+            msg = f"String modifier '{incompatible_name}' cannot be combined with 'xor'"
+            raise ValueError(msg)
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_plain_string(self)
 
@@ -222,6 +272,14 @@ class HexString(StringDefinition):
         super().validate_structure()
         tokens = _require_ast_node_sequence(self.tokens, "HexString.tokens")
         _validate_hex_token_sequence(tokens, "hex string", inside_alternative=False)
+
+    def _validate_modifier_names(self, modifier_names: list[str]) -> None:
+        super()._validate_modifier_names(modifier_names)
+        for modifier_name in sorted(set(modifier_names)):
+            if modifier_name in _HEX_ALLOWED_MODIFIERS:
+                continue
+            msg = f"String modifier '{modifier_name}' is not valid on hex strings"
+            raise ValueError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_string(self)
@@ -377,6 +435,12 @@ class RegexString(StringDefinition):
             msg = "RegexString regex must not be empty"
             raise ValueError(msg)
         _validate_regex_text(regex)
+
+    def _validate_modifier_names(self, modifier_names: list[str]) -> None:
+        super()._validate_modifier_names(modifier_names)
+        for modifier_name in sorted(set(modifier_names) & _REGEX_DISALLOWED_MODIFIERS):
+            msg = f"String modifier '{modifier_name}' is not valid on regex strings"
+            raise ValueError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_regex_string(self)
