@@ -237,10 +237,10 @@ class LspRuntime:
             if text is None:
                 return None
             return self.open_document(uri, text)
+        if self._document_is_backed_by_file(uri):
+            ctx.backed_by_file = True
         if text is not None:
             ctx.update(text, ctx.version, is_open=True)
-            if self._document_is_backed_by_file(uri):
-                ctx.backed_by_file = True
             self._mark_dirty(uri)
         self._sync_document_to_index(uri)
         return ctx
