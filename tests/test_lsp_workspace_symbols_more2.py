@@ -11,8 +11,12 @@ from lsprotocol.types import Position, Range, SymbolInformation
 import pytest
 
 from yaraast.lsp.document_types import SymbolRecord
-from yaraast.lsp.runtime import LspRuntime
-from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
+from yaraast.lsp.runtime import DocumentContext, LspRuntime
+from yaraast.lsp.workspace_symbols import (
+    WorkspaceSymbolsProvider,
+    _trailing_parse_error_rule_names,
+)
+from yaraast.parser._shared import ParserError
 
 
 def test_workspace_symbols_empty_and_exception_paths() -> None:
@@ -154,6 +158,55 @@ rule sample {
         assert key not in provider.symbol_cache
         provider.clear_cache()
         assert provider.symbol_cache == {}
+
+
+def test_workspace_symbols_keeps_earlier_symbols_from_parse_error_file() -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        broken = root / "broken.yar"
+        broken.write_text(
+            """
+rule good {
+  condition: true
+}
+
+rule broken {
+  condition:
+""".lstrip(),
+            encoding="utf-8",
+        )
+
+        provider = WorkspaceSymbolsProvider()
+        provider.set_workspace_root(tmp)
+
+        names = {symbol.name for symbol in provider.get_workspace_symbols("")}
+        assert "good" in names
+        assert "broken" not in names
+
+
+def test_workspace_symbols_trailing_rule_helper_handles_nonmatching_cases() -> None:
+    empty_doc = DocumentContext("file:///empty.yar", "}")
+    assert _trailing_parse_error_rule_names(empty_doc.symbols(), empty_doc.parse_error()) == set()
+
+    broken_doc = DocumentContext("file:///broken.yar", "rule ok { condition: true }\n}")
+    assert _trailing_parse_error_rule_names(broken_doc.symbols(), broken_doc.parse_error()) == set()
+
+    err = DocumentContext("file:///line.yar", "}").parse_error()
+    assert isinstance(err, ParserError)
+    cast(Any, err).line = "x"
+    assert _trailing_parse_error_rule_names([], err) == set()
+
+
+def test_workspace_symbols_invalidate_file_handles_cache_miss_and_bad_fspath() -> None:
+    provider = WorkspaceSymbolsProvider()
+    provider.invalidate_file(Path("missing.yar"))
+
+    class _BadPathLike:
+        def __fspath__(self) -> bytes:
+            return b"missing.yar"
+
+    with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
+        provider.invalidate_file(cast(Any, _BadPathLike()))
 
 
 def test_workspace_symbols_discovers_uppercase_suffix_files() -> None:

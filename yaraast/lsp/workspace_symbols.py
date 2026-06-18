@@ -8,8 +8,9 @@ from pathlib import Path
 
 from lsprotocol.types import SymbolInformation
 
-from yaraast.lsp.document_types import YARA_FILE_SUFFIXES
+from yaraast.lsp.document_types import YARA_FILE_SUFFIXES, SymbolRecord
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
+from yaraast.parser._shared import ParserError
 
 logger = logging.getLogger(__name__)
 
@@ -148,9 +149,14 @@ class WorkspaceSymbolsProvider:
 
             file_uri = path_to_uri(file_path)
             doc = DocumentContext(file_uri, content)
-            if doc.parse_error() is not None:
-                return []
-            for record in doc.symbols():
+            records = doc.symbols()
+            trailing_rule_names = _trailing_parse_error_rule_names(records, doc.parse_error())
+            for record in records:
+                if record.name in trailing_rule_names and (
+                    record.kind in {"rule", "rule_block"}
+                    or record.container_name in trailing_rule_names
+                ):
+                    continue
                 if record.kind not in {"rule", "string"}:
                     continue
                 info = record.to_symbol_information()
@@ -194,3 +200,24 @@ class WorkspaceSymbolsProvider:
             return
         if cache_key in self.symbol_cache:
             del self.symbol_cache[cache_key]
+
+
+def _trailing_parse_error_rule_names(
+    records: list[SymbolRecord], parse_error: Exception | None
+) -> set[str]:
+    if not isinstance(parse_error, ParserError):
+        return set()
+    error_line = getattr(parse_error, "line", None)
+    if not isinstance(error_line, int):
+        return set()
+    trailing_rule: SymbolRecord | None = None
+    for record in records:
+        if record.kind != "rule_block":
+            continue
+        trailing_rule = record
+    if trailing_rule is None:
+        return set()
+    error_zero_based = error_line - 1
+    if trailing_rule.range.start.line <= error_zero_based <= trailing_rule.range.end.line:
+        return {trailing_rule.name}
+    return set()
