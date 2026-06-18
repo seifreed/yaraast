@@ -611,6 +611,9 @@ def test_document_context_symbols_fall_back_on_unicode_surrogate_error() -> None
 
     assert doc.get_rule_names() == ["broken"]
     assert any(symbol.kind == "string" and symbol.name == "$a" for symbol in symbols)
+    assert doc.revision_key().startswith("noversion:")
+    doc.set_cached("surrogate-cache", 1)
+    assert doc.get_cached("surrogate-cache") == 1
 
 
 def test_document_context_rejects_invalid_text_inputs() -> None:

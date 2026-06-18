@@ -145,7 +145,9 @@ class DocumentContext:
         self._analysis_cache: dict[str, tuple[str, Any]] = {}
 
     def revision_key(self) -> str:
-        digest = hashlib.sha1(self.text.encode("utf-8"), usedforsecurity=False).hexdigest()
+        digest = hashlib.sha1(
+            self.text.encode("utf-8", errors="surrogatepass"), usedforsecurity=False
+        ).hexdigest()
         return f"{self.version if self.version is not None else 'noversion'}:{digest}"
 
     def get_cached(self, key: str) -> Any | None:
