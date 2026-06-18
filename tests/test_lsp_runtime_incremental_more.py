@@ -52,10 +52,13 @@ class _ByteStringDocument(DocumentContext):
 
 
 class _FailingUnifiedParser:
+    parse_calls = 0
+
     def __init__(self, _text: str, *, dialect: object = None) -> None:
         pass
 
     def parse(self) -> NoReturn:
+        type(self).parse_calls += 1
         raise RuntimeError("transient document parser failure")
 
 
@@ -611,12 +614,19 @@ def test_document_context_does_not_cache_internal_parser_failures(
     text = "rule sample { condition: true }\n"
     doc = DocumentContext("file://sample.yar", text)
 
+    _FailingUnifiedParser.parse_calls = 0
     monkeypatch.setattr(document_context_module, "UnifiedParser", _FailingUnifiedParser)
     assert doc.ast() is None
-    assert doc.parse_error() is None
+    error = doc.parse_error()
+    assert isinstance(error, RuntimeError)
+    assert str(error) == "transient document parser failure"
+    assert doc.parse_error() is error
+    assert doc.ast() is None
     assert doc.symbols() == []
+    assert _FailingUnifiedParser.parse_calls == 1
 
     monkeypatch.setattr(document_context_module, "UnifiedParser", RealUnifiedParser)
+    doc.update(text)
     recovered_symbols = doc.symbols()
 
     assert [symbol.name for symbol in recovered_symbols if symbol.kind == "rule"] == ["sample"]

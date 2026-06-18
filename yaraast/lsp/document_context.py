@@ -204,7 +204,8 @@ class DocumentContext:
         except ParserError as exc:
             self._parse_error = exc
             self._ast = None
-        except Exception:
+        except Exception as exc:
+            self._parse_error = exc
             self._ast = None
         return self._ast
 
