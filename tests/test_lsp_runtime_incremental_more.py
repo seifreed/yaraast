@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import deque
 import json
 from pathlib import Path
 from typing import Any, NoReturn, cast
@@ -22,6 +23,7 @@ from yaraast.lsp.document_query_resolution_symbol_records import _symbol_contain
 from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.document_types import LanguageMode, SymbolRecord
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, RuntimeConfig, path_to_uri
+from yaraast.lsp.runtime_observability import get_latency_metrics
 from yaraast.lsp.semantic_tokens import SemanticTokensProvider
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.unified_parser import UnifiedParser as RealUnifiedParser
@@ -267,6 +269,42 @@ rule sample {
     assert ("section", "condition", "sample") in sections
     assert ("section_header", "condition", "sample") in sections
     assert ("rule_block", "sample", None) in sections
+
+
+def test_runtime_status_reports_all_workspace_index_paths(tmp_path: Path) -> None:
+    root_one = tmp_path / "one"
+    root_two = tmp_path / "two"
+    root_one.mkdir()
+    root_two.mkdir()
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(root_one), str(root_two)])
+
+    status = runtime.get_status()
+    assert status["workspace_folders"] == [str(root_one), str(root_two)]
+    assert status["index_path"] == str(root_one / ".yaraast" / "lsp-workspace-index.json")
+    assert status["index_paths"] == [
+        str(root_one / ".yaraast" / "lsp-workspace-index.json"),
+        str(root_two / ".yaraast" / "lsp-workspace-index.json"),
+    ]
+
+
+def test_runtime_observability_covers_default_debounce_and_empty_latency() -> None:
+    runtime = LspRuntime()
+
+    assert runtime.should_debounce("file:///sample.yar", "task") is False
+
+    runtime._latency["empty"] = deque()
+    runtime._latency["sample"] = deque([1.0, 3.0])
+
+    assert get_latency_metrics(runtime) == {
+        "sample": {
+            "count": 2.0,
+            "avg_ms": 2.0,
+            "max_ms": 3.0,
+            "min_ms": 1.0,
+        }
+    }
 
 
 def test_document_context_ignores_section_names_inside_literals() -> None:

@@ -89,7 +89,8 @@ def get_latency_metrics(runtime: LspRuntime) -> dict[str, dict[str, float]]:
 
 
 def get_status(runtime: LspRuntime) -> dict[str, object]:
-    cache_path = runtime.index._cache_path()
+    cache_paths = runtime.index._cache_paths()
+    index_paths = [str(path) for path in cache_paths]
     document_cache_entries = sum(len(doc._analysis_cache) for doc in runtime.documents.values())
     return {
         "open_documents": len([doc for doc in runtime.documents.values() if doc.is_open]),
@@ -101,7 +102,8 @@ def get_status(runtime: LspRuntime) -> dict[str, object]:
         "cache_workspace": runtime.config.cache_workspace,
         "language_mode": runtime.config.language_mode.value,
         "workspace_folders": [str(path) for path in runtime.index.workspace_folders],
-        "index_path": str(cache_path) if cache_path is not None else None,
+        "index_path": index_paths[0] if index_paths else None,
+        "index_paths": index_paths,
         "cache_stats": {
             "workspace_generation": runtime.cache.generation,
             "workspace_symbol_queries": len(runtime.cache.workspace_symbol_cache),
