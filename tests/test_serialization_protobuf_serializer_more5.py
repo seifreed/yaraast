@@ -241,6 +241,28 @@ def test_protobuf_serializer_rejects_unknown_modifier_value_types() -> None:
         serializer.serialize(ast)
 
 
+def test_protobuf_serializer_rejects_invalid_string_modifier_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_modifier",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("xor", "zz")],
+                    )
+                ],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    with pytest.raises(SerializationError, match="xor value must be a byte"):
+        serializer.serialize(ast)
+
+
 def test_protobuf_serializer_rejects_unknown_modifier_tuple_items() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     invalid_modifier = StringModifier.from_name_value("xor", (1, 3))
@@ -685,7 +707,7 @@ def test_protobuf_serializer_rejects_non_string_file_and_rule_fields(
                     ),
                 ],
             ),
-            "String modifier value text must be UTF-8 encodable",
+            "xor value must be a byte",
         ),
         (
             YaraFile(

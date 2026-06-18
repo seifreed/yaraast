@@ -603,13 +603,26 @@ def _protobuf_modifier_names_from_protobuf(values, context: str) -> list[str]:
 
 
 def _protobuf_string_modifier_list(values, context: str) -> list:
-    from yaraast.ast.modifiers import StringModifier
+    from yaraast.ast.modifiers import (
+        StringModifier,
+        StringModifierType,
+        _validate_xor_modifier_value,
+    )
 
     items = _protobuf_list(values, context)
     for item in items:
         if not isinstance(item, StringModifier | str):
             msg = f"{context} item must be StringModifier or string"
             raise SerializationError(msg)
+        if (
+            isinstance(item, StringModifier)
+            and item.modifier_type == StringModifierType.XOR
+            and isinstance(item.value, str)
+        ):
+            try:
+                _validate_xor_modifier_value(item.value)
+            except (TypeError, ValueError) as exc:
+                raise SerializationError(str(exc)) from exc
     return items
 
 

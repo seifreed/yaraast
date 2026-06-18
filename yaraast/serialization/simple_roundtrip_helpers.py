@@ -41,7 +41,13 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import MetaEntry, RuleModifier, StringModifier
+from yaraast.ast.modifiers import (
+    MetaEntry,
+    RuleModifier,
+    StringModifier,
+    StringModifierType,
+    _validate_xor_modifier_value,
+)
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import (
@@ -781,6 +787,15 @@ def _serialize_modifiers(modifiers: Any, context: str) -> list[dict[str, Any]]:
         raise SerializationError(msg)
     serialized = []
     for modifier in modifiers:
+        if (
+            isinstance(modifier, StringModifier)
+            and modifier.modifier_type == StringModifierType.XOR
+            and isinstance(modifier.value, str)
+        ):
+            try:
+                _validate_xor_modifier_value(modifier.value)
+            except (TypeError, ValueError) as exc:
+                raise SerializationError(str(exc)) from exc
         data = {
             "name": _serialize_string_modifier_name(modifier),
             "value": _serialize_modifier_value(getattr(modifier, "value", None)),
@@ -1184,6 +1199,11 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, HexToken):
         return _serialize_hex_token(node)
     if isinstance(node, StringModifier):
+        if node.modifier_type == StringModifierType.XOR and isinstance(node.value, str):
+            try:
+                _validate_xor_modifier_value(node.value)
+            except (TypeError, ValueError) as exc:
+                raise SerializationError(str(exc)) from exc
         return {
             "type": "StringModifier",
             "name": _serialize_string_modifier_name(node),

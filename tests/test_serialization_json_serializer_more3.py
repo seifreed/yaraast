@@ -2409,6 +2409,28 @@ def test_json_roundtrip_preserves_typed_string_modifier_values() -> None:
     ]
 
 
+def test_json_serializer_rejects_invalid_string_modifier_values() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_modifier",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("xor", "zz")],
+                    )
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(SerializationError, match="xor value must be a byte"):
+        serializer.serialize(ast)
+
+
 def test_json_roundtrip_preserves_string_modifier_metadata() -> None:
     serializer = JsonSerializer(include_metadata=True)
     modifier = StringModifier.from_name_value("xor", 5)

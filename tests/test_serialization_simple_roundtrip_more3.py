@@ -5,12 +5,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.simple_roundtrip import SimpleRoundTrip, SimpleRoundtripSerializer
 
@@ -137,6 +140,28 @@ def test_simple_roundtrip_preserves_alias_and_modifiers() -> None:
     assert restored.rules[0].strings[0].modifiers[0].name == "nocase"
     assert restored.rules[0].strings[1].modifiers[0].name == "wide"
     assert restored.rules[0].strings[2].modifiers[0].name == "ascii"
+
+
+def test_simple_roundtrip_rejects_invalid_xor_modifier_strings() -> None:
+    serializer = SimpleRoundtripSerializer()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_modifier",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("xor", "zz")],
+                    )
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    with pytest.raises(SerializationError, match="xor value must be a byte"):
+        serializer.serialize(ast)
 
 
 def test_simple_roundtrip_validator() -> None:

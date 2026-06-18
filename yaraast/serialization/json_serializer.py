@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import ASTNode, Location
+from yaraast.ast.modifiers import StringModifierType, _validate_xor_modifier_value
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
@@ -373,6 +374,12 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
 
     def visit_string_modifier(self, node) -> dict[str, Any]:
         modifier_type = getattr(node, "modifier_type", None)
+        value = getattr(node, "value", None)
+        if modifier_type == StringModifierType.XOR and isinstance(value, str):
+            try:
+                _validate_xor_modifier_value(value)
+            except (TypeError, ValueError) as exc:
+                raise SerializationError(str(exc)) from exc
         name = getattr(modifier_type, "value", None)
         if name is None:
             try:
@@ -382,7 +389,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node(
             "StringModifier",
             name=_serialize_required_nonempty_string(name, "StringModifier name"),
-            value=_serialize_modifier_value(node.value),
+            value=_serialize_modifier_value(value),
         )
 
     def visit_hex_token(self, node) -> dict[str, Any]:
