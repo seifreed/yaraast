@@ -344,6 +344,7 @@ class LspRuntime:
             return
         if "YARA" in settings and isinstance(settings["YARA"], dict):
             settings = settings["YARA"]
+        previous_cache_workspace = self.config.cache_workspace
         previous_mode = self.config.language_mode
         if "cacheWorkspace" in settings:
             self.config.cache_workspace = _parse_bool_setting(
@@ -373,10 +374,12 @@ class LspRuntime:
             )
         if not self.config.cache_workspace:
             self.documents = {uri: doc for uri, doc in self.documents.items() if doc.is_open}
-        elif "cacheWorkspace" in settings and self.config.cache_workspace:
+        elif previous_cache_workspace is False and self.config.cache_workspace:
             for doc in self.documents.values():
                 if doc.is_open:
                     self._sync_document_to_index(doc.uri)
+            for path in self.index.iter_candidate_files():
+                self.get_document(path_to_uri(path))
         self.cache.bump_generation()
 
     def handle_watched_files(self, changes: list[Any]) -> None:
