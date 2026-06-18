@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from lsprotocol.types import CompletionItem, CompletionItemKind, InsertTextFormat, Position
@@ -10,6 +11,7 @@ from lsprotocol.types import CompletionItem, CompletionItemKind, InsertTextForma
 from yaraast.ast.conditions import ForExpression
 from yaraast.errors import ParseError
 from yaraast.lsp.document_context import DocumentContext
+from yaraast.lsp.document_query_reference_text import mask_non_code_segments
 from yaraast.lsp.language_services import parse_source
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import LanguageMode
@@ -46,6 +48,10 @@ STRING_MODIFIERS: dict[str, str] = {
 }
 
 MODULE_COMPLETIONS: list[tuple[str, str]] = list(MODULE_DOCS.items())
+TEXT_WITH_LOOP_RE = re.compile(r"\bwith\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*=")
+TEXT_FOR_LOOP_RE = re.compile(
+    r"\bfor\s+(?:(?:any|all|none)\s+)?(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s+in\b"
+)
 
 
 def _active_module_name(before_cursor: str) -> str | None:
@@ -352,7 +358,39 @@ def _text_condition_completions(text: str) -> list[CompletionItem]:
         if symbol.kind != "string":
             continue
         items.extend(_string_identifier_completion_items(symbol.name, seen))
+    items.extend(_text_loop_variable_completions(doc, seen))
     return items
+
+
+def _text_loop_variable_completions(doc: DocumentContext, seen: set[str]) -> list[CompletionItem]:
+    items: list[CompletionItem] = []
+    lines = doc.lines
+    for symbol in doc.symbols():
+        if symbol.kind != "section" or symbol.name != "condition":
+            continue
+        for line_num in range(symbol.range.start.line, symbol.range.end.line + 1):
+            masked = mask_non_code_segments(lines[line_num])
+            for match in TEXT_WITH_LOOP_RE.finditer(masked):
+                items.extend(_loop_variable_completion_items(match.group("name"), seen))
+            for match in TEXT_FOR_LOOP_RE.finditer(masked):
+                items.extend(_loop_variable_completion_items(match.group("name"), seen))
+    return items
+
+
+def _loop_variable_completion_items(
+    identifier: str, seen: set[str]
+) -> list[CompletionItem]:
+    if not identifier or identifier in seen:
+        return []
+    seen.add(identifier)
+    return [
+        CompletionItem(
+            label=identifier,
+            kind=CompletionItemKind.Variable,
+            detail="Loop variable",
+            insert_text=identifier,
+        )
+    ]
 
 
 def _string_identifier_completions(ast: Any) -> list[CompletionItem]:

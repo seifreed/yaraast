@@ -119,6 +119,26 @@ rule broken {
     assert "#a" in labels
 
 
+def test_completion_condition_keeps_loop_variables_after_parse_failure() -> None:
+    provider = CompletionProvider()
+    text = """
+rule sample {
+  strings:
+    $a = "x"
+  condition:
+    with xs = [1]: match xs { _ => $a }
+}
+
+rule broken {
+  condition:
+""".lstrip()
+
+    completions = provider.get_completions(text, _pos(4, 0))
+    labels = {item.label for item in completions.items}
+
+    assert "xs" in labels
+
+
 def test_definition_provider_handles_missing_symbol_and_parse_failure() -> None:
     provider = DefinitionProvider()
     uri = "file://test.yar"
