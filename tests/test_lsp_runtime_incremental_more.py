@@ -2089,7 +2089,7 @@ def test_runtime_rule_link_records_handle_missing_loaded_document(
     uri = path_to_uri(rule_file)
     runtime = LspRuntime()
 
-    def missing_document(_uri: str, *, load_workspace: bool = True) -> None:
+    def missing_document(_uri: str, *, _load_workspace: bool = True) -> None:
         return None
 
     monkeypatch.setattr(runtime, "get_document", missing_document)

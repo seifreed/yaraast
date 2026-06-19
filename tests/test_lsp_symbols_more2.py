@@ -80,7 +80,7 @@ def test_symbols_provider_handles_context_creation_failure(monkeypatch: pytest.M
         _uri: str | None,
         _text: str,
         *,
-        fallback_uri: str = "",
+        _fallback_uri: str = "",
     ) -> object:
         raise RuntimeError("context failed")
 

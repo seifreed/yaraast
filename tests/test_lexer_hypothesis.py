@@ -90,10 +90,10 @@ class TestLexerProperties:
 
     @given(
         name=_valid_identifier(),
-        n=st.integers(min_value=1, max_value=3),
+        _n=st.integers(min_value=1, max_value=3),
     )
     @settings(max_examples=30, deadline=5000)
-    def test_double_tokenize_idempotent(self, name: str, n: int) -> None:
+    def test_double_tokenize_idempotent(self, name: str, _n: int) -> None:
         """Tokenizing the same text multiple times produces identical results."""
         assume(name.lower() not in _ALL_KEYWORDS)
         text = f"rule {name} {{ condition: true }}"

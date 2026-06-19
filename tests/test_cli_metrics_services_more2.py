@@ -359,6 +359,7 @@ def test_metrics_services_error_paths_and_dependency_generator_success(
             image_format: str,
             generator_factory: Any = None,
         ) -> list[str]:
+            _ = image_format
             raise ValueError("dep boom")
 
         metrics_workflows.generate_dependency_graphs = _raise_dep
@@ -372,6 +373,7 @@ def test_metrics_services_error_paths_and_dependency_generator_success(
             image_format: str,
             generator_factory: Any = None,
         ) -> list[str]:
+            _ = image_format
             return []
 
         def _raise_pattern(
@@ -381,6 +383,7 @@ def test_metrics_services_error_paths_and_dependency_generator_success(
             image_format: str,
             generator_factory: Any = None,
         ) -> list[str]:
+            _ = image_format
             raise ValueError("pat boom")
 
         metrics_workflows.generate_dependency_graphs = _ok_dep
