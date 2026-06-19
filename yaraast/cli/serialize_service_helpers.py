@@ -21,20 +21,17 @@ def _require_serialization_format(fmt: object) -> str:
     return fmt
 
 
-def _create_serializer(fmt: str, *, include_metadata: bool):
-    if fmt == "json":
-        return JsonSerializer(include_metadata=include_metadata)
-    if fmt == "yaml":
-        return YamlSerializer(include_metadata=include_metadata)
-    return ProtobufSerializer(include_metadata=include_metadata)
-
-
 def export_with_serializer(
     ast: YaraFile, fmt: object, output: str | None, minimal: object
 ) -> tuple[str | None, dict | None]:
     fmt = _require_serialization_format(fmt)
     minimal = require_bool_option(minimal, "minimal")
-    serializer = _create_serializer(fmt, include_metadata=not minimal)
+    if fmt == "json":
+        serializer = JsonSerializer(include_metadata=not minimal)
+    elif fmt == "yaml":
+        serializer = YamlSerializer(include_metadata=not minimal)
+    else:
+        serializer = ProtobufSerializer(include_metadata=not minimal)
     if fmt == "json":
         return serializer.serialize(ast, output), None
     if fmt == "yaml":

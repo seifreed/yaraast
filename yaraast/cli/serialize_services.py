@@ -6,18 +6,23 @@ from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import YaraFile, require_yara_file
-from yaraast.cli.serialize_service_helpers import (
-    _create_serializer,
-    _require_serialization_format,
-)
+from yaraast.cli.serialize_service_helpers import _require_serialization_format
 from yaraast.cli.utils import parse_yara_file, write_text
 from yaraast.codegen import CodeGenerator
 from yaraast.serialization.ast_diff import AstDiff, AstHasher
+from yaraast.serialization.json_serializer import JsonSerializer
+from yaraast.serialization.protobuf_serializer import ProtobufSerializer
+from yaraast.serialization.yaml_serializer import YamlSerializer
 
 
 def import_ast(input_file: str, fmt: str):
     fmt = _require_serialization_format(fmt)
-    serializer = _create_serializer(fmt, include_metadata=True)
+    if fmt == "json":
+        serializer = JsonSerializer(include_metadata=True)
+    elif fmt == "yaml":
+        serializer = YamlSerializer(include_metadata=True)
+    else:
+        serializer = ProtobufSerializer(include_metadata=True)
     return serializer.deserialize(input_path=input_file)
 
 
