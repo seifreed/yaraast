@@ -38,11 +38,6 @@ def _ast_to_serializable_data(ast: Any) -> dict[str, Any]:
     return cast(dict[str, Any], ast.__dict__)
 
 
-def _format_yaral_code(code: str) -> str:
-    """Backward-compatible wrapper used by tests."""
-    return format_yaral_code(code)
-
-
 @click.group()
 def yaral() -> None:
     """YARA-L specific operations."""
