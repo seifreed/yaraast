@@ -285,7 +285,3 @@ class CommentPreservingLexer(Lexer[list[Token]]):
     def set_preserve_comments(self, preserve: bool) -> None:
         """Set whether to preserve comments."""
         self.preserve_comments = preserve
-
-    def clear_comments(self) -> None:
-        """Clear collected comments."""
-        self.comments.clear()

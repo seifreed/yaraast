@@ -58,7 +58,7 @@ def test_comment_preserving_lexer_helpers_and_preserve_toggle() -> None:
     no_preserve.set_preserve_comments(True)
     assert no_preserve.preserve_comments is True
 
-    lexer.clear_comments()
+    lexer.comments.clear()
     assert lexer.get_comments() == []
     assert comments_snapshot == original_comments
 
