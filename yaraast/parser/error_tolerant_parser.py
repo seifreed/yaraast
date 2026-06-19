@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule
-from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.errors import ParseError, YaraASTError
 from yaraast.parser.error_tolerant_flow import parse_with_recovery
 from yaraast.parser.error_tolerant_recovery import (
@@ -15,8 +13,6 @@ from yaraast.parser.error_tolerant_recovery import (
     parse_condition,
     parse_import_line,
     parse_include_line,
-    parse_meta_line,
-    parse_string_line,
 )
 from yaraast.parser.error_tolerant_types import ParserError, ParseResult, format_parser_errors
 from yaraast.parser.parser import Parser
@@ -71,21 +67,6 @@ class ErrorTolerantParser(Parser):
     ) -> Rule:
         """Create a Rule object from parsed body lines."""
         return create_rule_from_body(self, name, tags, body_lines, start_line)
-
-    def _parse_meta_line(
-        self, line: str, line_num: int | None = None, raw_line: str | None = None
-    ) -> Meta | None:
-        """Parse a meta line."""
-        return parse_meta_line(self, line, line_num, raw_line)
-
-    def _parse_string_line(
-        self,
-        line: str,
-        line_num: int | None = None,
-        raw_line: str | None = None,
-    ) -> PlainString | HexString | RegexString | None:
-        """Parse a string definition line."""
-        return parse_string_line(self, line, line_num, raw_line)
 
     def _parse_condition(
         self,

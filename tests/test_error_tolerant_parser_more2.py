@@ -10,6 +10,7 @@ from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, Identifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
+from yaraast.parser.error_tolerant_recovery import parse_meta_line, parse_string_line
 from yaraast.parser.error_tolerant_types import ParserError
 from yaraast.parser.parser import Parser
 
@@ -174,23 +175,24 @@ def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     assert isinstance(rule.condition.right, Identifier)
     assert rule.condition.right.name == "expr"
 
-    string_meta = p._parse_meta_line('k = "v"')
-    integer_meta = p._parse_meta_line("n = 9")
-    boolean_meta = p._parse_meta_line("flag = false")
+    string_meta = parse_meta_line(p, 'k = "v"')
+    integer_meta = parse_meta_line(p, "n = 9")
+    boolean_meta = parse_meta_line(p, "flag = false")
     assert string_meta is not None
     assert integer_meta is not None
     assert boolean_meta is not None
     assert string_meta.value == "v"
     assert integer_meta.value == 9
     assert boolean_meta.value is False
-    assert p._parse_meta_line("invalid") is None
+    assert parse_meta_line(p, "invalid") is None
 
-    plain_string = p._parse_string_line('$a = "x"')
-    hex_string = p._parse_string_line("$a = { 41 }")
-    regex_string = p._parse_string_line("$a = /abc/")
-    regex_with_flags = p._parse_string_line("$a = /abc/im")
-    xor_string = p._parse_string_line('$x = "abc" xor(1-2) private')
-    base64_string = p._parse_string_line(
+    plain_string = parse_string_line(p, '$a = "x"')
+    hex_string = parse_string_line(p, "$a = { 41 }")
+    regex_string = parse_string_line(p, "$a = /abc/")
+    regex_with_flags = parse_string_line(p, "$a = /abc/im")
+    xor_string = parse_string_line(p, '$x = "abc" xor(1-2) private')
+    base64_string = parse_string_line(
+        p,
         '$b = "abc" base64("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")'
     )
     assert isinstance(plain_string, PlainString)
@@ -212,7 +214,7 @@ def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     assert [(modifier.name, modifier.value) for modifier in base64_string.modifiers] == [
         ("base64", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"),
     ]
-    assert p._parse_string_line("broken") is None
+    assert parse_string_line(p, "broken") is None
 
     assert p._parse_condition("true") == BooleanLiteral(True)
     assert p._parse_condition("false") == BooleanLiteral(False)
