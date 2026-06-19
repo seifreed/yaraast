@@ -53,20 +53,10 @@ def _validate_real_ast_node(node: Any) -> None:
 class AstHasher(ASTVisitor[str]):
     """Creates structural hashes of AST nodes."""
 
-    def __init__(self) -> None:
-        self._node_hashes: dict[str, str] = {}
-
     def hash_ast(self, ast: YaraFile) -> str:
         """Create a hash of the entire AST."""
         ast_repr = self.visit(ast)
         return hashlib.sha256(ast_repr.encode()).hexdigest()[:16]
-
-    def hash_node(self, node: ASTNode, path: str = "") -> str:
-        """Create a hash of a specific node."""
-        node_repr = self.visit(node)
-        node_hash = hashlib.sha256(f"{path}:{node_repr}".encode()).hexdigest()[:12]
-        self._node_hashes[path] = node_hash
-        return node_hash
 
     def visit_yara_file(self, node: YaraFile) -> str:
         """Hash YaraFile node."""

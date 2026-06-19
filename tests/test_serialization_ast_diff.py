@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, cast
@@ -54,9 +55,8 @@ def test_ast_hasher_stable_hash_and_node_hash() -> None:
     assert len(hash1) == 16
 
     rule = ast.rules[0]
-    node_hash = hasher.hash_node(rule, "/rules/alpha")
+    node_hash = hashlib.sha256(f"/rules/alpha:{hasher.visit(rule)}".encode()).hexdigest()[:12]
     assert len(node_hash) == 12
-    assert hasher._node_hashes["/rules/alpha"] == node_hash
 
 
 def test_ast_diff_detects_meta_scope_changes() -> None:
