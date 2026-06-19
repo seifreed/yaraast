@@ -34,9 +34,8 @@ from yaraast.cli.metrics_services import (
 )
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.cli.utils import _validate_output_dir_path, _validate_output_path
-from yaraast.metrics import DependencyGraphGenerator
 from yaraast.metrics.graphviz_errors import is_graphviz_error
-from yaraast.metrics.workflows import build_report
+from yaraast.metrics.workflows import DependencyGraphGenerator, build_report
 
 
 @click.group()

@@ -34,8 +34,10 @@ builtins.__import__ = import_without_graphviz
 import importlib
 
 metrics = importlib.import_module("yaraast.metrics")
+workflows = importlib.import_module("yaraast.metrics.workflows")
 
-assert metrics.DependencyGraphGenerator is None
+assert not hasattr(metrics, "DependencyGraphGenerator")
+assert workflows.DependencyGraphGenerator is None
 assert metrics.ComplexityAnalyzer().__class__.__name__ == "ComplexityAnalyzer"
 """,
     )
@@ -61,7 +63,9 @@ def import_with_broken_dependency_graph(name, globals=None, locals=None, fromlis
 builtins.__import__ = import_with_broken_dependency_graph
 
 try:
-    import yaraast.metrics
+    import importlib
+
+    importlib.import_module("yaraast.metrics.workflows")
 except ModuleNotFoundError as exc:
     assert exc.name == "yaraast.metrics.dependency_graph_generation"
 else:
@@ -99,6 +103,7 @@ metrics = importlib.import_module("yaraast.metrics")
 assert not hasattr(metrics, "CAPABILITIES")
 assert not hasattr(metrics, "MetricsCapability")
 assert not hasattr(metrics, "MetricsReportData")
+assert not hasattr(metrics, "DependencyGraphGenerator")
 """,
     )
 

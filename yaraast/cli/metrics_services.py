@@ -9,11 +9,8 @@ import click
 from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file as _parse_yara_file
 from yaraast.errors import YaraASTError
-from yaraast.metrics import (
-    DependencyGraphGenerator,
-    workflows as _workflows,
-)
-from yaraast.metrics.workflows import MetricsReportData
+from yaraast.metrics import workflows as _workflows
+from yaraast.metrics.workflows import DependencyGraphGenerator, MetricsReportData
 
 _DEFAULT_FACTORY = object()
 
