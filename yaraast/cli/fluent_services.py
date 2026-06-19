@@ -7,15 +7,15 @@ from enum import StrEnum
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.rules import Rule
-from yaraast.builder import (
+from yaraast.builder.ast_transformer import transform_rule
+from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
+from yaraast.builder.fluent_file_builder import yara_file
+from yaraast.builder.fluent_rule_presets import (
     malware_rule,
     packed_rule,
     rule,
-    transform_rule,
     trojan_rule,
-    yara_file,
 )
-from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.codegen.generator import CodeGenerator
 
