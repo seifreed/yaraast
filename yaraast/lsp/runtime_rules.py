@@ -26,18 +26,6 @@ if TYPE_CHECKING:
     from yaraast.lsp.runtime import LspRuntime
 
 
-def _copy_locations(locations: list[Location]) -> list[Location]:
-    return [copy_location(location) for location in locations]
-
-
-def _copy_reference_records(records: list[ReferenceRecord]) -> list[ReferenceRecord]:
-    return [copy_reference_record(record) for record in records]
-
-
-def _copy_rule_link_records(records: list[RuleLinkRecord]) -> list[RuleLinkRecord]:
-    return [copy_rule_link_record(record) for record in records]
-
-
 def resolve_symbol(
     runtime: LspRuntime, uri: str, text: str, position: Position
 ) -> ResolvedSymbol | None:
@@ -90,7 +78,7 @@ def find_rule_references(
     cache_key = (runtime.cache.generation, rule_name, include_declaration, current_uri)
     cached = runtime.cache.rule_references_cache.get(cache_key)
     if cached is not None:
-        return _copy_locations(cached)
+        return [copy_location(location) for location in cached]
     refs: list[Location] = []
     definition = find_rule_definition(runtime, rule_name, current_uri)
     for doc in runtime.iter_workspace_documents():
@@ -100,7 +88,7 @@ def find_rule_references(
             ref for ref in refs if not (ref.uri == definition.uri and ref.range == definition.range)
         ]
     runtime.cache.rule_references_cache[cache_key] = list(refs)
-    return _copy_locations(refs)
+    return [copy_location(location) for location in refs]
 
 
 def find_rule_reference_records(
@@ -113,7 +101,7 @@ def find_rule_reference_records(
     cache_key = (runtime.cache.generation, rule_name, include_declaration, current_uri)
     cached = runtime.cache.rule_reference_records_cache.get(cache_key)
     if cached is not None:
-        return _copy_reference_records(cached)
+        return [copy_reference_record(record) for record in cached]
     records: list[ReferenceRecord] = []
     definition = find_rule_definition(runtime, rule_name, current_uri)
     for doc in runtime.iter_workspace_documents():
@@ -138,7 +126,7 @@ def find_rule_reference_records(
                 result_record = ReferenceRecord(record.location, "declaration", "rule")
             records.append(result_record)
     runtime.cache.rule_reference_records_cache[cache_key] = list(records)
-    return _copy_reference_records(records)
+    return [copy_reference_record(record) for record in records]
 
 
 def find_rule_reference_records_in_document(
@@ -180,7 +168,7 @@ def find_rule_reference_records_in_document(
         ):
             result_record = ReferenceRecord(record.location, "declaration", "rule")
         records.append(result_record)
-    return _copy_reference_records(records)
+    return [copy_reference_record(record) for record in records]
 
 
 def get_rule_link_records_for_document(
@@ -204,7 +192,7 @@ def get_rule_link_records_for_document(
     cache_key = f"rule_link_records:{runtime.cache.generation}:{document_uri}"
     cached = doc.get_cached(cache_key)
     if cached is not None:
-        return _copy_rule_link_records(cached)
+        return [copy_rule_link_record(record) for record in cached]
     links: list[RuleLinkRecord] = []
     for rule_name in workspace_rule_names:
         if not rule_name:
@@ -228,7 +216,7 @@ def get_rule_link_records_for_document(
                 )
             )
     doc.set_cached(cache_key, links)
-    return _copy_rule_link_records(links)
+    return [copy_rule_link_record(record) for record in links]
 
 
 def rename_rule(runtime: LspRuntime, rule_name: str, new_name: str) -> dict[str, list[TextEdit]]:

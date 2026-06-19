@@ -36,18 +36,6 @@ _YARA_KEYWORDS = frozenset(KEYWORDS)
 _YARA_CONTEXTUAL_RULE_KEYWORDS = frozenset({"as", "include"})
 
 
-def _copy_locations(locations: list[Location]) -> list[Location]:
-    return [copy_location(location) for location in locations]
-
-
-def _copy_reference_records(records: list[ReferenceRecord]) -> list[ReferenceRecord]:
-    return [copy_reference_record(record) for record in records]
-
-
-def _copy_rule_link_records(records: list[RuleLinkRecord]) -> list[RuleLinkRecord]:
-    return [copy_rule_link_record(record) for record in records]
-
-
 def _require_symbol_name(value: object, field_name: str) -> str:
     if not isinstance(value, str):
         msg = f"{field_name} must be a string"
@@ -116,13 +104,13 @@ def find_string_references(
     cache_key = f"string_references:{normalized}:{int(include_declaration)}:{rule_scope}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return _copy_locations(cached)
+        return [copy_location(location) for location in cached]
     ast_locations = collect_string_reference_locations_from_ast(
         ctx, normalized, include_declaration=include_declaration, rule_scope=rule_scope
     )
     if ast_locations is not None:
         ctx.set_cached(cache_key, list(ast_locations))
-        return _copy_locations(ast_locations)
+        return [copy_location(location) for location in ast_locations]
     base_name = normalized[1:]
     variants = [f"${base_name}", f"#{base_name}", f"@{base_name}", f"!{base_name}"]
     locations: list[Location] = []
@@ -154,7 +142,7 @@ def find_string_references(
             continue
         locations.append(Location(uri=ctx.uri, range=rng))
     ctx.set_cached(cache_key, locations)
-    return _copy_locations(locations)
+    return [copy_location(location) for location in locations]
 
 
 def find_string_reference_records(
@@ -171,7 +159,7 @@ def find_string_reference_records(
     cache_key = f"string_reference_records:{normalized}:{int(include_declaration)}:{rule_scope}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return _copy_reference_records(cached)
+        return [copy_reference_record(record) for record in cached]
     definition = ctx.find_string_definition(normalized, rule_scope=rule_scope)
     records = [
         ReferenceRecord(
@@ -186,7 +174,7 @@ def find_string_reference_records(
         )
     ]
     ctx.set_cached(cache_key, records)
-    return _copy_reference_records(records)
+    return [copy_reference_record(record) for record in records]
 
 
 def build_string_rename_edits(
@@ -258,11 +246,11 @@ def rule_occurrences(ctx: DocumentContext, rule_name: str) -> list[Location]:
     cache_key = f"rule_occurrences:{rule_name}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return _copy_locations(cached)
+        return [copy_location(location) for location in cached]
     ast_locations = collect_rule_reference_locations_from_ast(ctx, rule_name)
     if ast_locations is not None:
         ctx.set_cached(cache_key, list(ast_locations))
-        return _copy_locations(ast_locations)
+        return [copy_location(location) for location in ast_locations]
     locations: list[Location] = []
     definition = ctx.find_rule_definition(rule_name)
     if definition is not None:
@@ -284,7 +272,7 @@ def rule_occurrences(ctx: DocumentContext, rule_name: str) -> list[Location]:
             continue
         locations.append(Location(uri=ctx.uri, range=rng))
     ctx.set_cached(cache_key, locations)
-    return _copy_locations(locations)
+    return [copy_location(location) for location in locations]
 
 
 def rule_reference_records(
@@ -298,7 +286,7 @@ def rule_reference_records(
     cache_key = f"rule_reference_records:{rule_name}:{int(include_declaration)}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return _copy_reference_records(cached)
+        return [copy_reference_record(record) for record in cached]
     definition = ctx.find_rule_definition(rule_name)
     records: list[ReferenceRecord] = []
     for location in ctx.rule_occurrences(rule_name):
@@ -307,14 +295,14 @@ def rule_reference_records(
         role = "declaration" if definition and definition.range == location.range else "use"
         records.append(ReferenceRecord(location=location, role=role, symbol_kind="rule"))
     ctx.set_cached(cache_key, records)
-    return _copy_reference_records(records)
+    return [copy_reference_record(record) for record in records]
 
 
 def get_local_rule_link_records(ctx: DocumentContext) -> list[RuleLinkRecord]:
     cache_key = "local_rule_link_records"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return _copy_rule_link_records(cached)
+        return [copy_rule_link_record(record) for record in cached]
     records: list[RuleLinkRecord] = []
     for rule_name in ctx.get_rule_names():
         definition = ctx.find_rule_definition(rule_name)
@@ -329,4 +317,4 @@ def get_local_rule_link_records(ctx: DocumentContext) -> list[RuleLinkRecord]:
                 )
             )
     ctx.set_cached(cache_key, records)
-    return _copy_rule_link_records(records)
+    return [copy_rule_link_record(record) for record in records]
