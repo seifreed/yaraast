@@ -4,21 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
-from yaraast.analysis.optimization import OptimizationAnalyzer, OptimizationReport
-from yaraast.ast.base import YaraFile
-
-
-def _analyze_optimizations(ast: YaraFile) -> OptimizationReport:
-    """Analyze AST for optimization suggestions."""
-    analyzer = OptimizationAnalyzer()
-    return analyzer.analyze(ast)
-
-
-def _analyze_best_practices(ast: YaraFile) -> AnalysisReport:
-    """Analyze AST for best practices."""
-    analyzer = BestPracticesAnalyzer()
-    return analyzer.analyze(ast)
+from yaraast.analysis.best_practices import AnalysisReport
 
 
 def _get_severity_counts(report: AnalysisReport) -> tuple[list[Any], list[Any], list[Any]]:

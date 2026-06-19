@@ -4,17 +4,15 @@ from __future__ import annotations
 
 import click
 
+from yaraast.analysis.best_practices import BestPracticesAnalyzer
+from yaraast.analysis.optimization import OptimizationAnalyzer
 from yaraast.cli.analyze_reporting import (
     display_best_practices_report,
     display_issues,
     display_optimization_report,
     display_summary,
 )
-from yaraast.cli.analyze_services import (
-    _analyze_best_practices,
-    _analyze_optimizations,
-    _get_severity_counts,
-)
+from yaraast.cli.analyze_services import _get_severity_counts
 from yaraast.cli.utils import _validate_output_path, format_json, parse_yara_file, write_text
 
 
@@ -39,8 +37,8 @@ def full(rule_file: str, output_format: str, output: str | None) -> None:
     output = _validate_output_path(output)
     try:
         ast = parse_yara_file(rule_file)
-        best_report = _analyze_best_practices(ast)
-        opt_report = _analyze_optimizations(ast)
+        best_report = BestPracticesAnalyzer().analyze(ast)
+        opt_report = OptimizationAnalyzer().analyze(ast)
 
         if output_format == "json":
             result = {
@@ -112,7 +110,7 @@ def best_practices(rule_file: str, verbose: bool, category: str) -> None:
     """
     try:
         ast = parse_yara_file(rule_file)
-        report = _analyze_best_practices(ast)
+        report = BestPracticesAnalyzer().analyze(ast)
         display_best_practices_report(rule_file, report, verbose, category)
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
@@ -136,7 +134,7 @@ def optimize(rule_file: str, verbose: bool, output_format: str, output: str | No
     output = _validate_output_path(output)
     try:
         ast = parse_yara_file(rule_file)
-        report = _analyze_optimizations(ast)
+        report = OptimizationAnalyzer().analyze(ast)
 
         if output_format == "json":
             payload = {
