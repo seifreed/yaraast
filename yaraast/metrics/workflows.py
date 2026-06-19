@@ -28,7 +28,6 @@ except ModuleNotFoundError as exc:
 class MetricsReportData:
     base_name: str
     complexity_metrics: ComplexityMetrics
-    complexity_payload: dict[str, Any]
     generated_files: list[str]
 
 
@@ -143,7 +142,6 @@ def build_report(
     ast: YaraFile, output_dir: Path, base_name: str, image_format: str
 ) -> MetricsReportData:
     metrics = analyze_complexity(ast)
-    payload = build_complexity_payload(metrics)
 
     generated_files = []
     try:
@@ -161,7 +159,6 @@ def build_report(
     return MetricsReportData(
         base_name=base_name,
         complexity_metrics=metrics,
-        complexity_payload=payload,
         generated_files=generated_files,
     )
 

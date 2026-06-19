@@ -299,7 +299,6 @@ def test_metrics_services_build_report_and_generator_none(tmp_path: Path) -> Non
 
     report = metrics_workflows.build_report(ast, tmp_path, "rules", "svg")
     assert report.base_name == "rules"
-    assert "quality_score" in report.complexity_payload
     assert any(name.endswith("_tree.html") for name in report.generated_files)
 
     out = _PatternGen().generate_pattern_flow_diagram(ast, str(tmp_path / "flow_real.svg"), "svg")

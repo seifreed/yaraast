@@ -731,7 +731,6 @@ def test_metrics_reporting_report_files_and_summary(
     report_data = MetricsReportData(
         base_name="sample",
         complexity_metrics=metrics,
-        complexity_payload={},
         generated_files=["tree.html"],
     )
     summary = build_report_summary("sample.yar", report_data, generated)
