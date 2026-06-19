@@ -9,12 +9,8 @@ from lsprotocol.types import CodeAction, CodeActionKind, Diagnostic, WorkspaceEd
 
 from yaraast.lsp.code_action_semantic_dispatch import create_semantic_actions
 from yaraast.lsp.code_action_semantic_quickfixes import (
-    create_add_missing_arguments_action,
-    create_add_placeholder_argument_action,
     create_import_module_action,
     create_rename_duplicate_action,
-    create_replace_builtin_function_actions,
-    create_trim_arguments_action,
 )
 
 
@@ -28,49 +24,6 @@ class SemanticCodeActionMixin:
         uri: str,
     ) -> list[CodeAction]:
         return create_semantic_actions(self, text, diagnostic, uri)
-
-    def _create_replace_builtin_function_actions(
-        self: Any,
-        text: str,
-        diagnostic: Diagnostic,
-        uri: str,
-        function_name: str,
-        suggested_functions: list[str],
-    ) -> list[CodeAction]:
-        return create_replace_builtin_function_actions(
-            text, diagnostic, uri, function_name, suggested_functions
-        )
-
-    def _create_add_placeholder_argument_action(
-        self: Any,
-        text: str,
-        diagnostic: Diagnostic,
-        uri: str,
-        function_name: str,
-    ) -> list[CodeAction]:
-        return create_add_placeholder_argument_action(text, diagnostic, uri, function_name)
-
-    def _create_add_missing_arguments_action(
-        self: Any,
-        text: str,
-        diagnostic: Diagnostic,
-        uri: str,
-        function_name: str,
-        missing_count: int,
-    ) -> list[CodeAction]:
-        return create_add_missing_arguments_action(
-            text, diagnostic, uri, function_name, missing_count
-        )
-
-    def _create_trim_arguments_action(
-        self: Any,
-        text: str,
-        diagnostic: Diagnostic,
-        uri: str,
-        function_name: str,
-        keep_args: int,
-    ) -> list[CodeAction]:
-        return create_trim_arguments_action(text, diagnostic, uri, function_name, keep_args)
 
     def _create_add_string_actions(
         self: Any,
