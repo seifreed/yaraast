@@ -13,8 +13,8 @@ from yaraast.ast.expressions import (
 from yaraast.ast.modifiers import MetaEntry
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
-from yaraast.cli.diff_tools import ASTDiffer, ASTStructuralAnalyzer
 from yaraast.parser import Parser
+from yaraast.shared.ast_analysis import ASTDiffer, ASTStructuralAnalyzer
 
 
 def _yarax_rule(value: str) -> str:
