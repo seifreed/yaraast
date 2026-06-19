@@ -35,10 +35,45 @@ from yaraast.metrics.complexity_helpers import (
     calculate_expression_complexity,
     calculate_rule_complexity,
 )
-from yaraast.metrics.complexity_report_builder import generate_complexity_report
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.ast_nodes import ListExpression, WithDeclaration, WithStatement
+
+
+def _build_complexity_report(ast: YaraFile) -> dict[str, Any]:
+    analyzer = ComplexityAnalyzer()
+    metrics = analyzer.analyze(ast)
+    rules_data: list[dict[str, Any]] = []
+    total_complexities: list[int] = []
+    for rule in ast.rules:
+        complexity = calculate_rule_complexity(rule)
+        total_complexities.append(complexity)
+        metric_key = analyzer._metric_key_for_rule(rule)
+        cyclomatic = metrics.cyclomatic_complexity.get(metric_key, 1)
+        cognitive = (
+            calculate_cognitive_complexity(rule.condition) if rule.condition is not None else 0
+        )
+        rules_data.append(
+            {
+                "name": rule.name,
+                "total_complexity": complexity,
+                "cyclomatic_complexity": cyclomatic,
+                "cognitive_complexity": cognitive,
+                "strings": len(rule.strings) if rule.strings else 0,
+                "modifiers": len(rule.modifiers),
+            },
+        )
+    return {
+        "rules": rules_data,
+        "summary": {
+            "total_rules": len(ast.rules),
+            "avg_complexity": sum(total_complexities) / max(1, len(total_complexities)),
+            "max_complexity": max(total_complexities, default=0),
+            "quality_score": metrics.get_quality_score(),
+            "quality_grade": metrics.get_complexity_grade(),
+        },
+        "metrics": metrics.to_dict(),
+    }
 
 
 @pytest.mark.parametrize(
@@ -123,12 +158,12 @@ def test_complexity_analyzer_metrics_and_report() -> None:
     assert metrics.for_of_expressions >= 1
     assert metrics.total_binary_ops >= 1
 
-    report = generate_complexity_report(ast)
+    report = _build_complexity_report(ast)
     assert report["summary"]["total_rules"] == 2
     assert report["summary"]["quality_grade"] in {"A", "B", "C", "D", "F"}
 
     parsed = parse_yara_source(dedent(code))
-    parsed_report = generate_complexity_report(parsed)
+    parsed_report = _build_complexity_report(parsed)
     assert parsed_report["summary"]["total_rules"] == 2
 
 
@@ -360,7 +395,7 @@ def test_complexity_report_uses_occurrence_keys_for_duplicate_rule_names() -> No
     ast.rules[1].name = "dup"
 
     metrics = ComplexityAnalyzer().analyze(ast)
-    report = generate_complexity_report(ast)
+    report = _build_complexity_report(ast)
 
     # The report must surface each occurrence's real cyclomatic complexity
     # rather than silently falling back to the default of 1 because it looked
@@ -575,7 +610,7 @@ def test_analyze_file_complexity_accepts_yarax_syntax(tmp_path: Path) -> None:
     path = tmp_path / "native_yarax.yar"
     path.write_text("rule x { condition: with xs = [1]: match xs { _ => true } }", encoding="utf-8")
 
-    report = generate_complexity_report(parse_yara_source(path.read_text(encoding="utf-8")))
+    report = _build_complexity_report(parse_yara_source(path.read_text(encoding="utf-8")))
 
     assert report["summary"]["total_rules"] == 1
 

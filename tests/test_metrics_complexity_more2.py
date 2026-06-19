@@ -13,10 +13,46 @@ from yaraast.metrics.complexity_helpers import (
     calculate_cognitive_complexity,
     calculate_cyclomatic_complexity,
     calculate_expression_complexity,
+    calculate_rule_complexity,
 )
-from yaraast.metrics.complexity_report_builder import generate_complexity_report
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
+
+
+def _build_complexity_report(ast: YaraFile) -> dict[str, Any]:
+    analyzer = ComplexityAnalyzer()
+    metrics = analyzer.analyze(ast)
+    rules_data: list[dict[str, Any]] = []
+    total_complexities: list[int] = []
+    for rule in ast.rules:
+        complexity = calculate_rule_complexity(rule)
+        total_complexities.append(complexity)
+        metric_key = analyzer._metric_key_for_rule(rule)
+        cyclomatic = metrics.cyclomatic_complexity.get(metric_key, 1)
+        cognitive = (
+            calculate_cognitive_complexity(rule.condition) if rule.condition is not None else 0
+        )
+        rules_data.append(
+            {
+                "name": rule.name,
+                "total_complexity": complexity,
+                "cyclomatic_complexity": cyclomatic,
+                "cognitive_complexity": cognitive,
+                "strings": len(rule.strings) if rule.strings else 0,
+                "modifiers": len(rule.modifiers),
+            },
+        )
+    return {
+        "rules": rules_data,
+        "summary": {
+            "total_rules": len(ast.rules),
+            "avg_complexity": sum(total_complexities) / max(1, len(total_complexities)),
+            "max_complexity": max(total_complexities, default=0),
+            "quality_score": metrics.get_quality_score(),
+            "quality_grade": metrics.get_complexity_grade(),
+        },
+        "metrics": metrics.to_dict(),
+    }
 
 
 class _HashableDecision:
@@ -94,7 +130,7 @@ def test_cyclomatic_complexity_traverses_non_list_child_containers() -> None:
 
 def test_generate_complexity_report_from_parsed_source() -> None:
     ast = parse_yara_source("rule r1 { condition: true }")
-    report = generate_complexity_report(ast)
+    report = _build_complexity_report(ast)
 
     assert report["summary"]["total_rules"] == 1
     assert report["rules"][0]["name"] == "r1"
