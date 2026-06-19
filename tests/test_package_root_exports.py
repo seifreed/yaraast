@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import yaraast
+import yaraast.errors as errors
 
 
 def test_package_root_does_not_reexport_internal_helpers() -> None:
@@ -39,3 +40,14 @@ def test_package_root_does_not_reexport_internal_helpers() -> None:
 
     for name in removed_names:
         assert not hasattr(yaraast, name), name
+
+
+def test_errors_module_does_not_define_dead_exception_types() -> None:
+    removed_names = {
+        "CodeGenError",
+        "ResolutionError",
+        "SemanticError",
+    }
+
+    for name in removed_names:
+        assert not hasattr(errors, name), name

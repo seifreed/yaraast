@@ -48,13 +48,6 @@ def make_double_literal(value: float) -> DoubleLiteral:
     return DoubleLiteral(value=value)
 
 
-def make_string_literal(value: str, kind: str) -> StringLiteral:
-    if isinstance(value, str):
-        return StringLiteral(value=value)
-    msg = f"{kind} must be a string"
-    raise TypeError(msg)
-
-
 def make_filesize_compare(operator: str, size: int) -> BinaryExpression:
     return make_binary(Identifier(name="filesize"), operator, make_integer_literal(size))
 

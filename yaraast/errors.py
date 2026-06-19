@@ -15,14 +15,6 @@ class LexerError(YaraASTError):
     """Error during lexical analysis."""
 
 
-class SemanticError(YaraASTError):
-    """Error during semantic validation."""
-
-
-class CodeGenError(YaraASTError):
-    """Error during code generation."""
-
-
 class EvaluationError(YaraASTError):
     """Error during rule evaluation."""
 
@@ -33,7 +25,3 @@ class ValidationError(YaraASTError):
 
 class SerializationError(YaraASTError):
     """Error during AST serialization/deserialization."""
-
-
-class ResolutionError(YaraASTError):
-    """Error during include/import resolution."""
