@@ -83,8 +83,7 @@ def test_render_pattern_report_counts_triplicate_plain_value_as_one_unique() -> 
         PlainString(identifier="$c", value="same", modifiers=[]),
     ]
 
-    render_report = render.generate_pattern_report(strings)
-    assert render_report["summary"]["unique_patterns"] == 1
+    assert render.analyze_string_patterns(strings)["patterns"]["duplicates"] == ["same"]
 
 
 def test_render_regex_hex_reports_cover_remaining_branches() -> None:
@@ -143,10 +142,10 @@ def test_render_regex_hex_reports_cover_remaining_branches() -> None:
         ),
     ]
 
-    render_report = render.generate_pattern_report(strings)
-    assert render_report["details"][1]["pattern"] == "ab+"
-    assert render_report["details"][0]["modifiers"] == [f'base64("{alphabet}")']
-    assert render_report["details"][2]["tokens"] == 1
+    analysis = render.analyze_string_patterns(strings)
+    assert analysis["types"]["plain"] == 1
+    assert analysis["types"]["regex"] == 1
+    assert analysis["types"]["hex"] == 1
 
 
 def test_hex_diagrams_reject_boolean_hex_values() -> None:

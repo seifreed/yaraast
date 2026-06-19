@@ -82,13 +82,10 @@ from .string_diagram_primitives import (
     create_hex_diagram,
     create_regex_diagram,
 )
-from .string_diagrams_render import generate_pattern_report, generate_string_diagram
 
 __all__ = [
     "StringDiagramGenerator",
     "analyze_string_patterns",
     "create_hex_diagram",
     "create_regex_diagram",
-    "generate_pattern_report",
-    "generate_string_diagram",
 ]

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from typing import Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.metrics.string_diagram_primitives import (
@@ -19,8 +18,6 @@ from yaraast.metrics.string_diagrams_common import (
 __all__ = [
     "StringDiagramRenderMixin",
     "analyze_string_patterns",
-    "generate_pattern_report",
-    "generate_string_diagram",
 ]
 
 
@@ -82,63 +79,3 @@ class StringDiagramRenderMixin:
             diagram += f"Modifiers: {modifiers}\n"
 
         return diagram
-
-
-# Convenience functions
-def generate_string_diagram(string_def) -> str:
-    """Generate string diagram for a string definition."""
-    from yaraast.metrics.string_diagrams import StringDiagramGenerator
-
-    gen = StringDiagramGenerator()
-    return gen.generate(string_def)
-
-
-def generate_pattern_report(strings: list) -> dict[str, Any]:
-    """Generate comprehensive pattern analysis report."""
-    analysis = analyze_string_patterns(strings)
-    details: list[dict[str, Any]] = []
-    unique_patterns = set()
-
-    for string_def in strings:
-        if isinstance(string_def, PlainString):
-            unique_patterns.add(("plain", plain_value_text(string_def.value)))
-        elif isinstance(string_def, HexString):
-            unique_patterns.add(
-                (
-                    "hex",
-                    tuple(format_hex_token_for_diagram(token) for token in string_def.tokens),
-                )
-            )
-        elif isinstance(string_def, RegexString):
-            unique_patterns.add(("regex", string_def.regex))
-        else:
-            unique_patterns.add((type(string_def).__name__, repr(string_def)))
-
-    report = {
-        "summary": {
-            "total": analysis["total_strings"],
-            "by_type": analysis["types"],
-            "unique_patterns": len(unique_patterns),
-        },
-        "details": details,
-    }
-
-    # Add details for each string
-    for string_def in strings:
-        detail = {
-            "identifier": string_def.identifier,
-            "type": type(string_def).__name__,
-            "modifiers": list(modifier_names(string_def.modifiers)),
-        }
-
-        if isinstance(string_def, PlainString):
-            detail["value"] = plain_value_text(string_def.value)
-            detail["length"] = plain_value_length(string_def.value)
-        elif isinstance(string_def, HexString):
-            detail["tokens"] = len(string_def.tokens)
-        elif isinstance(string_def, RegexString):
-            detail["pattern"] = string_def.regex
-
-        details.append(detail)
-
-    return report

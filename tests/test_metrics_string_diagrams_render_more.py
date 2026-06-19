@@ -16,8 +16,6 @@ from yaraast.metrics.string_diagrams import (
     analyze_string_patterns,
     create_hex_diagram,
     create_regex_diagram,
-    generate_pattern_report,
-    generate_string_diagram,
 )
 
 
@@ -45,8 +43,7 @@ def test_render_mixin_and_convenience_functions() -> None:
     regex_diag = create_regex_diagram("^[ab]+(cd)?$")
     assert "Pattern:" in regex_diag and "Capture groups" in regex_diag
 
-    conv = generate_string_diagram(plain)
-    assert 'Value: "foobar"' in conv
+    assert 'Value: "foobar"' in gen.generate(plain)
 
 
 def test_render_helpers_handle_byte_plain_strings() -> None:
@@ -57,26 +54,20 @@ def test_render_helpers_handle_byte_plain_strings() -> None:
         PlainString(identifier="$np", value=b"ab\x00", modifiers=[]),
     ]
 
-    diagram = generate_string_diagram(strings[-1])
+    diagram = StringDiagramGenerator().generate(strings[-1])
     assert 'Value: "ab\\x00"' in diagram
 
     analysis = analyze_string_patterns(strings)
     assert "abc-" in analysis["patterns"]["common_prefixes"]
     assert "abc-common" in analysis["patterns"]["duplicates"]
 
-    report = generate_pattern_report(strings)
-    values = [detail["value"] for detail in report["details"]]
-    assert "ab\\x00" in values
-
 
 def test_plain_string_metrics_use_utf8_byte_length_for_text_values() -> None:
     strings = [PlainString(identifier="$u", value="á", modifiers=[])]
 
-    diagram = generate_string_diagram(strings[0])
-    report = generate_pattern_report(strings)
+    diagram = StringDiagramGenerator().generate(strings[0])
 
     assert "Length: 2" in diagram
-    assert report["details"][0]["length"] == 2
 
 
 def test_analyze_and_report_patterns() -> None:
@@ -94,6 +85,4 @@ def test_analyze_and_report_patterns() -> None:
     assert "abc-" in analysis["patterns"]["common_prefixes"]
     assert "abc-common" in analysis["patterns"]["duplicates"]
 
-    report = generate_pattern_report(strings)
-    assert report["summary"]["total"] == 5
-    assert len(report["details"]) == 5
+    assert analysis["patterns"]["common_prefixes"] == ["abc-"]

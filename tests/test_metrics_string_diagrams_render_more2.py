@@ -18,8 +18,6 @@ from yaraast.metrics.string_diagram_primitives import (
 )
 from yaraast.metrics.string_diagrams_render import (
     StringDiagramRenderMixin,
-    generate_pattern_report,
-    generate_string_diagram,
 )
 
 
@@ -69,8 +67,7 @@ def test_render_mixin_branches_plain_hex_regex() -> None:
 
 def test_render_convenience_functions_and_reports() -> None:
     plain = PlainString(identifier="$a", value="abc", modifiers=[])
-    conv = generate_string_diagram(plain)
-    assert "PlainString" in conv
+    assert "PlainString" in _Renderer().generate(plain)
 
     hex_line = create_hex_diagram(
         [
@@ -102,7 +99,5 @@ def test_render_convenience_functions_and_reports() -> None:
     assert analysis["types"]["hex"] == 1
     assert "one" in analysis["patterns"]["duplicates"]
 
-    report = generate_pattern_report(strings)
-    assert report["summary"]["total"] == 4
-    assert report["summary"]["unique_patterns"] == 3
-    assert len(report["details"]) == 4
+    assert analysis["total_strings"] == 4
+    assert analysis["patterns"]["duplicates"] == ["one"]
