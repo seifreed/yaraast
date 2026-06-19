@@ -81,6 +81,18 @@ def test_pretty_printer_paths_for_includes_modifiers_wrapping_and_fallback() -> 
     assert "condition:" in out
 
 
+def test_pretty_printer_options_drop_unused_style_flags() -> None:
+    opts = PrettyPrintOptions()
+
+    assert not hasattr(opts, "wrap_long_strings")
+    assert not hasattr(opts, "compact_conditions")
+    assert not hasattr(opts, "verbose_conditions")
+    assert not hasattr(opts, "preserve_original_style")
+    assert StylePresets.compact().max_line_length == 80
+    assert StylePresets.dense().max_line_length == 100
+    assert StylePresets.verbose().max_line_length == 140
+
+
 def test_pretty_printer_indents_string_entries_under_section() -> None:
     rule = Rule(
         name="indented_strings",

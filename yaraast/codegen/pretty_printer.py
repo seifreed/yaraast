@@ -49,18 +49,12 @@ class PrettyPrintOptions:
     # Line length and wrapping
     max_line_length: int = 120
     wrap_long_conditions: bool = True
-    wrap_long_strings: bool = False
 
     # Sorting
     sort_imports: bool = True
     sort_includes: bool = True
     sort_meta_keys: bool = False
     sort_tags: bool = True
-
-    # Style preferences
-    compact_conditions: bool = False
-    verbose_conditions: bool = False
-    preserve_original_style: bool = False
 
 
 class StylePresets:
@@ -76,7 +70,6 @@ class StylePresets:
             blank_lines_between_sections=0,
             align_string_definitions=False,
             align_meta_values=False,
-            compact_conditions=True,
             max_line_length=80,
         )
 
@@ -105,7 +98,6 @@ class StylePresets:
             align_string_definitions=True,
             align_meta_values=False,
             max_line_length=100,
-            compact_conditions=True,
         )
 
     @staticmethod
@@ -119,7 +111,6 @@ class StylePresets:
             align_string_definitions=True,
             align_meta_values=True,
             align_comments=True,
-            verbose_conditions=True,
             max_line_length=140,
         )
 
