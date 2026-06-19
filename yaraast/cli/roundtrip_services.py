@@ -6,10 +6,10 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
-from yaraast.cli.parser_helpers import parse_yara_source
 from yaraast.cli.utils import read_text
 from yaraast.codegen.pretty_printer import StylePresets, pretty_print
 from yaraast.errors import ValidationError
+from yaraast.parser.source import parse_yara_source
 from yaraast.serialization.roundtrip_serializer import (
     RoundTripSerializer,
     roundtrip_yara,
