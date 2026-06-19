@@ -29,8 +29,6 @@ from yaraast.cli.metrics_reporting_display import (
 from yaraast.cli.metrics_services import MetricsReportData
 from yaraast.cli.utils import format_json, write_text
 
-StringDef = PlainString | HexString | RegexString
-
 _STRING_OUTPUT_FORMATS = frozenset({"json", "text"})
 
 __all__ = [
