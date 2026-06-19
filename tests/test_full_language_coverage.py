@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast import CodeGenerator, Parser
 from yaraast.ast.expressions import BinaryExpression, RegexLiteral, StringLiteral
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.parser import Parser
 from yaraast.types import TypeValidator
 
 

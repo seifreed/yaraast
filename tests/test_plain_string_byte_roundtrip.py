@@ -11,13 +11,13 @@ from __future__ import annotations
 import pytest
 
 from simple_roundtrip_support import SimpleRoundtripSerializer
-from yaraast import Parser
 from yaraast.ast.strings import PlainString
 from yaraast.codegen.advanced_generator_helpers2 import render_advanced_plain_string
 from yaraast.codegen.formatting import FormattingConfig
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
 from yaraast.codegen.pretty_printer import PrettyPrintOptions, pretty_print
+from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 

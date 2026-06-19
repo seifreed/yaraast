@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
-from yaraast import CodeGenerator
 from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file
+from yaraast.codegen.generator import CodeGenerator
 from yaraast.libyara.compatibility import ensure_libyara_compatible_ast
 from yaraast.shared.numeric_validation import validate_positive_int_setting
 

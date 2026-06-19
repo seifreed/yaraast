@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from yaraast import CodeGenerator as BaseGenerator
+from yaraast.codegen.generator import CodeGenerator as BaseGenerator
 from yaraast.codegen.generator_expression_visitors import (
     render_function_call_callee,
     render_postfix_index_target,

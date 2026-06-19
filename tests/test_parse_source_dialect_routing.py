@@ -6,10 +6,10 @@ from collections.abc import Callable
 
 import pytest
 
-from yaraast import YaraLFile, parse_source
 from yaraast.ast.base import YaraFile
 from yaraast.errors import ParseError
-from yaraast.parser.source import parse_yara_source, parse_yara_source_with_comments
+from yaraast.parser.source import parse_source, parse_yara_source, parse_yara_source_with_comments
+from yaraast.yaral.ast_nodes import YaraLFile
 from yaraast.yarax.ast_nodes import TupleExpression, TupleIndexing
 
 _CLASSIC = 'rule classic { strings: $a = "x" condition: $a }'

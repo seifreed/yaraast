@@ -16,7 +16,8 @@ import tempfile
 
 import pytest
 
-from yaraast import CodeGenerator, Parser
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.parser import Parser
 
 ast_tools_path = Path(__file__).parent.parent / "yaraast" / "cli" / "ast_tools.py"
 spec = importlib.util.spec_from_file_location("ast_tools", ast_tools_path)

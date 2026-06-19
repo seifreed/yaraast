@@ -13,7 +13,7 @@ import sys
 
 import pytest
 
-from yaraast import Parser
+from yaraast.parser import Parser
 from yaraast.parser._shared import ParserError, max_expression_depth
 from yaraast.yarax.parser import YaraXParser
 

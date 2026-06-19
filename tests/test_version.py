@@ -1,18 +1,15 @@
 """Test version functionality."""
 
-from yaraast import (
+from yaraast.version import (
     YARA_SYNTAX_VERSION,
     YARAAST_VERSION,
     YARAAST_VERSION_MAJOR,
     YARAAST_VERSION_MINOR,
     YARAAST_VERSION_PATCH,
-    __version__,
-    get_version_info,
-    get_version_string,
-)
-from yaraast.version import (
     YARAX_COMPATIBLE,
     YARAX_SYNTAX_VERSION,
+    get_version_info,
+    get_version_string,
 )
 
 
@@ -28,9 +25,6 @@ def test_version_constants() -> None:
         f"{YARAAST_VERSION_MAJOR}.{YARAAST_VERSION_MINOR}.{YARAAST_VERSION_PATCH}"
         == YARAAST_VERSION
     )
-
-    # Check __version__ matches
-    assert __version__ == YARAAST_VERSION
 
     # Check YARA syntax version
     assert isinstance(YARA_SYNTAX_VERSION, str)

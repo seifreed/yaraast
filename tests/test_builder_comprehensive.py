@@ -178,9 +178,9 @@ class TestConditionBuilderLiterals:
 
     def test_identifier_path_generates_libyara_compatible_member_access(self) -> None:
         """Dotted identifier paths should generate as member access expressions."""
-        from yaraast import CodeGenerator
         from yaraast.builder.file_builder import YaraFileBuilder
         from yaraast.builder.rule_builder import RuleBuilder
+        from yaraast.codegen.generator import CodeGenerator
 
         rule = (
             RuleBuilder()

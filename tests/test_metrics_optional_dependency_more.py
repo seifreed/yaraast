@@ -31,7 +31,9 @@ def import_without_graphviz(name, globals=None, locals=None, fromlist=(), level=
 
 builtins.__import__ = import_without_graphviz
 
-from yaraast import metrics
+import importlib
+
+metrics = importlib.import_module("yaraast.metrics")
 
 assert metrics.DependencyGraphGenerator is None
 assert metrics.ComplexityAnalyzer().__class__.__name__ == "ComplexityAnalyzer"

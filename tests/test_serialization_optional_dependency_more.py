@@ -34,7 +34,9 @@ def import_without_protobuf(name, globals=None, locals=None, fromlist=(), level=
 
 builtins.__import__ = import_without_protobuf
 
-from yaraast import serialization
+import importlib
+
+serialization = importlib.import_module("yaraast.serialization")
 
 assert serialization.ProtobufSerializer is None
 assert serialization.JsonSerializer.__name__ == "JsonSerializer"
@@ -62,7 +64,9 @@ def import_with_broken_protobuf_serializer(name, globals=None, locals=None, from
 builtins.__import__ = import_with_broken_protobuf_serializer
 
 try:
-    import yaraast.serialization
+    import importlib
+
+    importlib.import_module("yaraast.serialization")
 except ImportError as exc:
     assert exc.name == "yaraast.serialization.protobuf_conversion"
 else:
@@ -91,7 +95,9 @@ def import_with_broken_google_protobuf(name, globals=None, locals=None, fromlist
 builtins.__import__ = import_with_broken_google_protobuf
 
 try:
-    import yaraast.serialization
+    import importlib
+
+    importlib.import_module("yaraast.serialization")
 except ModuleNotFoundError as exc:
     assert exc.name == "google.protobuf.internal.builder"
 else:

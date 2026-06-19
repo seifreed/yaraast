@@ -7,8 +7,8 @@ import tempfile
 
 import pytest
 
-from yaraast import Parser
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.parser import Parser
 from yaraast.resolution import DependencyGraph, IncludeResolver, Workspace
 
 
