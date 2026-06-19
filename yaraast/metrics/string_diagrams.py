@@ -6,13 +6,6 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
 from yaraast.metrics._visitor_base import MetricsVisitorBase
-from yaraast.metrics.string_diagrams_graph_builders import (
-    generate_hex_pattern_diagram,
-    generate_pattern_complexity_diagram,
-    generate_pattern_flow_diagram,
-    generate_pattern_similarity_diagram,
-    render_or_write_dot,
-)
 
 from .string_diagrams_analysis import StringDiagramAnalysisMixin
 from .string_diagrams_labels import StringDiagramLabelsMixin
@@ -41,6 +34,8 @@ class StringDiagramGenerator(
 
     @staticmethod
     def _render_or_write_dot(dot, output_path, format: str) -> str:
+        from yaraast.metrics.string_diagrams_graph_builders import render_or_write_dot
+
         return render_or_write_dot(dot, output_path, format)
 
     def generate_pattern_flow_diagram(
@@ -49,6 +44,8 @@ class StringDiagramGenerator(
         output_path: str | None = None,
         format: str = "svg",
     ) -> str:
+        from yaraast.metrics.string_diagrams_graph_builders import generate_pattern_flow_diagram
+
         return generate_pattern_flow_diagram(self, ast, output_path, format)
 
     def generate_pattern_complexity_diagram(
@@ -57,6 +54,10 @@ class StringDiagramGenerator(
         output_path: str | None = None,
         format: str = "svg",
     ) -> str:
+        from yaraast.metrics.string_diagrams_graph_builders import (
+            generate_pattern_complexity_diagram,
+        )
+
         return generate_pattern_complexity_diagram(self, ast, output_path, format)
 
     def generate_pattern_similarity_diagram(
@@ -65,6 +66,10 @@ class StringDiagramGenerator(
         output_path: str | None = None,
         format: str = "svg",
     ) -> str:
+        from yaraast.metrics.string_diagrams_graph_builders import (
+            generate_pattern_similarity_diagram,
+        )
+
         return generate_pattern_similarity_diagram(self, ast, output_path, format)
 
     def generate_hex_pattern_diagram(
@@ -73,6 +78,8 @@ class StringDiagramGenerator(
         output_path: str | None = None,
         format: str = "svg",
     ) -> str:
+        from yaraast.metrics.string_diagrams_graph_builders import generate_hex_pattern_diagram
+
         return generate_hex_pattern_diagram(self, ast, output_path, format)
 
 

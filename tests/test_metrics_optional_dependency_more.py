@@ -87,3 +87,19 @@ else:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_metrics_package_root_does_not_reexport_removed_names() -> None:
+    result = _run_import_probe(
+        """
+import importlib
+
+metrics = importlib.import_module("yaraast.metrics")
+
+assert not hasattr(metrics, "CAPABILITIES")
+assert not hasattr(metrics, "MetricsCapability")
+assert not hasattr(metrics, "MetricsReportData")
+""",
+    )
+
+    assert result.returncode == 0, result.stderr
