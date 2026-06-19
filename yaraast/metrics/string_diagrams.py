@@ -9,7 +9,6 @@ from yaraast.metrics._visitor_base import MetricsVisitorBase
 
 from .string_diagrams_analysis import StringDiagramAnalysisMixin
 from .string_diagrams_labels import StringDiagramLabelsMixin
-from .string_diagrams_render import StringDiagramRenderMixin
 from .string_diagrams_stats import StringDiagramStatsMixin
 
 if TYPE_CHECKING:
@@ -20,7 +19,6 @@ class StringDiagramGenerator(
     StringDiagramLabelsMixin,
     StringDiagramStatsMixin,
     StringDiagramAnalysisMixin,
-    StringDiagramRenderMixin,
     MetricsVisitorBase,
 ):
     """Generates string pattern analysis diagrams."""

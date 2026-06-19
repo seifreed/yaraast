@@ -20,9 +20,7 @@ from yaraast.ast.strings import (
 )
 from yaraast.metrics import (
     string_diagram_primitives as primitives,
-    string_diagrams_render as render,
 )
-from yaraast.metrics.string_diagrams_render import StringDiagramRenderMixin
 
 
 class _NamedModifier:
@@ -30,13 +28,7 @@ class _NamedModifier:
         self.name = name
 
 
-class _Renderer(StringDiagramRenderMixin):
-    pass
-
-
 def test_render_mixin_object_modifiers_and_short_prefix_paths() -> None:
-    r = _Renderer()
-
     plain = PlainString(identifier="$a", value="abx", modifiers=[_NamedModifier("ascii")])
     parameterized_plain = PlainString(
         identifier="$x",
@@ -50,19 +42,19 @@ def test_render_mixin_object_modifiers_and_short_prefix_paths() -> None:
     )
     regex = RegexString(identifier="$r", regex="abc", modifiers=[_NamedModifier("nocase")])
 
-    assert "Modifiers: ascii" in r._generate_plain_diagram(plain)
-    assert "Modifiers: xor(1-3)" in r._generate_plain_diagram(parameterized_plain)
-    assert "Modifiers: wide" in r._generate_hex_diagram(hexs)
-    assert "Modifiers: nocase" in r._generate_regex_diagram(regex)
-
-    analysis = render.analyze_string_patterns(
+    analysis = primitives.analyze_string_patterns(
         [
             plain,
             PlainString(identifier="$b", value="aby", modifiers=[]),
+            parameterized_plain,
+            hexs,
+            regex,
         ]
     )
-    assert analysis["patterns"]["common_prefixes"] == []
-    assert analysis["patterns"]["duplicates"] == []
+    assert analysis["modifiers"]["ascii"] == 1
+    assert analysis["modifiers"]["xor(1-3)"] == 1
+    assert analysis["modifiers"]["wide"] == 1
+    assert analysis["modifiers"]["nocase"] == 1
 
 
 def test_render_pattern_analysis_reports_common_suffixes() -> None:
@@ -72,7 +64,7 @@ def test_render_pattern_analysis_reports_common_suffixes() -> None:
         PlainString(identifier="$c", value="green_tail", modifiers=[]),
     ]
 
-    render_analysis = render.analyze_string_patterns(strings)
+    render_analysis = primitives.analyze_string_patterns(strings)
     assert "_tail" in render_analysis["patterns"]["common_suffixes"]
 
 
@@ -83,7 +75,7 @@ def test_render_pattern_report_counts_triplicate_plain_value_as_one_unique() -> 
         PlainString(identifier="$c", value="same", modifiers=[]),
     ]
 
-    assert render.analyze_string_patterns(strings)["patterns"]["duplicates"] == ["same"]
+    assert primitives.analyze_string_patterns(strings)["patterns"]["duplicates"] == ["same"]
 
 
 def test_render_regex_hex_reports_cover_remaining_branches() -> None:
@@ -110,9 +102,6 @@ def test_render_regex_hex_reports_cover_remaining_branches() -> None:
     ]
     expected_complex = "AF ~4D ?B (41|??|C?|[0-5])"
     assert primitives.create_hex_diagram(complex_tokens) == expected_complex
-    assert expected_complex in _Renderer()._generate_hex_diagram(
-        HexString(identifier="$complex", tokens=complex_tokens)
-    )
 
     groups_only = primitives.create_regex_diagram("(ab)")
     assert "Capture groups:" in groups_only
@@ -142,7 +131,7 @@ def test_render_regex_hex_reports_cover_remaining_branches() -> None:
         ),
     ]
 
-    analysis = render.analyze_string_patterns(strings)
+    analysis = primitives.analyze_string_patterns(strings)
     assert analysis["types"]["plain"] == 1
     assert analysis["types"]["regex"] == 1
     assert analysis["types"]["hex"] == 1
