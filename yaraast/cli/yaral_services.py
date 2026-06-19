@@ -29,7 +29,11 @@ def parse_yaral(content: str, enhanced: bool) -> YaraLFile:
 
 def parse_yaral_best_effort(content: str) -> YaraLFile:
     """Parse using enhanced parser, fallback to standard."""
-    return EnhancedYaraLParser(content).parse()
+    content = require_string(content, "content")
+    try:
+        return EnhancedYaraLParser(content).parse()
+    except Exception:
+        return YaraLParser(content).parse()
 
 
 def validate_yaral(ast: YaraLFile) -> tuple[list[ValidationError], list[ValidationError]]:
