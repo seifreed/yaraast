@@ -4,11 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import click
-
 from yaraast.ast.base import YaraFile
-from yaraast.cli.utils import parse_yara_file as _parse_yara_file
-from yaraast.errors import YaraASTError
 from yaraast.metrics import workflows as _workflows
 from yaraast.metrics.workflows import DependencyGraphGenerator, MetricsReportData
 
@@ -20,7 +16,6 @@ __all__ = [
     "determine_pattern_output_path",
     "generate_dependency_graph_with_generator",
     "generate_pattern_diagram_with_generator",
-    "parse_yara_file",
 ]
 
 
@@ -61,15 +56,3 @@ def generate_pattern_diagram_with_generator(
     return _workflows.generate_pattern_diagram_with_generator(
         generator, ast, pattern_type, output_path, fmt
     )
-
-
-def parse_yara_file(yara_file: str) -> YaraFile:
-    """Parse a YARA file into an AST.
-
-    Surface syntax errors as a clean CLI error instead of an uncaught
-    traceback so metrics subcommands exit non-zero with a readable message.
-    """
-    try:
-        return _parse_yara_file(yara_file)
-    except YaraASTError as exc:
-        raise click.ClickException(f"Failed to parse {yara_file}: {exc}") from None
