@@ -332,9 +332,15 @@ def test_metrics_services_build_report_and_generator_none(
     assert "quality_score" in report.complexity_payload
     assert any(name.endswith("_tree.html") for name in report.generated_files)
 
-    monkeypatch.setattr(ms, "DependencyGraphGenerator", None)
+    monkeypatch.setattr(metrics_workflows, "DependencyGraphGenerator", None)
     with pytest.raises(RuntimeError, match="graphviz"):
-        ms.generate_dependency_graph(ast, "full", str(tmp_path / "f.svg"), "svg", "dot")
+        metrics_workflows.generate_dependency_graph(
+            ast,
+            "full",
+            str(tmp_path / "f.svg"),
+            "svg",
+            "dot",
+        )
 
     out = ms.generate_pattern_diagram_with_generator(
         _PatternGen(), ast, "flow", str(tmp_path / "flow_real.svg"), "svg"
@@ -433,6 +439,7 @@ def test_metrics_services_error_paths_and_dependency_generator_success(
         ) -> str:
             return output_path
 
-    monkeypatch.setattr(ms, "DependencyGraphGenerator", _DepGen)
-    out = ms.generate_dependency_graph(ast, "full", str(tmp_path / "dep.svg"), "svg", "dot")
+    out = metrics_workflows.generate_dependency_graph_with_generator(
+        _DepGen(), ast, "full", str(tmp_path / "dep.svg"), "svg", "dot"
+    )
     assert out[0].endswith("dep.svg")

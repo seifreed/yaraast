@@ -24,7 +24,6 @@ __all__ = [
     "analyze_complexity",
     "determine_graph_output_path",
     "determine_pattern_output_path",
-    "generate_dependency_graph",
     "generate_dependency_graph_with_generator",
     "generate_html_tree_file",
     "generate_pattern_diagram_with_generator",
@@ -38,19 +37,6 @@ def analyze_complexity(ast: YaraFile) -> Any:
 
 def determine_graph_output_path(yara_file: str, output: object, graph_type: str, fmt: str) -> str:
     return _workflows.determine_graph_output_path(yara_file, output, graph_type, fmt)
-
-
-def generate_dependency_graph(
-    ast: YaraFile,
-    graph_type: str,
-    output_path: str,
-    fmt: str,
-    engine: str,
-) -> tuple[str, Any]:
-    if DependencyGraphGenerator is None:
-        msg = "Graph visualization requires the 'graphviz' Python package."
-        raise RuntimeError(msg)
-    return _workflows.generate_dependency_graph(ast, graph_type, output_path, fmt, engine)
 
 
 def generate_dependency_graph_with_generator(
