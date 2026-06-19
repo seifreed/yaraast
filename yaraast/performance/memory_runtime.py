@@ -20,7 +20,6 @@ def init_optimizer_state(optimizer: Any) -> None:
     optimizer._ast_pool = []
     optimizer._stats = {
         "nodes_processed": 0,
-        "memory_saved": 0,
         "total_objects": 0,
     }
 

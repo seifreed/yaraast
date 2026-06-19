@@ -41,6 +41,7 @@ def test_memory_optimizer_basic_and_stats() -> None:
     stats = optimizer.get_statistics()
     assert stats["nodes_processed"] >= 1
     assert stats["string_pool_size"] >= 1
+    assert "memory_saved" not in stats
 
     mem_stats = optimizer.get_memory_stats()
     assert mem_stats.total_objects >= 1
