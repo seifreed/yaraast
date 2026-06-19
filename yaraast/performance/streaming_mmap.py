@@ -81,12 +81,6 @@ def iter_rule_texts_from_text(content: str) -> Iterator[str]:
         yield rule_text
 
 
-def iter_rule_texts_from_mmap(mmapped_file: mmap.mmap) -> Iterator[str]:
-    """Yield complete rule texts from a memory-mapped YARA file."""
-    for rule_text, _, _ in iter_rule_text_byte_spans_from_mmap(mmapped_file):
-        yield rule_text
-
-
 def iter_rule_text_byte_spans_from_mmap(
     mmapped_file: mmap.mmap,
 ) -> Iterator[tuple[str, int, int]]:
