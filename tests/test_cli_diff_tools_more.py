@@ -254,7 +254,7 @@ def test_ast_differ_diff_files_error_and_style_detection_paths(tmp_path: Path) -
     assert same_result.change_summary["style_changes"] == 0
 
     ast = Parser().parse("rule s { condition: true }")
-    style_result = differ._detect_style_changes(ast, ast, differ.diff_asts(ast, ast))
+    style_result = differ.diff_asts(ast, ast)
     assert style_result.style_only_changes == []
 
 

@@ -366,18 +366,6 @@ class ASTDiffer:
             result.change_summary["style_changes"] = len(result.style_only_changes)
         return result
 
-    def _detect_style_changes(
-        self,
-        ast1: YaraFile,
-        ast2: YaraFile,
-        result: ASTDiffResult,
-    ) -> ASTDiffResult:
-        """Backward-compatible hook retained for existing tests."""
-        if ast1 is ast2:
-            result.change_summary.setdefault("style_changes", len(result.style_only_changes))
-            return result
-        return result
-
 
 class ASTFormatter:
     """AST-based code formatter using CodeGenerator."""
