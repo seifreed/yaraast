@@ -209,18 +209,18 @@ class TestParallelAnalyzer:
 
     def test_parse_files_parallel(self, sample_yara_files: list[Path]) -> None:
         """Test parallel file parsing."""
-        with ParallelAnalyzer(max_workers=2) as analyzer:
-            jobs = analyzer.parse_files_parallel(sample_yara_files, chunk_size=2)
+        analyzer = ParallelAnalyzer(max_workers=2)
+        jobs = analyzer.parse_files_parallel(sample_yara_files, chunk_size=2)
 
-            # Should have jobs for the files
-            assert len(jobs) >= 1
+        # Should have jobs for the files
+        assert len(jobs) >= 1
 
-            # Check that jobs completed
-            for job in jobs:
-                assert job.is_completed
-                if job.status.value == "completed":
-                    assert job.result is not None
-                    assert isinstance(job.result, list)
+        # Check that jobs completed
+        for job in jobs:
+            assert job.is_completed
+            if job.status.value == "completed":
+                assert job.result is not None
+                assert isinstance(job.result, list)
 
     def test_complexity_analysis_parallel(self, sample_yara_files: list[Path]) -> None:
         """Test parallel complexity analysis."""
@@ -232,18 +232,18 @@ class TestParallelAnalyzer:
             ast = parser.parse(content)
             asts.append(ast)
 
-        with ParallelAnalyzer(max_workers=2) as analyzer:
-            jobs = analyzer.analyze_complexity_parallel(asts)
+        analyzer = ParallelAnalyzer(max_workers=2)
+        jobs = analyzer.analyze_complexity_parallel(asts)
 
-            assert len(jobs) == 3
+        assert len(jobs) == 3
 
-            # Check results
-            successful_jobs = [j for j in jobs if j.status.value == "completed"]
-            assert len(successful_jobs) == 3
+        # Check results
+        successful_jobs = [j for j in jobs if j.status.value == "completed"]
+        assert len(successful_jobs) == 3
 
-            for job in successful_jobs:
-                assert "metrics" in job.result
-                assert "quality_score" in job.result
+        for job in successful_jobs:
+            assert "metrics" in job.result
+            assert "quality_score" in job.result
 
     def test_batch_processing(self, sample_yara_files: list[Path]) -> None:
         """Test custom batch processing."""
@@ -252,34 +252,34 @@ class TestParallelAnalyzer:
             # Simple worker that returns file size
             return Path(file_path).stat().st_size
 
-        with ParallelAnalyzer(max_workers=2) as analyzer:
-            jobs = analyzer.process_batch(
-                sample_yara_files,
-                simple_worker,
-                job_type="file_size",
-            )
+        analyzer = ParallelAnalyzer(max_workers=2)
+        jobs = analyzer.process_batch(
+            sample_yara_files,
+            simple_worker,
+            job_type="file_size",
+        )
 
-            assert len(jobs) == 3
+        assert len(jobs) == 3
 
-            for job in jobs:
-                assert job.is_completed
-                if job.status.value == "completed":
-                    assert isinstance(job.result, int)  # File size
-                    assert job.result > 0
+        for job in jobs:
+            assert job.is_completed
+            if job.status.value == "completed":
+                assert isinstance(job.result, int)  # File size
+                assert job.result > 0
 
     def test_job_management(self, sample_yara_files: list[Path]) -> None:
         """Test job status and management."""
-        with ParallelAnalyzer(max_workers=1) as analyzer:
-            jobs = analyzer.parse_files_parallel(sample_yara_files, chunk_size=1)
+        analyzer = ParallelAnalyzer(max_workers=1)
+        jobs = analyzer.parse_files_parallel(sample_yara_files, chunk_size=1)
 
-            # Check job IDs are unique
-            job_ids = [job.job_id for job in jobs]
-            assert len(set(job_ids)) == len(job_ids)
+        # Check job IDs are unique
+        job_ids = [job.job_id for job in jobs]
+        assert len(set(job_ids)) == len(job_ids)
 
-            # Check statistics
-            stats = analyzer.get_statistics()
-            assert stats["jobs_submitted"] >= 3
-            assert stats["jobs_completed"] >= 3
+        # Check statistics
+        stats = analyzer.get_statistics()
+        assert stats["jobs_submitted"] >= 3
+        assert stats["jobs_completed"] >= 3
 
 
 class TestBatchProcessor:
@@ -486,13 +486,13 @@ class TestPerformanceIntegration:
         successful_asts = [r.ast for r in parse_results if r.ast is not None]
 
         # Analyze with parallel analyzer
-        with ParallelAnalyzer(max_workers=2) as analyzer:
-            complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts)
+        analyzer = ParallelAnalyzer(max_workers=2)
+        complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts)
 
-            assert len(complexity_jobs) == len(successful_asts)
+        assert len(complexity_jobs) == len(successful_asts)
 
-            successful_analyses = [j for j in complexity_jobs if j.status.value == "completed"]
-            assert len(successful_analyses) == len(successful_asts)
+        successful_analyses = [j for j in complexity_jobs if j.status.value == "completed"]
+        assert len(successful_analyses) == len(successful_asts)
 
     def test_batch_processor_with_memory_optimizer(
         self,
@@ -532,14 +532,14 @@ class TestPerformanceIntegration:
             assert len(successful_asts) == 20
 
             # Step 3: Parallel analysis
-            with ParallelAnalyzer(max_workers=2) as analyzer:
-                complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts)
+            analyzer = ParallelAnalyzer(max_workers=2)
+            complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts)
 
-                # Should have analyzed all rules
-                successful_analyses = [j for j in complexity_jobs if j.status.value == "completed"]
-                assert len(successful_analyses) == 20
+            # Should have analyzed all rules
+            successful_analyses = [j for j in complexity_jobs if j.status.value == "completed"]
+            assert len(successful_analyses) == 20
 
-                # Each analysis should have metrics
-                for job in successful_analyses:
-                    assert "quality_score" in job.result
-                    assert job.result["quality_score"] > 0
+            # Each analysis should have metrics
+            for job in successful_analyses:
+                assert "quality_score" in job.result
+                assert job.result["quality_score"] > 0

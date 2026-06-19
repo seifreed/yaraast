@@ -65,15 +65,6 @@ class ParallelAnalyzer:
         self.rule_analyzer = RuleAnalyzer()
         self._stats = default_parallel_stats()
 
-    def __enter__(self) -> ParallelAnalyzer:
-        """Enter context manager."""
-        return self
-
-    def __exit__(self, _exc_type: Any, _exc_val: Any, _exc_tb: Any) -> None:
-        """Exit context manager."""
-        # Cleanup if needed
-        pass
-
     def analyze_rules(
         self,
         rules: list[Rule],

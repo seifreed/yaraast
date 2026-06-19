@@ -240,36 +240,34 @@ def run_parallel_analysis(
 ) -> tuple[dict[str, Any], float]:
     _validate_timeout(timeout)
     start_time = time.time()
-    with ParallelAnalyzer(max_workers=max_workers) as analyzer:
-        parse_jobs = analyzer.parse_files_parallel(file_paths, chunk_size)
-        _raise_if_analysis_timed_out(start_time, timeout, "parsing")
-        successful_asts, file_names = extract_successful_asts(
-            parse_jobs,
-            file_paths,
-            chunk_size,
+    analyzer = ParallelAnalyzer(max_workers=max_workers)
+    parse_jobs = analyzer.parse_files_parallel(file_paths, chunk_size)
+    _raise_if_analysis_timed_out(start_time, timeout, "parsing")
+    successful_asts, file_names = extract_successful_asts(
+        parse_jobs,
+        file_paths,
+        chunk_size,
+    )
+
+    if analysis_type in ["complexity", "all"]:
+        complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts, max_workers)
+        complexity_results = [job.result for job in complexity_jobs if job.status.value == "completed"]
+        _raise_if_analysis_timed_out(start_time, timeout, "complexity analysis")
+    else:
+        complexity_results = []
+
+    if analysis_type in ["dependency", "all"]:
+        graph_jobs = analyzer.generate_graphs_parallel(
+            successful_asts,
+            output_dir / "graphs",
+            ["full", "rules"],
         )
+        dependency_graphs = [job for job in graph_jobs if job.status.value == "completed"]
+        _raise_if_analysis_timed_out(start_time, timeout, "dependency graph generation")
+    else:
+        dependency_graphs = []
 
-        if analysis_type in ["complexity", "all"]:
-            complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts, max_workers)
-            complexity_results = [
-                job.result for job in complexity_jobs if job.status.value == "completed"
-            ]
-            _raise_if_analysis_timed_out(start_time, timeout, "complexity analysis")
-        else:
-            complexity_results = []
-
-        if analysis_type in ["dependency", "all"]:
-            graph_jobs = analyzer.generate_graphs_parallel(
-                successful_asts,
-                output_dir / "graphs",
-                ["full", "rules"],
-            )
-            dependency_graphs = [job for job in graph_jobs if job.status.value == "completed"]
-            _raise_if_analysis_timed_out(start_time, timeout, "dependency graph generation")
-        else:
-            dependency_graphs = []
-
-        analyzer_stats = analyzer.get_statistics()
+    analyzer_stats = analyzer.get_statistics()
 
     total_time = time.time() - start_time
     return {

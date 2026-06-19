@@ -498,16 +498,16 @@ def test_parallel_analyzer_error_paths_without_mocks(tmp_path: Path) -> None:
 
 
 def test_parallel_analyzer_context_manager_and_complexity_jobs() -> None:
-    with ParallelAnalyzer(max_workers=1) as analyzer:
-        ast = _parsed_ast("complex_ok")
-        jobs = analyzer.analyze_complexity_parallel([ast])
-        assert len(jobs) == 1
-        assert jobs[0].status.value == "completed"
-        assert jobs[0].result["stats"]["total_rules"] == 1
-        assert "metrics" in jobs[0].result
-        assert "quality_score" in jobs[0].result
+    analyzer = ParallelAnalyzer(max_workers=1)
+    ast = _parsed_ast("complex_ok")
+    jobs = analyzer.analyze_complexity_parallel([ast])
+    assert len(jobs) == 1
+    assert jobs[0].status.value == "completed"
+    assert jobs[0].result["stats"]["total_rules"] == 1
+    assert "metrics" in jobs[0].result
+    assert "quality_score" in jobs[0].result
 
-        bad_jobs = analyzer.analyze_complexity_parallel(cast(Any, ["not-an-ast"]))
-        assert len(bad_jobs) == 1
-        assert bad_jobs[0].status.value == "failed"
-        assert bad_jobs[0].error
+    bad_jobs = analyzer.analyze_complexity_parallel(cast(Any, ["not-an-ast"]))
+    assert len(bad_jobs) == 1
+    assert bad_jobs[0].status.value == "failed"
+    assert bad_jobs[0].error
