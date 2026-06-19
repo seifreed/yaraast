@@ -13,9 +13,6 @@ from yaraast.analysis.optimization_rule_analysis import (
     analyze_condition_patterns,
     analyze_cross_rule_patterns,
     analyze_string_definitions,
-    check_hex_consolidation,
-    check_overlapping_patterns,
-    find_similar_rules,
     visit_binary_expression,
 )
 from yaraast.ast.base import YaraFile, require_string, require_yara_file
@@ -30,7 +27,6 @@ from yaraast.ast.expressions import (
     StringWildcard,
 )
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexString
 from yaraast.shared.local_scope import local_name_variants
 from yaraast.visitor.base import BaseVisitor
 
@@ -159,18 +155,6 @@ class OptimizationAnalyzer(BaseVisitor[None]):
     def _analyze_string_definitions(self, rule: Rule) -> None:
         """Analyze string definitions for optimization."""
         analyze_string_definitions(self, rule)
-
-    def _check_hex_consolidation(
-        self,
-        rule: Rule,
-        hex_strings: list[HexString],
-    ) -> None:
-        """Check if hex strings can be consolidated."""
-        check_hex_consolidation(self, rule, hex_strings)
-
-    def _check_overlapping_patterns(self, rule: Rule, strings: list[Any]) -> None:
-        """Check for patterns that might overlap."""
-        check_overlapping_patterns(self, rule, strings)
 
     def _analyze_condition_patterns(self, rule: Rule) -> None:
         """Analyze condition for optimization patterns."""
@@ -366,10 +350,6 @@ class OptimizationAnalyzer(BaseVisitor[None]):
     def _analyze_cross_rule_patterns(self, rules: list[Rule]) -> None:
         """Analyze patterns across multiple rules."""
         analyze_cross_rule_patterns(self, rules)
-
-    def _find_similar_rules(self, rules: list[Rule]) -> None:
-        """Find rules with similar structure that could be combined."""
-        find_similar_rules(self, rules)
 
 
 def _require_string_reference(value: Any) -> str:
