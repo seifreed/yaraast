@@ -32,8 +32,6 @@ class DiffLine:
     type: DiffType
     line_num: int
     content: str
-    old_content: str | None = None
-    new_content: str | None = None
 
 
 @dataclass
@@ -142,8 +140,6 @@ def _process_equal(
                 type=DiffType.CONTEXT,
                 line_num=line_num,
                 content=f"  {lines1[i1 + idx]}",
-                old_content=lines1[i1 + idx],
-                new_content=lines1[i1 + idx],
             ),
         )
     return diff_lines, line_num
@@ -173,8 +169,6 @@ def _process_replace(
                     type=DiffType.MODIFY,
                     line_num=line_num,
                     content=f"~ {new_chunk[idx]}",
-                    old_content=old_chunk[idx],
-                    new_content=new_chunk[idx],
                 ),
             )
             modified += 1
@@ -184,7 +178,6 @@ def _process_replace(
                     type=DiffType.ADD,
                     line_num=line_num,
                     content=f"+ {new_chunk[idx]}",
-                    new_content=new_chunk[idx],
                 ),
             )
             added += 1
@@ -194,7 +187,6 @@ def _process_replace(
                     type=DiffType.REMOVE,
                     line_num=line_num,
                     content=f"- {old_chunk[idx]}",
-                    old_content=old_chunk[idx],
                 ),
             )
             removed += 1
@@ -210,13 +202,12 @@ def _process_insert(
     for idx in range(count):
         line_num += 1
         diff_lines.append(
-            DiffLine(
-                type=DiffType.ADD,
-                line_num=line_num,
-                content=f"+ {lines2[j1 + idx]}",
-                new_content=lines2[j1 + idx],
-            ),
-        )
+                DiffLine(
+                    type=DiffType.ADD,
+                    line_num=line_num,
+                    content=f"+ {lines2[j1 + idx]}",
+                ),
+            )
     return diff_lines, line_num, count
 
 
@@ -229,13 +220,12 @@ def _process_delete(
     for idx in range(count):
         line_num += 1
         diff_lines.append(
-            DiffLine(
-                type=DiffType.REMOVE,
-                line_num=line_num,
-                content=f"- {lines1[i1 + idx]}",
-                old_content=lines1[i1 + idx],
-            ),
-        )
+                DiffLine(
+                    type=DiffType.REMOVE,
+                    line_num=line_num,
+                    content=f"- {lines1[i1 + idx]}",
+                ),
+            )
     return diff_lines, line_num, count
 
 
