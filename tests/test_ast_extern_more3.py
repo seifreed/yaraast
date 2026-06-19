@@ -12,9 +12,6 @@ from yaraast.ast.extern import (
     ExternNamespace,
     ExternRule,
     ExternRuleReference,
-    create_extern_import,
-    create_extern_reference,
-    create_extern_rule,
 )
 from yaraast.errors import ValidationError
 
@@ -56,7 +53,7 @@ def test_extern_namespace_negative_lookup_and_factory_without_modifiers() -> Non
     assert ns.get_rule_by_name("missing") is None
     assert str(ns) == "namespace ext"
 
-    helper_rule = create_extern_rule("R2")
+    helper_rule = ExternRule(name="R2")
     assert helper_rule.modifiers == []
     assert helper_rule.namespace is None
 
@@ -253,43 +250,51 @@ def test_extern_string_reprs_reject_invalid_fields(
 def test_extern_helpers_reject_invalid_inputs_at_creation_time() -> None:
     invalid_cases: list[tuple[Callable[[], object], str]] = [
         (
-            lambda: create_extern_rule(cast(Any, object())),
+            lambda: ExternRule(name=cast(Any, object())).validate_structure(),
             "ExternRule name must be a string",
         ),
         (
-            lambda: create_extern_rule("R1", modifiers=cast(Any, "private")),
-            "ExternRule modifiers must be a list of strings",
+            lambda: ExternRule(name="R1", modifiers=cast(Any, "private")).validate_structure(),
+            "ExternRule modifiers must be a list",
         ),
         (
-            lambda: create_extern_rule("R1", modifiers=cast(Any, [object()])),
-            "ExternRule modifiers must be a list of strings",
+            lambda: ExternRule(name="R1", modifiers=cast(Any, [object()])).validate_structure(),
+            "ExternRule modifiers item must be RuleModifier or string",
         ),
         (
-            lambda: create_extern_rule("R1", namespace=cast(Any, object())),
+            lambda: ExternRule(name="R1", namespace=cast(Any, object())).validate_structure(),
             "ExternRule namespace must be a string",
         ),
         (
-            lambda: create_extern_reference(cast(Any, object())),
+            lambda: ExternRuleReference(rule_name=cast(Any, object())).validate_structure(),
             "ExternRuleReference rule_name must be a string",
         ),
         (
-            lambda: create_extern_reference("R1", namespace=cast(Any, object())),
+            lambda: ExternRuleReference(
+                rule_name="R1", namespace=cast(Any, object())
+            ).validate_structure(),
             "ExternRuleReference namespace must be a string",
         ),
         (
-            lambda: create_extern_import(cast(Any, object())),
+            lambda: ExternImport(module_path=cast(Any, object())).validate_structure(),
             "ExternImport module_path must be a string",
         ),
         (
-            lambda: create_extern_import("external", alias=cast(Any, object())),
+            lambda: ExternImport(
+                module_path="external", alias=cast(Any, object())
+            ).validate_structure(),
             "ExternImport alias must be a string",
         ),
         (
-            lambda: create_extern_import("external", rules=cast(Any, "R1")),
+            lambda: ExternImport(
+                module_path="external", rules=cast(Any, "R1")
+            ).validate_structure(),
             "ExternImport rules must be a list of strings",
         ),
         (
-            lambda: create_extern_import("external", rules=cast(Any, [object()])),
+            lambda: ExternImport(
+                module_path="external", rules=cast(Any, [object()])
+            ).validate_structure(),
             "ExternImport rules must be a list of strings",
         ),
     ]
@@ -300,31 +305,31 @@ def test_extern_helpers_reject_invalid_inputs_at_creation_time() -> None:
 
     empty_cases: list[tuple[Callable[[], object], str]] = [
         (
-            lambda: create_extern_rule(""),
+            lambda: ExternRule(name="").validate_structure(),
             "ExternRule name cannot be empty",
         ),
         (
-            lambda: create_extern_rule("R1", namespace="   "),
+            lambda: ExternRule(name="R1", namespace="   ").validate_structure(),
             "ExternRule namespace cannot be empty",
         ),
         (
-            lambda: create_extern_reference(""),
+            lambda: ExternRuleReference(rule_name="").validate_structure(),
             "ExternRuleReference rule_name cannot be empty",
         ),
         (
-            lambda: create_extern_reference("R1", namespace=""),
+            lambda: ExternRuleReference(rule_name="R1", namespace="").validate_structure(),
             "ExternRuleReference namespace cannot be empty",
         ),
         (
-            lambda: create_extern_import("   "),
+            lambda: ExternImport(module_path="   ").validate_structure(),
             "ExternImport module_path cannot be empty",
         ),
         (
-            lambda: create_extern_import("external", alias=""),
+            lambda: ExternImport(module_path="external", alias="").validate_structure(),
             "ExternImport alias cannot be empty",
         ),
         (
-            lambda: create_extern_import("external", rules=[""]),
+            lambda: ExternImport(module_path="external", rules=[""]).validate_structure(),
             "ExternImport rules must contain non-empty strings",
         ),
     ]

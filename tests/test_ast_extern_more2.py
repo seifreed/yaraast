@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 from yaraast.ast.extern import (
     ExternImport,
     ExternNamespace,
     ExternRule,
     ExternRuleReference,
-    create_extern_import,
-    create_extern_reference,
-    create_extern_rule,
 )
 from yaraast.ast.modifiers import RuleModifier, RuleModifierType
 
@@ -34,7 +31,7 @@ def test_extern_rule_flags_and_str() -> None:
 def test_extern_rule_flags_accept_string_modifiers() -> None:
     extern_rule = ExternRule(
         name="RuleA",
-        modifiers=cast(list[RuleModifier], ["private", "global"]),
+        modifiers=cast(Any, ["private", "global"]),
     )
 
     assert extern_rule.is_private is True
@@ -46,10 +43,10 @@ def test_extern_rule_reference_and_helpers() -> None:
     assert ref.qualified_name == "ns.R1"
     assert str(ref) == "ns.R1"
 
-    helper_ref = create_extern_reference("R2")
+    helper_ref = ExternRuleReference(rule_name="R2")
     assert helper_ref.qualified_name == "R2"
 
-    helper_rule = create_extern_rule("R3", modifiers=["private"])
+    helper_rule = ExternRule(name="R3", modifiers=cast(Any, ["private"]))
     assert helper_rule.is_private is True
 
 
@@ -61,7 +58,7 @@ def test_extern_import_and_namespace() -> None:
     escaped_imp = ExternImport(module_path='ext"\\rules', alias="ext")
     assert str(escaped_imp) == 'import "ext\\"\\\\rules" as ext'
 
-    helper_imp = create_extern_import("ext_rules")
+    helper_imp = ExternImport(module_path="ext_rules")
     assert helper_imp.is_selective_import is False
 
     ns = ExternNamespace(name="ns")
