@@ -47,7 +47,7 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert isinstance(b.string_at_offset("$a", 5).build(), AtExpression)
 
     assert isinstance(b.filesize_eq(12).build(), BinaryExpression)
-    assert isinstance(b.tiny_file().build(), BinaryExpression)
+    assert isinstance(b.filesize_lt(1024).build(), BinaryExpression)
     assert isinstance(b.huge_file().build(), BinaryExpression)
 
     assert isinstance(b.identifier("pe").build(), Identifier)
