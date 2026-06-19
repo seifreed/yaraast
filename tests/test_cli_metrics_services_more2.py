@@ -283,7 +283,7 @@ def test_metrics_services_html_and_wrapper_functions(tmp_path: Path) -> None:
     )
     assert name_s == "rules2_tree.html"
 
-    html_out = ms.generate_html_tree_file(
+    html_out = metrics_workflows.generate_html_tree_file(
         ast,
         str(tmp_path / "manual_tree.html"),
         "My Title",
@@ -293,7 +293,7 @@ def test_metrics_services_html_and_wrapper_functions(tmp_path: Path) -> None:
     assert html_out.endswith("manual_tree.html")
     assert (tmp_path / "manual_tree.html").exists()
 
-    html_out_i = ms.generate_html_tree_file(
+    html_out_i = metrics_workflows.generate_html_tree_file(
         ast,
         str(tmp_path / "manual_tree_interactive.html"),
         "My Title I",

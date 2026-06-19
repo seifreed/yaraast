@@ -19,7 +19,6 @@ __all__ = [
     "determine_graph_output_path",
     "determine_pattern_output_path",
     "generate_dependency_graph_with_generator",
-    "generate_html_tree_file",
     "generate_pattern_diagram_with_generator",
     "parse_yara_file",
 ]
@@ -61,19 +60,6 @@ def generate_pattern_diagram_with_generator(
 ) -> str:
     return _workflows.generate_pattern_diagram_with_generator(
         generator, ast, pattern_type, output_path, fmt
-    )
-
-
-def generate_html_tree_file(
-    ast: YaraFile,
-    output_path: str,
-    title: str,
-    interactive: bool,
-    include_metadata: bool,
-    default_collapsed: bool = False,
-) -> str:
-    return _workflows.generate_html_tree_file(
-        ast, output_path, title, interactive, include_metadata, default_collapsed
     )
 
 

@@ -28,14 +28,17 @@ from yaraast.cli.metrics_services import (
     determine_graph_output_path,
     determine_pattern_output_path,
     generate_dependency_graph_with_generator,
-    generate_html_tree_file,
     generate_pattern_diagram_with_generator,
     parse_yara_file,
 )
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.cli.utils import _validate_output_dir_path, _validate_output_path
 from yaraast.metrics.graphviz_errors import is_graphviz_error
-from yaraast.metrics.workflows import DependencyGraphGenerator, build_report
+from yaraast.metrics.workflows import (
+    DependencyGraphGenerator,
+    build_report,
+    generate_html_tree_file,
+)
 
 
 @click.group()
