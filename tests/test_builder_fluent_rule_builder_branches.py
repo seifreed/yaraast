@@ -273,7 +273,7 @@ def test_rule_metadata_aliases_and_example_rules_paths() -> None:
         .with_tag("demo")
         .meta("author", "me")
         .with_meta("score", 7)
-        .versioned(3)
+        .meta("version", 3)
         .regex_string("$re", "abc.*")
         .elf_header("$elf")
         .condition("true")

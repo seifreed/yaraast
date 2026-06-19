@@ -84,11 +84,6 @@ class FluentRuleBuilder:
         self._rule_builder.with_description(description)
         return self
 
-    def versioned(self, version: int) -> Self:
-        """Set version."""
-        self._rule_builder.with_version(version)
-        return self
-
     # String definition methods
     def with_string(
         self,
