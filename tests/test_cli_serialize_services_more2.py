@@ -9,7 +9,6 @@ from typing import Any, cast
 import pytest
 
 from yaraast.cli import serialize_services as ss
-from yaraast.cli.serialize_service_helpers import export_with_serializer
 from yaraast.cli.utils import parse_yara_file
 from yaraast.errors import ValidationError
 from yaraast.yarax.ast_nodes import WithStatement
@@ -55,17 +54,17 @@ def test_serialize_services_export_import_validate_and_info(tmp_path: Path) -> N
     pbuf_out = tmp_path / "ast.pb"
     ptxt_out = tmp_path / "ast.txt"
 
-    result_json, stats_json = export_with_serializer(ast, "json", str(json_out), minimal=False)
+    result_json, stats_json = ss.export_with_serializer(ast, "json", str(json_out), minimal=False)
     assert result_json and json_out.exists()
     assert stats_json is None
 
-    result_yaml, _ = export_with_serializer(ast, "yaml", str(yaml_out), minimal=True)
+    result_yaml, _ = ss.export_with_serializer(ast, "yaml", str(yaml_out), minimal=True)
     assert result_yaml and yaml_out.exists()
 
-    result_pbtxt, _ = export_with_serializer(ast, "protobuf", str(ptxt_out), minimal=False)
+    result_pbtxt, _ = ss.export_with_serializer(ast, "protobuf", str(ptxt_out), minimal=False)
     assert result_pbtxt and ptxt_out.exists()
 
-    result_pb, stats_pb = export_with_serializer(ast, "protobuf", str(pbuf_out), minimal=False)
+    result_pb, stats_pb = ss.export_with_serializer(ast, "protobuf", str(pbuf_out), minimal=False)
     assert result_pb is not None  # protobuf serialization now returns content
     assert stats_pb and isinstance(stats_pb, dict)
 
@@ -91,7 +90,7 @@ def test_serialize_services_compare_and_error_paths(tmp_path: Path) -> None:
     ast = parse_yara_file(old_file)
 
     with pytest.raises(ValidationError, match="Unknown format"):
-        export_with_serializer(ast, "badfmt", None, minimal=False)
+        ss.export_with_serializer(ast, "badfmt", None, minimal=False)
 
     with pytest.raises(ValidationError, match="Unknown format"):
         ss.import_ast(str(old_file), "badfmt")
@@ -107,7 +106,7 @@ def test_export_ast_rejects_invalid_minimal_types(
     ast = parse_yara_file(source)
 
     with pytest.raises(TypeError, match="minimal must be a boolean"):
-        export_with_serializer(ast, "yaml", None, minimal=cast(bool, minimal))
+        ss.export_with_serializer(ast, "yaml", None, minimal=cast(bool, minimal))
 
 
 @pytest.mark.parametrize("fmt", [None, 123, object()])
@@ -120,7 +119,7 @@ def test_serialize_services_reject_non_string_formats(
     ast = parse_yara_file(source)
 
     with pytest.raises(TypeError, match="serialization format must be a string"):
-        export_with_serializer(ast, cast(str, fmt), None, minimal=False)
+        ss.export_with_serializer(ast, cast(str, fmt), None, minimal=False)
 
     with pytest.raises(TypeError, match="serialization format must be a string"):
         ss.import_ast(str(source), cast(str, fmt))
@@ -136,7 +135,7 @@ def test_serialize_services_parse_export_and_compare_yarax(tmp_path: Path) -> No
     assert ast.rules[0].name == "yarax_one"
     assert isinstance(ast.rules[0].condition, WithStatement)
 
-    result_json, stats = export_with_serializer(ast, "json", None, minimal=False)
+    result_json, stats = ss.export_with_serializer(ast, "json", None, minimal=False)
     assert result_json is not None
     assert stats is None
     serialized = json.loads(result_json)

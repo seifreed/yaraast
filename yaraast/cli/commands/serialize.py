@@ -23,9 +23,9 @@ from yaraast.cli.serialize_reporting import (
     display_validation_result,
     write_diff_output,
 )
-from yaraast.cli.serialize_service_helpers import export_with_serializer
 from yaraast.cli.serialize_services import (
     build_ast_info,
+    export_with_serializer,
     generate_yara_from_ast,
     import_ast as import_ast_service,
     parse_yara_file,
