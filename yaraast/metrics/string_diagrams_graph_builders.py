@@ -7,12 +7,32 @@ from collections import defaultdict
 import graphviz
 
 from yaraast.metrics.dependency_graph_helpers import render_graph
-from yaraast.metrics.string_diagrams_graphviz import (
-    create_complexity_graph,
-    create_hex_graph,
-    create_pattern_flow_graph,
-    create_similarity_graph,
-)
+
+
+def _create_pattern_flow_graph() -> graphviz.Digraph:
+    dot = graphviz.Digraph(comment="YARA String Pattern Flow", engine="dot")
+    dot.attr(rankdir="TB", bgcolor="white", fontname="Arial", fontsize="12")
+    dot.attr("node", fontname="Arial", fontsize="10")
+    dot.attr("edge", fontname="Arial", fontsize="9")
+    return dot
+
+
+def _create_complexity_graph() -> graphviz.Digraph:
+    dot = graphviz.Digraph(comment="YARA Pattern Complexity", engine="neato")
+    dot.attr(bgcolor="white", fontname="Arial", overlap="false", splines="true")
+    return dot
+
+
+def _create_similarity_graph() -> graphviz.Digraph:
+    dot = graphviz.Digraph(comment="YARA Pattern Similarity", engine="fdp")
+    dot.attr(bgcolor="white", fontname="Arial", overlap="scale", sep="+20")
+    return dot
+
+
+def _create_hex_graph() -> graphviz.Digraph:
+    dot = graphviz.Digraph(comment="YARA Hex Pattern Analysis", engine="dot")
+    dot.attr(rankdir="LR", bgcolor="white", fontname="Arial")
+    return dot
 
 
 def pattern_sort_key(pattern_id: str) -> tuple[str, int, str]:
@@ -28,7 +48,7 @@ def generate_pattern_flow_diagram(
 ) -> str:
     """Generate string pattern flow diagram."""
     generator._analyze_patterns(ast)
-    dot = create_pattern_flow_graph()
+    dot = _create_pattern_flow_graph()
 
     with dot.subgraph(name="cluster_plain") as plain_cluster:
         plain_cluster.attr(
@@ -66,7 +86,7 @@ def generate_pattern_complexity_diagram(
 ) -> str:
     """Generate pattern complexity visualization."""
     generator._analyze_patterns(ast)
-    dot = create_complexity_graph()
+    dot = _create_complexity_graph()
 
     for pattern_id, pattern_info in generator.string_patterns.items():
         complexity = generator._calculate_pattern_complexity(pattern_info)
@@ -101,7 +121,7 @@ def generate_pattern_similarity_diagram(
 ) -> str:
     """Generate pattern similarity clustering diagram."""
     generator._analyze_patterns(ast)
-    dot = create_similarity_graph()
+    dot = _create_similarity_graph()
     similarity_groups = generator._find_similar_patterns()
     colors = [
         "lightblue",
@@ -156,7 +176,7 @@ def generate_hex_pattern_diagram(
 ) -> str:
     """Generate detailed hex pattern analysis diagram."""
     generator._analyze_patterns(ast)
-    dot = create_hex_graph()
+    dot = _create_hex_graph()
     hex_patterns = {
         pid: info for pid, info in generator.string_patterns.items() if info["type"] == "hex"
     }
