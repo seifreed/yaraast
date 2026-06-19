@@ -12,7 +12,6 @@ from yaraast.cli.simple_differ import (
     SimpleASTDiffer,
     SimpleDiffer,
 )
-from yaraast.parser import Parser
 
 
 def test_simple_differ_line_changes() -> None:
@@ -52,11 +51,6 @@ def test_simple_ast_differ_files_and_ast(tmp_path: Path) -> None:
     assert "r2" in result.added_rules
     assert "r1" in result.modified_rules
 
-    ast1 = Parser().parse(rule1)
-    ast2 = Parser().parse(rule2)
-    diff_result = SimpleASTDiffer().diff_ast(ast1, ast2)
-    assert diff_result.has_changes is True
-
 
 def test_simple_differ_does_not_expose_dead_change_wrapper() -> None:
     assert not hasattr(SimpleDiffer(), "get_changes")
@@ -82,4 +76,3 @@ def test_simple_differ_rejects_non_string_contents(
 ) -> None:
     with pytest.raises(TypeError, match=message):
         SimpleDiffer().diff(content1, content2)
-

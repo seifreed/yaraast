@@ -326,10 +326,3 @@ class SimpleASTDiffer(SimpleDiffer):
             structural_changes=[],
             style_only_changes=[],
         )
-
-    def diff_ast(self, ast1: YaraFile, ast2: YaraFile) -> DiffResult:
-        """Diff two ASTs by comparing their generated code."""
-        code1 = self.generator.generate(ast1)
-        code2 = self.generator.generate(ast2)
-
-        return self.diff(code1, code2)

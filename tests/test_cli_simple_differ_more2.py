@@ -10,7 +10,6 @@ from yaraast.cli.simple_differ import (
     SimpleDiffer,
 )
 from yaraast.parser import Parser
-from yaraast.yarax.parser import YaraXParser
 
 
 class _QueuedParser(Parser):
@@ -215,30 +214,31 @@ def test_simple_ast_differ_handles_yarax_files(tmp_path: Path) -> None:
     assert result.has_changes is True
 
 
-def test_diff_ast_handles_yarax_ast() -> None:
-    ast1 = YaraXParser("rule x { condition: with xs = [1]: match xs { _ => true } }").parse()
-    ast2 = YaraXParser("rule x { condition: with xs = [1]: match xs { _ => false } }").parse()
+def test_diff_ast_handles_yarax_ast(tmp_path: Path) -> None:
+    file1 = tmp_path / "old.yar"
+    file2 = tmp_path / "new.yar"
+    file1.write_text(
+        "rule x { condition: with xs = [1]: match xs { _ => true } }",
+        encoding="utf-8",
+    )
+    file2.write_text(
+        "rule x { condition: with xs = [1]: match xs { _ => false } }",
+        encoding="utf-8",
+    )
 
-    result = SimpleASTDiffer().diff_ast(ast1, ast2)
+    result = SimpleASTDiffer().diff_files(file1, file2)
 
     assert result.has_changes is True
-    assert result.summary["modified"] > 0
+    assert result.modified_rules == ["x"]
 
 
 def test_diff_ast_and_helpers() -> None:
-    parser = Parser()
-    ast1 = parser.parse("rule r1 { condition: true }")
-    ast2 = parser.parse("rule r1 { condition: true }")
-    ast3 = parser.parse("rule r1 { condition: false }")
-
-    same = SimpleASTDiffer().diff_ast(ast1, ast2)
-    changed = SimpleASTDiffer().diff_ast(ast1, ast3)
+    differ = SimpleDiffer()
+    same = differ.diff("rule r1 { condition: true }", "rule r1 { condition: true }")
+    changed = differ.diff("rule r1 { condition: true }", "rule r1 { condition: false }")
 
     assert same.has_changes is False
     assert changed.has_changes is True
-
-    lines = SimpleDiffer().diff("a\nb", "a\nc")
-    assert any(line.content.startswith("~") for line in lines.lines)
 
     token_result = SimpleDiffer().diff("a b c", "a c d")
     assert token_result.has_changes is True
