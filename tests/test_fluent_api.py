@@ -6,8 +6,6 @@ from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.builder.ast_transformer import clone_rule, transform_rule
 from yaraast.builder.fluent_condition_builder import (
     FluentConditionBuilder,
-    all_of_them,
-    any_of_them,
     match,
 )
 from yaraast.builder.fluent_file_builder import yara_file
@@ -90,10 +88,10 @@ class TestFluentConditionBuilder:
 
     def test_quantifiers(self) -> None:
         """Test quantifier conditions."""
-        cond1 = any_of_them().build()
+        cond1 = FluentConditionBuilder().any_of_them().build()
         assert cond1 is not None
 
-        cond2 = all_of_them().build()
+        cond2 = FluentConditionBuilder().all_of_them().build()
         assert cond2 is not None
 
         cond3 = FluentConditionBuilder().one_of("$a", "$b", "$c").build()

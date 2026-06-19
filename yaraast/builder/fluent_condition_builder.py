@@ -281,21 +281,6 @@ def match(string_id: str) -> FluentConditionBuilder:
     return FluentConditionBuilder.match_string(string_id)
 
 
-def any_of_them() -> FluentConditionBuilder:
-    """Any of them condition."""
-    return FluentConditionBuilder().any_of_them()
-
-
-def all_of_them() -> FluentConditionBuilder:
-    """All of them condition."""
-    return FluentConditionBuilder().all_of_them()
-
-
-def not_them() -> FluentConditionBuilder:
-    """Not any of them condition."""
-    return FluentConditionBuilder().not_them()
-
-
 def one_of(*strings: str) -> FluentConditionBuilder:
     """One of specified strings."""
     return FluentConditionBuilder().one_of(*strings)

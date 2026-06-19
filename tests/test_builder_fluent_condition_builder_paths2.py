@@ -15,12 +15,9 @@ from yaraast.ast.rules import Import, Rule
 from yaraast.builder.fluent_condition_builder import (
     FluentConditionBuilder,
     all_of,
-    all_of_them,
     any_of,
-    any_of_them,
     condition,
     match,
-    not_them,
     one_of,
 )
 from yaraast.errors import ValidationError
@@ -71,9 +68,9 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     with pytest.raises(ValidationError):
         condition().build()
     assert match("$a").build() is not None
-    assert any_of_them().build() is not None
-    assert all_of_them().build() is not None
-    assert not_them().build() is not None
+    assert b.any_of_them().build() is not None
+    assert b.all_of_them().build() is not None
+    assert b.not_them().build() is not None
     assert one_of("$a", "$b").build() is not None
     assert any_of("$a", "$b").build() is not None
     assert all_of("$a", "$b").build() is not None
