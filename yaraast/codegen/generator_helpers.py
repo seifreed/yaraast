@@ -39,7 +39,6 @@ from yaraast.regex_literals import (
 )
 from yaraast.xor_keys import parse_xor_key_text
 
-REGEX_SUFFIX_MODIFIERS = VALID_REGEX_MODIFIERS
 REGEX_SUFFIX_NAMES = {"dotall": "s"}
 _UNSUPPORTED_REGEX_MODIFIERS = frozenset({"m", "multiline"})
 _UNSUPPORTED_SPACED_STRING_MODIFIERS = frozenset(
