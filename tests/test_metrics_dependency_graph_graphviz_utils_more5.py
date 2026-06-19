@@ -21,12 +21,7 @@ from yaraast.metrics.dependency_graph_graphviz import (
     create_graph,
 )
 from yaraast.metrics.dependency_graph_helpers import render_graph
-from yaraast.metrics.dependency_graph_utils import (
-    DependencyGraph,
-    build_dependency_graph,
-    find_circular_dependencies,
-    get_dependency_order,
-)
+from yaraast.metrics.dependency_graph_utils import build_dependency_graph
 
 
 def test_graphviz_helper_empty_paths_and_edge_styles() -> None:
@@ -95,24 +90,6 @@ def test_dependency_utils_remaining_paths() -> None:
     graph = build_dependency_graph(ast)
     assert "d" in graph.nodes
     assert graph.get_dependencies("d") == set()
-
-    cycles = find_circular_dependencies(graph)
-    assert len(cycles) == 1
-    assert set(cycles[0]) == {"a", "b", "c"}
-
-    order = get_dependency_order(graph)
-    assert set(order) == {"a", "b", "c", "d"}
-
-    acyclic = DependencyGraph()
-    acyclic.add_edge("top", "mid")
-    acyclic.add_edge("mid", "leaf")
-    acyclic.add_node("solo")
-    acyclic_order = get_dependency_order(acyclic)
-    assert set(acyclic_order) == {"top", "mid", "leaf", "solo"}
-    assert acyclic_order.index("leaf") < acyclic_order.index("mid") < acyclic_order.index("top")
-
-    empty = DependencyGraph()
-    assert get_dependency_order(empty) == []
 
 
 def test_render_graph_success_path_with_real_graphviz(tmp_path: Path) -> None:

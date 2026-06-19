@@ -189,61 +189,6 @@ def analyze_dependencies(ast: YaraFile) -> dict[str, Any]:
     }
 
 
-def find_circular_dependencies(graph: DependencyGraph) -> list[list[str]]:
-    """Find circular dependencies in the graph."""
-    cycles = []
-    visited = set()
-    rec_stack = set()
-
-    def dfs(node: str, path: list[str]) -> None:
-        visited.add(node)
-        rec_stack.add(node)
-        path.append(node)
-
-        for neighbor in sorted(graph.get_dependencies(node)):
-            if neighbor not in visited:
-                dfs(neighbor, path)
-            elif neighbor in rec_stack:
-                cycle_start = path.index(neighbor)
-                cycle_nodes = path[cycle_start:]
-                min_idx = cycle_nodes.index(min(cycle_nodes))
-                rotated = cycle_nodes[min_idx:] + cycle_nodes[:min_idx]
-                normalized = [*rotated, rotated[0]]
-                if normalized not in cycles:
-                    cycles.append(normalized)
-
-        path.pop()
-        rec_stack.remove(node)
-
-    for node in sorted(graph.nodes):
-        if node not in visited:
-            dfs(node, [])
-
-    return cycles
-
-
-def get_dependency_order(graph: DependencyGraph) -> list[str]:
-    """Get topological order of rules (dependencies first)."""
-    in_degree = {node: len(graph.get_dependencies(node)) for node in sorted(graph.nodes)}
-
-    queue = [node for node in sorted(graph.nodes) if in_degree[node] == 0]
-    result = []
-
-    while queue:
-        node = queue.pop(0)
-        result.append(node)
-
-        for dependent in sorted(graph.get_dependents(node)):
-            in_degree[dependent] -= 1
-            if in_degree[dependent] == 0:
-                queue.append(dependent)
-
-    if len(result) != len(graph.nodes):
-        return sorted(graph.nodes)
-
-    return result
-
-
 def generate_dot_graph(graph: DependencyGraph) -> str:
     """Generate DOT format representation of the graph."""
     lines = ["digraph Dependencies {"]

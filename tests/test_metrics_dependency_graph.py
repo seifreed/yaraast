@@ -14,9 +14,7 @@ from yaraast.metrics.dependency_graph_utils import (
     analyze_dependencies,
     build_dependency_graph,
     export_dependency_graph,
-    find_circular_dependencies,
     generate_dot_graph,
-    get_dependency_order,
 )
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
@@ -232,17 +230,11 @@ def test_dependency_graph_generator_respects_yarax_module_name_shadowing() -> No
     assert "pe" in generator.module_references["dollar_local_does_not_shadow_module"]
 
 
-def test_dependency_graph_cycles_and_order(tmp_path: Path) -> None:
+def test_dependency_graph_export(tmp_path: Path) -> None:
     graph = DependencyGraph()
     graph.add_edge("a", "b")
     graph.add_edge("b", "c")
     graph.add_edge("c", "a")
-
-    cycles = find_circular_dependencies(graph)
-    assert cycles
-
-    order = get_dependency_order(graph)
-    assert set(order) == {"a", "b", "c"}
 
     dot = generate_dot_graph(graph)
     assert "digraph Dependencies" in dot

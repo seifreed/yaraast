@@ -37,8 +37,6 @@ from yaraast.metrics.dependency_graph_utils import (
     DependencyGraph,
     build_dependency_graph,
     export_dependency_graph,
-    find_circular_dependencies,
-    get_dependency_order,
 )
 
 
@@ -234,21 +232,6 @@ def test_build_dependency_graph_does_not_treat_member_root_as_rule_dependency() 
     assert graph.get_dependencies("check") == set()
 
 
-def test_dependency_graph_order_and_export_error(tmp_path: Path) -> None:
-    graph = DependencyGraph()
-    graph.add_edge("rule_c", "rule_b")
-    graph.add_edge("rule_b", "rule_a")
-
-    order = get_dependency_order(graph)
-    assert set(order) == {"rule_a", "rule_b", "rule_c"}
-
-    cycles = find_circular_dependencies(graph)
-    assert cycles == []
-
-    with pytest.raises(ValidationError, match="Unsupported format"):
-        export_dependency_graph(graph, tmp_path / "deps.bad", format="xml")
-
-
 @pytest.mark.parametrize("output_path", ["", "   ", "\t"])
 def test_export_dependency_graph_rejects_empty_output_paths(output_path: str) -> None:
     graph = DependencyGraph()
@@ -276,14 +259,6 @@ def test_dependency_graph_public_outputs_are_stably_sorted() -> None:
         "nodes": ["a_rule", "m_rule", "solo", "z_rule"],
         "edges": {"z_rule": ["a_rule", "m_rule"]},
     }
-    assert get_dependency_order(graph) == ["a_rule", "m_rule", "solo", "z_rule"]
-
-    cycle_graph = DependencyGraph()
-    cycle_graph.add_edge("b_rule", "c_rule")
-    cycle_graph.add_edge("c_rule", "a_rule")
-    cycle_graph.add_edge("a_rule", "b_rule")
-
-    assert find_circular_dependencies(cycle_graph) == [["a_rule", "b_rule", "c_rule", "a_rule"]]
 
 
 def test_dependency_graph_rejects_invalid_public_node_inputs_without_partial_update() -> None:

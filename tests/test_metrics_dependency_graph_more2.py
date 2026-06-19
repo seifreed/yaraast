@@ -12,9 +12,7 @@ from yaraast.metrics.dependency_graph_utils import (
     analyze_dependencies,
     build_dependency_graph,
     export_dependency_graph,
-    find_circular_dependencies,
     generate_dot_graph,
-    get_dependency_order,
 )
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
@@ -165,23 +163,6 @@ def test_dependency_graph_traverses_yarax_with_match_nodes() -> None:
     graph = build_dependency_graph(ast)
 
     assert graph.get_dependencies("caller") == {"base"}
-
-
-def test_dependency_graph_cycles_and_order() -> None:
-    code = """
-rule a { condition: b }
-rule b { condition: a }
-""".lstrip()
-    ast = Parser().parse(code)
-    graph = build_dependency_graph(ast)
-
-    cycles = find_circular_dependencies(graph)
-    assert cycles
-    flat = {node for cycle in cycles for node in cycle}
-    assert {"a", "b"}.issubset(flat)
-
-    order = get_dependency_order(graph)
-    assert set(order) == {"a", "b"}
 
 
 def test_dependency_graph_export(tmp_path: Path) -> None:
