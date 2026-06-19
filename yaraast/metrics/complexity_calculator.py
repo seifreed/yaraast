@@ -17,8 +17,6 @@ class ComplexityCalculator(MetricsVisitorBase):
 
     def __init__(self) -> None:
         super().__init__(default=0)
-        self._cognitive_depth = 0
-        self._in_logical_op = False
 
     def calculate(self, node: ASTNode | None) -> int:
         """Calculate complexity for an AST node."""
@@ -71,7 +69,6 @@ class ComplexityCalculator(MetricsVisitorBase):
         # Logical operators add more complexity
         if node.operator in ("and", "or"):
             complexity += 2
-            self._in_logical_op = True
         else:
             complexity += 1
 
@@ -79,7 +76,6 @@ class ComplexityCalculator(MetricsVisitorBase):
         complexity += self.calculate(node.left)
         complexity += self.calculate(node.right)
 
-        self._in_logical_op = False
         return complexity
 
     # Unary expressions
@@ -113,22 +109,18 @@ class ComplexityCalculator(MetricsVisitorBase):
 
     # Complex expressions
     def visit_for_expression(self, node: ForExpression) -> int:
-        self._cognitive_depth += 1
         complexity = 5  # High base for loops
         complexity += self._calculate_ast_value(node.quantifier)
         complexity += self.calculate(node.iterable)
         complexity += self.calculate(node.body)
-        self._cognitive_depth -= 1
         return complexity
 
     def visit_for_of_expression(self, node: ForOfExpression) -> int:
-        self._cognitive_depth += 1
         complexity = 5  # High base for loops
         complexity += self._calculate_ast_value(node.quantifier)
         complexity += self._calculate_string_set_value(node.string_set)
         if node.condition is not None:
             complexity += self.calculate(node.condition)
-        self._cognitive_depth -= 1
         return complexity
 
     def visit_of_expression(self, node: OfExpression) -> int:
@@ -185,22 +177,18 @@ class ComplexityCalculator(MetricsVisitorBase):
         return 1 + self._calculate_ast_value(node.value)
 
     def visit_array_comprehension(self, node) -> int:
-        self._cognitive_depth += 1
         complexity = 5
         complexity += self._calculate_ast_value(node.expression)
         complexity += self._calculate_ast_value(node.iterable)
         complexity += self._calculate_ast_value(node.condition)
-        self._cognitive_depth -= 1
         return complexity
 
     def visit_dict_comprehension(self, node) -> int:
-        self._cognitive_depth += 1
         complexity = 6
         complexity += self._calculate_ast_value(node.key_expression)
         complexity += self._calculate_ast_value(node.value_expression)
         complexity += self._calculate_ast_value(node.iterable)
         complexity += self._calculate_ast_value(node.condition)
-        self._cognitive_depth -= 1
         return complexity
 
     def visit_tuple_expression(self, node) -> int:
