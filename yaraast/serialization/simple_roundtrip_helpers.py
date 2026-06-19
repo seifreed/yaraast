@@ -77,7 +77,6 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.errors import SerializationError, ValidationError, YaraASTError
-from yaraast.parser.source import parse_yara_source
 from yaraast.serialization._serialization_primitives import (
     _HEX_CHARS,
     _deserialize_boolean_literal_value,
@@ -2904,36 +2903,6 @@ def validate_roundtrip(node: ASTNode) -> tuple[bool, dict[str, Any]]:
         return False, {"error": str(e)}
 
 
-def simple_roundtrip_report(yara_source: str) -> dict[str, Any]:
-    """Perform a simple roundtrip test."""
-    generator = YaraXGenerator()
-    try:
-        original_ast = parse_yara_source(yara_source)
-        reconstructed = generator.generate(original_ast)
-        original_normalized = yara_source.strip()
-        reconstructed_normalized = reconstructed.strip()
-        success, differences = _compare_normalized(original_normalized, reconstructed_normalized)
-        reconstructed_ast = parse_yara_source(reconstructed)
-        return {
-            "original_source": original_normalized,
-            "reconstructed_source": reconstructed_normalized,
-            "round_trip_successful": success,
-            "differences": differences,
-            "metadata": {
-                "original_rule_count": len(original_ast.rules) if original_ast else 0,
-                "reconstructed_rule_count": (
-                    len(reconstructed_ast.rules) if reconstructed_ast else 0
-                ),
-            },
-        }
-    except (YaraASTError, ValueError, TypeError) as e:  # parse + codegen roundtrip errors
-        return {
-            "original_source": yara_source,
-            "reconstructed_source": "",
-            "round_trip_successful": False,
-            "differences": [f"Error during roundtrip: {e!s}"],
-            "metadata": {},
-        }
 
 
 def _compare_normalized(original: str, reconstructed: str) -> tuple[bool, list[str]]:
