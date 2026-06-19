@@ -11,7 +11,8 @@ from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.errors import ParseError
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.source import parse_yara_source
-from yaraast.performance.string_analyzer import StringPerformanceIssue, analyze_rule_performance
+from yaraast.performance.string_analyzer import StringPerformanceIssue
+from yaraast.performance.string_performance_checks import analyze_rule_performance
 from yaraast.shared.numeric_validation import validate_positive_int_setting
 
 

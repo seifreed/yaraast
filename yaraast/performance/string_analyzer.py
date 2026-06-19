@@ -186,9 +186,3 @@ class StringPatternAnalyzer:
     def get_statistics(self) -> dict[str, Any]:
         """Get analyzer statistics."""
         return dict(self._stats)
-
-
-def analyze_rule_performance(rule: Rule) -> list[StringPerformanceIssue]:
-    from yaraast.performance.string_performance_checks import analyze_rule_performance
-
-    return analyze_rule_performance(rule)

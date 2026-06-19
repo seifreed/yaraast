@@ -9,7 +9,7 @@ from yaraast.errors import ParseError
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.source import parse_yara_source
 from yaraast.performance.optimizer import PerformanceOptimizer
-from yaraast.performance.string_analyzer import analyze_rule_performance
+from yaraast.performance.string_performance_checks import analyze_rule_performance
 from yaraast.yarax.generator import YaraXGenerator
 
 

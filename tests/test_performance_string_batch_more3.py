@@ -10,10 +10,8 @@ from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString
 from yaraast.parser import Parser
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor
-from yaraast.performance.string_analyzer import (
-    StringPatternAnalyzer,
-    analyze_rule_performance,
-)
+from yaraast.performance.string_analyzer import StringPatternAnalyzer
+from yaraast.performance.string_performance_checks import analyze_rule_performance
 
 
 def _parse_rule(code: str) -> Rule:

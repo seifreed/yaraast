@@ -5,10 +5,8 @@ from __future__ import annotations
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString, RegexString
-from yaraast.performance.string_analyzer import (
-    StringPatternAnalyzer,
-    analyze_rule_performance,
-)
+from yaraast.performance.string_analyzer import StringPatternAnalyzer
+from yaraast.performance.string_performance_checks import analyze_rule_performance
 
 
 def test_string_pattern_analyzer_duplicates_and_prefixes() -> None:
