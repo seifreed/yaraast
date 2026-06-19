@@ -400,23 +400,3 @@ class MetaEntry:
             bool_value = "true" if value else "false"
             return f"{scope_prefix}{key} = {bool_value}"
         return f"{scope_prefix}{key} = {value}"
-
-
-# Convenience functions for creating modifiers
-def create_string_modifier(name: str, value: Any | None = None) -> StringModifier:
-    """Create a string modifier from name and optional value."""
-    return StringModifier.from_name_value(name, value)
-
-
-def create_rule_modifier(name: str) -> RuleModifier:
-    """Create a rule modifier from name."""
-    return RuleModifier.from_string(name)
-
-
-def create_meta_entry(
-    key: str,
-    value: str | int | bool | float,
-    scope: str | None = None,
-) -> MetaEntry:
-    """Create a meta entry with optional scope."""
-    return MetaEntry.from_key_value(key, value, scope)

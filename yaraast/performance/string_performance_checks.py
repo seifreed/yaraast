@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.ast.strings import PlainString, RegexString
 from yaraast.performance.string_analysis_helpers import string_value_length
 from yaraast.performance.string_analyzer import StringPerformanceIssue
 
@@ -35,21 +35,3 @@ def analyze_rule_performance(rule: Rule) -> list[StringPerformanceIssue]:
                     ),
                 )
     return issues
-
-
-def estimate_rule_cost(rule: Rule) -> int:
-    cost = 0
-    if rule.strings:
-        for string_def in rule.strings:
-            if isinstance(string_def, PlainString):
-                cost += 1
-            elif isinstance(string_def, HexString):
-                cost += 2
-            elif isinstance(string_def, RegexString):
-                cost += 10
-    if rule.condition is not None:
-        condition_str = str(rule.condition)
-        cost += condition_str.count(" and ") * 2
-        cost += condition_str.count(" or ") * 2
-        cost += condition_str.count("for ") * 5
-    return cost

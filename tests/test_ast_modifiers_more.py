@@ -14,9 +14,6 @@ from yaraast.ast.modifiers import (
     RuleModifierType,
     StringModifier,
     StringModifierType,
-    create_meta_entry,
-    create_rule_modifier,
-    create_string_modifier,
 )
 from yaraast.errors import ValidationError
 
@@ -129,13 +126,13 @@ def test_modifier_accept_and_factory_helpers() -> None:
         def visit_string_modifier(self, node: StringModifier) -> tuple[str, object]:
             return (node.name, node.value)
 
-    modifier = create_string_modifier("xor", 7)
+    modifier = StringModifier.from_name_value("xor", 7)
     assert modifier.accept(_Visitor()) == ("xor", 7)
 
-    rule_modifier = create_rule_modifier("private")
+    rule_modifier = RuleModifier.from_string("private")
     assert rule_modifier.modifier_type == RuleModifierType.PRIVATE
 
-    meta_entry = create_meta_entry("author", "seifreed", "protected")
+    meta_entry = MetaEntry.from_key_value("author", "seifreed", "protected")
     assert meta_entry.scope == MetaScope.PROTECTED
     assert str(meta_entry) == 'protected:author = "seifreed"'
 
@@ -223,14 +220,6 @@ def test_modifier_helpers_reject_invalid_inputs_at_creation_time() -> None:
             "Rule modifier input must be a string",
         ),
         (
-            lambda: create_string_modifier(cast(Any, object())),
-            "String modifier input must be a string",
-        ),
-        (
-            lambda: create_rule_modifier(cast(Any, object())),
-            "Rule modifier input must be a string",
-        ),
-        (
             lambda: MetaEntry.from_key_value(cast(Any, object()), "value"),
             "Meta key must be a string",
         ),
@@ -246,22 +235,6 @@ def test_modifier_helpers_reject_invalid_inputs_at_creation_time() -> None:
             lambda: MetaEntry.from_key_value("key", "value", cast(Any, object())),
             "Meta scope input must be a string",
         ),
-        (
-            lambda: create_meta_entry(cast(Any, object()), "value"),
-            "Meta key must be a string",
-        ),
-        (
-            lambda: create_meta_entry("key", cast(Any, object())),
-            "Meta value must be a string, integer, boolean, or finite float",
-        ),
-        (
-            lambda: create_meta_entry("key", cast(Any, float("inf"))),
-            "Meta value must be a string, integer, boolean, or finite float",
-        ),
-        (
-            lambda: create_meta_entry("key", "value", cast(Any, object())),
-            "Meta scope input must be a string",
-        ),
     ]
 
     for factory, message in invalid_cases:
@@ -274,19 +247,11 @@ def test_modifier_helpers_reject_invalid_inputs_at_creation_time() -> None:
             "Meta key cannot be empty",
         ),
         (
-            lambda: create_meta_entry("   ", "value"),
-            "Meta key cannot be empty",
-        ),
-        (
-            lambda: MetaScope.from_string("   "),
-            "Meta scope input cannot be empty",
-        ),
-        (
             lambda: MetaEntry.from_key_value("key", "value", ""),
             "Meta scope input cannot be empty",
         ),
         (
-            lambda: create_meta_entry("key", "value", "   "),
+            lambda: MetaScope.from_string("   "),
             "Meta scope input cannot be empty",
         ),
     ]

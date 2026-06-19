@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from yaraast.errors import YaraASTError
-from yaraast.regex_literals import escape_regex_delimiter
 
 from .lexer import YaraLToken
 
@@ -28,12 +27,6 @@ def split_regex_token_value(value: object) -> tuple[str, list[str]]:
         last_delimiter = raw_value.rfind("/")
         return raw_value[1:last_delimiter], list(raw_value[last_delimiter + 1 :])
     return raw_value, []
-
-
-def format_regex_token_value(value: object) -> str:
-    """Format a lexer regex token value with exactly one delimiter pair."""
-    pattern, flags = split_regex_token_value(value)
-    return f"/{escape_regex_delimiter(pattern)}/{''.join(flags)}"
 
 
 class YaraLParserError(YaraASTError):

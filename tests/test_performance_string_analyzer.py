@@ -9,7 +9,6 @@ from yaraast.performance.string_analyzer import (
     StringPatternAnalyzer,
     analyze_rule_performance,
 )
-from yaraast.performance.string_performance_checks import estimate_rule_cost
 
 
 def test_string_pattern_analyzer_duplicates_and_prefixes() -> None:
@@ -41,6 +40,3 @@ def test_analyze_rule_performance_and_cost() -> None:
     )
     issues = analyze_rule_performance(rule)
     assert issues
-
-    cost = estimate_rule_cost(rule)
-    assert cost > 0

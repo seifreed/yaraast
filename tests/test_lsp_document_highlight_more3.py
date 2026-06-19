@@ -8,7 +8,6 @@ from yaraast.lsp.document_highlight import DocumentHighlightProvider
 from yaraast.lsp.document_highlight_helpers import (
     highlight_identifier,
     highlight_string_identifier,
-    simple_highlight,
 )
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
@@ -405,7 +404,6 @@ def test_document_highlight_identifier_boundary_skips() -> None:
 
 
 def test_document_highlight_helpers_reject_empty_needles() -> None:
-    assert simple_highlight("alpha\n", "") == []
     assert highlight_identifier("alpha\n", "") == []
     assert highlight_string_identifier("rule a { condition: $a }\n", "") == []
     assert highlight_string_identifier("rule a { condition: $a }\n", "$") == []

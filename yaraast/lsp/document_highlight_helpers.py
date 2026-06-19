@@ -31,31 +31,6 @@ def _highlight_range(line: str, line_num: int, start: int, end: int) -> Range:
     )
 
 
-def simple_highlight(text: str, word: str) -> list[DocumentHighlight]:
-    if not word:
-        return []
-    highlights = []
-    lines = text.split("\n")
-    ctx = SimpleNamespace(lines=lines)
-    for line_num, line in enumerate(lines):
-        col = 0
-        while True:
-            idx = line.find(word, col)
-            if idx == -1:
-                break
-            if not _is_code_occurrence(ctx, line_num, idx):
-                col = idx + len(word)
-                continue
-            highlights.append(
-                DocumentHighlight(
-                    range=_highlight_range(line, line_num, idx, idx + len(word)),
-                    kind=DocumentHighlightKind.Text,
-                )
-            )
-            col = idx + len(word)
-    return highlights
-
-
 def highlight_identifier(text: str, identifier: str) -> list[DocumentHighlight]:
     if not identifier:
         return []
