@@ -70,3 +70,20 @@ else:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_metrics_facade_module_is_gone() -> None:
+    result = _run_import_probe(
+        """
+import importlib
+
+try:
+    importlib.import_module("yaraast.metrics.facade")
+except ModuleNotFoundError as exc:
+    assert exc.name == "yaraast.metrics.facade"
+else:
+    raise AssertionError("obsolete metrics facade module must not exist")
+""",
+    )
+
+    assert result.returncode == 0, result.stderr
