@@ -16,8 +16,6 @@ from yaraast.metrics.graphviz_errors import is_graphviz_error
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 
-__all__ = ["DependencyGraphGenerator"]
-
 try:
     from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 except ModuleNotFoundError as exc:
