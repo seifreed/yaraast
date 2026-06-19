@@ -420,26 +420,3 @@ def create_meta_entry(
 ) -> MetaEntry:
     """Create a meta entry with optional scope."""
     return MetaEntry.from_key_value(key, value, scope)
-
-
-# Predefined common modifiers for convenience
-class CommonStringModifiers:
-    """Pre-defined common string modifiers."""
-
-    ASCII = StringModifier(StringModifierType.ASCII)
-    WIDE = StringModifier(StringModifierType.WIDE)
-    NOCASE = StringModifier(StringModifierType.NOCASE)
-    FULLWORD = StringModifier(StringModifierType.FULLWORD)
-    BASE64 = StringModifier(StringModifierType.BASE64)
-    BASE64WIDE = StringModifier(StringModifierType.BASE64WIDE)
-    UTF8 = StringModifier(StringModifierType.UTF8)
-    UTF16 = StringModifier(StringModifierType.UTF16)
-    UTF16LE = StringModifier(StringModifierType.UTF16LE)
-    UTF16BE = StringModifier(StringModifierType.UTF16BE)
-
-
-class CommonRuleModifiers:
-    """Pre-defined common rule modifiers."""
-
-    PRIVATE = RuleModifier(RuleModifierType.PRIVATE)
-    GLOBAL = RuleModifier(RuleModifierType.GLOBAL)
