@@ -186,6 +186,12 @@ def test_tree_builder_remaining_paths() -> None:
     r2 = _render(builder.visit_rule(rule2))
     assert "Meta" in r2 and "$h" in r2
 
+    # Meta dict branch.
+    rule2_dict = Rule(name="r2_dict", meta={"author": "me", "version": 1})
+    r2_dict = _render(builder.visit_rule(rule2_dict))
+    assert 'author = "me"' in r2_dict
+    assert "version = 1" in r2_dict
+
     # Condition fallback path when empty string.
     empty_builder = _BuilderEmptyCondition()
     rule3 = Rule(name="r3", condition=cast(Any, SimpleNamespace()))

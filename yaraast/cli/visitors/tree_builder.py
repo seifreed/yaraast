@@ -101,7 +101,22 @@ class ASTTreeBuilder:
             self._add_tags_to_tree(rule_tree, node.tags)
 
         if node.meta:
-            self._add_meta_to_tree(rule_tree, node.meta)
+            from rich.markup import escape
+
+            meta_tree = rule_tree.add("Meta")
+            if isinstance(node.meta, dict):
+                for key, value in node.meta.items():
+                    if isinstance(value, str):
+                        meta_tree.add(f'{escape(key)} = "{escape(value)}"')
+                    else:
+                        meta_tree.add(f"{escape(key)} = {value}")
+            else:
+                for meta in node.meta:
+                    if hasattr(meta, "key") and hasattr(meta, "value"):
+                        if isinstance(meta.value, str):
+                            meta_tree.add(f'{escape(meta.key)} = "{escape(meta.value)}"')
+                        else:
+                            meta_tree.add(f"{escape(meta.key)} = {meta.value}")
 
         if node.strings:
             self._add_strings_to_tree(rule_tree, node.strings)
@@ -140,31 +155,6 @@ class ASTTreeBuilder:
                 tags_tree.add(tag)
             else:
                 tags_tree.add(tag.name)
-
-    def _add_meta_to_tree(self, rule_tree: Tree, meta) -> None:
-        """Add meta section to rule tree."""
-        from rich.markup import escape
-
-        meta_tree = rule_tree.add("Meta")
-
-        self._add_list_meta_to_tree(meta_tree, meta, escape)
-
-    def _add_dict_meta_to_tree(self, meta_tree: Tree, meta_dict: dict, escape) -> None:
-        """Add dictionary meta to tree."""
-        for key, value in meta_dict.items():
-            if isinstance(value, str):
-                meta_tree.add(f'{escape(key)} = "{escape(value)}"')
-            else:
-                meta_tree.add(f"{escape(key)} = {value}")
-
-    def _add_list_meta_to_tree(self, meta_tree: Tree, meta_list: list, escape) -> None:
-        """Add list meta to tree."""
-        for m in meta_list:
-            if hasattr(m, "key") and hasattr(m, "value"):
-                if isinstance(m.value, str):
-                    meta_tree.add(f'{escape(m.key)} = "{escape(m.value)}"')
-                else:
-                    meta_tree.add(f"{escape(m.key)} = {m.value}")
 
     def _add_strings_to_tree(self, rule_tree: Tree, strings) -> None:
         """Add strings section to rule tree."""
