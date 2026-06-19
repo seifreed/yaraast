@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import ASTNode, require_string, require_yara_file
 from yaraast.ast.expressions import (
@@ -29,16 +29,6 @@ if TYPE_CHECKING:
         WithDeclaration,
         WithStatement,
     )
-
-
-class DependencyGraphEntry(TypedDict):
-    """Per-rule dependency graph details."""
-
-    depends_on: list[str]
-    depended_by: list[str]
-    transitive_dependencies: list[str]
-    is_independent: bool
-
 
 class DependencyAnalyzer(BaseVisitor[None]):
     """Analyze dependencies between YARA rules."""
@@ -142,9 +132,9 @@ class DependencyAnalyzer(BaseVisitor[None]):
         visited.remove(rule_name)  # Don't include self
         return visited
 
-    def _build_dependency_graph(self) -> dict[str, DependencyGraphEntry]:
+    def _build_dependency_graph(self) -> dict[str, dict[str, Any]]:
         """Build a dependency graph."""
-        graph: dict[str, DependencyGraphEntry] = {}
+        graph: dict[str, dict[str, Any]] = {}
 
         for rule in sorted(self.rule_names):
             deps = self.dependencies.get(rule, set())
