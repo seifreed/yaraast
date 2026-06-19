@@ -326,11 +326,6 @@ def build_parallel_summary(
     }
 
 
-def build_optimize_recommendations(collection_size: int) -> dict[str, Any]:
-    optimizer = MemoryOptimizer()
-    return optimizer.optimize_for_large_collection(collection_size)
-
-
 def build_optimization_plan(
     collection_size: int,
     memory_mb: int | None,
@@ -342,7 +337,7 @@ def build_optimization_plan(
     if target_time is not None:
         validate_positive_int_setting(target_time, "target_time")
 
-    recommendations = build_optimize_recommendations(collection_size)
+    recommendations = MemoryOptimizer().optimize_for_large_collection(collection_size)
     strategy = _build_strategy_messages(collection_size)
     memory_plan = _build_memory_plan(collection_size, memory_mb, recommendations)
     time_plan = _build_time_plan(collection_size, target_time)
