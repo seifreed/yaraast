@@ -16,10 +16,7 @@ from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.builder.fluent_file_builder import FluentYaraFileBuilder, yara_file
 from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
 from yaraast.builder.fluent_rule_presets import (
-    document_rule,
-    example_rules,
     malware_rule,
-    network_rule,
     packed_rule,
     rule,
     trojan_rule,
@@ -40,10 +37,7 @@ __all__ = [
     "YaraFileBuilder",
     "clone_rule",
     "clone_yara_file",
-    "document_rule",
-    "example_rules",
     "malware_rule",
-    "network_rule",
     "packed_rule",
     "rule",
     "transform_rule",
