@@ -30,14 +30,8 @@ class ValidateGroup(click.Group):
             cmd = self.get_command(ctx, cmd_name)
             if cmd is not None:
                 return cmd_name, cmd, args[1:]
-            default_cmd = self.get_command(ctx, "_file")
-            return "_file", default_cmd, args
+            return "_file", _VALIDATE_FILE_COMMAND, args
         return super().resolve_command(ctx, args)
-
-
-@click.group(cls=ValidateGroup)
-def validate() -> None:
-    """YARA rule validation commands."""
 
 
 def _validate_rule_file(rule_file: str) -> int:
@@ -52,13 +46,23 @@ def _validate_rule_file(rule_file: str) -> int:
     return 0
 
 
-@validate.command(name="_file", hidden=True)
-@click.argument("rule_file", type=click.Path(exists=True, dir_okay=False))
-def _validate_file(rule_file: str) -> None:
-    """Validate a YARA file."""
+def _invoke_validate_rule_file(rule_file: str) -> None:
     code = _validate_rule_file(rule_file)
     if code != 0:
         raise SystemExit(code)
+
+
+_VALIDATE_FILE_COMMAND = click.Command(
+    name="_file",
+    callback=_invoke_validate_rule_file,
+    params=[click.Argument(["rule_file"], type=click.Path(exists=True, dir_okay=False))],
+    hidden=True,
+)
+
+
+@click.group(cls=ValidateGroup)
+def validate() -> None:
+    """YARA rule validation commands."""
 
 
 @validate.command()
