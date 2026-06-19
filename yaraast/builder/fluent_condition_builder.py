@@ -277,11 +277,6 @@ class FluentConditionBuilder(ConditionBuilder):
         """Always true condition."""
         return FluentConditionBuilder(BooleanLiteral(value=True))
 
-    @staticmethod
-    def always_false() -> FluentConditionBuilder:
-        """Always false condition."""
-        return FluentConditionBuilder(BooleanLiteral(value=False))
-
 
 # Convenience functions
 def condition() -> FluentConditionBuilder:

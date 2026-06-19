@@ -72,7 +72,6 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
         FluentConditionBuilder.match_string("$a").build(), type(b.string_matches("$a").build())
     )
     assert isinstance(FluentConditionBuilder.always_true().build(), BooleanLiteral)
-    assert isinstance(FluentConditionBuilder.always_false().build(), BooleanLiteral)
 
     with pytest.raises(ValidationError):
         condition().build()
