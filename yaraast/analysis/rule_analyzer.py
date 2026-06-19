@@ -256,38 +256,3 @@ class RuleAnalyzer:
                     },
                 )
         return recommendations
-
-    def get_rule_report(
-        self,
-        rule_name: str,
-        yara_file: YaraFile,
-    ) -> dict[str, Any] | None:
-        """Get detailed report for a specific rule."""
-        # Find the rule
-        rule = None
-        for r in yara_file.rules:
-            if r.name == rule_name:
-                rule = r
-                break
-
-        if rule is None:
-            return None
-
-        # Analyze just this file
-        full_analysis = self.analyze(yara_file)
-
-        # Extract rule-specific data
-        return {
-            "name": rule_name,
-            "tags": rule.tags,
-            "string_count": len(rule.strings),
-            "string_usage": full_analysis["string_analysis"].get(rule_name, {}),
-            "dependencies": self.dependency_analyzer.get_dependencies(rule_name),
-            "dependents": self.dependency_analyzer.get_dependents(rule_name),
-            "transitive_dependencies": sorted(
-                self.dependency_analyzer.get_transitive_dependencies(rule_name),
-            ),
-            "recommendations": [
-                r for r in full_analysis["recommendations"] if r.get("rule") == rule_name
-            ],
-        }

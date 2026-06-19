@@ -18,12 +18,9 @@ ImportFunction = Callable[[str, Any, Any, Any, int], PythonModuleType]
 
 
 def test_type_system_builtin_module_fallback_initializes_pe_and_math() -> None:
-    ts = object.__new__(TypeSystem)
-    ts.modules = {}
+    ts = TypeSystem()
 
-    TypeSystem._init_builtin_modules(ts)
-
-    assert set(ts.modules) == {"pe", "math"}
+    assert {"pe", "math"} <= set(ts.modules)
 
     pe = ts.get_module("pe")
     assert pe is not None

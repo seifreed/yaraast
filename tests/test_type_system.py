@@ -2753,8 +2753,7 @@ class TestTypeInferenceEdgeCases:
         assert len(inference.errors) > 0
 
     def test_type_system_builtin_modules_fallback(self) -> None:
-        """Test TypeSystem fallback to builtin modules."""
-        # This test exercises the _init_builtin_modules fallback
+        """Test TypeSystem loads builtin modules."""
         type_sys = TypeSystem()
 
         # Verify PE module is loaded

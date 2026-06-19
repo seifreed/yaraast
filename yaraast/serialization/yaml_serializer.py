@@ -8,7 +8,6 @@ from typing import Any
 import yaml
 
 from yaraast.ast.base import YaraFile, require_yara_file
-from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.serializer_helpers import (
@@ -71,25 +70,3 @@ class YamlSerializer(JsonSerializer):
         ast = require_yara_file(ast, "ast")
         ast_data = self.visit(ast)
         return serialize_yaml(ast_data, output_path, flow_style=False)
-
-    def serialize_rules_only(
-        self,
-        ast: YaraFile,
-        output_path: str | Path | None = None,
-    ) -> str:
-        """Serialize only the rules section to YAML (useful for rule analysis)."""
-        ast = require_yara_file(ast, "ast")
-        if not isinstance(ast.rules, list | tuple):
-            msg = "YaraFile rules must be a list of Rule nodes"
-            raise SerializationError(msg)
-
-        for rule in ast.rules:
-            if not isinstance(rule, Rule):
-                msg = "YaraFile rules item must be a Rule node"
-                raise SerializationError(msg)
-
-        rules_data = {
-            "rules": [self.visit(rule) for rule in ast.rules],
-            "rule_count": len(ast.rules),
-        }
-        return serialize_yaml(rules_data, output_path, flow_style=False)

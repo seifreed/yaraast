@@ -77,13 +77,6 @@ class TypeSystem:
         loader = ModuleLoader()
         self.modules = loader.modules
 
-    def _init_builtin_modules(self) -> None:
-        """Initialize builtin modules (fallback)."""
-        from .module_definitions import load_builtin_modules
-
-        builtins = load_builtin_modules()
-        self.modules = {name: builtins[name] for name in ("pe", "math") if name in builtins}
-
     def get_module(self, name: str) -> ModuleDefinition | None:
         """Get module definition by name."""
         name = _require_module_lookup_name(name)

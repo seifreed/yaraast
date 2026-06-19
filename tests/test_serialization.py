@@ -148,26 +148,6 @@ class TestYamlSerializer:
         assert data["type"] == "YaraFile"
         assert len(data["rules"]) == 1
 
-    def test_serialize_rules_only(self) -> None:
-        """Test rules-only YAML serialization."""
-        rule_text = """
-        rule rule1 { condition: true }
-        rule rule2 { condition: false }
-        """
-
-        parser = Parser()
-        ast = parser.parse(rule_text)
-
-        serializer = YamlSerializer()
-        yaml_str = serializer.serialize_rules_only(ast)
-
-        data = yaml.safe_load(yaml_str)
-        assert "rules" in data
-        assert "rule_count" in data
-        assert data["rule_count"] == 2
-        assert len(data["rules"]) == 2
-        assert data["rules"][0]["name"] in ["rule1", "rule2"]
-
 
 class TestProtobufSerializer:
     """Test Protobuf serialization."""

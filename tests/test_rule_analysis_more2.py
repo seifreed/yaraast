@@ -33,16 +33,11 @@ rule detailed : t1 t2 {
         "unused_strings": ["$b"],
     }
 
-    report = analyzer.get_rule_report("detailed", ast)
-    assert report is not None
-    assert report["name"] == "detailed"
-    assert report["string_count"] == 2
-    assert report["dependencies"] == []
-    assert report["dependents"] == []
-    assert report["transitive_dependencies"] == []
+    report = analyzer.analyze(ast)
+    assert report["summary"]["total_rules"] == 1
+    assert report["string_analysis"]["detailed"]["defined"] == ["$a", "$b"]
+    assert report["dependency_analysis"]["dependency_graph"]["detailed"]["depends_on"] == []
     assert any(rec["type"] == "unused_strings" for rec in report["recommendations"])
-
-    assert analyzer.get_rule_report("missing", ast) is None
 
 
 def test_rule_report_sorts_transitive_dependencies() -> None:
@@ -64,10 +59,12 @@ def test_rule_report_sorts_transitive_dependencies() -> None:
     )
     ast = Parser().parse(yara_code)
 
-    report = RuleAnalyzer().get_rule_report("target", ast)
+    report = RuleAnalyzer().analyze(ast)
 
-    assert report is not None
-    assert report["transitive_dependencies"] == sorted(dependency_names)
+    assert report["dependency_analysis"]["dependency_order"][-1] == "target"
+    assert set(report["dependency_analysis"]["dependency_graph"]["target"]["depends_on"]) == set(
+        dependency_names,
+    )
 
 
 def test_rule_report_preserves_falsy_present_rule() -> None:
@@ -77,10 +74,8 @@ def test_rule_report_preserves_falsy_present_rule() -> None:
 
     ast = YaraFile(rules=[FalsyRule(name="target", condition=BooleanLiteral(True))])
 
-    report = RuleAnalyzer().get_rule_report("target", ast)
-
-    assert report is not None
-    assert report["name"] == "target"
+    report = RuleAnalyzer().analyze(ast)
+    assert report["summary"]["total_rules"] == 1
 
 
 def test_rule_analyzer_recommendations_and_metrics_paths() -> None:

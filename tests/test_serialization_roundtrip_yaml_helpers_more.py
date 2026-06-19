@@ -75,37 +75,12 @@ def test_yaml_serializer_error_and_output_paths(tmp_path: Path) -> None:
     serializer.serialize_minimal(ast, output_path=minimal_out)
     assert minimal_out.exists()
 
-    rules_out = tmp_path / "rules.yaml"
-    rules_yaml = serializer.serialize_rules_only(ast, output_path=rules_out)
-    assert rules_out.exists()
-    data = yaml.safe_load(rules_yaml)
-    assert data["rule_count"] == 1
-
 
 def test_yaml_serializer_without_metadata_skips_yaml_metadata_block() -> None:
     serializer = YamlSerializer(include_metadata=False)
     yaml_str = serializer.serialize(_sample_ast())
     data = yaml.safe_load(yaml_str)
     assert "metadata" not in data
-
-
-@pytest.mark.parametrize("invalid_rules", ["", False, 0, None])
-def test_yaml_serializer_rules_only_rejects_invalid_rule_collections(
-    invalid_rules: Any,
-) -> None:
-    ast = _sample_ast()
-    cast(Any, ast).rules = invalid_rules
-
-    with pytest.raises(SerializationError, match="YaraFile rules"):
-        YamlSerializer().serialize_rules_only(ast)
-
-
-def test_yaml_serializer_rules_only_rejects_invalid_rule_items() -> None:
-    ast = _sample_ast()
-    cast(Any, ast).rules = [object()]
-
-    with pytest.raises(SerializationError, match="YaraFile rules item"):
-        YamlSerializer().serialize_rules_only(ast)
 
 
 def test_yaml_helpers_emit_safe_loadable_sequence_data_without_python_tags() -> None:
