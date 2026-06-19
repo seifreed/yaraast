@@ -14,7 +14,6 @@ from yaraast.builder.fluent_condition_helpers import (
     build_entropy_call,
     build_of_expression,
     build_string_set,
-    chain_or,
     make_binary,
     make_filesize_compare,
 )
@@ -58,11 +57,11 @@ def test_fluent_condition_small_helpers_more() -> None:
     assert len(entropy_call.arguments) == 2
 
     try:
-        chain_or([])
-    except ValidationError as exc:
-        assert "Expected at least one condition" in str(exc)
+        make_binary(Identifier(name="left"), "or", StringIdentifier(name=""))
+    except ValueError as exc:
+        assert "String identifier cannot be empty" in str(exc)
     else:
-        raise AssertionError("chain_or([]) should raise")
+        raise AssertionError("make_binary(...) should raise")
 
 
 def test_fluent_condition_helpers_reject_boolean_integer_arguments() -> None:
@@ -90,9 +89,6 @@ def test_fluent_condition_helpers_reject_invalid_prebuilt_expression_structure()
 
     with pytest.raises(ValueError, match="String identifier cannot be empty"):
         build_of_expression("any", invalid_string)
-
-    with pytest.raises(ValueError, match="String identifier cannot be empty"):
-        chain_or([Identifier(name="valid"), invalid_string])
 
     with pytest.raises(ValueError, match="String identifier cannot be empty"):
         make_binary(Identifier(name="valid"), "and", invalid_string)

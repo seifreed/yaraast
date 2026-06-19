@@ -111,15 +111,6 @@ def build_of_expression(quantifier: int | str, string_set: Expression) -> OfExpr
     )
 
 
-def chain_or(conditions: list[Expression]) -> Expression:
-    if not conditions:
-        raise ValidationError("Expected at least one condition")
-    result = _validate_expression(conditions[0], "OR condition")
-    for cond in conditions[1:]:
-        result = make_binary(result, "or", cond)
-    return result
-
-
 def build_entropy_call(offset: int, size: int) -> FunctionCall:
     return FunctionCall(
         function="math.entropy",
