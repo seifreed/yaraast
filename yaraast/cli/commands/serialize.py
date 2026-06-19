@@ -9,7 +9,6 @@ from rich.console import Console
 from rich.markup import escape
 
 from yaraast.cli.serialize_command_services import (
-    build_ast_info_payload,
     build_diff_output_path,
     diff_serialized,
     validate_serialized_input,
@@ -26,6 +25,7 @@ from yaraast.cli.serialize_reporting import (
 )
 from yaraast.cli.serialize_service_helpers import export_with_serializer
 from yaraast.cli.serialize_services import (
+    build_ast_info,
     generate_yara_from_ast,
     import_ast as import_ast_service,
     parse_yara_file,
@@ -216,7 +216,8 @@ def info(input_file: str) -> None:
         yaraast serialize info rules.yar
     """
     try:
-        info_data = build_ast_info_payload(input_file)
+        ast = parse_yara_file(input_file)
+        info_data = build_ast_info(ast)
 
         display_info(console, input_file, info_data)
 
