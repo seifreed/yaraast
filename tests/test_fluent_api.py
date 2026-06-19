@@ -106,7 +106,7 @@ class TestFluentConditionBuilder:
         cond1 = FluentConditionBuilder().filesize_gt(1024).build()
         assert cond1 is not None
 
-        cond2 = FluentConditionBuilder().small_file().build()
+        cond2 = FluentConditionBuilder().filesize_lt(1024 * 1024).build()
         assert cond2 is not None
 
 

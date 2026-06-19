@@ -197,10 +197,6 @@ class FluentConditionBuilder(ConditionBuilder):
             ),
         )
 
-    def small_file(self) -> FluentConditionBuilder:
-        """Small file (< 1MB)."""
-        return self.filesize_lt(1024 * 1024)
-
     def large_file(self) -> FluentConditionBuilder:
         """Large file (> 10MB)."""
         return self.filesize_gt(10 * 1024 * 1024)

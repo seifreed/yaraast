@@ -70,7 +70,7 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert b.any_of("$a", "$b").build() is not None
     assert b.all_of("$a", "$b").build() is not None
     assert b.filesize_gt(10).build() is not None
-    assert b.small_file().build() is not None
+    assert b.filesize_lt(1024 * 1024).build() is not None
     assert b.large_file().build() is not None
     assert b.pe_is_dll().build() is not None
     assert b.high_entropy().build() is not None
