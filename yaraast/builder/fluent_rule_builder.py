@@ -182,11 +182,6 @@ class FluentRuleBuilder:
         apply_last_string_modifier(self._string_builders, "fullword")
         return self
 
-    def private_string(self) -> Self:
-        """Add private modifier to the most recent string."""
-        apply_last_string_modifier(self._string_builders, "private")
-        return self
-
     def xor(self, key: int | str | None = None) -> Self:
         """Add XOR modifier to the most recent string."""
         apply_last_string_modifier(self._string_builders, "xor", key)
@@ -220,15 +215,6 @@ class FluentRuleBuilder:
     def matches_any(self) -> Self:
         """Condition: any of them."""
         return self.condition("any of them")
-
-    def matches_all(self) -> Self:
-        """Condition: all of them."""
-        return self.condition("all of them")
-
-    def matches_one_of(self, *strings: str) -> Self:
-        """Condition: one of specified strings."""
-        builder = FluentConditionBuilder().one_of(*strings)
-        return self.condition(builder)
 
     def matches_any_of(self, *strings: str) -> Self:
         """Condition: any of specified strings."""
