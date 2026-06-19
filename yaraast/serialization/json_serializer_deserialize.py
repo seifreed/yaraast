@@ -121,29 +121,6 @@ def _deserialize_required_expression_value(self, value: Any, context: str) -> An
     raise SerializationError(msg)
 
 
-def _deserialize_expression_list_field(
-    self, data: dict[str, Any], field: str, context: str
-) -> list[Any]:
-    expressions: list[Any] = []
-    for item in _deserialize_list_field(data, field, context):
-        expression = self._deserialize_expression(item)
-        if expression is None:
-            msg = f"{context} {field} must contain expressions"
-            raise SerializationError(msg)
-        expressions.append(expression)
-    return expressions
-
-
-def _deserialize_required_ast_value(self, data: dict[str, Any], field: str, context: str) -> Any:
-    value = _deserialize_ast_value(
-        self, _deserialize_required_field(data, field, context), f"{context} {field}"
-    )
-    if value is not None:
-        return value
-    msg = f"{context} {field} is required"
-    raise SerializationError(msg)
-
-
 def _deserialize_required_quantifier(
     self,
     data: dict[str, Any],
