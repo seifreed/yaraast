@@ -9,7 +9,6 @@ from typing import Any
 
 from yaraast.ast.base import ASTNode
 from yaraast.errors import YaraASTError
-from yaraast.parser.parser import Parser
 from yaraast.parser.source import parse_yara_source
 from yaraast.serialization.simple_roundtrip_helpers import (
     deserialize_from_file,
@@ -32,10 +31,6 @@ def _read_yara_text_file(path: Path) -> str:
 
 
 class SimpleRoundtripSerializer:
-    def __init__(self) -> None:
-        self.parser = Parser()
-        self.generator = YaraXGenerator()
-
     def serialize(self, node: ASTNode) -> dict[str, Any]:
         return serialize_node(node)
 
@@ -54,7 +49,6 @@ class SimpleRoundtripSerializer:
 
 class SimpleRoundTrip:
     def __init__(self) -> None:
-        self.parser = Parser()
         self.generator = YaraXGenerator()
         self.test_count = 0
         self.success_count = 0
