@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from lsprotocol.types import Position, Range
+from lsprotocol.types import Position
 
 from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.structure import _starts_regex_literal, make_range
@@ -133,9 +133,11 @@ def find_module_member_at_position(
     ctx: DocumentContext, position: Position
 ) -> ResolvedSymbol | None:
     word, word_range = get_word_at_position(ctx.text, position)
-    dotted_from_word = resolve_dotted_word(ctx, word, word_range)
-    if dotted_from_word is not None:
-        return dotted_from_word
+    if _is_complete_dotted_word(word):
+        root, _sep, _rest = word.partition(".")
+        imported_modules = {symbol.name for symbol in ctx.symbols() if symbol.kind == "import"}
+        if root in imported_modules:
+            return ResolvedSymbol(ctx.uri, word, word, "module_member", word_range)
     if position.line < 0 or position.line >= len(ctx.lines):
         return None
     line = ctx.lines[position.line]
@@ -167,15 +169,3 @@ def find_module_member_at_position(
                 )
             start = member_end
     return None
-
-
-def resolve_dotted_word(
-    ctx: DocumentContext, word: str, word_range: Range
-) -> ResolvedSymbol | None:
-    if not _is_complete_dotted_word(word):
-        return None
-    root, _sep, _rest = word.partition(".")
-    imported_modules = {symbol.name for symbol in ctx.symbols() if symbol.kind == "import"}
-    if root not in imported_modules:
-        return None
-    return ResolvedSymbol(ctx.uri, word, word, "module_member", word_range)
