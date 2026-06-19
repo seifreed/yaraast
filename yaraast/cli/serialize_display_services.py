@@ -44,7 +44,6 @@ def _display_diff_summary(diff_result: Any) -> None:
                 "removed": "-",
                 "modified": "📝",
                 "moved": "↔️",
-                "unchanged": "✅",
             }.get(change_type, "•")
             table.add_row(f"{icon} {escape(change_type.title())}", str(count))
 

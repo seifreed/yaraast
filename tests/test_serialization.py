@@ -361,6 +361,7 @@ class TestAstDiff:
         assert "added" in summary
         assert "removed" in summary
         assert "modified" in summary
+        assert "unchanged" not in summary
 
     def test_create_patch(self) -> None:
         """Test patch creation."""

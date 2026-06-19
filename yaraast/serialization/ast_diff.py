@@ -35,7 +35,6 @@ class DiffType(Enum):
     ADDED = "added"
     REMOVED = "removed"
     MODIFIED = "modified"
-    UNCHANGED = "unchanged"
     MOVED = "moved"
 
 
