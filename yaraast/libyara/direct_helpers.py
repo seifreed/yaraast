@@ -15,20 +15,6 @@ from yaraast.libyara.compiler import LibyaraCompiler
 from yaraast.libyara.direct_models import DirectCompilationResult
 
 
-def _require_source_path(source_path: object) -> Path:
-    if isinstance(source_path, bool | bytes) or not isinstance(source_path, str | PathLike):
-        msg = "source_path must be a string or path-like object"
-        raise TypeError(msg)
-    raw_path = fspath(source_path)
-    if not isinstance(raw_path, str):
-        msg = "source_path must be a string or path-like object"
-        raise TypeError(msg)
-    if not raw_path.strip():
-        msg = "source_path must not be empty"
-        raise ValueError(msg)
-    return Path(raw_path)
-
-
 def generate_source(ast: YaraFile) -> str:
     ensure_libyara_compatible_ast(ast, action="compile")
     generator = CodeGenerator()
@@ -65,7 +51,17 @@ def compile_source_with_file_context(
     source compiled as an in-memory string has no directory context, so CLI/direct
     compilation must use a temporary file beside the original rules file.
     """
-    source_dir = _require_source_path(source_path).resolve().parent
+    if isinstance(source_path, bool | bytes) or not isinstance(source_path, str | PathLike):
+        msg = "source_path must be a string or path-like object"
+        raise TypeError(msg)
+    raw_path = fspath(source_path)
+    if not isinstance(raw_path, str):
+        msg = "source_path must be a string or path-like object"
+        raise TypeError(msg)
+    if not raw_path.strip():
+        msg = "source_path must not be empty"
+        raise ValueError(msg)
+    source_dir = Path(raw_path).resolve().parent
     temp_path = None
     with tempfile.NamedTemporaryFile(
         mode="w",
