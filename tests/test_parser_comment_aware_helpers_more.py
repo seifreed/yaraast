@@ -9,10 +9,9 @@ from yaraast.parser.comment_aware_helpers import (
     collect_leading_comments,
     collect_trailing_comment,
     extract_comment_tokens,
-    parse_hex_tokens,
     parse_regex_value,
 )
-from yaraast.parser.hex_parser import HexParseError
+from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 
 def _tok(tt: TokenType, value: str, line: int, col: int = 1) -> Token:
@@ -48,11 +47,13 @@ def test_extract_and_collect_comment_helpers() -> None:
 
 
 def test_parse_hex_tokens_with_invalid_pairs_and_trailing_nibble() -> None:
-    with pytest.raises(HexParseError):
-        parse_hex_tokens("AA ?? G1 B")
+    parser = HexStringParser()
 
     with pytest.raises(HexParseError):
-        parse_hex_tokens("AA ?")
+        parser.parse("AA ?? G1 B")
+
+    with pytest.raises(HexParseError):
+        parser.parse("AA ?")
 
 
 def test_parse_regex_value_branches() -> None:

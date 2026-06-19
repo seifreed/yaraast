@@ -5,7 +5,6 @@ from __future__ import annotations
 from yaraast.ast.base import Location
 from yaraast.ast.comments import Comment
 from yaraast.lexer.tokens import Token, TokenType
-from yaraast.parser._shared import parse_regex_value as parse_shared_regex_value
 
 
 def extract_comment_tokens(tokens: list[Token]) -> tuple[list[Token], list[Token]]:
@@ -64,11 +63,7 @@ def _comment_location(token: Token) -> Location:
     )
 
 
-def parse_hex_tokens(hex_content: str):
-    from yaraast.parser.hex_parser import HexStringParser
-
-    return HexStringParser().parse(hex_content)
-
-
 def parse_regex_value(regex_val: str):
+    from yaraast.parser._shared import parse_regex_value as parse_shared_regex_value
+
     return parse_shared_regex_value(regex_val)
