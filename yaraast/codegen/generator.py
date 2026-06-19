@@ -331,12 +331,6 @@ class CodeGenerator(ASTVisitor[str]):
         for key, value in meta.items():
             self._writeline(self._format_meta_value(key, value))
 
-    def _write_meta_list(self, meta: list[Any]) -> None:
-        """Write meta entries from list of Meta objects."""
-        for m in meta:
-            if hasattr(m, "key") and hasattr(m, "value"):
-                self._writeline(self._format_meta_value(m.key, m.value, getattr(m, "scope", None)))
-
     def _format_meta_value(self, key: str, value: Any, scope: object | None = None) -> str:
         """Format a single meta key-value pair."""
         return format_meta_value(key, value, scope)
