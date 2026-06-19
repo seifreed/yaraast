@@ -177,14 +177,14 @@ def test_ast_benchmarker_success_error_and_summary(tmp_path: Path) -> None:
     assert summary["roundtrip"]["count"] == 1
     assert "avg_rules_per_second" in summary["parsing"]
 
-    benchmarker.clear_results()
-    assert benchmarker.results == []
-    assert benchmarker.get_benchmark_summary() == {"message": "No benchmarks run"}
-
     failures_only = ASTBenchmarker()
     failures_only.benchmark_codegen(tmp_path / "missing_only_codegen.yar", iterations=1)
     failures_only.benchmark_roundtrip(tmp_path / "missing_only_roundtrip.yar", iterations=1)
     assert failures_only.get_benchmark_summary() == {}
+
+
+def test_ast_benchmarker_does_not_expose_dead_clear_results() -> None:
+    assert not hasattr(ASTBenchmarker, "clear_results")
 
 
 def test_ast_benchmarker_supports_yarax_roundtrip(tmp_path: Path) -> None:

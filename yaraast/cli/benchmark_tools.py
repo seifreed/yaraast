@@ -284,7 +284,3 @@ class ASTBenchmarker:
                 }
 
         return summary
-
-    def clear_results(self) -> None:
-        """Clear benchmark results."""
-        self.results.clear()
