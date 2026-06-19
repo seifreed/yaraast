@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 from io import StringIO
 from types import SimpleNamespace
 from typing import Any, cast
@@ -178,3 +179,11 @@ def test_tree_builder_rule_and_fallback_paths() -> None:
     assert builder.visit_extern_rule(SimpleNamespace(name="x")).label
     assert builder.visit_regex_literal(SimpleNamespace(value="ab")).label
     assert builder.visit_string_operator_expression(SimpleNamespace()).label
+
+
+def test_formatters_helpers_module_is_removed() -> None:
+    try:
+        importlib.import_module("yaraast.cli.visitors.formatters_helpers")
+    except ModuleNotFoundError:
+        return
+    raise AssertionError("yaraast.cli.visitors.formatters_helpers should not be importable")

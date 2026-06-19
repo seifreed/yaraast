@@ -2,8 +2,19 @@
 
 from typing import Any
 
-from yaraast.cli.visitors.formatters_helpers import format_int_literal, truncate_string
 from yaraast.string_references import normalize_string_reference_id
+
+
+def _format_int_literal(value: Any) -> str:
+    if isinstance(value, int) and value > 255:
+        return f"0x{value:X}"
+    return str(value)
+
+
+def _truncate_string(value: str, limit: int) -> str:
+    if len(value) > limit:
+        return value[:limit] + "..."
+    return value
 
 
 def _node_text(value: Any, default: str) -> str:
@@ -221,10 +232,10 @@ class ConditionStringFormatter:
         return self.ELLIPSIS_PARENTHESES
 
     def _format_integer_literal(self, condition: Any, _depth: int) -> str:
-        return format_int_literal(getattr(condition, "value", 0))
+        return _format_int_literal(getattr(condition, "value", 0))
 
     def _format_string_literal(self, condition: Any, _depth: int) -> str:
-        val = truncate_string(getattr(condition, "value", ""), 20)
+        val = _truncate_string(getattr(condition, "value", ""), 20)
         return f'"{val}"'
 
     def _format_member_access(self, condition: Any, depth: int) -> str:
@@ -371,13 +382,13 @@ class ExpressionStringFormatter:
         return getattr(expr, "name", "?")
 
     def _format_integer_literal(self, expr: Any, _depth: int) -> str:
-        return format_int_literal(getattr(expr, "value", 0))
+        return _format_int_literal(getattr(expr, "value", 0))
 
     def _format_boolean_literal(self, expr: Any, _depth: int) -> str:
         return str(getattr(expr, "value", True)).lower()
 
     def _format_string_literal(self, expr: Any, _depth: int) -> str:
-        val = truncate_string(getattr(expr, "value", ""), 30)
+        val = _truncate_string(getattr(expr, "value", ""), 30)
         return f'"{val}"'
 
     def _format_of_expression(self, expr: Any, depth: int) -> str:
@@ -541,7 +552,7 @@ class DetailedNodeStringFormatter:
         return str(value).lower()
 
     def _format_string_literal(self, node: Any, _depth: int) -> str:
-        val = truncate_string(getattr(node, "value", ""), 15)
+        val = _truncate_string(getattr(node, "value", ""), 15)
         return f'"{val}"'
 
     def _format_function_call(self, node: Any, depth: int) -> str:
