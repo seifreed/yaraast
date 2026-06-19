@@ -1702,23 +1702,6 @@ class JsonSerializerDeserializeMixin:
             return "before_strings"
         return _deserialize_nonempty_string_field(data, "position", "InRulePragma")
 
-    def _deserialize_pragma_block(self, data: dict[str, Any]):
-        from yaraast.ast.pragmas import PragmaBlock
-
-        return self._apply_node_metadata(
-            PragmaBlock(
-                pragmas=[
-                    self._deserialize_pragma(pragma)
-                    for pragma in _deserialize_required_list_field(data, "pragmas", "PragmaBlock")
-                ],
-                scope=_deserialize_pragma_scope(
-                    _deserialize_required_field(data, "scope", "PragmaBlock"),
-                    "PragmaBlock",
-                ),
-            ),
-            data,
-        )
-
     def _deserialize_expression(self, data: dict[str, Any]):
         if data is None or data == {}:
             return None

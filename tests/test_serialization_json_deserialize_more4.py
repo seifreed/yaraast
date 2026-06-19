@@ -360,15 +360,6 @@ def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Expression must be an object"):
         s._deserialize_rule(_serialized_json_rule(condition="true"))
 
-    with pytest.raises(SerializationError, match="PragmaBlock pragmas is required"):
-        s._deserialize_pragma_block({"type": "PragmaBlock"})
-
-    with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
-        s._deserialize_pragma_block({"type": "PragmaBlock", "pragmas": "pragma"})
-
-    with pytest.raises(SerializationError, match="PragmaBlock scope is required"):
-        s._deserialize_pragma_block({"type": "PragmaBlock", "pragmas": [_serialized_json_pragma()]})
-
 
 def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()
