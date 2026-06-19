@@ -57,10 +57,8 @@ def test_dependency_analyzer_cycle_dedup_transitive_and_topological_none() -> No
     analyzer.dependencies["c"].add("a")
     analyzer.dependencies["d"] = set()
 
-    transitive = analyzer.get_transitive_dependencies("a")
-    assert transitive == {"b", "c", "external"}
-
     graph = analyzer._build_dependency_graph()
+    assert graph["a"]["transitive_dependencies"] == ["b", "c", "external"]
     assert graph["d"]["is_independent"] is True
     assert "external" in graph["a"]["depends_on"]
 
@@ -76,18 +74,12 @@ def test_dependency_analyzer_cycle_dedup_transitive_and_topological_none() -> No
     assert analyzer._topological_sort() is None
 
 
-@pytest.mark.parametrize("rule_name", [None, 1, b"caller", object()])
-def test_dependency_analyzer_rejects_non_string_rule_lookup_names(
-    rule_name: Any,
-) -> None:
+def test_dependency_analyzer_does_not_expose_lookup_helpers() -> None:
     analyzer = DependencyAnalyzer()
 
-    with pytest.raises(TypeError, match="DependencyAnalyzer rule name must be a string"):
-        analyzer.get_dependencies(cast(str, rule_name))
-    with pytest.raises(TypeError, match="DependencyAnalyzer rule name must be a string"):
-        analyzer.get_dependents(cast(str, rule_name))
-    with pytest.raises(TypeError, match="DependencyAnalyzer rule name must be a string"):
-        analyzer.get_transitive_dependencies(cast(str, rule_name))
+    assert not hasattr(analyzer, "get_dependencies")
+    assert not hasattr(analyzer, "get_dependents")
+    assert not hasattr(analyzer, "get_transitive_dependencies")
 
 
 def test_dependency_analyzer_visit_rule_and_analyze_full_file() -> None:
@@ -111,9 +103,9 @@ rule caller {
     assert results["imported_modules"] == ["pe"]
     assert results["included_files"] == ["common.yar"]
     assert set(results["dependencies"]["caller"]) == {"base"}
-    assert analyzer.get_dependencies("caller") == ["base"]
-    assert analyzer.get_dependents("base") == ["caller"]
-    assert analyzer.get_transitive_dependencies("caller") == {"base"}
+    assert results["dependency_graph"]["caller"]["depends_on"] == ["base"]
+    assert results["dependency_graph"]["base"]["depended_by"] == ["caller"]
+    assert results["dependency_graph"]["caller"]["transitive_dependencies"] == ["base"]
 
     rule = Rule(name="empty", condition=None)
     analyzer.visit_rule(rule)
@@ -153,8 +145,8 @@ rule caller {
     assert results["dependencies"]["caller"] == ["dup#1", "dup#2"]
     assert results["dependency_graph"]["dup#1"]["is_independent"] is False
     assert results["dependency_graph"]["dup#2"]["depends_on"] == ["helper"]
-    assert analyzer.get_dependencies("caller") == ["dup#1", "dup#2"]
-    assert analyzer.get_dependents("helper") == ["dup#2"]
+    assert results["dependency_graph"]["caller"]["depends_on"] == ["dup#1", "dup#2"]
+    assert results["dependency_graph"]["helper"]["depended_by"] == ["dup#2"]
 
 
 def test_dependency_analyzer_tracks_rule_wildcard_sets() -> None:

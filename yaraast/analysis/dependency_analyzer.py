@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import ASTNode, require_string, require_yara_file
+from yaraast.ast.base import ASTNode, require_yara_file
 from yaraast.ast.expressions import (
     Identifier,
     MemberAccess,
@@ -100,46 +100,16 @@ class DependencyAnalyzer(BaseVisitor[None]):
             "included_files": sorted(self.included_files),
         }
 
-    def get_dependencies(self, rule_name: str) -> list[str]:
-        """Get direct dependencies of a rule."""
-        rule_name = require_string(rule_name, "DependencyAnalyzer rule name")
-        return sorted(self.dependencies.get(rule_name, set()))
-
-    def get_dependents(self, rule_name: str) -> list[str]:
-        """Get rules that depend on the given rule."""
-        rule_name = require_string(rule_name, "DependencyAnalyzer rule name")
-        dependents = []
-        for rule, deps in self.dependencies.items():
-            if rule_name in deps:
-                dependents.append(rule)
-        return sorted(dependents)
-
-    def get_transitive_dependencies(self, rule_name: str) -> set[str]:
-        """Get all transitive dependencies of a rule."""
-        rule_name = require_string(rule_name, "DependencyAnalyzer rule name")
-        visited = set()
-        to_visit = [rule_name]
-
-        while to_visit:
-            current = to_visit.pop()
-            if current in visited:
-                continue
-
-            visited.add(current)
-            deps = self.dependencies.get(current, set())
-            to_visit.extend(deps - visited)
-
-        visited.remove(rule_name)  # Don't include self
-        return visited
-
     def _build_dependency_graph(self) -> dict[str, dict[str, Any]]:
         """Build a dependency graph."""
         graph: dict[str, dict[str, Any]] = {}
 
         for rule in sorted(self.rule_names):
             deps = self.dependencies.get(rule, set())
-            dependents = self.get_dependents(rule)
-            transitive = self.get_transitive_dependencies(rule)
+            dependents = sorted(
+                dependent for dependent, dep_set in self.dependencies.items() if rule in dep_set
+            )
+            transitive = self._get_transitive_dependencies(rule)
 
             graph[rule] = {
                 "depends_on": sorted(deps),
@@ -206,6 +176,23 @@ class DependencyAnalyzer(BaseVisitor[None]):
                 unique_cycles.append(normalized)
 
         return unique_cycles
+
+    def _get_transitive_dependencies(self, rule_name: str) -> set[str]:
+        """Get all transitive dependencies of a rule."""
+        visited = set()
+        to_visit = [rule_name]
+
+        while to_visit:
+            current = to_visit.pop()
+            if current in visited:
+                continue
+
+            visited.add(current)
+            deps = self.dependencies.get(current, set())
+            to_visit.extend(deps - visited)
+
+        visited.discard(rule_name)
+        return visited
 
     def _topological_sort(self) -> list[str] | None:
         """Perform topological sort on rules."""
