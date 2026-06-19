@@ -13,7 +13,6 @@ from yaraast.cli.utils import parse_yara_file as _parse_yara_file
 from yaraast.errors import YaraASTError
 from yaraast.metrics import (
     DependencyGraphGenerator,
-    StringDiagramGenerator,
     workflows as _workflows,
 )
 from yaraast.metrics.workflows import MetricsReportData
@@ -32,7 +31,6 @@ __all__ = [
     "generate_dependency_graphs",
     "generate_html_tree",
     "generate_html_tree_file",
-    "generate_pattern_diagram",
     "generate_pattern_diagram_with_generator",
     "generate_pattern_diagrams",
     "parse_yara_file",
@@ -116,12 +114,6 @@ def determine_pattern_output_path(
     yara_file: str, output: object, pattern_type: str, fmt: str
 ) -> str:
     return _workflows.determine_pattern_output_path(yara_file, output, pattern_type, fmt)
-
-
-def generate_pattern_diagram(ast: YaraFile, pattern_type: str, output_path: str, fmt: str) -> str:
-    return _workflows.generate_pattern_diagram_with_generator(
-        StringDiagramGenerator(), ast, pattern_type, output_path, fmt
-    )
 
 
 def generate_pattern_diagram_with_generator(

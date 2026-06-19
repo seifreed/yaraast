@@ -336,7 +336,9 @@ def test_metrics_services_build_report_and_generator_none(
     with pytest.raises(RuntimeError, match="graphviz"):
         ms.generate_dependency_graph(ast, "full", str(tmp_path / "f.svg"), "svg", "dot")
 
-    out = ms.generate_pattern_diagram(ast, "flow", str(tmp_path / "flow_real.svg"), "svg")
+    out = ms.generate_pattern_diagram_with_generator(
+        _PatternGen(), ast, "flow", str(tmp_path / "flow_real.svg"), "svg"
+    )
     assert out.endswith("flow_real.svg")
 
 
