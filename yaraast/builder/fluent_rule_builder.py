@@ -358,12 +358,6 @@ class FluentStringContext[RuleBuilderT: FluentRuleBuilder]:
         self.string_builder.base64()
         return self
 
-    # Pattern helpers
-    def with_mz_header_string(self) -> FluentStringContext[RuleBuilderT]:
-        """Set as MZ header pattern."""
-        self.string_builder.mz_header()
-        return self
-
     def pe_header(self) -> FluentStringContext[RuleBuilderT]:
         """Set as PE header pattern."""
         self.string_builder.pe_header()
@@ -379,11 +373,6 @@ class FluentStringContext[RuleBuilderT: FluentRuleBuilder]:
         """Return to rule builder after defining string."""
         self.rule_builder._string_builders.append(self.string_builder)
         return self.rule_builder
-
-    def and_string(self, identifier: str) -> FluentStringContext[RuleBuilderT]:
-        """Add this string and start another."""
-        self.rule_builder._string_builders.append(self.string_builder)
-        return FluentStringContext(self.rule_builder, identifier)
 
 
 class FluentRuleBuilderWithFile(FluentRuleBuilder):
