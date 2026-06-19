@@ -45,13 +45,10 @@ class ConditionBuilder:
     """Fluent builder for constructing conditions."""
 
     def __init__(self, expr: Expression | None = None) -> None:
-        self._expression = self._validate_prebuilt_expression(expr)
-
-    @staticmethod
-    def _validate_prebuilt_expression(expr: Expression | None) -> Expression | None:
         if expr is None:
-            return None
-        return _validate_expression(expr, "Condition expression")
+            self._expression = None
+        else:
+            self._expression = _validate_expression(expr, "Condition expression")
 
     @staticmethod
     def _integer_literal(value: int) -> IntegerLiteral:
