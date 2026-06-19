@@ -68,7 +68,6 @@ class OptimizationStats:
     redundant_checks_removed: int = 0
     indexes_suggested: int = 0
     time_windows_optimized: int = 0
-    joins_optimized: int = 0
 
     def __str__(self) -> str:
         return (
