@@ -43,6 +43,13 @@ class TestYaraLLexerComprehensive:
         assert time_tokens[2].value == "7d"
         assert time_tokens[3].value == "30s"
 
+    def test_yaral_token_enum_drops_unused_members(self) -> None:
+        assert not hasattr(YaraLTokenType, "SECONDS")
+        assert not hasattr(YaraLTokenType, "MINUTES")
+        assert not hasattr(YaraLTokenType, "HOURS")
+        assert not hasattr(YaraLTokenType, "DAYS")
+        assert not hasattr(YaraLTokenType, "PLACEHOLDER")
+
     def test_lexer_reference_lists(self) -> None:
         """Test lexing reference list tokens like %list_name%."""
         lexer = YaraLLexer("%blocked_ips% %trusted_domains% %user_list%")

@@ -19,12 +19,6 @@ class YaraLTokenType(Enum):
     AFTER = auto()
     WITHIN = auto()
 
-    # Time units
-    SECONDS = auto()
-    MINUTES = auto()
-    HOURS = auto()
-    DAYS = auto()
-
     # Aggregation functions
     COUNT = auto()
     COUNT_DISTINCT = auto()
@@ -57,9 +51,6 @@ class YaraLTokenType(Enum):
 
     # Event variables
     EVENT_VAR = auto()  # $e, $e1, $e2, etc.
-
-    # Field placeholders
-    PLACEHOLDER = auto()  # %field%
 
     # Special
     NOCASE = auto()
