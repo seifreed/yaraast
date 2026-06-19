@@ -9,21 +9,13 @@ import hashlib
 import os
 from os import PathLike, fspath
 from pathlib import Path
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any
 
 from yaraast.parser.source import parse_yara_source
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Rule
-
-
-class IncludeTree(TypedDict):
-    """Serializable include tree node."""
-
-    path: str
-    includes: list[IncludeTree]
-
 
 @dataclass
 class ResolvedFile:
@@ -313,7 +305,7 @@ class IncludeResolver:
         """Get all resolved files from cache."""
         return [deepcopy(resolved) for resolved in self.cache.values()]
 
-    def get_include_tree(self, file_path: str | PathLike[str]) -> IncludeTree:
+    def get_include_tree(self, file_path: str | PathLike[str]) -> dict[str, Any]:
         """Get include tree structure for a file.
 
         Returns:
@@ -323,10 +315,10 @@ class IncludeResolver:
         resolved = self.resolve_file(file_path)
         return self._build_include_tree(resolved)
 
-    def _build_include_tree(self, resolved: ResolvedFile) -> IncludeTree:
+    def _build_include_tree(self, resolved: ResolvedFile) -> dict[str, Any]:
         """Build include tree structure."""
-        includes: list[IncludeTree] = []
-        tree: IncludeTree = {"path": str(resolved.path), "includes": includes}
+        includes: list[dict[str, Any]] = []
+        tree: dict[str, Any] = {"path": str(resolved.path), "includes": includes}
 
         for include in resolved.includes:
             includes.append(self._build_include_tree(include))
