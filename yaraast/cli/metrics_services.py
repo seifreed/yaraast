@@ -12,9 +12,6 @@ from yaraast.errors import YaraASTError
 from yaraast.metrics import workflows as _workflows
 from yaraast.metrics.workflows import DependencyGraphGenerator, MetricsReportData
 
-_DEFAULT_FACTORY = object()
-
-
 __all__ = [
     "DependencyGraphGenerator",
     "MetricsReportData",
