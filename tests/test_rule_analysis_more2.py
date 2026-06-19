@@ -21,23 +21,13 @@ rule detailed : t1 t2 {
 """
     ast = Parser().parse(yara_code)
     analyzer = RuleAnalyzer()
-
-    rule_analysis = analyzer.analyze_rule(ast.rules[0])
-    assert rule_analysis == {
-        "name": "detailed",
-        "string_count": 2,
-        "has_condition": True,
-        "modifiers": [],
-        "tags": ["t1", "t2"],
-        "meta_count": 1,
-        "unused_strings": ["$b"],
-    }
-
     report = analyzer.analyze(ast)
     assert report["summary"]["total_rules"] == 1
     assert report["string_analysis"]["detailed"]["defined"] == ["$a", "$b"]
     assert report["dependency_analysis"]["dependency_graph"]["detailed"]["depends_on"] == []
     assert any(rec["type"] == "unused_strings" for rec in report["recommendations"])
+    assert report["summary"]["total_strings"] == 2
+    assert report["quality_metrics"]["string_usage_efficiency"] == 0.5
 
 
 def test_rule_report_sorts_transitive_dependencies() -> None:
@@ -128,13 +118,11 @@ rule helper4 { condition: true }
 def test_rule_analyzer_rule_without_optional_fields() -> None:
     ast = Parser().parse("rule bare { condition: true }")
     analyzer = RuleAnalyzer()
-    result = analyzer.analyze_rule(ast.rules[0])
-    assert result == {
-        "name": "bare",
-        "string_count": 0,
-        "has_condition": True,
-        "modifiers": [],
-        "tags": [],
-        "meta_count": 0,
-        "unused_strings": [],
-    }
+    result = analyzer.analyze(ast)
+    assert result["summary"]["total_rules"] == 1
+    assert result["string_analysis"]["bare"]["defined"] == []
+    assert result["dependency_analysis"]["dependency_graph"]["bare"]["is_independent"] is True
+
+
+def test_rule_analyzer_does_not_expose_dead_single_rule_helper() -> None:
+    assert not hasattr(RuleAnalyzer(), "analyze_rule")

@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from yaraast.ast.rules import Rule
+from typing import Any
 
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
 from yaraast.analysis.string_usage import StringUsageAnalyzer
@@ -48,33 +45,6 @@ class RuleAnalyzer:
                 dependency_analysis,
             ),
         }
-
-    def analyze_rule(self, rule: Rule) -> dict[str, Any]:
-        """Analyze a single rule."""
-        # Create a temporary YaraFile with just this rule for analysis
-        temp_file = YaraFile(rules=[rule])
-        full_analysis = self.analyze(temp_file)
-
-        # Extract rule-specific data
-        rule_analysis = {
-            "name": rule.name,
-            "string_count": len(rule.strings) if rule.strings else 0,
-            "has_condition": rule.condition is not None,
-            "modifiers": rule.modifiers if rule.modifiers else [],
-            "tags": (
-                [tag.name if hasattr(tag, "name") else str(tag) for tag in rule.tags]
-                if rule.tags
-                else []
-            ),
-            "meta_count": len(rule.meta) if rule.meta else 0,
-        }
-
-        # Add string usage info if available
-        if "string_analysis" in full_analysis:
-            unused = full_analysis["string_analysis"].get(rule.name, {}).get("unused", [])
-            rule_analysis["unused_strings"] = unused
-
-        return rule_analysis
 
     def _generate_summary(
         self,
