@@ -29,7 +29,6 @@ __all__ = [
     "generate_dependency_graph",
     "generate_dependency_graph_with_generator",
     "generate_dependency_graphs",
-    "generate_html_tree",
     "generate_html_tree_file",
     "generate_pattern_diagram_with_generator",
     "generate_pattern_diagrams",
@@ -52,18 +51,6 @@ def generate_dependency_graphs(
         DependencyGraphGenerator if generator_factory is _DEFAULT_FACTORY else generator_factory
     )
     return _workflows.generate_dependency_graphs(ast, output_dir, base_name, image_format, factory)
-
-
-def generate_html_tree(
-    ast: YaraFile,
-    output_dir: Path,
-    base_name: str,
-    interactive: bool = True,
-    generator_factory: Any = None,
-) -> str:
-    if generator_factory is None:
-        return _workflows.generate_html_tree(ast, output_dir, base_name, interactive)
-    return _workflows.generate_html_tree(ast, output_dir, base_name, interactive, generator_factory)
 
 
 def generate_pattern_diagrams(

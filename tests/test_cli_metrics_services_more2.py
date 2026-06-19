@@ -265,7 +265,7 @@ def test_metrics_services_graph_and_pattern_generation_with_generators(tmp_path:
 def test_metrics_services_html_and_wrapper_functions(tmp_path: Path) -> None:
     ast = _ast()
 
-    name_i = ms.generate_html_tree(
+    name_i = metrics_workflows.generate_html_tree(
         ast,
         tmp_path,
         "rules",
@@ -274,7 +274,7 @@ def test_metrics_services_html_and_wrapper_functions(tmp_path: Path) -> None:
     )
     assert name_i == "rules_tree.html"
 
-    name_s = ms.generate_html_tree(
+    name_s = metrics_workflows.generate_html_tree(
         ast,
         tmp_path,
         "rules2",
