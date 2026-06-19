@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 import click
@@ -10,16 +9,12 @@ import click
 from yaraast.ast.base import YaraFile
 
 
-def path_exists_for_display(path: str) -> bool:
-    try:
-        return Path(path).exists()
-    except OSError:
-        return False
-
-
 def path_size_for_display(path: str) -> int | None:
     try:
-        return Path(path).stat().st_size if path_exists_for_display(path) else None
+        from pathlib import Path
+
+        path_obj = Path(path)
+        return path_obj.stat().st_size if path_obj.exists() else None
     except OSError:
         return None
 
@@ -45,7 +40,16 @@ def display_graph_statistics(generator: Any) -> None:
 
 
 def display_successful_graph_result(result_path: str, generator: Any) -> None:
-    if isinstance(result_path, str) and path_exists_for_display(result_path):
+    if isinstance(result_path, str):
+        from pathlib import Path
+
+        try:
+            exists = Path(result_path).exists()
+        except OSError:
+            exists = False
+    else:
+        exists = False
+    if exists:
         click.echo(f"Dependency graph generated: {result_path}")
         if generator is not None:
             display_graph_statistics(generator)

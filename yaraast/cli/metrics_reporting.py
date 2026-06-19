@@ -24,7 +24,6 @@ from yaraast.cli.metrics_reporting_display import (
     display_text_fallback as _display_text_fallback,
     display_text_statistics as _display_text_statistics,
     graphviz_fallback_message as _graphviz_fallback_message,
-    path_exists_for_display as _path_exists_for_display,
 )
 from yaraast.cli.metrics_services import MetricsReportData
 from yaraast.cli.utils import format_json, write_text
@@ -59,7 +58,16 @@ __all__ = [
 
 def _display_pattern_result(result_path: str) -> None:
     """Display the result of pattern generation."""
-    if isinstance(result_path, str) and _path_exists_for_display(result_path):
+    if isinstance(result_path, str):
+        from pathlib import Path
+
+        try:
+            exists = Path(result_path).exists()
+        except OSError:
+            exists = False
+    else:
+        exists = False
+    if exists:
         click.echo(f"Pattern diagram generated: {result_path}")
     else:
         click.echo("Diagram source:")
