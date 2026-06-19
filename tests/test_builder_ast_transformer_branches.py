@@ -486,7 +486,7 @@ def test_yara_file_transformer_operations_and_filters() -> None:
         .suffix_all_rules("_suf")
         .add_tag_to_all_rules("all_rules")
         .make_all_rules_private()
-        .set_author_for_all_rules("team")
+        .transform_all_rules(lambda rule: RuleTransformer(rule).set_author("team").build())
         .filter_by_tag("all_rules")
         .filter_by_modifier("private")
         .build()

@@ -612,12 +612,6 @@ class YaraFileTransformer:
             lambda rule: RuleTransformer(rule).make_private().build(),
         )
 
-    def set_author_for_all_rules(self, author: str) -> YaraFileTransformer:
-        """Set author for all rules."""
-        return self.transform_all_rules(
-            lambda rule: RuleTransformer(rule).set_author(author).build(),
-        )
-
     def filter_rules(self, predicate: Callable[[Rule], bool]) -> YaraFileTransformer:
         """Filter rules based on predicate."""
         RuleTransformer._require_callable(predicate, "Rule filter predicate")
