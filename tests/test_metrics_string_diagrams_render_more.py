@@ -34,16 +34,15 @@ def test_render_mixin_and_convenience_functions() -> None:
     )
 
     gen = StringDiagramGenerator()
-    assert "PlainString: $a" in gen.generate(plain)
-    assert "RegexString: $b" in gen.generate(regex)
-    assert "HexString: $c" in gen.generate(hexs)
-    assert "Unknown string type" in gen.generate(object())
+    assert "PlainString: $a" in gen._generate_plain_diagram(plain)
+    assert "RegexString: $b" in gen._generate_regex_diagram(regex)
+    assert "HexString: $c" in gen._generate_hex_diagram(hexs)
 
     assert "6A ?? [2] (90|91)" in create_hex_diagram(hexs.tokens)
     regex_diag = create_regex_diagram("^[ab]+(cd)?$")
     assert "Pattern:" in regex_diag and "Capture groups" in regex_diag
 
-    assert 'Value: "foobar"' in gen.generate(plain)
+    assert 'Value: "foobar"' in gen._generate_plain_diagram(plain)
 
 
 def test_render_helpers_handle_byte_plain_strings() -> None:
@@ -54,7 +53,7 @@ def test_render_helpers_handle_byte_plain_strings() -> None:
         PlainString(identifier="$np", value=b"ab\x00", modifiers=[]),
     ]
 
-    diagram = StringDiagramGenerator().generate(strings[-1])
+    diagram = StringDiagramGenerator()._generate_plain_diagram(strings[-1])
     assert 'Value: "ab\\x00"' in diagram
 
     analysis = analyze_string_patterns(strings)
@@ -65,7 +64,7 @@ def test_render_helpers_handle_byte_plain_strings() -> None:
 def test_plain_string_metrics_use_utf8_byte_length_for_text_values() -> None:
     strings = [PlainString(identifier="$u", value="á", modifiers=[])]
 
-    diagram = StringDiagramGenerator().generate(strings[0])
+    diagram = StringDiagramGenerator()._generate_plain_diagram(strings[0])
 
     assert "Length: 2" in diagram
 

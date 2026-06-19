@@ -24,16 +24,6 @@ __all__ = [
 class StringDiagramRenderMixin:
     """Mixin providing string diagram helpers."""
 
-    def generate(self, string_def) -> str:
-        """Generate string diagram for a single string definition."""
-        if isinstance(string_def, PlainString):
-            return self._generate_plain_diagram(string_def)
-        if isinstance(string_def, HexString):
-            return self._generate_hex_diagram(string_def)
-        if isinstance(string_def, RegexString):
-            return self._generate_regex_diagram(string_def)
-        return f"Unknown string type: {type(string_def).__name__}"
-
     def _generate_plain_diagram(self, string_def: PlainString) -> str:
         """Generate diagram for plain string."""
         value = plain_value_text(string_def.value)

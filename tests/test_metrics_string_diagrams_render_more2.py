@@ -67,7 +67,7 @@ def test_render_mixin_branches_plain_hex_regex() -> None:
 
 def test_render_convenience_functions_and_reports() -> None:
     plain = PlainString(identifier="$a", value="abc", modifiers=[])
-    assert "PlainString" in _Renderer().generate(plain)
+    assert "PlainString" in _Renderer()._generate_plain_diagram(plain)
 
     hex_line = create_hex_diagram(
         [
