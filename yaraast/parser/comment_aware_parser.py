@@ -38,7 +38,6 @@ class CommentAwareParser(Parser):
 
     def __init__(self, text: str | None = None) -> None:
         super().__init__()
-        self.pending_comments: list[Token] = []
         self.comment_tokens: list[Token] = []
         self._source_text = text
 

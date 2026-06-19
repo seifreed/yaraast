@@ -42,6 +42,12 @@ def test_comment_aware_parser_supports_constructor_text() -> None:
     assert ast.rules[0].leading_comments is not None
 
 
+def test_comment_aware_parser_does_not_keep_pending_comments_state() -> None:
+    parser = CommentAwareParser()
+
+    assert not hasattr(parser, "pending_comments")
+
+
 def test_comment_aware_parser_requires_text() -> None:
     with pytest.raises(ParseError, match="No text provided to parse"):
         CommentAwareParser().parse()
