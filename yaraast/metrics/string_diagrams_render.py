@@ -14,7 +14,6 @@ from yaraast.metrics.string_diagrams_common import (
     modifier_names,
     plain_value_length,
     plain_value_text,
-    string_pattern_identity,
 )
 
 __all__ = [
@@ -98,12 +97,28 @@ def generate_pattern_report(strings: list) -> dict[str, Any]:
     """Generate comprehensive pattern analysis report."""
     analysis = analyze_string_patterns(strings)
     details: list[dict[str, Any]] = []
+    unique_patterns = set()
+
+    for string_def in strings:
+        if isinstance(string_def, PlainString):
+            unique_patterns.add(("plain", plain_value_text(string_def.value)))
+        elif isinstance(string_def, HexString):
+            unique_patterns.add(
+                (
+                    "hex",
+                    tuple(format_hex_token_for_diagram(token) for token in string_def.tokens),
+                )
+            )
+        elif isinstance(string_def, RegexString):
+            unique_patterns.add(("regex", string_def.regex))
+        else:
+            unique_patterns.add((type(string_def).__name__, repr(string_def)))
 
     report = {
         "summary": {
             "total": analysis["total_strings"],
             "by_type": analysis["types"],
-            "unique_patterns": len({string_pattern_identity(string_def) for string_def in strings}),
+            "unique_patterns": len(unique_patterns),
         },
         "details": details,
     }

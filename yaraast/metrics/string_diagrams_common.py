@@ -39,19 +39,6 @@ def modifier_names(modifiers) -> list[str]:
     return names
 
 
-def string_pattern_identity(string_def) -> tuple[str, str | tuple[str, ...]]:
-    """Return a content identity for counting unique string patterns."""
-    from yaraast.ast.strings import HexString, PlainString, RegexString
-
-    if isinstance(string_def, PlainString):
-        return ("plain", plain_value_text(string_def.value))
-    if isinstance(string_def, HexString):
-        return ("hex", tuple(format_hex_token_for_diagram(token) for token in string_def.tokens))
-    if isinstance(string_def, RegexString):
-        return ("regex", string_def.regex)
-    return (type(string_def).__name__, repr(string_def))
-
-
 def format_hex_token_for_diagram(token) -> str:
     """Format one hex token for string diagram output."""
     from yaraast.ast.strings import (
