@@ -10,7 +10,6 @@ from yaraast.cli.simple_differ import (
     SimpleDiffer,
     diff_ast,
     diff_lines,
-    diff_tokens,
     format_diff,
 )
 from yaraast.parser import Parser
@@ -247,5 +246,6 @@ def test_diff_ast_and_helpers() -> None:
     lines = diff_lines(["a", "b"], ["a", "c"])
     assert any(line.content.startswith("~") for line in lines)
 
-    tokens = diff_tokens("a b c", "a c d")
-    assert "- b" in tokens and "+ d" in tokens
+    token_result = SimpleDiffer().diff("a b c", "a c d")
+    assert token_result.has_changes is True
+    assert token_result.summary["modified"] >= 1

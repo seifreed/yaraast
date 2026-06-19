@@ -434,28 +434,6 @@ def diff_lines(lines1: list[str], lines2: list[str]) -> list[DiffLine]:
     return result.lines
 
 
-def diff_tokens(content1: str, content2: str) -> list[str]:
-    """Diff tokens in two contents, accounting for frequency."""
-    content1 = _require_text(content1, "content1")
-    content2 = _require_text(content2, "content2")
-    counts1 = Counter(content1.split())
-    counts2 = Counter(content2.split())
-
-    changes = []
-    all_tokens = sorted(set(counts1) | set(counts2))
-    for token in all_tokens:
-        c1 = counts1.get(token, 0)
-        c2 = counts2.get(token, 0)
-        if c1 > c2:
-            for _ in range(c1 - c2):
-                changes.append(f"- {token}")
-        elif c2 > c1:
-            for _ in range(c2 - c1):
-                changes.append(f"+ {token}")
-
-    return changes
-
-
 def diff_ast(ast1: YaraFile, ast2: YaraFile) -> DiffResult:
     """Diff two ASTs."""
     differ = SimpleASTDiffer()

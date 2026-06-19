@@ -13,7 +13,6 @@ from yaraast.cli.simple_differ import (
     SimpleDiffer,
     diff_ast,
     diff_lines,
-    diff_tokens,
     format_diff,
 )
 from yaraast.parser import Parser
@@ -78,9 +77,9 @@ def test_diff_lines_and_tokens() -> None:
     lines = diff_lines(["a", "b"], ["a", "c"])
     assert any(line.content.startswith("~") for line in lines)
 
-    tokens = diff_tokens("a b c", "a b d")
-    assert "- c" in tokens
-    assert "+ d" in tokens
+    token_result = SimpleDiffer().diff("a b c", "a b d")
+    assert token_result.has_changes is True
+    assert token_result.summary["modified"] >= 1
 
 
 @pytest.mark.parametrize(
@@ -97,22 +96,6 @@ def test_simple_differ_rejects_non_string_contents(
 ) -> None:
     with pytest.raises(TypeError, match=message):
         SimpleDiffer().diff(content1, content2)
-
-
-@pytest.mark.parametrize(
-    ("content1", "content2", "message"),
-    [
-        (cast(Any, True), "abc", "content1 must be a string"),
-        ("abc", cast(Any, True), "content2 must be a string"),
-    ],
-)
-def test_diff_tokens_rejects_non_string_contents(
-    content1: str,
-    content2: str,
-    message: str,
-) -> None:
-    with pytest.raises(TypeError, match=message):
-        diff_tokens(content1, content2)
 
 
 @pytest.mark.parametrize(
