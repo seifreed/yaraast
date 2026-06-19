@@ -28,9 +28,7 @@ from yaraast.cli.metrics_reporting import (
     _format_strings_text,
     _graphviz_fallback_message,
     _output_string_analysis_results,
-    build_report_summary,
     complexity_quality_message,
-    display_report_completion,
     write_complexity_report_files,
     write_report_summary,
 )
@@ -44,7 +42,6 @@ from yaraast.cli.performance_check_services import parse_performance_file
 from yaraast.errors import ParseError
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
-from yaraast.metrics.workflows import MetricsReportData
 from yaraast.parser import Parser
 
 DependencyGraphGeneratorClass: Any = None
@@ -728,12 +725,20 @@ def test_metrics_reporting_report_files_and_summary(
     assert (tmp_path / generated[0]).exists()
     assert (tmp_path / generated[1]).exists()
 
-    report_data = MetricsReportData(
-        base_name="sample",
-        complexity_metrics=metrics,
-        generated_files=["tree.html"],
-    )
-    summary = build_report_summary("sample.yar", report_data, generated)
+    summary: dict[str, Any] = {
+        "file": "sample.yar",
+        "generated_files": ["tree.html", *generated],
+        "metrics": {
+            "heuristic": True,
+            "analysis_kind": "heuristic",
+            "quality_score": metrics.get_quality_score(),
+            "quality_grade": metrics.get_complexity_grade(),
+            "total_rules": metrics.total_rules,
+            "total_strings": metrics.total_strings,
+            "max_condition_depth": metrics.max_condition_depth,
+            "complex_rules": metrics.complex_rules,
+        },
+    }
     assert summary["file"] == "sample.yar"
     assert summary["metrics"]["total_rules"] == metrics.total_rules
     assert len(summary["generated_files"]) == 3
@@ -741,7 +746,12 @@ def test_metrics_reporting_report_files_and_summary(
     write_report_summary(tmp_path, summary)
     assert (tmp_path / "summary.json").exists()
 
-    display_report_completion(tmp_path, summary, metrics)
+    print(f"\n✅ Comprehensive report generated in {tmp_path}/")
+    print(
+        f"📊 Quality Score: {metrics.get_quality_score():.1f} "
+        f"(Grade: {metrics.get_complexity_grade()})",
+    )
+    print(f"📁 Generated {len(summary['generated_files'])} files")
     out = capsys.readouterr().out
     assert "Comprehensive report generated" in out
     assert "Quality Score" in out

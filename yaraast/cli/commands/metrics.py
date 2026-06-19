@@ -16,9 +16,7 @@ from yaraast.cli.metrics_reporting import (
     _format_complexity_output,
     _format_string_analysis_output,
     _output_string_analysis_results,
-    build_report_summary,
     complexity_quality_message,
-    display_report_completion,
     write_complexity_report_files,
     write_report_summary,
 )
@@ -280,9 +278,27 @@ def report(yara_file: str, output_dir: str | None, format: str) -> None:
     click.echo("🧩 Generating pattern diagrams...")
 
     click.echo("📋 Creating summary report...")
-    summary = build_report_summary(yara_file, report_data, complexity_files)
+    summary = {
+        "file": yara_file,
+        "generated_files": report_data.generated_files + complexity_files,
+        "metrics": {
+            "heuristic": True,
+            "analysis_kind": "heuristic",
+            "quality_score": report_data.complexity_metrics.get_quality_score(),
+            "quality_grade": report_data.complexity_metrics.get_complexity_grade(),
+            "total_rules": report_data.complexity_metrics.total_rules,
+            "total_strings": report_data.complexity_metrics.total_strings,
+            "max_condition_depth": report_data.complexity_metrics.max_condition_depth,
+            "complex_rules": report_data.complexity_metrics.complex_rules,
+        },
+    }
     write_report_summary(output_path, summary)
-    display_report_completion(output_path, summary, report_data.complexity_metrics)
+    click.echo(f"\n✅ Comprehensive report generated in {output_path}/")
+    click.echo(
+        f"📊 Quality Score: {report_data.complexity_metrics.get_quality_score():.1f} "
+        f"(Grade: {report_data.complexity_metrics.get_complexity_grade()})",
+    )
+    click.echo(f"📁 Generated {len(summary['generated_files'])} files")
 
 
 @metrics.command()

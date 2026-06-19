@@ -25,7 +25,6 @@ from yaraast.cli.metrics_reporting_display import (
     graphviz_fallback_message as _graphviz_fallback_message,
 )
 from yaraast.cli.utils import format_json, write_text
-from yaraast.metrics.workflows import MetricsReportData
 
 _STRING_OUTPUT_FORMATS = frozenset({"json", "text"})
 
@@ -45,9 +44,7 @@ __all__ = [
     "_format_strings_text",
     "_graphviz_fallback_message",
     "_output_string_analysis_results",
-    "build_report_summary",
     "complexity_quality_message",
-    "display_report_completion",
     "write_complexity_report_files",
     "write_report_summary",
 ]
@@ -223,42 +220,8 @@ def write_complexity_report_files(
     return [json_name, text_name]
 
 
-def build_report_summary(
-    yara_file: str,
-    report_data: MetricsReportData,
-    extra_files: list[str],
-) -> dict[str, Any]:
-    return {
-        "file": yara_file,
-        "generated_files": report_data.generated_files + extra_files,
-        "metrics": {
-            "heuristic": True,
-            "analysis_kind": "heuristic",
-            "quality_score": report_data.complexity_metrics.get_quality_score(),
-            "quality_grade": report_data.complexity_metrics.get_complexity_grade(),
-            "total_rules": report_data.complexity_metrics.total_rules,
-            "total_strings": report_data.complexity_metrics.total_strings,
-            "max_condition_depth": report_data.complexity_metrics.max_condition_depth,
-            "complex_rules": report_data.complexity_metrics.complex_rules,
-        },
-    }
-
-
 def write_report_summary(output_path: Path, summary: dict[str, Any]) -> None:
     (output_path / "summary.json").write_text(
         format_json(summary),
         encoding="utf-8",
     )
-
-
-def display_report_completion(
-    output_path: Path,
-    summary: dict[str, Any],
-    complexity_metrics: Any,
-) -> None:
-    click.echo(f"\n✅ Comprehensive report generated in {output_path}/")
-    click.echo(
-        f"📊 Quality Score: {complexity_metrics.get_quality_score():.1f} "
-        f"(Grade: {complexity_metrics.get_complexity_grade()})",
-    )
-    click.echo(f"📁 Generated {len(summary['generated_files'])} files")
