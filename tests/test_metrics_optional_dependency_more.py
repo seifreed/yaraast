@@ -99,11 +99,13 @@ def test_metrics_package_root_does_not_reexport_removed_names() -> None:
 import importlib
 
 metrics = importlib.import_module("yaraast.metrics")
+workflows = importlib.import_module("yaraast.metrics.workflows")
 
 assert not hasattr(metrics, "CAPABILITIES")
 assert not hasattr(metrics, "MetricsCapability")
 assert not hasattr(metrics, "MetricsReportData")
 assert not hasattr(metrics, "DependencyGraphGenerator")
+assert not hasattr(workflows, "generate_dependency_graph")
 """,
     )
 

@@ -332,16 +332,6 @@ def test_metrics_services_build_report_and_generator_none(
     assert "quality_score" in report.complexity_payload
     assert any(name.endswith("_tree.html") for name in report.generated_files)
 
-    monkeypatch.setattr(metrics_workflows, "DependencyGraphGenerator", None)
-    with pytest.raises(RuntimeError, match="graphviz"):
-        metrics_workflows.generate_dependency_graph(
-            ast,
-            "full",
-            str(tmp_path / "f.svg"),
-            "svg",
-            "dot",
-        )
-
     out = ms.generate_pattern_diagram_with_generator(
         _PatternGen(), ast, "flow", str(tmp_path / "flow_real.svg"), "svg"
     )
