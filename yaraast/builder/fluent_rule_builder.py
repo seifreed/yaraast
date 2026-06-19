@@ -251,10 +251,6 @@ class FluentRuleBuilder:
         combined = combine_condition(self._rule_builder.get_condition(), condition_builder)
         return self.condition(combined)
 
-    def for_executables(self) -> Self:
-        """Add executable file conditions."""
-        return self.for_pe_files().for_large_files()
-
     # Build method
     def build(self) -> Rule:
         """Build the rule."""

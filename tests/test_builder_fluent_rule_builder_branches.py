@@ -156,7 +156,8 @@ def test_file_builder_chaining_and_duplicate_elimination() -> None:
         .condition("true")
         .then_rule("r2")
         .hex_string("$b", "4D 5A")
-        .for_executables()
+        .for_pe_files()
+        .for_large_files()
         .then_build_file()
     )
 
