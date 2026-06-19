@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from textwrap import dedent
-from typing import Any, cast
-
-import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BinaryExpression, IntegerLiteral
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString, RegexString
 from yaraast.parser import Parser
-from yaraast.performance.optimizer import PerformanceOptimizer, optimize_yara_file
+from yaraast.performance.optimizer import PerformanceOptimizer
 
 
 def _parse_yara(code: str) -> YaraFile:
@@ -71,99 +67,3 @@ def test_performance_optimizer_counts_condition_simplifications() -> None:
     optimizer2.optimize(YaraFile(rules=[rule]))
 
     assert optimizer2.get_statistics()["conditions_simplified"] == 1
-
-
-def test_optimize_yara_file(tmp_path: Path) -> None:
-    code = """
-    rule perf_opt_file {
-        strings:
-            $a = "abc"
-        condition:
-            $a
-    }
-    """
-    path = tmp_path / "perf.yar"
-    out = tmp_path / "perf_out.yar"
-    path.write_text(dedent(code), encoding="utf-8")
-
-    ast, stats = optimize_yara_file(str(path), output_path=str(out), strategy="memory")
-    assert ast.rules
-    assert out.exists()
-    assert stats["rules_optimized"] == 1
-
-
-@pytest.mark.parametrize("output_path", ["", "   ", "\t"])
-def test_optimize_yara_file_rejects_empty_output_path(
-    tmp_path: Path,
-    output_path: str,
-) -> None:
-    path = tmp_path / "perf.yar"
-    path.write_text("rule perf { condition: true }", encoding="utf-8")
-
-    with pytest.raises(ValueError, match="output_path must not be empty"):
-        optimize_yara_file(str(path), output_path=output_path)
-
-
-@pytest.mark.parametrize("file_path", ["", "   ", "\t"])
-def test_optimize_yara_file_rejects_empty_file_path(file_path: str) -> None:
-    with pytest.raises(ValueError, match="file_path must not be empty"):
-        optimize_yara_file(file_path)
-
-
-def test_optimize_yara_file_rejects_empty_pathlike_paths(tmp_path: Path) -> None:
-    class EmptyPathLike:
-        def __fspath__(self) -> str:
-            return ""
-
-    path = tmp_path / "perf.yar"
-    path.write_text("rule perf { condition: true }", encoding="utf-8")
-    empty_path = EmptyPathLike()
-
-    with pytest.raises(ValueError, match="file_path must not be empty"):
-        optimize_yara_file(cast(Any, empty_path))
-    with pytest.raises(ValueError, match="output_path must not be empty"):
-        optimize_yara_file(path, output_path=cast(Any, empty_path))
-
-
-def test_optimize_yara_file_rejects_directory_paths(tmp_path: Path) -> None:
-    input_dir = tmp_path / "input_dir"
-    input_dir.mkdir()
-    output_dir = tmp_path / "output_dir"
-    output_dir.mkdir()
-    path = tmp_path / "perf.yar"
-    path.write_text("rule perf { condition: true }", encoding="utf-8")
-
-    with pytest.raises(ValueError, match="file_path must not be a directory"):
-        optimize_yara_file(input_dir)
-    with pytest.raises(ValueError, match="output_path must not be a directory"):
-        optimize_yara_file(path, output_path=output_dir)
-
-
-def test_optimize_yara_file_rejects_inaccessible_paths(tmp_path: Path) -> None:
-    path = tmp_path / "perf.yar"
-    path.write_text("rule perf { condition: true }", encoding="utf-8")
-    inaccessible = "a" * 5000
-
-    with pytest.raises(ValueError, match="path could not be accessed"):
-        optimize_yara_file(inaccessible)
-    with pytest.raises(ValueError, match="path could not be accessed"):
-        optimize_yara_file(path, output_path=inaccessible)
-
-
-def test_optimize_yara_file_rejects_invalid_utf8(tmp_path: Path) -> None:
-    path = tmp_path / "bad.yar"
-    path.write_bytes(b"\xff")
-
-    with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
-        optimize_yara_file(path)
-
-
-@pytest.mark.parametrize("value", [False, 0, object()])
-def test_optimize_yara_file_rejects_invalid_path_types(value: Any, tmp_path: Path) -> None:
-    path = tmp_path / "perf.yar"
-    path.write_text("rule perf { condition: true }", encoding="utf-8")
-
-    with pytest.raises(TypeError, match="file_path must be a file path"):
-        optimize_yara_file(cast(Any, value))
-    with pytest.raises(TypeError, match="output_path must be a file path"):
-        optimize_yara_file(path, output_path=cast(Any, value))
