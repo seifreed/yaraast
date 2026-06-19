@@ -29,7 +29,15 @@ def display_best_practices_report(
     suggestions = _filter_suggestions(report.suggestions, category)
     display_issues(suggestions)
     if verbose:
-        display_verbose_info(suggestions, report)
+        info_items = [s for s in suggestions if s.severity == "info"]
+        if info_items:
+            console.print("\n[bold blue]Suggestions:[/bold blue]")
+            for suggestion in info_items:
+                console.print(f"  {escape(suggestion.format())}")
+        if report.statistics:
+            console.print("\n[dim]Statistics:[/dim]")
+            for key, value in report.statistics.items():
+                console.print(f"  {escape(str(key))}: {escape(str(value))}")
 
     if errors:
         sys.exit(2)
@@ -54,18 +62,6 @@ def display_issues(suggestions: list[Any]) -> None:
         console.print("\n[bold red]Issues:[/bold red]")
         for suggestion in important:
             console.print(f"  {escape(suggestion.format())}")
-
-
-def display_verbose_info(suggestions: list[Any], report: AnalysisReport) -> None:
-    info_items = [s for s in suggestions if s.severity == "info"]
-    if info_items:
-        console.print("\n[bold blue]Suggestions:[/bold blue]")
-        for suggestion in info_items:
-            console.print(f"  {escape(suggestion.format())}")
-    if report.statistics:
-        console.print("\n[dim]Statistics:[/dim]")
-        for key, value in report.statistics.items():
-            console.print(f"  {escape(str(key))}: {escape(str(value))}")
 
 
 def display_optimization_report(rule_file: str, report: OptimizationReport, verbose: bool) -> None:

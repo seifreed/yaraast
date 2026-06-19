@@ -65,7 +65,17 @@ def test_display_summary_issues_and_verbose_info_empty_branches(
 ) -> None:
     ar.display_summary([], [], [])
     ar.display_issues([Suggestion("r", "style", "info", "info only")])
-    ar.display_verbose_info([], AnalysisReport(suggestions=[], statistics={}))
+    with pytest.raises(SystemExit) as exc:
+        ar.display_best_practices_report(
+            "empty.yar",
+            AnalysisReport(
+                suggestions=[Suggestion("r", "style", "info", "info only")],
+                statistics={},
+            ),
+            verbose=True,
+            category="all",
+        )
+    assert exc.value.code == 0
     out = capsys.readouterr().out
     assert "Summary" in out
     assert "Errors:" in out
