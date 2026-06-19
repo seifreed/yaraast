@@ -139,11 +139,6 @@ def graph(yara_file: str, output: str | None, format: str, type: str, engine: st
         click.echo(result_path)
 
 
-def _is_graphviz_not_found_error(error: Exception) -> bool:
-    """Backward-compatible wrapper for older tests."""
-    return is_graphviz_error(error)
-
-
 @metrics.command()
 @click.argument("yara_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--output", "-o", type=click.Path(), help="Output HTML file path")

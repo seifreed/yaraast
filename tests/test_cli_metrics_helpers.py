@@ -10,7 +10,6 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
-from yaraast.cli.commands import metrics as metrics_cmd
 from yaraast.cli.metrics_reporting import (
     _display_module_usage,
     _display_pattern_statistics,
@@ -24,6 +23,7 @@ from yaraast.cli.metrics_reporting import (
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.dependency_graph import DependencyGraphGenerator
+from yaraast.metrics.graphviz_errors import is_graphviz_error
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.parser import Parser
 
@@ -137,7 +137,7 @@ def test_string_pattern_analysis_uses_utf8_byte_lengths() -> None:
 
 def test_metrics_graphviz_error_detection() -> None:
     err = Exception("failed to execute PosixPath('dot')")
-    assert metrics_cmd._is_graphviz_not_found_error(err) is True
+    assert is_graphviz_error(err) is True
 
 
 def test_metrics_display_helpers_sort_set_backed_output(
