@@ -12,7 +12,6 @@ from yaraast.errors import ParseError
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.source import parse_yara_source
 from yaraast.performance.string_analyzer import StringPerformanceIssue
-from yaraast.performance.string_performance_checks import analyze_rule_performance
 from yaraast.shared.numeric_validation import validate_positive_int_setting
 
 
@@ -36,11 +35,6 @@ def parse_performance_file(input_file: Path) -> Any:
     if dialect == YaraDialect.YARA_X:
         return parse_yara_source(content)
     return ErrorTolerantParser().parse(content).ast
-
-
-def analyze_rule_issues(rule: Any) -> list[StringPerformanceIssue]:
-    """Analyze a single rule for performance issues."""
-    return analyze_rule_performance(rule)
 
 
 def filter_issues(

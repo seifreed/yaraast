@@ -16,11 +16,11 @@ from yaraast.cli.performance_check_reporting import (
     display_summary,
 )
 from yaraast.cli.performance_check_services import (
-    analyze_rule_issues,
     filter_issues,
     parse_performance_file,
     summarize_issues,
 )
+from yaraast.performance.string_performance_checks import analyze_rule_performance
 
 console = Console()
 
@@ -65,7 +65,7 @@ def performance_check(input_file: Path, severity: str, limit: int, summary: bool
         )
 
         for rule in track(ast.rules, description="Analyzing rules"):
-            issues = analyze_rule_issues(rule)
+            issues = analyze_rule_performance(rule)
             all_issues.extend(issues)
 
         all_issues = filter_issues(all_issues, severity, limit)
