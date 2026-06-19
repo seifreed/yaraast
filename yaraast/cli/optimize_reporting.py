@@ -8,10 +8,6 @@ from rich.markup import escape
 from yaraast.cli.optimize_services import OptimizationAnalysis
 
 
-def display_parse_failure(console: Console) -> None:
-    console.print("[red]❌ Failed to parse YARA file[/red]")
-
-
 def display_analysis(console: Console, title: str, analysis: OptimizationAnalysis) -> None:
     console.print(f"\n[yellow]{escape(title)}:[/yellow]")
     console.print(f"  • Total issues: {analysis.total_issues}")

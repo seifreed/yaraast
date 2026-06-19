@@ -60,7 +60,6 @@ def test_optimize_reporting_emits_reporting_messages() -> None:
     console = Console(record=True, width=120)
     analysis = OptimizationAnalysis(total_issues=12, critical_issues=3)
 
-    orpt.display_parse_failure(console)
     orpt.display_analysis(console, "Before", analysis)
     orpt.display_changes(console, [f"change {i}" for i in range(12)])
     orpt.display_no_changes(console)
@@ -69,7 +68,6 @@ def test_optimize_reporting_emits_reporting_messages() -> None:
     orpt.display_write_success(console, "optimized.yar")
 
     output = console.export_text()
-    assert "Failed to parse YARA file" in output
     assert "Before:" in output
     assert "Total issues: 12" in output
     assert "Critical issues: 3" in output
