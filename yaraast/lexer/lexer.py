@@ -9,11 +9,7 @@ from __future__ import annotations
 
 from typing import TypeVar, cast
 
-from yaraast.lexer.lexer_dispatch import (
-    get_single_char_token,
-    get_two_char_operator,
-    read_next_token,
-)
+from yaraast.lexer.lexer_dispatch import read_next_token
 from yaraast.lexer.lexer_helpers import skip_whitespace_and_comments
 from yaraast.lexer.lexer_readers import (
     is_hex_string_context,
@@ -181,14 +177,6 @@ class Lexer[TokenizeResult]:
     def _read_string_length(self) -> Token:
         """Read string length (!name)."""
         return read_string_length(self)
-
-    def _get_two_char_operator(self, chars: str) -> TokenType | None:
-        """Get token type for two-character operators."""
-        return get_two_char_operator(chars)
-
-    def _get_single_char_token(self, char: str) -> TokenType | None:
-        """Get token type for single-character tokens."""
-        return get_single_char_token(char)
 
     def _is_line_continuation(self) -> bool:
         """Check if backslash is a line continuation.

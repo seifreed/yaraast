@@ -190,33 +190,6 @@ class YaraLEventsParsingMixin:
             or self._check(BaseTokenType.NEQ)
         )
 
-    def _skip_to_next_statement(self) -> None:
-        """Consume tokens until the start of a new statement or section boundary."""
-        start_line = self._peek().line if not self._is_at_end() else -1
-
-        while not self._is_at_end():
-            current_token = self._peek()
-
-            # Stop if we hit a section keyword or closing brace
-            if self._check_section_keyword() or self._check(BaseTokenType.RBRACE):
-                break
-
-            # Stop if we see a new line with a new statement pattern
-            if (
-                current_token.line > start_line
-                and (
-                    self._check_yaral_type(YaraLTokenType.EVENT_VAR)
-                    or self._check(BaseTokenType.STRING_IDENTIFIER)
-                    or self._check(BaseTokenType.INTEGER)
-                    or self._check(BaseTokenType.DOUBLE)
-                    or self._check(BaseTokenType.LPAREN)
-                )
-                and self._looks_like_new_statement()
-            ):
-                break
-
-            self._advance()
-
     def _looks_like_new_statement(self) -> bool:
         """Check if the next token suggests a new statement."""
         next_token = self._event_value_token_ahead(1)
@@ -257,10 +230,6 @@ class YaraLEventsParsingMixin:
                 self._collect_rhs_expression_tokens(),
             ),
         )
-
-    def _skip_rhs_expression(self) -> None:
-        """Skip the right-hand side of an assignment by consuming tokens until end of statement."""
-        self._collect_rhs_expression_tokens()
 
     def _collect_rhs_expression_tokens(self) -> list[Any]:
         """Collect right-hand side tokens until the next event statement boundary."""
