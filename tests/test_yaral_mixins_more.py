@@ -38,7 +38,6 @@ from yaraast.yaral.visitor_base import YaraLVisitor
 @dataclass
 class OutcomeVariablesContainer:
     variables: dict[str, object]
-    conditional_expressions: list[object]
 
 
 @dataclass
@@ -191,7 +190,6 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
 
     legacy = OutcomeVariablesContainer(
         variables={"risk_score": 10, "severity": "high", "$drop": 1},
-        conditional_expressions=["cond"],
     )
     optimized_legacy = opt._optimize_outcome_section(legacy)
     assert [assignment.variable for assignment in optimized_legacy.assignments] == [
