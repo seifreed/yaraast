@@ -12,18 +12,8 @@ from yaraast.cli.serialize_display_services import (
     _display_diff_summary,
     build_validation_panel,
 )
-from yaraast.cli.serialize_services import (
-    build_ast_info,
-    compare_yara_files,
-    generate_yara_from_ast,
-    parse_yara_file,
-    validate_serialized,
-)
-from yaraast.cli.utils import _path_exists_and_is_dir
-
-
-def generate_imported_yara(ast: Any, output: str) -> str:
-    return generate_yara_from_ast(ast, output)
+from yaraast.cli.serialize_services import build_ast_info, compare_yara_files, import_ast
+from yaraast.cli.utils import _path_exists_and_is_dir, parse_yara_file
 
 
 def diff_serialized(
@@ -71,13 +61,9 @@ def build_diff_output_path(
 
 
 def validate_serialized_input(input_file: str, format: str) -> tuple[Any, Any]:
-    ast = validate_serialized(input_file, format)
+    ast = import_ast(input_file, format)
     panel = build_validation_panel(Path(input_file).name, format, ast, None)
     return ast, panel
-
-
-def validate_serialized_error(input_file: str, format: str, error: Exception) -> Any:
-    return build_validation_panel(Path(input_file).name, format, None, error)
 
 
 def build_ast_info_payload(input_file: str) -> Any:

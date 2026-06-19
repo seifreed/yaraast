@@ -32,7 +32,7 @@ def parse_content_by_dialect(
     elif dialect == "yara-l":
         ast = _parse_yara_l_dialect(content, status_cb)
     else:
-        ast, lexer_errors, parser_errors = _parse_standard_yara_dialect(content)
+        ast, lexer_errors, parser_errors = _parse_with_error_tolerant_parser(content)
 
     return ast, lexer_errors, parser_errors
 
@@ -75,10 +75,6 @@ def _parse_yara_l_dialect(content: str, status_cb: Callable[[str], None] | None)
 
     parser = YaraLParser(content)
     return parser.parse()
-
-
-def _parse_standard_yara_dialect(content: str) -> tuple:
-    return _parse_with_error_tolerant_parser(content)
 
 
 def _parse_with_error_tolerant_parser(content: str) -> tuple:

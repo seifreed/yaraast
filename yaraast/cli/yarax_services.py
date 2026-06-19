@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 
 from yaraast.ast.base import YaraFile, require_string
-from yaraast.cli.utils import parse_yara_file
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.dialects import _strip_string_literals
 from yaraast.errors import YaraASTError
@@ -32,10 +31,6 @@ def parse_yarax_content(content: str) -> tuple[YaraFile, str]:
     ast = parser.parse()
     generator = YaraXGenerator()
     return ast, generator.generate(ast)
-
-
-def parse_yara_file_ast(file_path: str) -> YaraFile:
-    return parse_yara_file(file_path)
 
 
 def check_yarax_compatibility(ast: YaraFile, strict: bool) -> list[CompatibilityIssue]:

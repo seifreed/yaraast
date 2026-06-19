@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import click
 
-from yaraast.cli.utils import _validate_output_path, read_text, write_text
+from yaraast.cli.utils import _validate_output_path, parse_yara_file, read_text, write_text
 from yaraast.cli.yarax_reporting import (
     display_compatibility_issues,
     display_feature_showcase,
@@ -19,7 +19,6 @@ from yaraast.cli.yarax_services import (
     detect_playground_features,
     detect_yarax_features,
     get_default_playground_code,
-    parse_yara_file_ast,
     parse_yarax_content,
 )
 
@@ -64,7 +63,7 @@ def check(file: str, strict: bool, fix: bool):
     """Check YARA file for YARA-X compatibility."""
     try:
         # Parse file
-        ast = parse_yara_file_ast(file)
+        ast = parse_yara_file(file)
 
         # Check compatibility
         issues = check_yarax_compatibility(ast, strict)

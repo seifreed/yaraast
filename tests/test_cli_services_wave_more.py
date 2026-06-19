@@ -17,6 +17,7 @@ from yaraast.cli import (
     performance_check_reporting as pcr,
     workspace_services as ws,
 )
+from yaraast.cli.analyze_report_helpers import generate_json_report, generate_text_report
 from yaraast.performance.string_analyzer import StringPerformanceIssue
 
 
@@ -60,12 +61,12 @@ def test_analyze_services_formatting_helpers() -> None:
     assert an._filter_suggestions(bp.suggestions, "all") == bp.suggestions
     assert len(an._filter_suggestions(bp.suggestions, "security")) == 1
 
-    data = an._generate_json_report("sample.yar", bp, opt)
+    data = generate_json_report("sample.yar", bp, opt)
     assert data["file"] == "sample.yar"
     assert data["best_practices"]["statistics"] == {"rules": 2}
     assert data["optimization"]["suggestions"][0]["type"] == "dedup"
 
-    text = an._generate_text_report("sample.yar", bp, opt)
+    text = generate_text_report("sample.yar", bp, opt)
     assert "BEST PRACTICES" in text
     assert "OPTIMIZATIONS" in text
     assert "SUMMARY" in text

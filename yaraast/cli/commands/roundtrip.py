@@ -17,7 +17,6 @@ from yaraast.cli.roundtrip_reporting import (
     display_serialize_result,
 )
 from yaraast.cli.roundtrip_services import (
-    build_rules_manifest,
     deserialize_roundtrip_file,
     pipeline_serialize_file,
     pretty_print_file,
@@ -25,6 +24,7 @@ from yaraast.cli.roundtrip_services import (
     test_roundtrip_file,
 )
 from yaraast.cli.utils import _resolve_output_path, format_json, write_text
+from yaraast.serialization.roundtrip_serializer import create_rules_manifest
 
 
 @click.group()
@@ -373,7 +373,7 @@ def pipeline(
 
         manifest_content = None
         if include_manifest:
-            manifest_content = build_rules_manifest(ast)
+            manifest_content = create_rules_manifest(ast)
             manifest_path = (
                 output_path.with_suffix(".manifest.yaml") if output_path is not None else None
             )

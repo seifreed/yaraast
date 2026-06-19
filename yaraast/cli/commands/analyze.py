@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 
+from yaraast.cli.analyze_report_helpers import best_report_to_dict, opt_report_to_dict
 from yaraast.cli.analyze_reporting import (
     display_best_practices_report,
     display_issues,
@@ -13,12 +14,9 @@ from yaraast.cli.analyze_reporting import (
 from yaraast.cli.analyze_services import (
     _analyze_best_practices,
     _analyze_optimizations,
-    _best_report_to_dict,
     _get_severity_counts,
-    _opt_report_to_dict,
-    _parse_rule_file,
 )
-from yaraast.cli.utils import _validate_output_path, format_json, write_text
+from yaraast.cli.utils import _validate_output_path, format_json, parse_yara_file, write_text
 
 
 @click.group()
@@ -41,14 +39,14 @@ def full(rule_file: str, output_format: str, output: str | None) -> None:
     """Run full analysis (best practices + optimization)."""
     output = _validate_output_path(output)
     try:
-        ast = _parse_rule_file(rule_file)
+        ast = parse_yara_file(rule_file)
         best_report = _analyze_best_practices(ast)
         opt_report = _analyze_optimizations(ast)
 
         if output_format == "json":
             result = {
-                "best_practices": _best_report_to_dict(best_report),
-                "optimization": _opt_report_to_dict(opt_report),
+                "best_practices": best_report_to_dict(best_report),
+                "optimization": opt_report_to_dict(opt_report),
             }
             json_output = format_json(result)
             if output is not None:
@@ -88,7 +86,7 @@ def best_practices(rule_file: str, verbose: bool, category: str) -> None:
 
     """
     try:
-        ast = _parse_rule_file(rule_file)
+        ast = parse_yara_file(rule_file)
         report = _analyze_best_practices(ast)
         display_best_practices_report(rule_file, report, verbose, category)
     except Exception as e:
@@ -112,11 +110,11 @@ def optimize(rule_file: str, verbose: bool, output_format: str, output: str | No
     """Analyze optimization opportunities for YARA rules."""
     output = _validate_output_path(output)
     try:
-        ast = _parse_rule_file(rule_file)
+        ast = parse_yara_file(rule_file)
         report = _analyze_optimizations(ast)
 
         if output_format == "json":
-            payload = _opt_report_to_dict(report)
+            payload = opt_report_to_dict(report)
             text = format_json(payload)
             if output is not None:
                 write_text(output, text)

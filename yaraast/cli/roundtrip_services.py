@@ -6,14 +6,12 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
-from yaraast.ast.base import YaraFile
 from yaraast.cli.parser_helpers import parse_yara_source
 from yaraast.cli.utils import read_text
 from yaraast.codegen.pretty_printer import StylePresets, pretty_print
 from yaraast.errors import ValidationError
 from yaraast.serialization.roundtrip_serializer import (
     RoundTripSerializer,
-    create_rules_manifest,
     roundtrip_yara,
     serialize_for_pipeline,
 )
@@ -127,7 +125,3 @@ def pipeline_serialize_file(
     pipeline_data = _parse_pipeline_info(pipeline_info)
     yaml_content = serialize_for_pipeline(ast, pipeline_data)
     return ast, yaml_content, pipeline_data
-
-
-def build_rules_manifest(ast: YaraFile) -> str:
-    return create_rules_manifest(ast)

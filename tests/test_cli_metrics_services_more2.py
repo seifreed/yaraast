@@ -12,6 +12,7 @@ from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.cli import metrics_services as ms
 from yaraast.errors import ValidationError
 from yaraast.metrics import workflows as metrics_workflows
+from yaraast.metrics.graphviz_errors import is_graphviz_error
 from yaraast.parser import Parser
 
 
@@ -134,11 +135,11 @@ def test_metrics_services_path_helpers_and_error_detection() -> None:
     )
     assert ms.determine_pattern_output_path("/tmp/rules.yar", "x.dot", "flow", "dot") == "x.dot"
 
-    assert ms.is_graphviz_error(Exception("ExecutableNotFound")) is True
-    assert ms.is_graphviz_error(Exception("failed to execute PosixPath('dot')")) is True
-    assert ms.is_graphviz_error(Exception("No such file or directory: PosixPath('dot')")) is True
+    assert is_graphviz_error(Exception("ExecutableNotFound")) is True
+    assert is_graphviz_error(Exception("failed to execute PosixPath('dot')")) is True
+    assert is_graphviz_error(Exception("No such file or directory: PosixPath('dot')")) is True
     assert (
-        ms.is_graphviz_error(ModuleNotFoundError("No module named 'graphviz'", name="graphviz"))
+        is_graphviz_error(ModuleNotFoundError("No module named 'graphviz'", name="graphviz"))
         is True
     )
     graphviz_called_process = type(
@@ -146,11 +147,11 @@ def test_metrics_services_path_helpers_and_error_detection() -> None:
         (Exception,),
         {"__module__": "graphviz.backend.execute"},
     )
-    assert ms.is_graphviz_error(graphviz_called_process("graphviz dot failed")) is True
-    assert ms.is_graphviz_error(subprocess.CalledProcessError(1, ["not-dot"])) is False
-    assert ms.is_graphviz_error(FileNotFoundError("No such file or directory: rules.yar")) is False
-    assert ms.is_graphviz_error(Exception("dot product calculation failed")) is False
-    assert ms.is_graphviz_error(Exception("another error")) is False
+    assert is_graphviz_error(graphviz_called_process("graphviz dot failed")) is True
+    assert is_graphviz_error(subprocess.CalledProcessError(1, ["not-dot"])) is False
+    assert is_graphviz_error(FileNotFoundError("No such file or directory: rules.yar")) is False
+    assert is_graphviz_error(Exception("dot product calculation failed")) is False
+    assert is_graphviz_error(Exception("another error")) is False
 
 
 def test_metrics_services_path_helpers_reject_empty_output_path() -> None:

@@ -8,6 +8,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.cli import yarax_services as ys
+from yaraast.cli.utils import parse_yara_file
 
 
 def test_yarax_services_detection_helpers() -> None:
@@ -95,7 +96,7 @@ def test_yarax_services_parse_and_convert_roundtrip(tmp_path: Path) -> None:
 
     file_path = tmp_path / "sample.yar"
     file_path.write_text(yara_code, encoding="utf-8")
-    ast_file = ys.parse_yara_file_ast(str(file_path))
+    ast_file = parse_yara_file(str(file_path))
     assert len(ast_file.rules) == 1
 
 

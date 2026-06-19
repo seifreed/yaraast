@@ -8,8 +8,8 @@ from yaraast.ast.base import YaraFile
 from yaraast.cli import (
     optimize_services as osvc,
     parse_output_services as pos,
-    serialize_services as ssvc,
 )
+from yaraast.cli.serialize_service_helpers import export_with_serializer
 from yaraast.errors import ParseError
 from yaraast.parser import Parser
 
@@ -91,7 +91,7 @@ def test_optimize_services_reject_yaral_without_tolerant_classic_parse() -> None
 
 def test_export_ast_yaml_non_minimal_returns_yaml_string() -> None:
     ast = _sample_ast()
-    result, stats = ssvc.export_ast(ast, "yaml", None, minimal=False)
+    result, stats = export_with_serializer(ast, "yaml", None, minimal=False)
 
     assert stats is None
     assert isinstance(result, str)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import click
 from rich.console import Console
 from rich.markup import escape
@@ -10,10 +12,9 @@ from yaraast.cli.serialize_command_services import (
     build_ast_info_payload,
     build_diff_output_path,
     diff_serialized,
-    generate_imported_yara,
-    validate_serialized_error,
     validate_serialized_input,
 )
+from yaraast.cli.serialize_display_services import build_validation_panel
 from yaraast.cli.serialize_reporting import (
     display_diff_no_changes,
     display_diff_saved,
@@ -23,8 +24,9 @@ from yaraast.cli.serialize_reporting import (
     display_validation_result,
     write_diff_output,
 )
+from yaraast.cli.serialize_service_helpers import export_with_serializer
 from yaraast.cli.serialize_services import (
-    export_ast,
+    generate_yara_from_ast,
     import_ast as import_ast_service,
     parse_yara_file,
 )
@@ -66,7 +68,7 @@ def export(input_file: str, output: str | None, format: str, minimal: bool, pret
     try:
         with console.status(f"[bold green]Parsing {escape(input_file)}..."):
             ast = parse_yara_file(input_file)
-            result, stats = export_ast(ast, format, output, minimal)
+            result, stats = export_with_serializer(ast, format, output, minimal)
         display_export_result(console, result, format, output, pretty, stats)
 
     except Exception as e:  # CLI error boundary
@@ -97,7 +99,7 @@ def import_ast(input_file: str, format: str, output: str | None) -> None:
     try:
         ast = import_ast_service(input_file, format)
         if output is not None:
-            generate_imported_yara(ast, output)
+            generate_yara_from_ast(ast, output)
 
         display_import_result(console, input_file, format, ast, output)
 
@@ -197,7 +199,7 @@ def validate(input_file: str, format: str) -> None:
     except Exception as e:  # CLI error boundary
         display_validation_result(
             console,
-            validate_serialized_error(input_file, format, e),
+            build_validation_panel(Path(input_file).name, format, None, e),
         )
         raise click.Abort from e
 

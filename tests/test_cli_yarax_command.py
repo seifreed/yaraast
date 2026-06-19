@@ -115,7 +115,7 @@ def test_yarax_check_abort_preserves_original_cause(
     def fail_parse_file(_file: str) -> NoReturn:
         raise sentinel
 
-    monkeypatch.setattr(yarax_command, "parse_yara_file_ast", fail_parse_file)
+    monkeypatch.setattr(yarax_command, "parse_yara_file", fail_parse_file)
 
     result = CliRunner().invoke(yarax, ["check", yarax_path], standalone_mode=False)
 

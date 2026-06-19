@@ -12,7 +12,6 @@ from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file as _parse_yara_file
 from yaraast.errors import YaraASTError
 from yaraast.metrics import DependencyGraphGenerator, workflows as _workflows
-from yaraast.metrics.graphviz_errors import is_graphviz_error as _is_graphviz_error
 from yaraast.metrics.workflows import MetricsReportData
 
 _DEFAULT_FACTORY = object()
@@ -32,17 +31,12 @@ __all__ = [
     "generate_pattern_diagram",
     "generate_pattern_diagram_with_generator",
     "generate_pattern_diagrams",
-    "is_graphviz_error",
     "parse_yara_file",
 ]
 
 
 def analyze_complexity(ast: YaraFile) -> Any:
     return _workflows.analyze_complexity(ast)
-
-
-def is_graphviz_error(error: Exception) -> bool:
-    return _is_graphviz_error(error)
 
 
 def generate_dependency_graphs(
