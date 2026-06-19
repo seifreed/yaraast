@@ -17,7 +17,6 @@ from yaraast.cli.metrics_reporting_complexity import (
 )
 from yaraast.cli.metrics_reporting_display import (
     display_graph_statistics as _display_graph_statistics,
-    display_graphviz_installation_help as _display_graphviz_installation_help,
     display_graphviz_installation_instructions as _display_graphviz_installation_instructions,
     display_module_usage as _display_module_usage,
     display_rule_dependencies as _display_rule_dependencies,
@@ -36,7 +35,6 @@ _STRING_OUTPUT_FORMATS = frozenset({"json", "text"})
 
 __all__ = [
     "_display_graph_statistics",
-    "_display_graphviz_installation_help",
     "_display_module_usage",
     "_display_pattern_result",
     "_display_pattern_statistics",

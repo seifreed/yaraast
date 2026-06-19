@@ -16,7 +16,6 @@ import yaraast.cli.commands.performance_check as performance_check_module
 from yaraast.cli.commands.performance_check import performance_check
 from yaraast.cli.metrics_reporting import (
     _display_graph_statistics,
-    _display_graphviz_installation_help,
     _display_module_usage,
     _display_pattern_result,
     _display_pattern_statistics,
@@ -38,7 +37,10 @@ from yaraast.cli.metrics_reporting import (
     write_complexity_report_files,
     write_report_summary,
 )
-from yaraast.cli.metrics_reporting_display import path_size_for_display
+from yaraast.cli.metrics_reporting_display import (
+    display_graphviz_installation_instructions,
+    path_size_for_display,
+)
 from yaraast.cli.metrics_services import MetricsReportData
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.cli.performance_check_services import parse_performance_file
@@ -509,7 +511,7 @@ def test_metrics_reporting_graph_and_pattern_helpers(
     _display_graph_statistics(dep_generator)
     _display_rule_dependencies(dep_generator)
     _display_module_usage(dep_generator)
-    _display_graphviz_installation_help()
+    display_graphviz_installation_instructions()
     _display_text_fallback("sample.yar", ast, dep_generator)
 
     output_file = tmp_path / "deps.dot"
@@ -564,7 +566,7 @@ def test_metrics_reporting_graph_and_pattern_helpers(
 
 def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     _display_pattern_result("digraph { a -> b }")
-    _display_graphviz_installation_help()
+    display_graphviz_installation_instructions()
     _display_pattern_statistics(
         type("NoStats", (), {"get_pattern_statistics": lambda self: None})()
     )

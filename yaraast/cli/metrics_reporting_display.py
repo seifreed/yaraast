@@ -35,10 +35,6 @@ def display_graphviz_installation_instructions() -> None:
     click.echo("  Windows: https://graphviz.org/download/")
 
 
-def display_graphviz_installation_help() -> None:
-    display_graphviz_installation_instructions()
-
-
 def display_graph_statistics(generator: Any) -> None:
     stats = generator.get_dependency_stats()
     click.echo("\n📊 Graph Statistics:")
@@ -90,4 +86,4 @@ def display_text_fallback(
     display_text_statistics(yara_file, stats)
     display_rule_dependencies(generator)
     display_module_usage(generator)
-    display_graphviz_installation_help()
+    display_graphviz_installation_instructions()
