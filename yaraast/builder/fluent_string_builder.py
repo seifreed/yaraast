@@ -247,14 +247,6 @@ class FluentStringBuilder:
         """Common ELF header pattern."""
         return self.hex("7F 45 4C 46")
 
-    def zip_header(self) -> FluentStringBuilder:
-        """Common ZIP header pattern."""
-        return self.hex("50 4B 03 04")
-
-    def pdf_header(self) -> FluentStringBuilder:
-        """PDF file header."""
-        return self.literal("%PDF-")
-
     def email_pattern(self) -> FluentStringBuilder:
         """Email address regex pattern."""
         return self.regex(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")

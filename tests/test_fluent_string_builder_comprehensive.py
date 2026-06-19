@@ -411,9 +411,7 @@ class TestFluentStringBuilderCommonPatterns:
 
     def test_zip_header_creates_zip_pattern(self) -> None:
         """Zip_header should create ZIP header pattern."""
-        builder = FluentStringBuilder("$zip")
-
-        result = builder.zip_header()
+        result = FluentStringBuilder.hex_string("$zip", "50 4B 03 04")
         string_def = result.build()
 
         assert isinstance(string_def, HexString)
@@ -421,9 +419,7 @@ class TestFluentStringBuilderCommonPatterns:
 
     def test_pdf_header_creates_pdf_pattern(self) -> None:
         """Pdf_header should create PDF header pattern."""
-        builder = FluentStringBuilder("$pdf")
-
-        result = builder.pdf_header()
+        result = FluentStringBuilder("$pdf").literal("%PDF-")
         string_def = result.build()
 
         assert isinstance(string_def, PlainString)
