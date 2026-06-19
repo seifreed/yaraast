@@ -3,20 +3,90 @@
 from __future__ import annotations
 
 from typing import Any, cast
+from collections.abc import Iterator
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import BinaryExpression, BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.metrics.complexity import ComplexityAnalyzer
-from yaraast.metrics.complexity_helpers import (
-    calculate_cognitive_complexity,
-    calculate_cyclomatic_complexity,
-    calculate_expression_complexity,
-    calculate_rule_complexity,
-)
+from yaraast.metrics.complexity_calculator import ComplexityCalculator
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
+from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension, PatternMatch
+
+
+def _rule_complexity(rule: Rule) -> int:
+    complexity = 1
+    if rule.strings:
+        complexity += len(rule.strings)
+        for string in rule.strings:
+            if string.__class__.__name__ == "RegexString":
+                complexity += 2
+            elif string.__class__.__name__ == "HexString":
+                complexity += 1
+    if rule.condition is not None:
+        complexity += ComplexityCalculator().calculate(rule.condition)
+    if any(str(m) == "private" for m in rule.modifiers):
+        complexity += 1
+    if any(str(m) == "global" for m in rule.modifiers):
+        complexity += 1
+    return complexity
+
+
+def _cyclomatic_complexity(expr: object) -> int:
+    complexity = 1
+    op = expr.operator if hasattr(expr, "operator") else None
+    if op in ("and", "or"):
+        complexity += 1
+    if isinstance(expr, ForOfExpression | ArrayComprehension | DictComprehension):
+        complexity += 1
+    if isinstance(expr, PatternMatch):
+        complexity += max(1, len(expr.cases) + (1 if expr.default is not None else 0))
+
+    for child in _iter_cyclomatic_children(expr):
+        complexity += _cyclomatic_complexity(child) - 1
+    return complexity
+
+
+def _iter_cyclomatic_children(expr: object) -> Iterator[object]:
+    child_attrs = (
+        "left",
+        "right",
+        "operand",
+        "expression",
+        "body",
+        "quantifier",
+        "iterable",
+        "condition",
+        "string_set",
+        "declarations",
+        "value",
+        "cases",
+        "default",
+        "pattern",
+        "result",
+        "elements",
+        "items",
+        "key",
+        "key_expression",
+        "value_expression",
+        "tuple_expr",
+        "index",
+        "target",
+        "start",
+        "stop",
+        "step",
+        "arguments",
+    )
+    for attr in child_attrs:
+        value = getattr(expr, attr, None)
+        if hasattr(value, "accept"):
+            yield value
+        elif isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                if hasattr(item, "accept"):
+                    yield item
 
 
 def _build_complexity_report(ast: YaraFile) -> dict[str, Any]:
@@ -25,13 +95,11 @@ def _build_complexity_report(ast: YaraFile) -> dict[str, Any]:
     rules_data: list[dict[str, Any]] = []
     total_complexities: list[int] = []
     for rule in ast.rules:
-        complexity = calculate_rule_complexity(rule)
+        complexity = _rule_complexity(rule)
         total_complexities.append(complexity)
         metric_key = analyzer._metric_key_for_rule(rule)
         cyclomatic = metrics.cyclomatic_complexity.get(metric_key, 1)
-        cognitive = (
-            calculate_cognitive_complexity(rule.condition) if rule.condition is not None else 0
-        )
+        cognitive = ComplexityCalculator().calculate(rule.condition) if rule.condition else 0
         rules_data.append(
             {
                 "name": rule.name,
@@ -113,9 +181,9 @@ def test_complexity_expression_helpers() -> None:
     expr = ast.rules[0].condition
     assert expr is not None
 
-    assert calculate_expression_complexity(expr) >= 1
-    assert calculate_cyclomatic_complexity(expr) >= 1
-    assert calculate_cognitive_complexity(expr) >= 1
+    assert ComplexityCalculator().calculate(expr) >= 1
+    assert _cyclomatic_complexity(expr) >= 1
+    assert ComplexityCalculator().calculate(expr) >= 1
 
 
 def test_cyclomatic_complexity_traverses_non_list_child_containers() -> None:
@@ -123,9 +191,9 @@ def test_cyclomatic_complexity_traverses_non_list_child_containers() -> None:
     hashable_decision = _HashableDecision()
     hashable_container = cast(Any, frozenset((hashable_decision,)))
 
-    assert calculate_cyclomatic_complexity(OfExpression("any", [decision])) == 2
-    assert calculate_cyclomatic_complexity(OfExpression("any", (decision,))) == 2
-    assert calculate_cyclomatic_complexity(OfExpression("any", hashable_container)) == 2
+    assert _cyclomatic_complexity(OfExpression("any", [decision])) == 2
+    assert _cyclomatic_complexity(OfExpression("any", (decision,))) == 2
+    assert _cyclomatic_complexity(OfExpression("any", hashable_container)) == 2
 
 
 def test_generate_complexity_report_from_parsed_source() -> None:

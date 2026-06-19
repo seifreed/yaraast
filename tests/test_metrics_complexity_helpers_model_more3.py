@@ -12,14 +12,39 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
-from yaraast.metrics.complexity_helpers import (
-    calculate_cognitive_complexity,
-    calculate_cyclomatic_complexity,
-    calculate_expression_complexity,
-    calculate_rule_complexity,
-)
+from yaraast.metrics.complexity_calculator import ComplexityCalculator
 from yaraast.metrics.complexity_model import ComplexityMetrics
 from yaraast.yarax.ast_nodes import MatchCase, PatternMatch
+
+
+def _rule_complexity(rule: Rule) -> int:
+    complexity = 1
+    if rule.strings:
+        complexity += len(rule.strings)
+        for string in rule.strings:
+            if isinstance(string, RegexString):
+                complexity += 2
+            elif isinstance(string, HexString):
+                complexity += 1
+    if rule.condition is not None:
+        complexity += ComplexityCalculator().calculate(rule.condition)
+    if any(str(m) == "private" for m in rule.modifiers):
+        complexity += 1
+    if any(str(m) == "global" for m in rule.modifiers):
+        complexity += 1
+    return complexity
+
+
+def _cyclomatic_complexity(expr: object) -> int:
+    complexity = 1
+    op = expr.operator if hasattr(expr, "operator") else None
+    if op in ("and", "or"):
+        complexity += 1
+    if isinstance(expr, ForExpression | ForOfExpression):
+        complexity += 1
+    if isinstance(expr, PatternMatch):
+        complexity += max(1, len(expr.cases) + (1 if expr.default is not None else 0))
+    return complexity
 
 
 class _FalsyBooleanLiteral(BooleanLiteral):
@@ -45,9 +70,9 @@ def test_complexity_helpers_cover_rule_expression_and_cognitive_paths() -> None:
         condition=expr,
     )
 
-    assert calculate_rule_complexity(rule) > 1
-    assert calculate_expression_complexity(expr) >= 1
-    assert calculate_cyclomatic_complexity(expr) >= 2
+    assert _rule_complexity(rule) > 1
+    assert ComplexityCalculator().calculate(expr) >= 1
+    assert _cyclomatic_complexity(expr) >= 2
 
     for_expr = ForExpression(
         quantifier="any",
@@ -60,8 +85,8 @@ def test_complexity_helpers_cover_rule_expression_and_cognitive_paths() -> None:
         string_set=Identifier(name="them"),
         condition=IntegerLiteral(value=1),
     )
-    assert calculate_cognitive_complexity(for_expr) >= 4
-    assert calculate_cognitive_complexity(for_of_expr) >= 4
+    assert ComplexityCalculator().calculate(for_expr) >= 4
+    assert ComplexityCalculator().calculate(for_of_expr) >= 4
 
 
 def test_cyclomatic_complexity_counts_falsy_pattern_match_default() -> None:
@@ -74,7 +99,7 @@ def test_cyclomatic_complexity_counts_falsy_pattern_match_default() -> None:
         default=_FalsyBooleanLiteral(False),
     )
 
-    assert calculate_cyclomatic_complexity(match_expr) == 4
+    assert _cyclomatic_complexity(match_expr) == 4
 
 
 def test_complexity_model_to_dict_quality_score_and_grades() -> None:

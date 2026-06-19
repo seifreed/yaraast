@@ -27,17 +27,30 @@ from yaraast.ast.expressions import (
     StringWildcard,
 )
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import PlainString
+from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.metrics.complexity import ComplexityAnalyzer
-from yaraast.metrics.complexity_helpers import (
-    calculate_cognitive_complexity,
-    calculate_cyclomatic_complexity,
-    calculate_expression_complexity,
-    calculate_rule_complexity,
-)
+from yaraast.metrics.complexity_calculator import ComplexityCalculator
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.ast_nodes import ListExpression, WithDeclaration, WithStatement
+
+
+def _rule_complexity(rule: Rule) -> int:
+    complexity = 1
+    if rule.strings:
+        complexity += len(rule.strings)
+        for string in rule.strings:
+            if isinstance(string, RegexString):
+                complexity += 2
+            elif isinstance(string, HexString):
+                complexity += 1
+    if rule.condition is not None:
+        complexity += ComplexityCalculator().calculate(rule.condition)
+    if any(str(m) == "private" for m in rule.modifiers):
+        complexity += 1
+    if any(str(m) == "global" for m in rule.modifiers):
+        complexity += 1
+    return complexity
 
 
 def _build_complexity_report(ast: YaraFile) -> dict[str, Any]:
@@ -46,13 +59,11 @@ def _build_complexity_report(ast: YaraFile) -> dict[str, Any]:
     rules_data: list[dict[str, Any]] = []
     total_complexities: list[int] = []
     for rule in ast.rules:
-        complexity = calculate_rule_complexity(rule)
+        complexity = _rule_complexity(rule)
         total_complexities.append(complexity)
         metric_key = analyzer._metric_key_for_rule(rule)
         cyclomatic = metrics.cyclomatic_complexity.get(metric_key, 1)
-        cognitive = (
-            calculate_cognitive_complexity(rule.condition) if rule.condition is not None else 0
-        )
+        cognitive = ComplexityCalculator().calculate(rule.condition) if rule.condition else 0
         rules_data.append(
             {
                 "name": rule.name,
@@ -181,10 +192,10 @@ def test_complexity_calculators_on_rule_and_condition() -> None:
     rule = ast.rules[0]
     assert rule.condition is not None
 
-    total = calculate_rule_complexity(rule)
-    expr_complexity = calculate_expression_complexity(rule.condition)
-    cyclomatic = calculate_cyclomatic_complexity(rule.condition)
-    cognitive = calculate_cognitive_complexity(rule.condition)
+    total = _rule_complexity(rule)
+    expr_complexity = ComplexityCalculator().calculate(rule.condition)
+    cyclomatic = ComplexityCalculator().calculate(rule.condition)
+    cognitive = ComplexityCalculator().calculate(rule.condition)
 
     assert total > 0
     assert expr_complexity > 0
@@ -603,7 +614,7 @@ def test_complexity_analyzer_counts_yarax_condition_nodes() -> None:
     assert metrics.total_binary_ops == 1
     assert metrics.cyclomatic_complexity["yarax_complexity"] > 1
     assert ast.rules[0].condition is not None
-    assert calculate_expression_complexity(ast.rules[0].condition) > 0
+    assert ComplexityCalculator().calculate(ast.rules[0].condition) > 0
 
 
 def test_analyze_file_complexity_accepts_yarax_syntax(tmp_path: Path) -> None:

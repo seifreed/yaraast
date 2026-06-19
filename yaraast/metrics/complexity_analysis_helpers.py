@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import re
 
+from yaraast.ast.base import ASTNode
+from yaraast.ast.conditions import ForExpression, ForOfExpression
 from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension, PatternMatch
 
 
 def analyze_rule(analyzer, rule) -> None:
@@ -76,12 +79,66 @@ def analyze_regex_complexity(analyzer, regex: str) -> None:
 
 
 def calculate_cyclomatic_complexity(analyzer) -> int:
-    from yaraast.metrics.complexity_helpers import calculate_cyclomatic_complexity as calc_from_expr
-
     rule = analyzer._current_rule
     if rule is not None and rule.condition is not None:
-        return calc_from_expr(rule.condition)
+        return _calculate_cyclomatic_complexity(rule.condition)
     return 1
+
+
+def _calculate_cyclomatic_complexity(expr: ASTNode) -> int:
+    complexity = 1
+
+    if hasattr(expr, "operator") and expr.operator in ("and", "or"):
+        complexity += 1
+    if isinstance(expr, ForExpression | ForOfExpression | ArrayComprehension | DictComprehension):
+        complexity += 1
+    if isinstance(expr, PatternMatch):
+        complexity += max(1, len(expr.cases) + (1 if expr.default is not None else 0))
+
+    for child in _iter_cyclomatic_children(expr):
+        complexity += _calculate_cyclomatic_complexity(child) - 1
+
+    return complexity
+
+
+def _iter_cyclomatic_children(expr: ASTNode):
+    child_attrs = (
+        "left",
+        "right",
+        "operand",
+        "expression",
+        "body",
+        "quantifier",
+        "iterable",
+        "condition",
+        "string_set",
+        "declarations",
+        "value",
+        "cases",
+        "default",
+        "pattern",
+        "result",
+        "elements",
+        "items",
+        "key",
+        "key_expression",
+        "value_expression",
+        "tuple_expr",
+        "index",
+        "target",
+        "start",
+        "stop",
+        "step",
+        "arguments",
+    )
+    for attr in child_attrs:
+        value = getattr(expr, attr, None)
+        if hasattr(value, "accept"):
+            yield value
+        elif isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                if hasattr(item, "accept"):
+                    yield item
 
 
 def calculate_derived_metrics(analyzer) -> None:
