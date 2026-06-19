@@ -241,9 +241,6 @@ class FluentConditionBuilder(ConditionBuilder):
             ),
         )
 
-    # Math module helpers
-    MATH_ENTROPY = "math.entropy"
-
     def entropy_gt(
         self,
         offset: int,
