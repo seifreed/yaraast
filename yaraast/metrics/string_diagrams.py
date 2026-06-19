@@ -3,16 +3,13 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from yaraast.metrics._visitor_base import MetricsVisitorBase
 
 from .string_diagrams_analysis import StringDiagramAnalysisMixin
 from .string_diagrams_labels import StringDiagramLabelsMixin
 from .string_diagrams_stats import StringDiagramStatsMixin
-
-if TYPE_CHECKING:
-    pass
 
 
 class StringDiagramGenerator(
