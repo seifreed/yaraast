@@ -16,7 +16,6 @@ from yaraast.cli.metrics_reporting_complexity import (
 )
 from yaraast.cli.metrics_reporting_display import (
     display_graph_statistics as _display_graph_statistics,
-    display_graphviz_installation_instructions as _display_graphviz_installation_instructions,
     display_module_usage as _display_module_usage,
     display_rule_dependencies as _display_rule_dependencies,
     display_successful_graph_result as _display_successful_graph_result,
@@ -109,7 +108,6 @@ def _display_text_pattern_analysis(
     click.echo(f"  Plain strings: {counts['plain']}")
     click.echo(f"  Hex patterns: {counts['hex']}")
     click.echo(f"  Regex patterns: {counts['regex']}")
-    _display_graphviz_installation_instructions()
 
 
 def _display_pattern_statistics(generator: Any) -> None:  # generator typing: protocol-compatible

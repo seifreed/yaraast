@@ -33,7 +33,6 @@ from yaraast.cli.metrics_reporting import (
     write_report_summary,
 )
 from yaraast.cli.metrics_reporting_display import (
-    display_graphviz_installation_instructions,
     display_text_statistics,
     path_size_for_display,
 )
@@ -526,7 +525,6 @@ def test_metrics_reporting_graph_and_pattern_helpers(
     _display_graph_statistics(dep_generator)
     _display_rule_dependencies(dep_generator)
     _display_module_usage(dep_generator)
-    display_graphviz_installation_instructions()
     _display_text_fallback("sample.yar", ast, dep_generator)
 
     output_file = tmp_path / "deps.dot"
@@ -581,7 +579,6 @@ def test_metrics_reporting_graph_and_pattern_helpers(
 
 def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     _display_pattern_result("digraph { a -> b }")
-    display_graphviz_installation_instructions()
     _display_pattern_statistics(
         type("NoStats", (), {"get_pattern_statistics": lambda self: None})()
     )

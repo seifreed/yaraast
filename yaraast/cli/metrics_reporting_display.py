@@ -23,13 +23,6 @@ def graphviz_fallback_message(output_kind: str) -> str:
     return f"⚠️ Graphviz not installed. Generating {output_kind} instead...\n"
 
 
-def display_graphviz_installation_instructions() -> None:
-    click.echo("\n💡 To generate visual diagrams, install Graphviz:")
-    click.echo("  macOS: brew install graphviz")
-    click.echo("  Ubuntu: apt-get install graphviz")
-    click.echo("  Windows: https://graphviz.org/download/")
-
-
 def display_graph_statistics(generator: Any) -> None:
     stats = generator.get_dependency_stats()
     click.echo("\n📊 Graph Statistics:")
@@ -90,4 +83,7 @@ def display_text_fallback(
     display_text_statistics(yara_file, stats)
     display_rule_dependencies(generator)
     display_module_usage(generator)
-    display_graphviz_installation_instructions()
+    click.echo("\n💡 To generate visual diagrams, install Graphviz:")
+    click.echo("  macOS: brew install graphviz")
+    click.echo("  Ubuntu: apt-get install graphviz")
+    click.echo("  Windows: https://graphviz.org/download/")
