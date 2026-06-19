@@ -22,6 +22,7 @@ from yaraast.serialization._serialization_primitives import (
     _validate_unique_rule_identifiers,
     _validate_yara_identifier_text,
 )
+from yaraast.serialization.file_io_helpers import read_utf8 as read_text, write_utf8 as write_text
 from yaraast.serialization.json_serialize_visitors import (
     _serialize_anonymous_flag,
     _serialize_dynamic_node_metadata,
@@ -95,10 +96,8 @@ from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.pragma_scopes import serialize_pragma_scope
 from yaraast.serialization.serializer_helpers import (
     build_base_metadata,
-    read_text,
     require_bool_option,
     require_input_path,
-    write_text,
 )
 from yaraast.visitor.visitor import ASTVisitor
 

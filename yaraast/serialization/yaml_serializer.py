@@ -9,9 +9,9 @@ import yaml
 
 from yaraast.ast.base import YaraFile, require_yara_file
 from yaraast.errors import SerializationError
+from yaraast.serialization.file_io_helpers import read_utf8 as read_text
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.serializer_helpers import (
-    read_text,
     require_bool_option,
     require_input_path,
 )

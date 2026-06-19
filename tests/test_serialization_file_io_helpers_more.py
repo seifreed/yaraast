@@ -7,6 +7,7 @@ from typing import Any, cast
 
 import pytest
 
+from yaraast.serialization import serializer_helpers as sh
 from yaraast.serialization.file_io_helpers import read_utf8, write_utf8
 from yaraast.serialization.serializer_helpers import require_input_path
 
@@ -18,6 +19,11 @@ def test_file_io_helpers_read_and_write_utf8_paths(tmp_path: Path) -> None:
 
     assert read_utf8(path) == "hello"
     assert read_utf8(str(path)) == "hello"
+
+
+def test_serializer_helpers_drop_duplicate_text_wrappers() -> None:
+    assert not hasattr(sh, "read_text")
+    assert not hasattr(sh, "write_text")
 
 
 def test_file_io_helpers_reject_non_utf8_encodable_text(tmp_path: Path) -> None:

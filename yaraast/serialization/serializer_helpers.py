@@ -6,8 +6,6 @@ from os import PathLike, fspath
 from pathlib import Path
 from typing import Any
 
-from yaraast.serialization.file_io_helpers import read_utf8, write_utf8
-
 
 def _path_access_error(path: Path) -> ValueError:
     msg = f"path could not be accessed: {path}"
@@ -80,13 +78,3 @@ def require_input_path(value: object, name: str) -> Path:
         msg = f"{name} must not be a directory"
         raise ValueError(msg)
     return path
-
-
-def read_text(path: str | Path) -> str:
-    """Read text from a file path."""
-    return read_utf8(path)
-
-
-def write_text(path: str | Path, text: str) -> None:
-    """Write text to a file path."""
-    write_utf8(path, text)

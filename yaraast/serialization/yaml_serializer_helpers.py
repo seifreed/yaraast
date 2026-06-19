@@ -8,11 +8,11 @@ from typing import Any
 import yaml
 
 from yaraast.config import YAML_DEFAULT_WIDTH
+from yaraast.serialization.file_io_helpers import write_utf8 as write_text
 from yaraast.serialization.serializer_helpers import (
     require_bool_option,
     require_input_path,
     require_positive_int_option,
-    write_text,
 )
 
 
