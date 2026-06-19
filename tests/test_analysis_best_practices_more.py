@@ -5,6 +5,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
+from yaraast.analysis.best_practices_helpers import get_hex_prefix
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
@@ -41,9 +42,9 @@ def test_best_practices_report_helpers_and_integration_paths() -> None:
     report.add_suggestion("r1", "style", "info", "message", "line 1")
     report.add_suggestion("r2", "structure", "warning", "warn")
     report.add_suggestion("r3", "optimization", "error", "err")
-    assert report.has_issues is True
     assert len(report.get_by_severity("info")) == 1
-    assert len(report.get_by_category("style")) == 1
+    assert len([s for s in report.suggestions if s.category == "style"]) == 1
+    assert any(s.severity in ("warning", "error") for s in report.suggestions)
     assert report.suggestions[0].format() == "i [style] r1 (line 1): message"
 
     ast = Parser().parse(r"""
@@ -587,7 +588,7 @@ rule bare {
         for s in analyzer.report.suggestions
     )
 
-    prefix = analyzer._get_hex_prefix(
+    prefix = get_hex_prefix(
         HexString("$h", tokens=[HexByte(0x4D), HexWildcard(), HexByte(0x5A)]),
         4,
     )

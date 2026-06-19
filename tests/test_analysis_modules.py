@@ -55,7 +55,7 @@ rule bp_rule {
 
     assert report is not None
     assert report.suggestions
-    assert report.has_issues is False
+    assert all(s.severity == "info" for s in report.suggestions)
 
 
 def test_optimization_analyzer_report_format() -> None:

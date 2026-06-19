@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.analysis.best_practices_helpers import (
     analyze_global_patterns,
-    get_hex_prefix,
     levenshtein_distance,
 )
 from yaraast.ast.base import ASTNode, YaraFile, require_string
@@ -84,11 +83,6 @@ class AnalysisReport:
         """Get suggestions by severity."""
         severity = require_string(severity, "AnalysisReport severity")
         return [s for s in self.suggestions if s.severity == severity]
-
-    def get_by_category(self, category: str) -> list[Suggestion]:
-        """Get suggestions by category."""
-        category = require_string(category, "AnalysisReport category")
-        return [s for s in self.suggestions if s.category == category]
 
 
 class BestPracticesAnalyzer(BaseVisitor[None]):
@@ -598,10 +592,6 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def _analyze_global_patterns(self) -> None:
         """Analyze patterns across all rules."""
         analyze_global_patterns(self)
-
-    def _get_hex_prefix(self, hex_string: HexString, length: int) -> tuple[Any, ...]:
-        """Get first N bytes of hex string for comparison."""
-        return get_hex_prefix(hex_string, length)
 
     def _levenshtein_distance(self, s1: str, s2: str) -> int:
         """Calculate edit distance between two strings."""

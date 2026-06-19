@@ -23,8 +23,6 @@ def test_analysis_report_rejects_non_string_filter_values(value: Any) -> None:
 
     with pytest.raises(TypeError, match="AnalysisReport severity must be a string"):
         report.get_by_severity(cast(str, value))
-    with pytest.raises(TypeError, match="AnalysisReport category must be a string"):
-        report.get_by_category(cast(str, value))
 
 
 class TestBestPracticesAnalyzer:
@@ -308,11 +306,7 @@ class TestReportFeatures:
         assert len(report.get_by_severity("info")) == 1
         assert len(report.get_by_severity("warning")) == 1
         assert len(report.get_by_severity("error")) == 1
-
-        assert len(report.get_by_category("style")) == 1
-        assert len(report.get_by_category("optimization")) == 1
-
-        assert report.has_issues  # Has warnings/errors
+        assert any(s.severity in ("warning", "error") for s in report.suggestions)
 
     def test_optimization_report_impact(self) -> None:
         """Test optimization report impact tracking."""
