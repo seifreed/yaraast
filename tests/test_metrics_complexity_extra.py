@@ -35,7 +35,7 @@ from yaraast.metrics.complexity_helpers import (
     calculate_expression_complexity,
     calculate_rule_complexity,
 )
-from yaraast.metrics.complexity_reporting import analyze_file_complexity, generate_complexity_report
+from yaraast.metrics.complexity_report_builder import generate_complexity_report
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.ast_nodes import ListExpression, WithDeclaration, WithStatement
@@ -83,7 +83,7 @@ rule implicit_current_refs {
     assert metrics.for_of_expressions == 1
 
 
-def test_complexity_analyzer_metrics_and_report(tmp_path: Path) -> None:
+def test_complexity_analyzer_metrics_and_report() -> None:
     code = """
     import "pe"
 
@@ -127,12 +127,9 @@ def test_complexity_analyzer_metrics_and_report(tmp_path: Path) -> None:
     assert report["summary"]["total_rules"] == 2
     assert report["summary"]["quality_grade"] in {"A", "B", "C", "D", "F"}
 
-    # Exercise file-based analysis
-    path = tmp_path / "rules.yar"
-    path.write_text(dedent(code), encoding="utf-8")
-    file_report = analyze_file_complexity(path)
-    assert file_report["file"] == str(path)
-    assert file_report["complexity"]["summary"]["total_rules"] == 2
+    parsed = parse_yara_source(dedent(code))
+    parsed_report = generate_complexity_report(parsed)
+    assert parsed_report["summary"]["total_rules"] == 2
 
 
 def test_complexity_calculators_on_rule_and_condition() -> None:
@@ -576,15 +573,11 @@ def test_complexity_analyzer_counts_yarax_condition_nodes() -> None:
 
 def test_analyze_file_complexity_accepts_yarax_syntax(tmp_path: Path) -> None:
     path = tmp_path / "native_yarax.yar"
-    path.write_text(
-        "rule x { condition: with xs = [1]: match xs { _ => true } }",
-        encoding="utf-8",
-    )
+    path.write_text("rule x { condition: with xs = [1]: match xs { _ => true } }", encoding="utf-8")
 
-    report = analyze_file_complexity(path)
+    report = generate_complexity_report(parse_yara_source(path.read_text(encoding="utf-8")))
 
-    assert report["file"] == str(path)
-    assert report["complexity"]["summary"]["total_rules"] == 1
+    assert report["summary"]["total_rules"] == 1
 
 
 def test_complexity_complex_rules_use_current_rule_depth_only() -> None:

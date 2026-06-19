@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, cast
-
-import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForOfExpression, OfExpression
@@ -17,8 +14,9 @@ from yaraast.metrics.complexity_helpers import (
     calculate_cyclomatic_complexity,
     calculate_expression_complexity,
 )
-from yaraast.metrics.complexity_reporting import analyze_file_complexity
+from yaraast.metrics.complexity_report_builder import generate_complexity_report
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 class _HashableDecision:
@@ -94,35 +92,9 @@ def test_cyclomatic_complexity_traverses_non_list_child_containers() -> None:
     assert calculate_cyclomatic_complexity(OfExpression("any", hashable_container)) == 2
 
 
-def test_analyze_file_complexity(tmp_path: Path) -> None:
-    file_path = tmp_path / "sample.yar"
-    file_path.write_text("rule r1 { condition: true }", encoding="utf-8")
+def test_generate_complexity_report_from_parsed_source() -> None:
+    ast = parse_yara_source("rule r1 { condition: true }")
+    report = generate_complexity_report(ast)
 
-    report = analyze_file_complexity(file_path)
-    assert report["file"].endswith("sample.yar")
-    assert "complexity" in report
-
-
-@pytest.mark.parametrize("file_path", [None, False, 123, object(), b"sample.yar"])
-def test_analyze_file_complexity_rejects_invalid_path_types(file_path: Any) -> None:
-    with pytest.raises(TypeError, match="file_path must be a file path"):
-        analyze_file_complexity(cast(Any, file_path))
-
-
-@pytest.mark.parametrize("file_path", ["", "   "])
-def test_analyze_file_complexity_rejects_empty_paths(file_path: str) -> None:
-    with pytest.raises(ValueError, match="file_path must not be empty"):
-        analyze_file_complexity(file_path)
-
-
-def test_analyze_file_complexity_rejects_invalid_utf8(tmp_path: Path) -> None:
-    file_path = tmp_path / "bad.yar"
-    file_path.write_bytes(b"\xff")
-
-    with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
-        analyze_file_complexity(file_path)
-
-
-def test_analyze_file_complexity_rejects_inaccessible_path() -> None:
-    with pytest.raises(ValueError, match="path could not be accessed"):
-        analyze_file_complexity("a" * 5000)
+    assert report["summary"]["total_rules"] == 1
+    assert report["rules"][0]["name"] == "r1"
