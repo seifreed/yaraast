@@ -293,7 +293,7 @@ def test_module_loader_parses_parameter_forms_and_lists_modules(tmp_path: Path) 
     finally:
         del os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"]
 
-    assert loader.list_modules() == ["calc"]
+    assert sorted(loader.modules) == ["calc"]
     calc = loader.get_module("calc")
     assert calc is not None
     assert len(calc.functions["one"].parameters) == 2
