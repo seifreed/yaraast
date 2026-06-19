@@ -31,10 +31,6 @@ def _require_path(value: object, context: str) -> Path:
     raise ValidationError(msg)
 
 
-def _require_query_path(value: object, context: str) -> Path:
-    return _require_path(value, context)
-
-
 def _require_string(value: object, context: str) -> str:
     if isinstance(value, str):
         if not value.strip():
@@ -498,7 +494,7 @@ class DependencyGraph:
 
     def get_file_dependencies(self, file_path: object) -> set[str]:
         """Get all dependencies of a file (transitive)."""
-        query_path = _require_query_path(file_path, "DependencyGraph file_path")
+        query_path = _require_path(file_path, "DependencyGraph file_path")
 
         # Resolve path to handle symlinks (e.g., /var -> /private/var on macOS)
         resolved_path = str(query_path.resolve())
@@ -510,7 +506,7 @@ class DependencyGraph:
 
     def get_file_dependents(self, file_path: object) -> set[str]:
         """Get all files that depend on this file (transitive)."""
-        query_path = _require_query_path(file_path, "DependencyGraph file_path")
+        query_path = _require_path(file_path, "DependencyGraph file_path")
         resolved_path = str(query_path.resolve())
         if resolved_path in self.nodes:
             return self._get_transitive_dependents(resolved_path)
