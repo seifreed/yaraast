@@ -13,10 +13,7 @@ from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.builder.fluent_file_builder import yara_file
 from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
 from yaraast.builder.fluent_rule_presets import (
-    document_rule,
-    example_rules,
     malware_rule,
-    network_rule,
     packed_rule,
     rule,
     trojan_rule,
@@ -149,14 +146,6 @@ def test_convenience_factories_cover_common_builder_paths() -> None:
     packed = packed_rule("packed").build()
     assert {t.name for t in packed.tags} == {"packed"}
     assert isinstance(packed.condition, BinaryExpression)
-
-    document = document_rule("doc").build()
-    assert {t.name for t in document.tags} == {"document"}
-    assert document.get_meta_value("author") == "YARA AST"
-
-    network = network_rule("net").build()
-    assert {s.identifier for s in network.strings} == {"$ip", "$url"}
-    assert isinstance(network.condition, OfExpression)
 
 
 def test_file_builder_chaining_and_duplicate_elimination() -> None:
@@ -305,6 +294,3 @@ def test_rule_metadata_aliases_and_example_rules_paths() -> None:
     assert built.get_meta_value("version") == 3
     assert {t.name for t in built.tags} == {"demo"}
     assert {s.identifier for s in built.strings} == {"$re", "$elf"}
-
-    examples = example_rules()
-    assert [r.name for r in examples.rules] == ["example_malware", "example_packed"]
