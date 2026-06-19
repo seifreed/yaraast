@@ -14,11 +14,6 @@ from yaraast.ast.expressions import (
 from yaraast.ast.rules import Import, Rule
 from yaraast.builder.fluent_condition_builder import (
     FluentConditionBuilder,
-    all_of,
-    any_of,
-    condition,
-    match,
-    one_of,
 )
 from yaraast.errors import ValidationError
 from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
@@ -66,14 +61,14 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert isinstance(FluentConditionBuilder.always_true().build(), BooleanLiteral)
 
     with pytest.raises(ValidationError):
-        condition().build()
-    assert match("$a").build() is not None
+        FluentConditionBuilder.create().build()
+    assert FluentConditionBuilder.match_string("$a").build() is not None
     assert b.any_of_them().build() is not None
     assert b.all_of_them().build() is not None
     assert b.not_them().build() is not None
-    assert one_of("$a", "$b").build() is not None
-    assert any_of("$a", "$b").build() is not None
-    assert all_of("$a", "$b").build() is not None
+    assert b.one_of("$a", "$b").build() is not None
+    assert b.any_of("$a", "$b").build() is not None
+    assert b.all_of("$a", "$b").build() is not None
     assert b.filesize_gt(10).build() is not None
     assert b.small_file().build() is not None
     assert b.large_file().build() is not None

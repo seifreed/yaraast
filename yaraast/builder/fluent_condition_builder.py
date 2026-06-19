@@ -271,26 +271,3 @@ class FluentConditionBuilder(ConditionBuilder):
 
 
 # Convenience functions
-def condition() -> FluentConditionBuilder:
-    """Create a new fluent condition builder."""
-    return FluentConditionBuilder.create()
-
-
-def match(string_id: str) -> FluentConditionBuilder:
-    """Match a string identifier."""
-    return FluentConditionBuilder.match_string(string_id)
-
-
-def one_of(*strings: str) -> FluentConditionBuilder:
-    """One of specified strings."""
-    return FluentConditionBuilder().one_of(*strings)
-
-
-def any_of(*strings: str) -> ConditionBuilder:
-    """Any of specified strings."""
-    return FluentConditionBuilder().any_of(*strings)
-
-
-def all_of(*strings: str) -> ConditionBuilder:
-    """All of specified strings."""
-    return FluentConditionBuilder().all_of(*strings)
