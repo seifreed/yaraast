@@ -364,35 +364,3 @@ class ModuleLoader:
     def list_modules(self) -> list[str]:
         """List all available module names."""
         return sorted(self.modules.keys())
-
-
-# Example JSON module format:
-EXAMPLE_MODULE_JSON = """
-{
-    "name": "custom",
-    "description": "Custom module for demonstration",
-    "attributes": {
-        "version": "string",
-        "data": "string[]"
-    },
-    "functions": {
-        "calculate": {
-            "return": "int",
-            "parameters": [
-                {"name": "x", "type": "int"},
-                {"name": "y", "type": "int"}
-            ]
-        },
-        "check": {
-            "return": "bool",
-            "parameters": {
-                "value": "string"
-            }
-        }
-    },
-    "constants": {
-        "MAX_SIZE": "int",
-        "MODULE_NAME": "string"
-    }
-}
-"""
