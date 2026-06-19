@@ -141,7 +141,7 @@ def find_module_member_at_position(
     if position.line < 0 or position.line >= len(ctx.lines):
         return None
     line = ctx.lines[position.line]
-    imported_modules = [symbol.name for symbol in ctx.symbols() if symbol.kind == "import"]
+    imported_modules = {symbol.name for symbol in ctx.symbols() if symbol.kind == "import"}
     for module_name in imported_modules:
         needle = f"{module_name}."
         start = 0

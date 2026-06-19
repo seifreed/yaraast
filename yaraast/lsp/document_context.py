@@ -10,7 +10,26 @@ from lsprotocol.types import Location, Position, Range, TextEdit
 
 from yaraast.dialects import YaraDialect
 from yaraast.lexer.lexer_errors import LexerError
-import yaraast.lsp.document_queries as document_queries
+from yaraast.lsp.document_query_lookup import (
+    get_dotted_symbol_at_position,
+    get_include_info,
+    get_include_target_uri,
+    get_meta_value,
+    get_module_member_info,
+    get_string_definition_info,
+    get_string_definition_node,
+)
+from yaraast.lsp.document_query_references import (
+    build_string_rename_edits,
+    find_rule_definition,
+    find_string_reference_records,
+    find_string_references,
+    get_local_rule_link_records,
+    rename_rule_edits,
+    rule_occurrences,
+    rule_reference_records,
+)
+from yaraast.lsp.document_query_resolution import resolve_symbol
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -318,25 +337,25 @@ class DocumentContext:
         return get_rule_sections(self, rule_name)
 
     def get_meta_value(self, key: str) -> Any | None:
-        return document_queries.get_meta_value(self, key)
+        return get_meta_value(self, key)
 
     def get_string_definition_node(self, identifier: str) -> tuple[Any, Any] | None:
-        return document_queries.get_string_definition_node(self, identifier)
+        return get_string_definition_node(self, identifier)
 
     def get_string_definition_info(self, identifier: str) -> dict[str, Any] | None:
-        return document_queries.get_string_definition_info(self, identifier)
+        return get_string_definition_info(self, identifier)
 
     def get_module_member_info(self, qualified_name: str) -> dict[str, Any] | None:
-        return document_queries.get_module_member_info(self, qualified_name)
+        return get_module_member_info(self, qualified_name)
 
     def get_include_info(self, include_path: str) -> dict[str, Any]:
-        return document_queries.get_include_info(self, include_path)
+        return get_include_info(self, include_path)
 
     def get_include_target_uri(self, include_path: str) -> str | None:
-        return document_queries.get_include_target_uri(self, include_path)
+        return get_include_target_uri(self, include_path)
 
     def get_dotted_symbol_at_position(self, position: Position) -> tuple[str, Range] | None:
-        return document_queries.get_dotted_symbol_at_position(self, position)
+        return get_dotted_symbol_at_position(self, position)
 
     def find_string_references(
         self,
@@ -345,7 +364,7 @@ class DocumentContext:
         include_declaration: bool = True,
         rule_scope: str | None = None,
     ) -> list[Location]:
-        return document_queries.find_string_references(
+        return find_string_references(
             self,
             identifier,
             include_declaration=include_declaration,
@@ -359,7 +378,7 @@ class DocumentContext:
         include_declaration: bool = True,
         rule_scope: str | None = None,
     ) -> list[ReferenceRecord]:
-        return document_queries.find_string_reference_records(
+        return find_string_reference_records(
             self,
             identifier,
             include_declaration=include_declaration,
@@ -369,35 +388,27 @@ class DocumentContext:
     def build_string_rename_edits(
         self, identifier: str, new_name: str, *, rule_scope: str | None = None
     ) -> list[TextEdit]:
-        return document_queries.build_string_rename_edits(
-            self, identifier, new_name, rule_scope=rule_scope
-        )
+        return build_string_rename_edits(self, identifier, new_name, rule_scope=rule_scope)
 
     def rename_rule_edits(self, rule_name: str, new_name: str) -> list[TextEdit]:
-        return document_queries.rename_rule_edits(self, rule_name, new_name)
+        return rename_rule_edits(self, rule_name, new_name)
 
     def resolve_symbol(self, position: Position) -> ResolvedSymbol | None:
-        return document_queries.resolve_symbol(self, position)
+        return resolve_symbol(self, position)
 
     def _iter_rules(self, ast: Any) -> list[Any]:
         return list(getattr(ast, "rules", []))
 
     def find_rule_definition(self, rule_name: str) -> Location | None:
-        return document_queries.find_rule_definition(self, rule_name)
+        return find_rule_definition(self, rule_name)
 
     def rule_occurrences(self, rule_name: str) -> list[Location]:
-        return document_queries.rule_occurrences(self, rule_name)
+        return rule_occurrences(self, rule_name)
 
     def rule_reference_records(
         self, rule_name: str, *, include_declaration: bool = True
     ) -> list[ReferenceRecord]:
-        return document_queries.rule_reference_records(
-            self,
-            rule_name,
-            include_declaration=include_declaration,
-        )
+        return rule_reference_records(self, rule_name, include_declaration=include_declaration)
 
     def get_local_rule_link_records(self) -> list[RuleLinkRecord]:
-        return document_queries.get_local_rule_link_records(
-            self,
-        )
+        return get_local_rule_link_records(self)
