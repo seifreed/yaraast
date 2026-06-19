@@ -81,7 +81,7 @@ class YaraLanguageServer(LanguageServer):
 
     if not hasattr(LanguageServer, "show_message_log"):
 
-        def show_message_log(self, message: str, msg_type: Any = None) -> None:
+        def show_message_log(self, message: str, _msg_type: Any = None) -> None:
             from lsprotocol.types import LogMessageParams, MessageType
 
             self.window_log_message(LogMessageParams(type=MessageType.Log, message=message))

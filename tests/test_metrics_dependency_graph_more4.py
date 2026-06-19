@@ -45,6 +45,7 @@ class _RaisingDot:
     source = "digraph G { a -> b }"
 
     def render(self, _output_file: str, format: str, cleanup: bool = True) -> str:
+        del cleanup
         raise RuntimeError("failed to execute PosixPath('dot')")
 
 
@@ -52,6 +53,7 @@ class _BrokenDot:
     source = "digraph G { a -> b }"
 
     def render(self, _output_file: str, format: str, cleanup: bool = True) -> str:
+        del cleanup
         raise AttributeError("render state missing")
 
 
