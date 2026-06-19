@@ -6,9 +6,15 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
 from yaraast.metrics._visitor_base import MetricsVisitorBase
+from yaraast.metrics.string_diagrams_graph_builders import (
+    generate_hex_pattern_diagram,
+    generate_pattern_complexity_diagram,
+    generate_pattern_flow_diagram,
+    generate_pattern_similarity_diagram,
+    render_or_write_dot,
+)
 
 from .string_diagrams_analysis import StringDiagramAnalysisMixin
-from .string_diagrams_graphs import StringDiagramGraphsMixin
 from .string_diagrams_labels import StringDiagramLabelsMixin
 from .string_diagrams_render import StringDiagramRenderMixin
 from .string_diagrams_stats import StringDiagramStatsMixin
@@ -21,7 +27,6 @@ class StringDiagramGenerator(
     StringDiagramLabelsMixin,
     StringDiagramStatsMixin,
     StringDiagramAnalysisMixin,
-    StringDiagramGraphsMixin,
     StringDiagramRenderMixin,
     MetricsVisitorBase,
 ):
@@ -33,6 +38,42 @@ class StringDiagramGenerator(
         self.pattern_relationships: dict[str, set[str]] = defaultdict(set)
         self.pattern_stats: dict[str, Any] = {}
         self._current_rule: str | None = None
+
+    @staticmethod
+    def _render_or_write_dot(dot, output_path, format: str) -> str:
+        return render_or_write_dot(dot, output_path, format)
+
+    def generate_pattern_flow_diagram(
+        self,
+        ast,
+        output_path: str | None = None,
+        format: str = "svg",
+    ) -> str:
+        return generate_pattern_flow_diagram(self, ast, output_path, format)
+
+    def generate_pattern_complexity_diagram(
+        self,
+        ast,
+        output_path: str | None = None,
+        format: str = "svg",
+    ) -> str:
+        return generate_pattern_complexity_diagram(self, ast, output_path, format)
+
+    def generate_pattern_similarity_diagram(
+        self,
+        ast,
+        output_path: str | None = None,
+        format: str = "svg",
+    ) -> str:
+        return generate_pattern_similarity_diagram(self, ast, output_path, format)
+
+    def generate_hex_pattern_diagram(
+        self,
+        ast,
+        output_path: str | None = None,
+        format: str = "svg",
+    ) -> str:
+        return generate_hex_pattern_diagram(self, ast, output_path, format)
 
 
 from .string_diagram_primitives import (
