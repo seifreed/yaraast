@@ -562,17 +562,6 @@ def _deserialize_string_field(data: dict[str, Any], field: str, context: str) ->
     raise SerializationError(msg)
 
 
-def _deserialize_optional_string_field(
-    data: dict[str, Any], field: str, context: str, default: str = ""
-) -> str:
-    data = _deserialize_object(data, context)
-    value = data.get(field, default)
-    if isinstance(value, str):
-        return value
-    msg = f"{context} {field} must be a string"
-    raise SerializationError(msg)
-
-
 def _deserialize_nullable_string_field(
     data: dict[str, Any], field: str, context: str
 ) -> str | None:
