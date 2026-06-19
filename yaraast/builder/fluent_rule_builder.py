@@ -235,12 +235,6 @@ class FluentRuleBuilder:
         return self.condition(result)
 
     # File property conditions
-    def for_small_files(self) -> Self:
-        """Add small file condition (< 1MB)."""
-        condition_builder = FluentConditionBuilder().small_file()
-        combined = combine_condition(self._rule_builder.get_condition(), condition_builder)
-        return self.condition(combined)
-
     def for_large_files(self) -> Self:
         """Add large file condition (> 10MB)."""
         condition_builder = FluentConditionBuilder().large_file()

@@ -25,7 +25,7 @@ def test_fluent_rule_builder_additional_builder_paths() -> None:
         .regex("foo.*bar")
         .then()
         .condition(FluentConditionBuilder().true())
-        .for_small_files()
+        .condition(FluentConditionBuilder().small_file())
         .build()
     )
 
