@@ -97,10 +97,14 @@ def test_fluent_condition_builder_rejects_invalid_string_count_identifiers() -> 
 
 
 def test_fluent_condition_helpers_return_literals() -> None:
-    expr = FluentConditionBuilder()._create_n_of(1, "$a", "$b")
-    assert isinstance(expr, OfExpression)
-    assert isinstance(expr.quantifier, IntegerLiteral)
-    assert isinstance(expr.string_set, SetExpression | Identifier)
+    builder = FluentConditionBuilder()
+
+    assert not hasattr(builder, "_create_n_of")
+    expr = builder.one_of("$a", "$b").build()
+    assert isinstance(expr, BinaryExpression)
+    assert isinstance(expr.left, OfExpression)
+    assert isinstance(expr.left.quantifier, IntegerLiteral)
+    assert isinstance(expr.left.string_set, SetExpression | Identifier)
 
 
 def test_fluent_condition_builder_rejects_boolean_integer_arguments() -> None:

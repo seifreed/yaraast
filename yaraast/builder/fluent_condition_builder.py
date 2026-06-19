@@ -254,12 +254,6 @@ class FluentConditionBuilder(ConditionBuilder):
         """High entropy section (> 7.0)."""
         return self.entropy_gt(offset, size, 7.0)
 
-    # Helper methods
-    def _create_n_of(self, n: int, *strings: str) -> Expression:
-        """Create N of strings expression."""
-        string_set = build_string_set(*strings)
-        return build_of_expression(n, string_set)
-
     def _validate_quantifier_count(self, name: str, count: int) -> None:
         make_integer_literal(count)
         if count < 0:
