@@ -64,6 +64,10 @@ def test_memory_optimizer_context_and_cleanup() -> None:
     assert isinstance(cleaned, int)
 
 
+def test_memory_optimizer_drops_dead_private_recording_hook() -> None:
+    assert not hasattr(MemoryOptimizer, "_record_optimization_stats")
+
+
 def test_memory_optimizer_recommendations_and_pool() -> None:
     optimizer = MemoryOptimizer()
     rec_small = optimizer.optimize_for_large_collection(10)

@@ -159,7 +159,7 @@ class MemoryOptimizer:
         optimized = optimizer.visit(yara_file)
 
         # Update stats
-        self._record_optimization_stats(optimizer)
+        self._stats["nodes_processed"] += optimizer.nodes_processed
 
         # Force garbage collection if aggressive
         maybe_post_optimize_collect(self)
@@ -171,7 +171,7 @@ class MemoryOptimizer:
         self._string_pool.clear()
         optimizer = MemoryOptimizerTransformer(self._string_pool, self.aggressive)
         optimized = optimizer.visit(rule)
-        self._record_optimization_stats(optimizer)
+        self._stats["nodes_processed"] += optimizer.nodes_processed
         maybe_post_optimize_collect(self)
         return optimized
 
@@ -188,9 +188,6 @@ class MemoryOptimizer:
         self._stats["nodes_processed"] += nodes_processed
         maybe_post_optimize_collect(self)
         return optimized_rules
-
-    def _record_optimization_stats(self, optimizer: MemoryOptimizerTransformer) -> None:
-        self._stats["nodes_processed"] += optimizer.nodes_processed
 
     def get_memory_usage(self) -> dict[str, Any]:
         """Get current memory usage statistics."""
