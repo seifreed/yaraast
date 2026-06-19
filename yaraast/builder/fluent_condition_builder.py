@@ -23,7 +23,6 @@ from yaraast.builder.fluent_condition_helpers import (
     make_filesize_compare,
     make_integer_literal,
     make_string_count_compare,
-    make_string_literal,
     validate_string_reference,
 )
 from yaraast.errors import ValidationError
@@ -64,19 +63,6 @@ class FluentConditionBuilder(ConditionBuilder):
     def three_of(self, *strings: str) -> FluentConditionBuilder:
         """Exactly three of the specified strings."""
         return self.between_n_and_m_of(3, 3, *strings)
-
-    def most_of(self, *strings: str) -> ConditionBuilder:
-        """Most of the strings (more than half)."""
-        threshold = (len(strings) // 2) + 1
-        return self.n_of(threshold, *strings)
-
-    def few_of(self, *strings: str) -> FluentConditionBuilder:
-        """Few of the strings (at least 2)."""
-        return self.at_least_n_of(2, *strings)
-
-    def many_of(self, *strings: str) -> FluentConditionBuilder:
-        """Many of the strings (at least 3)."""
-        return self.at_least_n_of(3, *strings)
 
     def at_least_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At least N of the specified strings."""
@@ -227,11 +213,6 @@ class FluentConditionBuilder(ConditionBuilder):
         """Huge file (> 100MB)."""
         return self.filesize_gt(100 * 1024 * 1024)
 
-    # Module helpers
-    def pe_module(self) -> FluentConditionBuilder:
-        """PE module reference."""
-        return FluentConditionBuilder(Identifier(name="pe"))
-
     def pe_is_dll(self) -> FluentConditionBuilder:
         """PE is DLL."""
         return FluentConditionBuilder(
@@ -247,18 +228,6 @@ class FluentConditionBuilder(ConditionBuilder):
             ),
         )
 
-    def pe_is_32bit(self) -> FluentConditionBuilder:
-        """PE is 32-bit."""
-        return FluentConditionBuilder(
-            FunctionCall(function="pe.is_32bit", arguments=[]),
-        )
-
-    def pe_is_64bit(self) -> FluentConditionBuilder:
-        """PE is 64-bit."""
-        return FluentConditionBuilder(
-            FunctionCall(function="pe.is_64bit", arguments=[]),
-        )
-
     def pe_section_count_eq(self, count: int) -> FluentConditionBuilder:
         """PE section count equals."""
         return FluentConditionBuilder(
@@ -269,37 +238,6 @@ class FluentConditionBuilder(ConditionBuilder):
                 ),
                 operator="==",
                 right=make_integer_literal(count),
-            ),
-        )
-
-    def pe_imphash_eq(self, hash_value: str) -> FluentConditionBuilder:
-        """PE import hash equals."""
-        return FluentConditionBuilder(
-            BinaryExpression(
-                left=FunctionCall(function="pe.imphash", arguments=[]),
-                operator="==",
-                right=make_string_literal(hash_value, "PE imphash"),
-            ),
-        )
-
-    def pe_exports(self, function_name: str) -> FluentConditionBuilder:
-        """PE exports function."""
-        return FluentConditionBuilder(
-            FunctionCall(
-                function="pe.exports",
-                arguments=[make_string_literal(function_name, "PE export name")],
-            ),
-        )
-
-    def pe_imports(self, dll_name: str, function_name: str) -> FluentConditionBuilder:
-        """PE imports function from DLL."""
-        return FluentConditionBuilder(
-            FunctionCall(
-                function="pe.imports",
-                arguments=[
-                    make_string_literal(dll_name, "PE DLL name"),
-                    make_string_literal(function_name, "PE import name"),
-                ],
             ),
         )
 
@@ -318,50 +256,6 @@ class FluentConditionBuilder(ConditionBuilder):
     def high_entropy(self, offset: int = 0, size: int = 1024) -> FluentConditionBuilder:
         """High entropy section (> 7.0)."""
         return self.entropy_gt(offset, size, 7.0)
-
-    def low_entropy(self, offset: int = 0, size: int = 1024) -> FluentConditionBuilder:
-        """Low entropy section (< 3.0)."""
-        return FluentConditionBuilder(build_entropy_compare("<", offset, size, 3.0))
-
-    # Composite helpers
-    def executable_file(self) -> ConditionBuilder:
-        """Common executable file patterns."""
-        mz_at_0 = FluentConditionBuilder(
-            AtExpression(string_id="mz_header", offset=IntegerLiteral(value=0)),
-        )
-
-        return mz_at_0.and_(
-            FluentConditionBuilder(
-                BinaryExpression(
-                    left=Identifier(name="filesize"),
-                    operator=">",
-                    right=IntegerLiteral(value=1024),
-                ),
-            ),
-        )
-
-    def suspicious_entropy(self) -> ConditionBuilder:
-        """Suspicious entropy patterns."""
-        return self.high_entropy().or_(
-            FluentConditionBuilder(
-                build_entropy_compare(">", 0, 512, 7.5),
-            ),
-        )
-
-    def packed_executable(self) -> ConditionBuilder:
-        """Common packed executable indicators."""
-        return self.suspicious_entropy().and_(
-            FluentConditionBuilder(
-                BinaryExpression(
-                    left=MemberAccess(
-                        object=Identifier(name="pe"),
-                        member="number_of_sections",
-                    ),
-                    operator="<",
-                    right=IntegerLiteral(value=5),
-                ),
-            ),
-        )
 
     # Helper methods
     def _create_n_of(self, n: int, *strings: str) -> Expression:

@@ -141,14 +141,5 @@ def test_fluent_condition_builder_rejects_invalid_entropy_thresholds() -> None:
 def test_fluent_condition_builder_rejects_invalid_pe_string_arguments() -> None:
     builder = FluentConditionBuilder()
 
-    with pytest.raises(TypeError, match="PE imphash must be a string"):
-        builder.pe_imphash_eq(cast(Any, True))
-
-    with pytest.raises(TypeError, match="PE export name must be a string"):
-        builder.pe_exports(cast(Any, 123))
-
-    with pytest.raises(TypeError, match="PE DLL name must be a string"):
-        builder.pe_imports(cast(Any, 123), "CreateFileW")
-
-    with pytest.raises(TypeError, match="PE import name must be a string"):
-        builder.pe_imports("kernel32.dll", cast(Any, ["CreateFileW"]))
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        builder.pe_section_count_eq(cast(Any, True))

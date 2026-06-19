@@ -8,6 +8,7 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     FunctionCall,
+    Identifier,
     UnaryExpression,
 )
 from yaraast.ast.rules import Import, Rule
@@ -36,9 +37,8 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
 
     assert isinstance(b.two_of("$a", "$b", "$c").build(), BinaryExpression)
     assert isinstance(b.three_of("$a", "$b", "$c", "$d").build(), BinaryExpression)
-    assert isinstance(b.most_of("$a", "$b", "$c").build(), OfExpression)
-    assert isinstance(b.few_of("$a", "$b", "$c").build(), OfExpression)
-    assert isinstance(b.many_of("$a", "$b", "$c", "$d").build(), OfExpression)
+    assert isinstance(b.at_least_n_of(2, "$a", "$b", "$c").build(), OfExpression)
+    assert isinstance(b.n_of(2, "$a", "$b", "$c").build(), OfExpression)
     assert isinstance(b.at_most_n_of(1, "$a", "$b").build(), UnaryExpression)
     assert isinstance(b.at_most_n_of(2, "$a", "$b", "$c").build(), UnaryExpression)
     assert isinstance(b.between_n_and_m_of(1, 2, "$a", "$b", "$c").build(), BinaryExpression)
@@ -50,29 +50,21 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert isinstance(b.tiny_file().build(), BinaryExpression)
     assert isinstance(b.huge_file().build(), BinaryExpression)
 
-    assert isinstance(b.pe_module().build(), type(b.pe_module().build()))
+    assert isinstance(b.identifier("pe").build(), Identifier)
     pe_dll = b.pe_is_dll().build()
     assert isinstance(pe_dll, FunctionCall)
     assert pe_dll.function == "pe.is_dll"
     assert pe_dll.arguments == []
     assert isinstance(b.pe_is_exe().build(), UnaryExpression)
-    pe_32bit = b.pe_is_32bit().build()
+    pe_32bit = FluentConditionBuilder(FunctionCall(function="pe.is_32bit", arguments=[])).build()
     assert isinstance(pe_32bit, FunctionCall)
     assert pe_32bit.function == "pe.is_32bit"
     assert pe_32bit.arguments == []
-    pe_64bit = b.pe_is_64bit().build()
+    pe_64bit = FluentConditionBuilder(FunctionCall(function="pe.is_64bit", arguments=[])).build()
     assert isinstance(pe_64bit, FunctionCall)
     assert pe_64bit.function == "pe.is_64bit"
     assert pe_64bit.arguments == []
     assert isinstance(b.pe_section_count_eq(3).build(), BinaryExpression)
-    assert isinstance(b.pe_imphash_eq("abc").build(), BinaryExpression)
-    assert isinstance(b.pe_exports("fn").build(), FunctionCall)
-    assert isinstance(b.pe_imports("kernel32.dll", "CreateFileW").build(), FunctionCall)
-
-    assert isinstance(b.low_entropy().build(), BinaryExpression)
-    assert isinstance(b.executable_file().build(), BinaryExpression)
-    assert isinstance(b.suspicious_entropy().build(), BinaryExpression)
-    assert isinstance(b.packed_executable().build(), BinaryExpression)
 
     with pytest.raises(ValidationError):
         FluentConditionBuilder.create().build()
@@ -121,8 +113,8 @@ def test_pe_predicate_helpers_generate_libyara_compatible_calls() -> None:
     condition_expr = (
         FluentConditionBuilder()
         .pe_is_dll()
-        .or_(FluentConditionBuilder().pe_is_32bit())
-        .or_(FluentConditionBuilder().pe_is_64bit())
+        .or_(FluentConditionBuilder(FunctionCall(function="pe.is_32bit", arguments=[])))
+        .or_(FluentConditionBuilder(FunctionCall(function="pe.is_64bit", arguments=[])))
         .build()
     )
     yara_file = YaraFile(
