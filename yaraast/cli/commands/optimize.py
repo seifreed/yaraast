@@ -109,7 +109,3 @@ def optimize(input_file: Path, output_file: str, dry_run: bool, analyze: bool) -
     except Exception as e:
         console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from e
-
-
-# Export the command
-optimize_cmd = optimize

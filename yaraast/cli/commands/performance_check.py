@@ -86,7 +86,3 @@ def performance_check(input_file: Path, severity: str, limit: int, summary: bool
     except Exception as e:
         console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from e
-
-
-# Export the command
-performance_check_cmd = performance_check

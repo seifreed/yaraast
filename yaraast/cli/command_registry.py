@@ -12,10 +12,10 @@ from yaraast.cli.commands.fmt_cmd import fmt
 from yaraast.cli.commands.format_cmd import format_yara, validate_syntax
 from yaraast.cli.commands.libyara_cmd import libyara
 from yaraast.cli.commands.metrics import metrics
-from yaraast.cli.commands.optimize import optimize_cmd
+from yaraast.cli.commands.optimize import optimize
 from yaraast.cli.commands.parse_cmd import parse
 from yaraast.cli.commands.performance import performance
-from yaraast.cli.commands.performance_check import performance_check_cmd
+from yaraast.cli.commands.performance_check import performance_check
 from yaraast.cli.commands.roundtrip import roundtrip
 from yaraast.cli.commands.semantic import semantic
 from yaraast.cli.commands.serialize import serialize
@@ -34,10 +34,10 @@ CLI_COMMANDS = (
     metrics,
     semantic,
     performance,
-    performance_check_cmd,
+    performance_check,
     bench,
     diff,
-    optimize_cmd,
+    optimize,
     libyara,
     serialize,
     roundtrip,
