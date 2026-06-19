@@ -40,10 +40,7 @@ from .string_diagram_primitives import (
     create_hex_diagram,
     create_regex_diagram,
 )
-from .string_diagrams_helpers import (
-    generate_pattern_report,
-    generate_string_diagram,
-)
+from .string_diagrams_render import generate_pattern_report, generate_string_diagram
 
 __all__ = [
     "StringDiagramGenerator",

@@ -1,8 +1,7 @@
-"""Additional real coverage for string diagram render/helpers."""
+"""Additional real coverage for string diagram render helpers."""
 
 from __future__ import annotations
 
-import importlib
 from typing import Any, cast
 
 import pytest
@@ -24,9 +23,6 @@ from yaraast.metrics import (
     string_diagrams_render as render,
 )
 from yaraast.metrics.string_diagrams_render import StringDiagramRenderMixin
-
-helpers = importlib.import_module("yaraast.metrics.string_diagrams_helpers")
-importlib.import_module("yaraast.metrics.string_diagrams")
 
 
 class _NamedModifier:
@@ -69,7 +65,7 @@ def test_render_mixin_object_modifiers_and_short_prefix_paths() -> None:
     assert analysis["patterns"]["duplicates"] == []
 
 
-def test_render_and_helper_pattern_analysis_reports_common_suffixes() -> None:
+def test_render_pattern_analysis_reports_common_suffixes() -> None:
     strings = [
         PlainString(identifier="$a", value="red_tail", modifiers=[]),
         PlainString(identifier="$b", value="blue_tail", modifiers=[]),
@@ -77,13 +73,10 @@ def test_render_and_helper_pattern_analysis_reports_common_suffixes() -> None:
     ]
 
     render_analysis = render.analyze_string_patterns(strings)
-    helper_analysis = helpers.analyze_string_patterns(strings)
-
     assert "_tail" in render_analysis["patterns"]["common_suffixes"]
-    assert "_tail" in helper_analysis["patterns"]["common_suffixes"]
 
 
-def test_render_and_helper_pattern_report_counts_triplicate_plain_value_as_one_unique() -> None:
+def test_render_pattern_report_counts_triplicate_plain_value_as_one_unique() -> None:
     strings = [
         PlainString(identifier="$a", value="same", modifiers=[]),
         PlainString(identifier="$b", value="same", modifiers=[]),
@@ -91,13 +84,10 @@ def test_render_and_helper_pattern_report_counts_triplicate_plain_value_as_one_u
     ]
 
     render_report = render.generate_pattern_report(strings)
-    helper_report = helpers.generate_pattern_report(strings)
-
     assert render_report["summary"]["unique_patterns"] == 1
-    assert helper_report["summary"]["unique_patterns"] == 1
 
 
-def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None:
+def test_render_regex_hex_reports_cover_remaining_branches() -> None:
     jump_tokens = [
         HexByte(value=0xAA),
         HexJump(min_jump=0, max_jump=0),
@@ -154,19 +144,9 @@ def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None
     ]
 
     render_report = render.generate_pattern_report(strings)
-    helper_report = helpers.generate_pattern_report(strings)
     assert render_report["details"][1]["pattern"] == "ab+"
-    assert helper_report["details"][1]["pattern"] == "ab+"
     assert render_report["details"][0]["modifiers"] == [f'base64("{alphabet}")']
-    assert helper_report["details"][0]["modifiers"] == [f'base64("{alphabet}")']
     assert render_report["details"][2]["tokens"] == 1
-    assert helper_report["details"][2]["tokens"] == 1
-
-    one_plain = helpers.analyze_string_patterns(
-        [PlainString(identifier="$x", value="solo", modifiers=[])]
-    )
-    assert one_plain["patterns"]["common_prefixes"] == []
-    assert one_plain["patterns"]["duplicates"] == []
 
 
 def test_hex_diagrams_reject_boolean_hex_values() -> None:

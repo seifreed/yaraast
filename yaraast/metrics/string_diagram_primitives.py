@@ -1,8 +1,7 @@
 """Pure string-pattern diagram builders shared across the metrics diagram modules.
 
-Extracted from string_diagrams_helpers so both it and string_diagrams_render reuse
-one implementation; this module imports no sibling metrics module, breaking the
-cycle helpers <-> string_diagrams.
+This module imports no sibling metrics module, so render and aggregator code can
+reuse it without creating a cycle.
 """
 
 from __future__ import annotations
