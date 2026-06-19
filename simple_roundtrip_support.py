@@ -1,4 +1,4 @@
-"""Simple roundtrip serialization for YARA AST."""
+"""Test-only support for simple roundtrip serialization."""
 
 from __future__ import annotations
 
@@ -32,37 +32,27 @@ def _read_yara_text_file(path: Path) -> str:
 
 
 class SimpleRoundtripSerializer:
-    """Simple serializer for AST roundtrip testing."""
-
     def __init__(self) -> None:
-        """Initialize the serializer."""
         self.parser = Parser()
         self.generator = YaraXGenerator()
 
     def serialize(self, node: ASTNode) -> dict[str, Any]:
-        """Serialize an AST node to a dictionary."""
         return serialize_node(node)
 
     def deserialize(self, data: dict[str, Any]) -> ASTNode:
-        """Deserialize a dictionary to an AST node."""
         return deserialize_node(data)
 
     def serialize_to_file(self, node: ASTNode, file_path: str | Path) -> None:
-        """Serialize an AST node to a JSON file."""
         serialize_to_file(node, file_path)
 
     def deserialize_from_file(self, file_path: str | Path) -> ASTNode:
-        """Deserialize an AST node from a JSON file."""
         return deserialize_from_file(file_path)
 
     def validate_roundtrip(self, node: ASTNode) -> tuple[bool, dict[str, Any]]:
-        """Validate roundtrip serialization."""
         return validate_roundtrip(node)
 
 
 class SimpleRoundTrip:
-    """Simple roundtrip testing utility."""
-
     def __init__(self) -> None:
         self.parser = Parser()
         self.generator = YaraXGenerator()
@@ -70,7 +60,6 @@ class SimpleRoundTrip:
         self.success_count = 0
 
     def test(self, yara_code: str) -> tuple[bool, Any, Any]:
-        """Test roundtrip for a single YARA rule."""
         self.test_count += 1
         if not isinstance(yara_code, str):
             return False, None, None
@@ -88,7 +77,6 @@ class SimpleRoundTrip:
             return False, None, None
 
     def test_batch(self, yara_codes: list[str]) -> list[tuple[bool, Any, Any]]:
-        """Test multiple YARA rules."""
         if isinstance(yara_codes, str) or not isinstance(yara_codes, Sequence):
             msg = "yara_codes must be a sequence of strings"
             raise TypeError(msg)
@@ -98,7 +86,6 @@ class SimpleRoundTrip:
         return [self.test(code) for code in yara_codes]
 
     def test_file(self, file_path: str | PathLike[str]) -> tuple[bool, Any, Any]:
-        """Test a YARA file."""
         if isinstance(file_path, bytes) or not isinstance(file_path, str | PathLike):
             msg = "file_path must be a string or path-like object"
             raise TypeError(msg)
@@ -114,7 +101,6 @@ class SimpleRoundTrip:
         return self.test(yara_code)
 
     def test_directory(self, dir_path: str | PathLike[str]) -> list[tuple[Path, bool, Any, Any]]:
-        """Test all YARA files in a directory."""
         if isinstance(dir_path, bytes) or not isinstance(dir_path, str | PathLike):
             msg = "dir_path must be a string or path-like object"
             raise TypeError(msg)
@@ -133,7 +119,6 @@ class SimpleRoundTrip:
         return results
 
     def get_statistics(self) -> dict[str, Any]:
-        """Get test statistics."""
         return {
             "total_tests": self.test_count,
             "successful_tests": self.success_count,
@@ -143,5 +128,4 @@ class SimpleRoundTrip:
 
 
 def simple_roundtrip_test(yara_source: str) -> dict[str, Any]:
-    """Perform a simple roundtrip test."""
     return simple_roundtrip_report(yara_source)

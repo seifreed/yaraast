@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from simple_roundtrip_support import SimpleRoundTrip, SimpleRoundtripSerializer
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral
 from yaraast.ast.modifiers import StringModifier
@@ -15,7 +16,6 @@ from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.errors import SerializationError
 from yaraast.parser import Parser
-from yaraast.serialization.simple_roundtrip import SimpleRoundTrip, SimpleRoundtripSerializer
 
 
 def _sample_ast() -> YaraFile:

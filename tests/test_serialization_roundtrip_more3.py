@@ -9,6 +9,8 @@ from typing import Any, cast
 import pytest
 import yaml
 
+import simple_roundtrip_support as simple_roundtrip_module
+from simple_roundtrip_support import SimpleRoundTrip
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.meta import Meta
@@ -16,14 +18,12 @@ from yaraast.ast.modifiers import MetaEntry
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString, RegexString
 from yaraast.errors import SerializationError
-from yaraast.serialization import simple_roundtrip as simple_roundtrip_module
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.roundtrip_pipeline_helpers import (
     build_pipeline_statistics,
     build_rules_manifest,
 )
 from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer, RoundTripSerializer
-from yaraast.serialization.simple_roundtrip import SimpleRoundTrip
 
 
 def _sample_ast() -> YaraFile:

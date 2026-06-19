@@ -7,6 +7,11 @@ from typing import Any, cast
 
 import pytest
 
+from simple_roundtrip_support import (
+    SimpleRoundTrip,
+    SimpleRoundtripSerializer,
+    simple_roundtrip_test,
+)
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -20,11 +25,6 @@ from yaraast.ast.expressions import (
 from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
-from yaraast.serialization.simple_roundtrip import (
-    SimpleRoundTrip,
-    SimpleRoundtripSerializer,
-    simple_roundtrip_test,
-)
 
 
 def _sample_yara_rule() -> str:
