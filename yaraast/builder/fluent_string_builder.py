@@ -267,10 +267,6 @@ class FluentStringBuilder:
         """URL regex pattern."""
         return self.regex(r"https?://[^\s<>\"]+")
 
-    def domain_pattern(self) -> FluentStringBuilder:
-        """Domain name regex pattern."""
-        return self.regex(r"\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b")
-
     # Advanced hex patterns
     def wildcard_sequence(self, count: int) -> FluentStringBuilder:
         """Create sequence of hex wildcards."""

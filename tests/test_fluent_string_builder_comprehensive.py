@@ -461,11 +461,11 @@ class TestFluentStringBuilderCommonPatterns:
         assert "https?" in string_def.regex
 
     def test_domain_pattern_creates_domain_regex(self) -> None:
-        """Domain_pattern should create domain regex."""
-        builder = FluentStringBuilder("$domain")
-
-        result = builder.domain_pattern()
-        string_def = result.build()
+        """Domain-style regex should create a regex string."""
+        string_def = FluentStringBuilder.regex_string(
+            "$domain",
+            r"\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b",
+        ).build()
 
         assert isinstance(string_def, RegexString)
 
