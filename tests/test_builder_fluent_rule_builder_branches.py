@@ -22,10 +22,6 @@ from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.errors import ValidationError
 
 
-def _modifier_names(string_def: PlainString | HexString | RegexString) -> set[str]:
-    return {mod.name for mod in string_def.modifiers}
-
-
 def test_with_string_rejects_invalid_argument_shapes() -> None:
     builder = FluentRuleBuilder("invalid")
 
@@ -87,7 +83,7 @@ def test_string_context_chaining_and_and_string_path() -> None:
     first = built_rule.strings[0]
     assert isinstance(first, PlainString)
     assert first.value == "alpha"
-    assert _modifier_names(first) == {
+    assert {mod.name for mod in first.modifiers} == {
         "ascii",
         "wide",
         "nocase",
