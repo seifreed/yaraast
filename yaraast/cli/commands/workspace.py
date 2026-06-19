@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any
+
 import click
 
 from yaraast.cli.utils import _validate_output_path, write_text
-from yaraast.cli.workspace_reporting import print_include_tree
 from yaraast.cli.workspace_services import (
     analyze_workspace,
     format_workspace_graph,
@@ -71,6 +73,12 @@ def analyze(directory, pattern, recursive, output, format, parallel) -> None:
 def resolve(file, search_path, show_tree) -> None:
     """Resolve all includes for a YARA file."""
     from yaraast.resolution import IncludeResolver
+
+    def print_include_tree(tree: dict[str, Any], indent: int = 0) -> None:
+        prefix = "  " * indent
+        click.echo(f"{prefix}- {Path(tree['path']).name}")
+        for include in tree["includes"]:
+            print_include_tree(include, indent + 1)
 
     click.echo(f"Resolving includes for: {file}")
 
