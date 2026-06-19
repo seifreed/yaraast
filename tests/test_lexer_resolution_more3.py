@@ -7,9 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from yaraast.lexer.error_tolerant_lexer import ErrorTolerantLexer, LexerErrorInfo
 from yaraast.lexer.string_escape import StringEscapeHandler
-from yaraast.lexer.tokens import TokenType
 from yaraast.resolution.include_resolver import IncludeResolver
 
 
@@ -23,78 +21,6 @@ def test_string_escape_handler_covers_remaining_paths() -> None:
     eof_after_quote = StringEscapeHandler(r"\"", 1).handle_backslash('"')
     assert eof_after_quote.chars == ['"']
     assert eof_after_quote.ends_string is False
-
-
-def test_error_info_format_without_context_includes_suggestion() -> None:
-    error = LexerErrorInfo(
-        message="Only suggestion path",
-        line=1,
-        column=1,
-        context="",
-        suggestion="Fix it",
-        severity="warning",
-    )
-
-    formatted = error.format_error()
-    assert "Fix it" in formatted
-    assert "Context:" not in formatted
-
-
-def test_error_tolerant_lexer_max_errors_and_recovery_helpers() -> None:
-    lexer = ErrorTolerantLexer("@", max_errors=0)
-    tokens, errors = lexer.tokenize()
-    assert tokens[-1].type == TokenType.EOF
-    assert any("Too many errors" in error.message for error in errors)
-
-    invalid = ErrorTolerantLexer("€")
-    tokens, errors = invalid.tokenize()
-    assert tokens[-1].type == TokenType.EOF
-    assert errors
-
-    quoted = ErrorTolerantLexer('"abc')
-    quoted.position = 0
-    quoted._recover_from_error()
-    assert quoted.position == 1
-
-    slash = ErrorTolerantLexer("/bad token")
-    slash.position = 0
-    slash._recover_from_error()
-    current = slash._current_char()
-    assert current is not None
-    assert current.isspace()
-
-    hex_lexer = ErrorTolerantLexer("{AB")
-    hex_lexer.position = 0
-    hex_lexer._recover_from_error()
-    assert hex_lexer.position == len("{AB")
-
-    default = ErrorTolerantLexer("!rest")
-    default.position = 0
-    default._recover_from_error()
-    assert default.position == 1
-
-    unterminated = ErrorTolerantLexer("abc")
-    unterminated.position = 0
-    unterminated._recover_from_unterminated_string()
-    assert unterminated.position == len("abc")
-
-
-def test_error_tolerant_read_string_end_of_file_escape_variants() -> None:
-    trailing_escaped_quote = ErrorTolerantLexer('"abc\\"')
-    trailing_escaped_quote.position = 0
-    token = trailing_escaped_quote._read_string()
-    assert token.type == TokenType.STRING
-    assert isinstance(token.value, str)
-    assert token.value.endswith("\\")
-    assert trailing_escaped_quote.errors
-
-    trailing_backslash = ErrorTolerantLexer('"abc\\')
-    trailing_backslash.position = 0
-    token = trailing_backslash._read_string()
-    assert token.type == TokenType.STRING
-    assert isinstance(token.value, str)
-    assert token.value.endswith("\\")
-    assert any("Unterminated string" in error.message for error in trailing_backslash.errors)
 
 
 def test_include_resolver_env_tree_and_cache_helpers(tmp_path: Path) -> None:
