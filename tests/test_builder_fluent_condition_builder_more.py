@@ -5,19 +5,19 @@ from __future__ import annotations
 import pytest
 
 from yaraast.ast.expressions import BooleanLiteral
+from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.errors import ValidationError
 
 
 def test_fluent_condition_quantifiers() -> None:
-    builder = FluentConditionBuilder()
-    expr = builder.any_of_them().build()
+    expr = ConditionBuilder().any_of("them").build()
     assert "any" in str(expr)
 
-    expr2 = builder.all_of_them().build()
+    expr2 = ConditionBuilder().all_of("them").build()
     assert "all" in str(expr2)
 
-    expr3 = builder.not_them().build()
+    expr3 = ConditionBuilder().any_of("them").not_().build()
     assert "not" in str(expr3)
 
 

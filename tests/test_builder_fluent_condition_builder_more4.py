@@ -14,20 +14,20 @@ from yaraast.ast.expressions import (
     SetExpression,
     UnaryExpression,
 )
+from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.errors import ValidationError
 
 
 def test_fluent_condition_quantifiers_and_strings() -> None:
-    builder = FluentConditionBuilder().any_of_them()
-    expr = builder.build()
+    expr = ConditionBuilder().any_of("them").build()
     assert isinstance(expr, OfExpression)
 
-    expr = FluentConditionBuilder().all_of_them().build()
+    expr = ConditionBuilder().all_of("them").build()
     assert isinstance(expr, OfExpression)
 
-    expr = FluentConditionBuilder().not_them().build()
+    expr = ConditionBuilder().any_of("them").not_().build()
     assert isinstance(expr, UnaryExpression)
 
     expr = FluentConditionBuilder().string_count_gt("$a", 2).build()

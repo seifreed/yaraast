@@ -12,6 +12,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.rules import Import, Rule
+from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.fluent_condition_builder import (
     FluentConditionBuilder,
 )
@@ -63,9 +64,9 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     with pytest.raises(ValidationError):
         FluentConditionBuilder.create().build()
     assert FluentConditionBuilder.match_string("$a").build() is not None
-    assert b.any_of_them().build() is not None
-    assert b.all_of_them().build() is not None
-    assert b.not_them().build() is not None
+    assert ConditionBuilder().any_of("them").build() is not None
+    assert ConditionBuilder().all_of("them").build() is not None
+    assert ConditionBuilder().any_of("them").not_().build() is not None
     assert b.one_of("$a", "$b").build() is not None
     assert b.any_of("$a", "$b").build() is not None
     assert b.all_of("$a", "$b").build() is not None

@@ -11,6 +11,7 @@ from yaraast.builder.ast_transformer import (
     YaraFileTransformer,
     create_variant_rule,
 )
+from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
 
@@ -37,7 +38,7 @@ def test_fluent_rule_builder_additional_builder_paths() -> None:
     built_with_fluent_condition = (
         FluentRuleBuilder("fcb")
         .condition(
-            FluentConditionBuilder().any_of_them(),
+            ConditionBuilder().any_of("them"),
         )
         .build()
     )

@@ -35,23 +35,6 @@ class FluentConditionBuilder(ConditionBuilder):
         super().__init__(expr)
 
     # Enhanced quantifier methods
-    def any_of_them(self) -> FluentConditionBuilder:
-        """Any of them - common pattern."""
-        return FluentConditionBuilder(build_of_expression("any", Identifier(name="them")))
-
-    def all_of_them(self) -> FluentConditionBuilder:
-        """All of them - common pattern."""
-        return FluentConditionBuilder(build_of_expression("all", Identifier(name="them")))
-
-    def not_them(self) -> FluentConditionBuilder:
-        """Not any of them - negated pattern."""
-        return FluentConditionBuilder(
-            UnaryExpression(
-                operator="not",
-                operand=build_of_expression("any", Identifier(name="them")),
-            ),
-        )
-
     def one_of(self, *strings: str) -> FluentConditionBuilder:
         """Exactly one of the specified strings."""
         return self.between_n_and_m_of(1, 1, *strings)
