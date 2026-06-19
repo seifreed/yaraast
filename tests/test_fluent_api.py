@@ -4,17 +4,19 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.builder import (
-    all_of_them,
-    any_of_them,
     clone_rule,
     malware_rule,
-    match,
     rule,
     transform_rule,
     trojan_rule,
     yara_file,
 )
-from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
+from yaraast.builder.fluent_condition_builder import (
+    FluentConditionBuilder,
+    all_of_them,
+    any_of_them,
+    match,
+)
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.codegen import CodeGenerator
 
