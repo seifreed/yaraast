@@ -6,16 +6,13 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 import difflib
 from enum import Enum
-from os import PathLike, fspath
 from pathlib import Path
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
-from yaraast.cli.utils import _path_exists_and_not_dir
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.parser.parser import Parser
 from yaraast.parser.source import parse_yara_source
-from yaraast.shared.file_patterns import iter_matching_files
 from yaraast.yarax.generator import YaraXGenerator
 
 
@@ -46,24 +43,6 @@ class DiffResult:
     has_changes: bool
     lines: list[DiffLine]
     summary: dict[str, int]
-
-
-def _require_directory_path(value: object, name: str) -> Path:
-    if isinstance(value, bool | bytes) or not isinstance(value, str | PathLike):
-        msg = f"{name} must be a directory path"
-        raise TypeError(msg)
-    raw_path = fspath(value)
-    if not isinstance(raw_path, str):
-        msg = f"{name} must be a directory path"
-        raise TypeError(msg)
-    if not raw_path.strip():
-        msg = f"{name} must not be empty"
-        raise ValueError(msg)
-    path = Path(raw_path)
-    if _path_exists_and_not_dir(path):
-        msg = f"{name} must not be a file"
-        raise ValueError(msg)
-    return path
 
 
 def _require_text(value: object, name: str) -> str:
@@ -371,35 +350,6 @@ class SimpleASTDiffer(SimpleDiffer):
         code2 = self.generator.generate(ast2)
 
         return self.diff(code1, code2)
-
-    def diff_directories(
-        self,
-        dir1: str | PathLike[str],
-        dir2: str | PathLike[str],
-    ) -> dict[str, DiffResult | ASTDiffResult]:
-        """Diff all YARA files in two directories."""
-        dir1 = _require_directory_path(dir1, "dir1")
-        dir2 = _require_directory_path(dir2, "dir2")
-
-        results: dict[str, DiffResult | ASTDiffResult] = {}
-
-        files1 = {path.relative_to(dir1) for path in iter_matching_files(dir1, recursive=True)}
-        files2 = {path.relative_to(dir2) for path in iter_matching_files(dir2, recursive=True)}
-
-        # Files in both directories
-        for file in sorted(files1 & files2, key=str):
-            results[str(file)] = self.diff_files(dir1 / file, dir2 / file)
-
-        # Files only in dir1 (removed)
-        for file in sorted(files1 - files2, key=str):
-            results[str(file)] = _diff_result_for_removed_file(dir1 / file)
-
-        # Files only in dir2 (added)
-        for file in sorted(files2 - files1, key=str):
-            results[str(file)] = _diff_result_for_added_file(dir2 / file)
-
-        return results
-
 
 def _diff_result_for_removed_file(file_path: Path) -> DiffResult:
     """Create a DiffResult showing all lines of a file as removed."""
