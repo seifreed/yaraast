@@ -303,7 +303,7 @@ def test_metrics_services_html_and_wrapper_functions(tmp_path: Path) -> None:
     assert html_out_i.endswith("manual_tree_interactive.html")
     assert (tmp_path / "manual_tree_interactive.html").exists()
 
-    dep_files = ms.generate_dependency_graphs(
+    dep_files = metrics_workflows.generate_dependency_graphs(
         ast,
         tmp_path,
         "rules",
@@ -312,7 +312,7 @@ def test_metrics_services_html_and_wrapper_functions(tmp_path: Path) -> None:
     )
     assert len(dep_files) == 3
 
-    pat_files = ms.generate_pattern_diagrams(
+    pat_files = metrics_workflows.generate_pattern_diagrams(
         ast,
         tmp_path,
         "rules",
@@ -348,7 +348,9 @@ def test_metrics_services_error_paths_and_dependency_generator_success(
     ast = _ast()
 
     with pytest.raises(RuntimeError, match="graphviz"):
-        ms.generate_dependency_graphs(ast, tmp_path, "x", "svg", generator_factory=None)
+        metrics_workflows.generate_dependency_graphs(
+            ast, tmp_path, "x", "svg", generator_factory=None
+        )
 
     original_dep = metrics_workflows.generate_dependency_graphs
     original_pattern = metrics_workflows.generate_pattern_diagrams

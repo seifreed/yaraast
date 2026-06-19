@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from pathlib import Path
 from typing import Any
 
 import click
@@ -28,43 +26,14 @@ __all__ = [
     "determine_pattern_output_path",
     "generate_dependency_graph",
     "generate_dependency_graph_with_generator",
-    "generate_dependency_graphs",
     "generate_html_tree_file",
     "generate_pattern_diagram_with_generator",
-    "generate_pattern_diagrams",
     "parse_yara_file",
 ]
 
 
 def analyze_complexity(ast: YaraFile) -> Any:
     return _workflows.analyze_complexity(ast)
-
-
-def generate_dependency_graphs(
-    ast: YaraFile,
-    output_dir: Path,
-    base_name: str,
-    image_format: str,
-    generator_factory: Any = _DEFAULT_FACTORY,
-) -> Sequence[str]:
-    factory = (
-        DependencyGraphGenerator if generator_factory is _DEFAULT_FACTORY else generator_factory
-    )
-    return _workflows.generate_dependency_graphs(ast, output_dir, base_name, image_format, factory)
-
-
-def generate_pattern_diagrams(
-    ast: YaraFile,
-    output_dir: Path,
-    base_name: str,
-    image_format: str,
-    generator_factory: Any = None,
-) -> Sequence[str]:
-    if generator_factory is None:
-        return _workflows.generate_pattern_diagrams(ast, output_dir, base_name, image_format)
-    return _workflows.generate_pattern_diagrams(
-        ast, output_dir, base_name, image_format, generator_factory
-    )
 
 
 def determine_graph_output_path(yara_file: str, output: object, graph_type: str, fmt: str) -> str:
