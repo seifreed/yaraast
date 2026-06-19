@@ -8,24 +8,6 @@ _BENCHMARK_OPERATIONS = frozenset({"all", "codegen", "parse", "roundtrip"})
 _SINGLE_BENCHMARK_OPERATIONS = frozenset({"codegen", "parse", "roundtrip"})
 
 
-def _run_benchmarks_for_single_file(
-    benchmarker,
-    file_path: Path,
-    operations: object,
-    iterations: int,
-) -> dict:
-    """Run benchmarks for a single file."""
-    ops_to_run = _determine_operations_to_run(operations)
-    file_results = {}
-
-    for op in ops_to_run:
-        result = _run_single_operation(benchmarker, file_path, op, iterations)
-        if result and result.success:
-            file_results[op] = result
-
-    return file_results
-
-
 def _determine_operations_to_run(operations: object) -> list[str]:
     """Determine which operations to run based on input."""
     operations = _require_benchmark_operation(operations)

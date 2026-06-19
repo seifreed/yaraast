@@ -121,7 +121,11 @@ def test_bench_services_operations_and_summary() -> None:
         ):
             bs._run_single_operation(bench, path, unknown_operation, 2)
 
-    file_results = bs._run_benchmarks_for_single_file(bench, path, "all", 3)
+    file_results = {}
+    for op in bs._determine_operations_to_run("all"):
+        result = bs._run_single_operation(bench, path, op, 3)
+        if result and result.success:
+            file_results[op] = result
     assert "parse" in file_results
     assert "roundtrip" in file_results
     assert "codegen" not in file_results
@@ -129,8 +133,8 @@ def test_bench_services_operations_and_summary() -> None:
     assert bs._get_benchmark_summary(bench)["total"] == 3
 
 
-def test_bench_services_does_not_expose_dead_all_files_wrapper() -> None:
-    assert not hasattr(bs, "_run_benchmarks_for_all_files")
+def test_bench_services_does_not_expose_dead_benchmark_wrapper() -> None:
+    assert not hasattr(bs, "_run_benchmarks_for_single_file")
 
 
 def test_workspace_services_formatters() -> None:
