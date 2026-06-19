@@ -50,7 +50,6 @@ class BatchResult:
     input_count: int
     successful_count: int = 0
     failed_count: int = 0
-    skipped_count: int = 0
     total_time: float = 0.0
     output_files: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
