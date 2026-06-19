@@ -12,7 +12,6 @@ from yaraast.lsp.authoring_actions_basic import (
     create_missing_string,
     normalize_string_modifiers,
 )
-from yaraast.lsp.authoring_actions_common import replace_rule_text, require_rule_context
 from yaraast.lsp.authoring_actions_rewrites import (
     deduplicate_identical_strings as rewrite_deduplicate_identical_strings,
     optimize_rule as rewrite_optimize_rule,
@@ -26,7 +25,6 @@ from yaraast.lsp.authoring_actions_sorting import (
     sort_strings_by_identifier as sort_sort_strings_by_identifier,
     sort_tags_alphabetically as sort_sort_tags_alphabetically,
 )
-from yaraast.lsp.authoring_support import RuleContext
 
 __all__ = [
     "StructuralEdit",
@@ -95,16 +93,3 @@ def rewrite_of_them(
     authoring: Any, text: str, selection: Range, *, mode: str, title: str
 ) -> StructuralEdit | None:
     return rewrite_of_them_action(authoring, text, selection, mode=mode, title=title)
-
-
-def _require_rule_context(text: str, current_line: int) -> RuleContext | None:
-    return require_rule_context(text, current_line)
-
-
-def _replace_rule_text(
-    rule_context: RuleContext,
-    new_text: str,
-    title: str,
-    preview: str,
-) -> StructuralEdit:
-    return replace_rule_text(rule_context, new_text, title, preview)
