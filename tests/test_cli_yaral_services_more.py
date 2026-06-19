@@ -8,8 +8,6 @@ import pytest
 
 from yaraast.cli import yaral_services as ys
 from yaraast.yaral.ast_nodes import YaraLFile, YaraLRule
-from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
-from yaraast.yaral.parser import YaraLParser
 
 
 def test_format_yaral_code_preserves_blank_lines() -> None:
@@ -43,28 +41,21 @@ def test_compare_structural_detects_different_rule_counts() -> None:
 
     assert diff == ["Different number of rules: 1 vs 2"]
 
+def test_parse_yaral_handles_standard_and_enhanced_modes() -> None:
+    code = """
+    rule login_attempts {
+        events:
+            $e.metadata.event_type = "LOGIN"
 
-def test_parse_yaral_best_effort_returns_ast_for_degraded_input() -> None:
-    ast = ys.parse_yaral_best_effort('rule sample meta: author = "a"')
+        condition:
+            #e > 1
+    }
+    """
+    enhanced_ast = ys.parse_yaral(code, enhanced=True)
+    standard_ast = ys.parse_yaral(code, enhanced=False)
 
-    assert isinstance(ast, YaraLFile)
-
-
-def test_parse_yaral_best_effort_falls_back_to_standard_parser(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def fail_parse(self: object) -> YaraLFile:
-        raise RuntimeError("enhanced failed")
-
-    def parse_standard(self: object) -> YaraLFile:
-        return YaraLFile(rules=[YaraLRule(name="fallback")])
-
-    monkeypatch.setattr(EnhancedYaraLParser, "parse", fail_parse)
-    monkeypatch.setattr(YaraLParser, "parse", parse_standard)
-
-    ast = ys.parse_yaral_best_effort("rule fallback { condition: true }")
-
-    assert [rule.name for rule in ast.rules] == ["fallback"]
+    assert isinstance(enhanced_ast, YaraLFile)
+    assert isinstance(standard_ast, YaraLFile)
 
 
 def test_parse_yaral_enhanced_rejects_recovered_parser_errors() -> None:

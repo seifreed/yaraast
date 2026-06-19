@@ -10,8 +10,6 @@ from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file
 from yaraast.errors import ValidationError
 from yaraast.libyara.equivalence import EquivalenceTester
-from yaraast.yarax.compatibility_checker import CompatibilityIssue, YaraXCompatibilityChecker
-from yaraast.yarax.feature_flags import YaraXFeatures
 
 
 def validate_rule_file(rule_file: str) -> tuple[YaraFile, int, int, int]:
@@ -22,15 +20,6 @@ def validate_rule_file(rule_file: str) -> tuple[YaraFile, int, int, int]:
 def roundtrip_test(rule_file: str, data: bytes | None) -> Any:
     tester = EquivalenceTester()
     return tester.test_file_round_trip(rule_file, data)
-
-
-def yarax_check(ast: YaraFile, strict: bool) -> list[CompatibilityIssue]:
-    if not isinstance(strict, bool):
-        msg = "strict must be a boolean"
-        raise TypeError(msg)
-    features = YaraXFeatures.yarax_strict() if strict else YaraXFeatures.yarax_compatible()
-    checker = YaraXCompatibilityChecker(features)
-    return checker.check(ast)
 
 
 def read_test_data(test_data_path: str | PathLike[str] | None) -> bytes | None:

@@ -11,6 +11,8 @@ from yaraast.ast.base import YaraFile
 from yaraast.cli import validate_services as vs
 from yaraast.parser import Parser
 from yaraast.yarax.ast_nodes import WithStatement
+from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
+from yaraast.yarax.feature_flags import YaraXFeatures
 
 
 def _ast_with_regex_issue() -> YaraFile:
@@ -61,19 +63,13 @@ def test_read_test_data_rejects_empty_pathlike_path() -> None:
 def test_yarax_check_varies_with_strict_flag() -> None:
     ast = _ast_with_regex_issue()
 
-    strict_issues = vs.yarax_check(ast, strict=True)
-    compatible_issues = vs.yarax_check(ast, strict=False)
+    strict_checker = YaraXCompatibilityChecker(YaraXFeatures.yarax_strict())
+    compatible_checker = YaraXCompatibilityChecker(YaraXFeatures.yarax_compatible())
+    strict_issues = strict_checker.check(ast)
+    compatible_issues = compatible_checker.check(ast)
 
     assert any(issue.issue_type == "unescaped_brace" for issue in strict_issues)
     assert not any(issue.issue_type == "unescaped_brace" for issue in compatible_issues)
-
-
-@pytest.mark.parametrize("strict", [None, 1, "yes", object()])
-def test_yarax_check_rejects_invalid_strict_types(strict: Any) -> None:
-    ast = _ast_with_regex_issue()
-
-    with pytest.raises(TypeError, match="strict must be a boolean"):
-        vs.yarax_check(ast, strict=cast(bool, strict))
 
 
 def test_validate_rule_file_parses_yarax(tmp_path: Path) -> None:
