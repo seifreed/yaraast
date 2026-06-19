@@ -72,15 +72,6 @@ class StringDiagramGenerator(
         return generate_hex_pattern_diagram(self, ast, output_path, format)
 
 
-from .string_diagram_primitives import (
-    analyze_string_patterns,
-    create_hex_diagram,
-    create_regex_diagram,
-)
-
 __all__ = [
     "StringDiagramGenerator",
-    "analyze_string_patterns",
-    "create_hex_diagram",
-    "create_regex_diagram",
 ]
