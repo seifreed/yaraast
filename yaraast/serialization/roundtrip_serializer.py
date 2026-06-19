@@ -27,8 +27,6 @@ from yaraast.serialization.roundtrip_pipeline_helpers import (
     build_pipeline_metadata,
     build_pipeline_statistics,
     build_rules_manifest,
-    collect_all_tags,
-    count_string_types,
     dump_pipeline_yaml,
 )
 from yaraast.serialization.yaml_serializer import YamlSerializer
@@ -312,14 +310,6 @@ class EnhancedYamlSerializer(YamlSerializer):
         ast = _require_yara_file(ast, "ast")
         manifest = build_rules_manifest(ast)
         return dump_pipeline_yaml(manifest, output_path)
-
-    def _collect_all_tags(self, ast: YaraFile) -> list[str]:
-        """Collect all unique tags from rules."""
-        return collect_all_tags(ast)
-
-    def _count_string_types(self, ast: YaraFile) -> dict[str, int]:
-        """Count different types of string patterns."""
-        return count_string_types(ast)
 
 
 # Convenience functions

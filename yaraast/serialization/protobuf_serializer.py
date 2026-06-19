@@ -12,10 +12,6 @@ from yaraast.ast.base import YaraFile, require_yara_file
 from yaraast.errors import SerializationError
 from yaraast.serialization.protobuf_conversion import (
     ast_to_protobuf,
-    convert_expression_to_protobuf,
-    convert_hex_token_to_protobuf,
-    convert_rule_to_protobuf,
-    convert_string_to_protobuf,
     protobuf_to_ast,
 )
 from yaraast.serialization.serializer_helpers import require_bool_option, require_input_path
@@ -96,22 +92,6 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
     def _ast_to_protobuf(self, ast: YaraFile) -> yara_ast_pb2.YaraFile:
         """Convert AST to Protobuf message."""
         return ast_to_protobuf(ast, include_metadata=self.include_metadata)
-
-    def _convert_rule_to_protobuf(self, rule, pb_rule) -> None:
-        """Convert rule AST to Protobuf."""
-        convert_rule_to_protobuf(rule, pb_rule)
-
-    def _convert_string_to_protobuf(self, string_def, pb_string) -> None:
-        """Convert string definition to Protobuf."""
-        convert_string_to_protobuf(string_def, pb_string)
-
-    def _convert_hex_token_to_protobuf(self, token, pb_token) -> None:
-        """Convert hex token to Protobuf."""
-        convert_hex_token_to_protobuf(token, pb_token)
-
-    def _convert_expression_to_protobuf(self, expr, pb_expr) -> None:
-        """Convert expression to Protobuf."""
-        convert_expression_to_protobuf(expr, pb_expr)
 
     def _protobuf_to_ast(self, pb_file: yara_ast_pb2.YaraFile) -> YaraFile:
         """Convert Protobuf message to AST."""

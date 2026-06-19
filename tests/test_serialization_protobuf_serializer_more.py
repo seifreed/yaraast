@@ -56,7 +56,10 @@ from yaraast.ast.strings import (
 from yaraast.codegen import CodeGenerator
 from yaraast.errors import SerializationError
 from yaraast.serialization import yara_ast_pb2
-from yaraast.serialization.protobuf_conversion import _protobuf_has_field
+from yaraast.serialization.protobuf_conversion import (
+    _protobuf_has_field,
+    convert_expression_to_protobuf,
+)
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 from yaraast.yarax.ast_nodes import DictExpression, ListExpression, TupleExpression
 
@@ -1289,8 +1292,6 @@ def test_protobuf_expression_conversion_paths() -> None:
     pytest.importorskip("yaraast.serialization.yara_ast_pb2")
     from yaraast.serialization import yara_ast_pb2
 
-    serializer = ProtobufSerializer()
-
     expr_cases: list[tuple[Expression, Callable[[Any], bool]]] = [
         (Identifier(name="id"), lambda pb: pb.identifier.name == "id"),
         (StringIdentifier(name="$a"), lambda pb: pb.string_identifier.name == "$a"),
@@ -1318,5 +1319,5 @@ def test_protobuf_expression_conversion_paths() -> None:
 
     for expr, predicate in expr_cases:
         pb_expr = yara_ast_pb2.Expression()
-        serializer._convert_expression_to_protobuf(expr, pb_expr)
+        convert_expression_to_protobuf(expr, pb_expr)
         assert predicate(pb_expr)
