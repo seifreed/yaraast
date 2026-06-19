@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import graphviz
 
-from yaraast.metrics.graphviz_factory import create_digraph
-
 
 def create_pattern_flow_graph() -> graphviz.Digraph:
-    dot = create_digraph("YARA String Pattern Flow", "dot")
+    dot = graphviz.Digraph(comment="YARA String Pattern Flow", engine="dot")
     dot.attr(rankdir="TB", bgcolor="white", fontname="Arial", fontsize="12")
     dot.attr("node", fontname="Arial", fontsize="10")
     dot.attr("edge", fontname="Arial", fontsize="9")
@@ -16,18 +14,18 @@ def create_pattern_flow_graph() -> graphviz.Digraph:
 
 
 def create_complexity_graph() -> graphviz.Digraph:
-    dot = create_digraph("YARA Pattern Complexity", "neato")
+    dot = graphviz.Digraph(comment="YARA Pattern Complexity", engine="neato")
     dot.attr(bgcolor="white", fontname="Arial", overlap="false", splines="true")
     return dot
 
 
 def create_similarity_graph() -> graphviz.Digraph:
-    dot = create_digraph("YARA Pattern Similarity", "fdp")
+    dot = graphviz.Digraph(comment="YARA Pattern Similarity", engine="fdp")
     dot.attr(bgcolor="white", fontname="Arial", overlap="scale", sep="+20")
     return dot
 
 
 def create_hex_graph() -> graphviz.Digraph:
-    dot = create_digraph("YARA Hex Pattern Analysis", "dot")
+    dot = graphviz.Digraph(comment="YARA Hex Pattern Analysis", engine="dot")
     dot.attr(rankdir="LR", bgcolor="white", fontname="Arial")
     return dot
