@@ -15,6 +15,7 @@ from yaraast.cli.diff_reporting import (
     show_diff_summary,
     show_rule_changes,
 )
+from yaraast.cli.simple_differ import SimpleASTDiffer
 
 console = Console()
 
@@ -38,12 +39,10 @@ def diff(
 ) -> None:
     """Show AST-based diff highlighting logical vs stylistic changes."""
     try:
-        from yaraast.cli.diff_services import diff_files
-
         file1_path = Path(file1)
         file2_path = Path(file2)
 
-        result = diff_files(file1_path, file2_path)
+        result = SimpleASTDiffer().diff_files(file1_path, file2_path)
 
         if not result.has_changes:
             display_no_changes(file1_path, file2_path)

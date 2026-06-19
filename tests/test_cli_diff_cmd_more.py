@@ -7,8 +7,8 @@ import click
 from click.testing import CliRunner, Result
 import pytest
 
-from yaraast.cli import diff_services
 from yaraast.cli.commands.diff_cmd import diff
+from yaraast.cli.simple_differ import SimpleASTDiffer
 
 
 def _write(path: Path, content: str) -> None:
@@ -104,10 +104,10 @@ def test_diff_cmd_abort_preserves_original_cause(
     _write(file_b, "rule b { condition: true }")
     sentinel = RuntimeError("diff sentinel")
 
-    def fail_diff_files(_file_a: Path, _file_b: Path) -> NoReturn:
+    def fail_diff_files(_self: SimpleASTDiffer, _file_a: Path, _file_b: Path) -> NoReturn:
         raise sentinel
 
-    monkeypatch.setattr(diff_services, "diff_files", fail_diff_files)
+    monkeypatch.setattr(SimpleASTDiffer, "diff_files", fail_diff_files)
 
     result = CliRunner().invoke(diff, [str(file_a), str(file_b)], standalone_mode=False)
 
