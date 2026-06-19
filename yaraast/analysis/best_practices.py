@@ -13,10 +13,7 @@ from fnmatch import fnmatchcase
 import re
 from typing import TYPE_CHECKING, Any
 
-from yaraast.analysis.best_practices_helpers import (
-    analyze_global_patterns,
-    levenshtein_distance,
-)
+from yaraast.analysis.best_practices_helpers import get_hex_prefix, levenshtein_distance
 from yaraast.ast.base import ASTNode, YaraFile, require_string
 from yaraast.ast.expressions import (
     Identifier,
@@ -583,4 +580,19 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
     def _analyze_global_patterns(self) -> None:
         """Analyze patterns across all rules."""
-        analyze_global_patterns(self)
+        if len(self._hex_patterns) <= 1:
+            return
+        pattern_groups: dict[tuple[int, tuple[Any, ...]], list[tuple[str, HexString]]] = {}
+        for name, hex_string in self._hex_patterns:
+            if len(hex_string.tokens) > 0:
+                key = (len(hex_string.tokens), get_hex_prefix(hex_string, 4))
+                pattern_groups.setdefault(key, []).append((name, hex_string))
+        for group in pattern_groups.values():
+            if len(group) > 1:
+                names = [name for name, _ in group]
+                self.report.add_suggestion(
+                    "global",
+                    "optimization",
+                    "info",
+                    f"Similar hex patterns: {', '.join(names)} - consider consolidation?",
+                )

@@ -2,29 +2,9 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import Any
 
 from yaraast.ast.strings import HexString
-
-
-def analyze_global_patterns(analyzer: Any) -> None:
-    if len(analyzer._hex_patterns) <= 1:
-        return
-    pattern_groups = defaultdict(list)
-    for name, hex_string in analyzer._hex_patterns:
-        if len(hex_string.tokens) > 0:
-            key = (len(hex_string.tokens), get_hex_prefix(hex_string, 4))
-            pattern_groups[key].append((name, hex_string))
-    for group in pattern_groups.values():
-        if len(group) > 1:
-            names = [name for name, _ in group]
-            analyzer.report.add_suggestion(
-                "global",
-                "optimization",
-                "info",
-                f"Similar hex patterns: {', '.join(names)} - consider consolidation?",
-            )
 
 
 def get_hex_prefix(hex_string: HexString, length: int) -> tuple[Any, ...]:
