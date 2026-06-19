@@ -19,13 +19,9 @@ from yaraast.builder.fluent_condition_builder import (
     any_of,
     any_of_them,
     condition,
-    filesize_gt,
-    large_file,
     match,
     not_them,
     one_of,
-    pe_is_dll,
-    small_file,
 )
 from yaraast.errors import ValidationError
 from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
@@ -81,10 +77,10 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert one_of("$a", "$b").build() is not None
     assert any_of("$a", "$b").build() is not None
     assert all_of("$a", "$b").build() is not None
-    assert filesize_gt(10).build() is not None
-    assert small_file().build() is not None
-    assert large_file().build() is not None
-    assert pe_is_dll().build() is not None
+    assert b.filesize_gt(10).build() is not None
+    assert b.small_file().build() is not None
+    assert b.large_file().build() is not None
+    assert b.pe_is_dll().build() is not None
     assert b.high_entropy().build() is not None
 
 

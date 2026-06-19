@@ -309,23 +309,3 @@ def any_of(*strings: str) -> ConditionBuilder:
 def all_of(*strings: str) -> ConditionBuilder:
     """All of specified strings."""
     return FluentConditionBuilder().all_of(*strings)
-
-
-def filesize_gt(size: int) -> FluentConditionBuilder:
-    """File size greater than."""
-    return FluentConditionBuilder().filesize_gt(size)
-
-
-def small_file() -> FluentConditionBuilder:
-    """Small file condition."""
-    return FluentConditionBuilder().small_file()
-
-
-def large_file() -> FluentConditionBuilder:
-    """Large file condition."""
-    return FluentConditionBuilder().large_file()
-
-
-def pe_is_dll() -> FluentConditionBuilder:
-    """PE is DLL condition."""
-    return FluentConditionBuilder().pe_is_dll()
