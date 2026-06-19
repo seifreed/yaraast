@@ -37,16 +37,7 @@ from yaraast.builder.fluent_rule_presets import (
     rule,
     trojan_rule,
 )
-
-# Convenience functions
-# Enhanced fluent builders
-from yaraast.builder.fluent_string_builder import (
-    FluentStringBuilder,
-    hex_pattern,
-    regex,
-    string,
-    text,
-)
+from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 
@@ -70,7 +61,6 @@ __all__ = [
     "document_rule",
     "example_rules",
     "filesize_gt",
-    "hex_pattern",
     "large_file",
     "malware_rule",
     "match",
@@ -78,12 +68,8 @@ __all__ = [
     "not_them",
     "one_of",
     "packed_rule",
-    "regex",
     "rule",
     "small_file",
-    # Convenience functions
-    "string",
-    "text",
     "transform_rule",
     "transform_yara_file",
     "trojan_rule",

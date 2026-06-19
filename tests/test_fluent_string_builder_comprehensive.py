@@ -22,16 +22,6 @@ from yaraast.ast.strings import (
 )
 from yaraast.builder.fluent_string_builder import (
     FluentStringBuilder,
-    elf_header,
-    email_regex,
-    hex_pattern,
-    ip_regex,
-    mz_header,
-    pe_header,
-    regex,
-    string,
-    text,
-    url_regex,
 )
 from yaraast.errors import ValidationError
 from yaraast.parser.parser import Parser
@@ -695,32 +685,32 @@ class TestFluentStringBuilderConvenienceFunctions:
 
     def test_string_function_creates_builder(self) -> None:
         """String function should create builder."""
-        builder = string("$test")
+        builder = FluentStringBuilder.string("$test")
 
         assert isinstance(builder, FluentStringBuilder)
         assert builder.identifier == "$test"
 
     def test_text_function_creates_text_builder(self) -> None:
         """Text function should create text builder."""
-        builder = text("$t", "content")
+        builder = FluentStringBuilder.text_string("$t", "content")
 
         assert builder._content == "content"
 
     def test_hex_pattern_function_creates_hex_builder(self) -> None:
         """Hex_pattern function should create hex builder."""
-        builder = hex_pattern("$h", "FF AA")
+        builder = FluentStringBuilder.hex_string("$h", "FF AA")
 
         assert builder._string_type == "hex"
 
     def test_regex_function_creates_regex_builder(self) -> None:
         """Regex function should create regex builder."""
-        builder = regex("$r", r"[0-9]+")
+        builder = FluentStringBuilder.regex_string("$r", r"[0-9]+")
 
         assert builder._string_type == "regex"
 
     def test_mz_header_function_creates_mz_pattern(self) -> None:
         """Mz_header function should create MZ pattern builder."""
-        builder = mz_header()
+        builder = FluentStringBuilder.string("$mz").mz_header()
 
         assert builder.identifier == "$mz"
         string_def = builder.build()
@@ -728,25 +718,25 @@ class TestFluentStringBuilderConvenienceFunctions:
 
     def test_mz_header_with_custom_identifier(self) -> None:
         """Mz_header should accept custom identifier."""
-        builder = mz_header("$custom")
+        builder = FluentStringBuilder.string("$custom").mz_header()
 
         assert builder.identifier == "$custom"
 
     def test_pe_header_function_creates_pe_pattern(self) -> None:
         """Pe_header function should create PE pattern builder."""
-        builder = pe_header()
+        builder = FluentStringBuilder.string("$pe").pe_header()
 
         assert builder.identifier == "$pe"
 
     def test_elf_header_function_creates_elf_pattern(self) -> None:
         """Elf_header function should create ELF pattern builder."""
-        builder = elf_header()
+        builder = FluentStringBuilder.string("$elf").elf_header()
 
         assert builder.identifier == "$elf"
 
     def test_email_regex_function_creates_email_pattern(self) -> None:
         """Email_regex function should create email pattern."""
-        builder = email_regex()
+        builder = FluentStringBuilder.string("$email").email_pattern()
 
         assert builder.identifier == "$email"
         string_def = builder.build()
@@ -754,7 +744,7 @@ class TestFluentStringBuilderConvenienceFunctions:
 
     def test_ip_regex_function_creates_ip_pattern(self) -> None:
         """Ip_regex function should create IP pattern."""
-        builder = ip_regex()
+        builder = FluentStringBuilder.string("$ip").ip_address_pattern()
 
         assert builder.identifier == "$ip"
         string_def = builder.build()
@@ -764,7 +754,7 @@ class TestFluentStringBuilderConvenienceFunctions:
 
     def test_url_regex_function_creates_url_pattern(self) -> None:
         """Url_regex function should create URL pattern."""
-        builder = url_regex()
+        builder = FluentStringBuilder.string("$url").url_pattern()
 
         assert builder.identifier == "$url"
 

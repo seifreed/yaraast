@@ -7,18 +7,15 @@ from yaraast.builder import (
     all_of_them,
     any_of_them,
     clone_rule,
-    hex_pattern,
     malware_rule,
     match,
-    regex,
     rule,
-    string,
-    text,
     transform_rule,
     trojan_rule,
     yara_file,
 )
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
+from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.codegen import CodeGenerator
 
 
@@ -27,7 +24,7 @@ class TestFluentStringBuilder:
 
     def test_text_string_basic(self) -> None:
         """Test basic text string creation."""
-        string_def = text("$test", "hello world").build()
+        string_def = FluentStringBuilder.text_string("$test", "hello world").build()
 
         assert isinstance(string_def, PlainString)
         assert string_def.identifier == "$test"
@@ -36,7 +33,9 @@ class TestFluentStringBuilder:
 
     def test_text_string_with_modifiers(self) -> None:
         """Test text string with modifiers."""
-        string_def = text("$test", "malware").nocase().wide().fullword().build()
+        string_def = (
+            FluentStringBuilder.text_string("$test", "malware").nocase().wide().fullword().build()
+        )
 
         assert isinstance(string_def, PlainString)
         assert string_def.identifier == "$test"
@@ -50,7 +49,7 @@ class TestFluentStringBuilder:
 
     def test_hex_string_basic(self) -> None:
         """Test basic hex string creation."""
-        string_def = hex_pattern("$hex", "4D 5A ?? 00").build()
+        string_def = FluentStringBuilder.hex_string("$hex", "4D 5A ?? 00").build()
 
         assert isinstance(string_def, HexString)
         assert string_def.identifier == "$hex"
@@ -58,7 +57,7 @@ class TestFluentStringBuilder:
 
     def test_regex_string_basic(self) -> None:
         """Test basic regex string creation."""
-        string_def = regex(
+        string_def = FluentStringBuilder.regex_string(
             "$email",
             r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
         ).build()
@@ -69,13 +68,13 @@ class TestFluentStringBuilder:
 
     def test_pattern_helpers(self) -> None:
         """Test pattern helper methods."""
-        mz = string("$mz").mz_header().build()
+        mz = FluentStringBuilder.string("$mz").mz_header().build()
         assert mz.identifier == "$mz"
 
-        pe = string("$pe").pe_header().build()
+        pe = FluentStringBuilder.string("$pe").pe_header().build()
         assert pe.identifier == "$pe"
 
-        email = string("$email").email_pattern().build()
+        email = FluentStringBuilder.string("$email").email_pattern().build()
         assert email.identifier == "$email"
 
 
