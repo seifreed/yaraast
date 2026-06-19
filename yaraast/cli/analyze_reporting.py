@@ -11,7 +11,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from yaraast.analysis.best_practices import AnalysisReport
-from yaraast.analysis.optimization import OptimizationReport, OptimizationSuggestion
+from yaraast.analysis.optimization import OptimizationReport
 from yaraast.cli.analyze_services import _filter_suggestions, _get_level_style, _get_severity_counts
 
 console = Console()
@@ -30,7 +30,14 @@ def display_best_practices_report(
     display_issues(suggestions)
     if verbose:
         display_verbose_info(suggestions, report)
-    handle_exit_code(errors, warnings, info, verbose)
+
+    if errors:
+        sys.exit(2)
+    if warnings and not verbose:
+        console.print(f"\n[dim]Use -v to see {len(info)} additional suggestions[/dim]")
+        sys.exit(1)
+    console.print("\n[green]✓ No major issues found[/green]")
+    sys.exit(0)
 
 
 def display_summary(errors: list[Any], warnings: list[Any], info: list[Any]) -> None:
@@ -59,18 +66,6 @@ def display_verbose_info(suggestions: list[Any], report: AnalysisReport) -> None
         console.print("\n[dim]Statistics:[/dim]")
         for key, value in report.statistics.items():
             console.print(f"  {escape(str(key))}: {escape(str(value))}")
-
-
-def handle_exit_code(
-    errors: list[Any], warnings: list[Any], info: list[Any], verbose: bool
-) -> None:
-    if errors:
-        sys.exit(2)
-    if warnings and not verbose:
-        console.print(f"\n[dim]Use -v to see {len(info)} additional suggestions[/dim]")
-        sys.exit(1)
-    console.print("\n[green]✓ No major issues found[/green]")
-    sys.exit(0)
 
 
 def display_optimization_report(rule_file: str, report: OptimizationReport, verbose: bool) -> None:
@@ -111,11 +106,7 @@ def display_suggestions_by_level(level_suggestions: list[Any], level: str, verbo
     for suggestion in level_suggestions:
         console.print(f"  {escape(suggestion.format())}")
         if verbose:
-            display_code_examples(suggestion)
-
-
-def display_code_examples(suggestion: OptimizationSuggestion) -> None:
-    if suggestion.code_before:
-        console.print(f"    Before: [dim]{escape(suggestion.code_before)}[/dim]")
-    if suggestion.code_after:
-        console.print(f"    After:  [green]{escape(suggestion.code_after)}[/green]")
+            if suggestion.code_before:
+                console.print(f"    Before: [dim]{escape(suggestion.code_before)}[/dim]")
+            if suggestion.code_after:
+                console.print(f"    After:  [green]{escape(suggestion.code_after)}[/green]")

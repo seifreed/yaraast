@@ -63,27 +63,22 @@ def display_performance_comparison(all_results: list[dict]) -> None:
     ]
 
     if parse_results:
-        _display_parsing_comparison(parse_results)
+        parse_results.sort(
+            key=lambda x: x[1].execution_time if x[1] else float("inf"),
+        )
+        console.print("\n[yellow]Parsing Performance (fastest to slowest):[/yellow]")
 
-
-def _display_parsing_comparison(parse_results: list[tuple]) -> None:
-    """Display parsing performance comparison."""
-    parse_results.sort(
-        key=lambda x: x[1].execution_time if x[1] else float("inf"),
-    )
-    console.print("\n[yellow]Parsing Performance (fastest to slowest):[/yellow]")
-
-    for i, (filename, result) in enumerate(parse_results):
-        if result:
-            throughput = (
-                result.rules_count / result.execution_time if result.execution_time > 0 else 0
-            )
-            escaped_filename = escape(str(filename))
-            console.print(
-                f"  {i + 1:2d}. {escaped_filename:20s} "
-                f"{result.execution_time * 1000:6.2f}ms "
-                f"({throughput:.1f} rules/sec)",
-            )
+        for i, (filename, result) in enumerate(parse_results):
+            if result:
+                throughput = (
+                    result.rules_count / result.execution_time if result.execution_time > 0 else 0
+                )
+                escaped_filename = escape(str(filename))
+                console.print(
+                    f"  {i + 1:2d}. {escaped_filename:20s} "
+                    f"{result.execution_time * 1000:6.2f}ms "
+                    f"({throughput:.1f} rules/sec)",
+                )
 
 
 def save_benchmark_results(
