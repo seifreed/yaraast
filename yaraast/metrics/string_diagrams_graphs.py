@@ -53,6 +53,3 @@ class StringDiagramGraphsMixin:
         format: str = "svg",
     ) -> str:
         return _graph_builders().generate_hex_pattern_diagram(self, ast, output_path, format)
-
-    def _add_pattern_relationships(self, dot: Any) -> None:
-        _graph_builders().add_pattern_relationships(self, dot)

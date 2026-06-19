@@ -328,10 +328,6 @@ class DeadCodeEliminator(ASTTransformer):
                 return True
         return False
 
-    def _is_referenced_by_other_rules(self, rule_name: str) -> bool:
-        """Check if this rule is referenced by any other rule."""
-        return rule_name in self.used_rules
-
     def _has_external_references(self, rule: Rule) -> bool:
         """Check if rule references other rules."""
         if rule.condition is not None:
