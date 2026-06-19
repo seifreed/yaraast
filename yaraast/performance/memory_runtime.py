@@ -20,7 +20,6 @@ def init_optimizer_state(optimizer: Any) -> None:
     optimizer._ast_pool = []
     optimizer._stats = {
         "nodes_processed": 0,
-        "strings_pooled": 0,
         "memory_saved": 0,
         "total_objects": 0,
     }
@@ -74,7 +73,6 @@ def get_memory_stats(optimizer: Any) -> MemoryStats:
     return MemoryStats(
         total_objects=optimizer._stats.get("total_objects", 0),
         nodes_processed=optimizer._stats.get("nodes_processed", 0),
-        strings_pooled=optimizer._stats.get("strings_pooled", 0),
     )
 
 

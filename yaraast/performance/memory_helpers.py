@@ -29,4 +29,3 @@ def clear_tracking(tracked_objects: list[Any]) -> None:
 class MemoryStats:
     total_objects: int
     nodes_processed: int
-    strings_pooled: int
