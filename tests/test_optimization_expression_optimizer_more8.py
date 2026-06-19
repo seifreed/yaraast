@@ -27,7 +27,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.operators import DefinedExpression
 from yaraast.ast.rules import Rule
-from yaraast.optimization.expression_optimizer import ExpressionOptimizer, optimize_expression
+from yaraast.optimization.expression_optimizer import ExpressionOptimizer
 from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
 
 
@@ -362,7 +362,7 @@ def test_unary_parentheses_and_convenience_function() -> None:
     assert isinstance(out, IntegerLiteral)
 
     expr = BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False))
-    assert optimize_expression(expr) == BooleanLiteral(False)
+    assert ExpressionOptimizer().optimize(expr) == BooleanLiteral(False)
 
 
 def test_visit_collection_and_access_nodes_preserves_set_duplicates() -> None:

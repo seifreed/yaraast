@@ -512,9 +512,3 @@ class ExpressionOptimizer(ASTTransformer):
 
     def visit_regex_string(self, node: Any) -> Any:
         return node
-
-
-def optimize_expression(expr: Expression) -> Expression:
-    """Convenience function to optimize an expression."""
-    optimizer = ExpressionOptimizer()
-    return optimizer.optimize(expr)
