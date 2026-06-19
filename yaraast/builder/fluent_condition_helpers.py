@@ -111,18 +111,14 @@ def build_of_expression(quantifier: int | str, string_set: Expression) -> OfExpr
     )
 
 
-def build_entropy_call(offset: int, size: int) -> FunctionCall:
-    return FunctionCall(
-        function="math.entropy",
-        arguments=[make_integer_literal(offset), make_integer_literal(size)],
-    )
-
-
 def build_entropy_compare(
     operator: str, offset: int, size: int, threshold: float
 ) -> BinaryExpression:
     return make_binary(
-        build_entropy_call(offset, size),
+        FunctionCall(
+            function="math.entropy",
+            arguments=[make_integer_literal(offset), make_integer_literal(size)],
+        ),
         operator,
         make_double_literal(threshold),
     )

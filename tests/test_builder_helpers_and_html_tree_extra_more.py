@@ -11,7 +11,7 @@ from yaraast.ast.strings import HexByte, HexString, PlainString
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.file_builder import YaraFileBuilder
 from yaraast.builder.fluent_condition_helpers import (
-    build_entropy_call,
+    build_entropy_compare,
     build_of_expression,
     build_string_set,
     make_binary,
@@ -51,10 +51,10 @@ def test_fluent_condition_small_helpers_more() -> None:
     assert isinstance(of_expr.quantifier, StringLiteral)
     assert of_expr.quantifier.value == "any"
 
-    entropy_call = build_entropy_call(0, 1024)
-    assert isinstance(entropy_call, FunctionCall)
-    assert entropy_call.function == "math.entropy"
-    assert len(entropy_call.arguments) == 2
+    entropy_compare = build_entropy_compare(">", 0, 1024, 0.5)
+    assert isinstance(entropy_compare.left, FunctionCall)
+    assert entropy_compare.left.function == "math.entropy"
+    assert len(entropy_compare.left.arguments) == 2
 
     try:
         make_binary(Identifier(name="left"), "or", StringIdentifier(name=""))
@@ -72,7 +72,7 @@ def test_fluent_condition_helpers_reject_boolean_integer_arguments() -> None:
         build_of_expression(False, Identifier(name="them"))
 
     with pytest.raises(TypeError, match="Invalid integer literal value"):
-        build_entropy_call(True, 1024)
+        build_entropy_compare(">", True, 1024, 0.5)
 
 
 def test_fluent_condition_helpers_reject_invalid_of_quantifiers() -> None:
