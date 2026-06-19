@@ -292,7 +292,7 @@ def test_rule_metadata_aliases_and_example_rules_paths() -> None:
         .elf_header("$elf")
         .condition("true")
         .when("true")
-        .with_condition("true")
+        .condition("true")
         .matches_any_of("$re")
         .matches_all_of("$re")
         .build()

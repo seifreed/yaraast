@@ -205,13 +205,6 @@ class FluentRuleBuilder:
         """Alias for condition."""
         return self.condition(condition)
 
-    def with_condition(
-        self,
-        condition: str | Expression | ConditionBuilder,
-    ) -> Self:
-        """Alias for condition."""
-        return self.condition(condition)
-
     def matches_any(self) -> Self:
         """Condition: any of them."""
         return self.condition("any of them")
