@@ -11,12 +11,12 @@ from yaraast.builder import (
     malware_rule,
     packed_rule,
     rule,
-    text,
     transform_rule,
     trojan_rule,
     yara_file,
 )
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
+from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.codegen.generator import CodeGenerator
 
 
@@ -231,7 +231,7 @@ def create_transformation_rules() -> list[Rule]:
         transform_rule(packed_base)
         .rename("upx_packed")
         .add_tag("upx")
-        .add_string(text("$upx", "UPX!").build())
+        .add_string(FluentStringBuilder.text_string("$upx", "UPX!").build())
         .transform_condition(
             lambda cond: (
                 FluentConditionBuilder(cond)
