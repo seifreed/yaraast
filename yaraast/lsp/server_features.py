@@ -31,10 +31,9 @@ from yaraast.lsp.lsp_types import (
     YARAAST_RUNTIME_STATUS,
     InitializeParams,
 )
-from yaraast.lsp.server_feature_handlers import (
-    register_server_features as _register_server_features,
-)
+from yaraast.lsp.server_feature_document_handlers import register_document_handlers
 from yaraast.lsp.server_feature_helpers import get_workspace_folders
+from yaraast.lsp.server_feature_language_handlers import register_language_handlers
 from yaraast.lsp.server_protocol import FeatureRegistrationServer
 
 __all__ = [
@@ -72,7 +71,8 @@ __all__ = [
 
 def register_server_features(server: FeatureRegistrationServer) -> None:
     """Register LSP features on the server."""
-    _register_server_features(server)
+    register_document_handlers(server)
+    register_language_handlers(server)
 
 
 def register_initialize(server: FeatureRegistrationServer) -> None:
