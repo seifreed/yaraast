@@ -614,7 +614,7 @@ def test_process_rules_analyze_rules_optimize_rules_and_progress_callback() -> N
 
     processor = BatchProcessor(progress_callback=progress, batch_size=1)
 
-    processed = processor.process_rules([rule], lambda r: r.name.upper())
+    processed = processor.process_batch([rule], lambda r: r.name.upper())
     assert processed == ["X"]
 
     complexity = processor.analyze_rules([rule])

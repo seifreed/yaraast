@@ -250,14 +250,6 @@ class BatchProcessor:
         """Process multiple YARA files with a single operation."""
         return process_files_single(self, file_paths, operation, output_dir)
 
-    def process_rules(
-        self,
-        rules: list[Rule],
-        operation: Callable[[Rule], Any],
-    ) -> list[Any]:
-        """Process a list of rules with a custom operation."""
-        return self.process_batch(rules, operation)
-
     def analyze_rules(self, rules: list[Rule]) -> list[dict[str, Any]]:
         """Analyze a batch of rules."""
         return self.process_batch(rules, BatchOperation.COMPLEXITY)
