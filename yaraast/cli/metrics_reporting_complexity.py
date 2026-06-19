@@ -11,7 +11,20 @@ from yaraast.metrics.workflows import build_complexity_payload
 _OUTPUT_FORMATS = frozenset({"json", "text"})
 
 
-def format_complexity_text(metrics: ComplexityMetrics) -> str:
+def _require_output_format(fmt: object) -> str:
+    if not isinstance(fmt, str):
+        raise TypeError("complexity output format must be a string")
+    if fmt not in _OUTPUT_FORMATS:
+        valid = ", ".join(sorted(_OUTPUT_FORMATS))
+        raise ValueError(f"complexity output format must be one of: {valid}")
+    return fmt
+
+
+def format_complexity_output(metrics: ComplexityMetrics, fmt: object) -> str:
+    fmt = _require_output_format(fmt)
+    if fmt == "json":
+        return format_json(build_complexity_payload(metrics))
+
     lines: list[str] = [
         "YARA Rule Complexity Analysis",
         "=" * 35,
@@ -80,9 +93,9 @@ def format_complexity_text(metrics: ComplexityMetrics) -> str:
                     if len(metrics.unused_strings) <= 10
                     else f"  ... and {len(metrics.unused_strings) - 10} more"
                 ),
-                    "",
-                ],
-            )
+                "",
+            ],
+        )
     if metrics.module_usage:
         lines.extend(
             [
@@ -92,24 +105,6 @@ def format_complexity_text(metrics: ComplexityMetrics) -> str:
             ]
         )
     return "\n".join(lines)
-
-
-def _require_output_format(fmt: object) -> str:
-    if not isinstance(fmt, str):
-        raise TypeError("complexity output format must be a string")
-    if fmt not in _OUTPUT_FORMATS:
-        valid = ", ".join(sorted(_OUTPUT_FORMATS))
-        raise ValueError(f"complexity output format must be one of: {valid}")
-    return fmt
-
-
-def format_complexity_output(metrics: ComplexityMetrics, fmt: object) -> str:
-    fmt = _require_output_format(fmt)
-    return (
-        format_json(build_complexity_payload(metrics))
-        if fmt == "json"
-        else format_complexity_text(metrics)
-    )
 
 
 def complexity_quality_message(quality_score: float, quality_gate: int) -> tuple[str, bool]:

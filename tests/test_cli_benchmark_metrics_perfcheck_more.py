@@ -24,7 +24,6 @@ from yaraast.cli.metrics_reporting import (
     _display_text_pattern_analysis,
     _emit_text_output,
     _format_complexity_output,
-    _format_complexity_text,
     _format_string_analysis_output,
     _format_strings_text,
     _graphviz_fallback_message,
@@ -397,14 +396,14 @@ def test_metrics_reporting_complexity_and_string_outputs(
     metrics = ComplexityAnalyzer().analyze(ast)
     analysis = _analyze_string_patterns(ast)
 
-    text = _format_complexity_text(metrics)
+    text = _format_complexity_output(metrics, "text")
     assert "YARA Rule Complexity Analysis" in text
     assert "Complex Rules" in text or "File Metrics" in text
 
     metrics.complex_rules = ["sample"]
     metrics.unused_strings = [f"$u{i}" for i in range(11)]
     metrics.module_usage = {"pe": 1}
-    rich_text = _format_complexity_text(metrics)
+    rich_text = _format_complexity_output(metrics, "text")
     assert "Heuristic Complexity Thresholds" in rich_text
     assert "Unused Strings:" in rich_text
     assert "... and 1 more" in rich_text
@@ -680,7 +679,7 @@ def test_metrics_reporting_empty_and_mixed_branches(capsys: pytest.CaptureFixtur
         pytest.skip("graphviz package is not installed")
     empty_ast = _parse_yara("rule empty { condition: true }")
     empty_metrics = ComplexityAnalyzer().analyze(empty_ast)
-    text = _format_complexity_text(empty_metrics)
+    text = _format_complexity_output(empty_metrics, "text")
     assert "Cyclomatic Complexity by Rule:" in text
     assert "Heuristic Complexity Thresholds:" not in text
     assert "Unused Strings:" not in text

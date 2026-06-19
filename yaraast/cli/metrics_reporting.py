@@ -13,7 +13,6 @@ from yaraast.cli.metrics_reporting_complexity import (
     complexity_quality_message,
     emit_text_output as _emit_text_output,
     format_complexity_output as _format_complexity_output,
-    format_complexity_text as _format_complexity_text,
 )
 from yaraast.cli.metrics_reporting_display import (
     display_graph_statistics as _display_graph_statistics,
@@ -42,7 +41,6 @@ __all__ = [
     "_display_text_statistics",
     "_emit_text_output",
     "_format_complexity_output",
-    "_format_complexity_text",
     "_format_string_analysis_output",
     "_format_strings_text",
     "_graphviz_fallback_message",
