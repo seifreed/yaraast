@@ -22,7 +22,7 @@ from yaraast.serialization.roundtrip_helpers import (
     detect_formatting,
     serialize_with_roundtrip_metadata,
 )
-from yaraast.serialization.roundtrip_models import FormattingInfo, RoundTripMetadata
+from yaraast.serialization.roundtrip_models import RoundTripMetadata
 from yaraast.serialization.roundtrip_pipeline_helpers import (
     build_pipeline_metadata,
     build_pipeline_statistics,
@@ -127,10 +127,6 @@ class RoundTripSerializer:
         if dialect == YaraDialect.YARA_X:
             return YaraXParser(yara_source).parse()
         return self.parser.parse(yara_source)
-
-    def _detect_formatting(self, yara_source: str) -> FormattingInfo:
-        """Backward-compatible wrapper used by tests."""
-        return detect_formatting(yara_source)
 
     def parse_and_serialize(
         self,

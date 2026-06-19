@@ -13,6 +13,7 @@ from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
+from yaraast.serialization.roundtrip_helpers import detect_formatting
 from yaraast.serialization.roundtrip_serializer import (
     EnhancedYamlSerializer,
     RoundTripSerializer,
@@ -31,7 +32,7 @@ def test_roundtrip_parse_and_serialize_json() -> None:
     source = "rule r1 { condition: true }"
     serializer = RoundTripSerializer()
 
-    formatting = serializer._detect_formatting(source)
+    formatting = detect_formatting(source)
     assert formatting.indent_size >= 1
 
     ast, serialized = serializer.parse_and_serialize(source, format="json")

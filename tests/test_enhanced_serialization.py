@@ -8,6 +8,7 @@ from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
 from yaraast.codegen.pretty_printer import PrettyPrintOptions, StylePresets
 from yaraast.parser.parser import Parser
+from yaraast.serialization.roundtrip_helpers import detect_formatting
 from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer, RoundTripSerializer
 
 
@@ -77,14 +78,12 @@ class TestRoundTripSerializer:
         }
         """
 
-        serializer = RoundTripSerializer()
-
         # Test tab detection
-        formatting_tabs = serializer._detect_formatting(yara_source_tabs)
+        formatting_tabs = detect_formatting(yara_source_tabs)
         assert formatting_tabs.indent_style == "tabs"
 
         # Test space detection
-        formatting_spaces = serializer._detect_formatting(yara_source_spaces)
+        formatting_spaces = detect_formatting(yara_source_spaces)
         assert formatting_spaces.indent_style == "spaces"
         assert formatting_spaces.indent_size == 4
 
