@@ -8,32 +8,6 @@ _BENCHMARK_OPERATIONS = frozenset({"all", "codegen", "parse", "roundtrip"})
 _SINGLE_BENCHMARK_OPERATIONS = frozenset({"codegen", "parse", "roundtrip"})
 
 
-def _run_benchmarks_for_all_files(
-    benchmarker,
-    file_paths: list[Path],
-    operations: object,
-    iterations: int,
-) -> list[dict]:
-    """Run benchmarks for all files and return results."""
-    all_results = []
-
-    for file_path in file_paths:
-        # Reporting is handled in bench_cmd/bench_reporting.
-        file_results = _run_benchmarks_for_single_file(
-            benchmarker, file_path, operations, iterations
-        )
-
-        all_results.append(
-            {
-                "file": str(file_path),
-                "file_name": file_path.name,
-                "results": file_results,
-            }
-        )
-
-    return all_results
-
-
 def _run_benchmarks_for_single_file(
     benchmarker,
     file_path: Path,

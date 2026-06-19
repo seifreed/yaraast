@@ -126,9 +126,11 @@ def test_bench_services_operations_and_summary() -> None:
     assert "roundtrip" in file_results
     assert "codegen" not in file_results
 
-    all_results = bs._run_benchmarks_for_all_files(bench, [path], "all", 1)
-    assert all_results[0]["file_name"] == "rule.yar"
     assert bs._get_benchmark_summary(bench)["total"] == 3
+
+
+def test_bench_services_does_not_expose_dead_all_files_wrapper() -> None:
+    assert not hasattr(bs, "_run_benchmarks_for_all_files")
 
 
 def test_workspace_services_formatters() -> None:
