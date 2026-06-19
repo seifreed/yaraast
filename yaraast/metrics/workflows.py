@@ -45,8 +45,8 @@ def build_complexity_payload(metrics: ComplexityMetrics) -> dict[str, Any]:
     result["heuristic"] = True
     result["analysis_kind"] = "heuristic"
     if capability is not None:
-        result["capability"] = capability.name
-        result["capability_outputs"] = list(capability.outputs)
+        result["capability"] = capability["name"]
+        result["capability_outputs"] = list(capability["outputs"])
     return result
 
 

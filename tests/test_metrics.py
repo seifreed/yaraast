@@ -80,6 +80,15 @@ def test_metrics_capability_lookup_rejects_empty_names(name: str) -> None:
         get_capability(name)
 
 
+def test_metrics_capability_lookup_returns_expected_payload() -> None:
+    capability = get_capability("complexity")
+
+    assert capability == {
+        "name": "complexity",
+        "outputs": ("metrics", "quality_score", "quality_grade"),
+    }
+
+
 class TestComplexityAnalyzer:
     """Test complexity analysis functionality."""
 

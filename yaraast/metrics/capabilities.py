@@ -1,54 +1,34 @@
-"""Capability model for the metrics subsystem."""
+"""Capability lookup for the metrics subsystem."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from typing import Any
 
 from yaraast.ast.base import require_string
 
-
-@dataclass(frozen=True)
-class MetricsCapability:
-    name: str
-    entrypoint: str
-    outputs: tuple[str, ...]
-    description: str
-
-
-CAPABILITIES: tuple[MetricsCapability, ...] = (
-    MetricsCapability(
-        name="complexity",
-        entrypoint="ComplexityAnalyzer",
-        outputs=("metrics", "quality_score", "quality_grade"),
-        description="Heuristic AST complexity scoring and rule-level quality signals.",
-    ),
-    MetricsCapability(
-        name="dependency_graph",
-        entrypoint="DependencyGraphGenerator",
-        outputs=("graphviz_graphs", "rule_graphs", "module_graphs"),
-        description="Dependency and complexity graphs derived from AST structure.",
-    ),
-    MetricsCapability(
-        name="html_tree",
-        entrypoint="HtmlTreeGenerator",
-        outputs=("interactive_html", "static_html"),
-        description="Structural HTML visualization of the parsed AST.",
-    ),
-    MetricsCapability(
-        name="string_diagrams",
-        entrypoint="StringDiagramGenerator",
-        outputs=("flow_diagrams", "complexity_diagrams", "hex_diagrams", "similarity_diagrams"),
-        description="Pattern-oriented diagrams and summaries for YARA strings.",
-    ),
-)
+_CAPABILITIES: dict[str, dict[str, Any]] = {
+    "complexity": {
+        "name": "complexity",
+        "outputs": ("metrics", "quality_score", "quality_grade"),
+    },
+    "dependency_graph": {
+        "name": "dependency_graph",
+        "outputs": ("graphviz_graphs", "rule_graphs", "module_graphs"),
+    },
+    "html_tree": {
+        "name": "html_tree",
+        "outputs": ("interactive_html", "static_html"),
+    },
+    "string_diagrams": {
+        "name": "string_diagrams",
+        "outputs": ("flow_diagrams", "complexity_diagrams", "hex_diagrams", "similarity_diagrams"),
+    },
+}
 
 
-def get_capability(name: str) -> MetricsCapability | None:
+def get_capability(name: str) -> dict[str, Any] | None:
     name = require_string(name, "Metrics capability name")
     if not name.strip():
         msg = "Metrics capability name cannot be empty"
         raise ValueError(msg)
-    for capability in CAPABILITIES:
-        if capability.name == name:
-            return capability
-    return None
+    return _CAPABILITIES.get(name)
