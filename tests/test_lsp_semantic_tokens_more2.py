@@ -16,10 +16,6 @@ from yaraast.lsp.semantic_tokens_helpers import map_token_type
 
 
 class _FailingLexer:
-    @classmethod
-    def __class_getitem__(cls, _item: object) -> type[_FailingLexer]:
-        return cls
-
     def __init__(self, _text: str) -> None:
         pass
 
