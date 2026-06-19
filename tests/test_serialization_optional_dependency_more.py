@@ -106,3 +106,19 @@ else:
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_serialization_package_root_does_not_reexport_convenience_wrappers() -> None:
+    result = _run_import_probe(
+        """
+import importlib
+
+serialization = importlib.import_module("yaraast.serialization")
+
+assert not hasattr(serialization, "roundtrip_yara")
+assert not hasattr(serialization, "serialize_for_pipeline")
+assert not hasattr(serialization, "create_rules_manifest")
+""",
+    )
+
+    assert result.returncode == 0, result.stderr

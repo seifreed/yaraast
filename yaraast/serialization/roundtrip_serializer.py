@@ -311,27 +311,3 @@ class EnhancedYamlSerializer(YamlSerializer):
         manifest = build_rules_manifest(ast)
         return dump_pipeline_yaml(manifest, output_path)
 
-
-# Convenience functions
-def roundtrip_yara(yara_source: str, format: str = "json") -> dict[str, Any]:
-    """Perform round-trip conversion test on YARA source."""
-    serializer = RoundTripSerializer()
-    return serializer.roundtrip_test(yara_source, format)
-
-
-def serialize_for_pipeline(
-    ast: YaraFile,
-    pipeline_info: dict[str, Any] | None = None,
-) -> str:
-    """Serialize AST for CI/CD pipeline."""
-    ast = _require_yara_file(ast, "ast")
-    pipeline_info = _require_optional_dict(pipeline_info, "pipeline_info")
-    serializer = EnhancedYamlSerializer(include_pipeline_metadata=True)
-    return serializer.serialize_for_pipeline(ast, pipeline_info)
-
-
-def create_rules_manifest(ast: YaraFile) -> str:
-    """Create rules manifest for pipeline automation."""
-    ast = _require_yara_file(ast, "ast")
-    serializer = EnhancedYamlSerializer()
-    return serializer.serialize_rules_manifest(ast)

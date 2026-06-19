@@ -18,7 +18,7 @@ from yaraast.cli.roundtrip_services import (
 from yaraast.cli.semantic_services import _create_validation_context, _process_file
 from yaraast.errors import ValidationError
 from yaraast.parser import Parser
-from yaraast.serialization.roundtrip_serializer import create_rules_manifest
+from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer
 from yaraast.yarax.ast_nodes import WithStatement
 from yaraast.yarax.parser import YaraXParser
 
@@ -85,7 +85,7 @@ def test_roundtrip_pipeline_and_manifest_services(tmp_path: Path) -> None:
     loaded = yaml.safe_load(yaml_content)
     assert loaded["pipeline_metadata"]["ci"] == "true"
 
-    manifest = create_rules_manifest(ast)
+    manifest = EnhancedYamlSerializer().serialize_rules_manifest(ast)
     manifest_data = yaml.safe_load(manifest)
     assert manifest_data["summary"]["total_rules"] == 1
 

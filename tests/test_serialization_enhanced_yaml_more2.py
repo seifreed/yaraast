@@ -14,8 +14,6 @@ from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString, RegexString
 from yaraast.serialization.roundtrip_serializer import (
     EnhancedYamlSerializer,
-    create_rules_manifest,
-    serialize_for_pipeline,
 )
 
 
@@ -54,13 +52,16 @@ def test_enhanced_yaml_pipeline_serialization() -> None:
 def test_rules_manifest_and_helpers() -> None:
     ast = _sample_ast()
 
-    manifest_yaml = create_rules_manifest(ast)
+    manifest_yaml = EnhancedYamlSerializer().serialize_rules_manifest(ast)
     manifest = yaml.safe_load(manifest_yaml)
 
     assert manifest["summary"]["total_rules"] == 1
     assert manifest["rules"][0]["name"] == "r1"
 
-    pipeline_yaml = serialize_for_pipeline(ast, {"env": "ci"})
+    pipeline_yaml = EnhancedYamlSerializer(include_pipeline_metadata=True).serialize_for_pipeline(
+        ast,
+        {"env": "ci"},
+    )
     pipeline = yaml.safe_load(pipeline_yaml)
     assert pipeline["pipeline_metadata"]["env"] == "ci"
 
@@ -76,7 +77,7 @@ def test_rules_manifest_preserves_meta_scopes() -> None:
         ],
     )
 
-    manifest_yaml = create_rules_manifest(ast)
+    manifest_yaml = EnhancedYamlSerializer().serialize_rules_manifest(ast)
     manifest = yaml.safe_load(manifest_yaml)
 
     assert manifest["rules"][0]["meta"] == [
@@ -98,7 +99,7 @@ def test_rules_manifest_preserves_scoped_meta_float_values() -> None:
         ],
     )
 
-    manifest_yaml = create_rules_manifest(ast)
+    manifest_yaml = EnhancedYamlSerializer().serialize_rules_manifest(ast)
     manifest = yaml.safe_load(manifest_yaml)
 
     assert manifest["rules"][0]["meta"] == [{"key": "score", "value": 1.5, "scope": "private"}]
@@ -118,7 +119,7 @@ def test_rules_manifest_preserves_duplicate_meta_entries() -> None:
         ],
     )
 
-    manifest_yaml = create_rules_manifest(ast)
+    manifest_yaml = EnhancedYamlSerializer().serialize_rules_manifest(ast)
     manifest = yaml.safe_load(manifest_yaml)
 
     assert manifest["manifest_version"] == "2.0"

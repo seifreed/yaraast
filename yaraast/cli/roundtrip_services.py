@@ -10,11 +10,7 @@ from yaraast.cli.utils import read_text
 from yaraast.codegen.pretty_printer import StylePresets, pretty_print
 from yaraast.errors import ValidationError
 from yaraast.parser.source import parse_yara_source
-from yaraast.serialization.roundtrip_serializer import (
-    RoundTripSerializer,
-    roundtrip_yara,
-    serialize_for_pipeline,
-)
+from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer, RoundTripSerializer
 from yaraast.shared.numeric_validation import validate_positive_int_setting
 
 _PRETTY_STYLE_PRESETS = {
@@ -78,7 +74,7 @@ def deserialize_roundtrip_file(
 
 def test_roundtrip_file(input_file: Path, format: str) -> dict[str, Any]:
     yara_source = read_text(input_file)
-    return roundtrip_yara(yara_source, format=format)
+    return RoundTripSerializer().roundtrip_test(yara_source, format)
 
 
 def pretty_print_file(
@@ -123,5 +119,8 @@ def pipeline_serialize_file(
     yara_source = read_text(input_file)
     ast = parse_yara_source(yara_source)
     pipeline_data = _parse_pipeline_info(pipeline_info)
-    yaml_content = serialize_for_pipeline(ast, pipeline_data)
+    yaml_content = EnhancedYamlSerializer(include_pipeline_metadata=True).serialize_for_pipeline(
+        ast,
+        pipeline_data,
+    )
     return ast, yaml_content, pipeline_data

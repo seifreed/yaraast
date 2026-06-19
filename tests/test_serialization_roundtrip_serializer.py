@@ -11,9 +11,6 @@ import yaml
 from yaraast.serialization.roundtrip_serializer import (
     EnhancedYamlSerializer,
     RoundTripSerializer,
-    create_rules_manifest,
-    roundtrip_yara,
-    serialize_for_pipeline,
 )
 
 
@@ -73,7 +70,7 @@ def test_roundtrip_serializer_yaml_reconstructs() -> None:
 
 
 def test_roundtrip_test_reports_metadata_and_differences() -> None:
-    result = roundtrip_yara(_sample_rule(), format="json")
+    result = RoundTripSerializer().roundtrip_test(_sample_rule(), format="json")
 
     assert result["format"] == "json"
     assert isinstance(result["differences"], list)
@@ -85,12 +82,15 @@ def test_enhanced_yaml_pipeline_and_manifest(tmp_path: Path) -> None:
     serializer = RoundTripSerializer()
     ast, _ = serializer.parse_and_serialize(_sample_rule(), format="json")
 
-    pipeline_yaml = serialize_for_pipeline(ast, pipeline_info={"ci": "true"})
+    pipeline_yaml = EnhancedYamlSerializer(include_pipeline_metadata=True).serialize_for_pipeline(
+        ast,
+        pipeline_info={"ci": "true"},
+    )
     pipeline_data = yaml.safe_load(pipeline_yaml)
     assert pipeline_data["pipeline_metadata"]["ci"] == "true"
     assert pipeline_data["statistics"]["total_rules"] == 1
 
-    manifest_yaml = create_rules_manifest(ast)
+    manifest_yaml = EnhancedYamlSerializer().serialize_rules_manifest(ast)
     manifest_data = yaml.safe_load(manifest_yaml)
     assert manifest_data["summary"]["total_rules"] == 1
 
@@ -98,3 +98,11 @@ def test_enhanced_yaml_pipeline_and_manifest(tmp_path: Path) -> None:
     out_path = tmp_path / "manifest.yaml"
     _ = enhanced.serialize_rules_manifest(ast, output_path=out_path)
     assert out_path.exists()
+
+
+def test_roundtrip_serializer_module_does_not_reexport_convenience_wrappers() -> None:
+    import yaraast.serialization.roundtrip_serializer as roundtrip_serializer
+
+    assert not hasattr(roundtrip_serializer, "roundtrip_yara")
+    assert not hasattr(roundtrip_serializer, "serialize_for_pipeline")
+    assert not hasattr(roundtrip_serializer, "create_rules_manifest")
