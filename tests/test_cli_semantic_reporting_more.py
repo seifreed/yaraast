@@ -37,12 +37,10 @@ def test_semantic_reporting_error_paths_and_summary(
     path = Path("sample.yar")
 
     sr.display_validation_start(path, quiet=False)
-    sr.display_parse_failure(path)
     sr.display_processing_error(path, RuntimeError("boom"))
 
     out_err = capsys.readouterr()
     assert "Validating sample.yar" in out_err.out
-    assert "Failed to parse sample.yar" in out_err.err
     assert "Error processing sample.yar: boom" in out_err.err
 
     sr.display_summary(total_files=2, total_errors=1, total_warnings=3)

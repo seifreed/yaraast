@@ -11,10 +11,6 @@ from rich.table import Table
 from yaraast.performance.string_analyzer import StringPerformanceIssue
 
 
-def display_parse_failure(console: Console) -> None:
-    console.print("[red]❌ Failed to parse YARA file[/red]")
-
-
 def display_no_issues(console: Console) -> None:
     console.print("[green]✅ No performance issues found![/green]")
 

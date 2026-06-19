@@ -248,7 +248,6 @@ def test_performance_check_reporting_render() -> None:
         ),
     ]
 
-    pcr.display_parse_failure(console)
     pcr.display_no_issues(console)
     pcr.display_issues(console, issues)
     pcr.display_summary(
@@ -263,7 +262,6 @@ def test_performance_check_reporting_render() -> None:
     pcr.display_issue_totals(console, issues)
 
     out = console.export_text()
-    assert "Failed to parse" in out
     assert "No performance issues found" in out
     assert "Performance Issues" in out
     assert "Suggestions:" in out

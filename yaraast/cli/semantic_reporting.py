@@ -17,10 +17,6 @@ def display_validation_start(file_path: Path, quiet: bool) -> None:
         click.echo(f"Validating {file_path}...")
 
 
-def display_parse_failure(file_path: Path) -> None:
-    click.echo(f"Error: Failed to parse {file_path}", err=True)
-
-
 def display_processing_error(file_path: Path, error: Exception) -> None:
     click.echo(f"Error processing {file_path}: {error}", err=True)
 
