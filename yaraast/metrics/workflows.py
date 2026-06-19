@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import YaraFile
-from yaraast.errors import ValidationError
 from yaraast.metrics.capabilities import get_capability
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.complexity_model import ComplexityMetrics
@@ -177,31 +176,6 @@ def determine_graph_output_path(yara_file: str, output: object, graph_type: str,
     return f"{base_name}_graph_{graph_type}.{fmt}"
 
 
-def generate_dependency_graph_with_generator(
-    generator: Any,
-    ast: YaraFile,
-    graph_type: str,
-    output_path: str,
-    fmt: str,
-    engine: str,
-) -> tuple[str, Any]:
-    if graph_type == "full":
-        return generator.generate_graph(ast, output_path, fmt, engine), generator
-    if graph_type == "rules":
-        return generator.generate_rule_graph(ast, output_path, fmt), generator
-    if graph_type == "modules":
-        return generator.generate_module_graph(ast, output_path, fmt), generator
-    if graph_type == "complexity":
-        metrics = analyze_complexity(ast)
-        return (
-            generator.generate_complexity_graph(
-                ast, metrics.cyclomatic_complexity, output_path, fmt
-            ),
-            generator,
-        )
-    raise ValidationError(f"Unknown graph type: {graph_type}")
-
-
 def determine_pattern_output_path(
     yara_file: str, output: object, pattern_type: str, fmt: str
 ) -> str:
@@ -212,37 +186,3 @@ def determine_pattern_output_path(
         return str(require_output_path(output))
     base_name = Path(yara_file).stem
     return f"{base_name}_patterns_{pattern_type}.{fmt}"
-
-
-def generate_pattern_diagram_with_generator(
-    generator: Any,
-    ast: YaraFile,
-    pattern_type: str,
-    output_path: str,
-    fmt: str,
-) -> str:
-    if pattern_type == "flow":
-        return generator.generate_pattern_flow_diagram(ast, output_path, fmt)
-    if pattern_type == "complexity":
-        return generator.generate_pattern_complexity_diagram(ast, output_path, fmt)
-    if pattern_type == "similarity":
-        return generator.generate_pattern_similarity_diagram(ast, output_path, fmt)
-    if pattern_type == "hex":
-        return generator.generate_hex_pattern_diagram(ast, output_path, fmt)
-    raise ValidationError(f"Unknown pattern type: {pattern_type}")
-
-
-def generate_html_tree_file(
-    ast: YaraFile,
-    output_path: str,
-    title: str,
-    interactive: bool,
-    include_metadata: bool,
-    default_collapsed: bool = False,
-) -> str:
-    generator = HtmlTreeGenerator(include_metadata=include_metadata)
-    if interactive:
-        generator.generate_interactive_html(ast, output_path, title, default_collapsed)
-    else:
-        generator.generate_html(ast, output_path, title, default_collapsed)
-    return output_path

@@ -30,15 +30,13 @@ from yaraast.cli.utils import (
     parse_yara_file,
 )
 from yaraast.metrics.graphviz_errors import is_graphviz_error
+from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.workflows import (
     DependencyGraphGenerator,
     analyze_complexity,
     build_report,
     determine_graph_output_path,
     determine_pattern_output_path,
-    generate_dependency_graph_with_generator,
-    generate_html_tree_file,
-    generate_pattern_diagram_with_generator,
 )
 
 
@@ -123,14 +121,19 @@ def graph(yara_file: str, output: str | None, format: str, type: str, engine: st
     generator = DependencyGraphGenerator()
 
     try:
-        result_path, _generator = generate_dependency_graph_with_generator(
-            generator,
-            ast,
-            type,
-            output_path,
-            format,
-            engine,
-        )
+        if type == "full":
+            result_path = generator.generate_graph(ast, output_path, format, engine)
+        elif type == "rules":
+            result_path = generator.generate_rule_graph(ast, output_path, format)
+        elif type == "modules":
+            result_path = generator.generate_module_graph(ast, output_path, format)
+        elif type == "complexity":
+            metrics = analyze_complexity(ast)
+            result_path = generator.generate_complexity_graph(
+                ast, metrics.cyclomatic_complexity, output_path, format
+            )
+        else:
+            raise click.ClickException(f"Unknown graph type: {type}")
         _display_successful_graph_result(result_path, generator)
     except Exception as e:
         if is_graphviz_error(e):
@@ -169,14 +172,11 @@ def tree(
         suffix = "interactive" if interactive else "tree"
         output = f"{base_name}_{suffix}.html"
 
-    generate_html_tree_file(
-        ast,
-        output,
-        title,
-        interactive=interactive,
-        include_metadata=not no_metadata,
-        default_collapsed=collapsible,
-    )
+    generator = HtmlTreeGenerator(include_metadata=not no_metadata)
+    if interactive:
+        generator.generate_interactive_html(ast, output, title, collapsible)
+    else:
+        generator.generate_html(ast, output, title, collapsible)
 
     click.echo(f"HTML tree visualization generated: {output}")
 
@@ -214,13 +214,16 @@ def patterns(yara_file: str, output: str | None, type: str, format: str, stats: 
     output_path = determine_pattern_output_path(yara_file, output, type, format)
 
     try:
-        result_path = generate_pattern_diagram_with_generator(
-            generator,
-            ast,
-            type,
-            output_path,
-            format,
-        )
+        if type == "flow":
+            result_path = generator.generate_pattern_flow_diagram(ast, output_path, format)
+        elif type == "complexity":
+            result_path = generator.generate_pattern_complexity_diagram(ast, output_path, format)
+        elif type == "similarity":
+            result_path = generator.generate_pattern_similarity_diagram(ast, output_path, format)
+        elif type == "hex":
+            result_path = generator.generate_hex_pattern_diagram(ast, output_path, format)
+        else:
+            raise click.ClickException(f"Unknown pattern type: {type}")
         _display_pattern_result(result_path)
     except Exception as e:
         if is_graphviz_error(e):
