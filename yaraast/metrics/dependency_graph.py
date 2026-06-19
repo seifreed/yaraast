@@ -31,9 +31,6 @@ from yaraast.metrics.dependency_graph_graphviz import (
 )
 from yaraast.metrics.dependency_graph_helpers import rule_info
 from yaraast.metrics.dependency_graph_render import rule_cluster_label, rule_node_color
-from yaraast.metrics.dependency_graph_stats import (
-    get_dependency_stats as dependency_get_dependency_stats,
-)
 from yaraast.shared.local_scope import local_name_variants
 
 if TYPE_CHECKING:
@@ -117,7 +114,35 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
     def get_dependency_stats(self) -> dict[str, Any]:
         """Get dependency statistics."""
-        return dependency_get_dependency_stats(self)
+        return {
+            "total_rules": len(self.rules),
+            "total_imports": len(self.imports),
+            "total_includes": len(self.includes),
+            "rules_with_strings": sum(
+                1 for rule in self.rules.values() if rule["string_count"] > 0
+            ),
+            "rules_using_modules": len(
+                [rule for rule in self.module_references if self.module_references[rule]],
+            ),
+            "rules_with_deps": sum(1 for deps in self.dependencies.values() if deps),
+            "total_dependencies": sum(len(deps) for deps in self.dependencies.values()),
+            "most_used_modules": sorted(
+                [
+                    (
+                        module,
+                        len([refs for refs in self.module_references.values() if module in refs]),
+                    )
+                    for module in self.imports
+                ],
+                key=lambda item: item[1],
+                reverse=True,
+            )[:5],
+            "average_strings_per_rule": sum(rule["string_count"] for rule in self.rules.values())
+            / max(1, len(self.rules)),
+            "complex_rules": [
+                name for name, info in self.rules.items() if info["string_count"] > 10
+            ],
+        }
 
     # Visitor methods
     def visit_yara_file(self, node: YaraFile) -> None:
