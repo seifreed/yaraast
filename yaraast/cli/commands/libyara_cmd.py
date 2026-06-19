@@ -5,7 +5,9 @@ from __future__ import annotations
 import click
 from rich.console import Console
 
-from yaraast.cli.libyara_handlers import handle_compile, handle_optimize, handle_scan
+from yaraast.cli.libyara_handlers_compile import handle_compile
+from yaraast.cli.libyara_handlers_optimize import handle_optimize
+from yaraast.cli.libyara_handlers_scan import handle_scan
 from yaraast.cli.utils import _validate_output_path
 
 console = Console()
