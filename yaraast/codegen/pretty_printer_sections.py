@@ -22,7 +22,6 @@ from yaraast.codegen.pretty_printer_helpers import (
     current_indent,
     format_plain_string,
     format_regex_string,
-    indent_unit,
     modifiers_to_string,
     regex_modifiers_to_string,
 )
@@ -144,21 +143,3 @@ def write_regex_string_aligned(printer: Any, node: RegexString) -> None:
     if trailing_comment:
         printer._write_comment(trailing_comment, inline=True)
     printer._writeline()
-
-
-def write_wrapped_condition(printer: Any, condition_str: str) -> None:
-    """Write condition with simple wrapping on token boundaries."""
-    current_line = ""
-    for word in condition_str.split():
-        if len(current_line + " " + word) > printer._layout.options.max_line_length:
-            if current_line:
-                printer._writeline(current_line)
-                current_line = indent_unit(printer) + word
-            else:
-                current_line = word
-        elif current_line:
-            current_line += " " + word
-        else:
-            current_line = word
-    if current_line:
-        printer._writeline(current_line)

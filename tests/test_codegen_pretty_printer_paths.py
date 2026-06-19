@@ -34,7 +34,6 @@ from yaraast.codegen.pretty_printer_sections import (
     write_hex_string_aligned,
     write_plain_string_aligned,
     write_regex_string_aligned,
-    write_wrapped_condition,
 )
 from yaraast.yarax.ast_nodes import (
     DictComprehension,
@@ -620,8 +619,3 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
     printer2.buffer.truncate(0)
     printer2._write_condition_section(BooleanLiteral(True))
     assert printer2.buffer.getvalue() == "true\n"
-
-    printer2.buffer.seek(0)
-    printer2.buffer.truncate(0)
-    write_wrapped_condition(printer2, "")
-    assert printer2.buffer.getvalue() == ""
