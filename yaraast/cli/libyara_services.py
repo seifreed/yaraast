@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file
@@ -62,6 +62,7 @@ def scan_yara(
     optimize = _require_bool_option(optimize, "optimize")
     if timeout is not None:
         validate_positive_int_setting(timeout, "timeout")
+    timeout_value = cast(int | None, timeout)
     fast = _require_bool_option(fast, "fast")
 
     from yaraast.libyara import DirectASTCompiler, OptimizedMatcher
@@ -76,7 +77,7 @@ def scan_yara(
     matcher = OptimizedMatcher(compile_result.compiled_rules, ast)
     scan_result = matcher.scan(
         Path(target),
-        timeout=timeout,
+        timeout=timeout_value,
         fast_mode=fast,
     )
     return scan_result, matcher, compile_result

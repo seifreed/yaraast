@@ -5,9 +5,27 @@ from __future__ import annotations
 import click
 from rich.console import Console
 
-from yaraast.cli.libyara_handlers_compile import handle_compile
-from yaraast.cli.libyara_handlers_optimize import handle_optimize
-from yaraast.cli.libyara_handlers_scan import handle_scan
+from yaraast.cli.libyara_handlers_common import run_or_abort
+from yaraast.cli.libyara_reporting import (
+    display_compilation_errors,
+    display_compilation_stats,
+    display_compilation_success,
+    display_compiled_rules_saved,
+    display_generated_source_preview,
+    display_matches,
+    display_optimization_hints,
+    display_optimization_stats,
+    display_optimize_results,
+    display_scan_failure,
+    display_scan_stats,
+    display_scan_summary,
+)
+from yaraast.cli.libyara_services import (
+    compile_yara,
+    ensure_yara_available,
+    optimize_yara,
+    scan_yara,
+)
 from yaraast.cli.utils import _validate_output_path
 
 console = Console()
@@ -38,7 +56,27 @@ def compile(
 ) -> None:
     """Compile YARA file using direct AST compilation."""
     output = _validate_output_path(output)
-    handle_compile(console, input_file, output, optimize, debug, stats)
+    run_or_abort(ensure_yara_available, console)
+    result, compiler, _ast = run_or_abort(compile_yara, console, input_file, optimize, debug)
+
+    if not result.success:
+        display_compilation_errors(console, result.errors)
+        raise click.Abort from None
+
+    display_compilation_success(console)
+
+    if result.optimized:
+        display_optimization_stats(console, result)
+
+    if stats:
+        display_compilation_stats(console, result, compiler)
+
+    if output and result.compiled_rules:
+        result.compiled_rules.save(output)
+        display_compiled_rules_saved(console, output)
+
+    if debug and result.generated_source:
+        display_generated_source_preview(console, result.generated_source)
 
 
 # ==============================================================================
@@ -62,7 +100,30 @@ def scan(
     stats: bool,
 ) -> None:
     """Scan file using optimized AST-based matcher."""
-    handle_scan(console, rules_file, target, optimize, timeout, fast, stats)
+    run_or_abort(ensure_yara_available, console)
+    scan_result, matcher, compile_result = run_or_abort(
+        scan_yara,
+        console,
+        rules_file,
+        target,
+        optimize,
+        timeout,
+        fast,
+    )
+    if scan_result is None:
+        display_compilation_errors(console, compile_result.errors)
+        raise click.Abort from None
+    if scan_result["success"]:
+        console.print("[green]Scan completed[/green]")
+        matches = scan_result["matches"]
+        display_scan_summary(console, scan_result, matches)
+        display_matches(console, matches)
+        display_optimization_hints(console, scan_result)
+        if stats:
+            display_scan_stats(console, matcher)
+    else:
+        display_scan_failure(console, scan_result)
+        raise click.Abort from None
 
 
 # ==============================================================================
@@ -75,4 +136,6 @@ def scan(
 @click.option("--show-optimizations", is_flag=True, help="Show applied optimizations")
 def optimize(input_file: str, show_optimizations: bool) -> None:
     """Optimize YARA rules using AST analysis."""
-    handle_optimize(console, input_file, show_optimizations)
+    run_or_abort(ensure_yara_available, console)
+    optimizer, optimized_code = run_or_abort(optimize_yara, console, input_file)
+    display_optimize_results(console, optimizer, show_optimizations, optimized_code)
