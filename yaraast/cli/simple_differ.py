@@ -351,77 +351,6 @@ class SimpleASTDiffer(SimpleDiffer):
 
         return self.diff(code1, code2)
 
-def _diff_result_for_removed_file(file_path: Path) -> DiffResult:
-    """Create a DiffResult showing all lines of a file as removed."""
-    content = _read_yara_text_file(file_path)
-    lines = content.splitlines()
-    diff_lines = [
-        DiffLine(
-            type=DiffType.REMOVE,
-            line_num=i + 1,
-            content=f"- {line}",
-            old_content=line,
-        )
-        for i, line in enumerate(lines)
-    ]
-    removed = len(lines)
-    if not diff_lines:
-        diff_lines.append(
-            DiffLine(
-                type=DiffType.REMOVE,
-                line_num=1,
-                content="- <empty file>",
-                old_content="",
-            ),
-        )
-        removed = 1
-    return DiffResult(
-        has_changes=True,
-        lines=diff_lines,
-        summary={
-            "added": 0,
-            "removed": removed,
-            "modified": 0,
-            "total_changes": removed,
-        },
-    )
-
-
-def _diff_result_for_added_file(file_path: Path) -> DiffResult:
-    """Create a DiffResult showing all lines of a file as added."""
-    content = _read_yara_text_file(file_path)
-    lines = content.splitlines()
-    diff_lines = [
-        DiffLine(
-            type=DiffType.ADD,
-            line_num=i + 1,
-            content=f"+ {line}",
-            new_content=line,
-        )
-        for i, line in enumerate(lines)
-    ]
-    added = len(lines)
-    if not diff_lines:
-        diff_lines.append(
-            DiffLine(
-                type=DiffType.ADD,
-                line_num=1,
-                content="+ <empty file>",
-                new_content="",
-            ),
-        )
-        added = 1
-    return DiffResult(
-        has_changes=True,
-        lines=diff_lines,
-        summary={
-            "added": added,
-            "removed": 0,
-            "modified": 0,
-            "total_changes": added,
-        },
-    )
-
 
 def diff_lines(lines1: list[str], lines2: list[str]) -> list[DiffLine]:
     """Diff two lists of lines."""
@@ -438,17 +367,3 @@ def diff_ast(ast1: YaraFile, ast2: YaraFile) -> DiffResult:
     """Diff two ASTs."""
     differ = SimpleASTDiffer()
     return differ.diff_ast(ast1, ast2)
-
-
-def format_diff(diff_result: DiffResult) -> str:
-    """Format diff result as string."""
-    lines = []
-
-    if not diff_result.has_changes:
-        return "No changes"
-
-    for line in diff_result.lines:
-        if line.type != DiffType.CONTEXT:
-            lines.append(line.content)
-
-    return "\n".join(lines)

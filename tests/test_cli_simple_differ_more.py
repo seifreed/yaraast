@@ -13,7 +13,6 @@ from yaraast.cli.simple_differ import (
     SimpleDiffer,
     diff_ast,
     diff_lines,
-    format_diff,
 )
 from yaraast.parser import Parser
 
@@ -28,10 +27,6 @@ def test_simple_differ_line_changes() -> None:
     summary = result.summary
     assert summary["added"] == 1
     assert summary["modified"] == 1
-
-    formatted = format_diff(result)
-    assert "+ d" in formatted
-    assert "~ x" in formatted
 
 
 def test_simple_ast_differ_files_and_ast(tmp_path: Path) -> None:
