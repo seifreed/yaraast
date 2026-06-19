@@ -16,7 +16,6 @@ from yaraast.performance.optimizer import PerformanceOptimizer
     "optimize",
     [
         RuleOptimizer().optimize,
-        RuleOptimizer().get_optimization_report,
         PerformanceOptimizer().optimize_file,
         ASTOptimizer().optimize,
     ],

@@ -79,37 +79,6 @@ class RuleOptimizer:
 
         return current, stats
 
-    def get_optimization_report(self, yara_file: YaraFile) -> dict[str, Any]:
-        """Generate a detailed optimization report."""
-        yara_file = require_yara_file(yara_file, "yara_file")
-        original_rule_count = len(yara_file.rules)
-        original_strings = sum(len(rule.strings) for rule in yara_file.rules)
-
-        # Perform optimization
-        optimized, stats = self.optimize(yara_file)
-
-        # Calculate size reduction
-        optimized_strings = sum(len(rule.strings) for rule in optimized.rules)
-
-        return {
-            "summary": stats,
-            "size_reduction": {
-                "rules": f"{stats['rules_eliminated']} rules removed",
-                "strings": f"{original_strings - optimized_strings} strings removed",
-                "percentage": (
-                    f"{(1 - len(optimized.rules) / original_rule_count) * 100:.1f}%"
-                    if original_rule_count
-                    else "0%"
-                ),
-            },
-            "optimization_breakdown": {
-                "constant_folding": "Evaluated constant expressions",
-                "boolean_simplification": "Simplified boolean logic",
-                "dead_code_removal": "Removed unreachable code",
-                "unused_string_removal": "Removed unused string definitions",
-            },
-        }
-
     def optimize_rule(self, rule: Rule) -> Rule:
         """Optimize a single rule."""
         rule = copy.deepcopy(rule)

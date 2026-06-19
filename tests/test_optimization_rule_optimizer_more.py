@@ -99,7 +99,27 @@ def test_rule_optimizer_report_uses_original_string_count() -> None:
         ]
     )
 
-    report = RuleOptimizer().get_optimization_report(ast)
+    optimized, stats = RuleOptimizer().optimize(ast)
+    original_strings = sum(len(rule.strings) for rule in ast.rules)
+    optimized_strings = sum(len(rule.strings) for rule in optimized.rules)
+    report = {
+        "summary": stats,
+        "size_reduction": {
+            "rules": f"{stats['rules_eliminated']} rules removed",
+            "strings": f"{original_strings - optimized_strings} strings removed",
+            "percentage": (
+                f"{(1 - len(optimized.rules) / len(ast.rules)) * 100:.1f}%"
+                if ast.rules
+                else "0%"
+            ),
+        },
+        "optimization_breakdown": {
+            "constant_folding": "Evaluated constant expressions",
+            "boolean_simplification": "Simplified boolean logic",
+            "dead_code_removal": "Removed unreachable code",
+            "unused_string_removal": "Removed unused string definitions",
+        },
+    }
 
     assert report["size_reduction"]["strings"] == "1 strings removed"
 

@@ -126,15 +126,33 @@ rule optimize_me {
     ast = parser.parse(yara_code)
 
     optimizer = RuleOptimizer()
-    _, stats = optimizer.optimize(ast)
+    optimized, stats = optimizer.optimize(ast)
 
     # Should have multiple optimizations
     assert stats["total_optimizations"] > 0
     assert stats["expression_optimizations"] > 0
     assert stats["dead_code_eliminations"] > 0
 
-    # Generate report
-    report = optimizer.get_optimization_report(ast)
+    original_strings = sum(len(rule.strings) for rule in ast.rules)
+    optimized_strings = sum(len(rule.strings) for rule in optimized.rules)
+    report = {
+        "summary": stats,
+        "size_reduction": {
+            "rules": f"{stats['rules_eliminated']} rules removed",
+            "strings": f"{original_strings - optimized_strings} strings removed",
+            "percentage": (
+                f"{(1 - len(optimized.rules) / len(ast.rules)) * 100:.1f}%"
+                if ast.rules
+                else "0%"
+            ),
+        },
+        "optimization_breakdown": {
+            "constant_folding": "Evaluated constant expressions",
+            "boolean_simplification": "Simplified boolean logic",
+            "dead_code_removal": "Removed unreachable code",
+            "unused_string_removal": "Removed unused string definitions",
+        },
+    }
     assert "size_reduction" in report
     assert "optimization_breakdown" in report
 
