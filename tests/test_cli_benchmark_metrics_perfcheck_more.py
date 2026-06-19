@@ -187,6 +187,12 @@ def test_ast_benchmarker_does_not_expose_dead_clear_results() -> None:
     assert not hasattr(ASTBenchmarker, "clear_results")
 
 
+def test_benchmark_result_does_not_expose_dead_memory_field() -> None:
+    from yaraast.cli.benchmark_tools import BenchmarkResult
+
+    assert "memory_usage" not in BenchmarkResult.__annotations__
+
+
 def test_ast_benchmarker_supports_yarax_roundtrip(tmp_path: Path) -> None:
     yara_path = tmp_path / "bench_yarax.yar"
     yara_path.write_text(_yarax_rule(), encoding="utf-8")

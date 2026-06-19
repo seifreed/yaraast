@@ -53,7 +53,6 @@ class BenchmarkResult:
     rules_count: int
     strings_count: int
     ast_nodes: int
-    memory_usage: int | None = None
     success: bool = True
     error: str | None = None
 
