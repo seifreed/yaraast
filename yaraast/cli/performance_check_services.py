@@ -20,7 +20,6 @@ class Severity(StrEnum):
 
     WARNING = "warning"
     CRITICAL = "critical"
-    INFO = "info"
 
 
 _FILTER_SEVERITIES = frozenset({"all", Severity.WARNING, Severity.CRITICAL})
