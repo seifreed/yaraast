@@ -66,63 +66,6 @@ def _display_pattern_result(result_path: str) -> None:
         click.echo(result_path)
 
 
-def _format_plain_string_value(value: str | bytes) -> str:
-    if isinstance(value, bytes):
-        return value.decode("utf-8", errors="backslashreplace")
-    return value
-
-
-def _display_plain_string(string_def: PlainString) -> None:
-    """Display plain string information."""
-    value_str = _format_plain_string_value(string_def.value)
-    display_value = f'"{value_str[:30]}..."' if len(value_str) > 30 else f'"{value_str}"'
-    click.echo(f"  📝 {string_def.identifier}: {display_value}")
-
-
-def _display_hex_string(string_def: HexString) -> None:
-    """Display hex string information."""
-    token_count = len(string_def.tokens)
-    click.echo(f"  🔢 {string_def.identifier}: HEX pattern ({token_count} tokens)")
-
-
-def _display_regex_string(string_def: RegexString) -> None:
-    """Display regex string information."""
-    click.echo(f"  🔍 {string_def.identifier}: /{string_def.regex}/")
-
-
-def _display_pattern_summary(counts: dict[str, int]) -> None:
-    """Display pattern count summary."""
-    total = counts["plain"] + counts["hex"] + counts["regex"]
-    click.echo("\n📈 Summary:")
-    click.echo(f"  Total strings: {total}")
-    click.echo(f"  Plain strings: {counts['plain']}")
-    click.echo(f"  Hex patterns: {counts['hex']}")
-    click.echo(f"  Regex patterns: {counts['regex']}")
-
-
-def _analyze_pattern_counts(ast: YaraFile) -> dict[str, int]:
-    """Analyze and display pattern counts by type."""
-    counts = {"plain": 0, "hex": 0, "regex": 0}
-
-    for rule in ast.rules:
-        if rule.strings:
-            click.echo(f"\n📁 Rule: {rule.name}")
-            for string_def in rule.strings:
-                if isinstance(string_def, PlainString):
-                    counts["plain"] += 1
-                    _display_plain_string(string_def)
-                elif isinstance(string_def, HexString):
-                    counts["hex"] += 1
-                    _display_hex_string(string_def)
-                elif isinstance(string_def, RegexString):
-                    counts["regex"] += 1
-                    _display_regex_string(string_def)
-                elif isinstance(string_def, StringDefinition):
-                    continue
-
-    return counts
-
-
 def _display_text_pattern_analysis(
     generator: Any, ast: YaraFile
 ) -> None:  # generator typing: protocol-compatible
@@ -133,8 +76,33 @@ def _display_text_pattern_analysis(
     click.echo("📊 String Pattern Analysis (Text Mode):")
     click.echo("=" * 50)
 
-    counts = _analyze_pattern_counts(ast)
-    _display_pattern_summary(counts)
+    counts = {"plain": 0, "hex": 0, "regex": 0}
+    for rule in ast.rules:
+        if rule.strings:
+            click.echo(f"\n📁 Rule: {rule.name}")
+            for string_def in rule.strings:
+                if isinstance(string_def, PlainString):
+                    counts["plain"] += 1
+                    value = string_def.value.decode("utf-8", errors="backslashreplace") if isinstance(
+                        string_def.value, bytes
+                    ) else string_def.value
+                    display_value = f'"{value[:30]}..."' if len(value) > 30 else f'"{value}"'
+                    click.echo(f"  📝 {string_def.identifier}: {display_value}")
+                elif isinstance(string_def, HexString):
+                    counts["hex"] += 1
+                    click.echo(f"  🔢 {string_def.identifier}: HEX pattern ({len(string_def.tokens)} tokens)")
+                elif isinstance(string_def, RegexString):
+                    counts["regex"] += 1
+                    click.echo(f"  🔍 {string_def.identifier}: /{string_def.regex}/")
+                elif isinstance(string_def, StringDefinition):
+                    continue
+
+    total = counts["plain"] + counts["hex"] + counts["regex"]
+    click.echo("\n📈 Summary:")
+    click.echo(f"  Total strings: {total}")
+    click.echo(f"  Plain strings: {counts['plain']}")
+    click.echo(f"  Hex patterns: {counts['hex']}")
+    click.echo(f"  Regex patterns: {counts['regex']}")
     _display_graphviz_installation_instructions()
 
 

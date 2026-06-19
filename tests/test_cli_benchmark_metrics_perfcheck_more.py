@@ -10,7 +10,6 @@ from click.testing import CliRunner
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.cli.benchmark_tools import ASTBenchmarker
 import yaraast.cli.commands.performance_check as performance_check_module
 from yaraast.cli.commands.performance_check import performance_check
@@ -39,6 +38,7 @@ from yaraast.cli.metrics_reporting import (
 )
 from yaraast.cli.metrics_reporting_display import (
     display_graphviz_installation_instructions,
+    display_text_statistics,
     path_size_for_display,
 )
 from yaraast.cli.metrics_services import MetricsReportData
@@ -597,19 +597,7 @@ def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[
             )(),
         )
 
-    from yaraast.cli.metrics_reporting import (
-        _display_hex_string,
-        _display_pattern_summary,
-        _display_plain_string,
-        _display_regex_string,
-        _display_text_statistics,
-    )
-
-    _display_plain_string(PlainString(identifier="$p", value="x" * 40))
-    _display_plain_string(PlainString(identifier="$bytes", value=b"abc\xff"))
-    _display_hex_string(HexString(identifier="$h", tokens=[1, 2, 3]))
-    _display_regex_string(RegexString(identifier="$r", regex="ab+"))
-    _display_text_statistics(
+    display_text_statistics(
         "sample.yar",
         {
             "total_rules": 2,
@@ -618,15 +606,12 @@ def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[
             "rules_using_modules": 1,
         },
     )
-    _display_pattern_summary({"plain": 1, "hex": 1, "regex": 1})
 
     out = capsys.readouterr().out
-    assert '"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx..."' in out
-    assert '$bytes: "abc\\xff"' in out
-    assert "b'abc" not in out
-    assert "HEX pattern (3 tokens)" in out
-    assert "/ab+/" in out
-    assert "Total strings: 3" in out
+    assert "Dependency Analysis (Text Mode):" in out
+    assert "sample.yar" in out
+    assert "Total Rules: 2" in out
+    assert "Total Imports: 1" in out
 
 
 def test_metrics_reporting_treats_inaccessible_result_paths_as_non_files(
@@ -647,10 +632,11 @@ def test_metrics_reporting_analyze_pattern_counts_and_string_branches(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     ast = _sample_ast()
-    from yaraast.cli.metrics_reporting import _analyze_pattern_counts
+    class _PatternGenerator:
+        def _analyze_patterns(self, _ast: YaraFile) -> None:
+            return None
 
-    counts = _analyze_pattern_counts(ast)
-    assert counts == {"plain": 1, "hex": 1, "regex": 1}
+    _display_text_pattern_analysis(_PatternGenerator(), ast)
 
     analysis = {
         "total_strings": 3,
@@ -663,6 +649,13 @@ def test_metrics_reporting_analyze_pattern_counts_and_string_branches(
     assert "Short strings (<4 chars): 1" in text
     assert "Hex patterns: 2" in text
     assert "nocase: 1" in text
+
+    output = capsys.readouterr().out
+    assert "String Pattern Analysis (Text Mode)" in output
+    assert "Total strings: 3" in output
+    assert "Plain strings: 1" in output
+    assert "Hex patterns: 1" in output
+    assert "Regex patterns: 1" in output
 
     _output_string_analysis_results("analysis text", None)
     assert "analysis text" in capsys.readouterr().out
