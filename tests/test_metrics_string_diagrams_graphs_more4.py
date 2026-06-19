@@ -13,8 +13,8 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexJump, HexString, HexWildcard, PlainString, RegexString
+from yaraast.metrics.dependency_graph_helpers import render_graph
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
-from yaraast.metrics.string_diagrams_graph_builders import render_or_write_dot
 
 
 class _DotFail:
@@ -34,13 +34,13 @@ class _DotBroken:
 
 def test_graph_helpers_fallbacks_and_empty_hex_source(tmp_path: Path) -> None:
     out = tmp_path / "fallback.svg"
-    result = render_or_write_dot(_DotFail("digraph { a }"), str(out), "svg")
+    result = render_graph(_DotFail("digraph { a }"), str(out), "svg")
     assert result.endswith(".svg")
     assert Path(result).read_text(encoding="utf-8") == "digraph { a }"
 
     real_dot = graphviz.Digraph(comment="ok")
     real_dot.node("a")
-    real_svg = render_or_write_dot(real_dot, str(tmp_path / "ok.svg"), "svg")
+    real_svg = render_graph(real_dot, str(tmp_path / "ok.svg"), "svg")
     assert real_svg.endswith(".svg")
     assert Path(real_svg).exists()
 
@@ -58,7 +58,7 @@ def test_graph_helpers_fallbacks_and_empty_hex_source(tmp_path: Path) -> None:
 
 def test_graph_helpers_propagate_non_graphviz_render_errors(tmp_path: Path) -> None:
     with pytest.raises(AttributeError, match="render state missing"):
-        render_or_write_dot(_DotBroken(), str(tmp_path / "broken.svg"), "svg")
+        render_graph(_DotBroken(), str(tmp_path / "broken.svg"), "svg")
 
 
 @pytest.mark.parametrize("format", [None, 123])
@@ -67,28 +67,28 @@ def test_string_diagram_render_rejects_non_string_formats(
     format: object,
 ) -> None:
     with pytest.raises(TypeError, match="graph format must be a string"):
-        render_or_write_dot(_DotFail("digraph { a }"), str(tmp_path / "broken"), cast(Any, format))
+        render_graph(_DotFail("digraph { a }"), str(tmp_path / "broken"), cast(Any, format))
 
 
 def test_string_diagram_render_rejects_empty_format(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="graph format must not be empty"):
-        render_or_write_dot(_DotFail("digraph { a }"), str(tmp_path / "broken"), "")
+        render_graph(_DotFail("digraph { a }"), str(tmp_path / "broken"), "")
 
 
 def test_string_diagram_render_rejects_empty_output_path() -> None:
     with pytest.raises(ValueError, match="output_path must not be empty"):
-        render_or_write_dot(_DotFail("digraph { a }"), "", "dot")
+        render_graph(_DotFail("digraph { a }"), "", "dot")
 
 
 def test_string_diagram_render_rejects_directory_output_path(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="output_path must not be a directory"):
-        render_or_write_dot(_DotFail("digraph { a }"), tmp_path, "dot")
+        render_graph(_DotFail("digraph { a }"), tmp_path, "dot")
 
 
 @pytest.mark.parametrize("output_path", [False, 0, object()])
 def test_string_diagram_render_rejects_invalid_output_path_types(output_path: Any) -> None:
     with pytest.raises(TypeError, match="output_path must be a file path"):
-        render_or_write_dot(_DotFail("digraph { a }"), cast(Any, output_path), "dot")
+        render_graph(_DotFail("digraph { a }"), cast(Any, output_path), "dot")
 
 
 def test_string_diagram_generators_reject_empty_output_path() -> None:

@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from os import PathLike
-from pathlib import Path
 
 import graphviz
 
-from yaraast.metrics.dependency_graph_helpers import require_graph_format, require_output_path
-from yaraast.metrics.graphviz_errors import is_graphviz_error
+from yaraast.metrics.dependency_graph_helpers import render_graph
 from yaraast.metrics.string_diagrams_graphviz import (
     create_complexity_graph,
     create_hex_graph,
@@ -24,28 +21,6 @@ def pattern_sort_key(pattern_id: str) -> tuple[str, int, str]:
     if separator and suffix.isdigit():
         return (prefix, int(suffix), "")
     return (pattern_id, -1, pattern_id)
-
-
-def render_or_write_dot(
-    dot: graphviz.Digraph, output_path: str | PathLike[str], format: str
-) -> str:
-    """Render graph output, with DOT/text fallback when executables are unavailable."""
-    format = require_graph_format(format)
-    output_path_obj = require_output_path(output_path)
-    if format == "dot":
-        output_path_obj.write_text(dot.source, encoding="utf-8")
-        return str(output_path_obj)
-
-    output_file = str(output_path_obj.with_suffix(""))
-    try:
-        dot.render(output_file, format=format, cleanup=True)
-        return f"{output_file}.{format}"
-    except Exception as exc:
-        if not is_graphviz_error(exc):
-            raise
-        fallback_path = f"{output_file}.{format}"
-        Path(fallback_path).write_text(dot.source, encoding="utf-8")
-        return fallback_path
 
 
 def generate_pattern_flow_diagram(
@@ -83,9 +58,7 @@ def generate_pattern_flow_diagram(
                 regex_cluster.node(pattern_id, generator._create_regex_pattern_label(pattern_info))
 
     add_pattern_relationships(generator, dot)
-    if output_path is not None:
-        return render_or_write_dot(dot, output_path, format)
-    return dot.source
+    return render_graph(dot, output_path, format)
 
 
 def generate_pattern_complexity_diagram(
@@ -119,7 +92,7 @@ def generate_pattern_complexity_diagram(
         legend.node("high_c", "High (>6)", fillcolor="lightcoral", shape="circle")
 
     if output_path is not None:
-        return render_or_write_dot(dot, output_path, format)
+        return render_graph(dot, output_path, format)
     return f"// Layout engine: neato\n{dot.source}"
 
 
@@ -174,7 +147,7 @@ def generate_pattern_similarity_diagram(
                         )
 
     if output_path is not None:
-        return render_or_write_dot(dot, output_path, format)
+        return render_graph(dot, output_path, format)
     return f"// Layout engine: fdp\n{dot.source}"
 
 
@@ -193,7 +166,7 @@ def generate_hex_pattern_diagram(
             "no_hex", "No Hex Patterns Found", shape="box", style="filled", fillcolor="lightgray"
         )
         if output_path is not None:
-            return render_or_write_dot(dot, output_path, format)
+            return render_graph(dot, output_path, format)
         return dot.source
 
     for pattern_id, pattern_info in hex_patterns.items():
@@ -223,7 +196,7 @@ def generate_hex_pattern_diagram(
             dot.edge(pattern_id, complexity_id, label="metrics")
 
     if output_path is not None:
-        return render_or_write_dot(dot, output_path, format)
+        return render_graph(dot, output_path, format)
     return dot.source
 
 

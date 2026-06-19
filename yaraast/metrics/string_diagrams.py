@@ -32,12 +32,6 @@ class StringDiagramGenerator(
         self.pattern_stats: dict[str, Any] = {}
         self._current_rule: str | None = None
 
-    @staticmethod
-    def _render_or_write_dot(dot, output_path, format: str) -> str:
-        from yaraast.metrics.string_diagrams_graph_builders import render_or_write_dot
-
-        return render_or_write_dot(dot, output_path, format)
-
     def generate_pattern_flow_diagram(
         self,
         ast,
