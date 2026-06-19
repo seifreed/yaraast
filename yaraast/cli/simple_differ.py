@@ -341,19 +341,3 @@ class SimpleASTDiffer(SimpleDiffer):
 
         return self.diff(code1, code2)
 
-
-def diff_lines(lines1: list[str], lines2: list[str]) -> list[DiffLine]:
-    """Diff two lists of lines."""
-    lines1 = _require_line_list(lines1, "lines1")
-    lines2 = _require_line_list(lines2, "lines2")
-    differ = SimpleDiffer()
-    content1 = "\n".join(lines1)
-    content2 = "\n".join(lines2)
-    result = differ.diff(content1, content2)
-    return result.lines
-
-
-def diff_ast(ast1: YaraFile, ast2: YaraFile) -> DiffResult:
-    """Diff two ASTs."""
-    differ = SimpleASTDiffer()
-    return differ.diff_ast(ast1, ast2)

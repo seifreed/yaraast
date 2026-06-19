@@ -8,8 +8,6 @@ from yaraast.ast.base import YaraFile
 from yaraast.cli.simple_differ import (
     SimpleASTDiffer,
     SimpleDiffer,
-    diff_ast,
-    diff_lines,
 )
 from yaraast.parser import Parser
 from yaraast.yarax.parser import YaraXParser
@@ -221,7 +219,7 @@ def test_diff_ast_handles_yarax_ast() -> None:
     ast1 = YaraXParser("rule x { condition: with xs = [1]: match xs { _ => true } }").parse()
     ast2 = YaraXParser("rule x { condition: with xs = [1]: match xs { _ => false } }").parse()
 
-    result = diff_ast(ast1, ast2)
+    result = SimpleASTDiffer().diff_ast(ast1, ast2)
 
     assert result.has_changes is True
     assert result.summary["modified"] > 0
@@ -233,14 +231,14 @@ def test_diff_ast_and_helpers() -> None:
     ast2 = parser.parse("rule r1 { condition: true }")
     ast3 = parser.parse("rule r1 { condition: false }")
 
-    same = diff_ast(ast1, ast2)
-    changed = diff_ast(ast1, ast3)
+    same = SimpleASTDiffer().diff_ast(ast1, ast2)
+    changed = SimpleASTDiffer().diff_ast(ast1, ast3)
 
     assert same.has_changes is False
     assert changed.has_changes is True
 
-    lines = diff_lines(["a", "b"], ["a", "c"])
-    assert any(line.content.startswith("~") for line in lines)
+    lines = SimpleDiffer().diff("a\nb", "a\nc")
+    assert any(line.content.startswith("~") for line in lines.lines)
 
     token_result = SimpleDiffer().diff("a b c", "a c d")
     assert token_result.has_changes is True

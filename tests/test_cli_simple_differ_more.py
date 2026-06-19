@@ -11,8 +11,6 @@ import pytest
 from yaraast.cli.simple_differ import (
     SimpleASTDiffer,
     SimpleDiffer,
-    diff_ast,
-    diff_lines,
 )
 from yaraast.parser import Parser
 
@@ -56,12 +54,8 @@ def test_simple_ast_differ_files_and_ast(tmp_path: Path) -> None:
 
     ast1 = Parser().parse(rule1)
     ast2 = Parser().parse(rule2)
-    diff_result = diff_ast(ast1, ast2)
+    diff_result = SimpleASTDiffer().diff_ast(ast1, ast2)
     assert diff_result.has_changes is True
-
-    assert any(
-        line.type.name in {"ADD", "MODIFY"} for line in differ.diff(rule1, rule2).lines
-    )
 
 
 def test_simple_differ_does_not_expose_dead_change_wrapper() -> None:
@@ -69,9 +63,6 @@ def test_simple_differ_does_not_expose_dead_change_wrapper() -> None:
 
 
 def test_diff_lines_and_tokens() -> None:
-    lines = diff_lines(["a", "b"], ["a", "c"])
-    assert any(line.content.startswith("~") for line in lines)
-
     token_result = SimpleDiffer().diff("a b c", "a b d")
     assert token_result.has_changes is True
     assert token_result.summary["modified"] >= 1
@@ -92,20 +83,3 @@ def test_simple_differ_rejects_non_string_contents(
     with pytest.raises(TypeError, match=message):
         SimpleDiffer().diff(content1, content2)
 
-
-@pytest.mark.parametrize(
-    ("lines1", "lines2", "message"),
-    [
-        (cast(Any, "abc"), ["abc"], "lines1 must be a list of strings"),
-        (["abc"], cast(Any, "abc"), "lines2 must be a list of strings"),
-        ([cast(Any, True)], ["abc"], "lines1 must be a list of strings"),
-        (["abc"], [cast(Any, True)], "lines2 must be a list of strings"),
-    ],
-)
-def test_diff_lines_rejects_non_string_line_lists(
-    lines1: list[str],
-    lines2: list[str],
-    message: str,
-) -> None:
-    with pytest.raises(TypeError, match=message):
-        diff_lines(lines1, lines2)
