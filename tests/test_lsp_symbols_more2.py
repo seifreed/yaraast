@@ -6,6 +6,8 @@ from typing import Any, cast
 
 import pytest
 
+from yaraast.lsp.structure import find_line_containing, make_range
+from yaraast.lsp.symbol_tree_builder import find_closing_brace
 from yaraast.lsp.symbols import SymbolsProvider
 
 
@@ -53,13 +55,12 @@ rule alpha {
 
 
 def test_symbols_helper_and_fallback_edges() -> None:
-    provider = SymbolsProvider()
-
-    assert provider._find_line_containing(["a", "b"], "z") == -1
-    assert provider._find_closing_brace(["rule a {", "  condition: true"], 0) == 1
-    rng = provider._make_range(1, 2, 3, 4)
+    assert find_line_containing(["a", "b"], "z") == -1
+    assert find_closing_brace(["rule a {", "  condition: true"], 0) == 1
+    rng = make_range(1, 2, 4)
     assert rng.start.line == 1 and rng.end.character == 4
 
+    provider = SymbolsProvider()
     broken = provider.get_symbols("""
 rule bad {
   meta:

@@ -5,14 +5,11 @@ from __future__ import annotations
 import logging
 import time
 
-from lsprotocol.types import DocumentSymbol, Range
+from lsprotocol.types import DocumentSymbol
 
 from yaraast.lsp.runtime import LspRuntime, get_document_context
 from yaraast.lsp.symbol_tree_builder import (
     build_document_symbols,
-    find_closing_brace as _find_closing_brace_impl,
-    find_line_containing as _find_line_containing_impl,
-    make_range as _make_range_impl,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,20 +64,3 @@ class SymbolsProvider:
                 "document_symbols", (time.perf_counter() - started) * 1000.0
             )
         return list(symbols)
-
-    def _find_line_containing(
-        self,
-        lines: list[str],
-        text: str,
-        start: int = 0,
-    ) -> int:
-        """Find the line number containing the given text."""
-        return _find_line_containing_impl(lines, text, start)
-
-    def _find_closing_brace(self, lines: list[str], start: int) -> int:
-        """Find the closing brace for a rule."""
-        return _find_closing_brace_impl(lines, start)
-
-    def _make_range(self, start_line: int, start_char: int, end_line: int, end_char: int) -> Range:
-        """Create an LSP Range."""
-        return _make_range_impl(start_line, start_char, end_line, end_char)
