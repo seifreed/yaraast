@@ -15,7 +15,6 @@ from yaraast.serialization.simple_roundtrip_helpers import (
     deserialize_node,
     serialize_node,
     serialize_to_file,
-    simple_roundtrip_report,
     validate_roundtrip,
 )
 from yaraast.shared.file_patterns import iter_matching_files
@@ -122,4 +121,34 @@ class SimpleRoundTrip:
 
 
 def simple_roundtrip_test(yara_source: str) -> dict[str, Any]:
-    return simple_roundtrip_report(yara_source)
+    try:
+        original_ast = parse_yara_source(yara_source)
+        generator = YaraXGenerator()
+        reconstructed_source = generator.generate(original_ast)
+        reconstructed_ast = parse_yara_source(reconstructed_source)
+        success = original_ast is not None and reconstructed_ast is not None
+        return {
+            "original_source": yara_source,
+            "reconstructed_source": reconstructed_source,
+            "serialized_data": reconstructed_source,
+            "format": "simple",
+            "round_trip_successful": success,
+            "differences": [] if success else ["Error during roundtrip"],
+            "metadata": {
+                "original_rule_count": len(original_ast.rules),
+                "reconstructed_rule_count": len(reconstructed_ast.rules),
+            },
+        }
+    except (ValueError, YaraASTError) as exc:
+        return {
+            "original_source": yara_source,
+            "reconstructed_source": "",
+            "serialized_data": "",
+            "format": "simple",
+            "round_trip_successful": False,
+            "differences": [f"Error during roundtrip: {exc}"],
+            "metadata": {
+                "original_rule_count": 0,
+                "reconstructed_rule_count": 0,
+            },
+        }

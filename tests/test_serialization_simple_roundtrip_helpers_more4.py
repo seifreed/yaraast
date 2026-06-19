@@ -68,7 +68,6 @@ from yaraast.ast.strings import (
 )
 from yaraast.errors import SerializationError
 from yaraast.serialization.simple_roundtrip_helpers import (
-    _compare_normalized,
     deserialize_extern_rule,
     deserialize_from_file,
     deserialize_meta,
@@ -3999,23 +3998,7 @@ def test_simple_roundtrip_helpers_preserve_nested_extern_and_pragma_metadata() -
     assert restored.namespaces[0].extern_rules[0].location == Location(20, 21)
 
 
-def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> None:
-    ok, differences = _compare_normalized("a\nb\nc", "a\nb\nc")
-    assert ok is True
-    assert differences == []
-
-    ok_equal_len, differences_equal_len = _compare_normalized("a\nb\nc", "a\nx\nc")
-    assert ok_equal_len is False
-    assert differences_equal_len == ["Line 2 differs: 'b' vs 'x'"]
-
-    ok2, differences2 = _compare_normalized(
-        "1\n2\n3\n4\n5\n6\n7\n8",
-        "x\ny\nz\nu\nv\nw",
-    )
-    assert ok2 is False
-    assert differences2[0].startswith("Line count differs:")
-    assert differences2[-1] == "... more differences"
-
+def test_simple_roundtrip_helpers_error_paths(tmp_path: Path) -> None:
     bad_json = tmp_path / "bad.json"
     bad_json.write_text("{not-json", encoding="utf-8")
     try:

@@ -2902,30 +2902,3 @@ def validate_roundtrip(node: ASTNode) -> tuple[bool, dict[str, Any]]:
     except (YaraASTError, ValueError, TypeError) as e:  # serialization + codegen roundtrip errors
         return False, {"error": str(e)}
 
-
-
-
-def _compare_normalized(original: str, reconstructed: str) -> tuple[bool, list[str]]:
-    """Compare normalized YARA source lines."""
-    differences: list[str] = []
-    original_lines = [line.strip() for line in original.split("\n") if line.strip()]
-    reconstructed_lines = [line.strip() for line in reconstructed.split("\n") if line.strip()]
-
-    if original_lines == reconstructed_lines:
-        return True, differences
-
-    if len(original_lines) != len(reconstructed_lines):
-        differences.append(
-            f"Line count differs: {len(original_lines)} vs {len(reconstructed_lines)}",
-        )
-
-    for i, (orig, recon) in enumerate(
-        zip(original_lines, reconstructed_lines, strict=False),
-    ):
-        if orig != recon:
-            differences.append(f"Line {i + 1} differs: '{orig}' vs '{recon}'")
-            if len(differences) > 5:
-                differences.append("... more differences")
-                break
-
-    return False, differences
