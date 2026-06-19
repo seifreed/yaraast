@@ -285,14 +285,6 @@ class BatchProcessor:
             ),
         }
 
-    def reset_statistics(self) -> None:
-        """Reset processing statistics."""
-        self._stats = {
-            "batches_processed": 0,
-            "items_processed": 0,
-            "failures": 0,
-        }
-
     @overload
     def process_directory(
         self,

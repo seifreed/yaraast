@@ -231,14 +231,6 @@ class PerformanceOptimizer:
         """Get optimization statistics."""
         return dict(self._stats)
 
-    def reset_statistics(self) -> None:
-        """Reset optimization statistics."""
-        self._stats = {
-            "rules_optimized": 0,
-            "conditions_simplified": 0,
-            "strings_optimized": 0,
-        }
-
 
 def optimize_yara_file(
     file_path: str | PathLike[str],

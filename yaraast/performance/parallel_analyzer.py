@@ -27,7 +27,6 @@ from yaraast.performance.parallel_job_actions import (
 from yaraast.performance.parallel_job_helpers import (
     analyze_file_path,
     default_parallel_stats,
-    resettable_parallel_stats,
 )
 from yaraast.performance.parallel_models import Job
 from yaraast.performance.validation import validate_positive_int_setting
@@ -185,10 +184,6 @@ class ParallelAnalyzer:
             "avg_time_per_rule": avg_time,
             "max_workers": self.max_workers,
         }
-
-    def reset_statistics(self) -> None:
-        """Reset analysis statistics."""
-        self._stats = resettable_parallel_stats()
 
     def optimize_worker_count(self, rules: list[Rule]) -> int:
         """Determine optimal worker count for rule set.

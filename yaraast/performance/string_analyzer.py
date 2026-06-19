@@ -187,18 +187,6 @@ class StringPatternAnalyzer:
         """Get analyzer statistics."""
         return dict(self._stats)
 
-    def reset_statistics(self) -> None:
-        """Reset analyzer statistics."""
-        self._stats = {
-            "total_strings": 0,
-            "plain_strings": 0,
-            "hex_strings": 0,
-            "regex_strings": 0,
-            "duplicate_values": 0,
-            "common_prefixes": 0,
-            "common_suffixes": 0,
-        }
-
 
 def analyze_rule_performance(rule: Rule) -> list[StringPerformanceIssue]:
     from yaraast.performance.string_performance_checks import analyze_rule_performance

@@ -453,10 +453,6 @@ class StreamingParser:
                 return self.parser.parse(content)
         return parse_yara_source(content)
 
-    def reset_statistics(self) -> None:
-        """Reset parsing statistics."""
-        self._stats = default_streaming_stats()
-
     def estimate_memory_usage(self, file_path: str | Path) -> dict[str, Any]:
         """Estimate memory usage for parsing a file.
 

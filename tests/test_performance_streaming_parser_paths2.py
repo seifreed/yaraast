@@ -22,15 +22,6 @@ def test_streaming_parser_bytes_stream_remaining_buffer_and_reset(tmp_path: Path
     rules = list(parser.parse_stream(io.BytesIO(raw)))
     assert len(rules) == 1
 
-    parser.reset_statistics()
-    stats = parser.get_statistics()
-    assert stats["rules_parsed"] == 0
-    assert stats["bytes_processed"] == 0
-    assert stats["parse_errors"] == 0
-    assert stats["files_processed"] == 0
-    assert stats["files_successful"] == 0
-    assert stats["total_parse_time"] == 0
-
     # parse_rules_from_file exception path
     missing = tmp_path / "missing.yar"
     results = list(parser.parse_rules_from_file(missing))

@@ -54,8 +54,6 @@ def test_performance_optimizer_rule_and_file() -> None:
 
     stats = optimizer.get_statistics()
     assert stats["rules_optimized"] >= 1
-    optimizer.reset_statistics()
-    assert optimizer.get_statistics()["rules_optimized"] == 0
 
 
 def test_performance_optimizer_counts_condition_simplifications() -> None:

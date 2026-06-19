@@ -41,8 +41,6 @@ def test_string_pattern_analyzer_patterns_and_stats() -> None:
 
     stats = analyzer.get_statistics()
     assert stats["total_strings"] == len(patterns)
-    analyzer.reset_statistics()
-    assert analyzer.get_statistics()["total_strings"] == 0
 
 
 def test_string_pattern_analyzer_counts_raw_strings_as_plain() -> None:

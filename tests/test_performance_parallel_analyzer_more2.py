@@ -76,15 +76,6 @@ def test_parallel_analyzer_direct_methods_and_stats(tmp_path: Path) -> None:
     assert stats["avg_time_per_rule"] >= 0
     assert stats["max_workers"] == 1
 
-    analyzer.reset_statistics()
-    reset = analyzer.get_statistics()
-    assert reset["rules_analyzed"] == 0
-    assert reset["errors"] == 0
-    assert reset["total_time"] == 0.0
-    assert reset["jobs_submitted"] == 0
-    assert reset["jobs_completed"] == 0
-    assert reset["jobs_failed"] == 0
-
     jobs_after_reset = analyzer.parse_files_parallel([str(file_path)], chunk_size=1)
     assert len(jobs_after_reset) == 1
     assert jobs_after_reset[0].status.value == "completed"
@@ -261,12 +252,9 @@ def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> 
         "rule_count": len(small_rules),
     }
 
-    analyzer.reset_statistics()
     empty_after_reset = analyzer.profile_performance(small_rules, worker_counts=[])
     assert empty_after_reset["worker_performance"] == {}
-    assert analyzer.get_statistics()["rules_analyzed"] == 0
 
-    analyzer.reset_statistics()
     jobs = analyzer.process_batch(small_rules, _worker_rule_name, job_type="names")
     assert [job.result for job in jobs] == ["a", "b"]
     stats = analyzer.get_statistics()

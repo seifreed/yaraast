@@ -55,10 +55,6 @@ def test_batch_processor_process_batch_and_stats(tmp_path: Path) -> None:
     stats = processor.get_statistics()
     assert stats["items_processed"] >= 2
 
-    processor.reset_statistics()
-    stats_after = processor.get_statistics()
-    assert stats_after["items_processed"] == 0
-
 
 def test_batch_processor_large_file_split(tmp_path: Path) -> None:
     code = """
