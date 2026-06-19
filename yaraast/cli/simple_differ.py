@@ -524,8 +524,3 @@ def format_diff(diff_result: DiffResult) -> str:
             lines.append(line.content)
 
     return "\n".join(lines)
-
-
-def print_diff(diff_result: DiffResult) -> None:
-    """Print diff result to stdout."""
-    print(format_diff(diff_result))

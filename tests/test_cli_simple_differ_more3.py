@@ -12,7 +12,6 @@ from yaraast.cli.simple_differ import (
     SimpleASTDiffer,
     SimpleDiffer,
     format_diff,
-    print_diff,
 )
 
 
@@ -219,4 +218,4 @@ def test_format_diff_no_changes_and_print_diff() -> None:
     )
 
     assert format_diff(result) == "No changes"
-    print_diff(result)
+    assert not hasattr(SimpleDiffer, "print_diff")
