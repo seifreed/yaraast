@@ -67,6 +67,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.errors import SerializationError
+from yaraast.serialization.pragma_scopes import deserialize_pragma_scope
 from yaraast.serialization.simple_roundtrip_helpers import (
     deserialize_extern_rule,
     deserialize_from_file,
@@ -384,6 +385,11 @@ def test_simple_roundtrip_regex_literal_modifiers_are_required() -> None:
 def test_simple_roundtrip_serialize_rejects_unsupported_ast_nodes() -> None:
     with pytest.raises(SerializationError, match="Unsupported simple AST node type:"):
         serialize_node(UnsupportedSimpleNode())
+
+
+def test_deserialize_pragma_scope_rejects_block_scope() -> None:
+    with pytest.raises(SerializationError, match="Pragma scope must be a valid pragma scope"):
+        deserialize_pragma_scope("block")
 
 
 def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:

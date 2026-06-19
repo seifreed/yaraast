@@ -98,7 +98,6 @@ class PragmaScope(Enum):
 
     FILE = "file"  # File-level pragma
     RULE = "rule"  # Rule-level pragma
-    BLOCK = "block"  # Block-level pragma
     LOCAL = "local"  # Local scope pragma
 
 
