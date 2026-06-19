@@ -12,16 +12,7 @@ _OUTPUT_FORMATS = frozenset({"json", "text"})
 
 
 def format_complexity_text(metrics: ComplexityMetrics) -> str:
-    lines: list[str] = []
-    lines.extend(_format_overview_section(metrics))
-    lines.extend(_format_rules_section(metrics))
-    lines.extend(_format_quality_section(metrics))
-    return "\n".join(lines)
-
-
-def _format_overview_section(metrics: ComplexityMetrics) -> list[str]:
-    """Format the overview table with file, rule, string, condition, and pattern metrics."""
-    return [
+    lines: list[str] = [
         "YARA Rule Complexity Analysis",
         "=" * 35,
         "",
@@ -63,11 +54,6 @@ def _format_overview_section(metrics: ComplexityMetrics) -> list[str]:
         f"  Regex quantifiers: {metrics.regex_quantifiers}",
         "",
     ]
-
-
-def _format_rules_section(metrics: ComplexityMetrics) -> list[str]:
-    """Format per-rule details: cyclomatic complexity, complex rules, unused strings."""
-    lines: list[str] = []
     if metrics.cyclomatic_complexity:
         lines.extend(
             [
@@ -94,15 +80,9 @@ def _format_rules_section(metrics: ComplexityMetrics) -> list[str]:
                     if len(metrics.unused_strings) <= 10
                     else f"  ... and {len(metrics.unused_strings) - 10} more"
                 ),
-                "",
-            ],
-        )
-    return lines
-
-
-def _format_quality_section(metrics: ComplexityMetrics) -> list[str]:
-    """Format the quality score section with module usage."""
-    lines: list[str] = []
+                    "",
+                ],
+            )
     if metrics.module_usage:
         lines.extend(
             [
@@ -111,7 +91,7 @@ def _format_quality_section(metrics: ComplexityMetrics) -> list[str]:
                 "",
             ]
         )
-    return lines
+    return "\n".join(lines)
 
 
 def _require_output_format(fmt: object) -> str:
