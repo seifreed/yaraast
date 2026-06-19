@@ -27,7 +27,7 @@ def test_adapt_with_count_and_passthrough_paths() -> None:
     features = YaraXFeatures.yara_compatible()
     features.disallow_duplicate_modifiers = False
     adapter = YaraXSyntaxAdapter(features=features, target="yara")
-    adapted, count = adapter.adapt_with_count(node)
+    adapted, count = adapter.adapt(node)
 
     assert count == 0
     assert [str(m) for m in adapted.rules[0].modifiers] == ["private", "private"]

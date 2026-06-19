@@ -50,12 +50,6 @@ class YaraXSyntaxAdapter(ASTTransformer):
         adapted = cast(YaraFile, self.visit(yara_file))
         return adapted, self.adaptations_count
 
-    def adapt_with_count(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
-        """Adapt YARA file syntax and return adapted file with adaptation count."""
-        self.adaptations_count = 0
-        adapted = cast(YaraFile, self.visit(yara_file))
-        return adapted, self.adaptations_count
-
     def visit_rule(self, node: Rule) -> Rule:
         """Adapt rule syntax."""
         # Remove duplicate modifiers if targeting YARA-X
