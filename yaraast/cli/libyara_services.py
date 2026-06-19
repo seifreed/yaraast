@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file
@@ -17,13 +17,6 @@ def _require_bool_option(value: object, name: str) -> bool:
         msg = f"{name} must be a boolean"
         raise TypeError(msg)
     return value
-
-
-def _require_timeout(value: object) -> int | None:
-    if value is None:
-        return None
-    validate_positive_int_setting(value, "timeout")
-    return cast(int, value)
 
 
 def ensure_yara_available() -> None:
@@ -67,7 +60,8 @@ def scan_yara(
 ) -> tuple[Any | None, Any | None, Any]:
     """Compile and scan a target file."""
     optimize = _require_bool_option(optimize, "optimize")
-    timeout = _require_timeout(timeout)
+    if timeout is not None:
+        validate_positive_int_setting(timeout, "timeout")
     fast = _require_bool_option(fast, "fast")
 
     from yaraast.libyara import DirectASTCompiler, OptimizedMatcher
