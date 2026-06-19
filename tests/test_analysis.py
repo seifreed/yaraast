@@ -29,6 +29,12 @@ def test_analysis_report_does_not_expose_dead_issue_flag() -> None:
     assert not hasattr(AnalysisReport(), "has_issues")
 
 
+def test_optimization_report_does_not_expose_dead_heuristic_flag() -> None:
+    from yaraast.analysis.optimization import OptimizationReport
+
+    assert not hasattr(OptimizationReport(), "is_heuristic")
+
+
 class TestBestPracticesAnalyzer:
     """Test best practices analysis."""
 

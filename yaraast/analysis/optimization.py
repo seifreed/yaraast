@@ -85,11 +85,6 @@ class OptimizationReport:
         )
 
     @property
-    def is_heuristic(self) -> bool:
-        """Whether this report contains heuristic guidance rather than semantic validation."""
-        return True
-
-    @property
     def high_impact_count(self) -> int:
         """Count of high impact optimizations."""
         return sum(1 for s in self.suggestions if s.impact == "high")
