@@ -322,7 +322,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         for i, name1 in enumerate(names):
             for name2 in names[i + 1 :]:
                 # Simple edit distance check
-                if self._levenshtein_distance(name1, name2) == 1:
+                if levenshtein_distance(name1, name2) == 1:
                     self.report.add_suggestion(
                         rule.name,
                         "style",
@@ -587,7 +587,3 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def _analyze_global_patterns(self) -> None:
         """Analyze patterns across all rules."""
         analyze_global_patterns(self)
-
-    def _levenshtein_distance(self, s1: str, s2: str) -> int:
-        """Calculate edit distance between two strings."""
-        return levenshtein_distance(s1, s2)

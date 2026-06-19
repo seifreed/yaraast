@@ -5,7 +5,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
-from yaraast.analysis.best_practices_helpers import get_hex_prefix
+from yaraast.analysis.best_practices_helpers import get_hex_prefix, levenshtein_distance
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
@@ -607,9 +607,9 @@ rule ab {
     short_report = BestPracticesAnalyzer().analyze(short_name_ast)
     assert any("more descriptive rule names" in s.message for s in short_report.suggestions)
 
-    assert analyzer._levenshtein_distance("abc", "abc") == 0
-    assert analyzer._levenshtein_distance("abc", "ab") == 1
-    assert analyzer._levenshtein_distance("abc", "") == 3
+    assert levenshtein_distance("abc", "abc") == 0
+    assert levenshtein_distance("abc", "ab") == 1
+    assert levenshtein_distance("abc", "") == 3
 
 
 def test_best_practices_global_hex_patterns_include_all_rules() -> None:
