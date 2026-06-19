@@ -158,11 +158,6 @@ class _BuilderEmptyCondition(ASTTreeBuilder):
         return ""
 
 
-class _BuilderGeneratedEmpty(ASTTreeBuilder):
-    def _get_condition_string(self, condition: Any) -> str:
-        return super()._get_condition_string(condition)
-
-
 def test_tree_builder_remaining_paths() -> None:
     builder = ASTTreeBuilder()
 

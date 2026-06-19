@@ -32,11 +32,6 @@ from yaraast.ast.strings import (
 from yaraast.cli.visitors import ASTDumper
 
 
-class _AcceptOnly(ASTNode):
-    def accept(self, _visitor: object) -> dict[str, str]:
-        return {"type": "AcceptOnly"}
-
-
 class _FalsyIntegerLiteral(IntegerLiteral):
     def __bool__(self) -> bool:
         return False
