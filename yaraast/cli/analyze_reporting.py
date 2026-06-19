@@ -70,11 +70,6 @@ def display_verbose_info(suggestions: list[Any], report: AnalysisReport) -> None
 
 def display_optimization_report(rule_file: str, report: OptimizationReport, verbose: bool) -> None:
     console.print(f"\n[bold]Optimization Analysis:[/bold] {escape(rule_file)}\n")
-    optimize_display_impact_summary(report)
-    optimize_display_suggestions(report.suggestions, verbose)
-
-
-def optimize_display_impact_summary(report: OptimizationReport) -> None:
     table = Table(title="Optimization Opportunities")
     table.add_column("Impact", style="cyan")
     table.add_column("Count", justify="right")
@@ -91,22 +86,15 @@ def optimize_display_impact_summary(report: OptimizationReport) -> None:
         style = {"high": "red", "medium": "yellow", "low": "green"}.get(level, "white")
         table.add_row(f"[{style}]{level.capitalize()}[/{style}]", str(count))
     console.print(table)
-
-
-def optimize_display_suggestions(suggestions: list[Any], verbose: bool) -> None:
     for level in ["high", "medium", "low"]:
-        level_suggestions = [s for s in suggestions if s.impact == level]
+        level_suggestions = [s for s in report.suggestions if s.impact == level]
         if level_suggestions:
-            display_suggestions_by_level(level_suggestions, level, verbose)
-
-
-def display_suggestions_by_level(level_suggestions: list[Any], level: str, verbose: bool) -> None:
-    style = _get_level_style(level)
-    console.print(f"\n[bold {style}]{level.capitalize()} Impact:[/bold {style}]")
-    for suggestion in level_suggestions:
-        console.print(f"  {escape(suggestion.format())}")
-        if verbose:
-            if suggestion.code_before:
-                console.print(f"    Before: [dim]{escape(suggestion.code_before)}[/dim]")
-            if suggestion.code_after:
-                console.print(f"    After:  [green]{escape(suggestion.code_after)}[/green]")
+            style = _get_level_style(level)
+            console.print(f"\n[bold {style}]{level.capitalize()} Impact:[/bold {style}]")
+            for suggestion in level_suggestions:
+                console.print(f"  {escape(suggestion.format())}")
+                if verbose:
+                    if suggestion.code_before:
+                        console.print(f"    Before: [dim]{escape(suggestion.code_before)}[/dim]")
+                    if suggestion.code_after:
+                        console.print(f"    After:  [green]{escape(suggestion.code_after)}[/green]")

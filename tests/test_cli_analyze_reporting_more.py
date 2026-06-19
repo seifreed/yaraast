@@ -101,18 +101,17 @@ def test_optimize_display_helpers_skip_empty_levels_and_unknown_style(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     report = OptimizationReport(
-        suggestions=[], statistics={"by_impact": {"high": 0, "medium": 0, "low": 0}}
+        suggestions=[
+            OptimizationSuggestion("r1", "misc", "high issue", "high"),
+            OptimizationSuggestion("r2", "misc", "low issue", "low"),
+        ],
+        statistics={},
     )
-    ar.optimize_display_impact_summary(report)
-    ar.optimize_display_suggestions([], verbose=False)
-    ar.display_suggestions_by_level(
-        [OptimizationSuggestion("r", "misc", "other issue", "other")],
-        "other",
-        verbose=False,
-    )
+    ar.display_optimization_report("rules.yar", report, verbose=False)
     out = capsys.readouterr().out
     assert "Optimization" in out and "Opportunities" in out
-    assert "other issue" in out
+    assert "high issue" in out
+    assert "low issue" in out
 
 
 def test_analyze_reporting_escapes_markup_in_dynamic_values(
