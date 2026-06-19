@@ -321,7 +321,6 @@ def parallel(
         )
 
         successful_asts = run_results["successful_asts"]
-        run_results["file_names"]
         complexity_results = run_results["complexity_results"]
         dependency_graphs = run_results["dependency_graphs"]
         analyzer_stats = run_results["analyzer_stats"]
