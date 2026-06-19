@@ -501,11 +501,6 @@ class FluentStringBuilder:
         return FluentStringBuilder(identifier).literal(content)
 
     @staticmethod
-    def plain(identifier: str, content: str) -> FluentStringBuilder:
-        """Create a plain string builder (alias for text_string)."""
-        return FluentStringBuilder.text_string(identifier, content)
-
-    @staticmethod
     def hex_string(identifier: str, pattern: str) -> FluentStringBuilder:
         """Create a hex string builder."""
         return FluentStringBuilder(identifier).hex(pattern)

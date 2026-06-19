@@ -660,9 +660,9 @@ class TestFluentStringBuilderStaticMethods:
         assert builder.identifier == "$s"
         assert builder._content == "malware"
 
-    def test_plain_is_alias_for_text_string(self) -> None:
-        """Plain should be alias for text_string."""
-        builder = FluentStringBuilder.plain("$p", "test")
+    def test_text_string_factory_creates_plain_builder(self) -> None:
+        """Text_string should create plain string content."""
+        builder = FluentStringBuilder.text_string("$p", "test")
 
         assert builder._content == "test"
 
