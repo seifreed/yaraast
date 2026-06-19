@@ -8,7 +8,6 @@ from yaraast.lsp.document_context import DocumentContext
 from yaraast.lsp.document_highlight_helpers import (
     highlight_identifier,
     highlight_string_identifier,
-    simple_highlight,
 )
 from yaraast.lsp.document_types import ReferenceRecord
 from yaraast.lsp.text_utils import get_word_at_position
@@ -72,10 +71,6 @@ class DocumentHighlightProvider:
         if records:
             return self._highlights_from_records(records)
         return highlight_identifier(text, identifier)
-
-    def _simple_highlight(self, text: str, word: str) -> list[DocumentHighlight]:
-        """Simple text-based highlighting fallback."""
-        return simple_highlight(text, word)
 
     def _is_local_shadow(
         self,

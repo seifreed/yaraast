@@ -69,12 +69,6 @@ class WorkspaceIndex:
         self.workspace_folders = _normalize_workspace_folders(folders)
         self.load()
 
-    def _cache_path(self) -> Path | None:
-        cache_paths = self._cache_paths()
-        if not cache_paths:
-            return None
-        return cache_paths[0]
-
     def _cache_paths(self) -> list[Path]:
         cache_paths: list[Path] = []
         seen: set[Path] = set()

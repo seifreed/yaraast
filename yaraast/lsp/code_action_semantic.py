@@ -14,7 +14,6 @@ from yaraast.lsp.code_action_semantic_quickfixes import (
     create_import_module_action,
     create_rename_duplicate_action,
     create_replace_builtin_function_actions,
-    create_replace_module_function_actions,
     create_trim_arguments_action,
 )
 
@@ -29,19 +28,6 @@ class SemanticCodeActionMixin:
         uri: str,
     ) -> list[CodeAction]:
         return create_semantic_actions(self, text, diagnostic, uri)
-
-    def _create_replace_module_function_actions(
-        self: Any,
-        text: str,
-        diagnostic: Diagnostic,
-        uri: str,
-        module_name: str,
-        function_name: str,
-        available_functions: list[str],
-    ) -> list[CodeAction]:
-        return create_replace_module_function_actions(
-            text, diagnostic, uri, module_name, function_name, available_functions
-        )
 
     def _create_replace_builtin_function_actions(
         self: Any,
