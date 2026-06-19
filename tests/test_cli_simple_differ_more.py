@@ -66,8 +66,13 @@ def test_simple_ast_differ_files_and_ast(tmp_path: Path) -> None:
     diff_result = diff_ast(ast1, ast2)
     assert diff_result.has_changes is True
 
-    changes = differ.get_changes(rule1, rule2)
-    assert any(line.startswith("+") or line.startswith("~") for line in changes)
+    assert any(
+        line.type.name in {"ADD", "MODIFY"} for line in differ.diff(rule1, rule2).lines
+    )
+
+
+def test_simple_differ_does_not_expose_dead_change_wrapper() -> None:
+    assert not hasattr(SimpleDiffer(), "get_changes")
 
 
 def test_diff_lines_and_tokens() -> None:

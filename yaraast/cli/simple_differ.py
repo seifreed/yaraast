@@ -372,17 +372,6 @@ class SimpleASTDiffer(SimpleDiffer):
 
         return self.diff(code1, code2)
 
-    def get_changes(self, content1: str, content2: str) -> list[str]:
-        """Get a list of changes between two contents."""
-        result = self.diff(content1, content2)
-
-        changes = []
-        for line in result.lines:
-            if line.type != DiffType.CONTEXT:
-                changes.append(line.content)
-
-        return changes
-
     def diff_directories(
         self,
         dir1: str | PathLike[str],
