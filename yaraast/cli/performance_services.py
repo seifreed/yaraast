@@ -338,10 +338,67 @@ def build_optimization_plan(
         validate_positive_int_setting(target_time, "target_time")
 
     recommendations = MemoryOptimizer().optimize_for_large_collection(collection_size)
-    strategy = _build_strategy_messages(collection_size)
-    memory_plan = _build_memory_plan(collection_size, memory_mb, recommendations)
-    time_plan = _build_time_plan(collection_size, target_time)
-    examples = _build_command_examples(collection_size, recommendations)
+    if collection_size < 100:
+        strategy = [
+            "Use standard parallel processing",
+            "Memory optimization not critical",
+        ]
+    elif collection_size < 1000:
+        strategy = [
+            "Use batch processing with moderate parallelism",
+            "Enable object pooling",
+            "Monitor memory usage",
+        ]
+    else:
+        strategy = [
+            "Use streaming parser with small batches",
+            "Enable aggressive memory management",
+            "Consider distributed processing",
+        ]
+
+    if memory_mb is None:
+        memory_plan = None
+    else:
+        estimated_memory = collection_size * 0.5
+        memory_limit = recommendations.get("memory_limit_mb")
+        memory_plan = {
+            "available_mb": memory_mb,
+            "estimated_mb": estimated_memory,
+            "sufficient": estimated_memory <= memory_mb,
+            "suggested_batch_size": max(1, (memory_mb * 2) // collection_size)
+            if collection_size
+            else 1,
+            "memory_limit_mb": memory_limit,
+        }
+
+    if target_time is None:
+        time_plan = None
+    else:
+        estimated_time_sequential = collection_size * 0.1
+        max_workers = 8
+        time_plan = {
+            "target_time": target_time,
+            "estimated_time_parallel": (
+                estimated_time_sequential / max_workers
+                if max_workers > 0
+                else estimated_time_sequential
+            ),
+            "needed_workers": int(estimated_time_sequential / target_time) if target_time > 0 else 0,
+            "max_workers": max_workers,
+        }
+
+    batch_size = recommendations.get("batch_size")
+    memory_limit = recommendations.get("memory_limit_mb")
+    examples = {
+        "batch": {
+            "batch_size": batch_size,
+            "memory_limit_mb": memory_limit,
+            "max_workers": min(8, max(2, collection_size // 100)) if collection_size else 2,
+        },
+        "stream": {
+            "memory_limit_mb": memory_limit // 2 if isinstance(memory_limit, int) else memory_limit,
+        },
+    }
     return {
         "collection_size": collection_size,
         "recommendations": recommendations,
@@ -349,81 +406,4 @@ def build_optimization_plan(
         "memory_plan": memory_plan,
         "time_plan": time_plan,
         "examples": examples,
-    }
-
-
-def _build_strategy_messages(collection_size: int) -> list[str]:
-    if collection_size < 100:
-        return [
-            "Use standard parallel processing",
-            "Memory optimization not critical",
-        ]
-    if collection_size < 1000:
-        return [
-            "Use batch processing with moderate parallelism",
-            "Enable object pooling",
-            "Monitor memory usage",
-        ]
-    return [
-        "Use streaming parser with small batches",
-        "Enable aggressive memory management",
-        "Consider distributed processing",
-    ]
-
-
-def _build_memory_plan(
-    collection_size: int,
-    memory_mb: int | None,
-    recommendations: dict[str, Any],
-) -> dict[str, Any] | None:
-    if memory_mb is None:
-        return None
-
-    estimated_memory = collection_size * 0.5
-    memory_limit = recommendations.get("memory_limit_mb")
-    sufficient = estimated_memory <= memory_mb
-    suggested_batch = max(1, (memory_mb * 2) // collection_size) if collection_size else 1
-    return {
-        "available_mb": memory_mb,
-        "estimated_mb": estimated_memory,
-        "sufficient": sufficient,
-        "suggested_batch_size": suggested_batch,
-        "memory_limit_mb": memory_limit,
-    }
-
-
-def _build_time_plan(collection_size: int, target_time: int | None) -> dict[str, Any] | None:
-    if target_time is None:
-        return None
-
-    estimated_time_sequential = collection_size * 0.1
-    max_workers = 8
-    estimated_time_parallel = (
-        estimated_time_sequential / max_workers if max_workers > 0 else estimated_time_sequential
-    )
-    needed_workers = int(estimated_time_sequential / target_time) if target_time > 0 else 0
-    return {
-        "target_time": target_time,
-        "estimated_time_parallel": estimated_time_parallel,
-        "needed_workers": needed_workers,
-        "max_workers": max_workers,
-    }
-
-
-def _build_command_examples(
-    collection_size: int,
-    recommendations: dict[str, Any],
-) -> dict[str, Any]:
-    batch_size = recommendations.get("batch_size")
-    memory_limit = recommendations.get("memory_limit_mb")
-    max_workers = min(8, max(2, collection_size // 100)) if collection_size else 2
-    return {
-        "batch": {
-            "batch_size": batch_size,
-            "memory_limit_mb": memory_limit,
-            "max_workers": max_workers,
-        },
-        "stream": {
-            "memory_limit_mb": memory_limit // 2 if isinstance(memory_limit, int) else memory_limit,
-        },
     }

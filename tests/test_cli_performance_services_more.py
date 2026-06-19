@@ -177,18 +177,22 @@ def test_build_parallel_summary_and_plans_cover_remaining_branches() -> None:
     )
     assert summary3["speedup"] == 1.0
 
-    assert ps._build_strategy_messages(500) == [
+    plan_small = ps.build_optimization_plan(500, None, None)
+    plan_large = ps.build_optimization_plan(5000, 128, 60)
+    assert plan_small["strategy"] == [
         "Use batch processing with moderate parallelism",
         "Enable object pooling",
         "Monitor memory usage",
     ]
-    assert ps._build_strategy_messages(5000) == [
+    assert plan_large["strategy"] == [
         "Use streaming parser with small batches",
         "Enable aggressive memory management",
         "Consider distributed processing",
     ]
-    assert ps._build_memory_plan(10, None, {"memory_limit_mb": 64}) is None
-    assert ps._build_time_plan(10, None) is None
+    assert plan_small["memory_plan"] is None
+    assert plan_small["time_plan"] is None
+    assert plan_large["memory_plan"] is not None
+    assert plan_large["time_plan"] is not None
 
 
 def test_build_optimization_plan_rejects_invalid_numeric_inputs() -> None:
