@@ -74,11 +74,6 @@ class AnalysisReport:
         """Add a suggestion to the report."""
         self.suggestions.append(Suggestion(rule, category, severity, message, location))
 
-    @property
-    def has_issues(self) -> bool:
-        """Check if there are any warnings or errors."""
-        return any(s.severity in ("warning", "error") for s in self.suggestions)
-
     def get_by_severity(self, severity: str) -> list[Suggestion]:
         """Get suggestions by severity."""
         severity = require_string(severity, "AnalysisReport severity")

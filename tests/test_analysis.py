@@ -25,6 +25,10 @@ def test_analysis_report_rejects_non_string_filter_values(value: Any) -> None:
         report.get_by_severity(cast(str, value))
 
 
+def test_analysis_report_does_not_expose_dead_issue_flag() -> None:
+    assert not hasattr(AnalysisReport(), "has_issues")
+
+
 class TestBestPracticesAnalyzer:
     """Test best practices analysis."""
 
