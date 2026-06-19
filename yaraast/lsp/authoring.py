@@ -9,13 +9,8 @@ from yaraast.codegen.options import GeneratorOptions
 import yaraast.lsp.authoring_actions as authoring_actions
 from yaraast.lsp.authoring_actions import StructuralEdit
 from yaraast.lsp.authoring_support import (
-    RuleContext,
     canonical_config,
-    get_rule_context,
-    modifier_start,
-    normalize_modifiers,
 )
-from yaraast.lsp.structure import find_rule_end, find_rule_start, find_section_line
 from yaraast.optimization.rule_optimizer import RuleOptimizer
 from yaraast.parser.parser import Parser
 from yaraast.serialization.roundtrip_serializer import RoundTripSerializer
@@ -93,22 +88,3 @@ class AuthoringActions:
             mode="compress",
             title="Compress explicit set to 'of them'",
         )
-
-    # Compatibility wrappers for existing tests; implementation lives in support modules.
-    def _find_rule_start(self, lines: list[str], current_line: int) -> int:
-        return find_rule_start(lines, current_line)
-
-    def _get_rule_context(self, text: str, current_line: int) -> RuleContext | None:
-        return get_rule_context(text, current_line)
-
-    def _find_rule_end(self, lines: list[str], start_line: int) -> int:
-        return find_rule_end(lines, start_line)
-
-    def _find_section_line(self, lines: list[str], section_header: str, start_line: int) -> int:
-        return find_section_line(lines, section_header, start_line)
-
-    def _modifier_start(self, body: str) -> int | None:
-        return modifier_start(body)
-
-    def _normalize_modifiers(self, modifiers: list[str]) -> list[str]:
-        return normalize_modifiers(modifiers)

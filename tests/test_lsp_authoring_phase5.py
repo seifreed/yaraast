@@ -9,7 +9,9 @@ from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import Identifier, SetExpression
 from yaraast.lsp.authoring import AuthoringActions
 from yaraast.lsp.authoring_rewriters import OfThemTransformer, StringReferenceRewriter
+from yaraast.lsp.authoring_support import get_rule_context, modifier_start, normalize_modifiers
 from yaraast.lsp.code_actions import CodeActionsProvider
+from yaraast.lsp.structure import find_rule_end, find_rule_start, find_section_line
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
@@ -627,7 +629,6 @@ rule demo {
 
 
 def test_authoring_helpers_cover_edge_cases() -> None:
-    actions = AuthoringActions()
     text = """
 rule demo {
     strings:
@@ -637,41 +638,39 @@ rule demo {
 }
 """.lstrip()
 
-    assert actions._find_rule_start(text.split("\n"), 0) == 0
-    assert actions._find_rule_start(text.split("\n"), 4) == 0
+    assert find_rule_start(text.split("\n"), 0) == 0
+    assert find_rule_start(text.split("\n"), 4) == 0
+    assert find_rule_start(["private rule demo {", "  condition:", "    true", "}"], 2) == 0
+    assert find_rule_start(["global rule demo {", "  condition:", "    true", "}"], 2) == 0
+    assert find_rule_start(["meta:", "a = 1"], 1) == -1
+    assert get_rule_context("meta:\n a = 1", 0) is None
+    assert find_rule_end(["rule demo {", '  $a = "{"', "}"], 0) == 2
+    assert find_rule_end(["rule demo {", "  /* x } */", "}"], 0) == 2
+    assert find_rule_end(["rule demo {", "  /a\\/b/", "}"], 0) == 2
     assert (
-        actions._find_rule_start(["private rule demo {", "  condition:", "    true", "}"], 2) == 0
-    )
-    assert actions._find_rule_start(["global rule demo {", "  condition:", "    true", "}"], 2) == 0
-    assert actions._find_rule_start(["meta:", "a = 1"], 1) == -1
-    assert actions._get_rule_context("meta:\n a = 1", 0) is None
-    assert actions._find_rule_end(["rule demo {", '  $a = "{"', "}"], 0) == 2
-    assert actions._find_rule_end(["rule demo {", "  /* x } */", "}"], 0) == 2
-    assert actions._find_rule_end(["rule demo {", "  /a\\/b/", "}"], 0) == 2
-    assert (
-        actions._find_rule_end(
+        find_rule_end(
             ["rule demo {", "  condition:", "    (4 / 2) == 2", "}", "rule next { }"],
             0,
         )
         == 3
     )
-    assert actions._find_section_line(text.split("\n"), "strings:", 0) == 1
-    assert actions._find_section_line(text.split("\n"), "meta:", 0) == -1
+    assert find_section_line(text.split("\n"), "strings:", 0) == 1
+    assert find_section_line(text.split("\n"), "meta:", 0) == -1
     assert (
-        actions._find_section_line(
+        find_section_line(
             ["private rule a {", "}", "private rule b {", "  condition:"],
             "condition:",
             0,
         )
         == -1
     )
-    assert actions._modifier_start('"abc" wide nocase') is not None
-    assert actions._modifier_start("{ 41 42 } ascii") is not None
-    assert actions._modifier_start("/abc/i nocase") is not None
-    assert actions._modifier_start(r'"a\"b" wide ascii') is not None
-    assert actions._modifier_start(r"/a\/b/ wide ascii") is not None
-    assert actions._modifier_start('"abc"') is None
-    assert actions._normalize_modifiers(["wide", "ascii", "wide", "nocase"]) == [
+    assert modifier_start('"abc" wide nocase') is not None
+    assert modifier_start("{ 41 42 } ascii") is not None
+    assert modifier_start("/abc/i nocase") is not None
+    assert modifier_start(r'"a\"b" wide ascii') is not None
+    assert modifier_start(r"/a\/b/ wide ascii") is not None
+    assert modifier_start('"abc"') is None
+    assert normalize_modifiers(["wide", "ascii", "wide", "nocase"]) == [
         "ascii",
         "wide",
         "nocase",
