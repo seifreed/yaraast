@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import click
 
-from yaraast.cli.analyze_report_helpers import best_report_to_dict, opt_report_to_dict
 from yaraast.cli.analyze_reporting import (
     display_best_practices_report,
     display_issues,
@@ -45,8 +44,34 @@ def full(rule_file: str, output_format: str, output: str | None) -> None:
 
         if output_format == "json":
             result = {
-                "best_practices": best_report_to_dict(best_report),
-                "optimization": opt_report_to_dict(opt_report),
+                "best_practices": {
+                    "statistics": best_report.statistics,
+                    "suggestions": [
+                        {
+                            "rule": suggestion.rule_name,
+                            "category": suggestion.category,
+                            "severity": suggestion.severity,
+                            "message": suggestion.message,
+                            "location": suggestion.location,
+                        }
+                        for suggestion in best_report.suggestions
+                    ],
+                },
+                "optimization": {
+                    "statistics": opt_report.statistics,
+                    "heuristic": getattr(opt_report, "is_heuristic", True),
+                    "suggestions": [
+                        {
+                            "rule": suggestion.rule_name,
+                            "type": suggestion.optimization_type,
+                            "impact": suggestion.impact,
+                            "description": suggestion.description,
+                            "code_before": suggestion.code_before,
+                            "code_after": suggestion.code_after,
+                        }
+                        for suggestion in opt_report.suggestions
+                    ],
+                },
             }
             json_output = format_json(result)
             if output is not None:
@@ -114,7 +139,21 @@ def optimize(rule_file: str, verbose: bool, output_format: str, output: str | No
         report = _analyze_optimizations(ast)
 
         if output_format == "json":
-            payload = opt_report_to_dict(report)
+            payload = {
+                "statistics": report.statistics,
+                "heuristic": getattr(report, "is_heuristic", True),
+                "suggestions": [
+                    {
+                        "rule": suggestion.rule_name,
+                        "type": suggestion.optimization_type,
+                        "impact": suggestion.impact,
+                        "description": suggestion.description,
+                        "code_before": suggestion.code_before,
+                        "code_after": suggestion.code_after,
+                    }
+                    for suggestion in report.suggestions
+                ],
+            }
             text = format_json(payload)
             if output is not None:
                 write_text(output, text)

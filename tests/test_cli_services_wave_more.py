@@ -18,7 +18,6 @@ from yaraast.cli import (
     performance_check_reporting as pcr,
     workspace_services as ws,
 )
-from yaraast.cli.analyze_report_helpers import best_report_to_dict, opt_report_to_dict
 from yaraast.performance.string_analyzer import StringPerformanceIssue
 
 
@@ -62,8 +61,34 @@ def test_analyze_services_formatting_helpers() -> None:
     assert an._filter_suggestions(bp.suggestions, "all") == bp.suggestions
     assert len(an._filter_suggestions(bp.suggestions, "security")) == 1
 
-    best_data = best_report_to_dict(bp)
-    opt_data: dict[str, Any] = opt_report_to_dict(opt)
+    best_data = {
+        "statistics": bp.statistics,
+        "suggestions": [
+            {
+                "rule": suggestion.rule_name,
+                "category": suggestion.category,
+                "severity": suggestion.severity,
+                "message": suggestion.message,
+                "location": suggestion.location,
+            }
+            for suggestion in bp.suggestions
+        ],
+    }
+    opt_data: dict[str, Any] = {
+        "statistics": opt.statistics,
+        "heuristic": getattr(opt, "is_heuristic", True),
+        "suggestions": [
+            {
+                "rule": suggestion.rule_name,
+                "type": suggestion.optimization_type,
+                "impact": suggestion.impact,
+                "description": suggestion.description,
+                "code_before": suggestion.code_before,
+                "code_after": suggestion.code_after,
+            }
+            for suggestion in opt.suggestions
+        ],
+    }
     opt_suggestions = cast(list[dict[str, Any]], opt_data["suggestions"])
     assert best_data["statistics"] == {"rules": 2}
     assert opt_suggestions[0]["type"] == "dedup"
