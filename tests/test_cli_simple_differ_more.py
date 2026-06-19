@@ -15,7 +15,6 @@ from yaraast.cli.simple_differ import (
     diff_lines,
     diff_tokens,
     format_diff,
-    get_diff_summary,
 )
 from yaraast.parser import Parser
 
@@ -27,7 +26,7 @@ def test_simple_differ_line_changes() -> None:
 
     result = d.diff(content1, content2)
     assert result.has_changes is True
-    summary = get_diff_summary(result)
+    summary = result.summary
     assert summary["added"] == 1
     assert summary["modified"] == 1
 

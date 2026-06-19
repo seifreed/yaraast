@@ -512,11 +512,6 @@ def diff_ast(ast1: YaraFile, ast2: YaraFile) -> DiffResult:
     return differ.diff_ast(ast1, ast2)
 
 
-def get_diff_summary(diff_result: DiffResult) -> dict[str, int]:
-    """Get summary of diff result."""
-    return diff_result.summary
-
-
 def format_diff(diff_result: DiffResult) -> str:
     """Format diff result as string."""
     lines = []

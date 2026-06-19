@@ -12,7 +12,6 @@ from yaraast.cli.simple_differ import (
     diff_lines,
     diff_tokens,
     format_diff,
-    get_diff_summary,
 )
 from yaraast.parser import Parser
 from yaraast.yarax.parser import YaraXParser
@@ -39,7 +38,7 @@ def test_simple_differ_line_changes() -> None:
     result = differ.diff("rule a { condition: true }", "rule a { condition: false }")
 
     assert result.has_changes is True
-    summary = get_diff_summary(result)
+    summary = result.summary
     assert summary["modified"] >= 1
     assert summary["total_changes"] == summary["added"] + summary["removed"] + summary["modified"]
 
