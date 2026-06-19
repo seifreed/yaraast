@@ -20,7 +20,6 @@ from yaraast.builder.fluent_condition_builder import (
     any_of_them,
     condition,
     filesize_gt,
-    high_entropy,
     large_file,
     match,
     not_them,
@@ -86,7 +85,7 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert small_file().build() is not None
     assert large_file().build() is not None
     assert pe_is_dll().build() is not None
-    assert high_entropy().build() is not None
+    assert b.high_entropy().build() is not None
 
 
 def test_fluent_condition_string_in_last_kb_expression_shape() -> None:

@@ -329,8 +329,3 @@ def large_file() -> FluentConditionBuilder:
 def pe_is_dll() -> FluentConditionBuilder:
     """PE is DLL condition."""
     return FluentConditionBuilder().pe_is_dll()
-
-
-def high_entropy(offset: int = 0, size: int = 1024) -> FluentConditionBuilder:
-    """High entropy condition."""
-    return FluentConditionBuilder().high_entropy(offset, size)
