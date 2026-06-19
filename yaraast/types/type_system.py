@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ._inference import TypeInference
+from ._expr_inference import ExpressionTypeInference as TypeInference
 from ._registry import (
     BUILTIN_BOOL_FUNCTIONS,
     BUILTIN_DOUBLE_FUNCTIONS,

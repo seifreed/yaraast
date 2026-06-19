@@ -1,6 +1,6 @@
 """Type system for YARA AST semantic validation."""
 
-from yaraast.types._inference import TypeInference
+from yaraast.types._expr_inference import ExpressionTypeInference as TypeInference
 from yaraast.types._registry import YaraType
 from yaraast.types._validation import TypeChecker, TypeValidator
 from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition

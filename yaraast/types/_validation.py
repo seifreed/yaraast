@@ -7,10 +7,10 @@ from typing import Any
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Import, Rule
+from yaraast.types._expr_inference import ExpressionTypeInference as TypeInference
 from yaraast.types.module_loader import ModuleLoader
 from yaraast.visitor import BaseVisitor
 
-from ._inference import TypeInference
 from ._registry import (
     BooleanType,
     DoubleType,
