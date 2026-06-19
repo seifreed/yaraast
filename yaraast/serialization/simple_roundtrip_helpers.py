@@ -376,14 +376,6 @@ def _serialize_plain_string_raw_bytes(data: dict[str, Any], raw_bytes: Any) -> N
     data["raw_value_encoding"] = "base64"
 
 
-def _deserialize_legacy_string_data(data: dict[str, Any]) -> str | bytes:
-    value = data.get("data", "")
-    if isinstance(value, str | bytes):
-        return value
-    msg = "String data must be a string or bytes"
-    raise SerializationError(msg)
-
-
 def _deserialize_hex_byte_value(data: dict[str, Any], context: str) -> int | str:
     return _validate_hex_byte_value(_deserialize_required_field(data, "value", context), context)
 
@@ -467,13 +459,6 @@ def _deserialize_optional_node_value(value: Any, context: str) -> ASTNode | None
     return deserialize_node(value)
 
 
-def _deserialize_optional_node_field(
-    data: dict[str, Any], field: str, context: str
-) -> ASTNode | None:
-    value = data.get(field)
-    return _deserialize_optional_node_value(value, context)
-
-
 def _deserialize_nullable_node_field(
     data: dict[str, Any], field: str, context: str
 ) -> ASTNode | None:
@@ -492,16 +477,6 @@ def _deserialize_required_node(data: dict[str, Any], field: str, context: str) -
     return _deserialize_required_node_value(
         _deserialize_required_field(data, field, context), f"{context} {field}"
     )
-
-
-def _deserialize_node_list_field(data: dict[str, Any], field: str, context: str) -> list[ASTNode]:
-    nodes = []
-    for item in _deserialize_list_field(data, field, context):
-        if item is None or item == {}:
-            msg = f"{context} {field} must contain nodes"
-            raise SerializationError(msg)
-        nodes.append(deserialize_node(item))
-    return nodes
 
 
 def _deserialize_expected_node(
@@ -965,12 +940,6 @@ def _deserialize_ast_value(value: Any, context: str = "AST value") -> Any:
             values.append(_deserialize_ast_value(item, context))
         return values
     return value
-
-
-def _deserialize_required_ast_value(data: dict[str, Any], field: str, context: str) -> Any:
-    return _deserialize_ast_value(
-        _deserialize_required_field(data, field, context), f"{context} {field}"
-    )
 
 
 def _deserialize_required_quantifier(
