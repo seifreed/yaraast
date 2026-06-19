@@ -8,7 +8,7 @@ from typing import Any
 import click
 import pytest
 
-import yaraast.ast.simple_nodes as simple_nodes
+import yaraast.ast as simple_nodes
 from yaraast.cli.libyara_handlers_common import run_or_abort
 from yaraast.cli.libyara_reporting import LibYaraCommandError
 
