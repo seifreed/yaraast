@@ -11,10 +11,10 @@ from pathlib import Path
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
-from yaraast.cli.parser_helpers import parse_yara_source
 from yaraast.cli.utils import _path_exists_and_not_dir
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.parser.parser import Parser
+from yaraast.parser.source import parse_yara_source
 from yaraast.shared.file_patterns import iter_matching_files
 from yaraast.yarax.generator import YaraXGenerator
 
