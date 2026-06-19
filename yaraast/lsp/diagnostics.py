@@ -26,7 +26,6 @@ from yaraast.lsp.diagnostics_helpers import (
     parser_error_to_diagnostic,
     patches_for_error,
     related_info,
-    suggest_builtin_functions,
 )
 from yaraast.lsp.runtime import LspRuntime, get_optional_document_context
 from yaraast.lsp.utf16 import utf8_col_to_utf16
@@ -382,9 +381,6 @@ class DiagnosticsProvider:
                     )
                 )
         return results
-
-    def _suggest_builtin_functions(self, function_name: str) -> list[str]:
-        return suggest_builtin_functions(function_name)
 
 
 def _location_source_line(location: Any, line: int) -> str:

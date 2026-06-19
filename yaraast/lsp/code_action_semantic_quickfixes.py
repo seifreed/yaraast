@@ -129,31 +129,6 @@ def _find_matching_call_close_in_lines(
     return None
 
 
-def _find_diagnostic_call(
-    line: str,
-    function_name: str,
-    diagnostic: Diagnostic,
-) -> tuple[int, int, int] | None:
-    needle = f"{function_name}("
-    range_start, range_end = _diagnostic_python_range(line, diagnostic)
-    fallback: tuple[int, int, int] | None = None
-    search_start = 0
-    while True:
-        start_col = line.find(needle, search_start)
-        if start_col < 0:
-            break
-        open_paren = start_col + len(function_name)
-        close_paren = _find_matching_call_close(line, open_paren)
-        if close_paren is not None:
-            call_span = (start_col, open_paren, close_paren)
-            if fallback is None:
-                fallback = call_span
-            if start_col < range_end and close_paren + 1 > range_start:
-                return call_span
-        search_start = start_col + len(needle)
-    return fallback
-
-
 def _find_diagnostic_call_close(
     lines: list[str],
     function_name: str,
