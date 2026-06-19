@@ -167,9 +167,9 @@ def test_dependency_graph_build_and_analysis() -> None:
     ast = _parse_yara(code)
     graph = build_dependency_graph(ast)
 
-    assert graph.has_edge("b", "a")
-    assert graph.has_edge("c", "a")
-    assert graph.has_edge("c", "b")
+    assert "a" in graph.edges["b"]
+    assert "a" in graph.edges["c"]
+    assert "b" in graph.edges["c"]
 
     analysis = analyze_dependencies(ast)
     stats = analysis["stats"]
@@ -257,4 +257,4 @@ def test_dependency_graph_cycles_and_order(tmp_path: Path) -> None:
 
     loaded = DependencyGraph()
     loaded.from_dict(graph.to_dict())
-    assert loaded.has_edge("a", "b")
+    assert "b" in loaded.edges["a"]

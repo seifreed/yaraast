@@ -118,7 +118,7 @@ def test_build_dependency_graph_visits_rare_expression_paths() -> None:
 
     graph = build_dependency_graph(ast)
 
-    assert graph.has_node("a")
+    assert "a" in graph.nodes
     assert graph.get_dependencies("a") == {"b", "c", "d"}
     assert graph.get_dependencies("keyuser") == {"a", "b"}
     assert graph.get_dependencies("e") == set()
@@ -309,20 +309,6 @@ def test_dependency_graph_rejects_invalid_public_node_inputs_without_partial_upd
     with pytest.raises(ValidationError, match="DependencyGraph edge target must be a string"):
         graph.add_edge("existing", cast(Any, object()))
     with pytest.raises(ValidationError, match="DependencyGraph node must not be empty"):
-        graph.has_node("")
-    with pytest.raises(ValidationError, match="DependencyGraph node must not be empty"):
-        graph.has_node("   ")
-    with pytest.raises(ValidationError, match="DependencyGraph node must be a string"):
-        graph.has_node(cast(Any, object()))
-    with pytest.raises(ValidationError, match="DependencyGraph edge source must not be empty"):
-        graph.has_edge("", "dependency")
-    with pytest.raises(ValidationError, match="DependencyGraph edge target must not be empty"):
-        graph.has_edge("existing", "   ")
-    with pytest.raises(ValidationError, match="DependencyGraph edge source must be a string"):
-        graph.has_edge(cast(Any, object()), "dependency")
-    with pytest.raises(ValidationError, match="DependencyGraph edge target must be a string"):
-        graph.has_edge("existing", cast(Any, object()))
-    with pytest.raises(ValidationError, match="DependencyGraph node must not be empty"):
         graph.get_dependencies("   ")
     with pytest.raises(ValidationError, match="DependencyGraph node must be a string"):
         graph.get_dependencies(cast(Any, object()))
@@ -365,4 +351,4 @@ def test_dependency_graph_from_dict_rejects_invalid_payloads_without_clearing(
     with pytest.raises(ValidationError, match=message):
         graph.from_dict(cast(Any, payload))
 
-    assert graph.has_edge("existing", "dependency")
+    assert "dependency" in graph.edges["existing"]

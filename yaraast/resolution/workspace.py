@@ -260,7 +260,3 @@ class Workspace:
     def get_file_dependents(self, file_path: str) -> set[str]:
         """Get all files that depend on this file."""
         return self.dependency_graph.get_file_dependents(file_path)
-
-    def get_all_files(self) -> list[str]:
-        """Get all files in the workspace."""
-        return list(self.files.keys())

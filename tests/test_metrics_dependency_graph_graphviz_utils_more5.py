@@ -93,7 +93,7 @@ def test_dependency_utils_remaining_paths() -> None:
     )
 
     graph = build_dependency_graph(ast)
-    assert graph.has_node("d")
+    assert "d" in graph.nodes
     assert graph.get_dependencies("d") == set()
 
     cycles = find_circular_dependencies(graph)

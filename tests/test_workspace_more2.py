@@ -103,7 +103,7 @@ def test_workspace_add_file_error_paths_and_getters(tmp_path: Path) -> None:
     assert added.resolved is not None
     assert added.path == ok
 
-    assert workspace.get_all_files()
+    assert workspace.files
     all_rules = workspace.get_all_rules()
     assert ("ok_rule", str(ok)) in all_rules
     found = workspace.find_rule("ok_rule")

@@ -57,17 +57,6 @@ class DependencyGraph:
         self.edges[from_node].add(to_node)
         self._reverse_edges[to_node].add(from_node)
 
-    def has_node(self, node: str) -> bool:
-        """Check if node exists in graph."""
-        node = _require_graph_node(node, "DependencyGraph node")
-        return node in self.nodes
-
-    def has_edge(self, from_node: str, to_node: str) -> bool:
-        """Check if edge exists."""
-        from_node = _require_graph_node(from_node, "DependencyGraph edge source")
-        to_node = _require_graph_node(to_node, "DependencyGraph edge target")
-        return to_node in self.edges.get(from_node, set())
-
     def get_dependencies(self, node: str) -> set[str]:
         """Get nodes that this node depends on."""
         node = _require_graph_node(node, "DependencyGraph node")
