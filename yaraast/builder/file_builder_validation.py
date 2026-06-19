@@ -73,12 +73,6 @@ def validate_version_value(value: object) -> int:
     raise TypeError(msg)
 
 
-def validate_optional_identifier(value: object | None, kind: str) -> None:
-    if value is None:
-        return
-    validate_identifier(value, kind)
-
-
 def validate_rule_names(rules: Sequence[Rule]) -> None:
     for rule in rules:
         validate_identifier(rule.name, "rule")
