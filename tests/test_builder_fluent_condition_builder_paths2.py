@@ -48,7 +48,7 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
 
     assert isinstance(b.filesize_eq(12).build(), BinaryExpression)
     assert isinstance(b.filesize_lt(1024).build(), BinaryExpression)
-    assert isinstance(b.huge_file().build(), BinaryExpression)
+    assert isinstance(b.filesize_gt(100 * 1024 * 1024).build(), BinaryExpression)
 
     assert isinstance(b.identifier("pe").build(), Identifier)
     pe_dll = b.pe_is_dll().build()
