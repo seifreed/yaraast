@@ -356,9 +356,6 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
             return
         self._mark_string_usage(normalized)
 
-    def _mark_string_identifier_usage(self, string_id: str) -> None:
-        self._mark_condition_string_usage(string_id)
-
     def _normalize_string_id(self, string_id: str) -> str:
         return normalize_string_reference_id(string_id)
 
@@ -454,7 +451,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
     def visit_string_identifier(self, node: StringIdentifier) -> None:
         """Track string usage."""
-        self._mark_string_identifier_usage(node.name)
+        self._mark_condition_string_usage(node.name)
 
     def visit_string_wildcard(self, node: StringWildcard) -> None:
         self._mark_string_set_text(node.pattern)

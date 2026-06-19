@@ -174,9 +174,6 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             return self._metric_key_for_rule(self._current_rule)
         return None
 
-    def _mark_string_identifier_usage(self, string_id: str) -> None:
-        self._mark_condition_string_usage(string_id)
-
     def _mark_condition_string_usage(self, string_id: str) -> None:
         if self._implicit_current_string_allowed and string_id in {"", "$"}:
             return
@@ -269,7 +266,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
     def visit_string_identifier(self, node) -> None:
         """Track string usage."""
-        self._mark_string_identifier_usage(node.name)
+        self._mark_condition_string_usage(node.name)
 
     def visit_string_wildcard(self, node) -> None:
         self._mark_string_set_text(node.pattern)
