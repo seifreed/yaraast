@@ -39,11 +39,6 @@ def default_parallel_stats() -> dict[str, float | int]:
     }
 
 
-def resettable_parallel_stats() -> dict[str, float | int]:
-    """Return a fresh statistics shape for a reset analyzer."""
-    return default_parallel_stats()
-
-
 def start_job(job_type: str) -> Job:
     """Create a running job with a generated id."""
     return Job(job_id=str(uuid.uuid4()), job_type=job_type, status=JobStatus.RUNNING)
