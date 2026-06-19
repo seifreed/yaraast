@@ -12,9 +12,9 @@ from yaraast.parser import Parser
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor
 from yaraast.performance.string_analyzer import (
     StringPatternAnalyzer,
-    _estimate_rule_cost,
     analyze_rule_performance,
 )
+from yaraast.performance.string_performance_checks import estimate_rule_cost
 
 
 def _parse_rule(code: str) -> Rule:
@@ -70,14 +70,14 @@ def test_string_pattern_analyzer_empty_and_prefix_tree_paths() -> None:
 def test_string_rule_performance_and_cost_extra_paths() -> None:
     no_strings_rule = Rule(name="nostrings", condition=Condition())
     assert analyze_rule_performance(no_strings_rule) == []
-    assert _estimate_rule_cost(no_strings_rule) == 0
+    assert estimate_rule_cost(no_strings_rule) == 0
 
     hex_rule = Rule(
         name="hex_cost",
         strings=[HexString(identifier="$h", tokens=[HexByte(value=0x41)])],
         condition=Condition(),
     )
-    assert _estimate_rule_cost(hex_rule) == 2
+    assert estimate_rule_cost(hex_rule) == 2
 
     plain_long_rule = Rule(
         name="long_plain",
@@ -94,7 +94,7 @@ def test_string_rule_performance_and_cost_extra_paths() -> None:
                 $r
         }
         """)
-    assert _estimate_rule_cost(regex_rule) >= 10
+    assert estimate_rule_cost(regex_rule) >= 10
 
 
 def test_string_pattern_analyzer_skips_rules_without_strings_in_file_analysis() -> None:

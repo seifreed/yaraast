@@ -204,9 +204,3 @@ def analyze_rule_performance(rule: Rule) -> list[StringPerformanceIssue]:
     from yaraast.performance.string_performance_checks import analyze_rule_performance
 
     return analyze_rule_performance(rule)
-
-
-def _estimate_rule_cost(rule: Rule) -> int:
-    from yaraast.performance.string_performance_checks import estimate_rule_cost
-
-    return estimate_rule_cost(rule)
