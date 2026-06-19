@@ -154,7 +154,8 @@ rule r { condition: true }
             encoding="utf-8",
         )
 
-        imports, includes = UnifiedParser._extract_preamble_fast(p)
+        ast = UnifiedParser._extract_preamble_ast_fast(p)
+        imports, includes = ast.imports, ast.includes
         assert len(imports) == 2
         assert imports[0].module == "pe"
         assert imports[0].alias is None
@@ -167,7 +168,8 @@ rule r { condition: true }
 
 def test_extract_preamble_fast_error_and_parse_file_not_found() -> None:
     missing = Path("/definitely/not/here/file.yar")
-    imports, includes = UnifiedParser._extract_preamble_fast(missing)
+    ast = UnifiedParser._extract_preamble_ast_fast(missing)
+    imports, includes = ast.imports, ast.includes
     assert imports == []
     assert includes == []
 

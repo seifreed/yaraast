@@ -11,7 +11,6 @@ import re
 import stat as stat_module
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.rules import Import, Include
 from yaraast.config import DEFAULT_STREAMING_THRESHOLD_MB as _DEFAULT_STREAMING_THRESHOLD_MB
 from yaraast.dialects import DialectRegistry, YaraDialect, detect_dialect
 from yaraast.errors import YaraASTError
@@ -218,16 +217,6 @@ class UnifiedParser:
             return YaraFile()
 
         return YaraParser(preamble_source).parse()
-
-    @classmethod
-    def _extract_preamble_fast(cls, file_path: Path) -> tuple[list[Import], list[Include]]:
-        """Extract imports/includes from file preamble without full-file parsing.
-
-        Reads and parses only lines before the first real rule definition.
-        O(k) where k is the number of preamble lines. Returns empty lists on read error.
-        """
-        preamble_ast = cls._extract_preamble_ast_fast(file_path)
-        return preamble_ast.imports, preamble_ast.includes
 
     @classmethod
     def parse_file(

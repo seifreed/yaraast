@@ -136,7 +136,8 @@ rule x { condition: true }
         encoding="utf-8",
     )
 
-    imports, includes = UnifiedParser._extract_preamble_fast(f)
+    ast = UnifiedParser._extract_preamble_ast_fast(f)
+    imports, includes = ast.imports, ast.includes
     assert len(imports) == 2
     assert imports[0].module == "pe"
     assert imports[1].module == "elf"
@@ -156,7 +157,8 @@ include "late.yar"
         encoding="utf-8",
     )
 
-    imports, includes = UnifiedParser._extract_preamble_fast(f)
+    ast = UnifiedParser._extract_preamble_ast_fast(f)
+    imports, includes = ast.imports, ast.includes
     assert [import_.module for import_ in imports] == ["pe"]
     assert includes == []
 
