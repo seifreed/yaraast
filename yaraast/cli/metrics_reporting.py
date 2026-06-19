@@ -25,8 +25,8 @@ from yaraast.cli.metrics_reporting_display import (
     display_text_statistics as _display_text_statistics,
     graphviz_fallback_message as _graphviz_fallback_message,
 )
-from yaraast.cli.metrics_services import MetricsReportData
 from yaraast.cli.utils import format_json, write_text
+from yaraast.metrics.workflows import MetricsReportData
 
 _STRING_OUTPUT_FORMATS = frozenset({"json", "text"})
 

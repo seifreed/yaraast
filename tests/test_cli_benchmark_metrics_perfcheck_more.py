@@ -41,12 +41,12 @@ from yaraast.cli.metrics_reporting_display import (
     display_text_statistics,
     path_size_for_display,
 )
-from yaraast.cli.metrics_services import MetricsReportData
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.cli.performance_check_services import parse_performance_file
 from yaraast.errors import ParseError
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
+from yaraast.metrics.workflows import MetricsReportData
 from yaraast.parser import Parser
 
 DependencyGraphGeneratorClass: Any = None

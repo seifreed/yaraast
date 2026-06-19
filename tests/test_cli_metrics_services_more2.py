@@ -9,7 +9,6 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.cli import metrics_services as ms
 from yaraast.errors import ValidationError
 from yaraast.metrics import workflows as metrics_workflows
 from yaraast.metrics.graphviz_errors import is_graphviz_error
@@ -124,16 +123,16 @@ class _PatternGen:
 
 def test_metrics_services_path_helpers_and_error_detection() -> None:
     assert (
-        ms.determine_graph_output_path("/tmp/rules.yar", None, "full", "svg")
+        metrics_workflows.determine_graph_output_path("/tmp/rules.yar", None, "full", "svg")
         == "rules_graph_full.svg"
     )
-    assert ms.determine_graph_output_path("/tmp/rules.yar", "x.svg", "full", "svg") == "x.svg"
+    assert metrics_workflows.determine_graph_output_path("/tmp/rules.yar", "x.svg", "full", "svg") == "x.svg"
 
     assert (
-        ms.determine_pattern_output_path("/tmp/rules.yar", None, "flow", "dot")
+        metrics_workflows.determine_pattern_output_path("/tmp/rules.yar", None, "flow", "dot")
         == "rules_patterns_flow.dot"
     )
-    assert ms.determine_pattern_output_path("/tmp/rules.yar", "x.dot", "flow", "dot") == "x.dot"
+    assert metrics_workflows.determine_pattern_output_path("/tmp/rules.yar", "x.dot", "flow", "dot") == "x.dot"
 
     assert is_graphviz_error(Exception("ExecutableNotFound")) is True
     assert is_graphviz_error(Exception("failed to execute PosixPath('dot')")) is True
@@ -156,40 +155,40 @@ def test_metrics_services_path_helpers_and_error_detection() -> None:
 
 def test_metrics_services_path_helpers_reject_empty_output_path() -> None:
     with pytest.raises(ValueError, match="output_path must not be empty"):
-        ms.determine_graph_output_path("/tmp/rules.yar", "", "full", "svg")
+        metrics_workflows.determine_graph_output_path("/tmp/rules.yar", "", "full", "svg")
     with pytest.raises(ValueError, match="output_path must not be empty"):
-        ms.determine_pattern_output_path("/tmp/rules.yar", "", "flow", "dot")
+        metrics_workflows.determine_pattern_output_path("/tmp/rules.yar", "", "flow", "dot")
 
 
 def test_metrics_services_path_helpers_reject_directory_output_path(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="output_path must not be a directory"):
-        ms.determine_graph_output_path("/tmp/rules.yar", tmp_path, "full", "svg")
+        metrics_workflows.determine_graph_output_path("/tmp/rules.yar", tmp_path, "full", "svg")
     with pytest.raises(ValueError, match="output_path must not be a directory"):
-        ms.determine_pattern_output_path("/tmp/rules.yar", tmp_path, "flow", "dot")
+        metrics_workflows.determine_pattern_output_path("/tmp/rules.yar", tmp_path, "flow", "dot")
 
 
 @pytest.mark.parametrize("output", [False, 0, object()])
 def test_metrics_services_path_helpers_reject_invalid_output_path_types(output: Any) -> None:
     with pytest.raises(TypeError, match="output_path must be a file path"):
-        ms.determine_graph_output_path("/tmp/rules.yar", cast(Any, output), "full", "svg")
+        metrics_workflows.determine_graph_output_path("/tmp/rules.yar", cast(Any, output), "full", "svg")
     with pytest.raises(TypeError, match="output_path must be a file path"):
-        ms.determine_pattern_output_path("/tmp/rules.yar", cast(Any, output), "flow", "dot")
+        metrics_workflows.determine_pattern_output_path("/tmp/rules.yar", cast(Any, output), "flow", "dot")
 
 
 @pytest.mark.parametrize("value", [None, False, 123, object(), b"rules.yar", "", "   "])
 def test_metrics_services_path_helpers_reject_invalid_yara_file_values(value: Any) -> None:
     error_type = ValueError if isinstance(value, str) else TypeError
     with pytest.raises(error_type, match="yara_file must"):
-        ms.determine_graph_output_path(cast(Any, value), None, "full", "svg")
+        metrics_workflows.determine_graph_output_path(cast(Any, value), None, "full", "svg")
     with pytest.raises(error_type, match="yara_file must"):
-        ms.determine_pattern_output_path(cast(Any, value), None, "flow", "dot")
+        metrics_workflows.determine_pattern_output_path(cast(Any, value), None, "flow", "dot")
 
 
 @pytest.mark.parametrize("graph_type", [None, False, 123, object(), b"full", "", "   "])
 def test_metrics_services_path_helpers_reject_invalid_graph_types(graph_type: Any) -> None:
     error_type = ValueError if isinstance(graph_type, str) else TypeError
     with pytest.raises(error_type, match="graph_type must"):
-        ms.determine_graph_output_path(
+        metrics_workflows.determine_graph_output_path(
             "/tmp/rules.yar",
             None,
             cast(Any, graph_type),
@@ -201,7 +200,7 @@ def test_metrics_services_path_helpers_reject_invalid_graph_types(graph_type: An
 def test_metrics_services_path_helpers_reject_invalid_pattern_types(pattern_type: Any) -> None:
     error_type = ValueError if isinstance(pattern_type, str) else TypeError
     with pytest.raises(error_type, match="pattern_type must"):
-        ms.determine_pattern_output_path(
+        metrics_workflows.determine_pattern_output_path(
             "/tmp/rules.yar",
             None,
             cast(Any, pattern_type),
@@ -213,53 +212,53 @@ def test_metrics_services_path_helpers_reject_invalid_pattern_types(pattern_type
 def test_metrics_services_path_helpers_reject_invalid_output_formats(fmt: Any) -> None:
     error_type = ValueError if isinstance(fmt, str) else TypeError
     with pytest.raises(error_type, match="output format must"):
-        ms.determine_graph_output_path("/tmp/rules.yar", None, "full", cast(Any, fmt))
+        metrics_workflows.determine_graph_output_path("/tmp/rules.yar", None, "full", cast(Any, fmt))
     with pytest.raises(error_type, match="output format must"):
-        ms.determine_pattern_output_path("/tmp/rules.yar", None, "flow", cast(Any, fmt))
+        metrics_workflows.determine_pattern_output_path("/tmp/rules.yar", None, "flow", cast(Any, fmt))
 
 
 def test_metrics_services_graph_and_pattern_generation_with_generators(tmp_path: Path) -> None:
     ast = _ast()
     dep = _DepGen()
 
-    out, _ = ms.generate_dependency_graph_with_generator(
+    out, _ = metrics_workflows.generate_dependency_graph_with_generator(
         dep, ast, "full", str(tmp_path / "f.svg"), "svg", "dot"
     )
     assert out.endswith("f.svg")
-    out, _ = ms.generate_dependency_graph_with_generator(
+    out, _ = metrics_workflows.generate_dependency_graph_with_generator(
         dep, ast, "rules", str(tmp_path / "r.svg"), "svg", "dot"
     )
     assert out.endswith("r.svg")
-    out, _ = ms.generate_dependency_graph_with_generator(
+    out, _ = metrics_workflows.generate_dependency_graph_with_generator(
         dep, ast, "modules", str(tmp_path / "m.svg"), "svg", "dot"
     )
     assert out.endswith("m.svg")
-    out, _ = ms.generate_dependency_graph_with_generator(
+    out, _ = metrics_workflows.generate_dependency_graph_with_generator(
         dep, ast, "complexity", str(tmp_path / "c.svg"), "svg", "dot"
     )
     assert out.endswith("c.svg")
 
     with pytest.raises(ValidationError, match="Unknown graph type"):
-        ms.generate_dependency_graph_with_generator(
+        metrics_workflows.generate_dependency_graph_with_generator(
             dep, ast, "bad", str(tmp_path / "x.svg"), "svg", "dot"
         )
 
     pat = _PatternGen()
-    assert ms.generate_pattern_diagram_with_generator(
+    assert metrics_workflows.generate_pattern_diagram_with_generator(
         pat, ast, "flow", str(tmp_path / "flow.svg"), "svg"
     ).endswith("flow.svg")
-    assert ms.generate_pattern_diagram_with_generator(
+    assert metrics_workflows.generate_pattern_diagram_with_generator(
         pat, ast, "complexity", str(tmp_path / "cx.svg"), "svg"
     ).endswith("cx.svg")
-    assert ms.generate_pattern_diagram_with_generator(
+    assert metrics_workflows.generate_pattern_diagram_with_generator(
         pat, ast, "similarity", str(tmp_path / "sim.svg"), "svg"
     ).endswith("sim.svg")
-    assert ms.generate_pattern_diagram_with_generator(
+    assert metrics_workflows.generate_pattern_diagram_with_generator(
         pat, ast, "hex", str(tmp_path / "hex.svg"), "svg"
     ).endswith("hex.svg")
 
     with pytest.raises(ValidationError, match="Unknown pattern type"):
-        ms.generate_pattern_diagram_with_generator(pat, ast, "bad", str(tmp_path / "z.svg"), "svg")
+        metrics_workflows.generate_pattern_diagram_with_generator(pat, ast, "bad", str(tmp_path / "z.svg"), "svg")
 
 
 def test_metrics_services_html_and_wrapper_functions(tmp_path: Path) -> None:
@@ -332,7 +331,7 @@ def test_metrics_services_build_report_and_generator_none(
     assert "quality_score" in report.complexity_payload
     assert any(name.endswith("_tree.html") for name in report.generated_files)
 
-    out = ms.generate_pattern_diagram_with_generator(
+    out = metrics_workflows.generate_pattern_diagram_with_generator(
         _PatternGen(), ast, "flow", str(tmp_path / "flow_real.svg"), "svg"
     )
     assert out.endswith("flow_real.svg")
