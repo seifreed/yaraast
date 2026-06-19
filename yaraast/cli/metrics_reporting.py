@@ -45,7 +45,6 @@ __all__ = [
     "_format_complexity_text",
     "_format_string_analysis_output",
     "_format_strings_text",
-    "_get_text_graph",
     "_graphviz_fallback_message",
     "_output_string_analysis_results",
     "build_report_summary",
@@ -91,14 +90,18 @@ def _display_text_pattern_analysis(
             for string_def in rule.strings:
                 if isinstance(string_def, PlainString):
                     counts["plain"] += 1
-                    value = string_def.value.decode("utf-8", errors="backslashreplace") if isinstance(
-                        string_def.value, bytes
-                    ) else string_def.value
+                    value = (
+                        string_def.value.decode("utf-8", errors="backslashreplace")
+                        if isinstance(string_def.value, bytes)
+                        else string_def.value
+                    )
                     display_value = f'"{value[:30]}..."' if len(value) > 30 else f'"{value}"'
                     click.echo(f"  📝 {string_def.identifier}: {display_value}")
                 elif isinstance(string_def, HexString):
                     counts["hex"] += 1
-                    click.echo(f"  🔢 {string_def.identifier}: HEX pattern ({len(string_def.tokens)} tokens)")
+                    click.echo(
+                        f"  🔢 {string_def.identifier}: HEX pattern ({len(string_def.tokens)} tokens)"
+                    )
                 elif isinstance(string_def, RegexString):
                     counts["regex"] += 1
                     click.echo(f"  🔍 {string_def.identifier}: /{string_def.regex}/")
@@ -200,34 +203,6 @@ def _output_string_analysis_results(output_text: str, output: str | None) -> Non
         click.echo(f"String analysis written to {output}")
     else:
         click.echo(output_text)
-
-
-def _get_text_graph(stats: dict[str, Any], dependencies: dict[str, list[str]]) -> str:
-    """Format dependency graph as text."""
-    lines = [
-        "Dependency Analysis",
-        "=" * 19,
-        "",
-        f"Total rules: {stats['total_rules']}",
-        f"Total imports: {stats['total_imports']}",
-        f"Rules with strings: {stats['rules_with_strings']}",
-        f"Rules using modules: {stats['rules_using_modules']}",
-        "",
-    ]
-
-    if dependencies:
-        lines.extend(
-            [
-                "Rule Dependencies:",
-                *[
-                    f"  {rule} → {', '.join(sorted(deps))}"
-                    for rule, deps in sorted(dependencies.items())
-                    if deps
-                ],
-            ],
-        )
-
-    return "\n".join(lines)
 
 
 def write_complexity_report_files(

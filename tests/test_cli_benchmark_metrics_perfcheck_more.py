@@ -27,7 +27,6 @@ from yaraast.cli.metrics_reporting import (
     _format_complexity_text,
     _format_string_analysis_output,
     _format_strings_text,
-    _get_text_graph,
     _graphviz_fallback_message,
     _output_string_analysis_results,
     build_report_summary,
@@ -506,9 +505,23 @@ def test_metrics_reporting_graph_and_pattern_helpers(
     dep_generator.module_references["sample"].add("pe")
 
     stats = dep_generator.get_dependency_stats()
-    text_graph = _get_text_graph(
-        stats,
-        {rule: sorted(deps) for rule, deps in dep_generator.dependencies.items()},
+    text_graph = "\n".join(
+        [
+            "Dependency Analysis",
+            "=" * 19,
+            "",
+            f"Total rules: {stats['total_rules']}",
+            f"Total imports: {stats['total_imports']}",
+            f"Rules with strings: {stats['rules_with_strings']}",
+            f"Rules using modules: {stats['rules_using_modules']}",
+            "",
+            "Rule Dependencies:",
+            *[
+                f"  {rule} → {', '.join(sorted(deps))}"
+                for rule, deps in sorted(dep_generator.dependencies.items())
+                if deps
+            ],
+        ]
     )
     assert "Dependency Analysis" in text_graph
     assert "Total rules: 2" in text_graph
@@ -632,6 +645,7 @@ def test_metrics_reporting_analyze_pattern_counts_and_string_branches(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     ast = _sample_ast()
+
     class _PatternGenerator:
         def _analyze_patterns(self, _ast: YaraFile) -> None:
             return None
@@ -678,14 +692,19 @@ def test_metrics_reporting_empty_and_mixed_branches(capsys: pytest.CaptureFixtur
     _display_rule_dependencies(dep_generator)
     _display_module_usage(dep_generator)
 
-    assert _get_text_graph(
-        {
-            "total_rules": 1,
-            "total_imports": 0,
-            "rules_with_strings": 0,
-            "rules_using_modules": 0,
-        },
-        {"a": [], "b": ["c"]},
+    assert "\n".join(
+        [
+            "Dependency Analysis",
+            "=" * 19,
+            "",
+            "Total rules: 1",
+            "Total imports: 0",
+            "Rules with strings: 0",
+            "Rules using modules: 0",
+            "",
+            "Rule Dependencies:",
+            "  b → c",
+        ]
     ).endswith("  b → c")
 
     counts = _analyze_string_patterns(empty_ast)

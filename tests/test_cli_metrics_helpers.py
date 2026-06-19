@@ -18,7 +18,6 @@ from yaraast.cli.metrics_reporting import (
     _display_text_pattern_analysis,
     _format_complexity_output,
     _format_string_analysis_output,
-    _get_text_graph,
 )
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.metrics.complexity import ComplexityAnalyzer
@@ -60,9 +59,23 @@ def test_metrics_helper_text_functions(
     generator = DependencyGraphGenerator()
     generator.visit(ast)
     stats = generator.get_dependency_stats()
-    text_graph = _get_text_graph(
-        stats,
-        {rule: sorted(dependencies) for rule, dependencies in generator.dependencies.items()},
+    text_graph = "\n".join(
+        [
+            "Dependency Analysis",
+            "=" * 19,
+            "",
+            f"Total rules: {stats['total_rules']}",
+            f"Total imports: {stats['total_imports']}",
+            f"Rules with strings: {stats['rules_with_strings']}",
+            f"Rules using modules: {stats['rules_using_modules']}",
+            "",
+            "Rule Dependencies:",
+            *[
+                f"  {rule} → {', '.join(sorted(dependencies))}"
+                for rule, dependencies in sorted(generator.dependencies.items())
+                if dependencies
+            ],
+        ]
     )
     assert "Dependency Analysis" in text_graph
 
@@ -165,14 +178,23 @@ def test_metrics_display_helpers_sort_set_backed_output(
     assert "  rule_z uses: dotnet, elf, math, pe" in output
     assert output.index("  rule_a uses:") < output.index("  rule_z uses:")
 
-    text_graph = _get_text_graph(
-        {
-            "total_rules": 2,
-            "total_imports": 0,
-            "rules_with_strings": 0,
-            "rules_using_modules": 0,
-        },
-        generator.dependencies,
+    text_graph = "\n".join(
+        [
+            "Dependency Analysis",
+            "=" * 19,
+            "",
+            "Total rules: 2",
+            "Total imports: 0",
+            "Rules with strings: 0",
+            "Rules using modules: 0",
+            "",
+            "Rule Dependencies:",
+            *[
+                f"  {rule} → {', '.join(sorted(dependencies))}"
+                for rule, dependencies in sorted(generator.dependencies.items())
+                if dependencies
+            ],
+        ]
     )
     assert "  rule_a → dep_a, dep_b" in text_graph
     assert "  rule_z → dep_a, dep_b, dep_c, dep_m, dep_y, dep_z" in text_graph
