@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import importlib
 from pathlib import Path
 from typing import NoReturn
 
@@ -199,3 +200,11 @@ def test_parse_cmd_abort_preserves_original_cause(
     assert result.exit_code != 0
     assert "parse sentinel" in result.output
     _assert_abort_preserves_cause(result, sentinel)
+
+
+def test_parse_reporting_module_is_removed() -> None:
+    try:
+        importlib.import_module("yaraast.cli.parse_reporting")
+    except ModuleNotFoundError:
+        return
+    raise AssertionError("yaraast.cli.parse_reporting should not be importable")
