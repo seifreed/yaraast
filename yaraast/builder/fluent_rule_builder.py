@@ -214,11 +214,6 @@ class FluentRuleBuilder:
         builder = FluentConditionBuilder().any_of(*strings)
         return self.condition(builder)
 
-    def matches_all_of(self, *strings: str) -> Self:
-        """Condition: all of specified strings."""
-        builder = FluentConditionBuilder().all_of(*strings)
-        return self.condition(builder)
-
     def with_condition_builder(
         self,
         builder_func: Callable[[FluentConditionBuilder], ConditionBuilder],

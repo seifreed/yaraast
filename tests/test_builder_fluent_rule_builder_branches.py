@@ -280,7 +280,7 @@ def test_rule_metadata_aliases_and_example_rules_paths() -> None:
         .when("true")
         .condition("true")
         .matches_any_of("$re")
-        .matches_all_of("$re")
+        .with_condition_builder(lambda builder: builder.all_of("$re"))
         .build()
     )
 
