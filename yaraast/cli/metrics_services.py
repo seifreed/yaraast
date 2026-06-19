@@ -11,7 +11,11 @@ import click
 from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file as _parse_yara_file
 from yaraast.errors import YaraASTError
-from yaraast.metrics import DependencyGraphGenerator, workflows as _workflows
+from yaraast.metrics import (
+    DependencyGraphGenerator,
+    StringDiagramGenerator,
+    workflows as _workflows,
+)
 from yaraast.metrics.workflows import MetricsReportData
 
 _DEFAULT_FACTORY = object()
@@ -115,7 +119,9 @@ def determine_pattern_output_path(
 
 
 def generate_pattern_diagram(ast: YaraFile, pattern_type: str, output_path: str, fmt: str) -> str:
-    return _workflows.generate_pattern_diagram(ast, pattern_type, output_path, fmt)
+    return _workflows.generate_pattern_diagram_with_generator(
+        StringDiagramGenerator(), ast, pattern_type, output_path, fmt
+    )
 
 
 def generate_pattern_diagram_with_generator(
