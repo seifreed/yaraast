@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 from rich.console import Console
@@ -17,7 +18,7 @@ from yaraast.cli import (
     performance_check_reporting as pcr,
     workspace_services as ws,
 )
-from yaraast.cli.analyze_report_helpers import generate_json_report, generate_text_report
+from yaraast.cli.analyze_report_helpers import best_report_to_dict, opt_report_to_dict
 from yaraast.performance.string_analyzer import StringPerformanceIssue
 
 
@@ -61,16 +62,11 @@ def test_analyze_services_formatting_helpers() -> None:
     assert an._filter_suggestions(bp.suggestions, "all") == bp.suggestions
     assert len(an._filter_suggestions(bp.suggestions, "security")) == 1
 
-    data = generate_json_report("sample.yar", bp, opt)
-    assert data["file"] == "sample.yar"
-    assert data["best_practices"]["statistics"] == {"rules": 2}
-    assert data["optimization"]["suggestions"][0]["type"] == "dedup"
-
-    text = generate_text_report("sample.yar", bp, opt)
-    assert "BEST PRACTICES" in text
-    assert "OPTIMIZATIONS" in text
-    assert "SUMMARY" in text
-    assert "Total issues:" in text
+    best_data = best_report_to_dict(bp)
+    opt_data: dict[str, Any] = opt_report_to_dict(opt)
+    opt_suggestions = cast(list[dict[str, Any]], opt_data["suggestions"])
+    assert best_data["statistics"] == {"rules": 2}
+    assert opt_suggestions[0]["type"] == "dedup"
 
     assert an._get_level_style("high") == "red"
     assert an._get_level_style("medium") == "yellow"
