@@ -50,13 +50,6 @@ def _require_text(value: object, name: str) -> str:
     return value
 
 
-def _require_line_list(value: object, name: str) -> list[str]:
-    if not isinstance(value, list) or any(not isinstance(line, str) for line in value):
-        msg = f"{name} must be a list of strings"
-        raise TypeError(msg)
-    return value
-
-
 def _read_yara_text_file(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
@@ -340,4 +333,3 @@ class SimpleASTDiffer(SimpleDiffer):
         code2 = self.generator.generate(ast2)
 
         return self.diff(code1, code2)
-
