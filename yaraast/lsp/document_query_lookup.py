@@ -187,7 +187,7 @@ def get_module_member_info(ctx: DocumentContext, qualified_name: str) -> dict[st
         }
         ctx.set_cached(cache_key, result)
         return _copy_info_dict(result)
-    fields = getattr(module_def, "fields", None) or {}
+    fields = getattr(module_def, "fields", None) or getattr(module_def, "attributes", None) or {}
     if member_name in fields:
         field_def = fields[member_name]
         result = {
