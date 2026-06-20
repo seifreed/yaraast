@@ -650,7 +650,7 @@ def _meta_value_to_python(pb_meta_value):
     raise SerializationError(msg)
 
 
-def protobuf_to_rule_meta_entry(pb_meta_entry):
+def protobuf_to_rule_meta_entry(pb_meta_entry: Any) -> Any:
     from yaraast.ast.meta import Meta
     from yaraast.ast.modifiers import MetaEntry
 
@@ -2022,7 +2022,7 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
     return _apply_node_metadata_from_protobuf(pb_file, ast)
 
 
-def protobuf_to_extern_rule(pb_extern_rule):
+def protobuf_to_extern_rule(pb_extern_rule: Any) -> Any:
     from yaraast.ast.extern import ExternRule
     from yaraast.ast.modifiers import RuleModifier
     from yaraast.errors import ValidationError
@@ -2057,7 +2057,7 @@ def protobuf_to_extern_rule(pb_extern_rule):
     )
 
 
-def protobuf_to_extern_import(pb_extern_import):
+def protobuf_to_extern_import(pb_extern_import: Any) -> Any:
     from yaraast.ast.extern import ExternImport
 
     module_path = _protobuf_required_nonempty_string(
@@ -2115,7 +2115,7 @@ def _protobuf_pragma_scope(scope_text):
     return deserialize_pragma_scope(scope_text or None)
 
 
-def protobuf_to_pragma(pb_pragma):
+def protobuf_to_pragma(pb_pragma: Any) -> Any:
     from yaraast.ast.pragmas import (
         ConditionalDirective,
         CustomPragma,
@@ -2316,7 +2316,7 @@ def _protobuf_modifier_value(pb_modifier):
     return None
 
 
-def _protobuf_modifiers_to_ast(pb_modifiers):
+def _protobuf_modifiers_to_ast(pb_modifiers: Any) -> list[Any]:
     from yaraast.ast.modifiers import StringModifier
     from yaraast.errors import ValidationError
 
