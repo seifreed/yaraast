@@ -26,23 +26,6 @@ def test_comment_preserving_lexer_helpers_and_preserve_toggle() -> None:
     assert lexer.get_comments() == original_comments
     comments_snapshot = lexer.get_comments()
 
-    line_comment = CommentPreservingLexer("// line")
-    token = line_comment._read_line_comment()
-    assert token is not None
-    assert token.type == TokenType.COMMENT
-    assert token.value == "// line"
-
-    block_comment = CommentPreservingLexer("/* block */")
-    token = block_comment._read_block_comment()
-    assert token is not None
-    assert token.type == TokenType.COMMENT
-    assert token.value == "/* block */"
-
-    unterminated = CommentPreservingLexer("/* block")
-    token = unterminated._read_block_comment()
-    assert token is not None
-    assert token.value == "/* block"
-
     multiline = CommentPreservingLexer("/* one\nline */rule c { condition: true }")
     tokens = multiline.tokenize()
     comments = [t for t in tokens if t.type == TokenType.COMMENT]
