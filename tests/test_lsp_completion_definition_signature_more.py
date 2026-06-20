@@ -226,10 +226,10 @@ def test_signature_help_edge_cases_and_parameter_counting() -> None:
     assert provider.get_signature_help("rule a { condition: foo(1) }", _pos(0, 26)) is None
 
     boundary_text = "rule a { condition: { uint32(0) } }"
-    assert provider._find_function_at_position(boundary_text, _pos(0, 22)) is None
+    assert provider._find_call_context_at_position(boundary_text, _pos(0, 22)) is None
 
-    assert provider._find_function_at_position("uint32(", _pos(1, 0)) is None
-    assert provider._find_function_at_position("(", _pos(0, 1)) is None
+    assert provider._find_call_context_at_position("uint32(", _pos(1, 0)) is None
+    assert provider._find_call_context_at_position("(", _pos(0, 1)) is None
 
     text = "math.deviation(1, 2, 3)"
     sig = provider.get_signature_help(text, _pos(0, len(text) - 1))
@@ -293,9 +293,11 @@ def test_signature_help_uses_utf16_cursor_for_active_parameter() -> None:
     assert signature is not None
     assert signature.active_parameter == 0
 
-    assert provider._calculate_active_parameter("uint32(1,", _pos(1, 0)) == 0
-    assert provider._calculate_active_parameter("uint32(1", _pos(0, 99)) == 0
-    assert provider._calculate_active_parameter("uint32(1)", _pos(0, len("uint32(1)"))) == 0
+    assert provider._find_call_context_at_position("uint32(1,", _pos(1, 0)) is None
+    open_context = provider._find_call_context_at_position("uint32(1", _pos(0, 99))
+    assert open_context is not None
+    assert open_context[1] == 0
+    assert provider._find_call_context_at_position("uint32(1)", _pos(0, len("uint32(1)"))) is None
 
 
 def test_signature_help_tracks_multiline_function_calls() -> None:

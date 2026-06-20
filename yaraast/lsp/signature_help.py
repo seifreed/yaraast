@@ -218,13 +218,6 @@ class SignatureHelpProvider:
             signatures=[signature], active_signature=0, active_parameter=active_parameter
         )
 
-    def _find_function_at_position(self, text: str, position: Position) -> str | None:
-        """Find the function call at the cursor position."""
-        call_context = self._find_call_context_at_position(text, position)
-        if call_context is None:
-            return None
-        return call_context[0]
-
     def _find_call_context_at_position(
         self, text: str, position: Position
     ) -> tuple[str, int] | None:
@@ -314,10 +307,3 @@ class SignatureHelpProvider:
         if not function_name:
             return None
         return function_name, active_parameter
-
-    def _calculate_active_parameter(self, text: str, position: Position) -> int:
-        """Calculate which parameter the cursor is on."""
-        call_context = self._find_call_context_at_position(text, position)
-        if call_context is None:
-            return 0
-        return call_context[1]
