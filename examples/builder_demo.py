@@ -1,6 +1,10 @@
 """Example demonstrating the fluent builder pattern."""
 
-from yaraast import CodeGenerator, ConditionBuilder, HexStringBuilder, RuleBuilder, YaraFileBuilder
+from yaraast.builder.condition_builder import ConditionBuilder
+from yaraast.builder.file_builder import YaraFileBuilder
+from yaraast.builder.hex_string_builder import HexStringBuilder
+from yaraast.builder.rule_builder import RuleBuilder
+from yaraast.codegen import CodeGenerator
 from yaraast.types import TypeValidator
 
 

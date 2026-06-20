@@ -2,7 +2,6 @@
 
 # No specific typing imports needed with Python 3.9+ built-in generics
 
-from yaraast import ASTVisitor, Parser
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -20,6 +19,8 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
+from yaraast.parser import Parser
+from yaraast.visitor import ASTVisitor
 
 
 # Visitor to collect statistics about YARA rules

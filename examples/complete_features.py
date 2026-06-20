@@ -6,20 +6,20 @@ import os
 from pathlib import Path
 import tempfile
 
-from yaraast import (
-    YARA_SYNTAX_VERSION,
-    YARAAST_VERSION,
-    CodeGenerator,
-    HexStringBuilder,
-    Parser,
-    RuleBuilder,
-    get_version_info,
-)
 from yaraast.analysis import RuleAnalyzer
+from yaraast.builder.hex_string_builder import HexStringBuilder
+from yaraast.builder.rule_builder import RuleBuilder
+from yaraast.codegen import CodeGenerator
 from yaraast.codegen.formatting import FormattingConfig, StringStyle
 from yaraast.codegen.options import GeneratorOptions
 from yaraast.optimization import RuleOptimizer
+from yaraast.parser import Parser
 from yaraast.types.module_loader import ModuleLoader
+from yaraast.version import (
+    YARA_SYNTAX_VERSION,
+    YARAAST_VERSION,
+    get_version_info,
+)
 from yaraast.yarax import YaraXCompatibilityChecker
 
 

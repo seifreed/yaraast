@@ -360,3 +360,7 @@ class ModuleLoader:
         """Get module definition by name."""
         name = _require_module_lookup_name(name)
         return self.modules.get(name)
+
+    def list_modules(self) -> list[str]:
+        """Return the names of all loaded modules, sorted."""
+        return sorted(self.modules)

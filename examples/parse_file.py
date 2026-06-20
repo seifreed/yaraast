@@ -1,6 +1,7 @@
 """Example: Basic YARA file parsing."""
 
-from yaraast import CodeGenerator, Parser
+from yaraast.codegen import CodeGenerator
+from yaraast.parser import Parser
 
 # Example YARA rule
 yara_rule = r"""

@@ -1,9 +1,10 @@
 """Example: Transforming YARA AST."""
 
-from yaraast import CodeGenerator, Parser
 from yaraast.ast.modifiers import MetaEntry, StringModifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
+from yaraast.codegen import CodeGenerator
+from yaraast.parser import Parser
 from yaraast.visitor import ASTTransformer
 
 
