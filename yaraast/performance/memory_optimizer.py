@@ -160,6 +160,7 @@ class MemoryOptimizer:
 
         # Update stats
         self._stats["nodes_processed"] += optimizer.nodes_processed
+        self._stats["strings_pooled"] += len(self._string_pool)
 
         # Force garbage collection if aggressive
         maybe_post_optimize_collect(self)
@@ -172,6 +173,7 @@ class MemoryOptimizer:
         optimizer = MemoryOptimizerTransformer(self._string_pool, self.aggressive)
         optimized = optimizer.visit(rule)
         self._stats["nodes_processed"] += optimizer.nodes_processed
+        self._stats["strings_pooled"] += len(self._string_pool)
         maybe_post_optimize_collect(self)
         return optimized
 
@@ -186,6 +188,7 @@ class MemoryOptimizer:
             nodes_processed += optimizer.nodes_processed
 
         self._stats["nodes_processed"] += nodes_processed
+        self._stats["strings_pooled"] += len(self._string_pool)
         maybe_post_optimize_collect(self)
         return optimized_rules
 
