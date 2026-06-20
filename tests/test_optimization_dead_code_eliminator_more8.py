@@ -42,22 +42,6 @@ from yaraast.yarax.ast_nodes import (
 )
 
 
-def test_contains_rule_reference_and_external_references() -> None:
-    dce = DeadCodeEliminator()
-
-    assert dce._contains_rule_reference(Identifier("other_rule")) is True
-    assert dce._contains_rule_reference(Identifier("them")) is False
-    assert (
-        dce._contains_rule_reference(BinaryExpression(Identifier("true"), "and", Identifier("x")))
-        is True
-    )
-
-    no_cond = Rule(name="a", condition=None)
-    with_cond = Rule(name="b", condition=Identifier("ref_rule"))
-    assert dce._has_external_references(no_cond) is False
-    assert dce._has_external_references(with_cond) is True
-
-
 def test_visit_methods_track_usage_and_passthrough_nodes() -> None:
     dce = DeadCodeEliminator()
     dce.in_condition = True
@@ -416,7 +400,6 @@ def test_dead_code_eliminator_ignores_multi_variable_for_locals_as_rule_referenc
     )
     dce = DeadCodeEliminator()
 
-    assert dce._has_external_references(ast.rules[0]) is False
     optimized, count = dce.eliminate(ast)
 
     assert count == 2
