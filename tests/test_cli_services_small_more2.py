@@ -9,7 +9,7 @@ from yaraast.cli import (
     optimize_services as osvc,
     parse_output_services as pos,
 )
-from yaraast.cli.serialize_service_helpers import export_with_serializer
+from yaraast.cli.serialize_services import export_with_serializer
 from yaraast.errors import ParseError
 from yaraast.parser import Parser
 
