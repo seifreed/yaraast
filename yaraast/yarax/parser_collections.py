@@ -16,7 +16,6 @@ from yaraast.yarax.ast_nodes import (
     SliceExpression,
     SpreadOperator,
     TupleExpression,
-    TupleIndexing,
 )
 from yaraast.yarax.parser_helpers import (
     ERROR_EXPECTED_BRACE_CLOSE,
@@ -321,22 +320,6 @@ class YaraXParserCollectionsMixin:
         from yaraast.ast.expressions import ParenthesesExpression
 
         return ParenthesesExpression(expression=first)
-
-    def _parse_tuple_indexing_postfix(self: Any, tuple_expr: Expression) -> Expression:
-        """Parse tuple indexing on an expression."""
-        self._consume(TokenType.LBRACKET, "Expected '['")
-
-        if self._check(TokenType.COLON):
-            return cast(Expression, self._parse_slice_expression(tuple_expr, None))
-
-        index = self._parse_expression()
-
-        if self._check(TokenType.COLON):
-            return cast(Expression, self._parse_slice_expression(tuple_expr, index))
-
-        self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
-
-        return TupleIndexing(tuple_expr=tuple_expr, index=index)
 
     def _parse_slice_expression(
         self: Any, target: Expression, start: Expression | None

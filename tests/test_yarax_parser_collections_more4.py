@@ -120,37 +120,30 @@ def test_parser_collections_regular_dict_parentheses_and_slice_variants() -> Non
 
     parser = _manual_parser(
         [
-            _tok(TokenType.LBRACKET, "["),
             _tok(TokenType.INTEGER, 1),
             _tok(TokenType.COLON, ":"),
             _tok(TokenType.RBRACKET, "]"),
         ],
     )
-    slice_no_stop = parser._parse_tuple_indexing_postfix(
-        Identifier(name="arr"),
-    )
+    slice_no_stop = parser._parse_bracket_access(Identifier(name="arr"))
     assert isinstance(slice_no_stop, SliceExpression)
     assert slice_no_stop.stop is None
 
     parser = _manual_parser(
         [
-            _tok(TokenType.LBRACKET, "["),
             _tok(TokenType.COLON, ":"),
             _tok(TokenType.COLON, ":"),
             _tok(TokenType.INTEGER, 2),
             _tok(TokenType.RBRACKET, "]"),
         ],
     )
-    slice_step_only = parser._parse_tuple_indexing_postfix(
-        Identifier(name="arr"),
-    )
+    slice_step_only = parser._parse_bracket_access(Identifier(name="arr"))
     assert isinstance(slice_step_only, SliceExpression)
     assert slice_step_only.start is None
     assert slice_step_only.step is not None
 
     parser = _manual_parser(
         [
-            _tok(TokenType.LBRACKET, "["),
             _tok(TokenType.INTEGER, 1),
             _tok(TokenType.COLON, ":"),
             _tok(TokenType.INTEGER, 4),
@@ -158,7 +151,7 @@ def test_parser_collections_regular_dict_parentheses_and_slice_variants() -> Non
             _tok(TokenType.RBRACKET, "]"),
         ],
     )
-    slice_empty_step = parser._parse_tuple_indexing_postfix(Identifier(name="arr"))
+    slice_empty_step = parser._parse_bracket_access(Identifier(name="arr"))
     assert isinstance(slice_empty_step, SliceExpression)
     assert slice_empty_step.step is None
 

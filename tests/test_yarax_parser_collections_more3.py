@@ -9,10 +9,8 @@ from yaraast.yarax.ast_nodes import (
     DictComprehension,
     DictExpression,
     ListExpression,
-    SliceExpression,
     SpreadOperator,
     TupleExpression,
-    TupleIndexing,
 )
 from yaraast.yarax.parser import YaraXParser
 
@@ -109,54 +107,14 @@ def test_spread_and_keyword_keyword_fallback_paths() -> None:
     assert dict_comp.condition is not None
 
 
-def test_tuple_parentheses_and_slice_paths() -> None:
+def test_tuple_or_parentheses_single_value() -> None:
     parser = _manual_parser(
         [
             _tok(TokenType.LPAREN, "("),
             _tok(TokenType.IDENTIFIER, "x"),
             _tok(TokenType.RPAREN, ")"),
-            _tok(TokenType.LBRACKET, "["),
         ],
     )
     single_parenthesized = parser._parse_tuple_or_parentheses()
     assert isinstance(single_parenthesized, ParenthesesExpression)
     assert single_parenthesized.expression == Identifier(name="x")
-
-    parser = _manual_parser(
-        [
-            _tok(TokenType.LBRACKET, "["),
-            _tok(TokenType.COLON, ":"),
-            _tok(TokenType.INTEGER, 3),
-            _tok(TokenType.RBRACKET, "]"),
-        ],
-    )
-    idx = parser._parse_tuple_indexing_postfix(Identifier(name="x"))
-    assert isinstance(idx, SliceExpression)
-    assert idx.start is None
-    assert idx.stop is not None
-
-    parser = _manual_parser(
-        [
-            _tok(TokenType.LBRACKET, "["),
-            _tok(TokenType.INTEGER, 1),
-            _tok(TokenType.RBRACKET, "]"),
-        ],
-    )
-    idx = parser._parse_tuple_indexing_postfix(Identifier(name="x"))
-    assert isinstance(idx, TupleIndexing)
-
-    parser = _manual_parser(
-        [
-            _tok(TokenType.LBRACKET, "["),
-            _tok(TokenType.INTEGER, 1),
-            _tok(TokenType.COLON, ":"),
-            _tok(TokenType.INTEGER, 4),
-            _tok(TokenType.COLON, ":"),
-            _tok(TokenType.INTEGER, 2),
-            _tok(TokenType.RBRACKET, "]"),
-        ],
-    )
-    idx = parser._parse_tuple_indexing_postfix(Identifier(name="x"))
-    assert isinstance(idx, SliceExpression)
-    assert idx.start is not None
-    assert idx.step is not None
