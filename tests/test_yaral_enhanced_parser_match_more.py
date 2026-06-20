@@ -36,7 +36,7 @@ def test_parse_match_variable_with_field_and_over_condition() -> None:
         ],
     )
 
-    parsed = p._parse_match_variable()
+    parsed = p._parse_match_variables()[0]
     assert parsed.variable == "m"
     assert parsed.grouping_field is not None
     assert parsed.grouping_field.full_path == "$e.principal.ip"
@@ -47,7 +47,7 @@ def test_parse_match_variable_with_field_and_over_condition() -> None:
 def test_parse_match_variable_without_optional_parts() -> None:
     p = EnhancedYaraLParser("")
     _set_tokens(p, [_tok(T.IDENTIFIER, "m"), _tok(T.EQ, "=")])
-    parsed = p._parse_match_variable()
+    parsed = p._parse_match_variables()[0]
     assert parsed.variable == "m"
     assert parsed.time_window.duration == 1
     assert parsed.time_window.unit == "m"

@@ -30,11 +30,6 @@ class EnhancedYaraLParserMatchMixin:
 
         return MatchSection(variables=variables)
 
-    def _parse_match_variable(self) -> MatchVariable:
-        """Parse match variable with grouping conditions."""
-        variables = self._parse_match_variables()
-        return variables[0]
-
     def _parse_match_variables(self) -> list[MatchVariable]:
         names = [self._parse_match_variable_name()]
         while self._check(BaseTokenType.COMMA):

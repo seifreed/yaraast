@@ -9,7 +9,6 @@ from yaraast.yaral.ast_nodes import (
     ConditionSection,
     EventCountCondition,
     EventExistsCondition,
-    ReferenceList,
     UnaryCondition,
     VariableComparisonCondition,
 )
@@ -283,16 +282,3 @@ class EnhancedYaraLParserConditionsMixin:
         value = self._parse_event_value()
 
         return BinaryCondition(left=field, operator=operator, right=value)
-
-    def _parse_reference_check(self) -> ConditionExpression:
-        """Parse reference list check like: ip in %suspicious_ips."""
-        field = self._parse_udm_field_access()
-
-        self._consume_keyword("in")
-
-        if not self._check_yaral_type(YaraLTokenType.REFERENCE_LIST):
-            raise self._error("Expected reference list")
-
-        list_name = self._advance().value.strip("%")
-        ref_list = ReferenceList(name=list_name)
-        return BinaryCondition(left=field, operator="in", right=ref_list)
