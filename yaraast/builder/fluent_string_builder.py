@@ -440,33 +440,6 @@ class FluentStringBuilder:
                 return []
             raise ValidationError(str(exc)) from exc
 
-    def _normalize_hex_pattern(self, pattern: str) -> str:
-        """Normalize hex pattern by removing whitespace and converting to uppercase."""
-        if not isinstance(pattern, str):
-            msg = "Hex pattern must be a string"
-            raise TypeError(msg)
-        return pattern.replace(" ", "").replace("\t", "").replace("\n", "").upper()
-
-    def _parse_hex_pair(self, two_char: str) -> tuple[HexToken | None, int]:
-        """Parse two characters as hex token.
-
-        Returns:
-            Tuple of (token or None, characters consumed)
-
-        """
-        if two_char == "??":
-            return HexWildcard(), 2
-
-        if "?" in two_char:
-            return self._parse_nibble(two_char), 2
-
-        try:
-            byte_val = int(two_char, 16)
-            return HexByte(value=byte_val), 2
-        except ValueError:
-            msg = f"Invalid hex pair: {two_char}"
-            raise ValidationError(msg) from None
-
     def _parse_nibble(self, two_char: str) -> HexNibble:
         """Parse a half-wildcard pattern like ?0 or 0?."""
         try:

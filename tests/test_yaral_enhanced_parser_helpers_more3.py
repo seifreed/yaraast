@@ -103,7 +103,7 @@ def test_parse_time_and_event_values() -> None:
     assert tw.duration == 5 and tw.unit == "m"
 
     _set_tokens(p, [_tok(T.INTEGER, 10), _tok(T.IDENTIFIER, "h")])
-    assert p._parse_time_duration() == "10h"
+    assert p._parse_duration_parts() == (10, "h")
 
     value_cases = [
         ([_tok(T.BOOLEAN_TRUE, True)], True),

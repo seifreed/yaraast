@@ -39,9 +39,6 @@ def test_fluent_string_builder_invalid_hex_inputs_and_trailing_nibble() -> None:
     ):
         FluentStringBuilder("$parse")._parse_hex_pattern("AA G")
 
-    with pytest.raises(ValidationError, match="Invalid hex pair: GZ"):
-        FluentStringBuilder("$pair")._parse_hex_pair("GZ")
-
 
 def test_fluent_string_builder_rejects_non_string_text_and_regex_content() -> None:
     with pytest.raises(TypeError, match="Plain string content must be a string"):

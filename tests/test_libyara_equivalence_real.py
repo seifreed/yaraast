@@ -30,8 +30,8 @@ def test_compare_code_normalizes_whitespace_only() -> None:
     code2 = "  rule r {  \n  condition:   \n   true\n}\n\n"
     code3 = "rule r2 {\ncondition:\n true\n}\n"
 
-    assert tester._compare_code(code1, code2) is True
-    assert tester._compare_code(code1, code3) is False
+    assert tester._normalize_code(code1) == tester._normalize_code(code2)
+    assert tester._normalize_code(code1) != tester._normalize_code(code3)
 
 
 @pytest.mark.parametrize("filepath", ["", "   ", "\t"])

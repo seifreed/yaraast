@@ -107,7 +107,6 @@ def test_rename_non_renameable_and_empty_cases() -> None:
     assert provider.prepare_rename(text, _pos(0, 4)) is None
     assert provider.rename(text, _pos(0, 4), "x", "file://test.yar") is None
     assert provider.rename(text, _pos(10, 0), "x", "file://test.yar") is None
-    assert provider._is_rule_name(text, _pos(10, 0)) is False
 
 
 def test_prepare_rename_ignores_comment_positions() -> None:

@@ -257,10 +257,6 @@ class EquivalenceTester:
                 f"Failed to parse file: {e!s}",
             )
 
-    def _compare_code(self, code1: str, code2: str) -> bool:
-        """Compare two code strings (normalized)."""
-        return self._normalize_code(code1) == self._normalize_code(code2)
-
     @staticmethod
     def _normalize_code(code: str) -> str:
         """Normalize code for equivalence comparisons."""

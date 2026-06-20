@@ -99,12 +99,3 @@ class RenameProvider:
         if not isinstance(position, Position):
             msg = "position must be an LSP Position"
             raise TypeError(msg)
-
-    def _is_rule_name(self, text: str, position: Position) -> bool:
-        """Check if position is at a rule name."""
-        lines = text.split("\n")
-        if position.line >= len(lines):
-            return False
-
-        line = lines[position.line]
-        return "rule" in line and "{" not in line

@@ -289,11 +289,6 @@ class EnhancedYaraLParserHelpersMixin:
                 pattern.flags.append("nocase")
         return pattern
 
-    def _parse_time_duration(self) -> str:
-        """Parse time duration like '5m', '1h', '30s'."""
-        duration, unit = self._parse_duration_parts()
-        return f"{duration}{unit}"
-
     def _parse_duration_parts(self) -> tuple[int, str]:
         """Parse a time duration into numeric value and unit."""
         if self._check_yaral_type(YaraLTokenType.TIME_LITERAL):

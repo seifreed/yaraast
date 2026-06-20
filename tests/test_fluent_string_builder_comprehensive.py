@@ -588,37 +588,35 @@ class TestFluentStringBuilderHelperMethods:
 
         assert len(tokens) > 0
 
-    def test_normalize_hex_pattern_removes_whitespace(self) -> None:
-        """_normalize_hex_pattern should remove whitespace."""
+    def test_parse_hex_pattern_handles_whitespace(self) -> None:
+        """_parse_hex_pattern should ignore whitespace between bytes."""
         builder = FluentStringBuilder("$hex")
-        result = builder._normalize_hex_pattern("4D 5A\t90\n00")
+        tokens = builder._parse_hex_pattern("4D 5A\t90\n00")
 
-        assert result == "4D5A9000"
+        assert all(isinstance(token, HexByte) for token in tokens)
+        assert [token.value for token in tokens] == [0x4D, 0x5A, 0x90, 0x00]
 
-    def test_parse_hex_pair_with_wildcard(self) -> None:
-        """_parse_hex_pair should recognize wildcard."""
+    def test_parse_hex_pattern_with_wildcard(self) -> None:
+        """_parse_hex_pattern should recognize wildcard."""
         builder = FluentStringBuilder("$hex")
-        token, consumed = builder._parse_hex_pair("??")
+        tokens = builder._parse_hex_pattern("??")
 
-        assert isinstance(token, HexWildcard)
-        assert consumed == 2
+        assert isinstance(tokens[0], HexWildcard)
 
-    def test_parse_hex_pair_with_nibble(self) -> None:
-        """_parse_hex_pair should recognize nibble patterns."""
+    def test_parse_hex_pattern_with_nibble(self) -> None:
+        """_parse_hex_pattern should recognize nibble patterns."""
         builder = FluentStringBuilder("$hex")
-        token, consumed = builder._parse_hex_pair("F?")
+        tokens = builder._parse_hex_pattern("F?")
 
-        assert isinstance(token, HexNibble)
-        assert consumed == 2
+        assert isinstance(tokens[0], HexNibble)
 
-    def test_parse_hex_pair_with_byte(self) -> None:
-        """_parse_hex_pair should parse byte value."""
+    def test_parse_hex_pattern_with_byte(self) -> None:
+        """_parse_hex_pattern should parse byte value."""
         builder = FluentStringBuilder("$hex")
-        token, consumed = builder._parse_hex_pair("FF")
+        tokens = builder._parse_hex_pattern("FF")
 
-        assert isinstance(token, HexByte)
-        assert token.value == 0xFF
-        assert consumed == 2
+        assert isinstance(tokens[0], HexByte)
+        assert tokens[0].value == 0xFF
 
     def test_parse_nibble_high_nibble(self) -> None:
         """_parse_nibble should parse high nibble pattern."""
