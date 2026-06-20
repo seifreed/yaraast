@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.metrics_reporting import (
     _display_pattern_result,
     _display_pattern_statistics,
@@ -36,11 +37,21 @@ from yaraast.metrics.workflows import (
     determine_graph_output_path,
     determine_pattern_output_path,
 )
+from yaraast.parser._shared import ParserError
 
 
 @click.group()
 def metrics() -> None:
     """Analyze and visualize YARA AST metrics."""
+
+
+def _parse_or_fail(yara_file: str) -> YaraFile:
+    """Parse a YARA file, reporting syntax errors cleanly instead of crashing."""
+    try:
+        return parse_yara_file(yara_file)
+    except ParserError as exc:
+        click.echo(f"Failed to parse {yara_file}: {exc}", err=True)
+        raise SystemExit(1) from exc
 
 
 @metrics.command()
@@ -67,7 +78,7 @@ def metrics() -> None:
 def complexity(yara_file: str, output: str | None, format: str, quality_gate: int) -> None:
     """Analyze YARA rule complexity metrics."""
     output = _validate_output_path(output)
-    ast = parse_yara_file(yara_file)
+    ast = _parse_or_fail(yara_file)
 
     metrics = analyze_complexity(ast)
 
@@ -314,7 +325,7 @@ def report(yara_file: str, output_dir: str | None, format: str) -> None:
 def strings(yara_file: str, output: str | None, format: str) -> None:
     """Analyze string patterns in YARA rules."""
     output = _validate_output_path(output)
-    ast = parse_yara_file(yara_file)
+    ast = _parse_or_fail(yara_file)
     analysis = _analyze_string_patterns(ast)
 
     # Format and output results
