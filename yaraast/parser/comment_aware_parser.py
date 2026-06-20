@@ -324,13 +324,6 @@ class CommentAwareParser(Parser):
             return location.end_line
         return fallback
 
-    def _skip_unrecognized_token(self) -> bool:
-        """Skip unrecognized token. Returns False if should break loop."""
-        if self._peek() and self._peek().type != TokenType.RBRACE:
-            self._advance()
-            return True
-        return False
-
     def _expect_rbrace_with_recovery(self) -> None:
         """Expect right brace with error recovery."""
         if self._match(TokenType.RBRACE):

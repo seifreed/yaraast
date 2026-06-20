@@ -87,7 +87,7 @@ def test_rule_name_and_section_errors_and_recovery() -> None:
     assert p.current == 3
 
 
-def test_parse_rule_sections_skip_and_ensure_condition() -> None:
+def test_parse_rule_sections_rejects_junk_and_ensure_condition() -> None:
     p = CommentAwareParser()
 
     p.tokens = [
@@ -98,13 +98,6 @@ def test_parse_rule_sections_skip_and_ensure_condition() -> None:
     p.current = 0
     with pytest.raises(ParserError, match="Unexpected section: junk"):
         p._parse_rule_sections_with_comments()
-
-    p.current = 0
-    assert p._skip_unrecognized_token() is True
-    assert p.current == 1
-
-    # _skip_unrecognized_token false branch when RBRACE
-    assert p._skip_unrecognized_token() is False
 
     ensured = p._ensure_condition(None)
     assert isinstance(ensured, BooleanLiteral)
