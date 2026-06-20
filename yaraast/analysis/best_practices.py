@@ -348,6 +348,10 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         self._string_usage[normalized] = self._string_usage.get(normalized, 0) + 1
 
     def _mark_condition_string_usage(self, string_id: str) -> None:
+        # '$' is the anonymous current-string reference inside a for..of loop
+        # body; it does not name a defined string, so skip usage tracking.
+        if string_id == "$":
+            return
         normalized = self._normalize_string_id(string_id)
         if self._is_local(normalized):
             return
