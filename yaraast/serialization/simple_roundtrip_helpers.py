@@ -1198,19 +1198,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             node.module_path,
             "ExternImport module_path",
         )
-        if not module_path.strip():
-            msg = "ExternImport module_path must not be empty"
-            raise SerializationError(msg)
         alias = _serialize_nullable_nonempty_string(node.alias, "ExternImport alias")
-        if alias is not None and not alias.strip():
-            msg = "ExternImport alias must not be empty"
-            raise SerializationError(msg)
         rules = _validate_extern_import_rule_identifiers(
             _serialize_nonempty_string_list(node.rules, "ExternImport rules")
         )
-        if any(not rule.strip() for rule in rules):
-            msg = "ExternImport rules must contain non-empty strings"
-            raise SerializationError(msg)
         return {
             "type": "ExternImport",
             "module_path": module_path,
@@ -2044,13 +2035,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             "module_path",
             "ExternImport",
         )
-        if not module_path.strip():
-            msg = "ExternImport module_path must not be empty"
-            raise SerializationError(msg)
         alias = _deserialize_required_nullable_nonempty_string_field(data, "alias", "ExternImport")
-        if alias is not None and not alias.strip():
-            msg = "ExternImport alias must not be empty"
-            raise SerializationError(msg)
         raw_rules = _deserialize_required_field(data, "rules", "ExternImport")
         if not isinstance(raw_rules, list) or not all(isinstance(rule, str) for rule in raw_rules):
             msg = "ExternImport rules must be a list of strings"

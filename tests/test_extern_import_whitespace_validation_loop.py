@@ -22,6 +22,10 @@ from yaraast.serialization.protobuf_conversion import (
     convert_extern_import_to_protobuf,
     protobuf_to_extern_import,
 )
+from yaraast.serialization.simple_roundtrip_helpers import (
+    deserialize_node,
+    serialize_node,
+)
 
 
 class TestSerializeExternImportWhitespace:
@@ -90,3 +94,50 @@ class TestDeserializeExternImportWhitespace:
         assert result.module_path == "mod"
         assert result.alias == "al"
         assert list(result.rules) == ["r1", "r2"]
+
+
+class TestJsonRoundtripExternImportWhitespace:
+    """JSON serialize/deserialize must reject whitespace-only ExternImport fields.
+
+    The redundant ``.strip()`` guards in ``simple_roundtrip_helpers`` were
+    removed; the shared ``_serialize_*`` / ``_deserialize_*`` nonempty helpers
+    are the single enforcement point.
+    """
+
+    def test_serialize_module_path_whitespace_raises(self) -> None:
+        obj = ExternImport(module_path="  ", alias=None, rules=["good"])
+        with pytest.raises(SerializationError, match="module_path must not be empty"):
+            serialize_node(obj)
+
+    def test_serialize_alias_whitespace_raises(self) -> None:
+        obj = ExternImport(module_path="mod", alias="  ", rules=["good"])
+        with pytest.raises(SerializationError, match="alias must not be empty"):
+            serialize_node(obj)
+
+    def test_serialize_rule_whitespace_raises(self) -> None:
+        obj = ExternImport(module_path="mod", alias=None, rules=["  "])
+        with pytest.raises(SerializationError, match="rules must contain non-empty"):
+            serialize_node(obj)
+
+    def test_deserialize_module_path_whitespace_raises(self) -> None:
+        data = {"type": "ExternImport", "module_path": "  ", "alias": None, "rules": ["good"]}
+        with pytest.raises(SerializationError, match="module_path must not be empty"):
+            deserialize_node(data)
+
+    def test_deserialize_alias_whitespace_raises(self) -> None:
+        data = {"type": "ExternImport", "module_path": "mod", "alias": "  ", "rules": ["good"]}
+        with pytest.raises(SerializationError, match="alias must not be empty"):
+            deserialize_node(data)
+
+    def test_deserialize_rule_whitespace_raises(self) -> None:
+        data = {"type": "ExternImport", "module_path": "mod", "alias": None, "rules": ["  "]}
+        with pytest.raises(SerializationError, match="rules must contain non-empty"):
+            deserialize_node(data)
+
+    def test_valid_json_roundtrips(self) -> None:
+        obj = ExternImport(module_path="mod", alias="al", rules=["r1", "r2"])
+        restored = deserialize_node(serialize_node(obj))
+        assert isinstance(restored, ExternImport)
+        assert restored.module_path == "mod"
+        assert restored.alias == "al"
+        assert list(restored.rules) == ["r1", "r2"]
