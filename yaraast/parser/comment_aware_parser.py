@@ -346,8 +346,7 @@ class CommentAwareParser(Parser):
             from yaraast.ast.expressions import BooleanLiteral
 
             literal = BooleanLiteral(value=True)
-            if self._peek() is not None:
-                self._set_node_location_from_token(literal, self._peek())
+            self._set_node_location_from_token(literal, self._peek())
             return literal
         return condition
 
