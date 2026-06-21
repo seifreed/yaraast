@@ -35,8 +35,6 @@ def read_string(lexer: LexerLike) -> Token:
             raw_bytes.extend(result.raw_bytes)
             for _ in range(result.advance_count):
                 lexer._advance()
-            if result.ends_string:
-                break
         else:
             value_chars.append(char)
             try:
@@ -272,9 +270,6 @@ def read_number(lexer: LexerLike) -> Token:
             lexer._advance()
             char = lexer._current_char()
         if "_" in raw_fraction:
-            msg = "Invalid decimal floating-point literal"
-            raise LexerError(msg, start_line, start_column)
-        if raw_fraction.endswith("_") or "__" in raw_fraction:
             msg = "Invalid decimal floating-point literal"
             raise LexerError(msg, start_line, start_column)
         return Token(
