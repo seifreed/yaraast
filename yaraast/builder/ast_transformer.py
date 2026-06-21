@@ -373,22 +373,18 @@ class RuleTransformer:
             return expr
 
         if isinstance(expr, BinaryExpression):
-            new_left = self._rename_strings_in_expression(expr.left, mapping)
-            new_right = self._rename_strings_in_expression(expr.right, mapping)
-            if new_left is not expr.left or new_right is not expr.right:
-                return BinaryExpression(left=new_left, operator=expr.operator, right=new_right)
+            # Children are renamed in place; this visitor always returns the
+            # same node it was given, so no reconstruction is needed.
+            self._rename_strings_in_expression(expr.left, mapping)
+            self._rename_strings_in_expression(expr.right, mapping)
             return expr
 
         if isinstance(expr, UnaryExpression):
-            new_operand = self._rename_strings_in_expression(expr.operand, mapping)
-            if new_operand is not expr.operand:
-                return UnaryExpression(operator=expr.operator, operand=new_operand)
+            self._rename_strings_in_expression(expr.operand, mapping)
             return expr
 
         if isinstance(expr, ParenthesesExpression):
-            new_inner = self._rename_strings_in_expression(expr.expression, mapping)
-            if new_inner is not expr.expression:
-                return ParenthesesExpression(expression=new_inner)
+            self._rename_strings_in_expression(expr.expression, mapping)
             return expr
 
         for attr_name, attr_value in vars(expr).items():
