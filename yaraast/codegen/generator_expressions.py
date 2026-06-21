@@ -517,12 +517,8 @@ def _static_integer_quantifier_value(value: Any) -> int | None:
                 return None
             return _integer_remainder(left, right)
         if value.operator == "<<":
-            if right < 0:
-                return None
             return _shift_left_int64(left, right)
         if value.operator == ">>":
-            if right < 0:
-                return None
             return _shift_right_int64(left, right)
         if value.operator == "&":
             return _normalize_int64(left & right)

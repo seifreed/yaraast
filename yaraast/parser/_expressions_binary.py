@@ -482,12 +482,8 @@ class ExpressionBinaryMixin:
                     return None
                 return _integer_remainder(left, right)
             if expr.operator == "<<":
-                if right < 0:
-                    return None
                 return _shift_left_int64(left, right)
             if expr.operator == ">>":
-                if right < 0:
-                    return None
                 return _shift_right_int64(left, right)
             if expr.operator == "&":
                 return _normalize_int64(left & right)
