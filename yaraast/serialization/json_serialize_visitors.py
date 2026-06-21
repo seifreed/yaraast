@@ -206,16 +206,6 @@ def _serialize_hex_nibble_value(value) -> int | str:
     raise SerializationError(msg)
 
 
-def _serialize_ast_value(serializer, value):
-    if hasattr(value, "accept"):
-        return serializer.visit(value)
-    if isinstance(value, list | tuple):
-        return [_serialize_ast_value(serializer, item) for item in value]
-    if isinstance(value, set | frozenset):
-        return [_serialize_ast_value(serializer, item) for item in sorted(value, key=str)]
-    return value
-
-
 def _serialize_optional_expression(serializer, value, context: str):
     if value is None:
         return None
