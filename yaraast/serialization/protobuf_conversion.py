@@ -701,30 +701,20 @@ def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
 
 
 def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
-    module_path = _protobuf_required_nonempty_string(
+    pb_extern_import.module_path = _protobuf_required_nonempty_string(
         extern_import.module_path,
         "ExternImport module_path",
     )
-    if not module_path.strip():
-        msg = "ExternImport module_path must not be empty"
-        raise SerializationError(msg)
-    pb_extern_import.module_path = module_path
     if extern_import.alias is not None:
-        alias = _protobuf_required_nonempty_string(
+        pb_extern_import.alias = _protobuf_required_nonempty_string(
             extern_import.alias,
             "ExternImport alias",
         )
-        if not alias.strip():
-            msg = "ExternImport alias must not be empty"
-            raise SerializationError(msg)
-        pb_extern_import.alias = alias
-    rules = _validate_extern_import_rule_identifiers(
-        _protobuf_nonempty_string_list(extern_import.rules, "ExternImport rules")
+    pb_extern_import.rules.extend(
+        _validate_extern_import_rule_identifiers(
+            _protobuf_nonempty_string_list(extern_import.rules, "ExternImport rules")
+        )
     )
-    if any(not rule.strip() for rule in rules):
-        msg = "ExternImport rules item must not be empty"
-        raise SerializationError(msg)
-    pb_extern_import.rules.extend(rules)
     _copy_node_metadata_to_protobuf(extern_import, pb_extern_import)
 
 
@@ -2064,21 +2054,16 @@ def protobuf_to_extern_import(pb_extern_import: Any) -> Any:
         pb_extern_import.module_path,
         "ExternImport module_path",
     )
-    if not module_path.strip():
-        msg = "ExternImport module_path must not be empty"
-        raise SerializationError(msg)
     alias = pb_extern_import.alias or None
     if alias is not None and not alias.strip():
         msg = "ExternImport alias must not be empty"
         raise SerializationError(msg)
-    rules = _protobuf_nonempty_string_list(
-        list(pb_extern_import.rules),
-        "ExternImport rules",
+    rules = _validate_extern_import_rule_identifiers(
+        _protobuf_nonempty_string_list(
+            list(pb_extern_import.rules),
+            "ExternImport rules",
+        )
     )
-    if any(not rule.strip() for rule in rules):
-        msg = "ExternImport rules item must not be empty"
-        raise SerializationError(msg)
-    rules = _validate_extern_import_rule_identifiers(rules)
     return _apply_node_metadata_from_protobuf(
         pb_extern_import,
         ExternImport(
