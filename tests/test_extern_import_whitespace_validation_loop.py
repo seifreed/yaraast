@@ -18,6 +18,7 @@ import pytest
 from yaraast.ast.extern import ExternImport
 from yaraast.errors import SerializationError
 from yaraast.serialization import yara_ast_pb2
+from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.protobuf_conversion import (
     convert_extern_import_to_protobuf,
     protobuf_to_extern_import,
@@ -141,3 +142,35 @@ class TestJsonRoundtripExternImportWhitespace:
         assert restored.module_path == "mod"
         assert restored.alias == "al"
         assert list(restored.rules) == ["r1", "r2"]
+
+
+class TestJsonSerializerExternImportWhitespace:
+    """JsonSerializer.visit_extern_import must reject whitespace-only fields.
+
+    The redundant ``.strip()`` guards were removed; the shared
+    ``_serialize_*nonempty*`` helpers reject whitespace via
+    ``_is_empty_nonempty_text`` for non-regex contexts.
+    """
+
+    def test_module_path_whitespace_raises(self) -> None:
+        obj = ExternImport(module_path="  ", alias=None, rules=["good"])
+        with pytest.raises(SerializationError, match="module_path must not be empty"):
+            JsonSerializer().visit_extern_import(obj)
+
+    def test_alias_whitespace_raises(self) -> None:
+        obj = ExternImport(module_path="mod", alias="  ", rules=["good"])
+        with pytest.raises(SerializationError, match="alias must not be empty"):
+            JsonSerializer().visit_extern_import(obj)
+
+    def test_rule_whitespace_raises(self) -> None:
+        obj = ExternImport(module_path="mod", alias=None, rules=["  "])
+        with pytest.raises(SerializationError, match="rules must contain non-empty"):
+            JsonSerializer().visit_extern_import(obj)
+
+    def test_valid_serializes(self) -> None:
+        obj = ExternImport(module_path="mod", alias="al", rules=["r1", "r2"])
+        result = JsonSerializer().visit_extern_import(obj)
+        assert result["type"] == "ExternImport"
+        assert result["module_path"] == "mod"
+        assert result["alias"] == "al"
+        assert result["rules"] == ["r1", "r2"]
