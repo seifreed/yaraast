@@ -1191,11 +1191,11 @@ class JsonSerializerDeserializeMixin:
             ]
         elif isinstance(meta_data, list):
             meta = [self._deserialize_meta(m) for m in meta_data]
-        elif "meta" in data:
+        else:
+            # _deserialize_required_field above guarantees the "meta" key is
+            # present, so any non-dict/non-list value is an error here.
             msg = "Rule meta must be a list or dictionary"
             raise SerializationError(msg)
-        else:
-            meta = []
 
         strings = [
             self._deserialize_string(s)
