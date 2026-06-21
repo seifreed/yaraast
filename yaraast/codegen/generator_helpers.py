@@ -830,13 +830,9 @@ def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) ->
         if value is not None:
             if name == "xor":
                 return f"{name}({_format_xor_modifier_value(value)})"
-            if name in BASE64_MODIFIERS:
-                return _format_base64_modifier_value(name, value)
-            if isinstance(value, tuple):
-                return f"{name}({value[0]}-{value[1]})"
-            if isinstance(value, str):
-                return f'{name}("{escape_plain_string_value(value)}")'
-            return f"{name}({value})"
+            # _validate_string_modifier_value guarantees a value-bearing
+            # modifier is xor or a base64 variant, so this is base64/base64wide.
+            return _format_base64_modifier_value(name, value)
         return str(name)
 
     if not isinstance(modifier, str):
@@ -927,10 +923,8 @@ def format_modifiers(
     visit: Callable[[Any], str] | None = None,
 ) -> str:
     """Format modifiers into a string with leading spaces."""
-    _validate_string_modifier_collection(modifiers)
+    modifiers = _validate_string_modifier_collection(modifiers)
     if not modifiers:
-        return ""
-    if not isinstance(modifiers, list | tuple):
         return ""
     validate_duplicate_string_modifiers(modifiers)
     parts = []
@@ -994,9 +988,9 @@ def _modifier_names(modifiers: object) -> set[str]:
     return {_regex_modifier_name(modifier) for modifier in modifiers}
 
 
-def _validate_string_modifier_collection(modifiers: object) -> None:
+def _validate_string_modifier_collection(modifiers: object) -> list[Any] | tuple[Any, ...]:
     if isinstance(modifiers, list | tuple):
-        return
+        return modifiers
     msg = "String modifiers must be a list or tuple for libyara output"
     raise TypeError(msg)
 
@@ -1032,10 +1026,8 @@ def split_regex_modifiers(
     visit: Callable[[Any], str] | None = None,
 ) -> tuple[str, list[str]]:
     """Split regex inline flags from spaced string modifiers."""
-    _validate_string_modifier_collection(modifiers)
+    modifiers = _validate_string_modifier_collection(modifiers)
     if not modifiers:
-        return "", []
-    if not isinstance(modifiers, list | tuple):
         return "", []
 
     suffix_parts: list[str] = []
