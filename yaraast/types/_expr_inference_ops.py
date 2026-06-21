@@ -1631,15 +1631,14 @@ def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
     set_type = _infer_string_set_value(ctx, node.string_set)
     if not isinstance(set_type, StringSetType):
         ctx.errors.append(f"'for...of' requires string set, got {set_type}")
-    if node.condition is not None:
-        ctx.env.push_scope()
-        ctx.env.define("$", StringIdentifierType())
-        try:
-            cond_type = ctx.visit(node.condition)
-        finally:
-            ctx.env.pop_scope()
-        if not _is_condition_type(cond_type):
-            ctx.errors.append(f"'for...of' condition must be scalar condition, got {cond_type}")
+    ctx.env.push_scope()
+    ctx.env.define("$", StringIdentifierType())
+    try:
+        cond_type = ctx.visit(node.condition)
+    finally:
+        ctx.env.pop_scope()
+    if not _is_condition_type(cond_type):
+        ctx.errors.append(f"'for...of' condition must be scalar condition, got {cond_type}")
     return BooleanType()
 
 

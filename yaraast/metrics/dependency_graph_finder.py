@@ -81,8 +81,7 @@ class DependencyFinder(MetricsVisitorBase):
         if node.condition is None:
             self._visit_rule_set_value(node.string_set)
             return
-        if node.condition is not None:
-            self.visit(node.condition)
+        self.visit(node.condition)
 
     def visit_at_expression(self, node) -> None:
         self.visit(self._required_ast_node(node.offset, "'at' offset"))
