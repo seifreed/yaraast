@@ -361,10 +361,9 @@ class DependencyGraph:
         if not old_key.startswith(f"{bare_key}#"):
             return
 
-        node = self.nodes.get(old_key)
-        if node is None or node.type != "rule":
-            return
-
+        # old_key comes from _rule_node_keys_for_name, which only yields keys
+        # present in self.nodes with type == "rule", so no None/type re-check
+        # is needed here.
         self.nodes[bare_key] = self.nodes.pop(old_key)
         old_rule_name = old_key.removeprefix("rule:")
         for graph_node in self.nodes.values():
