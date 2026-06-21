@@ -62,12 +62,6 @@ def _finite_double_value(value, context: str) -> float:
     return value
 
 
-def _validate_finite_quantifier(value) -> None:
-    if isinstance(value, float) and not math.isfinite(value):
-        msg = "quantifier must be finite"
-        raise SerializationError(msg)
-
-
 def _protobuf_has_field(message, field_name: str) -> bool:
     try:
         return message.HasField(field_name)
@@ -1392,18 +1386,8 @@ def _restore_quantifier_text(value: str, context: str, *, allow_percentage: bool
         context,
         allow_percentage=allow_percentage,
     )
-    if isinstance(restored_value, int | float):
+    if isinstance(restored_value, int):
         return restored_value
-    integer_text = value[1:] if value.startswith("+") else value
-    if integer_text.isdigit():
-        return int(value)
-    try:
-        if any(marker in value for marker in (".", "e", "E")):
-            restored_value = float(value)
-            _validate_finite_quantifier(restored_value)
-            return restored_value
-    except ValueError:
-        pass
     return value
 
 

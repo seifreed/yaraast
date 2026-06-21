@@ -57,7 +57,6 @@ from yaraast.serialization.protobuf_conversion import (
     _hex_nibble_raw_value_to_protobuf,
     _hex_nibble_value_to_protobuf,
     _restore_quantifier_text,
-    _validate_finite_quantifier,
     _validate_hex_token_sequence_for_protobuf,
     convert_expression_to_protobuf,
     convert_extern_import_to_protobuf,
@@ -108,27 +107,6 @@ def test_finite_double_value_accepts_valid_float() -> None:
 def test_finite_double_value_accepts_integer_input() -> None:
     """An integer is coerced to float by _finite_double_value."""
     assert _finite_double_value(42, "Test") == pytest.approx(42.0)
-
-
-# ---------------------------------------------------------------------------
-# _validate_finite_quantifier — lines 66-68
-# ---------------------------------------------------------------------------
-
-
-def test_validate_finite_quantifier_rejects_infinite_float() -> None:
-    """An infinite float quantifier raises SerializationError."""
-    with pytest.raises(SerializationError, match="quantifier must be finite"):
-        _validate_finite_quantifier(math.inf)
-
-
-def test_validate_finite_quantifier_accepts_finite_float() -> None:
-    """A finite float quantifier passes without error."""
-    _validate_finite_quantifier(1.5)
-
-
-def test_validate_finite_quantifier_accepts_integer() -> None:
-    """An integer quantifier passes without error (only floats are checked)."""
-    _validate_finite_quantifier(5)
 
 
 # ---------------------------------------------------------------------------
