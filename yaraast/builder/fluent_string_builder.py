@@ -376,9 +376,7 @@ class FluentStringBuilder:
         return cast(str, self._content)
 
     def _hex_tokens_for_build(self) -> list[HexToken]:
-        if isinstance(self._content, list):
-            return self._content
-        return []
+        return cast(list[HexToken], self._content)
 
     def _add_modifier(self, modifier_type: StringModifierType) -> None:
         """Add a modifier, avoiding duplicates."""

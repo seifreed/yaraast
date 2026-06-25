@@ -8,7 +8,6 @@ Missing lines before this file (95.04 %):
   188-189  _coerce_xor_key: path for non-bool, non-str, non-int value
   305-306  _validate_jump_bounds: max_bytes is negative
   308-309  _validate_jump_bounds: min_bytes exceeds LIBYARA_HEX_JUMP_MAX
-  381      _hex_tokens_for_build: defensive fallback returning empty list
   440      _parse_hex_pattern: HexParseError with position re-raised as ValidationError
   449-451  _parse_nibble: ValueError on non-hex character in nibble string
 """
@@ -135,29 +134,6 @@ def test_jump_pattern_min_exceeds_max_constant_error_mentions_limit() -> None:
     overflow = LIBYARA_HEX_JUMP_MAX + 1
     with pytest.raises(ValidationError, match=str(LIBYARA_HEX_JUMP_MAX)):
         FluentStringBuilder("$s9").jump_pattern(overflow, overflow)
-
-
-# ---------------------------------------------------------------------------
-# Line 381: _hex_tokens_for_build — defensive fallback for non-list _content
-# ---------------------------------------------------------------------------
-
-
-def test_hex_tokens_for_build_returns_empty_list_when_content_is_not_list() -> None:
-    """_hex_tokens_for_build has a defensive else-branch (line 381) that
-    returns an empty list when _content is not a list[HexToken].
-
-    This path is structurally unreachable through the public API: every
-    method that sets _string_type='hex' also assigns a list to _content.
-    The branch exists as a runtime safety net. We exercise it by directly
-    manipulating private state on a real FluentStringBuilder instance, which
-    is preferable to leaving the line unmeasured.
-    """
-    builder = FluentStringBuilder("$s10")
-    builder._content = "not_a_list"  # deliberate private access for coverage
-    builder._string_type = "hex"
-
-    tokens = builder._hex_tokens_for_build()
-    assert tokens == []
 
 
 # ---------------------------------------------------------------------------
