@@ -23,29 +23,6 @@ Reachable missing lines covered here
          but the stripped condition_text is not a substring of raw_line, so
          raw_line.find() returns -1 and must be clamped to 0.
 
-Structurally unreachable lines
---------------------------------
-209      parse_string_line_with_standard_parser — returns None when
-         ast.rules is empty or ast.rules[0].strings is empty after a
-         successful parse.  The helper always wraps the input in a fixed
-         ``rule recovered { strings: ... }`` template; if the Parser
-         succeeds it always produces exactly one rule with at least one
-         string (otherwise the Parser raises and line 206 fires instead).
-
-214      parse_string_line_with_standard_parser — returns None when the
-         string definition is not a PlainString, HexString, or RegexString.
-         The Parser never places any other node type in rule.strings for
-         YARA classic syntax.
-
-242      _parse_recovered_condition_expression — returns Identifier when
-         the parser succeeds but ast.rules is empty or the condition is
-         None.  If the Parser().parse() call succeeds it always produces
-         exactly one rule with a non-None condition; failures are handled
-         by the except clause on line 239.
-
-These three lines are documented here as genuine dead-code guards rather
-than driven through artificial monkeypatching that would not represent real
-code execution.
 """
 
 from __future__ import annotations

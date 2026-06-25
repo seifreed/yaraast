@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, cast
 
 from yaraast.ast.base import Location
 from yaraast.ast.expressions import BooleanLiteral, Identifier
@@ -205,13 +205,7 @@ def parse_string_line_with_standard_parser(
     except YaraASTError:
         return None
 
-    if not ast.rules or not ast.rules[0].strings:
-        return None
-
-    string_def = ast.rules[0].strings[0]
-    if isinstance(string_def, PlainString | HexString | RegexString):
-        return string_def
-    return None
+    return cast(PlainString | HexString | RegexString, ast.rules[0].strings[0])
 
 
 def parse_condition(
@@ -237,8 +231,6 @@ def _parse_recovered_condition_expression(condition_text: str) -> Any:
     try:
         ast = Parser().parse(f"rule __recovered_condition {{ condition: {condition_text} }}")
     except (YaraASTError, ValueError):
-        return Identifier(condition_text)
-    if not ast.rules or ast.rules[0].condition is None:
         return Identifier(condition_text)
     return ast.rules[0].condition
 
