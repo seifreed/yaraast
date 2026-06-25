@@ -357,27 +357,14 @@ def test_integer_literal_branch_of_is_static_numeric_identity_operand_is_dead() 
     assert opt.optimization_count == 1
 
 
-def test_hasattr_false_branches_in_visit_for_of_expression_are_unreachable() -> None:
-    """Document that the False branches of hasattr() guards in visit_for_of_expression
-    (branch arcs 443->445 and 445->447) are structurally unreachable with real AST nodes.
-
-    ForOfExpression is a dataclass that always declares 'quantifier', 'string_set', and
-    'condition' fields; hasattr() on a real instance is always True for those names.
-    The visit() dispatch requires a real ASTNode (the visitor raises TypeError otherwise),
-    so there is no execution path that passes a node lacking these attributes to
-    visit_for_of_expression.
-
-    This test documents the observable behavior to keep the test suite honest about
-    why those branch arcs cannot be driven to False without bypassing the visitor contract.
-    """
+def test_visit_for_of_expression_optimizes_declared_fields() -> None:
+    """visit_for_of_expression optimizes real ForOfExpression fields."""
     opt = ExpressionOptimizer()
-    # All three hasattr() checks evaluate to True for a real ForOfExpression.
     node = ForOfExpression(
         quantifier="all",
         string_set=["$a", "$b"],
         condition=BooleanLiteral(True),
     )
     result = opt.visit(node)
-    # Condition BooleanLiteral(True) is unchanged; quantifier and string_set pass through.
     assert isinstance(result, ForOfExpression)
     assert result.quantifier == "all"

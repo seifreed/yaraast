@@ -440,11 +440,9 @@ class ExpressionOptimizer(ASTTransformer):
         return node
 
     def visit_for_of_expression(self, node: Any) -> Any:
-        if hasattr(node, "quantifier"):
-            node.quantifier = self._optimize_ast_value(node.quantifier)
-        if hasattr(node, "string_set"):
-            node.string_set = self._optimize_ast_value(node.string_set)
-        if hasattr(node, "condition") and node.condition is not None:
+        node.quantifier = self._optimize_ast_value(node.quantifier)
+        node.string_set = self._optimize_ast_value(node.string_set)
+        if node.condition is not None:
             node.condition = self.visit(node.condition)
         return node
 
