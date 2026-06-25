@@ -17,8 +17,7 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
-from yaraast.codegen.formatting import FormattingConfig, HexStyle, StringStyle
-from yaraast.codegen.generator_formatting import format_rule_tags
+from yaraast.codegen.formatting import FormattingConfig, HexStyle
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
@@ -147,14 +146,6 @@ def _format_hex_nibble(token: HexNibble, config: FormattingConfig) -> str:
         uppercase=config.hex_style == HexStyle.UPPERCASE,
     )
     return f"{nibble_str}?" if validate_hex_nibble_high(token.high) else f"?{nibble_str}"
-
-
-def get_tag_string(tags: list[Any] | tuple[Any, ...], config: FormattingConfig) -> str:
-    if not tags:
-        return ""
-    if config.string_style == StringStyle.COMPACT:
-        return format_rule_tags(tags)
-    return format_rule_tags(tags)
 
 
 def _format_hex_jump(token: HexJump) -> str:

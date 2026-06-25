@@ -24,14 +24,8 @@ from yaraast.codegen.advanced_generator_helpers import (
     collect_string_definitions,
     format_hex_string,
     format_hex_token,
-    get_tag_string,
 )
-from yaraast.codegen.formatting import FormattingConfig, HexStyle, StringStyle
-
-
-class _TagObj:
-    def __init__(self, name: str) -> None:
-        self.name = name
+from yaraast.codegen.formatting import FormattingConfig, HexStyle
 
 
 def test_collect_string_definitions_supports_all_string_types() -> None:
@@ -207,14 +201,7 @@ def test_advanced_generator_helpers_reject_invalid_hex_string_structure(
         format_hex_string(HexString("$h", tokens=tokens), config)
 
 
-def test_get_tag_string_and_hex_jump_ranges() -> None:
-    compact_cfg = FormattingConfig(string_style=StringStyle.COMPACT)
-    aligned_cfg = FormattingConfig(string_style=StringStyle.ALIGNED)
-
-    assert get_tag_string([], compact_cfg) == ""
-    assert get_tag_string([_TagObj("alpha"), "beta"], compact_cfg) == "alpha beta"
-    assert get_tag_string([_TagObj("x"), "y"], aligned_cfg) == "x y"
-
+def test_format_hex_jump_ranges() -> None:
     assert _format_hex_jump(HexJump(None, None)) == "[-]"
     assert _format_hex_jump(HexJump(None, 4)) == "[0-4]"
     assert _format_hex_jump(HexJump(3, None)) == "[3-]"
