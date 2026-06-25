@@ -5,7 +5,6 @@ helpers directly with real AST nodes whose fields are set to the edge-case
 values that reach each branch.  No mocks, no stubs.
 
 Covered lines (additions over loop1):
-  55   - unreachable defensive guard (justification below)
   97   - declaration_range is None continue in _resolve_with_declaration_identifier
   116->118 - DictComprehension with value_variable=None (False branch)
   134  - body_range is None in _resolve_lambda_parameter_identifier
@@ -30,11 +29,6 @@ Covered lines (additions over loop1):
   458  - StringIdentifier with local binding resolves as 'identifier'
   472  - StringCount/StringOffset/StringLength with local binding resolves as 'identifier'
   540  - expression context: word with '#'/'@'/'!' prefix gets '$' prepended
-
-Line 55 is unreachable: find_node_at_position only yields nodes whose
-location attribute is non-None (it gates every candidate with
-'if location is not None'); therefore node_location can never be None at
-line 53, making line 55 a defensive dead branch.
 
 Copyright (c) 2026 Marc Rivero López
 Licensed under GPLv3. See LICENSE file for details.

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from lsprotocol.types import Position, Range
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, Location
 from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     FunctionCall,
@@ -50,10 +50,7 @@ def resolve_symbol_from_ast(ctx: DocumentContext, position: Position) -> Resolve
     node = find_node_at_position(ast, position, ctx.text)
     if node is None:
         return None
-    node_location = getattr(node, "location", None)
-    if node_location is None:
-        return None
-    node_range = location_to_range(node_location, ctx.text)
+    node_range = location_to_range(cast(Location, node.location), ctx.text)
 
     result = _resolve_typed_node(ctx, position, node, node_range, ast)
     if result is not None:
