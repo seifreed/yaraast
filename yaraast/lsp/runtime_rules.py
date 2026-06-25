@@ -107,15 +107,6 @@ def find_rule_reference_records(
         ):
             result_record = record
             if (
-                not include_declaration
-                and definition
-                and (
-                    record.location.uri == definition.uri
-                    and record.location.range == definition.range
-                )
-            ):
-                continue
-            if (
                 definition
                 and record.location.uri == definition.uri
                 and record.location.range == definition.range

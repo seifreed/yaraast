@@ -6,18 +6,9 @@ Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
 Prior file tests/test_lsp_runtime_rules_coverage_loop.py reached 94.41%, leaving
-two groups of uncovered lines: 120 and 199.
+one group of uncovered lines: 199.
 
 Investigation (confirmed by direct execution and source analysis):
-
-  Line 120 (continue in find_rule_reference_records):
-    The inner call ``doc.rule_reference_records(rule_name,
-    include_declaration=include_declaration)`` passes the same
-    ``include_declaration`` flag directly to the document layer.  When
-    ``include_declaration=False``, the document layer already filters out the
-    declaration record before yielding (document_query_references.py line 293).
-    The outer ``continue`` at line 120 can therefore never be reached: the
-    record that would trigger it is stripped one layer below.
 
   Line 199 (``continue`` for empty rule_name):
     Real YARA parsing (text-scan regex ``[A-Za-z_][A-Za-z0-9_]*`` and AST path
@@ -184,32 +175,14 @@ def test_get_rule_link_records_with_only_empty_rule_name_returns_empty(
 
 
 # ---------------------------------------------------------------------------
-# Dead-code evidence: line 120 in find_rule_reference_records
-#
-# The ``continue`` at line 120 is supposed to skip the declaration record when
-# ``include_declaration=False``.  However, the call to
-# ``doc.rule_reference_records(rule_name, include_declaration=include_declaration)``
-# passes the flag through to the document layer, which already filters out the
-# declaration (document_query_references.py line 293).  The record that would
-# trigger line 120 is never yielded.
-#
-# The tests below demonstrate this with a two-file workspace where one file
-# defines the rule and one references it.  Regardless of the ``include_declaration``
-# flag, the declaration record never arrives at line 120.  These tests add
-# behavioural coverage of the surrounding path (lines 113-119, 121-128) while
-# confirming the logical structure.
+# include_declaration=False must exclude the declaration.
 # ---------------------------------------------------------------------------
 
 
 def test_find_rule_reference_records_include_declaration_false_yields_only_uses(
     tmp_path: Path,
 ) -> None:
-    """Surroundings of line 120: include_declaration=False must exclude the declaration.
-
-    This test verifies the end-to-end behaviour of the include_declaration=False
-    path.  Line 120 itself remains uncovered because the document layer filters
-    the declaration before it reaches the outer loop — the guard at 120 is dead.
-    """
+    """include_declaration=False must exclude the declaration."""
     runtime = _make_runtime(
         tmp_path,
         {
