@@ -328,31 +328,11 @@ def test_overload_stubs_are_not_executable_at_runtime() -> None:
     assert opt.optimization_count == 0
 
 
-# ---------------------------------------------------------------------------
-# Structurally dead branches: documented and confirmed unreachable
-# ---------------------------------------------------------------------------
-
-
-def test_integer_literal_branch_of_is_static_numeric_identity_operand_is_dead() -> None:
-    """Document that the IntegerLiteral branch of _is_static_numeric_identity_operand
-    (source line 112) is structurally unreachable through the current optimizer flow.
-
-    Reasoning: _simplify_identity is called from visit_binary_expression only AFTER the
-    constant-folding block (lines 276-290).  Whenever both operands are IntegerLiterals,
-    the constant-folding block always handles the expression first (addition and
-    multiplication never produce a _SENTINEL result).  Whenever one operand is an
-    IntegerLiteral with a bool value, _integer_literal_value returns None and the
-    folding block returns the node early (line 280) before _simplify_identity is reached.
-    Therefore no execution path can supply an IntegerLiteral to _is_static_numeric_identity_operand.
-
-    This test validates observable behavior of the identity path using a non-IntegerLiteral
-    numeric operand (Identifier) so that future refactoring remains regression-safe.
-    """
+def test_static_numeric_identity_operand_identifier_path() -> None:
+    """Identity simplification keeps the live Identifier path."""
     opt = ExpressionOptimizer()
-    # The identity path is exercised via an Identifier operand (line 113), not line 112.
     node = BinaryExpression(IntegerLiteral(1), "*", Identifier("filesize"))
     result = opt.optimize(node)
-    # 1 * filesize -> filesize (identity simplification via Identifier branch)
     assert result == Identifier("filesize")
     assert opt.optimization_count == 1
 

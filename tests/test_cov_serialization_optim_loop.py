@@ -8,16 +8,6 @@ Coverage targets
 The tests below exercise the following source positions that are reported as
 uncovered or partially covered by the project's coverage configuration.
 
-Confirmed-reachable targets
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-* yaraast/optimization/expression_optimizer.py  line 112
-  ``_is_static_numeric_identity_operand``: the
-  ``return _integer_literal_value(node) is not None`` path, which is taken
-  when the operand is an ``IntegerLiteral``.  Called directly so the line is
-  recorded; when invoked through the full optimizer the early two-IntegerLiteral
-  constant-fold at visit_binary_expression line 276 fires first and bypasses
-  ``_simplify_identity`` entirely.
-
 Confirmed-dead-code targets (documented here so the analysis is not lost)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The remaining lines and branches listed in the task specification are all
@@ -206,42 +196,13 @@ def test_restore_quantifier_text_keyword_any_of_expression() -> None:
 
 
 # ---------------------------------------------------------------------------
-# expression_optimizer.py — line 112
-# _is_static_numeric_identity_operand: path that returns from IntegerLiteral
+# expression_optimizer.py
+# _is_static_numeric_identity_operand: identifier paths
 # ---------------------------------------------------------------------------
 
 
-def test_is_static_numeric_identity_operand_integer_literal_with_valid_value() -> None:
-    """_is_static_numeric_identity_operand returns True for IntegerLiteral(5).
-
-    This directly calls the function so that line 112 —
-    ``return _integer_literal_value(node) is not None`` — is recorded as
-    executed.  When called through the full optimizer the two-IntegerLiteral
-    constant-fold at line 276 fires first, bypassing _simplify_identity
-    entirely, so the direct call is the only path to line 112.
-    """
-    node = IntegerLiteral(value=5)
-    result = _is_static_numeric_identity_operand(node)
-    assert result is True
-
-
-def test_is_static_numeric_identity_operand_integer_literal_with_bool_value() -> None:
-    """_is_static_numeric_identity_operand returns False for IntegerLiteral(True).
-
-    ``_integer_literal_value`` returns None for bool-valued IntegerLiterals.
-    The function therefore returns False at line 112.
-    """
-    node = IntegerLiteral(value=True)  # bool, not a plain int
-    result = _is_static_numeric_identity_operand(node)
-    assert result is False
-
-
 def test_is_static_numeric_identity_operand_filesize_identifier() -> None:
-    """_is_static_numeric_identity_operand returns True for Identifier('filesize').
-
-    This exercises line 113, confirming both branches of the function are
-    reachable.
-    """
+    """_is_static_numeric_identity_operand returns True for Identifier('filesize')."""
     node = Identifier(name="filesize")
     result = _is_static_numeric_identity_operand(node)
     assert result is True

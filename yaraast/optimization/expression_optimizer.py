@@ -108,8 +108,6 @@ def _fold_comparison(left_val: int, right_val: int, operator: str) -> BooleanLit
 
 
 def _is_static_numeric_identity_operand(node: Expression) -> bool:
-    if isinstance(node, IntegerLiteral):
-        return _integer_literal_value(node) is not None
     return isinstance(node, Identifier) and node.name in {"filesize", "entrypoint"}
 
 
