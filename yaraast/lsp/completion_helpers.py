@@ -101,16 +101,15 @@ def analyze_context(text: str, position: Position) -> str:
         return "module_member"
 
     for i in range(position.line, -1, -1):
-        if i < len(lines):
-            line = lines[i].strip()
-            if line.startswith("condition:"):
-                return "condition"
-            if line.startswith("meta:"):
-                return "meta"
-            if line.startswith("strings:"):
-                return "strings"
-            if RULE_DECLARATION_RE.match(line):
-                break
+        line = lines[i].strip()
+        if line.startswith("condition:"):
+            return "condition"
+        if line.startswith("meta:"):
+            return "meta"
+        if line.startswith("strings:"):
+            return "strings"
+        if RULE_DECLARATION_RE.match(line):
+            break
 
     return "general"
 
@@ -341,11 +340,8 @@ def build_condition_completions(text: str, keywords: list[str]) -> list[Completi
         logger.debug("Operation failed in %s", __name__, exc_info=True)
         items.extend(_text_condition_completions(text))
 
-    try:
-        if ast is not None:
-            items.extend(_loop_variable_completions(ast))
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    if ast is not None:
+        items.extend(_loop_variable_completions(ast))
 
     items.extend(build_keyword_completions(keywords))
     return items

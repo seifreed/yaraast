@@ -337,24 +337,12 @@ def test_build_string_modifier_completions_real_modifiers() -> None:
 
 
 # ---------------------------------------------------------------------------
-# build_condition_completions - the try/except around _loop_variable_completions
-# (lines 347-348) fires when ast is non-None but loop-variable extraction raises.
+# build_condition_completions - loop variable extraction after successful parse.
 # ---------------------------------------------------------------------------
 
 
 def test_build_condition_completions_loop_variable_exception_is_swallowed() -> None:
-    """Cover lines 347-348: exception from _loop_variable_completions is caught.
-
-    We pass valid YARA text (ast parses successfully), then verify that even if
-    the loop-variable path raises internally, the function still returns keyword
-    completions.  The only way to trigger this in real code is if the AST tree
-    walker encounters an unexpected node; we test by verifying the fallback
-    produces keyword items, not by fabricating the exception.
-
-    Note: the existing test_lsp_condition_completions_parse_yarax_sources covers
-    the success path; this test exercises the guard structure with a rule where
-    condition is present but the for-loop walker finds nothing interesting.
-    """
+    """A plain parsed rule still returns string and keyword completions."""
     text = 'rule plain { strings: $s = "x" condition: $s }'
     items = build_condition_completions(text, ["all", "any"])
     labels = {item.label for item in items}
@@ -370,10 +358,6 @@ def test_build_condition_completions_ast_not_none_loop_vars_succeed() -> None:
 
     With a valid for-loop rule the parse succeeds (ast is not None), the
     _loop_variable_completions call succeeds, and the loop variable appears.
-    This exercises the true branch of the guard at lines 345-346 without an
-    exception (lines 347-348 are the exception handler; they are only reachable
-    if _loop_variable_completions raises after a successful parse, which does not
-    happen with well-formed ASTs - those lines are defensive dead code).
     """
     text = 'rule x { strings: $a = "x" condition: for any j in (1..3) : ( $a ) }'
     items = build_condition_completions(text, ["condition"])
@@ -387,9 +371,6 @@ def test_build_condition_completions_ast_loop_vars_guard_exercised() -> None:
 
     When parse_source returns None (via ParseError), ast stays None and the
     guard at line 345 is False, skipping _loop_variable_completions entirely.
-    The except block at 347-348 is never entered via this path; it is a
-    defensive handler for the (unreachable in practice) case where
-    _loop_variable_completions raises after a successful parse.
 
     This test documents the observable boundary: failed parse -> ast is None ->
     keywords still returned via text fallback.
@@ -654,12 +635,4 @@ def test_get_keywords_for_mode_default_yara() -> None:
 # ---------------------------------------------------------------------------
 # Structural unreachability notes
 # ---------------------------------------------------------------------------
-# Branch 104->103 (the false branch of 'if i < len(lines):' inside the backward
-# scan loop in analyze_context) is structurally unreachable: the loop variable i
-# ranges from position.line down to 0, and position.line < len(lines) is already
-# guaranteed by the guard at line 85.  No test is fabricated for this branch.
-#
-# Lines 347-348 ('except Exception:' around _loop_variable_completions) are
-# defensive dead code: _loop_variable_completions itself catches all exceptions
-# from _extract_loop_variables, so no exception propagates upward under normal
-# execution.  No test fabricates an artificial exception to reach these lines.
+# No tests fabricate exceptions for paths already guarded inside child walkers.
