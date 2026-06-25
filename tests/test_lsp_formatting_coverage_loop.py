@@ -6,26 +6,10 @@
 Target gaps identified by --cov-report=term-missing (prior run at 89.90%):
   - Line 89  : _format_range_safe falls back to whole-document format when no
                enclosing rule is found (rule_info is None)
-  - Line 122 : structurally unreachable — find_rule_line always succeeds for
-               any rule produced by parsing the same source text
-  - Line 125 : structurally unreachable — find_rule_end always returns a value
-               in [0, len(lines)-1], never negative or out of bounds
   - Line 135 : _find_enclosing_rule returns None after exhausting all rules
                without finding one that contains the requested range
   - Line 140 : _line_end_position guard branch for empty lines list or
                out-of-range line_num; exercised via the public module export
-
-Lines 122 and 125 are not tested because they are dead code under the current
-implementation contracts:
-
-  Line 122: find_rule_line is called with a rule name taken directly from the
-  AST produced by parsing the same source text.  find_rule_line searches that
-  same text for "rule <name>", and YARA rule names are restricted to
-  [A-Za-z0-9_] identifiers, so the regex will always find the declaration.
-
-  Line 125: find_rule_end scans from the rule's opening line and returns at
-  most len(lines)-1.  It never returns a negative value, and the returned
-  index is always a valid index into the lines list.
 
 All tests exercise real production code paths.  No mocks, stubs, or test
 doubles are used.
