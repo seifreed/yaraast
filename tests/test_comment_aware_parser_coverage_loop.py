@@ -430,21 +430,7 @@ def test_parse_strings_section_empty_plain_string_raises() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Lines 421-422: _parse_strings_section() - empty hex string guard
-#
-# The guard at lines 420-422 fires when _parse_hex_tokens returns an empty
-# list. In the current implementation HexStringParser always raises
-# HexParseError rather than returning [] for empty input, making this branch
-# structurally unreachable via a full parse. The guard is nonetheless part of
-# the module under test and the test below documents its reachable neighbour:
-# lines 537-538 (HexParseError re-raise via _parse_hex_tokens).
-#
-# Covering lines 421-422 directly would require either refactoring HexStringParser
-# to return [] on empty, or injecting a fake parse result — both violate the
-# no-mock policy and the no-source-modification rule. They are reported as
-# structurally unreachable.
-#
-# The HexParseError re-raise path (lines 537-538) is covered by the test below.
+# _parse_hex_tokens() - HexParseError re-raised as ParserError.
 # ---------------------------------------------------------------------------
 def test_parse_hex_tokens_parse_error_reraised_as_parser_error() -> None:
     """

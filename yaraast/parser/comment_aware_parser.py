@@ -416,9 +416,6 @@ class CommentAwareParser(Parser):
             elif self._match(TokenType.HEX_STRING):
                 hex_content = self._previous().value.strip()
                 hex_tokens = self._parse_hex_tokens(hex_content)
-                if not hex_tokens:
-                    msg = "Empty hex string"
-                    raise ParserError(msg, self._previous())
                 modifiers = self._parse_string_modifiers(
                     allowed_modifier_types=HEX_STRING_MODIFIER_TYPES,
                     modifier_context="hex strings",
