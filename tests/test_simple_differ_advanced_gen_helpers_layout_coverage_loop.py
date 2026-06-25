@@ -224,27 +224,9 @@ def test_process_insert_returns_correct_count() -> None:
 # advanced_generator_helpers.py  -- missing line coverage
 # ---------------------------------------------------------------------------
 
-# --- Lines 67-68: else branch in collect_string_definitions -----------------
-#
-# ANALYSIS: Lines 67-68 (the else: value="" / spaced_modifiers=[] branch) are
-# structurally unreachable through the public API.  The guard at line 48,
-# validate_string_identifiers(), calls _validate_supported_string_definition()
-# which raises TypeError for any type that is not PlainString, HexString, or
-# RegexString BEFORE the per-string loop can reach the else branch.  This is
-# intentional defensive dead code — the validator is the authoritative gate and
-# the else branch acts as a safety net that can never be triggered externally.
-# No test is generated for unreachable lines 67-68.
-
-# Confirm that the guard raises and the else branch is therefore unreachable:
-
 
 def test_collect_string_definitions_guard_rejects_bare_base_class() -> None:
-    """validate_string_identifiers rejects StringDefinition before the else branch.
-
-    This documents that lines 67-68 are preceded by a pre-loop validator that
-    raises for any non-concrete type, making the else branch structurally
-    unreachable through the public collect_string_definitions API.
-    """
+    """validate_string_identifiers rejects bare StringDefinition."""
     config = FormattingConfig()
     bare = StringDefinition(identifier="$bare", modifiers=[])
     with pytest.raises(TypeError, match="Unsupported string definition"):

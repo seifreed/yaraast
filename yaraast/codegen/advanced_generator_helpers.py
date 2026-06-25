@@ -55,22 +55,17 @@ def collect_string_definitions(
             source_value = plain_string_render_source(string_def)
             validate_plain_string_value(source_value)
             value = f'"{escape_plain_string_value(source_value)}"'
+            modifiers = [format_modifier(mod) for mod in string_def.modifiers]
         elif isinstance(string_def, HexString):
             validate_hex_string_modifiers(string_def.modifiers)
             value = format_hex_string(string_def, config)
-        elif isinstance(string_def, RegexString):
-            validate_regex_string_modifiers(string_def.modifiers)
-            escaped = escape_regex_delimiter(string_def.regex)
-            suffix, spaced_modifiers = split_regex_modifiers(string_def.modifiers)
-            value = f"/{escaped}/{suffix}"
-        else:
-            value = ""
-            spaced_modifiers = []
-
-        if isinstance(string_def, RegexString):
-            modifiers = spaced_modifiers
-        else:
             modifiers = [format_modifier(mod) for mod in string_def.modifiers]
+        else:
+            regex_def = cast(RegexString, string_def)
+            validate_regex_string_modifiers(regex_def.modifiers)
+            escaped = escape_regex_delimiter(regex_def.regex)
+            suffix, modifiers = split_regex_modifiers(regex_def.modifiers)
+            value = f"/{escaped}/{suffix}"
 
         collected.append((identifier, value, modifiers))
 
