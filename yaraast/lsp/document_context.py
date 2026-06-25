@@ -230,10 +230,7 @@ class DocumentContext:
             dialect = self.language_mode.to_dialect(self.text)
             self._dialect = dialect
             self._ast = UnifiedParser(self.text, dialect=dialect).parse()
-        except ParserError as exc:
-            self._parse_error = exc
-            self._ast = None
-        except Exception as exc:
+        except (ParserError, LexerError) as exc:
             self._parse_error = exc
             self._ast = None
         return self._ast

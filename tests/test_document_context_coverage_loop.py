@@ -30,14 +30,9 @@ Missing-line targets (module baseline 82.37% from the combined targeted run):
   355     get_dotted_symbol_at_position: delegates to lookup helper
 
 Unreachable lines (documented, not tested):
-  Lines 236-238 (generic Exception in ast()): UnifiedParser.parse() exclusively
-    raises ParserError or LexerError for any real YARA input; the generic except
-    branch cannot be reached without injecting failures into the parser itself,
-    which would require mocking.
   Line 249 (dialect() fallback `or self.language_mode.to_dialect(self.text)`):
     this expression can only evaluate the right-hand side when _dialect is None
-    after ast() runs, which only occurs via the unreachable generic exception path
-    above. When ast() fails with ParserError or LexerError, it still sets
+    after ast() runs. When ast() fails with ParserError or LexerError, it still sets
     self._dialect before reaching the except block (the assignment on line 231 runs
     before parse(), so it is always set even if parse() fails immediately after).
     Therefore line 249 is unreachable through real document processing.
