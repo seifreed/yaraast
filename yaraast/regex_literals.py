@@ -160,9 +160,6 @@ def validate_regex_pattern(pattern: str) -> None:
                 consume_quantifier()
                 i = end + 1
                 continue
-            if repeat_text == "," and not can_repeat:
-                msg = "Invalid regex pattern: syntax error"
-                raise ValueError(msg)
 
         if char in "^$":
             mark_atom(repeatable=False)

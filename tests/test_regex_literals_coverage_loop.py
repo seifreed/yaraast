@@ -10,14 +10,6 @@ do not reach.  All assertions are against the real public API:
 The private helpers (_validate_regex_escape, _validate_regex_character_class,
 _parse_regex_repeat_interval, etc.) are reachable only through those public
 entry points, so no private symbol is imported or called directly.
-
-UNREACHABLE LINES (164-165): The guard
-    if repeat_text == "," and not can_repeat:
-on line 163 is structurally dead.  When repeat_text == ",",
-_parse_regex_repeat_interval always returns (None, None) — a non-None tuple —
-so interval is not None and the code enters the interval branch at line 150
-before it can reach line 163.  No test can trigger these lines through the real
-API without modifying the source.
 """
 
 from __future__ import annotations
@@ -241,20 +233,12 @@ def test_validate_regex_pattern_accepts_valid_repeat_interval() -> None:
 
 
 # ---------------------------------------------------------------------------
-# validate_regex_pattern — '{,' literal (lines 163-165)
+# validate_regex_pattern — quantifier without atom
 # ---------------------------------------------------------------------------
 
 
 def test_validate_regex_pattern_rejects_bare_brace_comma_without_atom() -> None:
-    """'{,' at start of pattern is a syntax error when can_repeat is False (lines 163-165).
-
-    The pattern '{,' does not parse as a valid repeat interval (no closing '}' found
-    via end == -1 path) and then the literal '{' branch falls through to the
-    repeat_text == ',' guard, which requires can_repeat to be True.
-    """
-    # At pattern start there is no preceding atom, so can_repeat is False.
-    # '{' with no matching '}' means end == -1 in pattern.find('}', i+1),
-    # so interval is None and the code drops to the repeat_text == ',' check.
+    """'{,}' at pattern start is a syntax error because there is no preceding atom."""
     with pytest.raises(ValueError, match="Invalid regex pattern: syntax error"):
         validate_regex_pattern("{,}")
 
