@@ -286,8 +286,6 @@ class DiagnosticsProvider:
     def _validate_metadata(self, ast: YaraFile, config: RuntimeConfig) -> list[Diagnostic]:
         """Validate rule metadata against configurable validation rules."""
         results: list[Diagnostic] = []
-        if ast is None or not hasattr(ast, "rules"):
-            return results
         type_checkers: dict[str, Callable[[object], bool]] = {
             "string": lambda v: isinstance(v, str),
             "int": lambda v: isinstance(v, int) and not isinstance(v, bool),

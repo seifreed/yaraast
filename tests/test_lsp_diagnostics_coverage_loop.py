@@ -423,30 +423,6 @@ def test_location_source_line_valid_line_returns_content() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Line 290 — _validate_metadata early return when ast is None
-# ---------------------------------------------------------------------------
-
-
-def test_validate_metadata_none_ast_returns_empty_list() -> None:
-    """
-    Purpose: cover line 290 (early return when ast is None or has no 'rules').
-
-    _validate_metadata guards against None or incomplete AST objects.
-    Both inputs must return an empty list without raising.
-    """
-    provider = DiagnosticsProvider()
-    config = RuntimeConfig(metadata_validation=[{"identifier": "author", "required": True}])
-
-    # ast is None — cast to YaraFile to exercise the defensive None check
-    result_none = provider._validate_metadata(cast(YaraFile, None), config)
-    assert result_none == []
-
-    # ast exists but has no 'rules' attribute — same defensive guard
-    result_no_rules = provider._validate_metadata(cast(YaraFile, object()), config)
-    assert result_no_rules == []
-
-
-# ---------------------------------------------------------------------------
 # Line 302->309 — meta attribute is not a list (skips entry loop)
 # ---------------------------------------------------------------------------
 
