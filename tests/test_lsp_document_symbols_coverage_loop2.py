@@ -30,21 +30,7 @@ Coverage targets added by this file (module yaraast.lsp.document_symbols):
 
 - Line  326    : _parse_text_meta_value except-branch: lowered in {"null","none"} -> None.
 
-Unreachable lines — already declared by the companion file; restated here for completeness:
-
-- Line  124    : rule_name_col < 0 guard in _build_text_rule_symbols. The regex group
-                 bounds [match.start("name"), match.end("name")] span exactly the captured
-                 substring; str.find with those bounds always returns match.start("name").
-
-- Line  224    : key_start < 0 guard in _build_text_meta_symbols. key is derived from
-                 stripped text before '=' in a line that contains that key; line.find(key)
-                 always locates it.
-
-- Line  345    : make_range fallback in _build_import_symbols. find_line_containing searches
-                 for the literal 'import "module"'; when found, the same line contains
-                 '"module"', so find_quoted_value_range always succeeds on that line.
-
-- Line  373    : identical argument for _build_include_symbols.
+Unreachable text import/include branches are already declared by the companion file.
 """
 
 from __future__ import annotations

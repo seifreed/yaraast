@@ -31,15 +31,6 @@ Unreachable lines (defensive guards — reported, not faked):
   IMPORT_DIRECTIVE_RE / INCLUDE_DIRECTIVE_RE regex captures the value from the same line it
   appears on; _quoted_text_range always finds the captured value in that line and never
   returns None when the regex succeeded.
-- Line 124   : _build_text_rule_symbols rule_name_col < 0 — line.find(rule_name,
-  match.start("name"), match.end("name")) always returns match.start("name") because the
-  regex group spans exactly that substring; the result is always >= 0.
-- Line 224   : _build_text_meta_symbols key_start < 0 — key is derived from stripped line
-  text before '=', so line.find(key) always finds it in the same line; unreachable.
-- Line 344   : _build_import_symbols make_range fallback inside find_line_containing block —
-  find_line_containing requires the exact string 'import "module"' to be present in the line,
-  so find_quoted_value_range('module') on that same line always succeeds.
-- Line 373   : _build_include_symbols make_range fallback — same argument as line 344.
 """
 
 from __future__ import annotations

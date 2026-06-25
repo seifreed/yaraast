@@ -119,9 +119,7 @@ def _build_text_rule_symbols(
         seen.add(rule_name)
         rule_line = line_num
         rule_end = find_rule_end(lines, rule_line)
-        rule_name_col = line.find(rule_name, match.start("name"), match.end("name"))
-        if rule_name_col < 0:
-            continue
+        rule_name_col = match.start("name")
         name_range = make_range(
             rule_line,
             utf8_col_to_utf16(line, rule_name_col),
@@ -220,8 +218,6 @@ def _build_text_meta_symbols(
                 continue
             seen.add(dedupe_key)
             key_start = line.find(key)
-            if key_start < 0:
-                continue
             symbols.append(
                 SymbolRecord(
                     name=key,
@@ -341,8 +337,6 @@ def _build_import_symbols(
             line_num = find_line_containing(lines, target)
             if line_num >= 0:
                 symbol_range = find_quoted_value_range(lines, line_num, imp.module)
-                if symbol_range is None:
-                    symbol_range = make_range(line_num, 0, len(lines[line_num]))
         if symbol_range is not None:
             symbols.append(
                 SymbolRecord(
@@ -369,8 +363,6 @@ def _build_include_symbols(
             line_num = find_line_containing(lines, target)
             if line_num >= 0:
                 symbol_range = find_quoted_value_range(lines, line_num, include_path)
-                if symbol_range is None:
-                    symbol_range = make_range(line_num, 0, len(lines[line_num]))
         if symbol_range is not None:
             symbols.append(
                 SymbolRecord(
