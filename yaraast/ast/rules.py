@@ -215,9 +215,7 @@ class Rule(ASTNode):
         for pragma in self._validated_pragmas():
             pragma.validate_structure()
         for string in self.strings:
-            validate_structure = getattr(string, "validate_structure", None)
-            if callable(validate_structure):
-                validate_structure()
+            string.validate_structure()
         if self.condition is not None:
             validate_structure = getattr(self.condition, "validate_structure", None)
             if callable(validate_structure):

@@ -23,11 +23,6 @@ Missing-line coverage targets (as of the coverage snapshot):
   308->307 get_meta_value loop iteration branch
   310    get_meta_value: default return when key absent
 
-Confirmed unreachable lines in production code:
-  219->217 and 223->exit  The callable(validate_structure) == False branches inside
-         Rule.validate_structure are defensive guards. All StringDefinition and
-         Expression subclasses inherit validate_structure from their base classes, so
-         these branches cannot be reached with real AST nodes.
 """
 
 from __future__ import annotations
