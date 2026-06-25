@@ -193,9 +193,6 @@ class UnifiedParser:
                         continue
 
                     stripped = clean_line.strip()
-                    if not stripped:
-                        continue
-
                     # Stop at first rule definition (end of preamble)
                     if rule_start_pattern.match(stripped):
                         break

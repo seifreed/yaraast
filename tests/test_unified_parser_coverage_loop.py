@@ -13,9 +13,6 @@ Missing branches addressed:
   - Line 309: the _dialect_factory closure body inside _parse_file_streaming
               (confirmed unreachable via the public API because StreamingParser is
                always constructed without a dialect argument in that path)
-  - Line 197: defensive guard in _extract_preamble_source after _strip_comments
-              (confirmed unreachable: _strip_comments guarantees non-None returns
-               always have a non-empty .strip())
 """
 
 from __future__ import annotations
@@ -231,17 +228,15 @@ def test_parse_file_force_streaming_with_yarax_dialect_explicitly_skips_fallback
 
 
 # ---------------------------------------------------------------------------
-# Line 197 and line 309 — confirmed unreachable; documented here as a record.
+# Line 309 — confirmed unreachable; documented here as a record.
 # ---------------------------------------------------------------------------
 
 
 def test_strip_comments_multiline_spanning_entire_line_returns_none_not_empty() -> None:
-    """Confirms the invariant that makes line 197 unreachable.
+    """Confirms the invariant used by _extract_preamble_source.
 
     _strip_comments returns None (not an empty string) whenever the
-    effective content after comment removal is purely whitespace.  Because
-    _extract_preamble_source checks for None at line 192 before reaching
-    line 197, there is no code path that reaches line 197 with stripped==''.
+    effective content after comment removal is purely whitespace.
 
     This test pins the observable contract: a line that is entirely inside a
     multiline comment must produce None, not ('', ...).
