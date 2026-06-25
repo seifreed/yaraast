@@ -23,9 +23,8 @@ this module):
           member span, cursor outside span, and empty-module fallback
 
 Notes on genuinely unreachable code
-  No lines in this module are structurally unreachable.  The scanner at
-  lines 54-129 contains all reachable paths through careful position
-  construction.
+  No remaining lines in this module are structurally unreachable.  Position
+  rejects negative line values before this module is called.
 """
 
 from __future__ import annotations

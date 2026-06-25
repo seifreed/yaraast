@@ -51,7 +51,7 @@ def resolve_symbol_from_text_fallback(
 
 
 def position_is_in_non_code_segment(ctx: Any, position: Position) -> bool:
-    if position.line < 0 or position.line >= len(ctx.lines):
+    if position.line >= len(ctx.lines):
         return False
 
     in_block_comment = False
