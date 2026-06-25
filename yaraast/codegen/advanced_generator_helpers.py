@@ -98,7 +98,7 @@ def format_hex_string(node: HexString, config: FormattingConfig) -> str:
                 alt_str = " ".join(format_hex_token(_coerce_hex_token(t), config) for t in tokens)
                 alt_parts.append(alt_str)
             parts.append(f"({' | '.join(alt_parts)})")
-        elif hasattr(token, "high") and hasattr(token, "value"):  # HexNibble
+        elif isinstance(token, HexNibble):
             parts.append(_format_hex_nibble(token, config))
 
     if config.hex_group_size > 0:

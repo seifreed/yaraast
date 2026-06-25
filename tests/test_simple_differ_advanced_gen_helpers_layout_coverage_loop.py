@@ -251,33 +251,12 @@ def test_collect_string_definitions_guard_rejects_bare_base_class() -> None:
         collect_string_definitions([bare], config)
 
 
-# --- Line 101->84: HexNibble token in hex alternative (format_hex_string) ---
-
-
-# --- Line 101->84: structurally unreachable fallthrough in format_hex_string ---
-#
-# ANALYSIS: Branch 101->84 in format_hex_string is the path where the short-circuit
-# condition 'hasattr(token, "high") and hasattr(token, "value")' evaluates to False
-# and the for-loop continues to line 84.  This requires a token that passes
-# validate_hex_string_tokens() (which only admits HexByte | HexNegatedByte |
-# HexNibble | HexWildcard | HexJump | HexAlternative) but has no "high" attribute.
-# The only admitted token without "high" that is not caught by a prior isinstance
-# would not exist — all such tokens are already matched by earlier elifs.
-# HexNibble always has both "high" and "value", so for a HexNibble, line 101 is
-# always True.  The branch 101->84 (condition False, fallthrough) is therefore
-# unreachable through the public format_hex_string API.
-#
-# The tests below exercise the POSITIVE path (line 101 True, HexNibble processed).
+# --- HexNibble token in hex alternative (format_hex_string) ---
 
 
 def test_format_hex_string_nibble_followed_by_more_tokens() -> None:
-    """Process HexNibble followed by HexByte: confirms line 101 is executed.
-
-    The positive branch of line 101 (elif hasattr "high") fires for HexNibble.
-    After the HexNibble body runs, the loop continues to the HexByte token.
-    """
+    """Process HexNibble followed by HexByte."""
     config = FormattingConfig(hex_style=HexStyle.UPPERCASE, hex_group_size=0)
-    # HexNibble at index 0, HexByte at index 1 — forces 101->84 (loop continue)
     node = HexString(
         identifier="$n",
         tokens=[
@@ -291,7 +270,7 @@ def test_format_hex_string_nibble_followed_by_more_tokens() -> None:
 
 
 def test_format_hex_string_nibble_as_only_token() -> None:
-    """A single HexNibble token hits the nibble branch (line 101) and loop exits."""
+    """A single HexNibble token hits the nibble branch."""
     config = FormattingConfig(hex_style=HexStyle.LOWERCASE, hex_group_size=0)
     node = HexString(identifier="$nb", tokens=[HexNibble(high=False, value=0xC)])
     result = format_hex_string(node, config)
