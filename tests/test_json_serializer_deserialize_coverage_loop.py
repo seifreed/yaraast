@@ -2083,12 +2083,6 @@ def test_required_quantifier_null_raises() -> None:
         )
 
 
-# Lines 166-167: _deserialize_string_set_item fall-through is genuinely unreachable —
-# the only dict values that make _deserialize_expression return None are None and {},
-# both caught at line 154. Any other dict with unknown type raises "Unknown expression type"
-# before reaching the fall-through. This branch is dead code in the current implementation.
-
-
 # Lines 188-189: _deserialize_required_string_set fall-through — integer value
 def test_required_string_set_integer_raises() -> None:
     with pytest.raises(SerializationError, match="must be a string, expression, or list"):

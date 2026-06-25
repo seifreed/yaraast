@@ -160,9 +160,7 @@ def _deserialize_string_set_item(self, value: Any, context: str) -> Any:
             raise SerializationError(msg)
         return value
     if isinstance(value, dict):
-        expression = self._deserialize_expression(value)
-        if expression is not None:
-            return expression
+        return self._deserialize_expression(value)
     msg = f"{context} must contain strings or expressions"
     raise SerializationError(msg)
 
