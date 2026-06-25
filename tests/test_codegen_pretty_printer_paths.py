@@ -480,30 +480,6 @@ def test_pretty_printer_rejects_invalid_regex_string_modifier() -> None:
         )
 
 
-def test_pretty_printer_keeps_yara_string_literals_valid_for_quote_styles() -> None:
-    rule = Rule(
-        name="quotes",
-        meta=[Meta("author", "a\nb")],
-        strings=[PlainString("$a", value="abc")],
-        condition=StringIdentifier("$a"),
-    )
-
-    for quote_style in ("single", "preserve"):
-        out = CodeGenerator(
-            options=GeneratorOptions(
-                pretty=PrettyPrintOptions(
-                    quote_style=quote_style,
-                    align_meta_values=False,
-                    align_string_definitions=False,
-                )
-            )
-        ).generate(YaraFile(rules=[rule]))
-
-        assert 'author = "a\\nb"' in out
-        assert '$a = "abc"' in out
-        assert "'abc'" not in out
-
-
 def test_pretty_printer_style_presets_and_convenience_functions() -> None:
     ast = YaraFile(rules=[Rule(name="x", condition=Condition())])
 

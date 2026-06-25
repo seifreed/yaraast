@@ -41,8 +41,6 @@ class PrettyPrintOptions:
     comment_column: int = 60
     inline_comment_spacing: int = 2
 
-    # String formatting
-    quote_style: str = "double"  # "double", "single", "preserve"
     hex_uppercase: bool = True
     hex_spacing: bool = True
 
