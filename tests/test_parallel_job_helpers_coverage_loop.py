@@ -18,11 +18,6 @@ Missing-line audit (full-suite baseline 15.42% / targeted baseline 94.53%):
   177-210       -- parse_file_chunks: complete success, mixed errors
                    (partial fail path), multi-chunk, empty path list
 
-  NOTE lines 207-209 (outer except _EXPECTED_PARSE_ERRORS in parse_file_chunks):
-  Structurally unreachable via the public API. The inner per-file handler
-  absorbs all _EXPECTED_PARSE_ERRORS; no code path in the chunk loop body can
-  raise these exceptions outside of that guard. Reported here as dead code.
-
   220-233       -- process_items: success, per-item failure, empty list,
                    invalid parameters dict guard
 """

@@ -190,23 +190,19 @@ def parse_file_chunks(file_paths: Sequence[str | Path], chunk_size: int = 10) ->
         jobs.append(job)
         results: list[YaraFile | ParseErrorMarker] = []
         errors: list[str] = []
-        try:
-            for file_path in chunk:
-                try:
-                    content = _read_yara_text_file(file_path)
-                    ast = parse_yara_source(content)
-                    results.append(ast)
-                except _EXPECTED_PARSE_ERRORS as e:
-                    results.append(ParseErrorMarker(str(file_path), str(e)))
-                    errors.append(f"{file_path}: {e}")
-            if errors:
-                job.result = results
-                fail_job(job, "; ".join(errors))
-            else:
-                complete_job(job, results)
-        except _EXPECTED_PARSE_ERRORS as e:
+        for file_path in chunk:
+            try:
+                content = _read_yara_text_file(file_path)
+                ast = parse_yara_source(content)
+                results.append(ast)
+            except _EXPECTED_PARSE_ERRORS as e:
+                results.append(ParseErrorMarker(str(file_path), str(e)))
+                errors.append(f"{file_path}: {e}")
+        if errors:
             job.result = results
-            fail_job(job, e)
+            fail_job(job, "; ".join(errors))
+        else:
+            complete_job(job, results)
     return jobs
 
 
