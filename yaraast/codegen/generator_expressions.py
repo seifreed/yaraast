@@ -524,8 +524,7 @@ def _static_integer_quantifier_value(value: Any) -> int | None:
             return _normalize_int64(left & right)
         if value.operator == "|":
             return _normalize_int64(left | right)
-        if value.operator == "^":
-            return _normalize_int64(left ^ right)
+        return _normalize_int64(left ^ right)
     return None
 
 

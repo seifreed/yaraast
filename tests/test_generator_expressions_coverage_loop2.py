@@ -25,11 +25,6 @@ Items confirmed as structurally dead code (not tested here):
                   guard at line 501-503 already returns None for any shift with right < 0
                   before left is evaluated.
   Lines 524-525   Same reasoning for '>>'.
-  Line  531->533  The False branch of 'if value.operator == "^"' at line 531 cannot be
-                  reached: every operator in the set accepted at line 489 is handled
-                  exhaustively by the preceding if-branches, so no operator survives to
-                  produce a False result at line 531 and fall to line 533.
-
 All tests follow the AAA pattern (Arrange / Act / Assert) and call the
 production functions directly with concrete AST nodes.  No mocks, stubs,
 or placeholder implementations are used.
