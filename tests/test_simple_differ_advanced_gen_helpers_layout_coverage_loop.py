@@ -456,15 +456,6 @@ def test_advanced_layout_visit_meta_multiple_fields() -> None:
     assert "2" in result_int
 
 
-# --- Line 90: defensive continue in write_meta_section ----------------------
-#
-# ANALYSIS: Line 90 (the 'continue' inside 'if not hasattr(meta_item, "key")') is
-# structurally unreachable. write_meta_section feeds meta_list through
-# process_meta_data() which only appends items that already have 'key'.
-# Therefore the condition 'not hasattr(meta_item, "key")' is always False in
-# practice. The branch is a defensive guard on pre-filtered data.
-# No test is generated for unreachable line 90.
-
 # Confirm that write_meta_section works correctly with normal meta items:
 
 

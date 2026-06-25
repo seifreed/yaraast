@@ -86,8 +86,6 @@ class AdvancedLayout(GeneratorLayout):
         meta_list = get_sorted_meta(meta_list, sort_meta=self.config.sort_meta)
         max_key_len = get_max_key_length(meta_list)
         for meta_item in meta_list:
-            if not hasattr(meta_item, "key"):
-                continue
             write_meta_key(gen, meta_item, max_key_len)
             write_meta_value(gen, meta_item)
             gen._writeline()
