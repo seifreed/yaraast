@@ -19,7 +19,6 @@ Missing lines before this file (from existing parser test suite):
   224-225 _parse_extern_rule: 'extern' not followed by 'rule'
   241     _parse_qualified_identifier: first token is not an IDENTIFIER
   246-247 _parse_qualified_identifier: trailing dot without subsequent identifier
-  404-405 _parse_in_rule_pragma: _parsed_rule_pragmas lazy-init branch
   409     _infer_in_rule_pragma_position: next token is CONDITION
   412-413 _infer_in_rule_pragma_position: next is neither STRINGS nor CONDITION but strings exist
   414     _infer_in_rule_pragma_position: neither STRINGS nor CONDITION and no strings yet
@@ -33,7 +32,6 @@ import pytest
 
 from yaraast.ast.extern import ExternImport
 from yaraast.ast.pragmas import (
-    DefineDirective,
     IncludeOncePragma,
     Pragma,
     PragmaType,
@@ -289,35 +287,6 @@ def test_qualified_identifier_dot_without_subsequent_identifier_raises() -> None
 
     with pytest.raises(ParserError, match=r"Expected identifier after '\.'"):
         parser._parse_qualified_identifier("outer error")
-
-
-# ---------------------------------------------------------------------------
-# Lines 404-405: _parse_in_rule_pragma — lazy initialisation of _parsed_rule_pragmas
-# ---------------------------------------------------------------------------
-
-
-def test_in_rule_pragma_lazy_init_of_parsed_rule_pragmas() -> None:
-    """Covering lines 404-405.
-
-    When _parse_in_rule_pragma is called on a Parser that has never entered
-    _parse_rule (so _parsed_rule_pragmas does not yet exist as an attribute),
-    the method must create the list, append the new pragma, and leave the
-    parser in a consistent state.
-    """
-    parser = _parser_from_tokens(
-        [
-            _tok(TokenType.STRING_COUNT, "#define"),
-            _tok(TokenType.IDENTIFIER, "MACRO"),
-        ]
-    )
-    # Ensure the attribute is absent to exercise the lazy-init branch.
-    assert not hasattr(parser, "_parsed_rule_pragmas")
-
-    parser._parse_in_rule_pragma([])
-
-    assert hasattr(parser, "_parsed_rule_pragmas")
-    assert len(parser._parsed_rule_pragmas) == 1
-    assert isinstance(parser._parsed_rule_pragmas[0].pragma, DefineDirective)
 
 
 # ---------------------------------------------------------------------------

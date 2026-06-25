@@ -400,8 +400,6 @@ class RuleParsingMixin:
             position=self._infer_in_rule_pragma_position(strings),
         )
         self._set_node_location_from_nodes(in_rule_pragma, pragma, pragma)
-        if not hasattr(self, "_parsed_rule_pragmas"):
-            self._parsed_rule_pragmas = []
         self._parsed_rule_pragmas.append(in_rule_pragma)
 
     def _infer_in_rule_pragma_position(self, strings: list[StringDefinition]) -> str:
