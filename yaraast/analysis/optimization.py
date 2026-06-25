@@ -277,9 +277,6 @@ class OptimizationAnalyzer(BaseVisitor[None]):
         if comparison is None:
             return None
         variable = comparison["var"]
-        if not isinstance(variable, str):
-            msg = "Comparison variable must be a string"
-            raise TypeError(msg)
         if self._is_local_comparison_var(variable):
             return None
         return comparison

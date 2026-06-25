@@ -176,20 +176,8 @@ def test_define_local_does_nothing_when_scope_stack_is_empty() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Lines 281-282: structural note and companion tests
+# _extract_comparison reachable paths
 # ---------------------------------------------------------------------------
-
-
-# Lines 281-282 in _extract_comparison are a defensive TypeError guard that fires
-# when the outer extract_comparison() helper returns a dict whose 'var' key is not
-# a str.  However, the helper (optimization_helpers.extract_comparison) already
-# validates that the variable name is a str before constructing the return dict;
-# it returns None for any non-str name instead.  The guard is therefore structurally
-# unreachable through the normal production API.
-#
-# The tests below exercise the two reachable paths that lead into _extract_comparison:
-# (a) extract_comparison returns None  ->  _extract_comparison returns None (lines 277-278)
-# (b) the variable is non-local        ->  _extract_comparison returns the dict (line 285)
 
 
 def test_extract_comparison_returns_none_for_missing_var() -> None:
