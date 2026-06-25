@@ -142,8 +142,7 @@ class ASTTreeBuilder:
                 iterable = [node.modifiers]
             for mod in iterable:
                 modifier_strs.append(_modifier_label(mod))
-            if modifier_strs:
-                name_with_modifiers = f"[{'|'.join(modifier_strs)}] {name_with_modifiers}"
+            name_with_modifiers = f"[{'|'.join(modifier_strs)}] {name_with_modifiers}"
 
         return Tree(f"Rule: {name_with_modifiers}")
 

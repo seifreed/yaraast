@@ -8,8 +8,6 @@ Missing lines before this file (from the full-suite .coverage database):
   108-112    - visit_rule() dict-meta branch: iterates a raw dict for str/non-str values
   115->114   - visit_rule() meta-list branch: entry lacks .key/.value attrs (silent skip)
   142        - _create_rule_tree_with_modifiers() non-list/tuple modifier branch
-  145->148   - branch only taken when modifier_strs is empty while modifiers is truthy
-              (unreachable through normal usage; reported below as a structural finding)
   210        - _get_condition_string() fallback when YaraXGenerator.visit() returns ""
 
 Every test here exercises real production code.  No mocks, no stubs, no patch.
@@ -302,52 +300,6 @@ def test_visit_rule_with_import_as_condition_renders_complex_condition() -> None
     assert "Condition" in text
     # The fallback formatter produces at least a type-based label for Import
     assert text.count("Condition") >= 1
-
-
-# ---------------------------------------------------------------------------
-# Structural finding: branch 145->148 is unreachable under correct program flow
-# ---------------------------------------------------------------------------
-
-
-def test_modifier_strs_is_never_empty_when_modifiers_is_truthy() -> None:
-    """Confirms that branch 145->148 (if modifier_strs: ... -> return) cannot
-    be reached through any normal invocation of _create_rule_tree_with_modifiers.
-
-    The branch would fire only if ``modifier_strs`` were empty while
-    ``node.modifiers`` is truthy.  Since ``_modifier_label`` always returns a
-    non-empty string (either the original str or ``str(modifier)``), and the
-    for-loop always produces one entry per iterable element, the list can only
-    be empty if the iterable itself is empty - but an empty list is falsy and
-    the outer ``if node.modifiers:`` guard prevents entry to the block.
-
-    This test exercises _modifier_label with several types and confirms it never
-    returns an empty string, establishing the invariant that prevents the dead
-    branch.
-    """
-
-    # Arrange
-    class _AlwaysReprEmpty:
-        """Object whose str() is an empty string - the worst-case scenario."""
-
-        def __str__(self) -> str:
-            return ""
-
-    candidates: list[Any] = [
-        "private",
-        "global",
-        "private global",
-        42,
-        object(),
-        _AlwaysReprEmpty(),
-    ]
-
-    # Act & Assert - _modifier_label is allowed to return "" for the _AlwaysReprEmpty
-    # case; that is fine because _AlwaysReprEmpty.__str__ returns "".  The important
-    # invariant is that the function returns str, never raises, and the iterable is
-    # always consumed (so modifier_strs length equals iterable length).
-    for candidate in candidates:
-        result = _modifier_label(candidate)
-        assert isinstance(result, str)
 
 
 # ---------------------------------------------------------------------------
