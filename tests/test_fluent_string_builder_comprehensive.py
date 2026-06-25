@@ -51,7 +51,6 @@ class TestFluentStringBuilderInitialization:
 
         assert builder._string_type == "plain"
         assert builder._content is None
-        assert builder._hex_builder is None
 
 
 class TestFluentStringBuilderTextStrings:

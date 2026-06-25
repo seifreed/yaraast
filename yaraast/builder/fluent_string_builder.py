@@ -35,7 +35,6 @@ class FluentStringBuilder:
         self._content: str | list[HexToken] | None = None
         self._string_type: str = "plain"  # "plain", "hex", "regex"
         self._modifiers: list[StringModifier] = []
-        self._hex_builder: HexStringBuilder | None = None
 
     # String content methods
     def literal(self, content: str) -> FluentStringBuilder:
