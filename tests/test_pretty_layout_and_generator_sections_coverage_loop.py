@@ -579,20 +579,12 @@ def test_write_meta_section_dict_multiple_entries_directly() -> None:
 
 
 # ---------------------------------------------------------------------------
-# generator_sections.py — write_meta_section() line 38 (dead-code guard)
+# generator_sections.py — write_meta_section() invalid meta validation
 # ---------------------------------------------------------------------------
 
 
 def test_write_meta_section_non_collection_meta_raises_before_line_38() -> None:
-    """generator_sections line 38 is a defensive guard that is structurally
-    unreachable through the validated public API.
-
-    ``validate_rule_meta`` (called on line 34) raises ``TypeError`` for any
-    meta that is not ``None``, ``dict``, ``list``, or ``tuple`` — so the
-    ``isinstance`` check on line 38 can never evaluate True via the normal
-    call path.  This test documents that fact by confirming the TypeError is
-    raised before execution reaches line 38.
-    """
+    """validate_rule_meta rejects non-collection meta before output is written."""
     gen = CodeGenerator(options=GeneratorOptions(blank_line_between_sections=True))
 
     class UnsupportedMetaType:

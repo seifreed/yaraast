@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from yaraast.codegen.generator_formatting import validate_rule_meta
 from yaraast.codegen.generator_helpers import (
@@ -34,14 +34,12 @@ def write_meta_section(
     validate_rule_meta(meta)
     if not meta:
         return
-    if not isinstance(meta, dict | list | tuple):
-        return
     gen._writeline("meta:")
     gen._indent()
     if isinstance(meta, dict):
         gen._write_meta_dict(meta)
     else:
-        for item in meta:
+        for item in cast(list[Any] | tuple[Any, ...], meta):
             _emit_comments(gen, item)
             gen._writeline(
                 gen._format_meta_value(item.key, item.value, getattr(item, "scope", None))
