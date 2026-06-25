@@ -13,12 +13,6 @@ Targets the branches and lines that the existing test suite leaves uncovered:
   * Branch 154->165 — while loop not entered in collect_rule_body (negative brace balance
                        from header)
 
-Line 66->68 (the ``if rule is not None`` False branch in parse_rule_with_recovery) is
-structurally unreachable: ``_create_rule_from_body`` / ``create_rule_from_body`` always
-returns a ``Rule`` instance and never ``None`` in the current implementation.  That dead
-branch is documented here rather than artificially driven through a monkeypatch of the
-module under test, which would not constitute real code execution.
-
 All tests drive ``error_tolerant_flow`` exclusively through the public
 ``ErrorTolerantParser`` API, exercising real parsing of real YARA text.  No mocks of the
 module under test are used.
@@ -383,9 +377,6 @@ def test_parse_rule_with_recovery_returns_none_rule_on_invalid_header() -> None:
     returns (None, 1).
 
     This is the path exercised when the rule header regex does not match.
-    (The ``if rule is not None`` branch at line 66 that would be False is
-    genuinely unreachable in the current implementation: _create_rule_from_body
-    always returns a Rule, never None.  That dead branch is not driven here.)
     """
     parser = ErrorTolerantParser()
     parser.lines = ["@@@ this is not a rule"]

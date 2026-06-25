@@ -63,8 +63,7 @@ def parse_rule_with_recovery(parser, start_line: int) -> tuple[Rule | None, int]
     rule = parser._create_rule_from_body(
         rule_name, tags, body_lines=rule_body_lines, start_line=start_line
     )
-    if rule is not None:
-        rule.modifiers = Rule._normalize_modifiers(modifiers)
+    rule.modifiers = Rule._normalize_modifiers(modifiers)
     return rule, current_line - start_line + 1
 
 
