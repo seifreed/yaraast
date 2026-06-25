@@ -259,8 +259,6 @@ def get_rule_text_range(text: str, current_line: int) -> RuleTextRange | None:
     if start_line < 0:
         return None
     end_line = find_rule_end(lines, start_line)
-    if end_line < start_line:
-        return None
     return RuleTextRange(start=start_line, end=end_line, lines=lines)
 
 

@@ -197,35 +197,6 @@ def test_find_rule_end_returns_line_of_closing_brace() -> None:
 
 
 # ---------------------------------------------------------------------------
-# get_rule_text_range — line 263: end_line < start_line branch
-# ---------------------------------------------------------------------------
-
-
-def test_get_rule_text_range_returns_none_when_no_closing_brace() -> None:
-    """Return None when find_rule_end returns a line before start_line (line 263).
-
-    find_rule_end returns len(lines)-1 when no brace is found. If find_rule_start
-    returns a line index GREATER than that fallback, end_line < start_line holds.
-    We construct a text where the rule keyword appears on the last non-empty line
-    after all content, so start_line exceeds the fallback end_line.
-    """
-    # The only 'rule' line is line 2 (0-indexed). find_rule_end starts from line 2
-    # and finds no '{', so it returns len(lines)-1 == 2. Because end_line (2) is
-    # NOT less than start_line (2), the standard path returns a RuleTextRange.
-    # To trigger end_line < start_line we need find_rule_end returning < start_line.
-    # That is not reachable in practice via get_rule_text_range because find_rule_end
-    # always starts from start_line. Document the line as structurally unreachable
-    # through the public function and verify the guard with direct inputs instead.
-    lines = split_lines("rule a {\n  condition:\n    true\n}")
-    start_line = 0
-    end_line = find_rule_end(lines, start_line)
-    # Sanity: end_line >= start_line for well-formed input
-    assert end_line >= start_line
-    # For completeness, confirm get_rule_text_range returns a result for this input
-    result = get_rule_text_range("rule a {\n  condition:\n    true\n}", 0)
-    assert result is not None
-
-
 def test_get_rule_text_range_returns_none_when_no_rule_keyword() -> None:
     """Return None when find_rule_start returns -1 (no rule keyword on or before line)."""
     result = get_rule_text_range("condition: true", 0)
@@ -409,26 +380,18 @@ def test_find_rule_end_nested_braces_intermediate_close() -> None:
 
 
 # ---------------------------------------------------------------------------
-# get_rule_text_range — line 263 analysis (structurally unreachable via public API)
+# get_rule_text_range
 # ---------------------------------------------------------------------------
 
 
-def test_get_rule_text_range_end_never_less_than_start() -> None:
-    """find_rule_end always returns a line index >= start_line.
-
-    The guard at line 263 (end_line < start_line) is not reachable through the
-    public API because find_rule_end iterates from start_line onward and its
-    fallback is len(lines)-1, which is always >= start_line (since find_rule_start
-    only returns valid 0-based indices within the lines array).
-
-    This test documents the invariant: for any well-formed or malformed input,
-    get_rule_text_range either returns None (no rule keyword) or a RuleTextRange.
-    """
-    # Malformed: open brace but no close brace
+def test_get_rule_text_range_returns_range_for_open_rule() -> None:
+    """Malformed open rules still produce the best available text range."""
     result_open = get_rule_text_range("rule a {\n  condition: true", 0)
-    # find_rule_end returns len(lines)-1 == 1 >= start_line 0, so RuleTextRange is built
     assert result_open is not None
-    # Well-formed single-line rule
+
+
+def test_get_rule_text_range_returns_range_for_single_line_rule() -> None:
+    """Single-line rules produce a text range."""
     result_ok = get_rule_text_range("rule a { condition: true }", 0)
     assert result_ok is not None
 
