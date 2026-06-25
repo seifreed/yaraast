@@ -233,6 +233,11 @@ class Rule(ASTNode):
                 modifier.validate_structure()
                 modifiers.append(modifier)
             elif isinstance(modifier, str):
+                try:
+                    modifiers.append(str(RuleModifier.from_string(modifier)))
+                    continue
+                except ValidationError:
+                    pass
                 modifier_name = require_rule_modifier_identifier(
                     modifier,
                     "Rule modifier",

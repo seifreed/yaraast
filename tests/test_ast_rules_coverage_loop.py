@@ -24,11 +24,6 @@ Missing-line coverage targets (as of the coverage snapshot):
   310    get_meta_value: default return when key absent
 
 Confirmed unreachable lines in production code:
-  246    _validated_modifiers string-modifier acceptance: RuleModifierType only contains
-         "private" and "global", both of which are YARA keywords.  The guard
-         require_rule_modifier_identifier rejects keywords before reaching line 246,
-         so the only strings that could reach it are also rejected by
-         RuleModifierType.from_string.  The two checks together make line 246 dead code.
   219->217 and 223->exit  The callable(validate_structure) == False branches inside
          Rule.validate_structure are defensive guards. All StringDefinition and
          Expression subclasses inherit validate_structure from their base classes, so

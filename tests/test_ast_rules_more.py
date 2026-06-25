@@ -33,6 +33,11 @@ def test_rule_modifier_flags_and_meta_entries() -> None:
     assert [m.key for m in rule.get_public_meta()] == ["pub"]
 
 
+def test_rule_validate_structure_accepts_string_modifiers() -> None:
+    rule = Rule(name="r1", modifiers=["private", "global"])
+    rule.validate_structure()
+
+
 def test_rule_get_meta_value_uses_last_duplicate_key_value() -> None:
     rule = Rule(
         name="duplicate_meta",
