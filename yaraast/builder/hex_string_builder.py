@@ -264,7 +264,6 @@ class HexStringBuilder:
             raise ValidationError(msg)
 
         for i in range(0, len(hex_str), 2):
-            if i + 1 < len(hex_str):
-                builder.add(hex_str[i : i + 2])
+            builder.add(hex_str[i : i + 2])
 
         return builder
