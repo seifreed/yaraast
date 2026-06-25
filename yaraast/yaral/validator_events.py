@@ -164,9 +164,7 @@ def _extract_udm_validation_segments(part: str) -> list[str]:
     while index < len(part):
         bracket_index = part.find("[", index)
         if bracket_index == -1:
-            segment = part[index:]
-            if segment:
-                segments.append(segment)
+            segments.append(part[index:])
             break
 
         segment = part[index:bracket_index]

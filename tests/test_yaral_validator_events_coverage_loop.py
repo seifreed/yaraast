@@ -16,11 +16,6 @@ Targets the lines that remain uncovered after test_yaral_validator_events_more.p
     168-170  _extract_udm_validation_segments: no-bracket path with segment appended
     172-183  _extract_udm_validation_segments: bracket found: segment before + bracket content
 
-Note: line 168->170 (False branch of 'if segment:' at line 168) is structurally
-unreachable.  The 'while index < len(part)' guard guarantees that when
-bracket_index == -1, part[index:] has at least one character, so 'segment' is
-always truthy at that point.  This is documented below rather than fabricated.
-
 All tests go through the real YaraLValidator (which inherits EventValidationMixin)
 and the real module-level helpers _normalize_udm_validation_parts and
 _extract_udm_validation_segments.  No mocks, stubs, or test doubles are used.
@@ -318,11 +313,6 @@ def test_validate_udm_field_path_principal_namespace_single_part_no_warning() ->
 
 # ---------------------------------------------------------------------------
 # Lines 164-184 - _extract_udm_validation_segments: full bracket paths
-#
-# Structural note: the False branch of 'if segment:' at line 168 (168->170)
-# is not reachable in practice.  The while guard 'index < len(part)' ensures
-# part[index:] always contains at least one character when bracket_index == -1,
-# so 'segment' is always truthy at that point.  No test is fabricated for it.
 # ---------------------------------------------------------------------------
 
 
