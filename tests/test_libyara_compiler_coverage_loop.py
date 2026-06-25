@@ -11,11 +11,6 @@ Missing lines confirmed via --cov-report=term-missing before this file was added
   284     - "File not found" branch in compile_file
   322-329 - except yara.SyntaxError and except yara.Error branches in compile_file
 
-Lines 245-246 and 310 are dead code: _compile_kwargs and compile_file both guard
-`includes is None` before calling normalize_libyara_includes, which is the only code
-path that can return None; so the subsequent `if normalized_includes is None` branch
-can never be reached through the public API.
-
 Lines 330-335 (except (TypeError, ValueError) and except Exception in compile_file)
 are structurally unreachable: LibyaraCompiler validates externals at construction time
 via normalize_libyara_externals, so yara.compile cannot receive unsupported external
@@ -241,35 +236,3 @@ def test_compile_file_catches_yara_warning_error_as_compilation_error(tmp_path: 
     assert result.errors
     assert result.errors[0].startswith("Compilation error:")
     assert result.source_code == warn_rule.read_text(encoding="utf-8")
-
-
-# ---------------------------------------------------------------------------
-# Dead-code documentation: lines that cannot be reached via the public API
-# ---------------------------------------------------------------------------
-
-
-def test_normalize_libyara_includes_none_result_is_only_reachable_with_none_arg() -> None:
-    """Document that normalize_libyara_includes returns None only when passed None.
-
-    Lines 244-246 in _compile_kwargs and line 310 in compile_file check whether
-    normalize_libyara_includes returns None after calling it with a non-None argument.
-    Because normalize_libyara_includes never returns None for non-None inputs (it raises
-    on invalid inputs and returns a dict on valid ones), those branches are dead code
-    within the current implementation and cannot be reached through the public API.
-    """
-    # None input -> None output (line 56).
-    assert normalize_libyara_includes(None) is None
-
-    # Non-None valid input -> non-None dict output.
-    valid_result = normalize_libyara_includes({"header.yar": "rule h { condition: true }\n"})
-    assert valid_result is not None
-    assert valid_result == {"header.yar": "rule h { condition: true }\n"}
-
-    # Invalid inputs raise TypeError or ValueError rather than returning None.
-    # The argument is typed as Any to pass an invalid runtime type without a cast.
-    bad_list: Any = []
-    with pytest.raises(TypeError):
-        normalize_libyara_includes(bad_list)
-
-    with pytest.raises(ValueError):
-        normalize_libyara_includes({"": "rule x { condition: true }\n"})

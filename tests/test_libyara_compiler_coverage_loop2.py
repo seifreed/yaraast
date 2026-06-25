@@ -4,12 +4,7 @@
 """Regression tests targeting remaining uncovered lines in yaraast/libyara/compiler.py.
 
 Missing lines after test_libyara_compiler_coverage_loop.py (confirmed via
---cov-report=term-missing): 245-246, 310, 330-333.
-
-Lines 245-246 (_compile_kwargs) and 310 (compile_file) are genuinely dead code:
-  normalize_libyara_includes only returns None when its argument is None, but both
-  call sites guard `includes is None` before calling it, so the subsequent
-  `if normalized_includes is None` branch is unreachable via the public API.
+--cov-report=term-missing): 330-333.
 
 Lines 330-331 (except (TypeError, ValueError)) and 332-335 (except Exception) in
 compile_file ARE reachable via real production inputs:

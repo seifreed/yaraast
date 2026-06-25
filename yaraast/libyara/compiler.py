@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from yaraast.libyara._availability import is_missing_yara_import
 from yaraast.libyara._paths import path_exists, require_file_path
@@ -240,10 +240,7 @@ class LibyaraCompiler:
         if includes is None:
             kwargs["includes"] = False
             return kwargs
-        normalized_includes = normalize_libyara_includes(includes)
-        if normalized_includes is None:
-            kwargs["includes"] = False
-            return kwargs
+        normalized_includes = cast(dict[str, str], normalize_libyara_includes(includes))
         kwargs["include_callback"] = self._include_callback(normalized_includes)
         return kwargs
 
@@ -305,11 +302,8 @@ class LibyaraCompiler:
                 "error_on_warning": error_on_warning,
             }
             if includes is not None:
-                normalized_includes = normalize_libyara_includes(includes)
-                if normalized_includes is None:
-                    compile_kwargs["includes"] = False
-                else:
-                    compile_kwargs["include_callback"] = self._include_callback(normalized_includes)
+                normalized_includes = cast(dict[str, str], normalize_libyara_includes(includes))
+                compile_kwargs["include_callback"] = self._include_callback(normalized_includes)
             compiled = yara.compile(
                 filepath=str(filepath),
                 **compile_kwargs,
