@@ -8,8 +8,6 @@ Targets lines and branches missed by the existing test suites (94.61%):
   97->96  - validate(): false branch of 'if rule.condition is not None' — rule with no condition
   167->170 - validate_expression(): false branch of 'if env is None' — env provided by caller
   236    - _external_type(): return UnknownType() for non-bool/int/float/str values
-  276    - _walk_ast_nodes(): 'if not is_dataclass(value): return' — unreachable in production;
-           documented below rather than tested via artificial non-dataclass subclass
   296    - _validate_external_quantifier_value(): 'if value is None: return' —
            quantifier identifier not present in externals mapping
   315    - _validate_external_range_bounds(): 'result.add_error(\"Range lower bound must not
@@ -20,11 +18,6 @@ Targets lines and branches missed by the existing test suites (94.61%):
   348    - _external_identifier_name(): 'if isinstance(value, ParenthesesExpression)'
            — paren-wrapped Identifier name extraction
 
-Line 276 is a defensive guard that is structurally unreachable: every ASTNode subclass
-in this codebase inherits the @dataclass decorator from the ASTNode base class, so
-is_dataclass() always returns True for real AST objects.  No artificial non-dataclass
-ASTNode subclass is created here; the finding is documented so future maintainers are
-aware that removing the guard is safe.
 """
 
 from __future__ import annotations

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
-from dataclasses import fields, is_dataclass
+from dataclasses import fields
 import re
 from typing import TYPE_CHECKING
 
@@ -272,8 +272,6 @@ def _validate_external_expression_values(
 def _walk_ast_nodes(value: object) -> Iterator[ASTNode]:
     if isinstance(value, ASTNode):
         yield value
-        if not is_dataclass(value):
-            return
         for field in fields(value):
             yield from _walk_ast_nodes(getattr(value, field.name))
         return
