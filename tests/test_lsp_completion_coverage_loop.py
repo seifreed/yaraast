@@ -10,8 +10,6 @@ Missing lines from baseline (90.78%) at the start of this session:
   176-177   _get_workspace_rule_completions: exception handler swallows workspace errors
 
 Structurally unreachable lines (documented, not tested):
-  82->97    get_current_module returns None only when analyze_context cannot return
-            "module_member", because both call _active_module_name with identical inputs.
   166->165  get_rule_names() never yields empty strings: YARA rule names are always
             non-empty identifiers extracted by the real tree-sitter parser.
 """
@@ -319,35 +317,6 @@ class TestStructurallyUnreachableBranches:
     These tests exist to prove the structural guarantee that prevents those
     branches from being exercised, not to reach them artificially.
     """
-
-    def test_module_member_none_from_get_current_module_is_impossible_via_api(
-        self,
-    ) -> None:
-        # Line 82->97: if module_name: (False branch)
-        # analyze_context returns "module_member" only if _active_module_name
-        # returns non-None.  get_current_module calls the same _active_module_name
-        # with identical inputs, so it also returns non-None.  Both functions
-        # operate on the same (text, position) pair within a single call to
-        # get_completions; their results are structurally coupled.
-        from yaraast.lsp.completion_helpers import analyze_context, get_current_module
-
-        # Verify with every reasonable dot-access pattern that when context is
-        # "module_member", get_current_module is always truthy.
-        samples = [
-            ("rule r { condition: pe. }", 0, len("rule r { condition: pe.")),
-            ("rule r { condition: math.entropy( }", 0, len("rule r { condition: math.")),
-            ("pe.", 0, 3),
-            ("elf.type.", 0, len("elf.type.")),
-        ]
-        for text, line, char in samples:
-            pos = _pos(line, char)
-            context = analyze_context(text, pos)
-            module_name = get_current_module(text, pos)
-            if context == "module_member":
-                assert module_name, (
-                    f"Invariant violated: module_member context with falsy module_name "
-                    f"for {text!r} at char={char}"
-                )
 
     def test_get_rule_names_never_returns_empty_string(self) -> None:
         # Line 166->165: if rule_name and rule_name not in seen (False when not rule_name)

@@ -78,9 +78,9 @@ class CompletionProvider:
         if context == "import":
             items.extend(self._get_module_completions())
         elif context == "module_member":
-            module_name = get_current_module(text, position)
-            if module_name:
-                items.extend(self._get_module_member_completions(module_name))
+            items.extend(
+                self._get_module_member_completions(get_current_module(text, position) or "")
+            )
         elif context == "string_modifier":
             items.extend(self._get_string_modifier_completions())
         elif context == "condition":
