@@ -6,7 +6,7 @@ Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
 Prior file tests/test_lsp_runtime_rules_coverage_loop.py reached 94.41%, leaving
-five groups of uncovered lines: 120, 147-149, 184-186, and 199.
+two groups of uncovered lines: 120 and 199.
 
 Investigation (confirmed by direct execution and source analysis):
 
@@ -18,17 +18,6 @@ Investigation (confirmed by direct execution and source analysis):
     declaration record before yielding (document_query_references.py line 293).
     The outer ``continue`` at line 120 can therefore never be reached: the
     record that would trigger it is stripped one layer below.
-
-  Lines 147-149, 184-186 (except Exception blocks):
-    Both functions call ``runtime.get_document(document_uri)`` inside a
-    try/except.  However, ``LspRuntime.get_document`` (runtime.py lines 323-327)
-    catches all exceptions internally and returns None — it never propagates.
-    The only exception path that escapes ``get_document`` is a ``TypeError``
-    raised by ``_require_document_uri`` when the URI is not a string, but any
-    non-string ``document_uri`` is eliminated before the ``get_document`` call
-    by the ``uri_to_path`` guard (line 142 / 179): ``uri_to_path`` returns None
-    for non-strings, triggering an early ``return []``.  No real execution path
-    can therefore reach the ``except`` clauses at lines 147-149 / 184-186.
 
   Line 199 (``continue`` for empty rule_name):
     Real YARA parsing (text-scan regex ``[A-Za-z_][A-Za-z0-9_]*`` and AST path
@@ -47,8 +36,8 @@ Investigation (confirmed by direct execution and source analysis):
     unexpected cache contents (e.g., from a future code-path change or a corrupt
     persisted index).
 
-This file adds one net-new covered line (199) and documents the three groups of
-structurally dead lines with concrete evidence.
+This file adds one net-new covered line (199) and documents the remaining
+structurally dead line with concrete evidence.
 """
 
 from __future__ import annotations
@@ -244,22 +233,7 @@ def test_find_rule_reference_records_include_declaration_false_yields_only_uses(
 
 
 # ---------------------------------------------------------------------------
-# Dead-code evidence: lines 147-149 in find_rule_reference_records_in_document
-# and lines 184-186 in get_rule_link_records_for_document
-#
-# Both functions wrap ``runtime.get_document(document_uri)`` in a try/except.
-# LspRuntime.get_document (runtime.py:323-327) catches all exceptions internally
-# and returns None — it never propagates.  The ``except Exception`` clauses at
-# 147-149 and 184-186 are therefore unreachable through normal use.
-#
-# The only exception that can escape get_document is a TypeError from
-# _require_document_uri when the URI is not a string, but a non-string URI is
-# eliminated before get_document is called because uri_to_path returns None,
-# causing an early ``return []``.
-#
-# The tests below exercise the maximum reachable prefix of the try block: they
-# confirm the function calls get_document and handles a None return correctly
-# (line 150 / 187).  This is the closest real construction possible.
+# get_document returns None for unreadable files; callers return [].
 # ---------------------------------------------------------------------------
 
 
@@ -270,13 +244,7 @@ def test_find_rule_reference_records_include_declaration_false_yields_only_uses(
 def test_find_rule_reference_records_in_document_get_document_returns_none_for_unreadable(
     tmp_path: Path,
 ) -> None:
-    """Lines 145-151 prefix: get_document returns None for an unreadable file.
-
-    This test reaches the ``try`` block at line 145, executes
-    ``runtime.get_document(document_uri)`` (which catches PermissionError
-    internally and returns None), then hits ``if doc is None: return []`` at
-    line 150.  The ``except`` clause at lines 147-149 is not reached because
-    get_document swallows all I/O errors.
+    """get_document returns None for an unreadable file.
 
     The test documents the nearest reachable construction: file exists on disk
     and passes the path_exists / path_is_file checks, but a PermissionError
@@ -306,13 +274,7 @@ def test_find_rule_reference_records_in_document_get_document_returns_none_for_u
 def test_get_rule_link_records_for_document_get_document_returns_none_for_unreadable(
     tmp_path: Path,
 ) -> None:
-    """Lines 182-188 prefix: get_document returns None for an unreadable file.
-
-    Mirrors the test above for get_rule_link_records_for_document.  The
-    ``try`` block at line 182 is entered; get_document catches PermissionError
-    internally and returns None; ``if doc is None: return []`` at line 187 is
-    hit.  The ``except`` at lines 184-186 is not reached.
-    """
+    """get_document returns None for an unreadable file."""
     import os
     import stat
 
