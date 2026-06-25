@@ -14,7 +14,6 @@ Missing coverage targeted here (as reported by pytest-cov term-missing):
   - Lines 86-87  : comment_visit_yara_file trailing_comment in ordered path
   - Lines 152-160: _write_rule_pragmas with leading + trailing comments
   - Line  177    : _write_meta_section elif hasattr(meta, "key") branch
-  - Line  210    : _write_condition_section early return when condition is None
   - Branch 216->219: condition without leading_comments attribute
   - Line  229    : multi-line condition_str with trailing comment on last line
   - Line  238    : elif trailing path when condition_str is empty
@@ -292,17 +291,6 @@ def test_meta_section_duck_type_item_with_scope_attribute() -> None:
     out = _comment_gen().generate(yara_file)
 
     assert "version = 2" in out
-
-
-# ---------------------------------------------------------------------------
-# Note: _write_condition_section condition is None — line 210 is genuinely
-# unreachable through the public API.
-#
-# validate_rule_string_references() (called from CodeGenerator.visit_rule
-# before the layout's visit_rule delegates to comment_visit_rule) raises
-# ValueError when condition is None.  The guard at line 210 is therefore a
-# defensive check that can never be reached through CodeGenerator.generate().
-# ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------

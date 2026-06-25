@@ -206,8 +206,6 @@ def _write_strings_section(gen: Any, node: Any) -> None:
 def _write_condition_section(gen: Any, node: Any) -> None:
     """Write the condition section with comments."""
     condition = node.condition
-    if condition is None:
-        return
     validate_condition_expression(gen, condition)
 
     gen._writeline("condition:")
