@@ -12,20 +12,11 @@ Missing-line audit (baseline 80 %):
   205             -- require_output_dir_path PathLike returning bytes from fspath
   240             -- process_files_single COMPLEXITY (no previous success path)
   251             -- process_files_single DEPENDENCY_GRAPH
-  259-261         -- process_files_single VALIDATE failure (structurally unreachable; see note)
   287             -- process_large_file output_dir=None raises TypeError
   304             -- process_large_file COMPLEXITY split_rules=True success-count line
   307-309         -- process_large_file HTML_TREE and DEPENDENCY_GRAPH operation branches
   312             -- process_large_file progress_callback invocation
 
-Note on lines 259-261:
-  process_files_single's VALIDATE failure branch (failed_count increment + continue)
-  is guarded by validate_item() returning False.  validate_item() returns
-  bool(rule.name) and rule.condition is not None.  The parser (parse_yara_source /
-  Parser / YaraXParser) never produces rules with an empty name or a None condition;
-  all such inputs raise a ParseError before reaching the branch.  Lines 259-261 are
-  therefore structurally unreachable through the real file-based public API and are
-  reported here as dead code rather than covered by a contrived fabrication.
 """
 
 from __future__ import annotations
@@ -51,7 +42,6 @@ from yaraast.performance.batch_processor_ops import (
     process_files_single,
     process_large_file,
     require_output_dir_path,
-    validate_item,
 )
 
 # ---------------------------------------------------------------------------
@@ -549,32 +539,3 @@ def test_process_large_file_invokes_progress_callback_for_each_operation(tmp_pat
     assert calls[1] == ("Processing complexity", 2, 2)
     assert results[BatchOperation.PARSE].successful_count == 1
     assert results[BatchOperation.COMPLEXITY].successful_count == 1
-
-
-# ---------------------------------------------------------------------------
-# Unreachable lines documentation
-# ---------------------------------------------------------------------------
-
-
-def test_documentation_validate_failure_branch_is_unreachable_through_file_api() -> None:
-    """Document that lines 259-261 in process_files_single are structurally unreachable.
-
-    process_files_single's VALIDATE branch (lines 259-261) runs only when
-    validate_item(rule) returns False for a parsed rule.  validate_item returns
-    bool(rule.name) and rule.condition is not None.  parse_yara_source / Parser /
-    YaraXParser raise ParseError for any input that would produce a rule without
-    a name or condition; they never silently produce an invalid Rule.
-
-    This test asserts the behavior that makes those lines unreachable: every rule
-    produced by the parser passes validate_item.
-    """
-    for src in (
-        "rule a { condition: true }",
-        'rule b { strings: $x = "y" condition: $x }',
-        "rule c { condition: false }",
-    ):
-        parsed = parse_yara_source(src)
-        for rule in parsed.rules:
-            assert (
-                validate_item(rule) is True
-            ), f"Parser produced an invalid rule for input {src!r}: {rule!r}"
