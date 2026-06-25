@@ -8,10 +8,9 @@ Missing lines identified from full-suite coverage report (91.48%):
     452->454, 468, 482, 486, 490, 494-497,
     523->525, 542, 548
 
-Lines 486, 490, and 496->498 are structurally unreachable dead-code guards
+Lines 486 and 490 are structurally unreachable dead-code guards
 (the pre-check at line 467-468 already returns None when right < 0 for both
-<< and >>; 496->498 cannot be reached because the operator set is exhaustive),
-so this file does not attempt to cover them and instead documents the finding.
+<< and >>), so this file documents the finding instead of trying to cover them.
 """
 
 from __future__ import annotations

@@ -489,8 +489,7 @@ class ExpressionBinaryMixin:
                 return _normalize_int64(left & right)
             if expr.operator == "|":
                 return _normalize_int64(left | right)
-            if expr.operator == "^":
-                return _normalize_int64(left ^ right)
+            return _normalize_int64(left ^ right)
         return None
 
     def _parse_unary_expression(self) -> Expression:
