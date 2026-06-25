@@ -30,11 +30,6 @@ from yaraast.codegen.pretty_printer import (
     pretty_print_readable,
     pretty_print_verbose,
 )
-from yaraast.codegen.pretty_printer_sections import (
-    write_hex_string_aligned,
-    write_plain_string_aligned,
-    write_regex_string_aligned,
-)
 from yaraast.yarax.ast_nodes import (
     DictComprehension,
     DictExpression,
@@ -586,22 +581,6 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
     meta_out = printer2.buffer.getvalue()
     assert 'a = "x"' in meta_out
     assert "b = 2" in meta_out
-
-    printer2.buffer.seek(0)
-    printer2.buffer.truncate(0)
-    layout2._string_alignment_column = 4
-    write_plain_string_aligned(printer2, PlainString("$a", value="x"))
-    write_hex_string_aligned(printer2, HexString("$h", tokens=[HexByte(0x4D)]))
-    aligned_out = printer2.buffer.getvalue()
-    assert '$a   = "x"' in aligned_out
-    assert "$h   = { 4D }" in aligned_out
-
-    printer2.buffer.seek(0)
-    printer2.buffer.truncate(0)
-    printer2.indent_level = 1
-    write_regex_string_aligned(printer2, RegexString("$r", regex="x"))
-    assert printer2.buffer.getvalue() == "    $r   = /x/\n"
-    printer2.indent_level = 0
 
     printer2.buffer.seek(0)
     printer2.buffer.truncate(0)

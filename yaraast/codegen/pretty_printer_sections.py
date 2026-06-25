@@ -4,27 +4,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
+from yaraast.ast.strings import StringDefinition
 from yaraast.codegen.generator_formatting import (
     format_meta_key,
     format_meta_literal,
     validate_rule_meta,
 )
 from yaraast.codegen.generator_helpers import (
-    output_string_identifier,
-    validate_hex_string_modifiers,
-    validate_plain_string_modifiers,
-    validate_regex_string_modifiers,
     validate_string_identifiers,
 )
-from yaraast.codegen.pretty_printer_helpers import (
-    build_hex_pattern,
-    current_indent,
-    format_plain_string,
-    format_regex_string,
-    modifiers_to_string,
-    regex_modifiers_to_string,
-)
+from yaraast.codegen.pretty_printer_helpers import current_indent
 from yaraast.codegen.pretty_printer_layout import write_string_definition
 
 
@@ -73,73 +62,3 @@ def write_strings_section(printer: Any, strings: list[StringDefinition]) -> None
     validate_string_identifiers(strings)
     for string_def in strings:
         write_string_definition(printer, string_def)
-
-
-def write_plain_string_aligned(printer: Any, node: PlainString) -> None:
-    """Write a plain string honoring alignment options."""
-    validate_plain_string_modifiers(node.modifiers)
-    printer._write_comments(getattr(node, "leading_comments", None))
-    printer._write(current_indent(printer))
-    if (
-        printer._layout.options.align_string_definitions
-        and printer._layout._string_alignment_column > 0
-    ):
-        padding = max(
-            0, printer._layout._string_alignment_column - len(output_string_identifier(node))
-        )
-        printer._write(format_plain_string(node, '"', padding))
-    else:
-        printer._write(format_plain_string(node, '"', 0))
-    printer._write(modifiers_to_string(node.modifiers))
-    trailing_comment = getattr(node, "trailing_comment", None)
-    if trailing_comment:
-        printer._write_comment(trailing_comment, inline=True)
-    printer._writeline()
-
-
-def write_hex_string_aligned(printer: Any, node: HexString) -> None:
-    """Write a hex string honoring alignment and casing options."""
-    validate_hex_string_modifiers(node.modifiers)
-    printer._write_comments(getattr(node, "leading_comments", None))
-    printer._write(current_indent(printer))
-    hex_pattern = build_hex_pattern(
-        node,
-        hex_uppercase=printer._layout.options.hex_uppercase,
-        hex_spacing=printer._layout.options.hex_spacing,
-    )
-    if (
-        printer._layout.options.align_string_definitions
-        and printer._layout._string_alignment_column > 0
-    ):
-        identifier = output_string_identifier(node)
-        padding = max(0, printer._layout._string_alignment_column - len(identifier))
-        printer._write(f"{identifier}{' ' * padding} = {{ {hex_pattern} }}")
-    else:
-        printer._write(f"{output_string_identifier(node)} = {{ {hex_pattern} }}")
-    printer._write(modifiers_to_string(node.modifiers))
-    trailing_comment = getattr(node, "trailing_comment", None)
-    if trailing_comment:
-        printer._write_comment(trailing_comment, inline=True)
-    printer._writeline()
-
-
-def write_regex_string_aligned(printer: Any, node: RegexString) -> None:
-    """Write a regex string honoring alignment options."""
-    validate_regex_string_modifiers(node.modifiers)
-    printer._write_comments(getattr(node, "leading_comments", None))
-    printer._write(current_indent(printer))
-    if (
-        printer._layout.options.align_string_definitions
-        and printer._layout._string_alignment_column > 0
-    ):
-        padding = max(
-            0, printer._layout._string_alignment_column - len(output_string_identifier(node))
-        )
-        printer._write(format_regex_string(node, padding))
-    else:
-        printer._write(format_regex_string(node, 0))
-    printer._write(regex_modifiers_to_string(node.modifiers))
-    trailing_comment = getattr(node, "trailing_comment", None)
-    if trailing_comment:
-        printer._write_comment(trailing_comment, inline=True)
-    printer._writeline()
