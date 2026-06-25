@@ -23,15 +23,6 @@ The final return in position_is_in_non_code_segment is structurally unreachable:
   The body of the last iteration ends with the branch at lines 126-127, which
   always returns before the for loop can complete and reach line 129.
 
-- Lines 162-163 (return inside line-scan branch of find_module_member_at_position):
-  get_word_at_position includes '.' in its word-character set, so it always
-  returns the full 'module.member' string when the cursor is inside such a
-  token.  The fast-path at lines 136-140 therefore always fires first (either
-  returning the result directly or skipping because root is not in imports).
-  The line-scan at 143-170 only executes when the word is not a complete dotted
-  form, but in that case the cursor is at a non-word position (space, bracket,
-  etc.) whose column is never inside a valid member span.  The combination of
-  these two constraints makes lines 162-163 unreachable via the public API.
 """
 
 from __future__ import annotations

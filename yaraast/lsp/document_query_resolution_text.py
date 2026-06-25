@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from lsprotocol.types import Position
 
 from yaraast.lsp.document_types import ResolvedSymbol
-from yaraast.lsp.structure import _starts_regex_literal, make_range
+from yaraast.lsp.structure import _starts_regex_literal
 from yaraast.lsp.text_utils import get_word_at_position
 from yaraast.lsp.utf16 import utf16_col_to_utf8
 
@@ -130,34 +130,4 @@ def find_module_member_at_position(
         imported_modules = {symbol.name for symbol in ctx.symbols() if symbol.kind == "import"}
         if root in imported_modules:
             return ResolvedSymbol(ctx.uri, word, word, "module_member", word_range)
-    if position.line < 0 or position.line >= len(ctx.lines):
-        return None
-    line = ctx.lines[position.line]
-    imported_modules = {symbol.name for symbol in ctx.symbols() if symbol.kind == "import"}
-    for module_name in imported_modules:
-        needle = f"{module_name}."
-        start = 0
-        while True:
-            start = line.find(needle, start)
-            if start < 0:
-                break
-            member_start = start + len(needle)
-            member_end = member_start
-            while member_end < len(line) and (
-                line[member_end].isalnum() or line[member_end] == "_"
-            ):
-                member_end += 1
-            if member_end == member_start:
-                start += len(needle)
-                continue
-            if start <= position.character < member_end:
-                full_name = line[start:member_end]
-                return ResolvedSymbol(
-                    ctx.uri,
-                    full_name,
-                    full_name,
-                    "module_member",
-                    make_range(position.line, start, member_end),
-                )
-            start = member_end
     return None

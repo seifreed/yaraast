@@ -690,14 +690,3 @@ def test_non_code_division_slash_before_cursor_does_not_open_regex() -> None:
 #     the loop, line 129 is never reached from the loop body; and the early guard
 #     at line 54-55 handles the position.line < 0 / >= len(lines) cases.
 #
-#   Lines 162-163: the 'return ResolvedSymbol(...)' inside the line-scan branch of
-#     find_module_member_at_position.  Reaching lines 162-163 requires that the
-#     cursor position is within a 'module.member' span on the line but that
-#     get_word_at_position did NOT return a complete dotted word rooted in an
-#     imported module.  Since get_word_at_position's word scanner includes '.' as
-#     a word character, any cursor position within 'pe.member' always returns the
-#     full 'pe.member' word, and the dotted-word branch at lines 136-140 fires
-#     first when 'pe' is imported.  When 'pe' is not imported, the line-scan
-#     also finds no 'pe.' needle.  There is no position within a valid
-#     'module.member' token where the cursor returns a non-dotted word while the
-#     module is simultaneously imported.
