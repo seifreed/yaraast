@@ -106,17 +106,9 @@ def position_is_in_non_code_segment(ctx: Any, position: Position) -> bool:
                     continue
 
             if char == '"' and not in_regex:
-                if line_num == position.line and target_character == idx:
-                    return True
                 in_string = not in_string
             elif char == "/" and not in_string:
                 starts_regex = _starts_regex_literal(line, idx)
-                if (
-                    line_num == position.line
-                    and target_character == idx
-                    and (in_regex or starts_regex)
-                ):
-                    return True
                 if in_regex:
                     in_regex = False
                 elif starts_regex:

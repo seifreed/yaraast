@@ -375,14 +375,7 @@ def test_non_code_position_inside_string_literal_returns_true() -> None:
 
 
 def test_non_code_position_on_opening_quote_returns_false() -> None:
-    """Cursor exactly on the opening '"' is checked by the idx >= target guard first.
-
-    The inner guard at 'if line_num == position.line and idx >= target_character'
-    fires when idx equals target_character, returning the current in_string state
-    (False, because the quote has not yet been processed).  The quote-specific
-    early return at line 110 of the module is structurally unreachable through the
-    public API because the idx-guard always fires first for this case.
-    """
+    """Cursor exactly on the opening '"' is checked by the idx >= target guard first."""
     text = 'rule r {\n  strings:\n    $s = "hello"\n  condition:\n    $s\n}'
     doc = _doc(text)
     # line 2: opening '"' is at col 9; the idx-guard fires, in_string=False -> False
@@ -430,13 +423,7 @@ def test_non_code_position_inside_regex_literal_returns_true() -> None:
 
 
 def test_non_code_position_on_opening_slash_of_regex_returns_false() -> None:
-    """Cursor exactly on the opening '/' of a regex returns False.
-
-    The idx >= target_character guard fires at the same index as the opening '/',
-    returning in_regex (False, not yet set) before the regex-specific early return
-    at module line 119 is reached.  That line is structurally unreachable through
-    the public API.
-    """
+    """Cursor exactly on the opening '/' of a regex returns False."""
     text = "rule r {\n  strings:\n    $re = /abc/\n  condition:\n    $re\n}"
     doc = _doc(text)
     # line 2: opening '/' at col 10; idx-guard fires, in_regex=False -> False

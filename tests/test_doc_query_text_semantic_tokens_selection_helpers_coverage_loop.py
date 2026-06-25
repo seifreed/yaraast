@@ -16,15 +16,7 @@ YARA source strings.  No mocks, stubs, or artificial scaffolding are used.
 
 Genuinely unreachable lines
 ---------------------------
-Three lines in position_is_in_non_code_segment are structurally unreachable:
-
-- Line 110 (return True inside the '"' handler when target_character == idx):
-  The loop guard at line 68 returns early whenever idx >= target_character.
-  The condition on line 109 requires target_character == idx, which triggers
-  the guard on line 68 first, preventing line 110 from executing.
-
-- Line 119 (return True inside the '/' regex handler when target_character == idx):
-  Identical structural argument: the guard on line 68 fires before line 118-119.
+The final return in position_is_in_non_code_segment is structurally unreachable:
 
 - Line 129 (return False after the for loop):
   range(position.line + 1) always includes position.line as its final value.
