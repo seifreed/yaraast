@@ -53,8 +53,6 @@ Specifically:
 - json_serializer_deserialize.py  1198 (else: meta = []):
   _deserialize_required_field ensures "meta" is always present at that point; the elif
   at 1194 always fires for non-list/non-dict meta values.
-- json_serializer_deserialize.py  1542-1543 (whitespace alias guard):
-  _deserialize_required_nullable_nonempty_string_field raises first.
 - json_serializer_deserialize.py  branch [164,166]:
   _deserialize_expression can only return None for None or {} inputs; a non-empty dict
   always matches a factory or raises, never returns None.

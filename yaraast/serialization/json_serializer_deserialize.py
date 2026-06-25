@@ -1538,9 +1538,6 @@ class JsonSerializerDeserializeMixin:
             "alias",
             "ExternImport",
         )
-        if alias is not None and not alias.strip():
-            msg = "ExternImport alias must not be empty"
-            raise SerializationError(msg)
         raw_rules = _deserialize_required_field(data, "rules", "ExternImport")
         if not isinstance(raw_rules, list) or not all(isinstance(rule, str) for rule in raw_rules):
             msg = "ExternImport rules must be a list of strings"

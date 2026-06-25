@@ -2307,7 +2307,6 @@ def test_validate_hex_sequence_alt_with_empty_inner_branch_raises() -> None:
         _s()._validate_hex_token_sequence(outer_tokens, "outer", inside_alternative=False)
 
 
-# Lines 1542-1543: _deserialize_extern_import — whitespace-only alias raises
 def test_deserialize_extern_import_whitespace_alias_raises() -> None:
     with pytest.raises(SerializationError, match="must not be empty"):
         _s()._deserialize_extern_import(
