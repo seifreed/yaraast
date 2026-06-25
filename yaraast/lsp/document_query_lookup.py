@@ -233,10 +233,10 @@ def get_dotted_symbol_at_position(
     ctx: DocumentContext, position: Position
 ) -> tuple[str, Range] | None:
     position = _require_document_position(position)
-    if position.line < 0 or position.line >= len(ctx.lines):
+    if position.line >= len(ctx.lines):
         return None
     line = ctx.lines[position.line]
-    if position.character < 0 or position.character > utf16_len(line):
+    if position.character > utf16_len(line):
         return None
     allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.")
     position_character = utf16_col_to_utf8(line, position.character)

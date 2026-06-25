@@ -39,9 +39,6 @@ Missing lines targeted (module baseline 63.02% from existing three test files):
           two dots; leading/trailing dot; successful hit with Range return
 
 Notes on unreachable code:
-  Lines 236 (position.line < 0) and 239 (position.character < 0) are not reachable
-  through the public API because lsprotocol.types.Position validates both values as
-  unsigned integers at construction time, raising ValueError for negatives.
   Lines 217-219 (OSError from Path.resolve()) are not reachable on Python 3.13
   because Path.resolve() no longer raises OSError for non-existent paths or symlinks.
 """
