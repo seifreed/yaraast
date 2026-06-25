@@ -27,16 +27,8 @@ identified from the coverage report:
     Line 706         compare_rule_strings: multi-bucket REMOVED
     Branch 734->715  compare_rule_strings: multi-bucket shared, hashes equal -> no diff
 
-Structurally unreachable branches (dead code in source, not testable):
-    Branch 25->24    compare_imports: if-false branch inside set-difference loop
-    Branch 37->36    compare_imports: if-false branch inside set-difference loop
-    Branch 49->48    compare_imports: if-false branch inside intersection loop
-
-    In each case the for-loop iterates over a set operation result (A - B or A & B)
-    whose elements are guaranteed to satisfy the subsequent if-condition by construction.
-    Coverage.py emits these as missing branches because the if-body can be reached without
-    the guard returning False, but a False result would require an element present in the
-    iterated set yet absent from the same set — which is impossible.
+The compare_imports loops iterate directly over set operation results (A - B or A & B),
+so the tests assert emitted diffs without preserving redundant membership guards.
 """
 
 from __future__ import annotations

@@ -22,59 +22,56 @@ def compare_imports(old_imports, new_imports, result, diff_node, diff_type) -> N
     new_modules = _nodes_by_key(new_imports, _import_key)
 
     for module in sorted(new_modules.keys() - old_modules.keys()):
-        if module not in old_modules:
-            new_bucket = new_modules[module]
-            result.differences.append(
-                diff_node(
-                    path=f"/imports/{module}",
-                    diff_type=diff_type.ADDED,
-                    new_value=_import_bucket_value(module, new_bucket),
-                    node_type="Import",
-                ),
+        new_bucket = new_modules[module]
+        result.differences.append(
+            diff_node(
+                path=f"/imports/{module}",
+                diff_type=diff_type.ADDED,
+                new_value=_import_bucket_value(module, new_bucket),
+                node_type="Import",
             )
+        )
 
     for module in sorted(old_modules.keys() - new_modules.keys()):
-        if module not in new_modules:
-            old_bucket = old_modules[module]
-            result.differences.append(
-                diff_node(
-                    path=f"/imports/{module}",
-                    diff_type=diff_type.REMOVED,
-                    old_value=_import_bucket_value(module, old_bucket),
-                    node_type="Import",
-                ),
+        old_bucket = old_modules[module]
+        result.differences.append(
+            diff_node(
+                path=f"/imports/{module}",
+                diff_type=diff_type.REMOVED,
+                old_value=_import_bucket_value(module, old_bucket),
+                node_type="Import",
             )
+        )
 
     for module in sorted(old_modules.keys() & new_modules.keys()):
-        if module in new_modules:
-            old_bucket = old_modules[module]
-            new_bucket = new_modules[module]
-            if len(old_bucket) == 1 and len(new_bucket) == 1:
-                old_alias = getattr(old_bucket[0], "alias", None)
-                new_alias = getattr(new_bucket[0], "alias", None)
-                if old_alias != new_alias:
-                    result.differences.append(
-                        diff_node(
-                            path=f"/imports/{module}/alias",
-                            diff_type=diff_type.MODIFIED,
-                            old_value=old_alias,
-                            new_value=new_alias,
-                            node_type="Import",
-                        ),
-                    )
-            else:
-                old_value = _import_payloads(old_bucket)
-                new_value = _import_payloads(new_bucket)
-                if old_value != new_value:
-                    result.differences.append(
-                        diff_node(
-                            path=f"/imports/{module}",
-                            diff_type=diff_type.MODIFIED,
-                            old_value=old_value,
-                            new_value=new_value,
-                            node_type="Import",
-                        ),
-                    )
+        old_bucket = old_modules[module]
+        new_bucket = new_modules[module]
+        if len(old_bucket) == 1 and len(new_bucket) == 1:
+            old_alias = getattr(old_bucket[0], "alias", None)
+            new_alias = getattr(new_bucket[0], "alias", None)
+            if old_alias != new_alias:
+                result.differences.append(
+                    diff_node(
+                        path=f"/imports/{module}/alias",
+                        diff_type=diff_type.MODIFIED,
+                        old_value=old_alias,
+                        new_value=new_alias,
+                        node_type="Import",
+                    ),
+                )
+        else:
+            old_value = _import_payloads(old_bucket)
+            new_value = _import_payloads(new_bucket)
+            if old_value != new_value:
+                result.differences.append(
+                    diff_node(
+                        path=f"/imports/{module}",
+                        diff_type=diff_type.MODIFIED,
+                        old_value=old_value,
+                        new_value=new_value,
+                        node_type="Import",
+                    ),
+                )
 
 
 def compare_extended_file_fields(old_ast, new_ast, result, hasher, diff_node, diff_type) -> None:
