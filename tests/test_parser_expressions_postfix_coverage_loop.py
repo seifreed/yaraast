@@ -17,8 +17,7 @@ residual gaps found after the first coverage run:
   130-134 - _parse_bracket_access: expr.location is not None (from real parsing)
   135     - _parse_bracket_access: expr.location is None path
   164-171 - _parse_function_call_postfix: Identifier and MemberAccess paths
-              when expr.location is None; line 171 is structurally unreachable
-              dead-code and is documented below
+              when expr.location is None
   225     - _parse_at_postfix: StringIdentifier with no location
   242     - _parse_in_postfix: StringIdentifier/StringCount with no location
   255     - _parse_in_postfix: OfExpression path with location set
@@ -33,13 +32,6 @@ residual gaps found after the first coverage run:
               recursion when left is valid but right is invalid
 
 Dead-code findings:
-  Line 171 (raise ParserError at end of _parse_function_call_postfix) is
-  structurally unreachable.  At that point expr.location is None, and the only
-  ways 'node' was built are isinstance(expr, Identifier) (handled at line 164)
-  or isinstance(expr, MemberAccess) (handled at line 168).  The 'else' branch
-  at line 154 already raised, so execution past line 168 is impossible.  No
-  test attempts to cover it; its unreachability is recorded here instead.
-
   Lines 278-279 and 285-286 (_is_parenthesized_range_bound checks for low and
   high bounds in _parse_parenthesized_range_after_in) are structurally
   unreachable from the normal call path.  _parse_bitwise_or_expression is called

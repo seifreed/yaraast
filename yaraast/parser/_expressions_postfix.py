@@ -164,11 +164,8 @@ class ExpressionPostfixMixin:
         if isinstance(expr, Identifier):
             self._validate_builtin_integer_read_arity(node, start_token)
             return self._set_node_location_from_tokens(node, start_token, self._previous())
-        msg = "Invalid function call"
-        if isinstance(expr, MemberAccess):
-            self._validate_builtin_integer_read_arity(node, start_token)
-            return self._set_node_location_from_tokens(node, start_token, self._previous())
-        raise ParserError(msg, self._peek())
+        self._validate_builtin_integer_read_arity(node, start_token)
+        return self._set_node_location_from_tokens(node, start_token, self._previous())
 
     def _validate_builtin_integer_read_arity(self, node: FunctionCall, token) -> None:
         if node.function in _BUILTIN_INTEGER_READ_FUNCTIONS and len(node.arguments) != 1:
