@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import FunctionCall, Identifier, StringIdentifier, StringLiteral
 from yaraast.ast.strings import HexByte, HexString, PlainString
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.file_builder import YaraFileBuilder
 from yaraast.builder.fluent_condition_helpers import (
     build_entropy_compare,
-    build_of_expression,
-    build_string_set,
     make_binary,
     make_filesize_compare,
 )
@@ -21,7 +20,6 @@ from yaraast.builder.fluent_file_builder import yara_file
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
-from yaraast.errors import ValidationError
 from yaraast.metrics.html_tree_nodes_extra import HtmlTreeNodesExtraMixin
 
 
@@ -43,11 +41,11 @@ class _PatternNode:
 
 
 def test_fluent_condition_small_helpers_more() -> None:
-    string_set = build_string_set("them", "them")
+    of_expr = cast(OfExpression, ConditionBuilder().any_of("them").build())
+    string_set = of_expr.string_set
     assert isinstance(string_set, Identifier)
     assert string_set.name == "them"
 
-    of_expr = build_of_expression("any", Identifier(name="them"))
     assert isinstance(of_expr.quantifier, StringLiteral)
     assert of_expr.quantifier.value == "any"
 
@@ -69,29 +67,7 @@ def test_fluent_condition_helpers_reject_boolean_integer_arguments() -> None:
         make_filesize_compare("==", True)
 
     with pytest.raises(TypeError, match="Invalid integer literal value"):
-        build_of_expression(False, Identifier(name="them"))
-
-    with pytest.raises(TypeError, match="Invalid integer literal value"):
         build_entropy_compare(">", True, 1024, 0.5)
-
-
-def test_fluent_condition_helpers_reject_invalid_of_quantifiers() -> None:
-    with pytest.raises(ValidationError, match="of quantifier must not be empty"):
-        build_of_expression("", Identifier(name="them"))
-
-    invalid_quantifier: Any = object()
-    with pytest.raises(TypeError, match="of quantifier must be an integer or string"):
-        build_of_expression(invalid_quantifier, Identifier(name="them"))
-
-
-def test_fluent_condition_helpers_reject_invalid_prebuilt_expression_structure() -> None:
-    invalid_string = StringIdentifier(name="")
-
-    with pytest.raises(ValueError, match="String identifier cannot be empty"):
-        build_of_expression("any", invalid_string)
-
-    with pytest.raises(ValueError, match="String identifier cannot be empty"):
-        make_binary(Identifier(name="valid"), "and", invalid_string)
 
 
 def test_rule_builder_builds_independent_ast_nodes() -> None:

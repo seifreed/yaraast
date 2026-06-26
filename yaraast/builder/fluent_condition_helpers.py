@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 import re
 
-from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     DoubleLiteral,
@@ -13,9 +12,6 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     IntegerLiteral,
-    SetExpression,
-    StringIdentifier,
-    StringLiteral,
     _validate_expression,
 )
 from yaraast.errors import ValidationError
@@ -62,21 +58,6 @@ def make_string_count_compare(string_id: str, operator: str, count: int) -> Bina
     )
 
 
-def build_string_set(*strings: str) -> Expression:
-    if not strings:
-        msg = "At least one string identifier is required"
-        raise ValidationError(msg)
-    if "them" in strings and not all(string == "them" for string in strings):
-        msg = "'them' cannot be mixed with explicit string identifiers"
-        raise ValidationError(msg)
-    if all(s == "them" for s in strings):
-        return Identifier(name="them")
-    for string in strings:
-        validate_string_reference(string)
-    elements: list[Expression] = [StringIdentifier(name=s) for s in strings]
-    return SetExpression(elements=elements)
-
-
 def validate_string_reference(identifier: str) -> None:
     _normalize_string_reference(identifier, "$")
 
@@ -91,24 +72,6 @@ def _normalize_string_reference(identifier: str, marker: str) -> str:
         msg = f"Invalid string reference: {identifier}"
         raise ValidationError(msg)
     return normalized
-
-
-def build_of_expression(quantifier: int | str, string_set: Expression) -> OfExpression:
-    quant_expr: Expression
-    if isinstance(quantifier, int):
-        quant_expr = make_integer_literal(quantifier)
-    elif isinstance(quantifier, str):
-        if not quantifier:
-            msg = "of quantifier must not be empty"
-            raise ValidationError(msg)
-        quant_expr = StringLiteral(value=quantifier)
-    else:
-        msg = "of quantifier must be an integer or string"
-        raise TypeError(msg)
-    return OfExpression(
-        quantifier=quant_expr,
-        string_set=_validate_expression(string_set, "of string set"),
-    )
 
 
 def build_entropy_compare(
