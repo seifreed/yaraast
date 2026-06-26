@@ -14,8 +14,6 @@ from pathlib import Path
 import sys
 import tempfile
 
-import pytest
-
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.parser import Parser
 
@@ -673,7 +671,3 @@ class TestCLIIntegration:
         # Structure should be identical
         assert len(result.added_rules) == 0
         assert len(result.removed_rules) == 0
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
