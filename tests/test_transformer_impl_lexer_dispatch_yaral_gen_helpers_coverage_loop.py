@@ -301,10 +301,7 @@ class TestTransformNodeNonDataclassPath:
     def test_non_dataclass_object_returned_unchanged(self) -> None:
         """A non-dataclass value passed to _transform_node is returned as-is (line 89)."""
 
-        class NotADataclass:
-            pass
-
-        obj = NotADataclass()
+        obj = object()
         t = ASTTransformer()
         node_any: Any = obj
         result = t._transform_node(node_any)
