@@ -72,11 +72,14 @@ def infer_identifier(ctx: Any, node: Identifier) -> YaraType:
     except (TypeError, ValueError) as exc:
         var_type = ctx.env.lookup(node.name)
         if var_type:
+            is_loop_variable = False
             try:
                 _normalize_identifier(node.name, "Identifier name", "loop variable")
             except (TypeError, ValueError):
-                pass
+                is_loop_variable = False
             else:
+                is_loop_variable = True
+            if is_loop_variable:
                 return cast(YaraType, var_type)
         ctx.errors.append(str(exc))
         return UnknownType()

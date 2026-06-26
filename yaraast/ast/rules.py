@@ -204,20 +204,20 @@ class Rule(ASTNode):
             elif isinstance(modifier, str):
                 try:
                     modifiers.append(str(RuleModifier.from_string(modifier)))
-                    continue
                 except ValidationError:
-                    pass
-                modifier_name = require_rule_modifier_identifier(
-                    modifier,
-                    "Rule modifier",
-                    "rule modifier",
-                )
-                try:
-                    RuleModifierType.from_string(modifier_name)
-                except ValidationError as exc:
-                    msg = f"Invalid rule modifier '{modifier_name}'"
-                    raise ValueError(msg) from exc
-                modifiers.append(modifier_name)
+                    modifier_name = require_rule_modifier_identifier(
+                        modifier,
+                        "Rule modifier",
+                        "rule modifier",
+                    )
+                    try:
+                        RuleModifierType.from_string(modifier_name)
+                    except ValidationError as exc:
+                        msg = f"Invalid rule modifier '{modifier_name}'"
+                        raise ValueError(msg) from exc
+                    modifiers.append(modifier_name)
+                else:
+                    continue
             else:
                 msg = "Rule modifiers item must be RuleModifier or string"
                 raise TypeError(msg)

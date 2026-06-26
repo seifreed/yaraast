@@ -578,10 +578,13 @@ def _parse_integer_literal_text(value: str) -> int | str | None:
         return value
     if _has_uppercase_integer_base_prefix(value):
         return None
+    parsed_integer: int | None
     try:
-        return int(value)
+        parsed_integer = int(value)
     except ValueError:
-        pass
+        parsed_integer = None
+    else:
+        return parsed_integer
     try:
         return int(value, 0)
     except ValueError:

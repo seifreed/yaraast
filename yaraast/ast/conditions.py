@@ -69,11 +69,12 @@ def _validate_quantifier_text(value: str, field_name: str, *, allow_percentage: 
         if _PERCENTAGE_QUANTIFIER_RE.fullmatch(value) is not None:
             return
     if any(marker in value for marker in (".", "e", "E")):
+        parsed_float: float | None = None
         try:
             parsed_float = float(value)
         except ValueError:
-            pass
-        else:
+            parsed_float = None
+        if parsed_float is not None:
             if not math.isfinite(parsed_float):
                 msg = f"{field_name} must be finite"
                 raise ValueError(msg)
