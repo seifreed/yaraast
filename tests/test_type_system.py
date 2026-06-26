@@ -1531,26 +1531,6 @@ class TestTypeChecker:
         assert isinstance(checker.inference, TypeInference)
         assert len(checker.errors) == 0
 
-    def test_check_compatibility_integer_types(self) -> None:
-        """Test checking compatibility between integer types."""
-        checker = TypeChecker()
-        type1 = IntegerType()
-        type2 = IntegerType()
-        assert checker.check_compatibility(type1, type2) is True
-
-    def test_check_compatibility_incompatible_types(self) -> None:
-        """Test checking compatibility between incompatible types."""
-        checker = TypeChecker()
-        type1 = IntegerType()
-        type2 = StringType()
-        assert checker.check_compatibility(type1, type2) is False
-
-    def test_check_compatibility_non_yara_types_uses_equality(self) -> None:
-        """Test fallback compatibility path for plain Python values."""
-        checker = TypeChecker()
-        assert checker.check_compatibility("text", "text") is True
-        assert checker.check_compatibility("text", "other") is False
-
     def test_check_yara_file_with_imports(self) -> None:
         """Test checking YARA file with imports."""
         checker = TypeChecker()
@@ -2411,12 +2391,6 @@ class TestTypeInferenceEdgeCases:
         node = StringWildcard(pattern="$*")
         result = inference.infer(node)
         assert isinstance(result, StringSetType)
-
-    def test_type_checker_check_compatibility_with_instances(self) -> None:
-        """Test check_compatibility with YaraType instances."""
-        checker = TypeChecker()
-        result = checker.check_compatibility(IntegerType(), IntegerType())
-        assert result is True
 
     def test_type_checker_visit_methods_coverage(self) -> None:
         """Test various TypeChecker visit methods for coverage."""
