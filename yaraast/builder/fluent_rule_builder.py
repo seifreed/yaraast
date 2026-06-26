@@ -50,11 +50,6 @@ class FluentRuleBuilder:
         self._rule_builder.global_()
         return self
 
-    def public(self) -> Self:
-        """Mark rule as public (remove private modifier)."""
-        self._rule_builder.public()
-        return self
-
     def tagged(self, *tags: str) -> Self:
         """Add tags to the rule."""
         self._rule_builder.with_tags(*tags)
