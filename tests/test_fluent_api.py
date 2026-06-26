@@ -79,15 +79,16 @@ class TestFluentConditionBuilder:
 
     def test_string_match(self) -> None:
         """Test string matching condition."""
-        cond = FluentConditionBuilder.match_string("$test").build()
+        cond = FluentConditionBuilder().string_matches("$test").build()
         assert cond is not None
 
     def test_logical_operators(self) -> None:
         """Test logical operators."""
         cond = (
-            FluentConditionBuilder.match_string("$a")
-            .and_(FluentConditionBuilder.match_string("$b"))
-            .or_(FluentConditionBuilder.match_string("$c"))
+            FluentConditionBuilder()
+            .string_matches("$a")
+            .and_(FluentConditionBuilder().string_matches("$b"))
+            .or_(FluentConditionBuilder().string_matches("$c"))
             .build()
         )
         assert cond is not None

@@ -230,18 +230,3 @@ class FluentConditionBuilder(ConditionBuilder):
         if count < 0:
             msg = f"{name} count must be non-negative, got {count}"
             raise ValidationError(msg)
-
-    # Factory methods
-    @staticmethod
-    def match_string(string_id: str) -> FluentConditionBuilder:
-        """Create condition matching a string."""
-        validate_string_reference(string_id)
-        return FluentConditionBuilder(StringIdentifier(name=string_id))
-
-    @staticmethod
-    def always_true() -> FluentConditionBuilder:
-        """Always true condition."""
-        return FluentConditionBuilder(BooleanLiteral(value=True))
-
-
-# Convenience functions

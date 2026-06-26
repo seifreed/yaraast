@@ -56,14 +56,12 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
 
     with pytest.raises(ValidationError):
         FluentConditionBuilder().build()
-    assert isinstance(
-        FluentConditionBuilder.match_string("$a").build(), type(b.string_matches("$a").build())
-    )
-    assert isinstance(FluentConditionBuilder.always_true().build(), BooleanLiteral)
+    assert isinstance(b.string_matches("$a").build(), type(b.string_matches("$a").build()))
+    assert isinstance(FluentConditionBuilder(BooleanLiteral(value=True)).build(), BooleanLiteral)
 
     with pytest.raises(ValidationError):
         FluentConditionBuilder().build()
-    assert FluentConditionBuilder.match_string("$a").build() is not None
+    assert FluentConditionBuilder().string_matches("$a").build() is not None
     assert ConditionBuilder().any_of("them").build() is not None
     assert ConditionBuilder().all_of("them").build() is not None
     assert ConditionBuilder().any_of("them").not_().build() is not None
@@ -86,7 +84,7 @@ def test_fluent_condition_string_in_last_kb_expression_shape() -> None:
 @pytest.mark.parametrize("identifier", ["$bad-key", "$bad space", "$", ""])
 def test_fluent_condition_builder_rejects_invalid_string_references(identifier: str) -> None:
     with pytest.raises(ValidationError, match="Invalid string reference"):
-        FluentConditionBuilder.match_string(identifier)
+        FluentConditionBuilder().string_matches(identifier)
 
     with pytest.raises(ValidationError, match="Invalid string reference"):
         FluentConditionBuilder().one_of("$a", identifier)
