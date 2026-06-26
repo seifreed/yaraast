@@ -108,14 +108,11 @@ def _sample_ast() -> YaraFile:
 
 
 def test_protobuf_has_field_propagates_missing_message_api() -> None:
-    class NotAProtobufMessage:
-        pass
-
     location = yara_ast_pb2.SourceLocation(line=1)
     assert _protobuf_has_field(location, "line") is False
 
     with pytest.raises(AttributeError):
-        _protobuf_has_field(NotAProtobufMessage(), "line")
+        _protobuf_has_field(object(), "line")
 
 
 def test_protobuf_serializer_roundtrip_and_metadata() -> None:

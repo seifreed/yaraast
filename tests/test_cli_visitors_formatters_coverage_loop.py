@@ -30,10 +30,7 @@ def test_node_text_returns_default_when_no_value_or_name_attr() -> None:
     """_node_text must fall through to `default` (line 32) when the object
     carries neither a `value` nor a `name` attribute."""
 
-    class _Bare:
-        pass
-
-    result = _node_text(_Bare(), "fallback")
+    result = _node_text(object(), "fallback")
     assert result == "fallback"
 
 
@@ -86,8 +83,6 @@ def test_string_set_item_text_delegates_to_format_expression_via_accept() -> Non
 
 class _NoSpecialAttrs:
     """Object with no pattern, name, value, accept, or string type."""
-
-    pass
 
 
 def test_string_set_item_text_final_fallback_to_node_text() -> None:
