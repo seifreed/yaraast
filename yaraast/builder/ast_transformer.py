@@ -208,12 +208,6 @@ class RuleTransformer:
         self.rule.strings.append(deepcopy(string_def))
         return self
 
-    def remove_string(self, identifier: str) -> RuleTransformer:
-        """Remove a string definition by identifier."""
-        identifier = self._require_text(identifier, "String identifier")
-        self.rule.strings = [s for s in self.rule.strings if s.identifier != identifier]
-        return self
-
     def replace_condition(self, new_condition: Expression) -> RuleTransformer:
         """Replace the rule condition."""
         self.rule.condition = self._require_expression(

@@ -145,14 +145,8 @@ def test_rule_transformer_prefix_suffix_and_condition_transform_paths() -> None:
     assert [s.identifier for s in prefixed.strings] == ["$p_one_s", "p_two_s"]
     assert isinstance(prefixed.condition, BinaryExpression)
 
-    with_added = (
-        RuleTransformer(prefixed).add_string(PlainString(identifier="$extra", value="z")).build()
-    )
-    with_removed = RuleTransformer(with_added).remove_string("$extra").build()
-    assert [s.identifier for s in with_removed.strings] == ["$p_one_s", "p_two_s"]
-
     cond_transformed = (
-        RuleTransformer(with_removed)
+        RuleTransformer(prefixed)
         .transform_condition(
             lambda expr: BinaryExpression(left=expr, operator="and", right=Identifier(name="ok"))
         )
@@ -748,7 +742,6 @@ def test_rule_transformer_rejects_invalid_rule_names_without_partial_update(
         ("set_author", True, "Rule author must be a string"),
         ("prefix_strings", True, "String prefix must be a string"),
         ("suffix_strings", True, "String suffix must be a string"),
-        ("remove_string", True, "String identifier must be a string"),
     ],
 )
 def test_rule_transformer_rejects_non_string_text_inputs_without_partial_update(
