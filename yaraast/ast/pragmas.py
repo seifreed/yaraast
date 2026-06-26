@@ -390,26 +390,6 @@ class PragmaBlock(ASTNode):
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_pragma_block(self)
 
-    def add_pragma(self, pragma: Pragma) -> None:
-        """Add a pragma to this block."""
-        scope = _require_scope(self.scope)
-        if not isinstance(pragma, Pragma):
-            msg = "Pragma input must be a Pragma"
-            raise TypeError(msg)
-        pragma.validate_structure()
-        pragma.scope = scope
-        self.pragmas.append(pragma)
-
-    def get_pragmas_by_type(self, pragma_type: PragmaType) -> list[Pragma]:
-        """Get all pragmas of a specific type."""
-        pragma_type = _require_pragma_type(pragma_type)
-        return [p for p in self._validated_pragmas() if p.pragma_type == pragma_type]
-
-    def has_pragma(self, pragma_type: PragmaType) -> bool:
-        """Check if block contains a pragma of specific type."""
-        pragma_type = _require_pragma_type(pragma_type)
-        return any(p.pragma_type == pragma_type for p in self._validated_pragmas())
-
     def __str__(self) -> str:
         return "\n".join(str(pragma) for pragma in self._validated_pragmas())
 

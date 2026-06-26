@@ -722,56 +722,6 @@ def test_pragma_block_accept_calls_visitor() -> None:
     assert block.accept(_V()) == 1
 
 
-def test_pragma_block_add_pragma_appends_and_sets_scope() -> None:
-    """add_pragma appends the pragma and reassigns its scope to match the block."""
-    block = PragmaBlock(scope=PragmaScope.RULE)
-    pragma = Pragma(PragmaType.PRAGMA, "vendor")
-    block.add_pragma(pragma)
-    assert pragma in block.pragmas
-    assert pragma.scope == PragmaScope.RULE
-
-
-def test_pragma_block_add_pragma_raises_for_non_pragma() -> None:
-    block = PragmaBlock(scope=PragmaScope.FILE)
-    with pytest.raises(TypeError, match="Pragma input must be a Pragma"):
-        block.add_pragma(cast(Any, object()))
-
-
-def test_pragma_block_add_pragma_raises_when_pragma_fails_validate_structure() -> None:
-    """If the pragma's own validate_structure raises, add_pragma propagates that error."""
-    block = PragmaBlock(scope=PragmaScope.FILE)
-    broken = Pragma(PragmaType.PRAGMA, "")
-    with pytest.raises(ValueError, match="Pragma name cannot be empty"):
-        block.add_pragma(broken)
-    assert block.pragmas == []
-
-
-def test_pragma_block_get_pragmas_by_type_returns_matching_pragmas() -> None:
-    define = Pragma(PragmaType.DEFINE, "define", ["X"])
-    undef = Pragma(PragmaType.UNDEF, "undef", ["X"])
-    block = PragmaBlock([define, undef])
-    result = block.get_pragmas_by_type(PragmaType.DEFINE)
-    assert result == [define]
-
-
-def test_pragma_block_get_pragmas_by_type_returns_empty_for_absent_type() -> None:
-    p = Pragma(PragmaType.PRAGMA, "vendor")
-    block = PragmaBlock([p])
-    assert block.get_pragmas_by_type(PragmaType.DEFINE) == []
-
-
-def test_pragma_block_has_pragma_returns_true_when_type_present() -> None:
-    p = Pragma(PragmaType.PRAGMA, "vendor")
-    block = PragmaBlock([p])
-    assert block.has_pragma(PragmaType.PRAGMA) is True
-
-
-def test_pragma_block_has_pragma_returns_false_when_type_absent() -> None:
-    p = Pragma(PragmaType.PRAGMA, "vendor")
-    block = PragmaBlock([p])
-    assert block.has_pragma(PragmaType.DEFINE) is False
-
-
 def test_pragma_block_str_joins_pragmas_with_newlines() -> None:
     p1 = Pragma(PragmaType.PRAGMA, "vendor", ["on"])
     p2 = Pragma(PragmaType.UNDEF, "undef", ["OLD"])

@@ -191,7 +191,7 @@ def test_custom_pragma_preserves_invalid_falsy_parameters(parameters: Any) -> No
         custom.validate_structure()
 
 
-def test_custom_pragma_and_block_helpers() -> None:
+def test_custom_pragma_and_block_string_output() -> None:
     custom = CustomPragma(
         name="vendor",
         arguments=["x", "y"],
@@ -201,94 +201,36 @@ def test_custom_pragma_and_block_helpers() -> None:
     assert custom.parameters["level"] == 3
     assert str(custom).startswith("#pragma vendor")
 
-    block = PragmaBlock(scope=PragmaScope.RULE)
-    block.add_pragma(custom)
-    assert block.has_pragma(PragmaType.CUSTOM) is True
-    assert block.get_pragmas_by_type(PragmaType.CUSTOM) == [custom]
-    assert block.get_pragmas_by_type(PragmaType.DEFINE) == []
+    block = PragmaBlock([custom], scope=PragmaScope.RULE)
     assert str(block) == str(custom)
 
 
-@pytest.mark.parametrize("pragma_type", [None, 1, "custom", object()])
-def test_pragma_block_rejects_invalid_lookup_types(pragma_type: Any) -> None:
-    block = PragmaBlock(scope=PragmaScope.RULE)
-
-    with pytest.raises(TypeError, match="Pragma type must be a PragmaType"):
-        block.get_pragmas_by_type(cast(PragmaType, pragma_type))
-    with pytest.raises(TypeError, match="Pragma type must be a PragmaType"):
-        block.has_pragma(cast(PragmaType, pragma_type))
-
-
 @pytest.mark.parametrize(
-    ("value", "operation", "message"),
+    ("value", "message"),
     [
         (
             cast(Any, "bad"),
-            "get_pragmas_by_type",
             "PragmaBlock pragmas must be a list or tuple",
         ),
         (
             [cast(Any, object())],
-            "get_pragmas_by_type",
             "PragmaBlock pragmas must contain Pragma nodes",
         ),
         (
             [Pragma(cast(Any, "bad"), "vendor")],
-            "get_pragmas_by_type",
-            "Pragma type must be a PragmaType",
-        ),
-        (
-            cast(Any, "bad"),
-            "has_pragma",
-            "PragmaBlock pragmas must be a list or tuple",
-        ),
-        (
-            [cast(Any, object())],
-            "has_pragma",
-            "PragmaBlock pragmas must contain Pragma nodes",
-        ),
-        (
-            [Pragma(cast(Any, "bad"), "vendor")],
-            "has_pragma",
             "Pragma type must be a PragmaType",
         ),
     ],
 )
-def test_pragma_block_lookup_helpers_reject_invalid_internal_state(
+def test_pragma_block_string_rejects_invalid_internal_state(
     value: Any,
-    operation: str,
     message: str,
 ) -> None:
     block = PragmaBlock(scope=PragmaScope.RULE)
     block.pragmas = value
 
     with pytest.raises(TypeError, match=message):
-        if operation == "get_pragmas_by_type":
-            block.get_pragmas_by_type(PragmaType.PRAGMA)
-        else:
-            block.has_pragma(PragmaType.PRAGMA)
-
-
-def test_pragma_block_rejects_invalid_pragmas_without_partial_update() -> None:
-    custom = CustomPragma(name="vendor", arguments=["x"], scope=PragmaScope.FILE)
-    block = PragmaBlock(scope=PragmaScope.RULE)
-    block.add_pragma(custom)
-
-    with pytest.raises(TypeError, match="Pragma input must be a Pragma"):
-        block.add_pragma(cast(Any, object()))
-
-    assert block.pragmas == [custom]
-
-
-def test_pragma_block_add_pragma_rejects_invalid_scope_without_partial_update() -> None:
-    block = PragmaBlock(scope=cast(Any, "file"))
-    pragma = Pragma(PragmaType.PRAGMA, "vendor")
-
-    with pytest.raises(TypeError, match="Pragma scope must be a PragmaScope"):
-        block.add_pragma(pragma)
-
-    assert block.pragmas == []
-    assert pragma.scope == PragmaScope.FILE
+        str(block)
 
 
 def test_create_helpers_and_in_rule_positions() -> None:
