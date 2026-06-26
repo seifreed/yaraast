@@ -382,14 +382,13 @@ class TestRuleBuilderHexStrings:
         assert isinstance(hex_string, HexString)
         assert len(hex_string.tokens) == 3
 
-    def test_with_hex_string_builder_method(self) -> None:
-        """With_hex_string_builder should use builder function."""
+    def test_with_hex_string_with_custom_builder_tokens(self) -> None:
+        """With_hex_string should accept a HexStringBuilder."""
         builder = RuleBuilder(name="HexFunctionRule")
 
-        def build_hex(hb: HexStringBuilder) -> None:
-            hb.add(0xFF).add(0xAA).wildcard(2)
+        hex_builder = HexStringBuilder().add(0xFF).add(0xAA).wildcard(2)
 
-        builder.with_hex_string_builder("$hex", build_hex)
+        builder.with_hex_string("$hex", hex_builder)
         rule = builder.build()
 
         assert len(rule.strings) == 1
@@ -474,13 +473,10 @@ class TestRuleBuilderCompleteRules:
             RuleBuilder(name="PE_Detection")
             .with_tag("pe")
             .with_tag("windows")
-            .with_hex_string_builder(
-                "$mz_header",
-                lambda hb: hb.add(0x4D).add(0x5A),
-            )
-            .with_hex_string_builder(
+            .with_hex_string("$mz_header", HexStringBuilder().add(0x4D).add(0x5A))
+            .with_hex_string(
                 "$pe_header",
-                lambda hb: hb.add(0x50).add(0x45).add(0x00).add(0x00),
+                HexStringBuilder().add(0x50).add(0x45).add(0x00).add(0x00),
             )
             .with_any_string()
             .build()
@@ -519,9 +515,10 @@ class TestRuleBuilderCompleteRules:
             .with_string("$cmd", "cmd.exe", nocase=True)
             .with_string("$ps", "powershell", nocase=True)
             .with_regex_string("$url", r"https?://[a-zA-Z0-9.-]+\.[a-z]{2,}")
-            .with_hex_string_builder(
+            .with_hex_string(
                 "$shellcode",
-                lambda hb: hb.add(0x48)
+                HexStringBuilder()
+                .add(0x48)
                 .nibble("8?")
                 .wildcard(2)
                 .jump_varying(2, 8)
@@ -612,7 +609,7 @@ class TestRuleBuilderFluentAPI:
             .with_author("Builder Test")
             .with_string("$s1", "test")
             .with_regex_string("$re", r"\w+")
-            .with_hex_string_builder("$hex", lambda hb: hb.add(0xFF))
+            .with_hex_string("$hex", HexStringBuilder().add(0xFF))
             .with_any_string()
             .build()
         )

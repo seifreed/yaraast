@@ -314,21 +314,6 @@ class RuleBuilder:
         )
         return self
 
-    def with_hex_string_builder(
-        self,
-        identifier: str,
-        builder_func: Callable[[HexStringBuilder], object],
-    ) -> Self:
-        """Add a hex string using a builder callback."""
-        from yaraast.builder.hex_string_builder import HexStringBuilder
-
-        if not callable(builder_func):
-            msg = "Hex string builder callback must be callable"
-            raise TypeError(msg)
-        builder = HexStringBuilder(identifier=identifier)
-        builder_func(builder)
-        return self.with_hex_string(identifier, builder)
-
     def with_hex_string_raw(self, identifier: str, hex_pattern: str) -> Self:
         """Add a hex string from raw pattern."""
         hex_pattern = _validate_hex_pattern(hex_pattern)

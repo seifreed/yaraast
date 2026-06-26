@@ -48,7 +48,7 @@ def test_rule_builder_rejects_empty_hex_string_definitions() -> None:
 
 def test_rule_builder_rejects_standalone_hex_jump_definitions() -> None:
     with pytest.raises(ValidationError, match="HexJump cannot appear"):
-        RuleBuilder("bad").with_hex_string_builder("$h", lambda hb: hb.jump(1, 2))
+        RuleBuilder("bad").with_hex_string("$h", HexStringBuilder().jump(1, 2))
 
     with pytest.raises(ValidationError, match="HexJump cannot appear"):
         RuleBuilder("bad").with_hex_string("$h", HexStringBuilder().jump(1, 2))
@@ -56,12 +56,13 @@ def test_rule_builder_rejects_standalone_hex_jump_definitions() -> None:
 
 def test_rule_builder_rejects_invalid_hex_alternatives() -> None:
     with pytest.raises(ValidationError, match="HexAlternative branches must not be empty"):
-        RuleBuilder("bad").with_hex_string_builder("$h", lambda hb: hb.alternative([]))
+        RuleBuilder("bad").with_hex_string("$h", HexStringBuilder().alternative([]))
 
     with pytest.raises(ValidationError, match="Unbounded HexJump"):
-        RuleBuilder("bad").with_hex_string_builder(
+        RuleBuilder("bad").with_hex_string(
             "$h",
-            lambda hb: hb.add(0x41)
+            HexStringBuilder()
+            .add(0x41)
             .alternative(HexStringBuilder().add(0x42).jump_any().add(0x43))
             .add(0x44),
         )
@@ -91,6 +92,3 @@ def test_rule_builder_rejects_unsupported_raw_hex_tokens() -> None:
 def test_rule_builder_rejects_invalid_hex_builder_argument_shapes() -> None:
     with pytest.raises(TypeError, match="Hex string builder must be"):
         RuleBuilder("bad").with_hex_string("$h", cast(Any, object()))
-
-    with pytest.raises(TypeError, match="Hex string builder callback must be callable"):
-        RuleBuilder("bad").with_hex_string_builder("$h", cast(Any, 123))
