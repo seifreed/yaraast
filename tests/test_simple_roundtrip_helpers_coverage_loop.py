@@ -1387,11 +1387,7 @@ def test_serialize_hex_string_anonymous_true_flag_in_output() -> None:
 def test_serialize_string_fallback_for_non_ast_non_string_def() -> None:
     """serialize_string fallback for an object that is not an ASTNode."""
 
-    class _Weird:
-        pass
-
-    weird_instance: Any = _Weird()
-    result = serialize_string(weird_instance)
+    result = serialize_string(object())
     assert result["type"] == "StringDefinition"
     assert "data" in result
 
