@@ -327,39 +327,3 @@ class TestCodeGeneration:
         assert "$str" in code
         assert "nocase" in code
         assert "condition:" in code
-
-
-if __name__ == "__main__":
-    # Run a simple test
-    print("Testing fluent API...")
-
-    # Create a test rule
-    rule_ast = (
-        rule("fluent_test")
-        .tagged("test", "fluent")
-        .authored_by("Test Suite")
-        .described_as("Fluent API test rule")
-        .text_string("$hello", "hello world")
-        .nocase()
-        .hex_string("$mz", "4D 5A")
-        .regex_string("$email", r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-        .with_condition_builder(
-            lambda c: c.string_matches("$hello")
-            .and_(c.string_matches("$mz").at(0))
-            .or_(c.string_matches("$email")),
-        )
-        .build()
-    )
-
-    print(f"✓ Created rule: {rule_ast.name}")
-    print(f"✓ Tags: {[tag.name for tag in rule_ast.tags]}")
-    print(f"✓ Strings: {len(rule_ast.strings)}")
-    print(f"✓ Has condition: {rule_ast.condition is not None}")
-
-    # Test transformation
-    transformed = transform_rule(rule_ast).add_prefix("test_").add_tag("transformed").build()
-
-    print(f"✓ Transformed rule: {transformed.name}")
-    print(f"✓ New tags: {[tag.name for tag in transformed.tags]}")
-
-    print("✅ Fluent API tests passed!")
