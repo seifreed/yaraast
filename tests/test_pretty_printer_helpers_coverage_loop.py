@@ -169,11 +169,8 @@ def test_format_hex_token_unsupported_type_raises_type_error() -> None:
     a type not matched by any isinstance guard.
     """
 
-    class _Unknown:
-        pass
-
     with pytest.raises(TypeError, match="Unsupported hex token '_Unknown' for libyara output"):
-        _format_hex_token(cast(int, _Unknown()), True, True)
+        _format_hex_token(cast(int, type("_Unknown", (), {})()), True, True)
 
 
 # ---------------------------------------------------------------------------
