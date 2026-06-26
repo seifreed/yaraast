@@ -72,10 +72,6 @@ class DiffResult:
             summary[diff.diff_type.value] += 1
         return summary
 
-    def get_changes_by_type(self, diff_type: DiffType) -> list[DiffNode]:
-        """Get all changes of a specific type."""
-        return [diff for diff in self.differences if diff.diff_type == diff_type]
-
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {

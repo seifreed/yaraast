@@ -256,7 +256,7 @@ class TestAstDiff:
         assert result.has_changes
         assert len(result.differences) > 0
 
-        added_rules = result.get_changes_by_type(DiffType.ADDED)
+        added_rules = [diff for diff in result.differences if diff.diff_type == DiffType.ADDED]
         assert len(added_rules) == 1
         assert added_rules[0].path == "/rules/test2"
         assert added_rules[0].new_value == "test2"
@@ -278,7 +278,7 @@ class TestAstDiff:
 
         assert result.has_changes
 
-        removed_rules = result.get_changes_by_type(DiffType.REMOVED)
+        removed_rules = [diff for diff in result.differences if diff.diff_type == DiffType.REMOVED]
         assert len(removed_rules) == 1
         assert removed_rules[0].path == "/rules/test2"
         assert removed_rules[0].old_value == "test2"
