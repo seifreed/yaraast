@@ -8,7 +8,7 @@ from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.builder.ast_transformer import (
     RuleTransformer,
-    transform_yara_file,
+    YaraFileTransformer,
 )
 
 
@@ -56,7 +56,7 @@ def test_transformers_build_independent_ast_nodes() -> None:
     assert second_rule.strings[0].identifier == "$a"
     assert rule_transformer.build().name == "r2"
 
-    file_transformer = transform_yara_file(YaraFile(rules=[rule])).add_import("pe")
+    file_transformer = YaraFileTransformer(YaraFile(rules=[rule])).add_import("pe")
     first_file = file_transformer.build()
     second_file = file_transformer.build()
     first_file.imports[0].module = "corrupted"
@@ -72,12 +72,12 @@ def test_yara_file_transformer_and_merge() -> None:
     rule2 = Rule(name="r2", tags=[Tag(name="b")])
     yf1 = YaraFile(imports=[Import(module="pe")], includes=[Include(path="inc.yar")], rules=[rule1])
 
-    merged = transform_yara_file(yf1).add_import("math").add_rule(rule2).build()
+    merged = YaraFileTransformer(yf1).add_import("math").add_rule(rule2).build()
     assert len(merged.imports) == 2
     assert len(merged.rules) == 2
 
     transformed = (
-        transform_yara_file(merged)
+        YaraFileTransformer(merged)
         .add_import("hash")
         .remove_include("inc.yar")
         .add_tag_to_all_rules("all_rules")
@@ -97,7 +97,7 @@ def test_create_variant_and_collection() -> None:
     assert any(str(m) == "private" for m in variant.modifiers)
 
     collection = (
-        transform_yara_file(YaraFile())
+        YaraFileTransformer(YaraFile())
         .add_rule(RuleTransformer(base).add_prefix("grp_").build())
         .add_rule(RuleTransformer(variant).add_prefix("grp_").build())
         .build()

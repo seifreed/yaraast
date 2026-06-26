@@ -31,7 +31,6 @@ from yaraast.builder.ast_transformer import (
     RuleTransformer,
     YaraFileTransformer,
     transform_rule,
-    transform_yara_file,
 )
 from yaraast.errors import ValidationError
 
@@ -91,9 +90,6 @@ def test_yara_file_clone_and_transform_helpers_reject_invalid_file_inputs() -> N
 
     with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
         YaraFileTransformer(cast(Any, object()))
-
-    with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
-        transform_yara_file(cast(Any, object()))
 
 
 def test_clone_helpers_preserve_rule_metadata_and_pragmas() -> None:
@@ -565,7 +561,7 @@ def test_convenience_transform_functions_and_direct_transform_paths() -> None:
     assert {inc.path for inc in merged.includes} == {"x.yar", "y.yar"}
     assert [r.name for r in merged.rules] == ["base", "pre_variant_suf"]
 
-    helper_transformed = transform_yara_file(merged).remove_include("x.yar").build()
+    helper_transformed = YaraFileTransformer(merged).remove_include("x.yar").build()
     assert {inc.path for inc in helper_transformed.includes} == {"y.yar"}
 
     direct_clone = CloneTransformer.clone_rule(base)

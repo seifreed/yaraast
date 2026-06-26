@@ -631,8 +631,3 @@ class YaraFileTransformer:
 def transform_rule(rule: Rule) -> RuleTransformer:
     """Create a rule transformer."""
     return RuleTransformer(rule)
-
-
-def transform_yara_file(yara_file: YaraFile) -> YaraFileTransformer:
-    """Create a YARA file transformer."""
-    return YaraFileTransformer(yara_file)
