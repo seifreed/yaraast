@@ -47,10 +47,7 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
 )
 from yaraast.ast.modifiers import MetaEntry, RuleModifier, RuleModifierType
-from yaraast.ast.pragmas import (
-    create_in_rule_pragma,
-    create_include_once,
-)
+from yaraast.ast.pragmas import IncludeOncePragma, InRulePragma
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import PlainString, StringDefinition
 from yaraast.codegen.generator import CodeGenerator
@@ -131,7 +128,7 @@ def test_emit_top_level_line_writes_rendered_pragma() -> None:
     A top-level IncludeOncePragma returns '#include_once', which is truthy,
     so it exercises the branch at line 40.
     """
-    pragma = create_include_once()
+    pragma = IncludeOncePragma()
     rule = Rule(name="r", condition=BooleanLiteral(True))
     yf = YaraFile(pragmas=[pragma], rules=[rule])
 
@@ -374,7 +371,7 @@ def test_write_in_rule_pragmas_rendered_with_trailing_comment() -> None:
     visit(InRulePragma) returns '#include_once' (non-empty), so the 'if rendered:'
     branch is taken and _write_line is called with the trailing_comment argument.
     """
-    pragma = create_in_rule_pragma(create_include_once(), position="before_strings")
+    pragma = InRulePragma(IncludeOncePragma(), position="before_strings")
     pragma.trailing_comment = Comment("once only")
 
     rule = Rule(name="r", pragmas=[pragma], condition=BooleanLiteral(True))
@@ -390,7 +387,7 @@ def test_write_in_rule_pragmas_rendered_with_trailing_comment() -> None:
 
 def test_write_in_rule_pragmas_rendered_without_trailing_comment() -> None:
     """InRulePragma without a trailing_comment must render the pragma line cleanly."""
-    pragma = create_in_rule_pragma(create_include_once(), position="after_strings")
+    pragma = InRulePragma(IncludeOncePragma(), position="after_strings")
     string = PlainString(identifier="$s", value="x")
     rule = Rule(
         name="r",
@@ -422,7 +419,7 @@ def test_write_in_rule_pragmas_else_branch_with_trailing_comment() -> None:
 
     The trailing_comment must still be written even when the rendered body is empty.
     """
-    pragma = create_in_rule_pragma(create_include_once(), position="before_strings")
+    pragma = InRulePragma(IncludeOncePragma(), position="before_strings")
     pragma.trailing_comment = Comment("standalone comment")
 
     class _FalsyVisitPrinter(_RealPrinter):
@@ -447,7 +444,7 @@ def test_write_in_rule_pragmas_else_branch_no_trailing_comment() -> None:
 
     The inner 'if trailing_comment:' at line 165 must not write anything.
     """
-    pragma = create_in_rule_pragma(create_include_once(), position="before_strings")
+    pragma = InRulePragma(IncludeOncePragma(), position="before_strings")
     # No trailing_comment set — it defaults to None via ASTNode
 
     class _FalsyVisitPrinter(_RealPrinter):

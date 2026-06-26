@@ -30,14 +30,6 @@ from yaraast.ast.pragmas import (
     _validate_pragma_parameter_value,
     _validate_pragma_parameters,
     _validate_yara_identifier,
-    create_define,
-    create_endif,
-    create_ifdef,
-    create_ifndef,
-    create_in_rule_pragma,
-    create_include_once,
-    create_pragma,
-    create_undef,
 )
 
 # ---------------------------------------------------------------------------
@@ -747,84 +739,6 @@ def test_pragma_block_validated_pragmas_raises_for_tuple_of_pragmas() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Convenience factory functions — lines 452-458, 463, 468-471, 476, 481,
-#                                  486, 491, 499-502
-# ---------------------------------------------------------------------------
-
-
-def test_create_pragma_produces_known_type_pragma() -> None:
-    p = create_pragma("define", ["X", "1"])
-    assert isinstance(p, Pragma)
-    assert p.pragma_type == PragmaType.DEFINE
-
-
-def test_create_pragma_produces_custom_pragma_for_unknown_name() -> None:
-    p = create_pragma("my_vendor", ["opt"], scope=PragmaScope.LOCAL)
-    assert isinstance(p, CustomPragma)
-    assert p.scope == PragmaScope.LOCAL
-
-
-def test_create_pragma_with_none_arguments_defaults_to_empty() -> None:
-    p = create_pragma("pragma")
-    assert p.arguments == []
-
-
-def test_create_include_once_returns_include_once_pragma() -> None:
-    p = create_include_once()
-    assert isinstance(p, IncludeOncePragma)
-    assert str(p) == "#include_once"
-
-
-def test_create_define_with_value() -> None:
-    d = create_define("LEVEL", "5")
-    assert isinstance(d, DefineDirective)
-    assert d.macro_value == "5"
-
-
-def test_create_define_without_value() -> None:
-    d = create_define("FLAG")
-    assert d.macro_value is None
-
-
-def test_create_undef_returns_undef_directive() -> None:
-    u = create_undef("OLD_MACRO")
-    assert isinstance(u, UndefDirective)
-    assert u.macro_name == "OLD_MACRO"
-
-
-def test_create_ifdef_returns_conditional_directive() -> None:
-    d = create_ifdef("HAS_FEATURE")
-    assert isinstance(d, ConditionalDirective)
-    assert d.pragma_type == PragmaType.IFDEF
-    assert d.condition == "HAS_FEATURE"
-
-
-def test_create_ifndef_returns_conditional_directive() -> None:
-    d = create_ifndef("NO_FEATURE")
-    assert isinstance(d, ConditionalDirective)
-    assert d.pragma_type == PragmaType.IFNDEF
-
-
-def test_create_endif_returns_conditional_directive() -> None:
-    d = create_endif()
-    assert isinstance(d, ConditionalDirective)
-    assert d.pragma_type == PragmaType.ENDIF
-
-
-def test_create_in_rule_pragma_returns_in_rule_pragma() -> None:
-    p = Pragma(PragmaType.PRAGMA, "vendor")
-    irp = create_in_rule_pragma(p, "after_strings")
-    assert isinstance(irp, InRulePragma)
-    assert irp.position == "after_strings"
-
-
-def test_create_in_rule_pragma_default_position_is_before_strings() -> None:
-    p = Pragma(PragmaType.PRAGMA, "vendor")
-    irp = create_in_rule_pragma(p)
-    assert irp.position == "before_strings"
-
-
-# ---------------------------------------------------------------------------
 # Targeted gap-filler tests for remaining uncovered lines
 # ---------------------------------------------------------------------------
 
@@ -869,9 +783,3 @@ def test_pragma_block_validated_pragmas_raises_for_non_pragma_element() -> None:
     block.pragmas = cast(Any, [object()])
     with pytest.raises(TypeError, match="PragmaBlock pragmas must contain Pragma nodes"):
         block._validated_pragmas()
-
-
-def test_create_in_rule_pragma_raises_for_non_pragma_argument() -> None:
-    """Lines 500-501: non-Pragma first argument raises TypeError."""
-    with pytest.raises(TypeError, match="InRulePragma pragma must be a Pragma"):
-        create_in_rule_pragma(cast(Any, "not_a_pragma"))

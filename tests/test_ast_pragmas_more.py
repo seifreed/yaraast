@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Any, cast
 
 import pytest
@@ -18,14 +17,6 @@ from yaraast.ast.pragmas import (
     PragmaScope,
     PragmaType,
     UndefDirective,
-    create_define,
-    create_endif,
-    create_ifdef,
-    create_ifndef,
-    create_in_rule_pragma,
-    create_include_once,
-    create_pragma,
-    create_undef,
 )
 
 
@@ -233,35 +224,15 @@ def test_pragma_block_string_rejects_invalid_internal_state(
         str(block)
 
 
-def test_create_helpers_and_in_rule_positions() -> None:
-    pragma = create_pragma("define", ["X", "2"])
-    assert isinstance(pragma, Pragma)
-    assert pragma.pragma_type == PragmaType.DEFINE
-
-    include_once = create_include_once()
-    define = create_define("FLAG")
-    undef = create_undef("OLD")
-    ifdef = create_ifdef("FEATURE")
-    ifndef = create_ifndef("NO_FEATURE")
-    endif = create_endif()
-    assert isinstance(include_once, IncludeOncePragma)
-    assert isinstance(define, DefineDirective)
-    assert isinstance(undef, UndefDirective)
-    assert isinstance(ifdef, ConditionalDirective)
-    assert isinstance(ifndef, ConditionalDirective)
-    assert isinstance(endif, ConditionalDirective)
-
-    custom = create_pragma("vendor_specific", ["x"], scope=PragmaScope.LOCAL)
-    assert isinstance(custom, CustomPragma)
-    assert custom.scope == PragmaScope.LOCAL
-
+def test_in_rule_pragma_positions() -> None:
+    pragma = Pragma(PragmaType.DEFINE, "define", ["X", "2"])
     in_rule = InRulePragma(pragma=pragma, position="before_strings")
     assert in_rule.is_before_strings is True
     assert in_rule.is_after_strings is False
     assert in_rule.is_before_condition is False
     assert str(in_rule) == str(pragma)
 
-    in_rule2 = create_in_rule_pragma(pragma, "before_condition")
+    in_rule2 = InRulePragma(pragma, "before_condition")
     assert in_rule2.is_before_condition is True
 
 
@@ -307,99 +278,6 @@ def test_in_rule_pragma_position_properties_reject_invalid_internal_state(
             _ = in_rule_pragma.is_after_strings
         else:
             _ = in_rule_pragma.is_before_condition
-
-
-def test_pragma_helpers_reject_invalid_inputs_at_creation_time() -> None:
-    pragma = create_pragma("vendor")
-
-    invalid_cases: list[tuple[Callable[[], object], str]] = [
-        (
-            lambda: PragmaType.from_string(cast(Any, object())),
-            "Pragma type input must be a string",
-        ),
-        (
-            lambda: create_pragma(cast(Any, object())),
-            "Pragma name must be a string",
-        ),
-        (
-            lambda: create_pragma("vendor", cast(Any, "on")),
-            "Pragma arguments must be a list of strings",
-        ),
-        (
-            lambda: create_pragma("vendor", cast(Any, ["on", object()])),
-            "Pragma arguments must be a list of strings",
-        ),
-        (
-            lambda: create_pragma("vendor", scope=cast(Any, "file")),
-            "Pragma scope must be a PragmaScope",
-        ),
-        (
-            lambda: create_define(cast(Any, object())),
-            "Pragma macro_name must be a string",
-        ),
-        (
-            lambda: create_define("FLAG", cast(Any, object())),
-            "Pragma macro_value must be a string",
-        ),
-        (
-            lambda: create_undef(cast(Any, object())),
-            "Pragma macro_name must be a string",
-        ),
-        (
-            lambda: create_ifdef(cast(Any, object())),
-            "Pragma condition must be a string",
-        ),
-        (
-            lambda: create_ifndef(cast(Any, object())),
-            "Pragma condition must be a string",
-        ),
-        (
-            lambda: create_in_rule_pragma(cast(Any, object())),
-            "InRulePragma pragma must be a Pragma",
-        ),
-        (
-            lambda: create_in_rule_pragma(pragma, cast(Any, object())),
-            "InRulePragma position must be a string",
-        ),
-    ]
-
-    for factory, message in invalid_cases:
-        with pytest.raises(TypeError, match=message):
-            factory()
-
-    empty_cases: list[tuple[Callable[[], object], str]] = [
-        (
-            lambda: PragmaType.from_string("   "),
-            "Pragma type input cannot be empty",
-        ),
-        (
-            lambda: create_pragma(""),
-            "Pragma type input cannot be empty",
-        ),
-        (
-            lambda: create_define(""),
-            "Pragma macro_name cannot be empty",
-        ),
-        (
-            lambda: create_undef(""),
-            "Pragma macro_name cannot be empty",
-        ),
-        (
-            lambda: create_ifdef(""),
-            "Pragma condition cannot be empty",
-        ),
-        (
-            lambda: create_ifndef("   "),
-            "Pragma condition cannot be empty",
-        ),
-        (
-            lambda: create_in_rule_pragma(pragma, ""),
-            "InRulePragma position cannot be empty",
-        ),
-    ]
-    for factory, message in empty_cases:
-        with pytest.raises(ValueError, match=message):
-            factory()
 
 
 def test_pragma_accept_methods() -> None:
