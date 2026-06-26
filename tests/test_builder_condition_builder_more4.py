@@ -170,10 +170,10 @@ def test_condition_builder_rejects_invalid_count_offset_length_identifiers() -> 
 
 def test_condition_builder_match_factory_validates_string_reference() -> None:
     with pytest.raises(ValidationError, match="Invalid string reference"):
-        ConditionBuilder.match("$bad-key")
+        ConditionBuilder().string("$bad-key")
 
     with pytest.raises(TypeError, match="Invalid string reference"):
-        ConditionBuilder.match(cast(Any, 123))
+        ConditionBuilder().string(cast(Any, 123))
 
 
 @pytest.mark.parametrize("identifier", ["$bad-key", "$bad space", "$"])

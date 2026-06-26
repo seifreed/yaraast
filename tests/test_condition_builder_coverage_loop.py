@@ -585,25 +585,6 @@ def test_to_integer_expression_accepts_raw_expression() -> None:
 
 
 # ---------------------------------------------------------------------------
-# match() static factory  (line 548)
-# ---------------------------------------------------------------------------
-
-
-def test_match_static_factory_returns_string_identifier() -> None:
-    """match() must return a ConditionBuilder holding a StringIdentifier."""
-    result = ConditionBuilder.match("$a").build()
-    assert isinstance(result, StringIdentifier)
-    assert result.name == "$a"
-
-
-def test_match_static_factory_with_prefixed_identifier() -> None:
-    """match() must accept '$'-prefixed identifiers and strip nothing — name stays intact."""
-    result = ConditionBuilder.match("$signature_xyz").build()
-    assert isinstance(result, StringIdentifier)
-    assert result.name == "$signature_xyz"
-
-
-# ---------------------------------------------------------------------------
 # them() static factory  (line 553)
 # ---------------------------------------------------------------------------
 

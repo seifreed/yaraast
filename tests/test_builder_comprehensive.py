@@ -875,7 +875,7 @@ class TestConditionBuilderStaticMethods:
 
     def test_match_creates_string_identifier(self) -> None:
         """Match static method should create string identifier."""
-        builder = ConditionBuilder.match("$pattern")
+        builder = ConditionBuilder().string("$pattern")
         expr = builder.build()
 
         assert isinstance(expr, StringIdentifier)

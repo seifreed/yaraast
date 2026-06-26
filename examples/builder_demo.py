@@ -54,7 +54,7 @@ def main() -> None:
         RuleBuilder()
         .with_name("advanced_hex_patterns")
         .with_hex_string("$pattern", hex_builder)
-        .with_condition(ConditionBuilder.match("$pattern"))
+        .with_condition(ConditionBuilder().string("$pattern"))
         .build()
     )
 
