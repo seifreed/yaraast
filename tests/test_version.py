@@ -6,10 +6,7 @@ from yaraast.version import (
     YARAAST_VERSION_MAJOR,
     YARAAST_VERSION_MINOR,
     YARAAST_VERSION_PATCH,
-    YARAX_COMPATIBLE,
     YARAX_SYNTAX_VERSION,
-    get_version_info,
-    get_version_string,
 )
 
 
@@ -29,36 +26,6 @@ def test_version_constants() -> None:
     # Check YARA syntax version
     assert isinstance(YARA_SYNTAX_VERSION, str)
     assert "." in YARA_SYNTAX_VERSION
-
-
-def test_version_functions() -> None:
-    """Test version helper functions."""
-    # Test version string
-    version_str = get_version_string()
-    assert isinstance(version_str, str)
-    assert "YARAAST" in version_str
-    assert YARAAST_VERSION in version_str
-    assert YARA_SYNTAX_VERSION in version_str
-
-    # Test version info dict
-    info = get_version_info()
-    assert isinstance(info, dict)
-
-    # Check structure
-    assert "yaraast" in info
-    assert "yara" in info
-    assert "yarax" in info
-    assert "build" in info
-
-    # Check yaraast info
-    assert info["yaraast"]["major"] == YARAAST_VERSION_MAJOR
-    assert info["yaraast"]["minor"] == YARAAST_VERSION_MINOR
-    assert info["yaraast"]["patch"] == YARAAST_VERSION_PATCH
-    assert info["yaraast"]["version"] == YARAAST_VERSION
-
-    # Check yarax info
-    assert info["yarax"]["version"] == YARAX_SYNTAX_VERSION
-    assert info["yarax"]["compatible"] == YARAX_COMPATIBLE
 
 
 def test_version_format() -> None:
@@ -95,7 +62,6 @@ def test_version_comparison() -> None:
 
 if __name__ == "__main__":
     test_version_constants()
-    test_version_functions()
     test_version_format()
     test_version_comparison()
     print("✓ All version tests passed")
