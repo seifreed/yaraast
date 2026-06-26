@@ -56,11 +56,8 @@ def test_default_visit_returns_none_for_any_node() -> None:
     None.  Calling an unhandled visit method exercises line 28.
     """
 
-    # Arrange: visitor that does not override visit_integer_literal
-    class _DefaultOnlyVisitor(BaseVisitor[None]):
-        pass
-
-    visitor = _DefaultOnlyVisitor()
+    # Arrange: BaseVisitor already provides the default no-op dispatch.
+    visitor = BaseVisitor[None]()
     node = IntegerLiteral(value=42)
 
     # Act: visit_integer_literal falls through to _default_visit (line 28)
