@@ -25,5 +25,5 @@ def test_fluent_condition_string_helpers() -> None:
     expr2 = builder.string_at_entrypoint("$a").build()
     assert "entrypoint" in str(expr2)
 
-    expr3 = builder.string_in_first_kb("$a").build()
-    assert "1024" in str(expr3)
+    expr3 = builder.string_at_offset("$a", 0).build()
+    assert "0" in str(expr3)

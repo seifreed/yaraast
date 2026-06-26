@@ -6,7 +6,7 @@ from typing import Any, cast
 
 import pytest
 
-from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
+from yaraast.ast.conditions import AtExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     Identifier,
@@ -38,8 +38,8 @@ def test_fluent_condition_offsets_and_ranges() -> None:
     expr = FluentConditionBuilder().string_matches("$a").at(0).build()
     assert isinstance(expr, AtExpression)
 
-    expr = FluentConditionBuilder().string_in_last_kb("$a").build()
-    assert isinstance(expr, InExpression)
+    expr = FluentConditionBuilder().string_at_offset("$a", 1024).build()
+    assert isinstance(expr, AtExpression)
 
 
 def test_fluent_condition_filesize_and_entropy() -> None:

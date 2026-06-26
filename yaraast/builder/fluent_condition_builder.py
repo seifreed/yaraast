@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from yaraast.ast.conditions import AtExpression, InExpression
+from yaraast.ast.conditions import AtExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     Expression,
     FunctionCall,
     Identifier,
-    IntegerLiteral,
     MemberAccess,
-    RangeExpression,
     StringIdentifier,
     UnaryExpression,
 )
@@ -65,36 +63,6 @@ class FluentConditionBuilder(ConditionBuilder):
         validate_string_reference(string_id)
         return FluentConditionBuilder(
             AtExpression(string_id=string_id, offset=make_integer_literal(offset)),
-        )
-
-    def string_in_first_kb(self, string_id: str) -> FluentConditionBuilder:
-        """String in first 1KB of file."""
-        validate_string_reference(string_id)
-        return FluentConditionBuilder(
-            InExpression(
-                subject=string_id,
-                range=RangeExpression(
-                    low=IntegerLiteral(value=0),
-                    high=IntegerLiteral(value=1024),
-                ),
-            ),
-        )
-
-    def string_in_last_kb(self, string_id: str) -> FluentConditionBuilder:
-        """String in last 1KB of file."""
-        validate_string_reference(string_id)
-        return FluentConditionBuilder(
-            InExpression(
-                subject=string_id,
-                range=RangeExpression(
-                    low=BinaryExpression(
-                        left=Identifier(name="filesize"),
-                        operator="-",
-                        right=IntegerLiteral(value=1024),
-                    ),
-                    high=Identifier(name="filesize"),
-                ),
-            ),
         )
 
     # File property helpers

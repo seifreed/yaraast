@@ -3,12 +3,13 @@ from __future__ import annotations
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
+from yaraast.ast.conditions import AtExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     FunctionCall,
     Identifier,
+    IntegerLiteral,
     UnaryExpression,
 )
 from yaraast.ast.rules import Import, Rule
@@ -72,10 +73,11 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert b.high_entropy().build() is not None
 
 
-def test_fluent_condition_string_in_last_kb_expression_shape() -> None:
-    expr = FluentConditionBuilder().string_in_last_kb("$a").build()
-    assert isinstance(expr, InExpression)
-    assert isinstance(expr.range, type(expr.range))
+def test_fluent_condition_string_at_offset_expression_shape() -> None:
+    expr = FluentConditionBuilder().string_at_offset("$a", 1024).build()
+    assert isinstance(expr, AtExpression)
+    assert isinstance(expr.offset, IntegerLiteral)
+    assert expr.offset.value == 1024
 
 
 @pytest.mark.parametrize("identifier", ["$bad-key", "$bad space", "$", ""])
