@@ -70,10 +70,6 @@ class FluentRuleBuilder:
         self._rule_builder.with_meta(key, value)
         return self
 
-    def with_meta(self, key: str, value: str | int | bool) -> Self:
-        """Add metadata (alias for meta)."""
-        return self.meta(key, value)
-
     def authored_by(self, author: str) -> Self:
         """Set author."""
         self._rule_builder.with_author(author)
