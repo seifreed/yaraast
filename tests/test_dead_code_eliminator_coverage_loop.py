@@ -775,15 +775,12 @@ def test_visit_count_offset_length_do_not_mark_when_not_in_condition() -> None:
 
 
 # ---------------------------------------------------------------------------
-# eliminate_dead_code (single-rule method) — condition is None (lines 691-695)
+# DeadCodeEliminator.eliminate() — condition is None
 # ---------------------------------------------------------------------------
 
 
 def test_eliminate_dead_code_single_rule_with_no_condition_removes_all_strings() -> None:
-    """Lines 691-695: eliminate_dead_code skips collection when rule.condition is None.
-
-    With no condition there are no string references; all strings are removed.
-    """
+    """A rule with no condition has no string references, so all strings are removed."""
     dce = DeadCodeEliminator()
     rule = Rule(
         name="no_cond_single",
@@ -791,18 +788,18 @@ def test_eliminate_dead_code_single_rule_with_no_condition_removes_all_strings()
         condition=None,
     )
 
-    result = dce.eliminate_dead_code(rule)
+    result = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
 
     assert result.strings == []
 
 
 # ---------------------------------------------------------------------------
-# eliminate_dead_code (single-rule method) — condition and strings (lines 695-709)
+# DeadCodeEliminator.eliminate() — condition and strings
 # ---------------------------------------------------------------------------
 
 
 def test_eliminate_dead_code_single_rule_with_condition_prunes_unused_strings() -> None:
-    """Lines 695-709: eliminate_dead_code removes strings not referenced by the condition.
+    """Dead-code elimination removes strings not referenced by the condition.
 
     Arrange a rule with two strings where only one is used.  The method must
     iterate the strings block, check each identifier against the usage set, and
@@ -818,7 +815,7 @@ def test_eliminate_dead_code_single_rule_with_condition_prunes_unused_strings() 
         condition=StringIdentifier("$kept"),
     )
 
-    result = dce.eliminate_dead_code(rule)
+    result = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
 
     assert [s.identifier for s in result.strings] == ["$kept"]
 
@@ -833,7 +830,7 @@ def test_eliminate_dead_code_single_rule_with_condition_prunes_unused_strings() 
 def test_eliminate_dead_code_single_rule_parametrized_string_selection(
     used_str: str, kept: list[str]
 ) -> None:
-    """Lines 695-709 (parametrized): eliminate_dead_code keeps exactly the referenced string."""
+    """Dead-code elimination keeps exactly the referenced string."""
     dce = DeadCodeEliminator()
     rule = Rule(
         name="param_single",
@@ -844,7 +841,7 @@ def test_eliminate_dead_code_single_rule_parametrized_string_selection(
         condition=StringIdentifier(used_str),
     )
 
-    result = dce.eliminate_dead_code(rule)
+    result = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
 
     assert [s.identifier for s in result.strings] == kept
 
@@ -943,14 +940,12 @@ def test_collect_string_set_value_skips_recursion_for_sentinel_local_value() -> 
 
 
 # ---------------------------------------------------------------------------
-# eliminate_dead_code (single-rule method) — rule with no strings (arc 695->709)
+# DeadCodeEliminator.eliminate() — rule with no strings
 # ---------------------------------------------------------------------------
 
 
 def test_eliminate_dead_code_single_rule_with_no_strings_skips_pruning() -> None:
-    """Arc 695->709: eliminate_dead_code jumps past the string-pruning block when
-    rule.strings is empty (falsy), landing directly on the teardown code.
-    """
+    """A rule with no strings remains unchanged."""
     dce = DeadCodeEliminator()
     rule = Rule(
         name="no_strings",
@@ -958,7 +953,7 @@ def test_eliminate_dead_code_single_rule_with_no_strings_skips_pruning() -> None
         condition=BooleanLiteral(True),
     )
 
-    result = dce.eliminate_dead_code(rule)
+    result = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
 
     # A rule with no strings is returned unchanged; state is properly reset.
     assert result.strings == []

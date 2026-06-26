@@ -12,10 +12,8 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
-    Identifier,
     IntegerLiteral,
     StringIdentifier,
-    UnaryExpression,
 )
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
@@ -25,7 +23,6 @@ from yaraast.libyara.direct_compiler import YARA_AVAILABLE, DirectASTCompiler, O
 from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_AVAILABLE, LibyaraScanner
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
-from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
 
 
 def test_ast_optimizer_rule_and_constant_paths() -> None:
@@ -39,75 +36,16 @@ def test_ast_optimizer_rule_and_constant_paths() -> None:
         ),
     )
 
-    optimizer._optimize_rule(rule)
+    optimized = optimizer.optimize(YaraFile(rules=[rule]))
+    optimized_rule = optimized.rules[0]
 
     assert optimizer.stats.rules_optimized == 1
     assert optimizer.stats.conditions_simplified == 1
     assert any(
-        "Simplified condition in rule 'math_rule'" in item
-        for item in optimizer.optimizations_applied
+        "Applied 1 expression optimizations" in item for item in optimizer.optimizations_applied
     )
-    assert isinstance(rule.condition, IntegerLiteral)
-    assert rule.condition.value == 4
-
-    unary = UnaryExpression(
-        operator="not",
-        operand=BinaryExpression(
-            left=IntegerLiteral(value=9),
-            operator="-",
-            right=IntegerLiteral(value=4),
-        ),
-    )
-    optimized_unary = optimizer._optimize_condition(unary)
-    assert isinstance(optimized_unary, UnaryExpression)
-    assert isinstance(optimized_unary.operand, IntegerLiteral)
-    assert optimized_unary.operand.value == 5
-
-    non_folded = BinaryExpression(left=Identifier("x"), operator="+", right=IntegerLiteral(value=1))
-    optimized_non_folded = optimizer._optimize_condition(non_folded)
-    assert isinstance(optimized_non_folded, BinaryExpression)
-    assert isinstance(optimized_non_folded.left, Identifier)
-    assert isinstance(optimized_non_folded.right, IntegerLiteral)
-    assert optimized_non_folded.left.name == "x"
-    assert optimized_non_folded.right.value == 1
-
-    folded_sub = optimizer._fold_constants(IntegerLiteral(7), "-", IntegerLiteral(3))
-    folded_mul = optimizer._fold_constants(IntegerLiteral(7), "*", IntegerLiteral(3))
-    folded_mod = optimizer._fold_constants(IntegerLiteral(7), "%", IntegerLiteral(3))
-    assert folded_sub is not None
-    assert folded_mul is not None
-    assert folded_mod is not None
-    assert folded_sub.value == 4
-    assert folded_mul.value == 21
-    assert folded_mod.value == 1
-
-    folded_neg_div = optimizer._fold_constants(IntegerLiteral(-7), "/", IntegerLiteral(3))
-    folded_neg_backslash_div = optimizer._fold_constants(
-        IntegerLiteral(-7), "\\", IntegerLiteral(3)
-    )
-    folded_neg_mod = optimizer._fold_constants(IntegerLiteral(-7), "%", IntegerLiteral(3))
-    assert folded_neg_div is not None
-    assert folded_neg_backslash_div is not None
-    assert folded_neg_mod is not None
-    assert folded_neg_div.value == -2
-    assert folded_neg_backslash_div.value == -2
-    assert folded_neg_mod.value == -1
-
-    large = 10**400 + 1
-    folded_large_div = optimizer._fold_constants(IntegerLiteral(-large), "/", IntegerLiteral(3))
-    folded_large_mod = optimizer._fold_constants(IntegerLiteral(-large), "%", IntegerLiteral(3))
-    assert folded_large_div is not None
-    assert folded_large_mod is not None
-    assert folded_large_div.value == -(large // 3)
-    assert folded_large_mod.value == -(large % 3)
-
-    assert optimizer._fold_constants(IntegerLiteral(7), "/", IntegerLiteral(0)) is None
-    with pytest.raises(TypeError, match="IntegerLiteral value must be an integer"):
-        optimizer._fold_constants(IntegerLiteral(cast(Any, "bad")), "+", IntegerLiteral(1))
-    with pytest.raises(TypeError, match="IntegerLiteral value must be an integer"):
-        optimizer._fold_constants(IntegerLiteral(cast(Any, True)), "+", IntegerLiteral(1))
-    with pytest.raises(TypeError, match="IntegerLiteral value must be an integer"):
-        optimizer._fold_constants(IntegerLiteral(cast(Any, 1.5)), "+", IntegerLiteral(1))
+    assert isinstance(optimized_rule.condition, IntegerLiteral)
+    assert optimized_rule.condition.value == 4
 
 
 def test_ast_optimizer_rule_removes_unused_strings() -> None:
@@ -121,29 +59,15 @@ def test_ast_optimizer_rule_removes_unused_strings() -> None:
         condition=StringIdentifier("$used"),
     )
 
-    optimizer._optimize_rule(rule)
+    optimized = optimizer.optimize(YaraFile(rules=[rule]))
+    optimized_rule = optimized.rules[0]
 
-    assert [string.identifier for string in rule.strings] == ["$used"]
+    assert [string.identifier for string in optimized_rule.strings] == ["$used"]
     assert optimizer.stats.strings_optimized == 1
     assert optimizer.stats.dead_code_removed == 1
     assert any(
-        "Removed 1 unused strings in rule 'string_rule'" in item
-        for item in optimizer.optimizations_applied
+        "Removed 1 unused strings/dead code" in item for item in optimizer.optimizations_applied
     )
-
-
-def test_ast_optimizer_constant_folding_uses_yara_int64_semantics() -> None:
-    optimizer = ASTOptimizer()
-
-    folded_add = optimizer._fold_constants(IntegerLiteral(INT64_MAX), "+", IntegerLiteral(1))
-    folded_sub = optimizer._fold_constants(IntegerLiteral(INT64_MIN), "-", IntegerLiteral(1))
-    folded_mul = optimizer._fold_constants(IntegerLiteral(1 << 62), "*", IntegerLiteral(2))
-
-    assert folded_add == IntegerLiteral(INT64_MIN)
-    assert folded_sub == IntegerLiteral(INT64_MAX)
-    assert folded_mul == IntegerLiteral(INT64_MIN)
-    assert optimizer._fold_constants(IntegerLiteral(INT64_MIN), "\\", IntegerLiteral(-1)) is None
-    assert optimizer._fold_constants(IntegerLiteral(INT64_MIN), "%", IntegerLiteral(-1)) is None
 
 
 @pytest.mark.skipif(

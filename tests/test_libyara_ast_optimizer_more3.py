@@ -10,12 +10,20 @@ from yaraast.libyara.ast_optimizer import ASTOptimizer
 
 def test_ast_optimizer_constant_folding() -> None:
     optimizer = ASTOptimizer()
-    expr = BinaryExpression(
-        left=IntegerLiteral(value=2),
-        operator="+",
-        right=IntegerLiteral(value=3),
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="fold",
+                condition=BinaryExpression(
+                    left=IntegerLiteral(value=2),
+                    operator="+",
+                    right=IntegerLiteral(value=3),
+                ),
+            )
+        ]
     )
-    folded = optimizer._optimize_condition(expr)
+    optimized = optimizer.optimize(ast)
+    folded = optimized.rules[0].condition
     assert isinstance(folded, IntegerLiteral)
     assert folded.value == 5
 

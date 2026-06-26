@@ -119,6 +119,13 @@ class DeadCodeEliminator(ASTTransformer):
 
         # Second pass: eliminate unused code
         optimized_ast = cast(YaraFile, self.visit(ast))
+        self.in_condition = False
+        self.current_rule = None
+        self.current_rule_key = None
+        self.current_rule_strings = set()
+        self.current_rule_anonymous_strings = set()
+        self.local_variables.clear()
+        self.local_variable_values.clear()
 
         return optimized_ast, self.elimination_count
 
@@ -662,58 +669,6 @@ class DeadCodeEliminator(ASTTransformer):
         """
         node.operand = self.visit(node.operand)
         return node
-
-    def eliminate_dead_code(self, rule: Rule) -> Rule:
-        """Eliminate dead code from a single rule.
-
-        This is a simplified version that just removes unused strings.
-        """
-        # First collect used strings from this rule
-        self.used_strings.clear()
-        self.used_strings_by_rule.clear()
-        self.local_variables.clear()
-        self.local_variable_values.clear()
-        self.current_rule = rule.name
-        self.current_rule_key = rule.name
-        self.rule_usage_keys[id(rule)] = rule.name
-        self.current_rule_strings = {string_def.identifier for string_def in rule.strings}
-        self.current_rule_anonymous_strings = {
-            self._normalize_string_id(string_def.identifier)
-            for string_def in rule.strings
-            if getattr(string_def, "is_anonymous", False)
-        }
-        self.used_strings_by_rule[self.current_rule_key] = set()
-        self.anonymous_strings_by_rule[self.current_rule_key] = set(
-            self.current_rule_anonymous_strings
-        )
-        self.in_condition = True
-
-        if rule.condition is not None:
-            self._collect_from_expression(rule.condition)
-
-        # Remove unused strings
-        if rule.strings:
-            rule_key = self._usage_key_for_rule(rule)
-            used_strings = self.used_strings_by_rule.get(rule_key, set())
-            anonymous_strings = self.anonymous_strings_by_rule.get(rule_key, set())
-            kept_strings = []
-            for string_def in rule.strings:
-                if self._is_string_identifier_used(
-                    string_def.identifier,
-                    used_strings,
-                    anonymous_strings,
-                ):
-                    kept_strings.append(string_def)
-            rule.strings = kept_strings
-
-        self.in_condition = False
-        self.current_rule = None
-        self.current_rule_key = None
-        self.current_rule_strings = set()
-        self.current_rule_anonymous_strings = set()
-        self.local_variables.clear()
-        self.local_variable_values.clear()
-        return rule
 
     def _add_local_variables(
         self,

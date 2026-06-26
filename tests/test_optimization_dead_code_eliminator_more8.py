@@ -548,7 +548,7 @@ def test_string_wildcard_keeps_matching_strings() -> None:
         condition=StringWildcard("$api*"),
     )
 
-    out_rule = dce.eliminate_dead_code(rule)
+    out_rule = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
 
     assert [string.identifier for string in out_rule.strings] == ["$api_one", "$api_two"]
 
@@ -564,7 +564,7 @@ def test_dead_code_eliminator_named_wildcard_ignores_anonymous_internal_ids() ->
         condition=StringWildcard("$a*"),
     )
 
-    out_rule = dce.eliminate_dead_code(rule)
+    out_rule = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
 
     assert [string.identifier for string in out_rule.strings] == ["$alpha"]
 
@@ -580,7 +580,7 @@ def test_dead_code_eliminator_global_wildcard_keeps_anonymous_strings() -> None:
         condition=StringWildcard("$*"),
     )
 
-    out_rule = dce.eliminate_dead_code(rule)
+    out_rule = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
 
     assert [string.identifier for string in out_rule.strings] == ["$alpha", "$anon_1"]
 
@@ -615,7 +615,7 @@ def test_dead_code_eliminator_keeps_raw_string_set_references() -> None:
         ),
     )
 
-    out_rule = dce.eliminate_dead_code(rule)
+    out_rule = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
     assert [string.identifier for string in out_rule.strings] == ["$a"]
 
     dce = DeadCodeEliminator()
@@ -632,7 +632,7 @@ def test_dead_code_eliminator_keeps_raw_string_set_references() -> None:
             condition=None,
         ),
     )
-    out_rule = dce.eliminate_dead_code(rule)
+    out_rule = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
     assert [string.identifier for string in out_rule.strings] == ["$b", "$c"]
 
 
@@ -720,7 +720,7 @@ def test_dead_code_eliminator_keeps_parenthesized_string_literal_sets() -> None:
         ),
     )
 
-    out_rule = dce.eliminate_dead_code(rule)
+    out_rule = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
 
     assert [string.identifier for string in out_rule.strings] == ["$a", "$b"]
 
@@ -846,7 +846,7 @@ def test_eliminate_dead_code_single_rule_and_convenience_wrapper() -> None:
         condition=StringIdentifier("$y"),
     )
 
-    out_rule = dce.eliminate_dead_code(rule)
+    out_rule = dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
     assert [s.identifier for s in out_rule.strings] == ["$y"]
 
     # Wrapper currently returns the full eliminate() tuple.
@@ -863,7 +863,7 @@ def test_eliminate_dead_code_single_rule_resets_condition_context() -> None:
         condition=StringIdentifier("$x"),
     )
 
-    dce.eliminate_dead_code(rule)
+    dce.eliminate(YaraFile(rules=[rule]))[0].rules[0]
     dce.visit_string_identifier(StringIdentifier("$outside"))
 
     assert dce.in_condition is False

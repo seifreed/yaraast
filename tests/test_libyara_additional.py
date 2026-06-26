@@ -10,7 +10,9 @@ import pytest
 
 YARA_AVAILABLE = importlib.util.find_spec("yara") is not None
 
-from yaraast.ast.expressions import IntegerLiteral
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BinaryExpression, IntegerLiteral
+from yaraast.ast.rules import Rule
 from yaraast.libyara.ast_optimizer import ASTOptimizer
 from yaraast.parser import Parser
 
@@ -95,13 +97,27 @@ def test_scanner_missing_file() -> None:
 
 def test_ast_optimizer_fold_constants() -> None:
     optimizer = ASTOptimizer()
-    folded = optimizer._fold_constants(IntegerLiteral(4), "+", IntegerLiteral(3))
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="folded",
+                condition=BinaryExpression(IntegerLiteral(4), "+", IntegerLiteral(3)),
+            ),
+            Rule(
+                name="not_folded",
+                condition=BinaryExpression(IntegerLiteral(1), "/", IntegerLiteral(0)),
+            ),
+        ]
+    )
 
-    assert folded is not None
+    optimized = optimizer.optimize(ast)
+
+    folded = optimized.rules[0].condition
+    assert isinstance(folded, IntegerLiteral)
     assert folded.value == 7
 
-    none_fold = optimizer._fold_constants(IntegerLiteral(1), "/", IntegerLiteral(0))
-    assert none_fold is None
+    not_folded = optimized.rules[1].condition
+    assert isinstance(not_folded, BinaryExpression)
 
 
 @pytest.mark.skipif(YARA_AVAILABLE, reason="yara-python available")
