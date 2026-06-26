@@ -17,6 +17,7 @@ from yaraast.performance import (
     ParallelAnalyzer,
     StreamingParser,
 )
+from yaraast.performance.parallel_models import JobStatus
 
 
 @pytest.fixture
@@ -217,7 +218,7 @@ class TestParallelAnalyzer:
 
         # Check that jobs completed
         for job in jobs:
-            assert job.is_completed
+            assert job.status in {JobStatus.COMPLETED, JobStatus.FAILED}
             if job.status.value == "completed":
                 assert job.result is not None
                 assert isinstance(job.result, list)
@@ -262,7 +263,7 @@ class TestParallelAnalyzer:
         assert len(jobs) == 3
 
         for job in jobs:
-            assert job.is_completed
+            assert job.status in {JobStatus.COMPLETED, JobStatus.FAILED}
             if job.status.value == "completed":
                 assert isinstance(job.result, int)  # File size
                 assert job.result > 0

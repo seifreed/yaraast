@@ -30,11 +30,6 @@ class Job:
     end_time: float | None = None
 
     @property
-    def is_completed(self) -> bool:
-        """Check if job is completed."""
-        return self.status in (JobStatus.COMPLETED, JobStatus.FAILED)
-
-    @property
     def duration(self) -> float:
         """Get job duration in seconds."""
         if self.end_time:

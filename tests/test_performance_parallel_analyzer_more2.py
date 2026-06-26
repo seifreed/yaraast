@@ -14,6 +14,7 @@ from yaraast.cli.performance_services import extract_successful_asts
 from yaraast.metrics import dependency_graph_utils
 from yaraast.parser import Parser, source as parser_source
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
+from yaraast.performance.parallel_models import JobStatus
 
 
 def _rule_code(name: str = "r") -> str:
@@ -301,7 +302,8 @@ def test_parallel_analyzer_files_custom_and_graphs(tmp_path: Path) -> None:
 
     parse_jobs = analyzer.parse_files_parallel([str(good_a), str(bad)], chunk_size=1)
     assert len(parse_jobs) == 2
-    assert parse_jobs[0].is_completed and parse_jobs[1].is_completed
+    assert parse_jobs[0].status in {JobStatus.COMPLETED, JobStatus.FAILED}
+    assert parse_jobs[1].status in {JobStatus.COMPLETED, JobStatus.FAILED}
     assert any(job.status.value == "failed" for job in parse_jobs)
 
     with pytest.raises(ValueError, match="chunk_size must be at least 1"):
