@@ -117,18 +117,6 @@ class RuleTransformer:
         self.rule.tags = [t for t in self.rule.tags if t.name != tag]
         return self
 
-    def replace_tag(self, old_tag: str, new_tag: str) -> RuleTransformer:
-        """Replace a tag."""
-        old_tag = self._require_text(old_tag, "Old tag")
-        validate_identifier(new_tag, "tag")
-        if old_tag != new_tag and any(t.name == new_tag for t in self.rule.tags):
-            msg = f"Duplicate tag identifier: {new_tag}"
-            raise ValidationError(msg)
-        for tag in self.rule.tags:
-            if tag.name == old_tag:
-                tag.name = new_tag
-        return self
-
     def add_modifier(self, modifier: str) -> RuleTransformer:
         """Add a modifier to the rule."""
         modifier = self._require_text(modifier, "Rule modifier")

@@ -106,7 +106,6 @@ def test_rule_transformer_tag_modifier_meta_and_string_helpers() -> None:
         .add_prefix("pre_")
         .add_suffix("_suf")
         .add_tag("t2")
-        .replace_tag("t1", "new")
         .remove_tag("missing")
         .add_modifier("private")
         .add_modifier("private")
@@ -120,7 +119,7 @@ def test_rule_transformer_tag_modifier_meta_and_string_helpers() -> None:
     )
 
     assert transformed.name == "pre_base_suf"
-    assert {t.name for t in transformed.tags} == {"new", "t2"}
+    assert {t.name for t in transformed.tags} == {"t1", "t2"}
     assert [str(m) for m in transformed.modifiers] == ["private"]
     assert transformed.get_meta_value("author") == "you"
     assert transformed.get_meta_value("description") == "desc"
@@ -802,15 +801,6 @@ def test_rule_transformer_rejects_invalid_custom_modifiers_without_partial_updat
     assert [str(modifier) for modifier in transformed.modifiers] == ["global"]
 
 
-def test_rule_transformer_rejects_non_string_old_replacement_tag_without_partial_update() -> None:
-    transformer = RuleTransformer(_sample_rule("tagged"))
-
-    with pytest.raises(TypeError, match="Old tag must be a string"):
-        transformer.replace_tag(cast(Any, True), "newtag")
-
-    assert [rule_tag.name for rule_tag in transformer.build().tags] == ["t1"]
-
-
 @pytest.mark.parametrize("tag", ["bad tag", "bad-tag", "for", "1bad", ""])
 def test_rule_transformer_rejects_invalid_tags_without_partial_update(tag: str) -> None:
     transformer = RuleTransformer(_sample_rule("tagged"))
@@ -818,19 +808,6 @@ def test_rule_transformer_rejects_invalid_tags_without_partial_update(tag: str) 
     with pytest.raises(ValidationError, match="Invalid tag identifier"):
         transformer.add_tag(tag)
     assert [rule_tag.name for rule_tag in transformer.build().tags] == ["t1"]
-
-    with pytest.raises(ValidationError, match="Invalid tag identifier"):
-        transformer.replace_tag("t1", tag)
-    assert [rule_tag.name for rule_tag in transformer.build().tags] == ["t1"]
-
-
-def test_rule_transformer_rejects_duplicate_replacement_tag_without_partial_update() -> None:
-    transformer = RuleTransformer(_sample_rule("tagged")).add_tag("t2")
-
-    with pytest.raises(ValidationError, match="Duplicate tag identifier"):
-        transformer.replace_tag("t1", "t2")
-
-    assert [rule_tag.name for rule_tag in transformer.build().tags] == ["t1", "t2"]
 
 
 @pytest.mark.parametrize("meta_key", ["bad key", "bad-key", "for", "1bad", ""])
