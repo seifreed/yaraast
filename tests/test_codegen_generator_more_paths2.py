@@ -4632,7 +4632,7 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
     with pytest.raises(ValueError, match="Invalid pragma macro identifier"):
         gen.visit_in_rule_pragma(InRulePragma(pragma=UndefDirective('BAD"NAME')))
     with pytest.raises(ValueError, match="Invalid pragma condition identifier"):
-        gen.visit_pragma(ConditionalDirective.ifdef('BAD"NAME'))
+        gen.visit_pragma(ConditionalDirective(PragmaType.IFDEF, 'BAD"NAME'))
     assert gen.visit_string_wildcard(StringWildcard("$a*")) == "$a*"
     assert gen.visit_string_identifier(StringIdentifier("$a")) == "$a"
     assert gen.visit_module_reference(ModuleReference("pe")) == "pe"

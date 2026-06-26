@@ -509,7 +509,7 @@ def test_conditional_directive_validate_structure_raises_when_ifndef_condition_i
 
 
 def test_conditional_directive_validate_structure_raises_for_empty_condition_on_ifdef() -> None:
-    d = ConditionalDirective.ifdef("FEATURE")
+    d = ConditionalDirective(PragmaType.IFDEF, "FEATURE")
     d.condition = ""
     with pytest.raises(ValueError, match="Pragma condition cannot be empty"):
         d.validate_structure()
@@ -517,7 +517,7 @@ def test_conditional_directive_validate_structure_raises_for_empty_condition_on_
 
 def test_conditional_directive_validate_structure_raises_for_keyword_condition() -> None:
     """A YARA keyword used as condition is rejected."""
-    d = ConditionalDirective.ifdef("rule")
+    d = ConditionalDirective(PragmaType.IFDEF, "rule")
     with pytest.raises(ValueError, match="Invalid pragma condition identifier"):
         d.validate_structure()
 
@@ -534,13 +534,13 @@ def test_conditional_directive_validate_structure_accepts_endif_with_string_cond
 
 
 def test_conditional_directive_classmethod_ifdef() -> None:
-    d = ConditionalDirective.ifdef("HAS_FEATURE")
+    d = ConditionalDirective(PragmaType.IFDEF, "HAS_FEATURE")
     assert d.pragma_type == PragmaType.IFDEF
     assert d.condition == "HAS_FEATURE"
 
 
 def test_conditional_directive_classmethod_ifndef() -> None:
-    d = ConditionalDirective.ifndef("NO_FEATURE")
+    d = ConditionalDirective(PragmaType.IFNDEF, "NO_FEATURE")
     assert d.pragma_type == PragmaType.IFNDEF
     assert d.condition == "NO_FEATURE"
 
@@ -552,11 +552,11 @@ def test_conditional_directive_classmethod_endif() -> None:
 
 
 def test_conditional_directive_str_for_ifdef() -> None:
-    assert str(ConditionalDirective.ifdef("ALPHA")) == "#ifdef ALPHA"
+    assert str(ConditionalDirective(PragmaType.IFDEF, "ALPHA")) == "#ifdef ALPHA"
 
 
 def test_conditional_directive_str_for_ifndef() -> None:
-    assert str(ConditionalDirective.ifndef("BETA")) == "#ifndef BETA"
+    assert str(ConditionalDirective(PragmaType.IFNDEF, "BETA")) == "#ifndef BETA"
 
 
 def test_conditional_directive_str_for_endif_without_condition() -> None:

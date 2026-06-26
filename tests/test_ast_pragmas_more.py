@@ -41,8 +41,8 @@ def test_pragma_string_reprs_and_flags() -> None:
     undef = UndefDirective("X")
     assert str(undef) == "#undef X"
 
-    ifdef = ConditionalDirective.ifdef("FOO")
-    ifndef = ConditionalDirective.ifndef("BAR")
+    ifdef = ConditionalDirective(PragmaType.IFDEF, "FOO")
+    ifndef = ConditionalDirective(PragmaType.IFNDEF, "BAR")
     endif = ConditionalDirective.endif()
     assert str(ifdef) == "#ifdef FOO"
     assert str(ifndef) == "#ifndef BAR"

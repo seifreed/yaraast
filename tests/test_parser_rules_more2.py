@@ -12,6 +12,7 @@ from yaraast.ast.pragmas import (
     DefineDirective,
     IncludeOncePragma,
     InRulePragma,
+    PragmaType,
     UndefDirective,
 )
 from yaraast.ast.rules import Import, Rule
@@ -445,7 +446,7 @@ def test_parse_generated_file_pragmas() -> None:
         IncludeOncePragma(),
         DefineDirective("FEATURE", "1"),
         UndefDirective("OLD_FEATURE"),
-        ConditionalDirective.ifdef("FEATURE"),
+        ConditionalDirective(PragmaType.IFDEF, "FEATURE"),
         ConditionalDirective.endif(),
         CustomPragma("optimize", ["on"]),
     ]

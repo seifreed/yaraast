@@ -266,16 +266,6 @@ class ConditionalDirective(Pragma):
             require_string(self.condition, "Pragma condition")
 
     @classmethod
-    def ifdef(cls, condition: str) -> ConditionalDirective:
-        """Create an ifdef directive."""
-        return cls(PragmaType.IFDEF, condition)
-
-    @classmethod
-    def ifndef(cls, condition: str) -> ConditionalDirective:
-        """Create an ifndef directive."""
-        return cls(PragmaType.IFNDEF, condition)
-
-    @classmethod
     def endif(cls) -> ConditionalDirective:
         """Create an endif directive."""
         return cls(PragmaType.ENDIF)
