@@ -37,16 +37,6 @@ if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
 
 
-def _require_rule_sequence(rules: object) -> Sequence[Rule]:
-    if isinstance(rules, str | bytes) or not isinstance(rules, Sequence):
-        msg = "rules must be a sequence of Rule nodes"
-        raise TypeError(msg)
-    if not all(isinstance(rule, Rule) for rule in rules):
-        msg = "rules must contain Rule nodes"
-        raise TypeError(msg)
-    return rules
-
-
 class ParallelAnalyzer:
     """Analyzes YARA rules in parallel for improved performance."""
 
