@@ -11,23 +11,6 @@ if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
 
 
-KNOWN_MODULES: frozenset[str] = frozenset(
-    {
-        "pe",
-        "elf",
-        "math",
-        "hash",
-        "cuckoo",
-        "dotnet",
-        "time",
-        "console",
-        "string",
-        "dex",
-        "macho",
-        "vt",
-    }
-)
-
 BUILTIN_FUNCTION_ARITY: dict[str, tuple[int, int]] = {
     "uint8": (1, 1),
     "uint16": (1, 1),

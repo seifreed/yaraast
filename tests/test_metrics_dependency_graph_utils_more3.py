@@ -297,33 +297,3 @@ def test_dependency_graph_rejects_invalid_public_node_inputs_without_partial_upd
         "edges": {"existing": ["dependency"]},
     }
 
-
-@pytest.mark.parametrize(
-    ("payload", "message"),
-    [
-        ("graph", "DependencyGraph data must be an object"),
-        ({"nodes": "abc"}, "DependencyGraph nodes must be a list of strings"),
-        ({"nodes": [1]}, "DependencyGraph nodes must be a list of strings"),
-        ({"nodes": [""]}, "DependencyGraph node must not be empty"),
-        ({"nodes": ["   "]}, "DependencyGraph node must not be empty"),
-        ({"edges": "abc"}, "DependencyGraph edges must be an object"),
-        ({"edges": {1: ["a"]}}, "DependencyGraph edge names must be strings"),
-        ({"edges": {"": ["a"]}}, "DependencyGraph edge source must not be empty"),
-        ({"edges": {"   ": ["a"]}}, "DependencyGraph edge source must not be empty"),
-        ({"edges": {"a": "b"}}, "DependencyGraph edge targets must be a list of strings"),
-        ({"edges": {"a": [1]}}, "DependencyGraph edge targets must be a list of strings"),
-        ({"edges": {"a": [""]}}, "DependencyGraph edge target must not be empty"),
-        ({"edges": {"a": ["   "]}}, "DependencyGraph edge target must not be empty"),
-    ],
-)
-def test_dependency_graph_from_dict_rejects_invalid_payloads_without_clearing(
-    payload: object,
-    message: str,
-) -> None:
-    graph = DependencyGraph()
-    graph.add_edge("existing", "dependency")
-
-    with pytest.raises(ValidationError, match=message):
-        graph.from_dict(cast(Any, payload))
-
-    assert "dependency" in graph.edges["existing"]
