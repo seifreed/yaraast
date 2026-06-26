@@ -35,6 +35,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import io
+from types import SimpleNamespace
 from typing import Any
 
 from yaraast.ast.base import YaraFile
@@ -429,10 +430,7 @@ def test_write_in_rule_pragmas_else_branch_with_trailing_comment() -> None:
 
     printer = _FalsyVisitPrinter()
 
-    class _FakeNode:
-        pragmas = [pragma]
-
-    _write_in_rule_pragmas(printer, _FakeNode(), "before_strings")
+    _write_in_rule_pragmas(printer, SimpleNamespace(pragmas=[pragma]), "before_strings")
 
     output = printer.buffer.getvalue()
     # trailing_comment must be written even though rendered body was empty
@@ -453,10 +451,7 @@ def test_write_in_rule_pragmas_else_branch_no_trailing_comment() -> None:
 
     printer = _FalsyVisitPrinter()
 
-    class _FakeNode:
-        pragmas = [pragma]
-
-    _write_in_rule_pragmas(printer, _FakeNode(), "before_strings")
+    _write_in_rule_pragmas(printer, SimpleNamespace(pragmas=[pragma]), "before_strings")
 
     output = printer.buffer.getvalue()
     # Nothing must be written: no pragma body, no comment
