@@ -518,12 +518,6 @@ class YaraFileTransformer:
             lambda rule: RuleTransformer(rule).add_prefix(prefix).build(),
         )
 
-    def suffix_all_rules(self, suffix: str) -> YaraFileTransformer:
-        """Add suffix to all rule names."""
-        return self.transform_all_rules(
-            lambda rule: RuleTransformer(rule).add_suffix(suffix).build(),
-        )
-
     def add_tag_to_all_rules(self, tag: str) -> YaraFileTransformer:
         """Add tag to all rules."""
         return self.transform_all_rules(

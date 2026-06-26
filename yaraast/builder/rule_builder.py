@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from copy import deepcopy
 import re
 from typing import TYPE_CHECKING, Any, Self
@@ -302,38 +301,9 @@ class RuleBuilder:
 
         return self
 
-    def set_condition(self, condition: Expression | ConditionBuilder | str) -> Self:
-        """Set the rule condition (alias for with_condition)."""
-        return self.with_condition(condition)
-
     def get_condition(self) -> Expression | None:
         """Return the currently configured condition."""
         return self._condition
-
-    def with_simple_condition(self, condition: str) -> Self:
-        """Set a simple condition string."""
-        return self.with_condition(condition)
-
-    def with_any_string(self) -> Self:
-        """Set condition to any of them."""
-        return self.with_condition("any of them")
-
-    def with_all_strings(self) -> Self:
-        """Set condition to all of them."""
-        return self.with_condition("all of them")
-
-    def with_condition_lambda(self, builder_func: Callable[[ConditionBuilder], object]) -> Self:
-        """Set condition using a lambda that receives a ConditionBuilder."""
-        if not callable(builder_func):
-            msg = "Condition lambda must be callable"
-            raise TypeError(msg)
-        cb = ConditionBuilder()
-        result = builder_func(cb)
-        if not isinstance(result, ConditionBuilder):
-            msg = "Condition lambda must return a ConditionBuilder"
-            raise ValidationError(msg)
-        self._condition = result.build()
-        return self
 
     def require_condition(self, require: bool = True) -> Self:
         """Require an explicit condition before build."""

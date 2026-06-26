@@ -203,7 +203,7 @@ def test_rule_builder_hex_regex_and_condition_variants() -> None:
         RuleBuilder("variants")
         .with_hex_string("$hex", HexStringBuilder().add(0x4D).wildcard())
         .with_regex_string("$re", "ab.*", dotall=True, multiline=True)
-        .set_condition("$a")
+        .with_condition("$a")
         .build()
     )
 
@@ -345,43 +345,6 @@ def test_rule_builder_hex_builder_uses_complex_tokens() -> None:
     assert isinstance(tokens[5], HexByte)
     assert tokens[5].value == 0x5A
     assert "$hex = { 4D A? ?F [2-4] ( ~00 | 41 ) 5A }" in CodeGenerator().generate(rule)
-
-
-def test_rule_builder_complex_conditions_and_lambda() -> None:
-    rule = (
-        RuleBuilder("complex")
-        .with_condition("identifier_expr")
-        .with_condition_lambda(lambda cb: cb.true())
-        .build()
-    )
-
-    assert isinstance(rule.condition, BooleanLiteral)
-    assert rule.condition.value is True
-
-    simple = (
-        RuleBuilder("simple")
-        .with_plain_string("$seen", "marker")
-        .with_simple_condition("$seen")
-        .build()
-    )
-    assert isinstance(simple.condition, StringIdentifier)
-    assert simple.condition.name == "$seen"
-    assert "$seen" in CodeGenerator().generate(simple)
-
-
-def test_rule_builder_condition_lambda_rejects_missing_return() -> None:
-    with pytest.raises(ValidationError, match="Condition lambda must return"):
-        RuleBuilder("bad_condition").with_condition_lambda(lambda cb: None)
-
-
-def test_rule_builder_condition_lambda_rejects_invalid_return() -> None:
-    with pytest.raises(ValidationError, match="Condition lambda must return"):
-        RuleBuilder("bad_condition").with_condition_lambda(lambda cb: "bad")
-
-
-def test_rule_builder_condition_lambda_rejects_non_callable() -> None:
-    with pytest.raises(TypeError, match="Condition lambda must be callable"):
-        RuleBuilder("bad_condition").with_condition_lambda(cast(Any, 123))
 
 
 def test_rule_builder_true_condition_direct_builder_and_plain_regex() -> None:

@@ -433,7 +433,6 @@ def test_yara_file_transformer_operations_and_filters() -> None:
         .remove_rule("missing")
         .transform_rule("one", lambda r: RuleTransformer(r).rename("renamed").build())
         .prefix_all_rules("pre_")
-        .suffix_all_rules("_suf")
         .add_tag_to_all_rules("all_rules")
         .make_all_rules_private()
         .transform_all_rules(lambda rule: RuleTransformer(rule).add_meta("author", "team").build())
@@ -444,7 +443,7 @@ def test_yara_file_transformer_operations_and_filters() -> None:
 
     assert {imp.module for imp in transformed.imports} == {"pe", "math"}
     assert {inc.path for inc in transformed.includes} == {"a.yar", "b.yar"}
-    assert [r.name for r in transformed.rules] == ["pre_renamed_suf", "pre_two_suf"]
+    assert [r.name for r in transformed.rules] == ["pre_renamed", "pre_two"]
     assert all(any(str(m) == "private" for m in r.modifiers) for r in transformed.rules)
     assert all(r.get_meta_value("author") == "team" for r in transformed.rules)
 

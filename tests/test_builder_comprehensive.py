@@ -185,7 +185,7 @@ class TestConditionBuilderLiterals:
         rule = (
             RuleBuilder()
             .with_name("module_path")
-            .with_condition_lambda(lambda c: c.identifier("pe.number_of_sections").gt(c.integer(3)))
+            .with_condition(ConditionBuilder().identifier("pe.number_of_sections").gt(3))
             .build()
         )
         ast = yara_file().import_module("pe").with_rule(rule).build()

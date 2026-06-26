@@ -387,7 +387,7 @@ class TestRuleBuilderConditions:
         builder = RuleBuilder(name="SimpleConditionRule")
 
         builder.with_string("$s", "test")
-        builder.with_simple_condition("$s")
+        builder.with_condition("$s")
         rule = builder.build()
 
         assert rule.condition is not None
@@ -399,7 +399,7 @@ class TestRuleBuilderConditions:
         builder = RuleBuilder(name="AnyStringRule")
 
         builder.with_string("$s1", "test1").with_string("$s2", "test2")
-        builder.with_any_string()
+        builder.with_condition("any of them")
         rule = builder.build()
 
         assert rule.condition is not None
@@ -409,7 +409,7 @@ class TestRuleBuilderConditions:
         builder = RuleBuilder(name="AllStringsRule")
 
         builder.with_string("$s1", "test1").with_string("$s2", "test2")
-        builder.with_all_strings()
+        builder.with_condition("all of them")
         rule = builder.build()
 
         assert rule.condition is not None
@@ -428,7 +428,7 @@ class TestRuleBuilderCompleteRules:
             .with_meta("description", "Detects simple malware")
             .with_string("$s1", "malicious", nocase=True)
             .with_string("$s2", "payload")
-            .with_any_string()
+            .with_condition("any of them")
             .build()
         )
 
@@ -449,7 +449,7 @@ class TestRuleBuilderCompleteRules:
                 "$pe_header",
                 HexStringBuilder().add(0x50).add(0x45).add(0x00).add(0x00),
             )
-            .with_any_string()
+            .with_condition("any of them")
             .build()
         )
 
@@ -495,7 +495,7 @@ class TestRuleBuilderCompleteRules:
                 .add(0xFF)
                 .add(0xD0),
             )
-            .with_any_string()
+            .with_condition("any of them")
             .build()
         )
 
@@ -579,7 +579,7 @@ class TestRuleBuilderFluentAPI:
             .with_string("$s1", "test")
             .with_regex_string("$re", r"\w+")
             .with_hex_string("$hex", HexStringBuilder().add(0xFF))
-            .with_any_string()
+            .with_condition("any of them")
             .build()
         )
 
