@@ -61,13 +61,6 @@ def validate_meta_value(value: object) -> None:
     raise TypeError(msg)
 
 
-def validate_version_value(value: object) -> int:
-    if isinstance(value, int) and not isinstance(value, bool):
-        return value
-    msg = "Version value must be an integer"
-    raise TypeError(msg)
-
-
 def validate_rule_names(rules: Sequence[Rule]) -> None:
     for rule in rules:
         validate_identifier(rule.name, "rule")
