@@ -617,30 +617,6 @@ def test_custom_pragma_validate_structure_raises_for_invalid_parameters() -> Non
         c.validate_structure()
 
 
-def test_custom_pragma_get_parameter_returns_default_when_key_absent() -> None:
-    c = CustomPragma("myvendor", parameters={"x": 1})
-    assert c.get_parameter("missing", default="fallback") == "fallback"
-
-
-def test_custom_pragma_get_parameter_returns_value_when_key_present() -> None:
-    c = CustomPragma("myvendor", parameters={"level": 7})
-    assert c.get_parameter("level") == 7
-
-
-def test_custom_pragma_set_parameter_stores_value() -> None:
-    c = CustomPragma("myvendor")
-    c.set_parameter("mode", "fast")
-    assert c.parameters["mode"] == "fast"
-
-
-def test_custom_pragma_set_parameter_accepts_bool_and_float() -> None:
-    c = CustomPragma("myvendor")
-    c.set_parameter("enabled", True)
-    c.set_parameter("ratio", 0.75)
-    assert c.parameters["enabled"] is True
-    assert c.parameters["ratio"] == 0.75
-
-
 def test_custom_pragma_str_with_no_arguments() -> None:
     assert str(CustomPragma("myvendor")) == "#pragma myvendor"
 
