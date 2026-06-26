@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from yaraast.ast.expressions import BinaryExpression, RegexLiteral, StringLiteral
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.parser import Parser
@@ -246,7 +244,3 @@ def test_mixed_features() -> None:
     assert "math.entropy" in output
     assert '"malicious" matches /mal[a-z]+/' in output
     assert '"ABCDE" matches /[A-Z]+/' in output
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
