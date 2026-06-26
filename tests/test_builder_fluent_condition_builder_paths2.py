@@ -55,14 +55,14 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert isinstance(b.pe_section_count_eq(3).build(), BinaryExpression)
 
     with pytest.raises(ValidationError):
-        FluentConditionBuilder.create().build()
+        FluentConditionBuilder().build()
     assert isinstance(
         FluentConditionBuilder.match_string("$a").build(), type(b.string_matches("$a").build())
     )
     assert isinstance(FluentConditionBuilder.always_true().build(), BooleanLiteral)
 
     with pytest.raises(ValidationError):
-        FluentConditionBuilder.create().build()
+        FluentConditionBuilder().build()
     assert FluentConditionBuilder.match_string("$a").build() is not None
     assert ConditionBuilder().any_of("them").build() is not None
     assert ConditionBuilder().all_of("them").build() is not None

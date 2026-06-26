@@ -233,11 +233,6 @@ class FluentConditionBuilder(ConditionBuilder):
 
     # Factory methods
     @staticmethod
-    def create() -> FluentConditionBuilder:
-        """Create empty fluent condition builder."""
-        return FluentConditionBuilder()
-
-    @staticmethod
     def match_string(string_id: str) -> FluentConditionBuilder:
         """Create condition matching a string."""
         validate_string_reference(string_id)
