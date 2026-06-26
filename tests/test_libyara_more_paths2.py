@@ -167,7 +167,6 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
     compiler = DirectASTCompiler(enable_optimization=False)
     compiled = compiler.compile_ast(ast)
     assert compiled.success is True
-    assert "rule hint_rule" in compiler.compile_to_yara(ast)
 
     stats = compiler.get_compilation_stats()
     assert stats["total_compilations"] >= 1
@@ -272,10 +271,6 @@ def test_direct_compiler_rejects_yarax_ast_before_codegen() -> None:
     assert "Cannot compile YARA-X-only syntax with libyara" in message
     assert "pattern matching" in message
     assert "with statements" in message
-
-    with pytest.raises(ValueError) as exc_info:
-        compiler.compile_to_yara(ast)
-    assert "Cannot compile YARA-X-only syntax with libyara" in str(exc_info.value)
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")

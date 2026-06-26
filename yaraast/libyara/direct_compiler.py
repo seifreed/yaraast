@@ -165,18 +165,6 @@ class DirectASTCompiler:
             return optimized, self.optimizer.stats
         return ast, None
 
-    def compile_to_yara(self, ast: YaraFile) -> str:
-        """Compile AST to YARA source code.
-
-        Args:
-            ast: The YARA AST to compile
-
-        Returns:
-            Generated YARA source code
-
-        """
-        return generate_source(ast)
-
     def get_compilation_stats(self) -> dict[str, Any]:
         """Get compilation statistics."""
         return self.compilation_stats.copy()
