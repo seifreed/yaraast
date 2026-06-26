@@ -355,7 +355,7 @@ class _ExceptionOnAnalyzeFile(ParallelAnalyzer):
     increments jobs_failed without re-raising.
     """
 
-    def analyze_file(self, yara_file: Any, max_workers: int | None = None) -> dict[str, Any]:
+    def analyze_file(self, yara_file: Any, _max_workers: int | None = None) -> dict[str, Any]:
         raise ValueError("forced analyze_file failure for branch coverage")
 
 

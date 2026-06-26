@@ -175,7 +175,7 @@ class TestLspCommandTcpDisplayBranch:
         """
         import yaraast.cli.lsp_services as lsp_svc
 
-        def raise_immediately(server: object, tcp: int | None, host: str) -> None:
+        def raise_immediately(server: object, _tcp: int | None, host: str) -> None:
             raise RuntimeError("tcp sentinel for coverage")
 
         monkeypatch.setattr(lsp_svc, "start_lsp_server", raise_immediately)
@@ -194,7 +194,7 @@ class TestLspCommandTcpDisplayBranch:
         """The host value supplied via --host appears in the line-47 output."""
         import yaraast.cli.lsp_services as lsp_svc
 
-        def raise_immediately(server: object, tcp: int | None, host: str) -> None:
+        def raise_immediately(server: object, _tcp: int | None, host: str) -> None:
             raise RuntimeError("stop")
 
         monkeypatch.setattr(lsp_svc, "start_lsp_server", raise_immediately)
@@ -208,7 +208,7 @@ class TestLspCommandTcpDisplayBranch:
         """When --tcp is absent, line 47 is skipped; the stdio display fires instead."""
         import yaraast.cli.lsp_services as lsp_svc
 
-        def raise_immediately(server: object, tcp: int | None, host: str) -> None:
+        def raise_immediately(server: object, _tcp: int | None, host: str) -> None:
             raise RuntimeError("stop")
 
         monkeypatch.setattr(lsp_svc, "start_lsp_server", raise_immediately)

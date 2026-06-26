@@ -66,7 +66,7 @@ class _ServerWithRuntime(_MinimalServer):
     def __init__(self) -> None:
         super().__init__()
         self.runtime = SimpleNamespace(
-            set_workspace_folders=lambda folders: None,
+            set_workspace_folders=lambda _folders: None,
             update_config=lambda opts: None,
         )
 
