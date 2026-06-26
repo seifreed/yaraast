@@ -40,11 +40,6 @@ class ConformanceReport:
     engine_results: dict[str, EngineResult] = field(default_factory=dict)
     divergences: list[Divergence] = field(default_factory=list)
 
-    @property
-    def conformant(self) -> bool:
-        """True when no yaraast-attributable divergence was found."""
-        return not self.divergences
-
 
 class DifferentialChecker:
     """Run the round-trip conformance invariants over reference engines."""

@@ -43,7 +43,7 @@ def test_corpus_round_trip_is_conformant(rule_file: Path) -> None:
     # Every corpus file is authored to be accepted by the installed engines, so
     # the round-trip must preserve both acceptance and matches.
     assert report.parse_ok, f"yaraast failed to parse {rule_file.name}: {report.parse_error}"
-    assert report.conformant, "\n".join(
+    assert not report.divergences, "\n".join(
         f"{d.engine}/{d.kind}: {d.detail}" for d in report.divergences
     )
 
@@ -89,7 +89,7 @@ def test_checker_reports_no_divergence_when_engine_is_stable() -> None:
     )
     report = DifferentialChecker([engine]).check(_OK_RULE, data=b"hi", name="stable")
 
-    assert report.conformant
+    assert not report.divergences
     assert report.parse_ok
     assert report.engine_results["stable"].accepted
 
@@ -99,7 +99,7 @@ def test_checker_skips_rules_the_engine_rejects() -> None:
     report = DifferentialChecker([engine]).check(_OK_RULE, name="rejected")
 
     # Original rejected -> no codegen invariant to check, no divergence.
-    assert report.conformant
+    assert not report.divergences
 
 
 def test_checker_flags_codegen_acceptance_drift() -> None:
@@ -111,7 +111,7 @@ def test_checker_flags_codegen_acceptance_drift() -> None:
 
     report = DifferentialChecker([_FakeEngine("drift", verdict)]).check(_OK_RULE, name="acc-drift")
 
-    assert not report.conformant
+    assert report.divergences
     assert report.divergences[0].kind == "codegen_acceptance"
 
 
@@ -124,7 +124,7 @@ def test_checker_flags_match_drift() -> None:
         _OK_RULE, data=b"hi", name="match-drift"
     )
 
-    assert not report.conformant
+    assert report.divergences
     assert report.divergences[0].kind == "match_drift"
 
 
@@ -134,7 +134,7 @@ def test_checker_flags_parse_parity_gap_for_libyara() -> None:
     report = DifferentialChecker([engine]).check("this is not valid yara @#$", name="parse-gap")
 
     assert not report.parse_ok
-    assert not report.conformant
+    assert report.divergences
     assert report.divergences[0].kind == "parse_parity"
 
 
@@ -144,7 +144,7 @@ def test_parse_parity_gap_not_reported_for_non_libyara_engines() -> None:
 
     # Non-libyara strictness must not gate yaraast's classic parser.
     assert not report.parse_ok
-    assert report.conformant
+    assert not report.divergences
 
 
 def test_available_engines_returns_reference_engine_instances() -> None:
