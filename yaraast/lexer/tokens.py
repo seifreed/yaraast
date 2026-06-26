@@ -94,7 +94,6 @@ class TokenType(Enum):
     EOF = auto()
     NEWLINE = auto()
     COMMENT = auto()
-    UNKNOWN = auto()
 
     # String modifiers
     NOCASE = auto()
