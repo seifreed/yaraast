@@ -106,21 +106,18 @@ def test_rule_transformer_tag_modifier_meta_and_string_helpers() -> None:
         .add_prefix("pre_")
         .add_suffix("_suf")
         .add_tag("t2")
-        .remove_tag("missing")
         .add_modifier("private")
         .add_modifier("private")
-        .remove_modifier("global")
-        .set_author("you")
-        .set_description("desc")
-        .set_version(7)
-        .remove_meta("missing")
+        .add_meta("author", "you")
+        .add_meta("description", "desc")
+        .add_meta("version", 7)
         .rename_strings({"$a": "$renamed"})
         .build()
     )
 
     assert transformed.name == "pre_base_suf"
     assert {t.name for t in transformed.tags} == {"t1", "t2"}
-    assert [str(m) for m in transformed.modifiers] == ["private"]
+    assert [str(m) for m in transformed.modifiers] == ["global", "private"]
     assert transformed.get_meta_value("author") == "you"
     assert transformed.get_meta_value("description") == "desc"
     assert transformed.get_meta_value("version") == 7
@@ -445,7 +442,7 @@ def test_yara_file_transformer_operations_and_filters() -> None:
         .suffix_all_rules("_suf")
         .add_tag_to_all_rules("all_rules")
         .make_all_rules_private()
-        .transform_all_rules(lambda rule: RuleTransformer(rule).set_author("team").build())
+        .transform_all_rules(lambda rule: RuleTransformer(rule).add_meta("author", "team").build())
         .filter_by_tag("all_rules")
         .filter_by_modifier("private")
         .build()
@@ -503,8 +500,8 @@ def test_convenience_transform_functions_and_direct_transform_paths() -> None:
         .add_suffix("_suf")
         .add_tag("x")
         .add_tag("y")
-        .set_author("author2")
-        .set_description("desc2")
+        .add_meta("author", "author2")
+        .add_meta("description", "desc2")
         .make_private()
         .build()
     )
@@ -749,11 +746,8 @@ def test_rule_transformer_rejects_invalid_rule_names_without_partial_update(
         ("add_suffix", True, "Rule suffix must be a string"),
         ("add_modifier", True, "Rule modifier must be a string"),
         ("set_author", True, "Rule author must be a string"),
-        ("set_description", 123, "Rule description must be a string"),
         ("prefix_strings", True, "String prefix must be a string"),
         ("suffix_strings", True, "String suffix must be a string"),
-        ("remove_tag", True, "Tag must be a string"),
-        ("remove_modifier", True, "Rule modifier must be a string"),
         ("remove_string", True, "String identifier must be a string"),
     ],
 )
@@ -837,18 +831,6 @@ def test_rule_transformer_rejects_invalid_meta_values_without_partial_update(
     with pytest.raises(TypeError, match="Invalid meta value"):
         transformer.add_meta("new_key", cast(Any, meta_value))
     assert transformer.build().get_meta_value("new_key") is None
-
-
-@pytest.mark.parametrize("version", [True, "1", 1.5])
-def test_rule_transformer_rejects_invalid_version_without_partial_update(
-    version: object,
-) -> None:
-    transformer = RuleTransformer(_sample_rule("metadata_rule"))
-
-    with pytest.raises(TypeError, match="Version value must be an integer"):
-        transformer.set_version(cast(Any, version))
-
-    assert transformer.build().get_meta_value("version") is None
 
 
 def test_rule_transformer_rejects_duplicate_strings_without_partial_update() -> None:

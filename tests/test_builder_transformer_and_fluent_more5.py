@@ -21,9 +21,7 @@ def test_fluent_rule_builder_additional_builder_paths() -> None:
         .with_string("$plain", "alpha")
         .pe_header("$pe")
         .email_pattern("$mail")
-        .string("$re")
-        .regex("foo.*bar")
-        .then()
+        .regex_string("$re", "foo.*bar")
         .condition(FluentConditionBuilder().true())
         .condition(FluentConditionBuilder().filesize_lt(1024 * 1024))
         .build()
@@ -57,15 +55,12 @@ def test_ast_transformer_noop_and_list_meta_paths() -> None:
         RuleTransformer(list_meta_rule)
         .add_tag("tag1")
         .add_meta("author", "ignored")
-        .remove_meta("author")
-        .remove_string("missing")
         .transform_condition(lambda expr: BooleanLiteral(value=False))
         .build()
     )
 
     assert [t.name for t in transformed.tags] == ["tag1", "tag2"]
-    assert transformed.meta == []
-    assert len(transformed.strings) == 1
+    assert transformed.get_meta_value("author") == "ignored"
     assert isinstance(transformed.condition, BooleanLiteral)
     assert transformed.condition.value is False
 
@@ -80,11 +75,11 @@ def test_ast_transformer_noop_and_list_meta_paths() -> None:
     )
     transformed_dict = (
         RuleTransformer(dict_meta_rule)
-        .remove_meta("author")
+        .add_meta("author", "new")
         .rename_strings({"$a": "$renamed"})
         .build()
     )
-    assert len(transformed_dict.meta) == 1
+    assert transformed_dict.get_meta_value("author") == "new"
     assert transformed_dict.get_meta_value("version") == 1
     assert [s.identifier for s in transformed_dict.strings] == ["$renamed", "$b"]
     assert isinstance(transformed_dict.condition, StringIdentifier)

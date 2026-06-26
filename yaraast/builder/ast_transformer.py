@@ -27,7 +27,6 @@ from yaraast.builder.file_builder_validation import (
     validate_meta_value,
     validate_nonempty_text,
     validate_unique_rule_names,
-    validate_version_value,
 )
 from yaraast.builder.string_identifier_validation import validate_new_string_definitions
 from yaraast.errors import ValidationError
@@ -111,12 +110,6 @@ class RuleTransformer:
             self.rule.tags.append(Tag(name=tag))
         return self
 
-    def remove_tag(self, tag: str) -> RuleTransformer:
-        """Remove a tag from the rule."""
-        tag = self._require_text(tag, "Tag")
-        self.rule.tags = [t for t in self.rule.tags if t.name != tag]
-        return self
-
     def add_modifier(self, modifier: str) -> RuleTransformer:
         """Add a modifier to the rule."""
         modifier = self._require_text(modifier, "Rule modifier")
@@ -129,12 +122,6 @@ class RuleTransformer:
             except (ValueError, ValidationError):
                 validate_identifier(modifier, "rule modifier")
                 self.rule.modifiers.append(modifier)
-        return self
-
-    def remove_modifier(self, modifier: str) -> RuleTransformer:
-        """Remove a modifier from the rule."""
-        modifier = self._require_text(modifier, "Rule modifier")
-        self.rule.modifiers = [m for m in self.rule.modifiers if str(m) != modifier]
         return self
 
     def make_private(self) -> RuleTransformer:
@@ -156,26 +143,10 @@ class RuleTransformer:
         self.rule.meta.append(MetaEntry.from_key_value(key, value))
         return self
 
-    def remove_meta(self, key: str) -> RuleTransformer:
-        """Remove metadata."""
-        self.rule.meta = [
-            entry for entry in self.rule.meta if not (hasattr(entry, "key") and entry.key == key)
-        ]
-        return self
-
     def set_author(self, author: str) -> RuleTransformer:
         """Set author metadata."""
         author = self._require_text(author, "Rule author")
         return self.add_meta("author", author)
-
-    def set_description(self, description: str) -> RuleTransformer:
-        """Set description metadata."""
-        description = self._require_text(description, "Rule description")
-        return self.add_meta("description", description)
-
-    def set_version(self, version: int) -> RuleTransformer:
-        """Set version metadata."""
-        return self.add_meta("version", validate_version_value(version))
 
     def _validate_string_rename_mapping(self, mapping: object) -> dict[str, str]:
         if not isinstance(mapping, dict):

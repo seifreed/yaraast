@@ -262,11 +262,12 @@ class TestRuleTransformations:
         """Test rule transformation - tags."""
         original = rule("test").tagged("original").text_string("$a", "hello").matches_any().build()
 
-        transformed = transform_rule(original).add_tag("new").remove_tag("original").build()
+        transformed = transform_rule(original).add_tag("new").add_tag("new").build()
 
         tag_names = [tag.name for tag in transformed.tags]
         assert "new" in tag_names
-        assert "original" not in tag_names
+        assert tag_names.count("new") == 1
+        assert "original" in tag_names
 
     def test_transform_rule_prefix(self) -> None:
         """Test rule transformation - prefix."""

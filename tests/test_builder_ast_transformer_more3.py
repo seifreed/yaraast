@@ -26,8 +26,7 @@ def test_rule_transformer_renames_and_meta() -> None:
         .add_prefix("pre_")
         .add_suffix("_suf")
         .add_tag("tag2")
-        .remove_tag("tag1")
-        .set_author("you")
+        .add_meta("author", "you")
         .rename_strings({"$a": "$b"})
         .build()
     )
@@ -91,7 +90,12 @@ def test_yara_file_transformer_and_merge() -> None:
 def test_create_variant_and_collection() -> None:
     base = Rule(name="base")
     variant = (
-        RuleTransformer(base).rename("variant").add_tag("x").set_author("me").make_private().build()
+        RuleTransformer(base)
+        .rename("variant")
+        .add_tag("x")
+        .add_meta("author", "me")
+        .make_private()
+        .build()
     )
     assert variant.name == "variant"
     assert any(str(m) == "private" for m in variant.modifiers)
