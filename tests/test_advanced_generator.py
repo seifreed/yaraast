@@ -262,15 +262,3 @@ rule test {
     # Should contain 3-space indents
     assert "   " in output
     assert "\t" not in output
-
-
-if __name__ == "__main__":
-    test_compact_formatting()
-    test_expanded_formatting()
-    test_brace_styles()
-    test_string_alignment()
-    test_hex_formatting()
-    test_sorting_options()
-    test_spacing_options()
-    test_indentation_styles()
-    print("✓ All advanced generator tests passed")
