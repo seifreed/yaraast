@@ -25,11 +25,6 @@ def validate_nonempty_text(value: object, kind: str) -> None:
     raise ValidationError(msg)
 
 
-def validate_nonempty_texts(values: Sequence[str], kind: str) -> None:
-    for value in values:
-        validate_nonempty_text(value, kind)
-
-
 def validate_identifier(value: object, kind: str) -> None:
     if not isinstance(value, str):
         msg = f"Invalid {kind} identifier: {value}"
