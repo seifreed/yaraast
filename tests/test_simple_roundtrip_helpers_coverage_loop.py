@@ -17,7 +17,7 @@ from typing import Any, cast
 
 import pytest
 
-from yaraast.ast.base import ASTNode, Location, YaraFile
+from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     OfExpression,
@@ -688,12 +688,7 @@ def test_serialize_hex_string_anonymous_flag_is_included() -> None:
 
 def test_serialize_string_fallback_for_non_standard_ast_node() -> None:
     """A non-StringDefinition ASTNode falls back to the 'data' key format."""
-
-    class _WeirdNode(ASTNode):
-        def accept(self, visitor: Any) -> Any:
-            return visitor.visit_weird(self)
-
-    node = _WeirdNode()
+    node = Comment("// weird")
     result = serialize_string(node)
     assert result["type"] == "StringDefinition"
     assert "data" in result
