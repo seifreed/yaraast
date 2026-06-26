@@ -12,11 +12,7 @@ from yaraast.ast.rules import Rule
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.lsp.hover import HoverProvider
 from yaraast.lsp.runtime import LspRuntime
-from yaraast.lsp.text_utils import (
-    get_word_at_position,
-    offset_to_position,
-    position_to_offset,
-)
+from yaraast.lsp.text_utils import get_word_at_position
 from yaraast.lsp.utils import (
     find_node_at_position,
     location_to_range,
@@ -53,21 +49,6 @@ def test_token_and_location_to_range() -> None:
     inline_location = Location(line=1, column=inline_text.index("beta") + 1)
     inline_range = location_to_range(inline_location, source_text=inline_text)
     assert inline_range.end.character > inline_range.start.character + 1
-
-
-def test_position_offset_roundtrip() -> None:
-    text = "abc\ndef\nghi"
-    position = Position(line=1, character=2)
-    offset = position_to_offset(text, position)
-    assert offset == 6
-
-    back = offset_to_position(text, offset)
-    assert back.line == position.line
-    assert back.character == position.character
-
-    end = offset_to_position(text, 999)
-    assert end.line == 2
-    assert end.character == 3
 
 
 def test_get_word_at_position_and_find_node() -> None:

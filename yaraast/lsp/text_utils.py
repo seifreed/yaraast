@@ -21,40 +21,6 @@ def _require_position(position: object) -> Position:
     return position
 
 
-def position_to_offset(text: str, position: Position) -> int:
-    text = _require_text(text)
-    position = _require_position(position)
-    lines = text.split("\n")
-    if position.line >= len(lines):
-        return len(text)
-    offset = 0
-    for i in range(position.line):
-        offset += len(lines[i]) + 1
-    offset += utf16_col_to_utf8(lines[position.line], position.character)
-    return offset
-
-
-def offset_to_position(text: str, offset: int) -> Position:
-    text = _require_text(text)
-    if isinstance(offset, bool) or not isinstance(offset, int):
-        msg = "offset must be an integer"
-        raise TypeError(msg)
-    if offset < 0:
-        msg = "offset must be non-negative"
-        raise ValueError(msg)
-    lines = text.split("\n")
-    current_offset = 0
-    for line_num, line in enumerate(lines):
-        line_length = len(line) + 1
-        if current_offset + line_length > offset:
-            return Position(
-                line=line_num,
-                character=utf8_col_to_utf16(line, offset - current_offset),
-            )
-        current_offset += line_length
-    return Position(line=len(lines) - 1, character=utf16_len(lines[-1]) if lines else 0)
-
-
 def get_word_at_position(text: str, position: Position) -> tuple[str, Range]:
     text = _require_text(text)
     position = _require_position(position)

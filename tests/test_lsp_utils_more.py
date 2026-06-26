@@ -12,11 +12,7 @@ from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import BinaryExpression
 from yaraast.ast.rules import Rule
 from yaraast.lexer.tokens import Token, TokenType
-from yaraast.lsp.text_utils import (
-    get_word_at_position,
-    offset_to_position,
-    position_to_offset,
-)
+from yaraast.lsp.text_utils import get_word_at_position
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.lsp.utils import (
     find_node_at_position,
@@ -93,60 +89,6 @@ def test_location_to_range_clamps_zero_based_location_line() -> None:
     assert loc_range.start.character == 0
     assert loc_range.end.line == 0
     assert loc_range.end.character == 1
-
-
-def test_position_offset_roundtrip() -> None:
-    text = "one\ntwo\nthree"
-    pos = Position(line=1, character=2)
-    offset = position_to_offset(text, pos)
-    roundtrip = offset_to_position(text, offset)
-    assert roundtrip.line == pos.line
-    assert roundtrip.character == pos.character
-
-
-def test_position_offset_roundtrip_uses_lsp_utf16_columns() -> None:
-    text = "a😀b\nnext"
-
-    after_emoji = Position(line=0, character=3)
-    offset = position_to_offset(text, after_emoji)
-
-    assert offset == 2
-    assert offset_to_position(text, offset) == after_emoji
-
-
-def test_position_to_offset_clamps_lines_beyond_document() -> None:
-    text = "abc\ndef"
-
-    assert position_to_offset(text, Position(line=2, character=0)) == len(text)
-    assert position_to_offset(text, Position(line=99, character=0)) == len(text)
-
-
-@pytest.mark.parametrize("text", [None, 1, b"abc", object()])
-def test_position_to_offset_rejects_invalid_text_types(text: Any) -> None:
-    with pytest.raises(TypeError, match="text must be a string"):
-        position_to_offset(cast(Any, text), Position(line=0, character=0))
-
-
-def test_position_to_offset_rejects_invalid_position_type() -> None:
-    with pytest.raises(TypeError, match="position must be an LSP Position"):
-        position_to_offset("abc", cast(Any, object()))
-
-
-@pytest.mark.parametrize("text", [None, 1, b"abc", object()])
-def test_offset_to_position_rejects_invalid_text_types(text: Any) -> None:
-    with pytest.raises(TypeError, match="text must be a string"):
-        offset_to_position(cast(Any, text), 0)
-
-
-@pytest.mark.parametrize("offset", [True, "1", object()])
-def test_offset_to_position_rejects_invalid_offset_types(offset: Any) -> None:
-    with pytest.raises(TypeError, match="offset must be an integer"):
-        offset_to_position("abc", cast(Any, offset))
-
-
-def test_offset_to_position_rejects_negative_offsets() -> None:
-    with pytest.raises(ValueError, match="offset must be non-negative"):
-        offset_to_position("abc\ndef", -1)
 
 
 def test_get_word_at_position_and_find_node() -> None:
