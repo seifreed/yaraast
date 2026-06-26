@@ -50,9 +50,6 @@ def test_fluent_string_builder_rejects_non_string_text_and_regex_content() -> No
     with pytest.raises(TypeError, match="Regex pattern must be a string"):
         FluentStringBuilder("$regex").regex(cast(Any, 123))
 
-    with pytest.raises(TypeError, match="Regex pattern must be a string"):
-        FluentStringBuilder("$regexp").regexp(cast(Any, ["x"]))
-
 
 def test_fluent_string_builder_hex_build_returns_token_snapshot() -> None:
     builder = FluentStringBuilder("$hex").hex("41")

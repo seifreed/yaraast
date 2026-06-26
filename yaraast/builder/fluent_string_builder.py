@@ -115,10 +115,6 @@ class FluentStringBuilder:
         self._string_type = "regex"
         return self
 
-    def regexp(self, pattern: str) -> FluentStringBuilder:
-        """Alias for regex."""
-        return self.regex(pattern)
-
     # String modifier methods using enhanced enums
     def ascii(self) -> FluentStringBuilder:
         """Add ASCII modifier."""
@@ -134,10 +130,6 @@ class FluentStringBuilder:
         """Add nocase modifier."""
         self._add_modifier(StringModifierType.NOCASE)
         return self
-
-    def case_insensitive(self) -> FluentStringBuilder:
-        """Alias for nocase."""
-        return self.nocase()
 
     def fullword(self) -> FluentStringBuilder:
         """Add fullword modifier."""

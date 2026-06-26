@@ -188,11 +188,11 @@ class TestFluentStringBuilderRegexStrings:
         assert builder._content == r"[0-9]+"
         assert builder._string_type == "regex"
 
-    def test_regexp_is_alias_for_regex(self) -> None:
-        """Regexp method should work as alias for regex."""
+    def test_regex_sets_regex_pattern_again(self) -> None:
+        """Regex should continue to set regex pattern."""
         builder = FluentStringBuilder("$re")
 
-        result = builder.regexp(r"\w+")
+        result = builder.regex(r"\w+")
 
         assert result is builder
         assert builder._content == r"\w+"
@@ -242,11 +242,11 @@ class TestFluentStringBuilderModifiers:
         assert len(builder._modifiers) == 1
         assert builder._modifiers[0].modifier_type == StringModifierType.NOCASE
 
-    def test_case_insensitive_is_alias(self) -> None:
-        """Case_insensitive should be alias for nocase."""
+    def test_nocase_adds_nocase_modifier_again(self) -> None:
+        """Nocase should continue to add nocase modifier."""
         builder = FluentStringBuilder("$s").literal("test")
 
-        result = builder.case_insensitive()
+        result = builder.nocase()
 
         assert result is builder
         assert len(builder._modifiers) == 1
