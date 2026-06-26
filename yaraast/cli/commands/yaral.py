@@ -41,7 +41,6 @@ def _ast_to_serializable_data(ast: Any) -> dict[str, Any]:
 @click.group()
 def yaral() -> None:
     """YARA-L specific operations."""
-    pass
 
 
 @yaral.command()

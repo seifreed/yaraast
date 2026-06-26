@@ -26,7 +26,6 @@ from yaraast.cli.yarax_services import (
 @click.group()
 def yarax():
     """YARA-X specific operations for next-gen YARA syntax."""
-    pass
 
 
 @yarax.command()
