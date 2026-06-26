@@ -104,38 +104,6 @@ class TestRequireCommentSequence:
             _require_comment_sequence((), "field")
 
 
-class TestYaraFileGetExternRuleByNameNamespaceFilter:
-    """Covers line 328 and branch [327,328]: namespace mismatch causes continue."""
-
-    def test_namespace_mismatch_skips_extern_namespace(self) -> None:
-        from yaraast.ast.extern import ExternNamespace, ExternRule
-
-        # Arrange: extern rule under 'ns_actual'; query asks for 'ns_other'
-        er = ExternRule(name="TargetRule")
-        ns = ExternNamespace(name="ns_actual", extern_rules=[er])
-        yf = YaraFile(namespaces=[ns])
-
-        # Act: search with mismatched namespace triggers the continue branch
-        result = yf.get_extern_rule_by_name("TargetRule", namespace="ns_other")
-
-        # Assert: rule is not found because namespace filter eliminated all candidates
-        assert result is None
-
-    def test_matching_namespace_finds_rule(self) -> None:
-        from yaraast.ast.extern import ExternNamespace, ExternRule
-
-        # Arrange: extern rule with namespace set to the namespace name
-        er = ExternRule(name="FoundRule", namespace="ns_actual")
-        ns = ExternNamespace(name="ns_actual", extern_rules=[er])
-        yf = YaraFile(namespaces=[ns])
-
-        # Act: search with the exact matching namespace
-        result = yf.get_extern_rule_by_name("FoundRule", namespace="ns_actual")
-
-        # Assert: the rule is returned
-        assert result is er
-
-
 class TestYaraFileDeepValidationCallsValidateStructure:
     """Covers branch [277,266]: deep=True with items that have validate_structure."""
 

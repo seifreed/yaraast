@@ -1719,16 +1719,12 @@ def test_yarafile_helpers() -> None:
         imports=[Import(module="pe")],
         includes=[Include(path="inc.yar")],
         rules=[Rule(name="r1")],
+        pragmas=[IncludeOncePragma()],
+        extern_rules=[ExternRule(name="ext1", namespace="ext")],
     )
     assert file_node.get_all_rules()[0].name == "r1"
-
-    pragma = IncludeOncePragma()
-    file_node.add_pragma(pragma)
-    assert file_node.has_include_once() is True
-
-    extern_rule = ExternRule(name="ext1", namespace="ext")
-    file_node.add_extern_rule(extern_rule)
-    assert file_node.get_extern_rule_by_name("ext1", "ext") == extern_rule
+    assert any(pragma.is_include_once for pragma in file_node.pragmas)
+    assert file_node.extern_rules[0].name == "ext1"
 
 
 @pytest.mark.parametrize(
@@ -1740,42 +1736,6 @@ def test_yarafile_helpers() -> None:
             [cast(Any, object())],
             "get_all_rules",
             "YaraFile rules must contain Rule nodes",
-        ),
-        (
-            "pragmas",
-            cast(Any, "bad"),
-            "get_pragma_by_type",
-            "YaraFile pragmas must be a list or tuple",
-        ),
-        (
-            "pragmas",
-            [cast(Any, object())],
-            "has_include_once",
-            "YaraFile pragmas must contain Pragma nodes",
-        ),
-        (
-            "extern_rules",
-            cast(Any, "bad"),
-            "get_extern_rule_by_name",
-            "YaraFile extern_rules must be a list or tuple",
-        ),
-        (
-            "extern_rules",
-            [cast(Any, object())],
-            "get_extern_rule_by_name",
-            "YaraFile extern_rules must contain ExternRule nodes",
-        ),
-        (
-            "namespaces",
-            cast(Any, "bad"),
-            "get_extern_rule_by_name",
-            "YaraFile namespaces must be a list or tuple",
-        ),
-        (
-            "namespaces",
-            [cast(Any, object())],
-            "get_extern_rule_by_name",
-            "YaraFile namespaces must contain ExternNamespace nodes",
         ),
     ],
 )
@@ -1791,12 +1751,8 @@ def test_yarafile_helpers_reject_invalid_internal_containers(
     with pytest.raises(TypeError, match=message):
         if operation == "get_all_rules":
             file_node.get_all_rules()
-        elif operation == "get_pragma_by_type":
-            file_node.get_pragma_by_type(PragmaType.PRAGMA)
-        elif operation == "has_include_once":
-            file_node.has_include_once()
         else:
-            file_node.get_extern_rule_by_name("Remote")
+            file_node.validate_structure()
 
 
 @pytest.mark.parametrize(
@@ -1806,31 +1762,6 @@ def test_yarafile_helpers_reject_invalid_internal_containers(
             YaraFile(rules=[Rule(cast(Any, object()))]),
             "get_all_rules",
             "Rule name must be a string",
-        ),
-        (
-            YaraFile(pragmas=[Pragma(cast(Any, "bad"), "vendor")]),
-            "get_pragma_by_type",
-            "Pragma type must be a PragmaType",
-        ),
-        (
-            YaraFile(extern_rules=[ExternRule(cast(Any, 123))]),
-            "get_extern_rule_by_name",
-            "ExternRule name must be a string",
-        ),
-        (
-            YaraFile(namespaces=[ExternNamespace("corp", extern_rules=cast(Any, "Rule"))]),
-            "get_extern_rule_by_name",
-            "ExternNamespace extern_rules must be a list",
-        ),
-        (
-            YaraFile(namespaces=[ExternNamespace("corp", extern_rules=[cast(Any, object())])]),
-            "get_extern_rule_by_name",
-            "ExternNamespace extern_rules item must be ExternRule",
-        ),
-        (
-            YaraFile(namespaces=[ExternNamespace("corp", [ExternRule(cast(Any, 123))])]),
-            "get_extern_rule_by_name",
-            "ExternRule name must be a string",
         ),
     ],
 )
@@ -1842,10 +1773,8 @@ def test_yarafile_helpers_reject_invalid_child_state(
     with pytest.raises(TypeError, match=message):
         if operation == "get_all_rules":
             file_node.get_all_rules()
-        elif operation == "get_pragma_by_type":
-            file_node.get_pragma_by_type(PragmaType.PRAGMA)
         else:
-            file_node.get_extern_rule_by_name("Remote")
+            file_node.validate_structure()
 
 
 def test_parser_populates_location_spans_for_core_nodes() -> None:

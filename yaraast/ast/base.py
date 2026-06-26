@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 if TYPE_CHECKING:
     from yaraast.ast.comments import Comment, CommentGroup
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
-    from yaraast.ast.pragmas import Pragma, PragmaType
+    from yaraast.ast.pragmas import Pragma
     from yaraast.ast.rules import Import, Include, Rule
 
     _VisitorType = Any
@@ -178,15 +178,6 @@ def _require_optional_nonempty_string(value: Any, field_name: str) -> str | None
     return text
 
 
-def _require_pragma_type(value: Any, field_name: str) -> PragmaType:
-    from yaraast.ast.pragmas import PragmaType
-
-    if not isinstance(value, PragmaType):
-        msg = f"{field_name} must be a PragmaType"
-        raise TypeError(msg)
-    return value
-
-
 def _require_ast_node(value: Any, field_name: str) -> ASTNode:
     if not isinstance(value, ASTNode):
         msg = f"{field_name} must be an AST node"
@@ -280,57 +271,6 @@ class YaraFile(ASTNode):
     def accept(self, visitor: _VisitorType) -> Any:
         self.validate_structure(deep=False)
         return visitor.visit_yara_file(self)
-
-    def add_extern_rule(self, extern_rule: ExternRule) -> None:
-        """Add an extern rule to the file."""
-        from yaraast.ast.extern import ExternRule
-
-        if not isinstance(extern_rule, ExternRule):
-            msg = "Extern rule input must be an ExternRule"
-            raise TypeError(msg)
-        self.extern_rules.append(extern_rule)
-
-    def add_pragma(self, pragma: Pragma) -> None:
-        """Add a file-level pragma."""
-        from yaraast.ast.pragmas import Pragma, PragmaScope
-
-        if not isinstance(pragma, Pragma):
-            msg = "Pragma input must be a Pragma"
-            raise TypeError(msg)
-
-        pragma.scope = PragmaScope.FILE
-        self.pragmas.append(pragma)
-
-    def get_pragma_by_type(self, pragma_type: PragmaType) -> list[Pragma]:
-        """Get all pragmas of a specific type."""
-        pragma_type = _require_pragma_type(pragma_type, "YaraFile pragma type")
-        return [p for p in self._validated_pragmas() if p.pragma_type == pragma_type]
-
-    def has_include_once(self) -> bool:
-        """Check if file has include_once pragma."""
-        from yaraast.ast.pragmas import PragmaType
-
-        return any(p.pragma_type == PragmaType.INCLUDE_ONCE for p in self._validated_pragmas())
-
-    def get_extern_rule_by_name(
-        self,
-        name: str,
-        namespace: str | None = None,
-    ) -> ExternRule | None:
-        """Get extern rule by name and optional namespace."""
-        name = _require_nonempty_string(name, "YaraFile extern rule name")
-        namespace = _require_optional_nonempty_string(namespace, "YaraFile extern namespace")
-        for rule in self._validated_extern_rules():
-            if rule.name == name and rule.namespace == namespace:
-                return rule
-        for extern_namespace in self._validated_namespaces():
-            if namespace is not None and extern_namespace.name != namespace:
-                continue
-            for rule in extern_namespace.extern_rules:
-                rule_namespace = rule.namespace or extern_namespace.name
-                if rule.name == name and rule_namespace == namespace:
-                    return rule
-        return None
 
     def get_all_rules(self) -> list[Rule]:
         """Get a copy of all regular rules in this file."""
