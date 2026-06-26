@@ -43,13 +43,12 @@ from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.parser import Parser
 
-DependencyGraphGeneratorClass: Any = None
 try:
     from yaraast.metrics.dependency_graph import (
         DependencyGraphGenerator as _DependencyGraphGeneratorClass,
     )
 except ModuleNotFoundError:
-    pass
+    DependencyGraphGeneratorClass: Any = None
 else:
     DependencyGraphGeneratorClass = _DependencyGraphGeneratorClass
 
