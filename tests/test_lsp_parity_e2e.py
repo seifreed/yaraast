@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TypedDict
 
 from lsprotocol.types import Location, Position, Range
 
@@ -19,18 +18,6 @@ from yaraast.lsp.symbols import SymbolsProvider
 FIXTURES = Path(__file__).parent / "fixtures" / "lsp_parity"
 
 
-class MatrixResult(TypedDict):
-    hover: bool
-    definition: bool
-    references: int
-    rename_files: int
-    symbols: int
-    document_links: int
-    highlights: int
-    selection_ranges: int
-    semantic_tokens_range: int
-
-
 def _pos(line: int, char: int) -> Position:
     return Position(line=line, character=char)
 
@@ -40,7 +27,7 @@ def _single_location(location: Location | list[Location]) -> Location:
     return location
 
 
-def _run_matrix(folder: str, dialect: str, position: Position) -> MatrixResult:
+def _run_matrix(folder: str, dialect: str, position: Position) -> dict[str, int | bool]:
     root = FIXTURES / folder
     runtime = LspRuntime()
     runtime.update_config({"YARA": {"dialectMode": dialect}})
