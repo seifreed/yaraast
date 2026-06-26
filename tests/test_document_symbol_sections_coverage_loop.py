@@ -164,19 +164,11 @@ def _names_of_kind(symbols: list[SymbolRecord], kind: str) -> list[str]:
     return [s.name for s in symbols if s.kind == kind]
 
 
-class _UnknownMeta:
-    """A meta object that is neither a list nor has an 'entries' attribute.
-
-    Used to exercise the defensive else-branch in both meta_item_ranges and
-    the iteration loop of append_meta_symbols (line 58: items = iter([])).
-    """
-
-
 class _FakeRuleWithUnknownMeta:
     """Minimal rule-like object carrying an unknown meta type."""
 
     def __init__(self) -> None:
-        self.meta: Any = _UnknownMeta()
+        self.meta: Any = object()
 
     # Other attributes accessed by append_string_symbols / append_condition_symbols
     # are not present — those helpers guard with getattr defaults.
@@ -404,7 +396,7 @@ rule DupMetaRule {
 
     def test_unknown_meta_type_returns_none(self) -> None:
         """Unknown meta object type (not list, no entries) returns None immediately."""
-        result = meta_item_range(_UnknownMeta(), "key", "source", 0)
+        result = meta_item_range(object(), "key", "source", 0)
         assert result is None
 
 
