@@ -10,7 +10,6 @@ Missing-line coverage targets (as of the coverage snapshot):
   66-70  Import.validate_structure: module body and alias branch
   84-85  Include.validate_structure body
   99-100 Tag.validate_structure body
-  143-145 Rule.from_raw body
   158    _normalize_modifiers: empty-string branch
   160-165 _normalize_modifiers: non-empty string (success and except paths)
   177    _normalize_modifiers: non-list/tuple/str/None fallback
@@ -218,37 +217,6 @@ class TestTagValidateStructure:
         tag = Tag(name="strings")
         with pytest.raises(ValueError, match="Invalid tag identifier"):
             tag.validate_structure()
-
-
-# ---------------------------------------------------------------------------
-# Rule.from_raw (lines 143-145)
-# ---------------------------------------------------------------------------
-
-
-class TestRuleFromRaw:
-    """Cover Rule.from_raw factory method (lines 143-145)."""
-
-    def test_from_raw_with_string_modifiers_and_dict_meta(self) -> None:
-        """from_raw normalizes string modifiers and dict meta and returns a Rule."""
-        rule = Rule.from_raw("test_rule", modifiers="private", meta={"author": "me"})
-        assert rule.name == "test_rule"
-        assert rule.is_private
-        assert rule.get_meta_value("author") == "me"
-
-    def test_from_raw_with_no_modifiers_or_meta(self) -> None:
-        """from_raw with all defaults builds an empty Rule correctly."""
-        rule = Rule.from_raw("minimal")
-        assert rule.name == "minimal"
-        assert not rule.is_private
-        assert not rule.is_global
-
-    def test_from_raw_with_list_modifiers_and_list_meta(self) -> None:
-        """from_raw accepts already-normalized modifiers and meta lists."""
-        mod = RuleModifier(modifier_type=RuleModifierType.GLOBAL)
-        entry = MetaEntry.from_key_value("desc", "test")
-        rule = Rule.from_raw("full_rule", modifiers=[mod], meta=[entry])
-        assert rule.is_global
-        assert rule.get_meta_value("desc") == "test"
 
 
 # ---------------------------------------------------------------------------

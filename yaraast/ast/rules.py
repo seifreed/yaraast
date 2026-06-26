@@ -120,35 +120,6 @@ class Rule(ASTNode):
         self.modifiers = self._normalize_modifiers(self.modifiers)
         self.meta = self._normalize_meta(self.meta)
 
-    @classmethod
-    def from_raw(
-        cls,
-        name: str,
-        modifiers: list[Any] | str | None = None,
-        meta: dict[str, Any] | list[MetaEntry] | None = None,
-        **kwargs: Any,
-    ) -> Rule:
-        """Create a Rule with automatic normalization of modifiers and meta.
-
-        Accepts both legacy formats (str modifiers, dict meta) and normalized
-        formats (RuleModifier list, MetaEntry list).
-
-        Examples:
-            >>> rule = Rule.from_raw("test", modifiers=["private"], meta={"author": "me"})
-            >>> rule.is_private
-            True
-            >>> rule.get_meta_value("author")
-            'me'
-        """
-        normalized_mods = cls._normalize_modifiers(modifiers)
-        normalized_meta = cls._normalize_meta(meta)
-        return cls(
-            name=name,
-            modifiers=normalized_mods,
-            meta=normalized_meta,
-            **kwargs,
-        )
-
     @staticmethod
     def _normalize_modifiers(
         modifiers: Sequence[Any] | str | None,

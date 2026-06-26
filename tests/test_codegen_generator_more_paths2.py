@@ -1836,11 +1836,6 @@ def test_codegen_generators_reject_invalid_rule_modifiers() -> None:
     "rule",
     [
         Rule(name="false_modifier", modifiers=cast(Any, False), condition=BooleanLiteral(True)),
-        Rule.from_raw(
-            name="false_raw_modifier",
-            modifiers=cast(Any, False),
-            condition=BooleanLiteral(True),
-        ),
     ],
 )
 def test_codegen_generators_reject_non_string_boolean_rule_modifiers(rule: Rule) -> None:
@@ -1909,11 +1904,6 @@ def test_codegen_generators_reject_invalid_rule_meta_collections() -> None:
     false_meta: Any = False
     cases = [
         Rule(name="invalid_meta_container", meta=false_meta, condition=BooleanLiteral(True)),
-        Rule.from_raw(
-            name="invalid_raw_meta_container",
-            meta=false_meta,
-            condition=BooleanLiteral(True),
-        ),
         Rule(name="invalid_meta_item", meta=[false_meta], condition=BooleanLiteral(True)),
     ]
 
