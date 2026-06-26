@@ -282,15 +282,15 @@ class TestFluentStringBuilderModifiers:
         assert len(builder._modifiers) == 1
         assert builder._modifiers[0].modifier_type == StringModifierType.BASE64
 
-    def test_base64wide_adds_base64wide_modifier(self) -> None:
-        """Base64wide method should add base64wide modifier."""
+    def test_base64_adds_base64_modifier_again(self) -> None:
+        """Base64 should continue to add base64 modifier."""
         builder = FluentStringBuilder("$s").literal("encoded")
 
-        result = builder.base64wide()
+        result = builder.base64()
 
         assert result is builder
         assert len(builder._modifiers) == 1
-        assert builder._modifiers[0].modifier_type == StringModifierType.BASE64WIDE
+        assert builder._modifiers[0].modifier_type == StringModifierType.BASE64
 
     def test_xor_without_key(self) -> None:
         """Xor without key should add XOR modifier."""

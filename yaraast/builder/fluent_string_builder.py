@@ -146,11 +146,6 @@ class FluentStringBuilder:
         self._add_modifier(StringModifierType.BASE64)
         return self
 
-    def base64wide(self) -> FluentStringBuilder:
-        """Add base64wide modifier."""
-        self._add_modifier(StringModifierType.BASE64WIDE)
-        return self
-
     def xor(self, key: int | str | None = None) -> FluentStringBuilder:
         """Add XOR modifier with optional key."""
         if key is not None:
