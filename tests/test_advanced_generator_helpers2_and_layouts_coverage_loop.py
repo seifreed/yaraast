@@ -586,9 +586,6 @@ class _MinimalGen:
     def _write(self, text: str) -> None:
         self._buf.write(text)
 
-    def _writeline(self, text: str = "") -> None:
-        self._buf.write(text + "\n")
-
     def getvalue(self) -> str:
         return self._buf.getvalue()
 

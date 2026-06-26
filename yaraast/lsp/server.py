@@ -64,7 +64,6 @@ class YaraLanguageServer(LanguageServer):
     folding_ranges_provider: FoldingRangesProvider
     document_links_provider: DocumentLinksProvider
     workspace_symbols_provider: WorkspaceSymbolsProvider
-    lsp: Any
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
