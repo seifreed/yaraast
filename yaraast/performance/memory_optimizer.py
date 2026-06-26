@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Sequence
 from contextlib import AbstractContextManager
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from yaraast.performance.memory_helpers import MemoryStats
 from yaraast.performance.memory_runtime import (
-    batch_process_with_memory_limit as runtime_batch_process_with_memory_limit,
     clear_caches as runtime_clear_caches,
     create_memory_efficient_ast as runtime_create_memory_efficient_ast,
     force_cleanup as runtime_force_cleanup,
@@ -204,15 +202,6 @@ class MemoryOptimizer:
     def create_memory_efficient_ast(self) -> ASTNode:
         """Create or reuse an AST from pool."""
         return runtime_create_memory_efficient_ast(self)
-
-    def batch_process_with_memory_limit[Item, Result](
-        self,
-        items: Sequence[Item],
-        processor: Callable[[Item], Result],
-        batch_size: int = 10,
-    ) -> Iterator[list[Result]]:
-        """Process items in batches with memory management."""
-        yield from runtime_batch_process_with_memory_limit(self, items, processor, batch_size)
 
     def optimize_for_large_collection(self, size: int) -> dict[str, Any]:
         """Get optimization recommendations for a collection size."""

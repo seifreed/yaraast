@@ -39,7 +39,7 @@ def _fresh_text(value: str) -> str:
     return ("_" + value)[1:]
 
 
-def test_memory_optimizer_rule_list_usage_and_batch_paths() -> None:
+def test_memory_optimizer_rule_list_usage() -> None:
     optimizer = MemoryOptimizer(aggressive=True, gc_threshold=2)
     rule = Rule(
         name="dup",
@@ -64,19 +64,6 @@ def test_memory_optimizer_rule_list_usage_and_batch_paths() -> None:
 
     usage = optimizer.get_memory_usage()
     assert {"rss_mb", "vms_mb", "percent", "available_mb"} <= set(usage)
-
-    batches = list(
-        optimizer.batch_process_with_memory_limit(list(range(5)), lambda x: x + 1, batch_size=2)
-    )
-    assert batches == [[1, 2], [3, 4], [5]]
-
-    with pytest.raises(ValueError, match="batch_size must be at least 1"):
-        list(optimizer.batch_process_with_memory_limit([1], lambda x: x, batch_size=0))
-
-    with pytest.raises(TypeError, match="batch_size must be an integer"):
-        list(
-            optimizer.batch_process_with_memory_limit([1], lambda x: x, batch_size=cast(Any, True))
-        )
 
 
 def test_memory_optimizer_optimize_rule_records_stats_and_resets_pool() -> None:

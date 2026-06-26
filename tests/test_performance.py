@@ -402,31 +402,6 @@ class TestMemoryOptimizer:
 
         assert ast1 is not ast2
 
-    def test_batch_processing_with_memory_limit(self) -> None:
-        """Test batch processing with memory limits."""
-        optimizer = MemoryOptimizer(memory_limit_mb=50)
-
-        items = list(range(100))
-
-        def simple_processor(item: int) -> int:
-            return item * 2
-
-        results = list(
-            optimizer.batch_process_with_memory_limit(
-                items,
-                simple_processor,
-                batch_size=10,
-            ),
-        )
-
-        # Should have processed all items in batches
-        assert len(results) == 10  # 100 items / 10 batch_size = 10 batches
-
-        # Check first batch
-        assert len(results[0]) == 10
-        assert results[0][0] == 0  # 0 * 2
-        assert results[0][1] == 2  # 1 * 2
-
     def test_optimization_recommendations(self) -> None:
         """Test optimization recommendations."""
         optimizer = MemoryOptimizer()
