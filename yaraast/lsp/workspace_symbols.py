@@ -180,19 +180,3 @@ class WorkspaceSymbolsProvider:
             return []
 
         return list(symbols)
-
-    def clear_cache(self) -> None:
-        """Clear the symbol cache."""
-        if self.runtime:
-            self.runtime.cache.workspace_symbol_cache.clear()
-            return
-        self.symbol_cache.clear()
-
-    def invalidate_file(self, file_path: str | PathLike[str]) -> None:
-        """Invalidate cache for a specific file."""
-        cache_key = _require_cache_file_path(file_path)
-        if self.runtime:
-            self.runtime.cache.workspace_symbol_cache.clear()
-            return
-        if cache_key in self.symbol_cache:
-            del self.symbol_cache[cache_key]

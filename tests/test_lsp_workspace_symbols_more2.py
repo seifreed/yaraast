@@ -148,14 +148,6 @@ rule sample {
         # Not found path through public query filter
         assert provider.get_workspace_symbols("missing-symbol") == []
 
-        # Cache mutation helpers
-        key = str(f.resolve())
-        assert key in provider.symbol_cache
-        provider.invalidate_file(Path(key))
-        assert key not in provider.symbol_cache
-        provider.clear_cache()
-        assert provider.symbol_cache == {}
-
 
 def test_workspace_symbols_keeps_earlier_symbols_from_parse_error_file() -> None:
     with TemporaryDirectory() as tmp:
@@ -179,32 +171,6 @@ rule broken {
         names = {symbol.name for symbol in provider.get_workspace_symbols("")}
         assert "good" in names
         assert "broken" in names
-
-
-def test_workspace_symbols_invalidate_file_handles_cache_miss_and_bad_fspath() -> None:
-    provider = WorkspaceSymbolsProvider()
-    provider.invalidate_file(Path("missing.yar"))
-
-    class _BadPathLike:
-        def __fspath__(self) -> bytes:
-            return b"missing.yar"
-
-    with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
-        provider.invalidate_file(cast(Any, _BadPathLike()))
-
-
-def test_workspace_symbols_invalidate_file_normalizes_equivalent_paths() -> None:
-    with TemporaryDirectory() as tmp:
-        root = Path(tmp)
-        yara_file = root / "sample.yar"
-        yara_file.write_text("rule sample { condition: true }\n", encoding="utf-8")
-
-        provider = WorkspaceSymbolsProvider()
-        provider.set_workspace_root(tmp)
-
-        assert provider.get_workspace_symbols("")
-        provider.invalidate_file(root / "subdir" / ".." / "sample.yar")
-        assert provider.symbol_cache == {}
 
 
 def test_workspace_symbols_discovers_uppercase_suffix_files() -> None:
@@ -288,22 +254,6 @@ def test_workspace_symbols_returns_empty_list_on_mid_file_symbol_failure(
     assert provider.symbol_cache == {}
 
 
-@pytest.mark.parametrize("file_path", ["", "   ", "\t"])
-def test_workspace_symbols_rejects_empty_invalidate_file_path(file_path: str) -> None:
-    provider = WorkspaceSymbolsProvider()
-
-    with pytest.raises(ValueError, match="file_path must not be empty"):
-        provider.invalidate_file(file_path)
-
-
-@pytest.mark.parametrize("file_path", [None, False, 123, object(), b"sample.yar"])
-def test_workspace_symbols_rejects_invalid_invalidate_file_path_types(file_path: Any) -> None:
-    provider = WorkspaceSymbolsProvider()
-
-    with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
-        provider.invalidate_file(cast(Any, file_path))
-
-
 def test_workspace_symbols_rejects_non_string_query_before_scanning(tmp_path: Path) -> None:
     yara_file = tmp_path / "a.yar"
     yara_file.write_text("rule a { condition: true }\n", encoding="utf-8")
@@ -319,30 +269,3 @@ def test_workspace_symbols_rejects_non_string_query_before_scanning(tmp_path: Pa
     runtime_provider = WorkspaceSymbolsProvider(LspRuntime())
     with pytest.raises(TypeError, match="Workspace symbol query must be a string"):
         runtime_provider.get_workspace_symbols(cast(Any, object()))
-
-
-def test_workspace_symbols_runtime_provider_clear_cache_clears_runtime_cache() -> None:
-    runtime = LspRuntime()
-    runtime.open_document("file:///sample.yar", "rule sample { condition: true }\n")
-    provider = WorkspaceSymbolsProvider(runtime)
-
-    assert provider.get_workspace_symbols("")
-    assert runtime.cache.workspace_symbol_cache
-
-    provider.clear_cache()
-
-    assert runtime.cache.workspace_symbol_cache == {}
-
-
-def test_workspace_symbols_runtime_provider_invalidate_file_clears_runtime_cache() -> None:
-    uri = "file:///sample.yar"
-    runtime = LspRuntime()
-    runtime.open_document(uri, "rule sample { condition: true }\n")
-    provider = WorkspaceSymbolsProvider(runtime)
-
-    assert provider.get_workspace_symbols("")
-    assert runtime.cache.workspace_symbol_cache
-
-    provider.invalidate_file(uri)
-
-    assert runtime.cache.workspace_symbol_cache == {}
