@@ -392,16 +392,6 @@ class TestMemoryOptimizer:
         stats = optimizer.get_memory_stats()
         assert stats.total_objects >= 0  # Some objects may still be tracked
 
-    def test_ast_pooling(self) -> None:
-        """Test AST object pooling."""
-        optimizer = MemoryOptimizer()
-
-        # Create ASTs
-        ast1 = optimizer.create_memory_efficient_ast()
-        ast2 = optimizer.create_memory_efficient_ast()
-
-        assert ast1 is not ast2
-
     def test_optimization_recommendations(self) -> None:
         """Test optimization recommendations."""
         optimizer = MemoryOptimizer()

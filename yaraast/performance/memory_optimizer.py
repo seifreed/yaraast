@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 from yaraast.performance.memory_helpers import MemoryStats
 from yaraast.performance.memory_runtime import (
     clear_caches as runtime_clear_caches,
-    create_memory_efficient_ast as runtime_create_memory_efficient_ast,
     force_cleanup as runtime_force_cleanup,
     get_memory_stats as runtime_get_memory_stats,
     get_memory_usage as runtime_get_memory_usage,
@@ -198,10 +197,6 @@ class MemoryOptimizer:
     def force_cleanup(self) -> int:
         """Force garbage collection and cleanup."""
         return runtime_force_cleanup(self)
-
-    def create_memory_efficient_ast(self) -> ASTNode:
-        """Create or reuse an AST from pool."""
-        return runtime_create_memory_efficient_ast(self)
 
     def optimize_for_large_collection(self, size: int) -> dict[str, Any]:
         """Get optimization recommendations for a collection size."""

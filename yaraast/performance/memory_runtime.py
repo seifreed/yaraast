@@ -5,10 +5,9 @@ from __future__ import annotations
 from collections.abc import Iterator
 from contextlib import AbstractContextManager, contextmanager
 import gc
-from typing import Any, cast
+from typing import Any
 import weakref
 
-from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.performance.memory_helpers import MemoryStats, clear_tracking, maybe_collect
 
 
@@ -79,12 +78,6 @@ def force_cleanup(optimizer: Any) -> int:
     clear_tracking(optimizer._tracked_objects)
     optimizer._stats["total_objects"] = 0
     return gc.collect()
-
-
-def create_memory_efficient_ast(optimizer: Any) -> ASTNode:
-    if optimizer._ast_pool:
-        return cast(ASTNode, optimizer._ast_pool.pop())
-    return YaraFile(imports=[], includes=[], rules=[])
 
 
 def maybe_post_optimize_collect(optimizer: Any) -> None:

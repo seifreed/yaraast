@@ -72,10 +72,6 @@ def test_memory_optimizer_recommendations_and_pool() -> None:
     assert rec_large["use_streaming"] is True
     assert rec_large["enable_pooling"] is True
 
-    ast1 = optimizer.create_memory_efficient_ast()
-    ast2 = optimizer.create_memory_efficient_ast()
-    assert ast1 is not ast2
-
 
 def test_memory_optimizer_rejects_invalid_numeric_configuration() -> None:
     with pytest.raises(TypeError, match="memory_limit_mb must be an integer"):
