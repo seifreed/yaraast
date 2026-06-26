@@ -29,13 +29,6 @@ class Job:
     start_time: float = field(default_factory=time.time)
     end_time: float | None = None
 
-    @property
-    def duration(self) -> float:
-        """Get job duration in seconds."""
-        if self.end_time:
-            return self.end_time - self.start_time
-        return time.time() - self.start_time
-
 
 @dataclass(frozen=True)
 class ParseErrorMarker:
