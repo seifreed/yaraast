@@ -14,7 +14,7 @@ from yaraast.parser.error_tolerant_recovery import (
     parse_import_line,
     parse_include_line,
 )
-from yaraast.parser.error_tolerant_types import ParserError, ParseResult, format_parser_errors
+from yaraast.parser.error_tolerant_types import ParserError, ParseResult
 from yaraast.parser.parser import Parser
 
 
@@ -93,19 +93,3 @@ class ErrorTolerantParser(Parser):
             severity=severity,
         )
         self.errors.append(error)
-
-    def get_errors(self) -> list[ParserError]:
-        """Get all parsing errors."""
-        return list(self.errors)
-
-    def get_recovered_rules(self) -> list[Rule]:
-        """Get rules that were successfully recovered."""
-        return list(self.recovered_rules)
-
-    def has_errors(self) -> bool:
-        """Check if any errors occurred."""
-        return len(self.errors) > 0
-
-    def format_errors(self) -> str:
-        """Format errors for display."""
-        return format_parser_errors(self.errors)

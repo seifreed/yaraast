@@ -436,4 +436,4 @@ def test_parse_with_recovery_appends_rule_to_recovered_rules() -> None:
     result = parser.parse(source)
 
     assert any(r.name == "Recovered" for r in result.ast.rules)
-    assert any(r.name == "Recovered" for r in parser.get_recovered_rules())
+    assert any(r.name == "Recovered" for r in parser.recovered_rules)

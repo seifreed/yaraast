@@ -32,5 +32,5 @@ def test_error_tolerant_parser_valid_input_parses_without_recovery() -> None:
     result = parser.parse("rule ok {\ncondition:\ntrue\n}\n")
 
     assert result.errors == []
-    assert parser.get_recovered_rules() == []
+    assert parser.recovered_rules == []
     assert result.ast.rules

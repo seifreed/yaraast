@@ -8,6 +8,7 @@ import pytest
 
 from yaraast.errors import ParseError
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
+from yaraast.parser.error_tolerant_types import format_parser_errors
 from yaraast.parser.parser import Parser
 
 
@@ -36,7 +37,7 @@ def test_error_tolerant_parser_recovers_rules_and_imports() -> None:
     assert result.ast.imports
     assert result.ast.includes
     assert len(result.ast.rules) >= 1
-    assert parser.get_recovered_rules()
+    assert parser.recovered_rules
 
 
 def test_error_tolerant_parser_invalid_lines() -> None:
@@ -48,9 +49,9 @@ def test_error_tolerant_parser_invalid_lines() -> None:
     parser = ErrorTolerantParser()
     result = parser.parse(dedent(code))
 
-    assert parser.has_errors() is True
+    assert bool(parser.errors) is True
     assert result.errors
-    formatted = parser.format_errors()
+    formatted = format_parser_errors(parser.errors)
     assert "ERROR:" in formatted or "error" in formatted.lower()
 
 

@@ -11,7 +11,7 @@ from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.error_tolerant_recovery import parse_meta_line, parse_string_line
-from yaraast.parser.error_tolerant_types import ParserError
+from yaraast.parser.error_tolerant_types import ParserError, format_parser_errors
 from yaraast.parser.parser import Parser
 
 
@@ -49,9 +49,9 @@ def test_recovery_paths_for_invalid_import_include_rule_and_unknown_lines() -> N
         """)
     result = parser.parse(text)
 
-    assert parser.has_errors() is True
+    assert bool(parser.errors) is True
     assert result.errors
-    assert parser.get_errors() == result.errors
+    assert parser.errors == result.errors
 
 
 def test_error_tolerant_parser_returns_error_and_rule_snapshots() -> None:
@@ -66,16 +66,16 @@ def test_error_tolerant_parser_returns_error_and_rule_snapshots() -> None:
         """))
 
     assert result.errors
-    assert parser.get_errors() == result.errors
+    assert parser.errors == result.errors
     result.errors.clear()
-    errors = parser.get_errors()
+    errors = list(parser.errors)
     errors.clear()
-    assert parser.has_errors() is True
+    assert bool(parser.errors) is True
 
-    recovered_rules = parser.get_recovered_rules()
+    recovered_rules = list(parser.recovered_rules)
     assert recovered_rules
     recovered_rules.clear()
-    assert parser.get_recovered_rules()
+    assert parser.recovered_rules
 
 
 def test_error_tolerant_parser_preserves_rule_modifiers() -> None:
@@ -116,7 +116,7 @@ def test_error_tolerant_recovery_preserves_falsy_present_rule(
     ast = parser._parse_with_recovery("\n".join(parser.lines))
 
     assert ast.rules == [recovered]
-    assert parser.get_recovered_rules() == [recovered]
+    assert parser.recovered_rules == [recovered]
     assert [str(modifier) for modifier in recovered.modifiers] == ["private"]
 
 
@@ -192,8 +192,7 @@ def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     regex_with_flags = parse_string_line(p, "$a = /abc/im")
     xor_string = parse_string_line(p, '$x = "abc" xor(1-2) private')
     base64_string = parse_string_line(
-        p,
-        '$b = "abc" base64("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")'
+        p, '$b = "abc" base64("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")'
     )
     assert isinstance(plain_string, PlainString)
     assert isinstance(hex_string, HexString)
@@ -248,7 +247,7 @@ def test_parse_result_api_and_format_errors_no_errors_branch() -> None:
 
     clean = ErrorTolerantParser()
     clean.parse("rule x { condition: true }")
-    assert clean.format_errors() == "No errors"
+    assert format_parser_errors(clean.errors) == "No errors"
 
 
 def test_recovered_nodes_include_basic_locations() -> None:
