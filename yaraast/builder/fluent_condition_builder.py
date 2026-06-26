@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from yaraast.ast.conditions import AtExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     Expression,
@@ -17,7 +16,6 @@ from yaraast.builder.fluent_condition_helpers import (
     build_entropy_compare,
     make_filesize_compare,
     make_integer_literal,
-    make_string_count_compare,
     validate_string_reference,
 )
 
@@ -39,24 +37,9 @@ class FluentConditionBuilder(ConditionBuilder):
         validate_string_reference(string_id)
         return FluentConditionBuilder(StringIdentifier(name=string_id))
 
-    def string_count_eq(self, string_id: str, count: int) -> FluentConditionBuilder:
-        """String count equals N."""
-        return FluentConditionBuilder(make_string_count_compare(string_id, "==", count))
-
-    def string_at_offset(self, string_id: str, offset: int) -> FluentConditionBuilder:
-        """String at specific offset."""
-        validate_string_reference(string_id)
-        return FluentConditionBuilder(
-            AtExpression(string_id=string_id, offset=make_integer_literal(offset)),
-        )
-
     def filesize_gt(self, size: int) -> FluentConditionBuilder:
         """File size greater than."""
         return FluentConditionBuilder(make_filesize_compare(">", size))
-
-    def filesize_lt(self, size: int) -> FluentConditionBuilder:
-        """File size less than."""
-        return FluentConditionBuilder(make_filesize_compare("<", size))
 
     def filesize_between(self, min_size: int, max_size: int) -> FluentConditionBuilder:
         """File size between min and max."""
@@ -67,10 +50,6 @@ class FluentConditionBuilder(ConditionBuilder):
                 right=make_filesize_compare("<=", max_size),
             ),
         )
-
-    def large_file(self) -> FluentConditionBuilder:
-        """Large file (> 10MB)."""
-        return self.filesize_gt(10 * 1024 * 1024)
 
     def pe_is_dll(self) -> FluentConditionBuilder:
         """PE is DLL."""

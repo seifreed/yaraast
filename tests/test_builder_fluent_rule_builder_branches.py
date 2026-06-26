@@ -156,9 +156,7 @@ def test_file_builder_chaining_and_duplicate_elimination() -> None:
         .include_file("common.yar")
     )
     first = FluentRuleBuilder("r1").text_string("$a", "one").condition("true").build()
-    second = (
-        FluentRuleBuilder("r2").hex_string("$b", "4D 5A").for_pe_files().for_large_files().build()
-    )
+    second = FluentRuleBuilder("r2").hex_string("$b", "4D 5A").for_pe_files().build()
     built_file = file_builder.with_rule(first).with_rule(second).build()
 
     assert len(built_file.imports) == 1
@@ -245,14 +243,14 @@ def test_fluent_rule_builder_rejects_duplicate_string_identifiers() -> None:
 
 
 def test_fluent_rule_builder_rejects_missing_condition_builder_return() -> None:
-    bad_callback = cast(Any, lambda cb: None)
+    bad_callback = cast(Any, lambda _cb: None)
 
     with pytest.raises(ValidationError, match="Condition builder callback must return"):
         rule("missing_condition").with_condition_builder(bad_callback)
 
 
 def test_fluent_rule_builder_rejects_invalid_condition_builder_return() -> None:
-    bad_callback = cast(Any, lambda cb: "bad")
+    bad_callback = cast(Any, lambda _cb: "bad")
 
     with pytest.raises(ValidationError, match="Condition builder callback must return"):
         rule("bad_condition").with_condition_builder(bad_callback)
@@ -265,8 +263,7 @@ def test_fluent_rule_builder_rejects_non_callable_condition_builder() -> None:
 
 def test_rule_metadata_aliases_and_example_rules_paths() -> None:
     built = (
-        FluentRuleBuilder()
-        .named("alias_paths")
+        FluentRuleBuilder("alias_paths")
         .private()
         .with_tag("demo")
         .meta("author", "me")

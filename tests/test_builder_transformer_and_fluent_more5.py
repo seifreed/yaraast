@@ -23,7 +23,7 @@ def test_fluent_rule_builder_additional_builder_paths() -> None:
         .email_pattern("$mail")
         .regex_string("$re", "foo.*bar")
         .condition(FluentConditionBuilder().true())
-        .condition(FluentConditionBuilder().filesize_lt(1024 * 1024))
+        .condition(ConditionBuilder().filesize().lt(1024 * 1024))
         .build()
     )
 

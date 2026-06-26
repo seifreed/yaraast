@@ -29,10 +29,10 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert isinstance(b.n_of(1, "$a", "$b").build(), OfExpression)
     assert isinstance(b.n_of(0, "$a", "$b").build(), OfExpression)
 
-    assert isinstance(b.string_at_offset("$a", 5).build(), AtExpression)
+    assert isinstance(ConditionBuilder().string("$a").at(5).build(), AtExpression)
 
     assert isinstance(ConditionBuilder().filesize().eq(12).build(), BinaryExpression)
-    assert isinstance(b.filesize_lt(1024).build(), BinaryExpression)
+    assert isinstance(ConditionBuilder().filesize().lt(1024).build(), BinaryExpression)
     assert isinstance(b.filesize_gt(100 * 1024 * 1024).build(), BinaryExpression)
 
     assert isinstance(b.identifier("pe").build(), Identifier)
@@ -66,14 +66,14 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert b.any_of("$a", "$b").build() is not None
     assert b.all_of("$a", "$b").build() is not None
     assert b.filesize_gt(10).build() is not None
-    assert b.filesize_lt(1024 * 1024).build() is not None
-    assert b.large_file().build() is not None
+    assert ConditionBuilder().filesize().lt(1024 * 1024).build() is not None
+    assert ConditionBuilder().filesize().gt(10 * 1024 * 1024).build() is not None
     assert b.pe_is_dll().build() is not None
     assert b.high_entropy().build() is not None
 
 
 def test_fluent_condition_string_at_offset_expression_shape() -> None:
-    expr = FluentConditionBuilder().string_at_offset("$a", 1024).build()
+    expr = ConditionBuilder().string("$a").at(1024).build()
     assert isinstance(expr, AtExpression)
     assert isinstance(expr.offset, IntegerLiteral)
     assert expr.offset.value == 1024
@@ -88,7 +88,7 @@ def test_fluent_condition_builder_rejects_invalid_string_references(identifier: 
         FluentConditionBuilder().one_of("$a", identifier)
 
     with pytest.raises(ValidationError, match="Invalid string reference"):
-        FluentConditionBuilder().string_at_offset(identifier, 0)
+        ConditionBuilder().string(identifier).at(0)
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python is not installed")

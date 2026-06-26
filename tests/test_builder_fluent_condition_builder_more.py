@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from yaraast.builder.condition_builder import ConditionBuilder
-from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 
 
 def test_fluent_condition_quantifiers() -> None:
@@ -18,12 +17,11 @@ def test_fluent_condition_quantifiers() -> None:
 
 
 def test_fluent_condition_string_helpers() -> None:
-    builder = FluentConditionBuilder()
-    expr = builder.string_count_eq("$a", 2).build()
+    expr = ConditionBuilder().string_count("$a").eq(2).build()
     assert "==" in str(expr)
 
     expr2 = ConditionBuilder().entrypoint().build()
     assert "entrypoint" in str(expr2)
 
-    expr3 = builder.string_at_offset("$a", 0).build()
+    expr3 = ConditionBuilder().string("$a").at(0).build()
     assert "0" in str(expr3)

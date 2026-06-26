@@ -33,11 +33,6 @@ class FluentRuleBuilder:
         self._string_builders: list[FluentStringBuilder] = []
 
     # Rule metadata methods
-    def named(self, name: str) -> Self:
-        """Set the rule name."""
-        self._rule_builder.with_name(name)
-        return self
-
     def private(self) -> Self:
         """Mark rule as private."""
         self._rule_builder.private()
@@ -197,12 +192,6 @@ class FluentRuleBuilder:
         return self.condition(result)
 
     # File property conditions
-    def for_large_files(self) -> Self:
-        """Add large file condition (> 10MB)."""
-        condition_builder = FluentConditionBuilder().large_file()
-        combined = combine_condition(self._rule_builder.get_condition(), condition_builder)
-        return self.condition(combined)
-
     def for_pe_files(self) -> Self:
         """Add PE file conditions."""
         # Add MZ header if not already present

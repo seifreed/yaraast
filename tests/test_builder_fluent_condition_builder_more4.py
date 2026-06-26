@@ -38,7 +38,7 @@ def test_fluent_condition_offsets_and_ranges() -> None:
     expr = FluentConditionBuilder().string_matches("$a").at(0).build()
     assert isinstance(expr, AtExpression)
 
-    expr = FluentConditionBuilder().string_at_offset("$a", 1024).build()
+    expr = ConditionBuilder().string("$a").at(1024).build()
     assert isinstance(expr, AtExpression)
 
 
@@ -83,10 +83,8 @@ def test_fluent_condition_builder_rejects_mixed_them_string_sets() -> None:
 
 
 def test_fluent_condition_builder_rejects_invalid_string_count_identifiers() -> None:
-    builder = FluentConditionBuilder()
-
     with pytest.raises(ValidationError, match="Invalid string reference"):
-        builder.string_count_eq("#", 1)
+        ConditionBuilder().string_count("#").eq(1)
 
     with pytest.raises(ValidationError, match="Invalid string reference"):
         ConditionBuilder().string_count("bad-key").gt(1)
@@ -106,7 +104,7 @@ def test_fluent_condition_builder_rejects_boolean_integer_arguments() -> None:
     builder = FluentConditionBuilder()
 
     with pytest.raises(TypeError, match="Invalid integer literal value"):
-        builder.string_at_offset("$a", cast(Any, True))
+        ConditionBuilder().string("$a").at(cast(Any, True))
 
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         builder.pe_section_count_eq(cast(Any, True))
