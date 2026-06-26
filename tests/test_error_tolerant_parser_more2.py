@@ -11,7 +11,7 @@ from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.error_tolerant_recovery import parse_meta_line, parse_string_line
-from yaraast.parser.error_tolerant_types import ParserError, format_parser_errors
+from yaraast.parser.error_tolerant_types import ParserError
 from yaraast.parser.parser import Parser
 
 
@@ -239,7 +239,7 @@ def test_recovered_condition_propagates_internal_parser_errors(
         ErrorTolerantParser()._parse_condition("$a or true")
 
 
-def test_parse_result_api_and_format_errors_no_errors_branch() -> None:
+def test_parse_result_api_and_clean_parse_has_no_errors() -> None:
     p = ErrorTolerantParser()
     result = p.parse('import "broken')
     assert result.ast is not None
@@ -247,7 +247,7 @@ def test_parse_result_api_and_format_errors_no_errors_branch() -> None:
 
     clean = ErrorTolerantParser()
     clean.parse("rule x { condition: true }")
-    assert format_parser_errors(clean.errors) == "No errors"
+    assert clean.errors == []
 
 
 def test_recovered_nodes_include_basic_locations() -> None:

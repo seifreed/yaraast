@@ -8,7 +8,6 @@ import pytest
 
 from yaraast.errors import ParseError
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
-from yaraast.parser.error_tolerant_types import format_parser_errors
 from yaraast.parser.parser import Parser
 
 
@@ -51,8 +50,8 @@ def test_error_tolerant_parser_invalid_lines() -> None:
 
     assert bool(parser.errors) is True
     assert result.errors
-    formatted = format_parser_errors(parser.errors)
-    assert "ERROR:" in formatted or "error" in formatted.lower()
+    formatted = parser.errors[0].format_error()
+    assert parser.errors[0].message in formatted
 
 
 def test_error_tolerant_parse_returns_result_with_errors() -> None:

@@ -1,4 +1,4 @@
-"""Types and formatting helpers for the error-tolerant parser."""
+"""Types for the error-tolerant parser."""
 
 from __future__ import annotations
 
@@ -31,19 +31,3 @@ class ParseResult:
     ast: YaraFile
     errors: list[ParserError] = field(default_factory=list)
     warnings: list[ParserError] = field(default_factory=list)
-
-
-def format_parser_errors(errors: list[ParserError]) -> str:
-    """Format a collection of parser errors for display."""
-    if not errors:
-        return "No errors"
-
-    lines: list[str] = []
-    for error in errors:
-        lines.append(f"{error.severity.upper()}: {error.message}")
-        lines.append(f"  at line {error.line}, column {error.column}")
-        if error.context:
-            lines.append(f"  > {error.context}")
-            lines.append(f"    {' ' * error.column}^")
-        lines.append("")
-    return "\n".join(lines)
