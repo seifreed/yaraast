@@ -66,7 +66,6 @@ from yaraast.ast.strings import PlainString, StringDefinition
 from yaraast.builder.ast_transformer import (
     RuleTransformer,
     YaraFileTransformer,
-    create_variant_rule,
 )
 
 # ---------------------------------------------------------------------------
@@ -593,7 +592,7 @@ def test_create_variant_rule_with_private_flag_true_adds_private_modifier() -> N
     so line 729 (`transformer.make_private()`) executes.
     """
     base = _rule(name="base")
-    variant = create_variant_rule(base, "base_priv", private=True)
+    variant = RuleTransformer(base).rename("base_priv").make_private().build()
     assert any(str(m) == "private" for m in variant.modifiers)
 
 
@@ -604,7 +603,7 @@ def test_create_variant_rule_with_private_flag_false_does_not_add_private() -> N
     False so the make_private() call at line 729 is skipped.
     """
     base = _rule(name="base")
-    variant = create_variant_rule(base, "base_pub", private=False)
+    variant = RuleTransformer(base).rename("base_pub").build()
     assert not any(str(m) == "private" for m in variant.modifiers)
 
 

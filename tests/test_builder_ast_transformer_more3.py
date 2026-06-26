@@ -8,9 +8,6 @@ from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.builder.ast_transformer import (
     RuleTransformer,
-    create_rule_collection,
-    create_variant_rule,
-    merge_yara_files,
     transform_yara_file,
 )
 
@@ -74,9 +71,8 @@ def test_yara_file_transformer_and_merge() -> None:
     rule1 = Rule(name="r1", tags=[Tag(name="a")])
     rule2 = Rule(name="r2", tags=[Tag(name="b")])
     yf1 = YaraFile(imports=[Import(module="pe")], includes=[Include(path="inc.yar")], rules=[rule1])
-    yf2 = YaraFile(imports=[Import(module="math")], includes=[], rules=[rule2])
 
-    merged = merge_yara_files(yf1, yf2)
+    merged = transform_yara_file(yf1).add_import("math").add_rule(rule2).build()
     assert len(merged.imports) == 2
     assert len(merged.rules) == 2
 
@@ -94,10 +90,17 @@ def test_yara_file_transformer_and_merge() -> None:
 
 def test_create_variant_and_collection() -> None:
     base = Rule(name="base")
-    variant = create_variant_rule(base, "variant", tags=["x"], author="me", private=True)
+    variant = (
+        RuleTransformer(base).rename("variant").add_tag("x").set_author("me").make_private().build()
+    )
     assert variant.name == "variant"
     assert any(str(m) == "private" for m in variant.modifiers)
 
-    collection = create_rule_collection([base, variant], "grp")
+    collection = (
+        transform_yara_file(YaraFile())
+        .add_rule(RuleTransformer(base).add_prefix("grp_").build())
+        .add_rule(RuleTransformer(variant).add_prefix("grp_").build())
+        .build()
+    )
     assert collection.rules[0].name.startswith("grp_")
     assert collection.rules[1].name.startswith("grp_")

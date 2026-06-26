@@ -32,9 +32,6 @@ from yaraast.builder.ast_transformer import (
     YaraFileTransformer,
     clone_rule,
     clone_yara_file,
-    create_rule_collection,
-    create_variant_rule,
-    merge_yara_files,
     transform_rule,
     transform_yara_file,
 )
@@ -104,12 +101,6 @@ def test_yara_file_clone_and_transform_helpers_reject_invalid_file_inputs() -> N
 
     with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
         transform_yara_file(cast(Any, object()))
-
-    with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
-        merge_yara_files(cast(Any, object()))
-
-    with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
-        merge_yara_files(YaraFile(), cast(Any, object()))
 
 
 def test_clone_helpers_preserve_rule_metadata_and_pragmas() -> None:
@@ -531,22 +522,24 @@ def test_yara_file_transformer_rejects_non_string_selectors_without_partial_upda
     assert [rule.name for rule in transformed.rules] == ["one"]
 
 
-def test_convenience_transform_functions_and_variant_collection_merge_paths() -> None:
+def test_convenience_transform_functions_and_direct_transform_paths() -> None:
     base = _sample_rule("base")
 
     via_helper = transform_rule(base).make_public().make_global().build()
     assert not any(str(m) == "private" for m in via_helper.modifiers)
     assert any(str(m) == "global" for m in via_helper.modifiers)
 
-    variant = create_variant_rule(
-        base,
-        "variant",
-        prefix="pre_",
-        suffix="_suf",
-        tags=["x", "y"],
-        author="author2",
-        description="desc2",
-        private=True,
+    variant = (
+        RuleTransformer(base)
+        .rename("variant")
+        .add_prefix("pre_")
+        .add_suffix("_suf")
+        .add_tag("x")
+        .add_tag("y")
+        .set_author("author2")
+        .set_description("desc2")
+        .make_private()
+        .build()
     )
     assert variant.name == "pre_variant_suf"
     assert {t.name for t in variant.tags} == {"t1", "x", "y"}
@@ -554,20 +547,27 @@ def test_convenience_transform_functions_and_variant_collection_merge_paths() ->
     assert variant.get_meta_value("description") == "desc2"
     assert any(str(m) == "private" for m in variant.modifiers)
 
-    collection = create_rule_collection([base, variant], "grp")
+    collection = (
+        YaraFileTransformer(YaraFile())
+        .add_rule(RuleTransformer(base).add_prefix("grp_").build())
+        .add_rule(RuleTransformer(variant).add_prefix("grp_").build())
+        .build()
+    )
     assert [r.name for r in collection.rules] == ["grp_base", "grp_pre_variant_suf"]
 
-    empty_merge = merge_yara_files()
-    assert empty_merge.rules == []
-    assert empty_merge.imports == []
-
-    f1 = YaraFile(imports=[Import(module="pe")], includes=[Include(path="x.yar")], rules=[base])
-    f2 = YaraFile(
-        imports=[Import(module="pe"), Import(module="math")],
-        includes=[Include(path="x.yar"), Include(path="y.yar")],
-        rules=[variant],
+    merged = (
+        YaraFileTransformer(
+            YaraFile(
+                imports=[Import(module="pe")],
+                includes=[Include(path="x.yar")],
+                rules=[base],
+            )
+        )
+        .add_import("math")
+        .add_include("y.yar")
+        .add_rule(variant)
+        .build()
     )
-    merged = merge_yara_files(f1, f2)
     assert {imp.module for imp in merged.imports} == {"pe", "math"}
     assert {inc.path for inc in merged.includes} == {"x.yar", "y.yar"}
     assert [r.name for r in merged.rules] == ["base", "pre_variant_suf"]
@@ -579,41 +579,6 @@ def test_convenience_transform_functions_and_variant_collection_merge_paths() ->
     deep_clone = CloneTransformer.clone(base)
     assert isinstance(direct_clone, Rule)
     assert isinstance(deep_clone, Rule)
-
-
-@pytest.mark.parametrize(
-    ("changes", "message"),
-    [
-        ({"prefix": True}, "Variant prefix must be a string"),
-        ({"suffix": True}, "Variant suffix must be a string"),
-        ({"tags": "abc"}, "Variant tags must be an iterable of strings"),
-        ({"tags": ["ok", True]}, "Variant tags must be an iterable of strings"),
-        ({"author": True}, "Variant author must be a string"),
-        ({"description": True}, "Variant description must be a string"),
-        ({"private": "false"}, "Variant private flag must be a boolean"),
-    ],
-)
-def test_create_variant_rule_rejects_invalid_option_types(
-    changes: dict[str, object], message: str
-) -> None:
-    with pytest.raises(TypeError, match=message):
-        create_variant_rule(_sample_rule("base"), "variant", **changes)
-
-
-@pytest.mark.parametrize(
-    ("rules", "collection_name", "message"),
-    [
-        (object(), "grp", "Rule collection rules must be an iterable of Rule"),
-        ("abc", "grp", "Rule collection rules must be an iterable of Rule"),
-        ([object()], "grp", "Rule collection rules must contain Rule values"),
-        ([_sample_rule("base")], True, "Rule collection name must be a string"),
-    ],
-)
-def test_create_rule_collection_rejects_invalid_inputs(
-    rules: object, collection_name: object, message: str
-) -> None:
-    with pytest.raises(TypeError, match=message):
-        create_rule_collection(cast(Any, rules), cast(Any, collection_name))
 
 
 def test_yara_file_transformer_rejects_duplicate_rule_names_without_partial_update() -> None:

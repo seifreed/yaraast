@@ -9,7 +9,6 @@ from yaraast.ast.strings import PlainString, RegexString
 from yaraast.builder.ast_transformer import (
     RuleTransformer,
     YaraFileTransformer,
-    create_variant_rule,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
@@ -112,6 +111,6 @@ def test_yara_file_transformer_no_match_and_variant_without_optional_changes() -
     )
     assert [r.name for r in unchanged.rules] == ["one", "two"]
 
-    variant = create_variant_rule(rule_one, "variant_only")
+    variant = RuleTransformer(rule_one).rename("variant_only").build()
     assert variant.name == "variant_only"
     assert variant.tags == []

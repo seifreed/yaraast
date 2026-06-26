@@ -10,8 +10,6 @@ from yaraast.builder.ast_transformer import (
     CloneTransformer,
     RuleTransformer,
     YaraFileTransformer,
-    create_rule_collection,
-    merge_yara_files,
 )
 
 
@@ -71,7 +69,6 @@ def test_yara_file_transformer_and_merge() -> None:
     rule1 = _basic_rule("r1")
     rule2 = _basic_rule("r2")
     yf1 = YaraFile(rules=[rule1])
-    yf2 = YaraFile(rules=[rule2])
 
     transformed = (
         YaraFileTransformer(yf1)
@@ -86,8 +83,18 @@ def test_yara_file_transformer_and_merge() -> None:
     assert transformed.includes
     assert all(r.name.startswith("pre_") for r in transformed.rules)
 
-    collection = create_rule_collection([rule1, rule2], "col")
+    collection = (
+        YaraFileTransformer(YaraFile())
+        .add_rule(RuleTransformer(rule1).add_prefix("col_").build())
+        .add_rule(RuleTransformer(rule2).add_prefix("col_").build())
+        .build()
+    )
     assert all(r.name.startswith("col_") for r in collection.rules)
 
-    merged = merge_yara_files(yf1, yf2)
+    merged = (
+        YaraFileTransformer(CloneTransformer.clone_yara_file(yf1))
+        .add_import("math")
+        .add_rule(rule2)
+        .build()
+    )
     assert len(merged.rules) >= 2
