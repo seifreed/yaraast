@@ -1,7 +1,5 @@
 """Tests for visitor pattern functionality."""
 
-import pytest
-
 from yaraast.ast.expressions import StringIdentifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
@@ -302,7 +300,3 @@ class TestVisitorPatternAdvanced:
 
         assert len(visitor.errors) == 1
         assert "Bad rule!" in visitor.errors[0]
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
