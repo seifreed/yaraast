@@ -35,14 +35,6 @@ class TestYaraFileBuilderInitialization:
         assert yara_file.includes == []
         assert yara_file.rules == []
 
-    def test_static_create_method(self) -> None:
-        """Create static method should return new builder."""
-        builder = YaraFileBuilder.create()
-
-        assert isinstance(builder, YaraFileBuilder)
-        yara_file = builder.build()
-        assert isinstance(yara_file, YaraFile)
-
 
 class TestYaraFileBuilderImports:
     """Test import functionality."""
@@ -472,68 +464,6 @@ class TestYaraFileBuilderCompleteFiles:
         assert yara_file.rules == []
 
 
-class TestYaraFileBuilderStaticMethods:
-    """Test static factory methods."""
-
-    def test_from_rules_with_rule_objects(self) -> None:
-        """From_rules should create file from Rule objects."""
-        rule1 = Rule(
-            name="Rule1",
-            strings=[PlainString(identifier="$s1", value=b"test1")],
-            condition=Identifier(name="$s1"),
-        )
-        rule2 = Rule(
-            name="Rule2",
-            strings=[PlainString(identifier="$s2", value=b"test2")],
-            condition=Identifier(name="$s2"),
-        )
-
-        yara_file = YaraFileBuilder.from_rules(rule1, rule2)
-
-        assert isinstance(yara_file, YaraFile)
-        assert len(yara_file.rules) == 2
-        assert yara_file.rules[0].name == "Rule1"
-        assert yara_file.rules[1].name == "Rule2"
-
-    def test_from_rules_with_rule_builders(self) -> None:
-        """From_rules should accept RuleBuilder instances."""
-        builder1 = RuleBuilder().with_name("Rule1").with_string("$s1", "test1")
-        builder2 = RuleBuilder().with_name("Rule2").with_string("$s2", "test2")
-
-        yara_file = YaraFileBuilder.from_rules(builder1, builder2)
-
-        assert len(yara_file.rules) == 2
-        assert yara_file.rules[0].name == "Rule1"
-        assert yara_file.rules[1].name == "Rule2"
-
-    def test_from_rules_with_mixed_types(self) -> None:
-        """From_rules should accept mixed Rule and RuleBuilder."""
-        rule_obj = Rule(
-            name="DirectRule",
-            strings=[PlainString(identifier="$s", value=b"test")],
-            condition=Identifier(name="$s"),
-        )
-        rule_builder = RuleBuilder().with_name("BuilderRule").with_string("$s", "test")
-
-        yara_file = YaraFileBuilder.from_rules(rule_obj, rule_builder)
-
-        assert len(yara_file.rules) == 2
-        assert yara_file.rules[0].name == "DirectRule"
-        assert yara_file.rules[1].name == "BuilderRule"
-
-    def test_from_rules_empty(self) -> None:
-        """From_rules with no arguments should create empty file."""
-        yara_file = YaraFileBuilder.from_rules()
-
-        assert isinstance(yara_file, YaraFile)
-        assert yara_file.rules == []
-
-    def test_from_rules_rejects_invalid_rule_inputs(self) -> None:
-        """From_rules should reject unsupported rule inputs before validation."""
-        with pytest.raises(TypeError, match="Rule input must be a Rule or RuleBuilder"):
-            YaraFileBuilder.from_rules(Rule(name="ValidRule"), cast(Any, object()))
-
-
 class TestYaraFileBuilderFluentAPI:
     """Test fluent API chain behavior."""
 
@@ -546,7 +476,7 @@ class TestYaraFileBuilderFluentAPI:
         )
 
         yara_file = (
-            YaraFileBuilder.create()
+            YaraFileBuilder()
             .with_import("pe")
             .with_imports("elf", "math")
             .with_include("common.yar")

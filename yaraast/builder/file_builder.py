@@ -94,16 +94,3 @@ class YaraFileBuilder:
             includes=[Include(path=path) for path in self._includes],
             rules=deepcopy(self._rules),
         )
-
-    # Convenience static methods
-    @staticmethod
-    def create() -> "YaraFileBuilder":
-        """Create a new file builder."""
-        return YaraFileBuilder()
-
-    @staticmethod
-    def from_rules(*rules: Rule | RuleBuilder) -> YaraFile:
-        """Create a YARA file from rules."""
-        builder = YaraFileBuilder()
-        builder.with_rules(*rules)
-        return builder.build()
