@@ -122,61 +122,37 @@ def test_visit_expression_returns_none() -> None:
 
 def test_visit_identifier_noop_path() -> None:
     """Line 73: visit_identifier default path returns None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit_identifier(Identifier("x"))
+    result = BaseVisitor[None]().visit_identifier(Identifier("x"))
     assert result is None
 
 
 def test_visit_string_identifier_noop_path() -> None:
     """Line 76: visit_string_identifier default path returns None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit_string_identifier(StringIdentifier("$s"))
+    result = BaseVisitor[None]().visit_string_identifier(StringIdentifier("$s"))
     assert result is None
 
 
 def test_visit_string_wildcard_noop_path() -> None:
     """Line 79: visit_string_wildcard default path returns None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit_string_wildcard(StringWildcard("$*"))
+    result = BaseVisitor[None]().visit_string_wildcard(StringWildcard("$*"))
     assert result is None
 
 
 def test_visit_string_count_noop_path() -> None:
     """Line 79 (visit_string_count): default path returns None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit_string_count(StringCount("#s"))
+    result = BaseVisitor[None]().visit_string_count(StringCount("#s"))
     assert result is None
 
 
 def test_visit_double_literal_noop_path() -> None:
     """Line 93: visit_double_literal default path returns None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit_double_literal(DoubleLiteral(3.14))
+    result = BaseVisitor[None]().visit_double_literal(DoubleLiteral(3.14))
     assert result is None
 
 
 def test_visit_regex_literal_noop_path() -> None:
     """Line 99: visit_regex_literal default path returns None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit_regex_literal(RegexLiteral("foo.*"))
+    result = BaseVisitor[None]().visit_regex_literal(RegexLiteral("foo.*"))
     assert result is None
 
 
@@ -322,11 +298,7 @@ def test_visit_member_access_traverses_object() -> None:
 
 def test_visit_condition_returns_none() -> None:
     """Line 143: visit_condition is a no-op and returns None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit_condition(Condition())
+    result = BaseVisitor[None]().visit_condition(Condition())
     assert result is None
 
 
@@ -497,11 +469,7 @@ def test_visit_of_expression_with_string_quantifier() -> None:
 
 def test_visit_module_reference_noop_path() -> None:
     """Line 176: visit_module_reference default is a no-op returning None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit_module_reference(ModuleReference("pe"))
+    result = BaseVisitor[None]().visit_module_reference(ModuleReference("pe"))
     assert result is None
 
 
@@ -774,31 +742,19 @@ def test_visit_spread_operator_traverses_expression() -> None:
 
 def test_visit_integer_literal_mixin_noop_returns_none() -> None:
     """Line 90: visit_integer_literal mixin body executes and returns None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit(IntegerLiteral(0))
+    result = BaseVisitor[None]().visit(IntegerLiteral(0))
     assert result is None
 
 
 def test_visit_string_literal_mixin_noop_returns_none() -> None:
     """Line 96: visit_string_literal mixin body executes and returns None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit(StringLiteral("hello"))
+    result = BaseVisitor[None]().visit(StringLiteral("hello"))
     assert result is None
 
 
 def test_visit_boolean_literal_mixin_noop_returns_none() -> None:
     """Line 102: visit_boolean_literal mixin body executes and returns None."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit(BooleanLiteral(False))
+    result = BaseVisitor[None]().visit(BooleanLiteral(False))
     assert result is None
 
 
@@ -892,9 +848,5 @@ def test_visit_match_case_traverses_pattern_and_result() -> None:
 )
 def test_all_noop_visit_methods_return_none(node: object) -> None:
     """Every method that only calls _noop() returns None from the default mixin."""
-
-    class _PassthroughVisitor(BaseVisitor[None]):
-        pass
-
-    result = _PassthroughVisitor().visit(node)  # type: ignore[arg-type]
+    result = BaseVisitor[None]().visit(node)  # type: ignore[arg-type]
     assert result is None
