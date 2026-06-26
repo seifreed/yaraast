@@ -32,24 +32,6 @@ from yaraast.lsp.utils import (
     path_is_file,
 )
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _inaccessible_child(parent: Path, filename: str = "target.yar") -> Path:
-    """Return a path inside a directory whose execute-bit has been removed.
-
-    The caller is responsible for restoring permissions before the temporary
-    directory is cleaned up; use the _revoke_and_restore context manager.
-    """
-    locked = parent / "locked"
-    locked.mkdir()
-    child = locked / filename
-    child.write_text("rule x { condition: true }\n", encoding="utf-8")
-    os.chmod(str(locked), 0)  # remove all bits — stat() on children raises OSError
-    return child
-
 
 def _restore_permissions(locked_dir: Path) -> None:
     os.chmod(str(locked_dir), stat.S_IRWXU)

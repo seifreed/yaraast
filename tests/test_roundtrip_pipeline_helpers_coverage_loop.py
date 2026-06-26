@@ -57,10 +57,6 @@ from yaraast.serialization.roundtrip_pipeline_helpers import (
     dump_pipeline_yaml,
 )
 
-# ---------------------------------------------------------------------------
-# Helpers that produce minimal valid AST nodes
-# ---------------------------------------------------------------------------
-
 
 def _bool_expr() -> BooleanLiteral:
     return BooleanLiteral(value=True)
@@ -68,10 +64,6 @@ def _bool_expr() -> BooleanLiteral:
 
 def _plain_rule(name: str = "test_rule") -> Rule:
     return Rule(name=name, condition=_bool_expr())
-
-
-def _yara_file(*rules: Rule) -> YaraFile:
-    return YaraFile(rules=list(rules))
 
 
 # ---------------------------------------------------------------------------
