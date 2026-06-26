@@ -376,7 +376,3 @@ class TestAdditionalParserBasedCoverage:
 
         # Set expressions may or may not be present depending on parsing
         assert visitor.sets >= 0
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
