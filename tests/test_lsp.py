@@ -460,7 +460,3 @@ def test_workspace_symbols_provider() -> None:
         assert len(symbols) > 0, "Should find symbols matching 'malware'"
         symbol_names = [sym.name for sym in symbols]
         assert "malware_detection" in symbol_names, "Should find malware_detection rule"
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
