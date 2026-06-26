@@ -10,13 +10,9 @@ from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
 def test_fluent_rule_builder_strings_and_modifiers() -> None:
     rule = (
         FluentRuleBuilder("demo")
-        .string("$a")
-        .text("hello")
+        .text_string("$a", "hello")
         .nocase()
-        .then()
-        .string("$b")
-        .hex("4D 5A")
-        .then()
+        .hex_string("$b", "4D 5A")
         .matches_any()
         .build()
     )
