@@ -233,14 +233,4 @@ rule yara_compat {
     errors = [i for i in issues if i.severity == "error"]
     assert len(errors) == 0
 
-
-if __name__ == "__main__":
-    test_regex_brace_escaping()
-    test_invalid_escape_sequences()
-    test_base64_length_validation()
-    test_duplicate_modifiers()
-    test_syntax_adaptation()
-    test_compatibility_report()
-    test_migration_guide_generation()
-    test_yara_compatibility_mode()
     print("✓ All YARA-X compatibility tests passed")
