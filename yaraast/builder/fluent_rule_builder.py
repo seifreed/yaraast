@@ -122,13 +122,9 @@ class FluentRuleBuilder:
         return self.with_string(builder)
 
     # Common string patterns
-    def with_mz_header(self, identifier: str = "$mz") -> Self:
+    def mz_header(self, identifier: str = "$mz") -> Self:
         """Add MZ header string."""
         return self.with_string(FluentStringBuilder.string(identifier).mz_header())
-
-    def mz_header(self, identifier: str = "$mz") -> Self:
-        """Add MZ header string (alias for with_mz_header)."""
-        return self.with_mz_header(identifier)
 
     def pe_header(self, identifier: str = "$pe") -> Self:
         """Add PE header string."""
@@ -227,7 +223,7 @@ class FluentRuleBuilder:
         """Add PE file conditions."""
         # Add MZ header if not already present
         if not any(s.identifier in ["$mz", self.MZ_HEADER] for s in self._string_builders):
-            self.with_mz_header(self.MZ_HEADER)
+            self.mz_header(self.MZ_HEADER)
 
         condition_builder = FluentConditionBuilder().string_matches(self.MZ_HEADER).at(0)
         combined = combine_condition(self._rule_builder.get_condition(), condition_builder)
