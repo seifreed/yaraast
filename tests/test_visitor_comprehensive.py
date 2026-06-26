@@ -675,10 +675,6 @@ class TestBaseVisitorComprehensive:
         visitor = MetaVisitor()
         visitor.visit(ast)
 
-        # Meta is typically stored as dict, so visit_meta may not be called
-        # This test validates the method exists and works
-        assert len(visitor.meta_keys) >= 0
-
     def test_base_visitor_dispatch_via_accept(self) -> None:
         """Test that BaseVisitor.visit() correctly dispatches via node.accept()."""
 

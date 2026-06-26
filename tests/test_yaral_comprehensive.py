@@ -8,6 +8,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+import contextlib
+
 import pytest
 
 from yaraast.lexer.lexer_errors import LexerError
@@ -289,8 +291,7 @@ class TestYaraLParserEdgeCases:
         # This should either parse successfully (incomplete statement) or raise error
         # The parser is designed to skip incomplete statements
         try:
-            ast = parser.parse()
-            assert len(ast.rules) >= 0
+            parser.parse()
         except YaraLParserError as e:
             error_msg = str(e)
             assert "Parser error" in error_msg or "Expected" in error_msg
@@ -1133,11 +1134,8 @@ class TestYaraLParserErrorRecovery:
 
         # This might parse or raise an error depending on implementation
         # Just ensure it doesn't crash
-        try:
-            ast = parser.parse()
-            assert len(ast.rules) >= 0
-        except YaraLParserError:
-            pass
+        with contextlib.suppress(YaraLParserError):
+            parser.parse()
 
     def test_missing_equals_in_outcome(self) -> None:
         """Test error on missing equals in outcome assignment."""
