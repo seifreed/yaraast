@@ -277,7 +277,6 @@ def test_rule_metadata_aliases_and_example_rules_paths() -> None:
         .regex_string("$re", "abc.*")
         .elf_header("$elf")
         .condition("true")
-        .when("true")
         .condition("true")
         .matches_any_of("$re")
         .with_condition_builder(lambda builder: builder.all_of("$re"))
