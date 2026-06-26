@@ -30,11 +30,6 @@ def test_clone_transformer_rule_and_file() -> None:
     assert cloned is not rule
     assert cloned.name == "r1"
 
-    yf = YaraFile(rules=[rule])
-    cloned_file = CloneTransformer.clone_yara_file(yf)
-    assert cloned_file is not yf
-    assert cloned_file.rules[0].name == "r1"
-
 
 def test_rule_transformer_renames_and_modifies() -> None:
     rule = _basic_rule("r1")
@@ -91,10 +86,5 @@ def test_yara_file_transformer_and_merge() -> None:
     )
     assert all(r.name.startswith("col_") for r in collection.rules)
 
-    merged = (
-        YaraFileTransformer(CloneTransformer.clone_yara_file(yf1))
-        .add_import("math")
-        .add_rule(rule2)
-        .build()
-    )
+    merged = YaraFileTransformer(yf1).add_import("math").add_rule(rule2).build()
     assert len(merged.rules) >= 2

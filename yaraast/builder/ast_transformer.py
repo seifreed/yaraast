@@ -49,14 +49,6 @@ class CloneTransformer:
             raise TypeError(msg)
         return deepcopy(rule)
 
-    @staticmethod
-    def clone_yara_file(yara_file: YaraFile) -> YaraFile:
-        """Clone a YARA file with all its components."""
-        if not isinstance(yara_file, YaraFile):
-            msg = "YaraFile input must be a YaraFile"
-            raise TypeError(msg)
-        return deepcopy(yara_file)
-
 
 class RuleTransformer:
     """Specialized transformer for rule modifications."""
@@ -476,7 +468,7 @@ class YaraFileTransformer:
     """Specialized transformer for YARA file modifications."""
 
     def __init__(self, yara_file: YaraFile) -> None:
-        cloned_file = CloneTransformer.clone_yara_file(yara_file)
+        cloned_file = deepcopy(yara_file)
         cloned_file.validate_structure()
         self._validate_rule_list(cloned_file.rules)
         self.yara_file = cloned_file
@@ -625,7 +617,7 @@ class YaraFileTransformer:
 
     def build(self) -> YaraFile:
         """Build the transformed YARA file."""
-        return CloneTransformer.clone_yara_file(self.yara_file)
+        return deepcopy(self.yara_file)
 
 
 def transform_rule(rule: Rule) -> RuleTransformer:

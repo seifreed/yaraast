@@ -60,18 +60,6 @@ def test_clone_helpers_create_deep_independent_copies() -> None:
     assert original_rule.get_meta_value("author") == "me"
     assert original_rule.strings[0].identifier == "$a"
 
-    original_file = YaraFile(
-        imports=[Import(module="pe")],
-        includes=[Include(path="inc.yar")],
-        rules=[original_rule],
-    )
-    cloned_file = CloneTransformer.clone_yara_file(original_file)
-    cloned_file.imports[0].module = "math"
-    cloned_file.rules[0].name = "mutated"
-
-    assert original_file.imports[0].module == "pe"
-    assert original_file.rules[0].name == "orig"
-
 
 def test_rule_clone_and_transform_helpers_reject_invalid_rule_inputs() -> None:
     with pytest.raises(TypeError, match="Rule input must be a Rule"):
@@ -82,14 +70,6 @@ def test_rule_clone_and_transform_helpers_reject_invalid_rule_inputs() -> None:
 
     with pytest.raises(TypeError, match="Rule input must be a Rule"):
         transform_rule(cast(Any, object()))
-
-
-def test_yara_file_clone_and_transform_helpers_reject_invalid_file_inputs() -> None:
-    with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
-        CloneTransformer.clone_yara_file(cast(Any, object()))
-
-    with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
-        YaraFileTransformer(cast(Any, object()))
 
 
 def test_clone_helpers_preserve_rule_metadata_and_pragmas() -> None:
