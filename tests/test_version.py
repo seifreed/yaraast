@@ -58,10 +58,3 @@ def test_version_comparison() -> None:
 
     # Test specific version
     assert yaraast_tuple == (YARAAST_VERSION_MAJOR, YARAAST_VERSION_MINOR, YARAAST_VERSION_PATCH)
-
-
-if __name__ == "__main__":
-    test_version_constants()
-    test_version_format()
-    test_version_comparison()
-    print("✓ All version tests passed")
