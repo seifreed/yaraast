@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include, Rule
@@ -13,9 +13,6 @@ from yaraast.builder.file_builder_validation import (
     validate_unique_rule_names,
 )
 from yaraast.errors import ValidationError
-
-if TYPE_CHECKING:
-    from yaraast.builder.fluent_rule_builder import FluentRuleBuilderWithFile
 
 
 class FluentYaraFileBuilder:
@@ -53,12 +50,6 @@ class FluentYaraFileBuilder:
         validate_unique_rule_names(self.rules, [rule])
         self.rules.append(deepcopy(rule))
         return self
-
-    def rule(self, name: str) -> FluentRuleBuilderWithFile:
-        """Start building a rule."""
-        from yaraast.builder.fluent_rule_builder import FluentRuleBuilderWithFile
-
-        return FluentRuleBuilderWithFile(self, name)
 
     def build(self) -> YaraFile:
         """Build the YARA file."""

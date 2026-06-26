@@ -9,6 +9,7 @@ from yaraast.builder.fluent_condition_builder import (
     FluentConditionBuilder,
 )
 from yaraast.builder.fluent_file_builder import yara_file
+from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
 from yaraast.builder.fluent_rule_presets import malware_rule, rule, trojan_rule
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.codegen import CodeGenerator
@@ -218,17 +219,14 @@ class TestYaraFileBuilder:
 
     def test_chained_rule_building(self) -> None:
         """Test chained rule building in file."""
-        yara_ast = (
-            yara_file()
-            .import_module("pe")
-            .rule("first_rule")
-            .text_string("$a", "hello")
-            .matches_any()
-            .then_rule("second_rule")
-            .hex_string("$b", "4D 5A")
-            .matches_any()
-            .then_build_file()
+        file_builder = yara_file().import_module("pe")
+        first_rule = (
+            FluentRuleBuilder("first_rule").text_string("$a", "hello").matches_any().build()
         )
+        second_rule = (
+            FluentRuleBuilder("second_rule").hex_string("$b", "4D 5A").matches_any().build()
+        )
+        yara_ast = file_builder.with_rule(first_rule).with_rule(second_rule).build()
 
         assert isinstance(yara_ast, YaraFile)
         assert len(yara_ast.imports) == 1
@@ -300,10 +298,8 @@ class TestCodeGeneration:
 
     def test_generate_complex_file(self) -> None:
         """Test generating code from complex YARA file."""
-        yara_ast = (
-            yara_file()
-            .import_module("pe")
-            .rule("complex_rule")
+        rule_ast = (
+            FluentRuleBuilder("complex_rule")
             .tagged("malware", "test")
             .authored_by("Test")
             .mz_header()
@@ -315,8 +311,9 @@ class TestCodeGeneration:
                 .and_(c.string_matches("$str"))
                 .and_(c.filesize_gt(1024)),
             )
-            .then_build_file()
+            .build()
         )
+        yara_ast = yara_file().import_module("pe").with_rule(rule_ast).build()
 
         generator = CodeGenerator()
         code = generator.generate(yara_ast)

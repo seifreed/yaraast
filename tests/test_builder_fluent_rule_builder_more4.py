@@ -46,18 +46,13 @@ def test_fluent_rule_builder_combines_falsy_present_condition() -> None:
     assert rule.condition.left.value is False
 
 
-def test_fluent_yara_file_builder_then_rule() -> None:
-    yf = (
-        yara_file()
-        .import_module("pe")
-        .rule("r1")
-        .text_string("$a", "x")
-        .condition("true")
-        .then_rule("r2")
-        .text_string("$b", "y")
-        .condition(BooleanLiteral(value=True))
-        .then_build_file()
+def test_fluent_yara_file_builder_with_rule() -> None:
+    builder = yara_file().import_module("pe")
+    rule1 = FluentRuleBuilder("r1").text_string("$a", "x").condition("true").build()
+    rule2 = (
+        FluentRuleBuilder("r2").text_string("$b", "y").condition(BooleanLiteral(value=True)).build()
     )
+    yf = builder.with_rule(rule1).with_rule(rule2).build()
 
     assert len(yf.rules) == 2
     assert yf.imports[0].module == "pe"

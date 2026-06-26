@@ -16,9 +16,7 @@ from yaraast.errors import ValidationError
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from yaraast.ast.base import YaraFile
     from yaraast.ast.expressions import Expression
-    from yaraast.builder.fluent_file_builder import FluentYaraFileBuilder
 
 
 class FluentRuleBuilder:
@@ -225,23 +223,3 @@ class FluentRuleBuilder:
             return self._rule_builder.build()
         finally:
             self._rule_builder._strings = original_strings
-
-
-class FluentRuleBuilderWithFile(FluentRuleBuilder):
-    """Rule builder that can return to file builder."""
-
-    def __init__(self, file_builder: FluentYaraFileBuilder, name: str) -> None:
-        super().__init__(name)
-        self.file_builder = file_builder
-
-    def then_rule(self, name: str) -> FluentRuleBuilderWithFile:
-        """Add this rule and start another."""
-        rule = self.build()
-        self.file_builder.with_rule(rule)
-        return FluentRuleBuilderWithFile(self.file_builder, name)
-
-    def then_build_file(self) -> YaraFile:
-        """Add this rule and build the file."""
-        rule = self.build()
-        self.file_builder.with_rule(rule)
-        return self.file_builder.build()

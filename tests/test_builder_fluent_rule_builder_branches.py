@@ -68,9 +68,15 @@ def test_string_context_chaining_and_and_string_path() -> None:
             .xor("2A")
             .base64(),
         )
-        .with_string(FluentStringBuilder.string("$mz").mz_header())
-        .with_string(FluentStringBuilder.string("$pe").pe_header())
-        .with_string(FluentStringBuilder.string("$email").email_pattern())
+        .with_string(
+            FluentStringBuilder.string("$mz").mz_header(),
+        )
+        .with_string(
+            FluentStringBuilder.string("$pe").pe_header(),
+        )
+        .with_string(
+            FluentStringBuilder.string("$email").email_pattern(),
+        )
         .matches_any()
         .build()
     )
@@ -142,21 +148,18 @@ def test_convenience_factories_cover_common_builder_paths() -> None:
 
 
 def test_file_builder_chaining_and_duplicate_elimination() -> None:
-    built_file = (
+    file_builder = (
         yara_file()
         .import_module("pe")
         .import_module("pe")
         .include_file("common.yar")
         .include_file("common.yar")
-        .rule("r1")
-        .text_string("$a", "one")
-        .condition("true")
-        .then_rule("r2")
-        .hex_string("$b", "4D 5A")
-        .for_pe_files()
-        .for_large_files()
-        .then_build_file()
     )
+    first = FluentRuleBuilder("r1").text_string("$a", "one").condition("true").build()
+    second = (
+        FluentRuleBuilder("r2").hex_string("$b", "4D 5A").for_pe_files().for_large_files().build()
+    )
+    built_file = file_builder.with_rule(first).with_rule(second).build()
 
     assert len(built_file.imports) == 1
     assert built_file.imports[0].module == "pe"
