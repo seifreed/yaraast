@@ -7,8 +7,6 @@ from pathlib import Path
 from lsprotocol.types import Position, Range
 
 from yaraast.ast.base import ASTNode, Location
-from yaraast.lexer.tokens import Token
-from yaraast.lsp.semantic_tokens_helpers import token_source_length
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 
 
@@ -31,14 +29,6 @@ def path_is_dir(path: Path) -> bool:
         return path.is_dir()
     except OSError:
         return False
-
-
-def token_to_range(token: Token) -> Range:
-    """Convert a token to an LSP Range."""
-    start_character = max(0, token.column - 1)
-    start = Position(line=token.line - 1, character=start_character)
-    end = Position(line=token.line - 1, character=start_character + token_source_length(token))
-    return Range(start=start, end=end)
 
 
 def location_to_range(location: Location, source_text: str | None = None) -> Range:

@@ -9,14 +9,12 @@ from lsprotocol.types import Hover, MarkupContent, Position, Range
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
-from yaraast.lexer.tokens import Token, TokenType
 from yaraast.lsp.hover import HoverProvider
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.text_utils import get_word_at_position
 from yaraast.lsp.utils import (
     find_node_at_position,
     location_to_range,
-    token_to_range,
 )
 
 
@@ -30,14 +28,7 @@ def _hover_range(hover: Hover) -> Range:
     return hover.range
 
 
-def test_token_and_location_to_range() -> None:
-    token = Token(type=TokenType.IDENTIFIER, value="abc", line=2, column=3)
-    token_range = token_to_range(token)
-    assert token_range.start.line == 1
-    assert token_range.start.character == 2
-    assert token_range.end.line == 1
-    assert token_range.end.character == 5
-
+def test_location_to_range() -> None:
     location = Location(line=4, column=2)
     location_range = location_to_range(location)
     assert location_range.start.line == 3

@@ -11,34 +11,16 @@ import pytest
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import BinaryExpression
 from yaraast.ast.rules import Rule
-from yaraast.lexer.tokens import Token, TokenType
 from yaraast.lsp.text_utils import get_word_at_position
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.lsp.utils import (
     find_node_at_position,
     location_to_range,
-    token_to_range,
 )
 from yaraast.parser import Parser
 
 
-def test_token_and_location_to_range() -> None:
-    token = Token(type=TokenType.IDENTIFIER, value="rule", line=2, column=4)
-    token_range = token_to_range(token)
-    assert token_range.start.line == 1
-    assert token_range.start.character == 3
-    assert token_range.end.character == 7
-
-    source_width_token = Token(
-        type=TokenType.INTEGER,
-        value=1,
-        line=2,
-        column=10,
-        length=3,
-    )
-    source_width_range = token_to_range(source_width_token)
-    assert source_width_range.end.character == 12
-
+def test_location_to_range() -> None:
     loc = Location(line=3, column=2, file=None)
     loc_range = location_to_range(loc)
     assert loc_range.start.line == 2
