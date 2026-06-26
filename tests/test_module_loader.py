@@ -149,12 +149,3 @@ def test_example_custom_module() -> None:
         assert "api_version" in custom.attributes
         assert "hash" in custom.functions
         assert "MAX_BUFFER_SIZE" in custom.constants
-
-
-if __name__ == "__main__":
-    test_builtin_modules()
-    test_load_json_module()
-    test_exclusive_module_path()
-    test_complex_types()
-    test_example_custom_module()
-    print("✓ All module loader tests passed")
