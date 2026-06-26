@@ -247,6 +247,5 @@ def test_dependency_graph_export(tmp_path: Path) -> None:
     export_dependency_graph(graph, dot_path, format="dot")
     assert "digraph" in dot_path.read_text(encoding="utf-8")
 
-    loaded = DependencyGraph()
-    loaded.from_dict(graph.to_dict())
-    assert "b" in loaded.edges["a"]
+    payload = graph.to_dict()
+    assert payload == {"nodes": ["a", "b", "c"], "edges": {"a": ["b"], "b": ["c"], "c": ["a"]}}

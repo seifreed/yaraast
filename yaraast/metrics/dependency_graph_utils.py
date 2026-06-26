@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from collections.abc import Mapping
 import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -16,13 +15,6 @@ from yaraast.metrics.dependency_graph_helpers import require_output_path
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Rule
-
-
-def _deserialize_string_list(value: object, context: str) -> list[str]:
-    if isinstance(value, list) and all(isinstance(item, str) for item in value):
-        return list(value)
-    msg = f"{context} must be a list of strings"
-    raise ValidationError(msg)
 
 
 def _require_graph_node(value: object, context: str) -> str:
@@ -75,47 +67,6 @@ class DependencyGraph:
                 from_node: sorted(to_nodes) for from_node, to_nodes in sorted(self.edges.items())
             },
         }
-
-    def from_dict(self, data: object) -> None:
-        """Load from dictionary representation."""
-        if not isinstance(data, Mapping):
-            msg = "DependencyGraph data must be an object"
-            raise ValidationError(msg)
-
-        nodes = [
-            _require_graph_node(node, "DependencyGraph node")
-            for node in _deserialize_string_list(data.get("nodes", []), "DependencyGraph nodes")
-        ]
-        raw_edges = data.get("edges", {})
-        if not isinstance(raw_edges, Mapping):
-            msg = "DependencyGraph edges must be an object"
-            raise ValidationError(msg)
-
-        edges: dict[str, list[str]] = {}
-        for from_node, to_nodes in raw_edges.items():
-            if not isinstance(from_node, str):
-                msg = "DependencyGraph edge names must be strings"
-                raise ValidationError(msg)
-            source = _require_graph_node(from_node, "DependencyGraph edge source")
-            edges[source] = [
-                _require_graph_node(target, "DependencyGraph edge target")
-                for target in _deserialize_string_list(
-                    to_nodes,
-                    "DependencyGraph edge targets",
-                )
-            ]
-
-        self.nodes.clear()
-        self.edges.clear()
-        self._reverse_edges.clear()
-
-        for node in nodes:
-            self.add_node(node)
-
-        for from_node, to_nodes in edges.items():
-            for to_node in to_nodes:
-                self.add_edge(from_node, to_node)
-
 
 def build_dependency_graph(ast: YaraFile) -> DependencyGraph:
     """Build dependency graph from YARA AST."""
