@@ -25,7 +25,5 @@ class BaseVisitor(
 ):
     """Base visitor with default no-op implementations and traversal."""
 
-    pass
-
 
 __all__ = ["ASTTransformer", "BaseVisitor"]
