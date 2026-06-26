@@ -178,7 +178,7 @@ class TestConditionBuilderLiterals:
 
     def test_identifier_path_generates_libyara_compatible_member_access(self) -> None:
         """Dotted identifier paths should generate as member access expressions."""
-        from yaraast.builder.file_builder import YaraFileBuilder
+        from yaraast.builder.fluent_file_builder import yara_file
         from yaraast.builder.rule_builder import RuleBuilder
         from yaraast.codegen.generator import CodeGenerator
 
@@ -188,7 +188,7 @@ class TestConditionBuilderLiterals:
             .with_condition_lambda(lambda c: c.identifier("pe.number_of_sections").gt(c.integer(3)))
             .build()
         )
-        ast = YaraFileBuilder().with_import("pe").with_rule(rule).build()
+        ast = yara_file().import_module("pe").with_rule(rule).build()
 
         generated = CodeGenerator().generate(ast)
 

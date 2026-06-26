@@ -10,7 +10,6 @@ from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import FunctionCall, Identifier, StringIdentifier, StringLiteral
 from yaraast.ast.strings import HexByte, HexString, PlainString
 from yaraast.builder.condition_builder import ConditionBuilder
-from yaraast.builder.file_builder import YaraFileBuilder
 from yaraast.builder.fluent_condition_helpers import (
     build_entropy_compare,
     make_binary,
@@ -126,14 +125,6 @@ def test_condition_and_string_builders_build_independent_ast_nodes() -> None:
 
 def test_file_builders_build_independent_rule_nodes() -> None:
     rule = RuleBuilder("stable").with_condition("true").build()
-
-    direct_builder = YaraFileBuilder().with_import("pe").with_rule(rule)
-    direct_first = direct_builder.build()
-    direct_second = direct_builder.build()
-    direct_first.rules[0].name = "corrupted"
-
-    assert direct_second.rules[0].name == "stable"
-    assert direct_builder.build().rules[0].name == "stable"
 
     fluent_builder = yara_file().import_module("pe").with_rule(rule)
     fluent_first = fluent_builder.build()
