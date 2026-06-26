@@ -145,14 +145,6 @@ class FluentStringBuilder:
         return self
 
     # Regex-specific modifiers
-    def case_sensitive(self) -> FluentStringBuilder:
-        """Mark regex as case sensitive (default)."""
-        # Remove nocase if present
-        self._modifiers = [
-            m for m in self._modifiers if m.modifier_type != StringModifierType.NOCASE
-        ]
-        return self
-
     def dotall(self) -> FluentStringBuilder:
         """Add dotall modifier for regex (. matches newlines)."""
         self._add_modifier(StringModifierType.DOTALL)

@@ -7,6 +7,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from yaraast.ast.modifiers import StringModifierType
@@ -343,15 +345,6 @@ class TestFluentStringBuilderModifiers:
 class TestFluentStringBuilderRegexModifiers:
     """Test regex-specific modifiers."""
 
-    def test_case_sensitive_removes_nocase(self) -> None:
-        """Case_sensitive should remove nocase modifier."""
-        builder = FluentStringBuilder("$re").regex(r"\w+").nocase()
-
-        result = builder.case_sensitive()
-
-        assert result is builder
-        assert len(builder._modifiers) == 0
-
     def test_regex_with_nocase_modifier(self) -> None:
         """Regex should work with nocase modifier."""
         builder = FluentStringBuilder("$re").regex(r".*")
@@ -596,7 +589,7 @@ class TestFluentStringBuilderHelperMethods:
         tokens = builder._parse_hex_pattern("4D 5A\t90\n00")
 
         assert all(isinstance(token, HexByte) for token in tokens)
-        assert [token.value for token in tokens] == [0x4D, 0x5A, 0x90, 0x00]
+        assert [cast(HexByte, token).value for token in tokens] == [0x4D, 0x5A, 0x90, 0x00]
 
     def test_parse_hex_pattern_with_wildcard(self) -> None:
         """_parse_hex_pattern should recognize wildcard."""
