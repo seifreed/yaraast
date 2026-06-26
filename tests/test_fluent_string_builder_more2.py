@@ -36,7 +36,7 @@ def test_fluent_string_builder_rejects_non_string_text_and_regex_content() -> No
         FluentStringBuilder("$plain").literal(cast(Any, True))
 
     with pytest.raises(TypeError, match="Plain string content must be a string"):
-        FluentStringBuilder("$text").text(cast(Any, 123))
+        FluentStringBuilder("$text").literal(cast(Any, 123))
 
     with pytest.raises(TypeError, match="Regex pattern must be a string"):
         FluentStringBuilder("$regex").regex(cast(Any, 123))

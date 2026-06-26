@@ -68,11 +68,11 @@ class TestFluentStringBuilderTextStrings:
         assert builder._content == "malware"
         assert builder._string_type == "plain"
 
-    def test_text_is_alias_for_literal(self) -> None:
-        """Text method should work as alias for literal."""
+    def test_literal_sets_plain_string_again(self) -> None:
+        """Literal method should set plain string content again."""
         builder = FluentStringBuilder("$text")
 
-        result = builder.text("payload")
+        result = builder.literal("payload")
 
         assert result is builder
         assert builder._content == "payload"

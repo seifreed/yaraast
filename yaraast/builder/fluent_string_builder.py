@@ -40,10 +40,6 @@ class FluentStringBuilder:
         self._string_type = "plain"
         return self
 
-    def text(self, content: str) -> FluentStringBuilder:
-        """Alias for literal."""
-        return self.literal(content)
-
     def hex(self, pattern: str) -> FluentStringBuilder:
         """Set as hex string from pattern (e.g., '4D 5A ?? 00')."""
         self._content = self._parse_hex_pattern(pattern)

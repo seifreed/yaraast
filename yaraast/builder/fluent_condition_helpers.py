@@ -48,16 +48,6 @@ def make_filesize_compare(operator: str, size: int) -> BinaryExpression:
     return make_binary(Identifier(name="filesize"), operator, make_integer_literal(size))
 
 
-def make_string_count_compare(string_id: str, operator: str, count: int) -> BinaryExpression:
-    from yaraast.ast.expressions import StringCount
-
-    return make_binary(
-        StringCount(string_id=_normalize_string_reference(string_id, "#")),
-        operator,
-        make_integer_literal(count),
-    )
-
-
 def validate_string_reference(identifier: str) -> None:
     _normalize_string_reference(identifier, "$")
 
