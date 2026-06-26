@@ -817,7 +817,7 @@ def test_protobuf_serializer_preserves_meta_entry_scope() -> None:
     scopes_by_key = {entry.key: entry.scope for entry in restored.rules[0].meta}
 
     assert scopes_by_key == {"secret": MetaScope.PRIVATE, "owner": MetaScope.PUBLIC}
-    assert [entry.key for entry in restored.rules[0].get_private_meta()] == ["secret"]
+    assert [entry.key for entry in restored.rules[0].meta if entry.is_private] == ["secret"]
 
 
 def test_protobuf_serializer_preserves_scoped_meta_metadata() -> None:

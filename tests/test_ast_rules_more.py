@@ -29,8 +29,9 @@ def test_rule_modifier_flags_and_meta_entries() -> None:
     private_meta = [MetaEntry.from_key_value("secret", "x", "private")]
     public_meta = [MetaEntry.from_key_value("pub", 1)]
     rule.meta = private_meta + public_meta
-    assert [m.key for m in rule.get_private_meta()] == ["secret"]
-    assert [m.key for m in rule.get_public_meta()] == ["pub"]
+    scoped_entries = rule.get_meta_entries()
+    assert [m.key for m in scoped_entries if m.is_private] == ["secret"]
+    assert [m.key for m in scoped_entries if m.is_public] == ["pub"]
 
 
 def test_rule_validate_structure_accepts_string_modifiers() -> None:
@@ -101,38 +102,22 @@ def test_rule_meta_accessors_reject_invalid_meta_state(
         rule.get_meta_value("owner")
 
     with pytest.raises(TypeError, match=message):
-        rule.get_private_meta()
-
-    with pytest.raises(TypeError, match=message):
-        rule.get_public_meta()
+        rule.get_meta_entries()
 
 
 def test_rule_pragmas_by_position() -> None:
-    rule = Rule(name="r2")
     pragma_before = InRulePragma(
         pragma=Pragma(PragmaType.DEFINE, "define"), position="before_strings"
     )
     pragma_after = InRulePragma(
         pragma=Pragma(PragmaType.DEFINE, "define"), position="after_strings"
     )
+    rule = Rule(name="r2", pragmas=[pragma_before, pragma_after])
 
-    rule.add_pragma(pragma_before)
-    rule.add_pragma(pragma_after)
-
-    before = rule.get_pragmas_by_position("before_strings")
-    after = rule.get_pragmas_by_position("after_strings")
+    before = [pragma for pragma in rule.pragmas if pragma.position == "before_strings"]
+    after = [pragma for pragma in rule.pragmas if pragma.position == "after_strings"]
     assert before == [pragma_before]
     assert after == [pragma_after]
-
-
-@pytest.mark.parametrize("position", [None, 1, b"before_strings", object()])
-def test_rule_get_pragmas_by_position_rejects_non_string_positions(
-    position: Any,
-) -> None:
-    rule = Rule(name="r2")
-
-    with pytest.raises(TypeError, match="Rule pragma position must be a string"):
-        rule.get_pragmas_by_position(cast(str, position))
 
 
 @pytest.mark.parametrize(
@@ -150,26 +135,4 @@ def test_rule_get_pragmas_by_position_rejects_invalid_pragma_state(
     rule.pragmas = pragmas
 
     with pytest.raises(TypeError, match=message):
-        rule.get_pragmas_by_position("before_strings")
-
-
-def test_rule_rejects_invalid_pragmas_without_partial_update() -> None:
-    rule = Rule(name="r2")
-    pragma = InRulePragma(pragma=Pragma(PragmaType.DEFINE, "define"))
-    rule.add_pragma(pragma)
-
-    with pytest.raises(TypeError, match="Rule pragma input must be an InRulePragma"):
-        rule.add_pragma(cast(Any, object()))
-
-    assert rule.pragmas == [pragma]
-
-
-def test_rule_add_pragma_validates_structure_without_partial_update() -> None:
-    rule = Rule(name="r2")
-    pragma = InRulePragma(pragma=Pragma(PragmaType.DEFINE, "define"))
-    rule.add_pragma(pragma)
-
-    with pytest.raises(ValueError, match="InRulePragma position cannot be empty"):
-        rule.add_pragma(InRulePragma(pragma=Pragma(PragmaType.PRAGMA, "vendor"), position=""))
-
-    assert rule.pragmas == [pragma]
+        rule.validate_structure()

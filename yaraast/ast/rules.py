@@ -282,28 +282,3 @@ class Rule(ASTNode):
             if entry.key == key:
                 return entry.value
         return default
-
-    def get_private_meta(self) -> list[MetaEntry]:
-        """Get only private meta entries."""
-        entries = self.get_meta_entries()
-        return [entry for entry in entries if entry.is_private]
-
-    def get_public_meta(self) -> list[MetaEntry]:
-        """Get only public meta entries."""
-        entries = self.get_meta_entries()
-        return [entry for entry in entries if entry.is_public]
-
-    def add_pragma(self, pragma: InRulePragma) -> None:
-        """Add a pragma to this rule."""
-        from yaraast.ast.pragmas import InRulePragma
-
-        if not isinstance(pragma, InRulePragma):
-            msg = "Rule pragma input must be an InRulePragma"
-            raise TypeError(msg)
-        pragma.validate_structure()
-        self.pragmas.append(pragma)
-
-    def get_pragmas_by_position(self, position: str) -> list[InRulePragma]:
-        """Get pragmas by their position in the rule."""
-        position = require_string(position, "Rule pragma position")
-        return [p for p in self._validated_pragmas() if p.position == position]

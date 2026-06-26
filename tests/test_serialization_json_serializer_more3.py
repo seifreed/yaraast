@@ -2573,7 +2573,7 @@ def test_json_roundtrip_preserves_meta_entry_scope() -> None:
     ]
     assert serialized["ast"]["rules"][0]["meta"][2]["value"] == 1.5
     assert restored.rules[0].meta[2].value == 1.5
-    assert [entry.key for entry in restored.rules[0].get_private_meta()] == ["secret"]
+    assert [entry.key for entry in restored.rules[0].meta if entry.is_private] == ["secret"]
 
     restored.rules[0].meta[0].location = Location(3, 5)
     reserialized = json.loads(serializer.serialize(restored))
