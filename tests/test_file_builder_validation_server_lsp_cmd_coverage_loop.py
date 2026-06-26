@@ -282,16 +282,7 @@ class TestServerPyPyglsV1FallbackImport:
         # Build a fake pygls.lsp.server module whose LanguageServer access raises
         # with the sentinel name that _is_missing_pygls_v2_server recognises.
         def _make_failing_module() -> types.ModuleType:
-            mod = types.ModuleType("pygls.lsp.server")
-
-            def _getattr(attr: str) -> object:
-                raise ImportError(
-                    f"cannot import name '{attr}' from 'pygls.lsp.server'",
-                    name="pygls.lsp.server",
-                )
-
-            mod.__getattr__ = _getattr  # type: ignore[method-assign]
-            return mod
+            return types.ModuleType("pygls.lsp.server")
 
         # Save originals
         orig_pygls_lsp_server = sys.modules.get("pygls.lsp.server")
