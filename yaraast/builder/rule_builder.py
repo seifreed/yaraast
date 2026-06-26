@@ -126,13 +126,6 @@ def _validate_regex_pattern(pattern: object) -> str:
     raise TypeError(msg)
 
 
-def _validate_hex_pattern(pattern: object) -> str:
-    if isinstance(pattern, str):
-        return pattern
-    msg = "Hex pattern must be a string"
-    raise TypeError(msg)
-
-
 def _require_bool_flag(value: bool, name: str) -> bool:
     if not isinstance(value, bool):
         msg = f"RuleBuilder {name} flag must be a boolean"
