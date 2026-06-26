@@ -2737,7 +2737,3 @@ class TestTypeInferenceEdgeCases:
         # Verify math module is loaded
         math_module = type_sys.get_module("math")
         assert math_module is not None
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
