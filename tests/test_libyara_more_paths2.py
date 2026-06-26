@@ -170,8 +170,6 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
 
     stats = compiler.get_compilation_stats()
     assert stats["total_compilations"] >= 1
-    compiler.reset_stats()
-    assert compiler.get_compilation_stats()["total_compilations"] == 0
 
     compile_fail_ast = YaraFile(rules=[Rule(name="bad name", condition=BooleanLiteral(True))])
     compile_fail = compiler.compile_ast(compile_fail_ast)

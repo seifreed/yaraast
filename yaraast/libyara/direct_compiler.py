@@ -169,17 +169,6 @@ class DirectASTCompiler:
         """Get compilation statistics."""
         return self.compilation_stats.copy()
 
-    def reset_stats(self) -> None:
-        """Reset compilation statistics."""
-        self.compilation_stats = {
-            "total_compilations": 0,
-            "successful_compilations": 0,
-            "failed_compilations": 0,
-            "total_rules_compiled": 0,
-            "total_optimization_time": 0.0,
-            "total_compilation_time": 0.0,
-        }
-
 
 class OptimizedMatcher:
     """Optimized matcher using AST structure for efficient scanning."""
