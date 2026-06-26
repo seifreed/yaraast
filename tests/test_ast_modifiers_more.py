@@ -122,12 +122,12 @@ def test_meta_entry_scope_properties_reject_invalid_internal_state(
 
 
 def test_modifier_accept_and_factory_helpers() -> None:
-    class _Visitor:
-        def visit_string_modifier(self, node: StringModifier) -> tuple[str, object]:
-            return (node.name, node.value)
-
     modifier = StringModifier.from_name_value("xor", 7)
-    assert modifier.accept(_Visitor()) == ("xor", 7)
+    assert modifier.accept(
+        type(
+            "_Visitor", (), {"visit_string_modifier": lambda self, node: (node.name, node.value)}
+        )()
+    ) == ("xor", 7)
 
     rule_modifier = RuleModifier.from_string("private")
     assert rule_modifier.modifier_type == RuleModifierType.PRIVATE
