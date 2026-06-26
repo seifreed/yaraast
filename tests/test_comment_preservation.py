@@ -115,10 +115,3 @@ rule no_comments {
     # Verify no comments in output
     assert "//" not in output
     assert "/*" not in output
-
-
-if __name__ == "__main__":
-    test_single_line_comments()
-    test_multiline_comments()
-    test_comment_preservation_disabled()
-    print("✓ All comment preservation tests passed")
