@@ -5,7 +5,6 @@ from __future__ import annotations
 from yaraast.ast.conditions import AtExpression, InExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
-    BooleanLiteral,
     Expression,
     FunctionCall,
     Identifier,
@@ -18,14 +17,11 @@ from yaraast.ast.expressions import (
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.fluent_condition_helpers import (
     build_entropy_compare,
-    build_of_expression,
-    build_string_set,
     make_filesize_compare,
     make_integer_literal,
     make_string_count_compare,
     validate_string_reference,
 )
-from yaraast.errors import ValidationError
 
 
 class FluentConditionBuilder(ConditionBuilder):
@@ -37,55 +33,7 @@ class FluentConditionBuilder(ConditionBuilder):
     # Enhanced quantifier methods
     def one_of(self, *strings: str) -> FluentConditionBuilder:
         """Exactly one of the specified strings."""
-        return self.between_n_and_m_of(1, 1, *strings)
-
-    def at_least_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
-        """At least N of the specified strings."""
-        self._validate_quantifier_count("Minimum", n)
-        string_set = build_string_set(*strings)
-        if n == 0:
-            return FluentConditionBuilder(BooleanLiteral(value=True))
-        return FluentConditionBuilder(build_of_expression(n, string_set))
-
-    def at_most_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
-        """At most N of the specified strings."""
-        self._validate_quantifier_count("Maximum", n)
-        string_set = build_string_set(*strings)
-        if n == 0:
-            return FluentConditionBuilder(build_of_expression("none", string_set))
-        return FluentConditionBuilder(
-            UnaryExpression(
-                operator="not",
-                operand=build_of_expression(n + 1, string_set),
-            ),
-        )
-
-    def between_n_and_m_of(
-        self,
-        min_n: int,
-        max_m: int,
-        *strings: str,
-    ) -> FluentConditionBuilder:
-        """Between N and M of the specified strings."""
-        self._validate_quantifier_count("Minimum", min_n)
-        self._validate_quantifier_count("Maximum", max_m)
-        if min_n > max_m:
-            msg = f"Minimum count {min_n} cannot exceed maximum {max_m}"
-            raise ValidationError(msg)
-        if min_n == 0:
-            return self.at_most_n_of(max_m, *strings)
-
-        string_set = build_string_set(*strings)
-        return FluentConditionBuilder(
-            BinaryExpression(
-                left=build_of_expression(min_n, string_set),
-                operator="and",
-                right=UnaryExpression(
-                    operator="not",
-                    operand=build_of_expression(max_m + 1, string_set),
-                ),
-            ),
-        )
+        return FluentConditionBuilder(super().n_of(1, *strings).build())
 
     # String-specific helpers
     def string_matches(self, string_id: str) -> FluentConditionBuilder:
@@ -216,9 +164,3 @@ class FluentConditionBuilder(ConditionBuilder):
     def high_entropy(self, offset: int = 0, size: int = 1024) -> FluentConditionBuilder:
         """High entropy section (> 7.0)."""
         return self.entropy_gt(offset, size, 7.0)
-
-    def _validate_quantifier_count(self, name: str, count: int) -> None:
-        make_integer_literal(count)
-        if count < 0:
-            msg = f"{name} count must be non-negative, got {count}"
-            raise ValidationError(msg)

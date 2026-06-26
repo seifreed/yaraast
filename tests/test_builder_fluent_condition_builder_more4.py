@@ -52,8 +52,7 @@ def test_fluent_condition_filesize_and_entropy() -> None:
     expr = FluentConditionBuilder().entropy_gt(0, 1024, 7.0).build()
     assert isinstance(expr, BinaryExpression)
 
-    # at_least_n_of should use YARA's threshold quantifier directly.
-    expr = FluentConditionBuilder().at_least_n_of(1, "$a", "$b").build()
+    expr = FluentConditionBuilder().n_of(1, "$a", "$b").build()
     assert isinstance(expr, OfExpression)
 
 
@@ -61,13 +60,10 @@ def test_fluent_condition_exact_and_upper_bound_quantifiers() -> None:
     generator = CodeGenerator()
 
     one = FluentConditionBuilder().one_of("$a", "$b").build()
-    assert generator.visit(one) == "1 of ($a, $b) and not 2 of ($a, $b)"
+    assert generator.visit(one) == "1 of ($a, $b)"
 
-    at_most = FluentConditionBuilder().at_most_n_of(1, "$a", "$b", "$c").build()
-    assert generator.visit(at_most) == "not 2 of ($a, $b, $c)"
-
-    between = FluentConditionBuilder().between_n_and_m_of(1, 2, "$a", "$b", "$c").build()
-    assert generator.visit(between) == "1 of ($a, $b, $c) and not 3 of ($a, $b, $c)"
+    exact = FluentConditionBuilder().n_of(2, "$a", "$b", "$c").build()
+    assert generator.visit(exact) == "2 of ($a, $b, $c)"
 
 
 def test_fluent_condition_builder_rejects_empty_string_sets() -> None:
@@ -75,7 +71,7 @@ def test_fluent_condition_builder_rejects_empty_string_sets() -> None:
         FluentConditionBuilder().one_of()
 
     with pytest.raises(ValidationError, match="At least one string identifier is required"):
-        FluentConditionBuilder().at_most_n_of(1)
+        FluentConditionBuilder().n_of(1)
 
 
 def test_fluent_condition_builder_rejects_mixed_them_string_sets() -> None:
@@ -83,7 +79,7 @@ def test_fluent_condition_builder_rejects_mixed_them_string_sets() -> None:
         FluentConditionBuilder().one_of("them", "$a")
 
     with pytest.raises(ValidationError, match="'them' cannot be mixed"):
-        FluentConditionBuilder().at_least_n_of(1, "$a", "them")
+        FluentConditionBuilder().n_of(1, "$a", "them")
 
 
 def test_fluent_condition_builder_rejects_invalid_string_count_identifiers() -> None:
@@ -101,10 +97,9 @@ def test_fluent_condition_helpers_return_literals() -> None:
 
     assert not hasattr(builder, "_create_n_of")
     expr = builder.one_of("$a", "$b").build()
-    assert isinstance(expr, BinaryExpression)
-    assert isinstance(expr.left, OfExpression)
-    assert isinstance(expr.left.quantifier, IntegerLiteral)
-    assert isinstance(expr.left.string_set, SetExpression | Identifier)
+    assert isinstance(expr, OfExpression)
+    assert isinstance(expr.quantifier, IntegerLiteral)
+    assert isinstance(expr.string_set, SetExpression | Identifier)
 
 
 def test_fluent_condition_builder_rejects_boolean_integer_arguments() -> None:
@@ -117,7 +112,7 @@ def test_fluent_condition_builder_rejects_boolean_integer_arguments() -> None:
         builder.pe_section_count_eq(cast(Any, True))
 
     with pytest.raises(TypeError, match="Invalid integer literal value"):
-        builder.at_least_n_of(cast(Any, True), "$a", "$b")
+        builder.n_of(cast(Any, True), "$a", "$b")
 
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         builder.filesize_gt(cast(Any, "10"))

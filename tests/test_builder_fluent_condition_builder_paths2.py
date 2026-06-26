@@ -23,13 +23,10 @@ from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
 def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     b = FluentConditionBuilder()
 
-    assert isinstance(b.between_n_and_m_of(2, 2, "$a", "$b", "$c").build(), BinaryExpression)
-    assert isinstance(b.between_n_and_m_of(3, 3, "$a", "$b", "$c", "$d").build(), BinaryExpression)
-    assert isinstance(b.at_least_n_of(2, "$a", "$b", "$c").build(), OfExpression)
     assert isinstance(b.n_of(2, "$a", "$b", "$c").build(), OfExpression)
-    assert isinstance(b.at_most_n_of(1, "$a", "$b").build(), UnaryExpression)
-    assert isinstance(b.at_most_n_of(2, "$a", "$b", "$c").build(), UnaryExpression)
-    assert isinstance(b.between_n_and_m_of(1, 2, "$a", "$b", "$c").build(), BinaryExpression)
+    assert isinstance(b.n_of(3, "$a", "$b", "$c", "$d").build(), OfExpression)
+    assert isinstance(b.n_of(1, "$a", "$b").build(), OfExpression)
+    assert isinstance(b.n_of(0, "$a", "$b").build(), OfExpression)
 
     assert isinstance(b.string_count_ge("$a", 2).build(), BinaryExpression)
     assert isinstance(b.string_at_offset("$a", 5).build(), AtExpression)
