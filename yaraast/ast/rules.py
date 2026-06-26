@@ -271,10 +271,6 @@ class Rule(ASTNode):
         """Check if rule is global."""
         return any(str(modifier) == "global" for modifier in self._validated_modifiers())
 
-    def get_meta_entries(self) -> list[MetaEntry]:
-        """Get meta entries as enhanced MetaEntry objects."""
-        return self._validated_meta_entries()
-
     def get_meta_value(self, key: str, default: Any = None) -> Any:
         """Get the value of a meta entry by key."""
         key = require_string(key, "Rule meta key")

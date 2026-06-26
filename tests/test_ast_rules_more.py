@@ -22,14 +22,14 @@ def test_rule_modifier_flags_and_meta_entries() -> None:
     assert rule.is_private is True
     assert rule.is_global is True
 
-    entries = rule.get_meta_entries()
+    entries = rule.meta
     assert len(entries) == 1
     assert entries[0].key == "owner"
 
     private_meta = [MetaEntry.from_key_value("secret", "x", "private")]
     public_meta = [MetaEntry.from_key_value("pub", 1)]
     rule.meta = private_meta + public_meta
-    scoped_entries = rule.get_meta_entries()
+    scoped_entries = rule.meta
     assert [m.key for m in scoped_entries if m.is_private] == ["secret"]
     assert [m.key for m in scoped_entries if m.is_public] == ["pub"]
 
@@ -100,9 +100,6 @@ def test_rule_meta_accessors_reject_invalid_meta_state(
 
     with pytest.raises(TypeError, match=message):
         rule.get_meta_value("owner")
-
-    with pytest.raises(TypeError, match=message):
-        rule.get_meta_entries()
 
 
 def test_rule_pragmas_by_position() -> None:
