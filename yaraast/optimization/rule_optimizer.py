@@ -21,7 +21,6 @@ class RuleOptimizer:
     def __init__(self) -> None:
         self.expression_optimizer = ExpressionOptimizer()
         self.dead_code_eliminator = DeadCodeEliminator()
-        self.optimization_stats: dict[str, int] = {}
 
     def optimize(
         self,
