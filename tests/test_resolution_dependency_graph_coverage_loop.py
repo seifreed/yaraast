@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 
 import pytest
 
@@ -370,13 +371,10 @@ class TestValidateFileAst:
         includes: list[object] | None = None,
         rules: list[object] | None = None,
     ) -> object:
-        class FakeYf:
-            pass
-
-        obj = FakeYf()
-        obj.imports = imports or []  # type: ignore[attr-defined]
-        obj.includes = includes or []  # type: ignore[attr-defined]
-        obj.rules = rules or []  # type: ignore[attr-defined]
+        obj = SimpleNamespace()
+        obj.imports = imports or []
+        obj.includes = includes or []
+        obj.rules = rules or []
         return obj
 
     def test_bad_import_node_raises(self, tmp_path: Path) -> None:
