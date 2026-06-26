@@ -4,7 +4,6 @@
 """Regression tests targeting uncovered lines in FluentStringBuilder.
 
 Missing lines before this file (95.04 %):
-  106-107  hex_builder: wrong return type from callback
   188-189  _coerce_xor_key: path for non-bool, non-str, non-int value
   305-306  _validate_jump_bounds: max_bytes is negative
   308-309  _validate_jump_bounds: min_bytes exceeds LIBYARA_HEX_JUMP_MAX
@@ -16,50 +15,9 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.ast.strings import HexString
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
-from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.errors import ValidationError
 from yaraast.limits import LIBYARA_HEX_JUMP_MAX
-
-# ---------------------------------------------------------------------------
-# Lines 106-107: hex_builder callback returns a non-HexStringBuilder value
-# ---------------------------------------------------------------------------
-
-
-def test_hex_builder_wrong_return_type_raises_type_error() -> None:
-    """hex_builder must reject a callback that returns something other than
-    HexStringBuilder or None.
-
-    The callback bypasses the None-branch check and hits the isinstance guard
-    on lines 105-107.
-    """
-    with pytest.raises(TypeError, match="Hex builder callback must return HexStringBuilder"):
-        FluentStringBuilder("$s1").hex_builder(lambda b: "not_a_builder")  # type: ignore[return-value, arg-type]
-
-
-def test_hex_builder_wrong_return_integer_raises_type_error() -> None:
-    """Same guard fires for an integer return value."""
-    with pytest.raises(TypeError, match="Hex builder callback must return HexStringBuilder"):
-        FluentStringBuilder("$s2").hex_builder(lambda b: 42)  # type: ignore[return-value, arg-type]
-
-
-def test_hex_builder_implicit_none_return_uses_mutated_builder() -> None:
-    """Callback that returns None implicitly should fall back to the builder
-    object itself (lines 103-104 branch), producing a valid HexString.
-
-    This test also verifies that the lines 103-104 branch executes correctly
-    by confirming the built AST node contains exactly the bytes added inside
-    the callback.
-    """
-
-    def populate(builder: HexStringBuilder) -> None:
-        builder.add(0x4D).add(0x5A)
-
-    result = FluentStringBuilder("$s3").hex_builder(populate).build()
-    assert isinstance(result, HexString)
-    assert len(result.tokens) == 2
-
 
 # ---------------------------------------------------------------------------
 # Lines 188-189: _coerce_xor_key — float reaches the isinstance guard
@@ -134,80 +92,3 @@ def test_jump_pattern_min_exceeds_max_constant_error_mentions_limit() -> None:
     overflow = LIBYARA_HEX_JUMP_MAX + 1
     with pytest.raises(ValidationError, match=str(LIBYARA_HEX_JUMP_MAX)):
         FluentStringBuilder("$s9").jump_pattern(overflow, overflow)
-
-
-# ---------------------------------------------------------------------------
-# Line 440: _parse_hex_pattern — HexParseError with position re-raised as
-#           ValidationError
-# ---------------------------------------------------------------------------
-
-
-def test_hex_pattern_with_invalid_character_raises_validation_error() -> None:
-    """_parse_hex_pattern must convert a HexParseError that carries a position
-    into a ValidationError (line 440).
-
-    'ZZ' is not valid hex; the parser raises HexParseError with position=0,
-    which does not match the empty-string sentinel, so the except clause
-    re-raises it as ValidationError.
-    """
-    with pytest.raises(ValidationError, match="Hex parse error at position"):
-        FluentStringBuilder("$s11").hex("ZZ")
-
-
-def test_hex_pattern_with_invalid_character_preserves_message() -> None:
-    """The ValidationError message must contain the offending character."""
-    with pytest.raises(ValidationError, match="Invalid character in hex string: Q"):
-        FluentStringBuilder("$s12").hex("QQ")
-
-
-def test_hex_pattern_empty_string_guard_returns_empty_token_list() -> None:
-    """An empty hex pattern raises HexParseError with position=None and the
-    canonical message 'Hex parse error: Empty hex string'.
-
-    The if-guard on lines 438-440 intercepts this case and returns an empty
-    list to the caller rather than propagating a ValidationError from the
-    hex parser.  We validate the guard by inspecting _content directly after
-    calling hex(), confirming it is an empty list rather than an exception.
-
-    The subsequent call to build() is expected to fail because
-    validate_hex_tokens_for_builder rejects an empty token sequence; that
-    failure is distinct from the parse guard under test.
-    """
-    builder = FluentStringBuilder("$s_empty")
-    builder.hex("")
-    # The parse guard on line 439-440 stored an empty list, not a parse error.
-    assert builder._content == []
-    # build() then rejects the empty sequence at the validation layer.
-    with pytest.raises(ValidationError):
-        builder.build()
-
-
-# ---------------------------------------------------------------------------
-# Lines 449-451: _parse_nibble — ValueError for invalid hex digit in nibble
-# ---------------------------------------------------------------------------
-
-
-def test_hex_bytes_nibble_low_invalid_digit_raises_validation_error() -> None:
-    """hex_bytes with '?G' produces a nibble string '?G' passed to _parse_nibble.
-
-    Inside _parse_nibble, int('G', 16) raises ValueError, which is caught
-    and re-raised as ValidationError on lines 449-451.
-    """
-    with pytest.raises(ValidationError, match="Invalid nibble pattern"):
-        FluentStringBuilder("$s13").hex_bytes("?G")
-
-
-def test_hex_bytes_nibble_high_invalid_digit_raises_validation_error() -> None:
-    """hex_bytes with 'G?' exercises the high-nibble path in _parse_nibble.
-
-    two_char[0] != '?' so the else-branch tries int('G', 16), which fails
-    and produces the same ValidationError on lines 449-451.
-    """
-    with pytest.raises(ValidationError, match="Invalid nibble pattern"):
-        FluentStringBuilder("$s14").hex_bytes("G?")
-
-
-def test_hex_bytes_nibble_error_message_contains_pattern() -> None:
-    """The ValidationError message must identify the invalid pattern."""
-    with pytest.raises(ValidationError, match=r"Invalid nibble pattern: \?Z"):
-        FluentStringBuilder("$s15").hex_bytes("?z")

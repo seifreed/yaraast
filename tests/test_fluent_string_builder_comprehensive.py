@@ -119,7 +119,7 @@ class TestFluentStringBuilderHexStrings:
         """Hex_bytes method should accept integer values."""
         builder = FluentStringBuilder("$hex")
 
-        result = builder.hex_bytes(0x4D, 0x5A, 0x90)
+        result = builder.hex("4D 5A 90")
 
         assert result is builder
         tokens = _hex_content(builder)
@@ -130,7 +130,7 @@ class TestFluentStringBuilderHexStrings:
         """Hex_bytes method should accept string values."""
         builder = FluentStringBuilder("$hex")
 
-        result = builder.hex_bytes("4D", "5A", "90")
+        result = builder.hex("4D 5A 90")
 
         assert result is builder
         assert len(_hex_content(builder)) == 3
@@ -139,7 +139,7 @@ class TestFluentStringBuilderHexStrings:
         """Hex_bytes should recognize ?? as wildcard."""
         builder = FluentStringBuilder("$hex")
 
-        result = builder.hex_bytes("FF", "??", "AA")
+        result = builder.hex("FF ?? AA")
 
         assert result is builder
         tokens = _hex_content(builder)
@@ -149,16 +149,16 @@ class TestFluentStringBuilderHexStrings:
         """Hex_bytes should recognize ? as wildcard."""
         builder = FluentStringBuilder("$hex")
 
-        result = builder.hex_bytes("?")
+        result = builder.hex("??")
 
         assert result is builder
         assert isinstance(_hex_content(builder)[0], HexWildcard)
 
     def test_hex_builder_with_lambda(self) -> None:
-        """Hex_builder method should accept builder function."""
+        """Hex content should accept parser output."""
         builder = FluentStringBuilder("$hex")
 
-        result = builder.hex_builder(lambda hb: hb.add(0x4D).add(0x5A).wildcard())
+        result = builder.hex("4D 5A ??")
 
         assert result is builder
         assert builder._string_type == "hex"
@@ -809,7 +809,7 @@ class TestFluentStringBuilderComplexScenarios:
 
     def test_pe_header_with_wildcards(self) -> None:
         """Build PE header with wildcard bytes."""
-        string_def = FluentStringBuilder("$pe").hex_bytes(0x4D, 0x5A, "??", "??").build()
+        string_def = FluentStringBuilder("$pe").hex("4D 5A ?? ??").build()
 
         assert isinstance(string_def, HexString)
         assert len(string_def.tokens) == 4

@@ -18,7 +18,6 @@ from yaraast.ast.strings import (
     RegexString,
 )
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
-from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.errors import ValidationError
 from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 
@@ -26,12 +25,6 @@ from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 def test_fluent_string_builder_invalid_hex_inputs_and_trailing_nibble() -> None:
     with pytest.raises(TypeError, match="Hex pattern must be a string"):
         FluentStringBuilder("$hex").hex(cast(Any, True))
-
-    with pytest.raises(ValidationError, match="Invalid hex byte: GG"):
-        FluentStringBuilder("$hex").hex_bytes("GG")
-
-    with pytest.raises(ValidationError, match="Invalid hex byte: 100"):
-        FluentStringBuilder("$hex").hex_bytes("100")
 
     with pytest.raises(
         ValidationError,
@@ -92,24 +85,6 @@ def test_fluent_string_builder_hex_uses_full_hex_parser() -> None:
     assert tokens[5].value == 0x5A
 
 
-def test_fluent_string_builder_hex_builder_accepts_mutating_callbacks() -> None:
-    def build_hex(builder: HexStringBuilder) -> None:
-        builder.add(0x41).wildcard().add(0x42)
-
-    string_def = FluentStringBuilder("$hex").hex_builder(build_hex).build()
-
-    assert isinstance(string_def, HexString)
-    assert len(string_def.tokens) == 3
-    assert isinstance(string_def.tokens[0], HexByte)
-    assert isinstance(string_def.tokens[1], HexWildcard)
-    assert isinstance(string_def.tokens[2], HexByte)
-
-
-def test_fluent_string_builder_rejects_non_callable_hex_builder() -> None:
-    with pytest.raises(TypeError, match="Hex builder callback must be callable"):
-        FluentStringBuilder("$hex").hex_builder(cast(Any, 123))
-
-
 def test_fluent_string_builder_rejects_standalone_hex_jump() -> None:
     builder = FluentStringBuilder("$jump").jump_pattern(2, 8)
 
@@ -117,30 +92,9 @@ def test_fluent_string_builder_rejects_standalone_hex_jump() -> None:
         builder.build()
 
 
-def test_fluent_string_builder_rejects_invalid_hex_alternatives() -> None:
-    with pytest.raises(ValidationError, match="HexAlternative branches must not be empty"):
-        FluentStringBuilder("$h").hex_builder(lambda hb: hb.alternative([])).build()
-
-    with pytest.raises(ValidationError, match="Unbounded HexJump"):
-        FluentStringBuilder("$h").hex_builder(
-            lambda hb: hb.add(0x41)
-            .alternative(HexStringBuilder().add(0x42).jump(None, None).add(0x43))
-            .add(0x44),
-        ).build()
-
-
 def test_fluent_string_builder_rejects_invalid_integer_hex_bytes() -> None:
-    with pytest.raises(TypeError, match="Invalid type for hex value"):
-        FluentStringBuilder("$bool").hex_bytes(True)
-
-    with pytest.raises(TypeError, match="Invalid type for hex value"):
-        FluentStringBuilder("$object").hex_bytes(0x4D, cast(Any, object()), 0x5A)
-
-    with pytest.raises(ValidationError, match="Byte value must be 0-255"):
-        FluentStringBuilder("$large").hex_bytes(256)
-
-    with pytest.raises(ValidationError, match="Byte value must be 0-255"):
-        FluentStringBuilder("$negative").hex_bytes(-1)
+    with pytest.raises(ValidationError, match="Hex parse error"):
+        FluentStringBuilder("$large").hex("100")
 
 
 def test_fluent_string_builder_rejects_boolean_xor_keys() -> None:
@@ -229,7 +183,7 @@ def test_fluent_string_builder_rejects_invalid_type_specific_modifiers() -> None
 
 
 def test_fluent_string_builder_parse_nibble_low_and_non_wildcard_string_path() -> None:
-    builder = FluentStringBuilder("$mixed").hex_bytes("4D", "??", "?A", "A?")
+    builder = FluentStringBuilder("$mixed").hex("4D ?? ?A A?")
     content = builder._content
     assert isinstance(content, list)
     assert isinstance(content[0], HexByte)

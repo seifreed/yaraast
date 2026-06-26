@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from copy import deepcopy
 from typing import cast
 
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.strings import (
-    HexByte,
     HexJump,
     HexNibble,
     HexString,
@@ -18,7 +16,6 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
-from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
 from yaraast.builder.string_identifier_validation import normalize_string_identifier
 from yaraast.errors import ValidationError
@@ -51,60 +48,6 @@ class FluentStringBuilder:
     def hex(self, pattern: str) -> FluentStringBuilder:
         """Set as hex string from pattern (e.g., '4D 5A ?? 00')."""
         self._content = self._parse_hex_pattern(pattern)
-        self._string_type = "hex"
-        return self
-
-    def hex_bytes(self, *bytes_values: int | str) -> FluentStringBuilder:
-        """Set as hex string from byte values."""
-        tokens: list[HexToken] = []
-        for byte_val in bytes_values:
-            if isinstance(byte_val, bool):
-                msg = f"Invalid type for hex value: {type(byte_val)}"
-                raise TypeError(msg)
-            if isinstance(byte_val, int):
-                if not 0 <= byte_val <= 255:
-                    msg = f"Byte value must be 0-255, got {byte_val}"
-                    raise ValidationError(msg)
-                tokens.append(HexByte(value=byte_val))
-            elif isinstance(byte_val, str):
-                if byte_val in {"?", "??"}:
-                    tokens.append(HexWildcard())
-                elif len(byte_val) == 2 and "?" in byte_val:
-                    tokens.append(self._parse_nibble(byte_val.upper()))
-                else:
-                    try:
-                        val = int(byte_val, 16)
-                    except ValueError:
-                        msg = f"Invalid hex byte: {byte_val}"
-                        raise ValidationError(msg) from None
-                    if len(byte_val) != 2 or not 0 <= val <= 255:
-                        msg = f"Invalid hex byte: {byte_val}"
-                        raise ValidationError(msg)
-                    tokens.append(HexByte(value=val))
-            else:
-                msg = f"Invalid type for hex value: {type(byte_val)}"
-                raise TypeError(msg)
-
-        self._content = tokens
-        self._string_type = "hex"
-        return self
-
-    def hex_builder(
-        self,
-        builder_func: Callable[[HexStringBuilder], HexStringBuilder | None],
-    ) -> FluentStringBuilder:
-        """Set hex content using a HexStringBuilder lambda."""
-        if not callable(builder_func):
-            msg = "Hex builder callback must be callable"
-            raise TypeError(msg)
-        builder = HexStringBuilder()
-        result = builder_func(builder)
-        if result is None:
-            result = builder
-        if not isinstance(result, HexStringBuilder):
-            msg = f"Hex builder callback must return HexStringBuilder or None, got {type(result)}"
-            raise TypeError(msg)
-        self._content = result.build()
         self._string_type = "hex"
         return self
 
