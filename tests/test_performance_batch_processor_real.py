@@ -23,7 +23,6 @@ def _yarax_rule() -> str:
 def test_batch_result_properties_cover_zero_and_nonzero_branches() -> None:
     empty = BatchResult(operation=BatchOperation.PARSE, input_count=0)
     assert empty.success_rate == 0.0
-    assert empty.avg_processing_time == 0.0
 
     done = BatchResult(
         operation=BatchOperation.PARSE,
@@ -32,7 +31,6 @@ def test_batch_result_properties_cover_zero_and_nonzero_branches() -> None:
         total_time=0.9,
     )
     assert done.success_rate == 75.0
-    assert done.avg_processing_time == 0.3
 
 
 def test_batch_processor_rejects_invalid_batch_sizes() -> None:

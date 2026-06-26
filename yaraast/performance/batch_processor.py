@@ -62,13 +62,6 @@ class BatchResult:
             return 0.0
         return (self.successful_count / self.input_count) * 100
 
-    @property
-    def avg_processing_time(self) -> float:
-        """Calculate average processing time per item."""
-        if self.successful_count == 0:
-            return 0.0
-        return self.total_time / self.successful_count
-
 
 def _validate_process_batch_operation(operation: object) -> None:
     if operation is None or callable(operation) or isinstance(operation, BatchOperation):
