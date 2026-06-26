@@ -312,17 +312,17 @@ def _validate_quantifier_text(value: str, context: str, *, allow_percentage: boo
         raise SerializationError(msg)
     if value in {"all", "any", "none"}:
         return value
+    parsed_integer: int | None
     try:
         parsed_integer = int(value, 10)
     except ValueError:
-        pass
-    else:
-        if str(parsed_integer) == value or (
-            value.startswith("+") and str(parsed_integer) == value[1:]
-        ):
-            if parsed_integer < 0:
-                _invalid_quantifier(value, context)
-            return parsed_integer
+        parsed_integer = None
+    if parsed_integer is not None and (
+        str(parsed_integer) == value or (value.startswith("+") and str(parsed_integer) == value[1:])
+    ):
+        if parsed_integer < 0:
+            _invalid_quantifier(value, context)
+        return parsed_integer
     if value.endswith("%"):
         percentage_text = value[:-1]
         if percentage_text.isdecimal():
@@ -331,11 +331,12 @@ def _validate_quantifier_text(value: str, context: str, *, allow_percentage: boo
             _validate_percentage_quantifier_value(int(percentage_text), value, context)
             return value
     if any(marker in value for marker in (".", "e", "E")):
+        parsed_float: float | None
         try:
             parsed_float = float(value)
         except ValueError:
-            pass
-        else:
+            parsed_float = None
+        if parsed_float is not None:
             if not math.isfinite(parsed_float):
                 msg = f"{context} must be finite"
                 raise SerializationError(msg)
