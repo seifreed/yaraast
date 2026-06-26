@@ -34,10 +34,6 @@ from yaraast.lsp.code_actions import CodeActionsProvider
 
 URI = "file://test.yar"
 
-# A minimal YARA text that contains a rule and a condition; used as document
-# context when the handler needs to locate tokens in source text.
-YARA_TEMPLATE = "rule r {{ condition: {call} }}"
-
 
 def _diag(line: int, start: int, end: int, msg: str = "x") -> Diagnostic:
     return Diagnostic(

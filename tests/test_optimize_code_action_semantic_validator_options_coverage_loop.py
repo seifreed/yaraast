@@ -33,7 +33,6 @@ from yaraast.yaral.validator import YaraLValidator
 URI = "file://test.yar"
 _ZERO = Position(line=0, character=0)
 _TEN = Position(line=0, character=10)
-BASIC_RANGE = Range(start=_ZERO, end=_TEN)
 
 
 def _diag(
