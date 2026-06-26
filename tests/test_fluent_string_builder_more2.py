@@ -182,7 +182,7 @@ def test_fluent_string_builder_rejects_invalid_type_specific_modifiers() -> None
         FluentStringBuilder("$regex").regex("abc").xor(1).build()
 
 
-def test_fluent_string_builder_parse_nibble_low_and_non_wildcard_string_path() -> None:
+def test_fluent_string_builder_parse_hex_pattern_with_nibbles() -> None:
     builder = FluentStringBuilder("$mixed").hex("4D ?? ?A A?")
     content = builder._content
     assert isinstance(content, list)
@@ -193,8 +193,3 @@ def test_fluent_string_builder_parse_nibble_low_and_non_wildcard_string_path() -
     assert content[2].high is False
     assert isinstance(content[3], HexNibble)
     assert content[3].high is True
-
-    nibble = FluentStringBuilder("$n")._parse_nibble("?A")
-    assert isinstance(nibble, HexNibble)
-    assert nibble.high is False
-    assert nibble.value == 0xA

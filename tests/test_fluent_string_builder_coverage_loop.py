@@ -8,7 +8,7 @@ Missing lines before this file (95.04 %):
   305-306  _validate_jump_bounds: max_bytes is negative
   308-309  _validate_jump_bounds: min_bytes exceeds LIBYARA_HEX_JUMP_MAX
   440      _parse_hex_pattern: HexParseError with position re-raised as ValidationError
-  449-451  _parse_nibble: ValueError on non-hex character in nibble string
+  449-451  _parse_hex_pattern: nibble parsing error re-raised as ValidationError
 """
 
 from __future__ import annotations

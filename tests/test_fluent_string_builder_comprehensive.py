@@ -613,24 +613,6 @@ class TestFluentStringBuilderHelperMethods:
         assert isinstance(tokens[0], HexByte)
         assert tokens[0].value == 0xFF
 
-    def test_parse_nibble_high_nibble(self) -> None:
-        """_parse_nibble should parse high nibble pattern."""
-        builder = FluentStringBuilder("$hex")
-        nibble = builder._parse_nibble("F?")
-
-        assert isinstance(nibble, HexNibble)
-        assert nibble.high is True
-        assert nibble.value == 0xF
-
-    def test_parse_nibble_low_nibble(self) -> None:
-        """_parse_nibble should parse low nibble pattern."""
-        builder = FluentStringBuilder("$hex")
-        nibble = builder._parse_nibble("?A")
-
-        assert isinstance(nibble, HexNibble)
-        assert nibble.high is False
-        assert nibble.value == 0xA
-
 
 class TestFluentStringBuilderStaticMethods:
     """Test static factory methods."""

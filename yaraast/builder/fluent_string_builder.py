@@ -8,7 +8,6 @@ from typing import cast
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.strings import (
     HexJump,
-    HexNibble,
     HexString,
     HexToken,
     HexWildcard,
@@ -358,16 +357,6 @@ class FluentStringBuilder:
             if exc.position is None and str(exc) == "Hex parse error: Empty hex string":
                 return []
             raise ValidationError(str(exc)) from exc
-
-    def _parse_nibble(self, two_char: str) -> HexNibble:
-        """Parse a half-wildcard pattern like ?0 or 0?."""
-        try:
-            if two_char[0] == "?":
-                return HexNibble(high=False, value=int(two_char[1], 16))
-            return HexNibble(high=True, value=int(two_char[0], 16))
-        except ValueError:
-            msg = f"Invalid nibble pattern: {two_char}"
-            raise ValidationError(msg) from None
 
     # Static factory methods
     @staticmethod
