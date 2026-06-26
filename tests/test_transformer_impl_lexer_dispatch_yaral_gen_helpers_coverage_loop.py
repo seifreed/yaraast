@@ -15,6 +15,7 @@ No mocks, stubs, or artificial test doubles are used.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -1168,12 +1169,7 @@ class TestFormatLiteralAcceptProtocol:
 
     def test_ast_node_like_with_accept_method_returns_empty_string(self) -> None:
         """An object implementing .accept() yields '' from format_literal (line 17)."""
-
-        class _FakeNode:
-            def accept(self, visitor: object) -> None:
-                pass
-
-        assert format_literal(_FakeNode()) == ""
+        assert format_literal(SimpleNamespace(accept=lambda visitor: None)) == ""
 
     def test_none_returns_empty_string(self) -> None:
         """None is the first branch; it yields '' (line 16)."""
