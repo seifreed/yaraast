@@ -23,21 +23,6 @@ def init_optimizer_state(optimizer: Any) -> None:
     }
 
 
-def get_memory_usage() -> dict[str, Any]:
-    import os
-
-    import psutil
-
-    process = psutil.Process(os.getpid())
-    mem_info = process.memory_info()
-    return {
-        "rss_mb": mem_info.rss / 1024 / 1024,
-        "vms_mb": mem_info.vms / 1024 / 1024,
-        "percent": process.memory_percent(),
-        "available_mb": psutil.virtual_memory().available / 1024 / 1024,
-    }
-
-
 def clear_caches(optimizer: Any) -> None:
     optimizer._cache.clear()
     optimizer._string_pool.clear()

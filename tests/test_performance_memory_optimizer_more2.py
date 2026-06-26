@@ -62,9 +62,6 @@ def test_memory_optimizer_rule_list_usage() -> None:
     optimized_rules = [optimizer.optimize_rule(item) for item in [rule]]
     assert optimized_rules == [optimized_rule]
 
-    usage = optimizer.get_memory_usage()
-    assert {"rss_mb", "vms_mb", "percent", "available_mb"} <= set(usage)
-
 
 def test_memory_optimizer_optimize_rule_records_stats_and_resets_pool() -> None:
     optimizer = MemoryOptimizer()

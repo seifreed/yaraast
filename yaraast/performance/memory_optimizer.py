@@ -10,7 +10,6 @@ from yaraast.performance.memory_runtime import (
     clear_caches as runtime_clear_caches,
     force_cleanup as runtime_force_cleanup,
     get_memory_stats as runtime_get_memory_stats,
-    get_memory_usage as runtime_get_memory_usage,
     get_statistics as runtime_get_statistics,
     init_optimizer_state,
     maybe_post_optimize_collect,
@@ -173,10 +172,6 @@ class MemoryOptimizer:
         self._stats["strings_pooled"] += len(self._string_pool)
         maybe_post_optimize_collect(self)
         return optimized
-
-    def get_memory_usage(self) -> dict[str, Any]:
-        """Get current memory usage statistics."""
-        return runtime_get_memory_usage()
 
     def clear_caches(self) -> None:
         """Clear all internal caches."""
