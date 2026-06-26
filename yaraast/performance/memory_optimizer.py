@@ -140,7 +140,6 @@ class MemoryOptimizer:
         self._cache: Any
         self._string_pool: dict[str, str]
         self._tracked_objects: list[object]
-        self._ast_pool: list[ASTNode]
         self._stats: dict[str, int]
         init_optimizer_state(self)
 

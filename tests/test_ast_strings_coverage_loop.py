@@ -388,10 +388,6 @@ def test_string_definition_accept_dispatches() -> None:
     visitor = _Visitor()
     node = PlainString(identifier="$a", value="hello")
 
-    class _BaseVisitor:
-        def visit_string_definition(self, n: object) -> str:
-            return "base"
-
     # PlainString.accept routes to visit_plain_string, not visit_string_definition
     result = node.accept(visitor)
     assert result == "plain:$a"

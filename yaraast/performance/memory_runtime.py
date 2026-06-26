@@ -15,7 +15,6 @@ def init_optimizer_state(optimizer: Any) -> None:
     optimizer._cache = weakref.WeakValueDictionary()
     optimizer._string_pool = {}
     optimizer._tracked_objects = []
-    optimizer._ast_pool = []
     optimizer._stats = {
         "nodes_processed": 0,
         "strings_pooled": 0,
