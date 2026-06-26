@@ -45,33 +45,13 @@ def test_extern_accepts_and_non_selective_import_str() -> None:
     assert str(imp) == 'import "ext_rules"'
 
 
-def test_extern_namespace_negative_lookup_and_factory_without_modifiers() -> None:
-    ns = ExternNamespace(name="ext")
-    rule = ExternRule(name="R1")
-    ns.add_extern_rule(rule)
-
-    assert ns.get_rule_by_name("missing") is None
+def test_extern_namespace_str_and_factory_without_modifiers() -> None:
+    ns = ExternNamespace(name="ext", extern_rules=[ExternRule(name="R1", namespace="ext")])
     assert str(ns) == "namespace ext"
 
     helper_rule = ExternRule(name="R2")
     assert helper_rule.modifiers == []
     assert helper_rule.namespace is None
-
-
-@pytest.mark.parametrize("name", [None, 1, b"R1", object()])
-def test_extern_namespace_rejects_non_string_rule_lookup_names(name: Any) -> None:
-    ns = ExternNamespace(name="ext")
-
-    with pytest.raises(TypeError, match="ExternNamespace rule name must be a string"):
-        ns.get_rule_by_name(cast(str, name))
-
-
-@pytest.mark.parametrize("name", ["", "   "])
-def test_extern_namespace_rejects_empty_rule_lookup_names(name: str) -> None:
-    ns = ExternNamespace(name="ext")
-
-    with pytest.raises(ValueError, match="ExternNamespace rule name cannot be empty"):
-        ns.get_rule_by_name(name)
 
 
 @pytest.mark.parametrize(
@@ -153,7 +133,7 @@ def test_extern_rule_modifier_properties_reject_invalid_internal_state(
         ),
     ],
 )
-def test_extern_namespace_lookup_rejects_invalid_internal_state(
+def test_extern_namespace_validation_rejects_invalid_internal_state(
     extern_rules: Any,
     error_type: type[Exception],
     message: str,
@@ -162,29 +142,7 @@ def test_extern_namespace_lookup_rejects_invalid_internal_state(
     ns.extern_rules = extern_rules
 
     with pytest.raises(error_type, match=message):
-        ns.get_rule_by_name("Remote")
-
-
-def test_extern_namespace_rejects_invalid_rule_inputs_without_partial_update() -> None:
-    ns = ExternNamespace(name="ext")
-    rule = ExternRule(name="R1")
-    ns.add_extern_rule(rule)
-
-    with pytest.raises(TypeError, match="Extern rule input must be an ExternRule"):
-        ns.add_extern_rule(cast(Any, object()))
-
-    assert ns.extern_rules == [rule]
-
-
-def test_extern_namespace_add_rule_rejects_invalid_namespace_without_partial_update() -> None:
-    ns = ExternNamespace(name=cast(Any, object()))
-    rule = ExternRule(name="R1")
-
-    with pytest.raises(TypeError, match="ExternNamespace name must be a string"):
-        ns.add_extern_rule(rule)
-
-    assert ns.extern_rules == []
-    assert rule.namespace is None
+        ns.validate_structure()
 
 
 @pytest.mark.parametrize(

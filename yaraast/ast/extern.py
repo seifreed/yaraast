@@ -276,24 +276,6 @@ class ExternNamespace(ASTNode):
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_namespace(self)
 
-    def add_extern_rule(self, extern_rule: ExternRule) -> None:
-        """Add an extern rule to this namespace."""
-        namespace = _require_nonempty_string(self.name, "ExternNamespace name")
-        if not isinstance(extern_rule, ExternRule):
-            msg = "Extern rule input must be an ExternRule"
-            raise TypeError(msg)
-        extern_rule.validate_structure()
-        extern_rule.namespace = namespace
-        self.extern_rules.append(extern_rule)
-
-    def get_rule_by_name(self, name: str) -> ExternRule | None:
-        """Get extern rule by name within this namespace."""
-        name = _require_nonempty_string(name, "ExternNamespace rule name")
-        for rule in self._validated_extern_rules():
-            if rule.name == name:
-                return rule
-        return None
-
     def __str__(self) -> str:
         name = _require_nonempty_string(self.name, "ExternNamespace name")
         return f"namespace {name}"

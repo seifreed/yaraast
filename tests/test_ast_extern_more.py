@@ -29,9 +29,7 @@ def test_extern_reference_and_import() -> None:
     assert "as ext" in str(imp)
 
 
-def test_extern_namespace_add_and_get() -> None:
-    ns = ExternNamespace(name="ns")
-    rule = ExternRule(name="r3")
-    ns.add_extern_rule(rule)
-    assert rule.namespace == "ns"
-    assert ns.get_rule_by_name("r3") is rule
+def test_extern_namespace_stores_rules() -> None:
+    rule = ExternRule(name="r3", namespace="ns")
+    ns = ExternNamespace(name="ns", extern_rules=[rule])
+    assert ns.extern_rules == [rule]

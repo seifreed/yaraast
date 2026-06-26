@@ -107,9 +107,8 @@ def test_get_extern_rule_by_name_rejects_empty_namespaces(namespace: str) -> Non
 
 
 def test_get_extern_rule_by_name_finds_namespaced_rules() -> None:
-    nested_rule = ExternRule(name="nested")
-    namespace = ExternNamespace(name="corp")
-    namespace.add_extern_rule(nested_rule)
+    nested_rule = ExternRule(name="nested", namespace="corp")
+    namespace = ExternNamespace(name="corp", extern_rules=[nested_rule])
     file_node = YaraFile(namespaces=[namespace])
 
     assert file_node.get_extern_rule_by_name("nested", "corp") is nested_rule

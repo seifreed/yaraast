@@ -61,8 +61,6 @@ def test_extern_import_and_namespace() -> None:
     helper_imp = ExternImport(module_path="ext_rules")
     assert helper_imp.is_selective_import is False
 
-    ns = ExternNamespace(name="ns")
-    rule = ExternRule(name="R1")
-    ns.add_extern_rule(rule)
-    assert rule.namespace == "ns"
-    assert ns.get_rule_by_name("R1") == rule
+    rule = ExternRule(name="R1", namespace="ns")
+    ns = ExternNamespace(name="ns", extern_rules=[rule])
+    assert ns.extern_rules == [rule]

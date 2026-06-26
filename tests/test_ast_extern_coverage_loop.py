@@ -292,9 +292,7 @@ def test_extern_namespace_str_returns_formatted_name() -> None:
 
 def test_extern_namespace_str_with_rules_still_returns_name_only() -> None:
     """__str__ is independent of contained extern rules."""
-    ns = ExternNamespace(name="ext")
-    rule = ExternRule(name="DetectMalware")
-    ns.add_extern_rule(rule)
+    ns = ExternNamespace(name="ext", extern_rules=[ExternRule(name="DetectMalware")])
     assert str(ns) == "namespace ext"
 
 
