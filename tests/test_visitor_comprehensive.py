@@ -1836,7 +1836,3 @@ class TestEdgeCasesAndNullHandling:
         )
 
         assert "str" in visitor.in_exprs or "OfExpression" in visitor.in_exprs
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
