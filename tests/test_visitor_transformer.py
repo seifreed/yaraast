@@ -8,8 +8,6 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
-import pytest
-
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -156,7 +154,3 @@ class TestASTTransformerOther:
         assert transformed is not None
         assert isinstance(transformed, Tag)
         assert transformed.name == "malware"
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
