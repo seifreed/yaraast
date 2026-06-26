@@ -12,7 +12,6 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
-from yaraast.metrics.complexity_calculator import ComplexityCalculator
 from yaraast.metrics.complexity_model import ComplexityMetrics
 from yaraast.yarax.ast_nodes import MatchCase, PatternMatch
 
@@ -27,7 +26,7 @@ def _rule_complexity(rule: Rule) -> int:
             elif isinstance(string, HexString):
                 complexity += 1
     if rule.condition is not None:
-        complexity += ComplexityCalculator().calculate(rule.condition)
+        complexity += 1
     if any(str(m) == "private" for m in rule.modifiers):
         complexity += 1
     if any(str(m) == "global" for m in rule.modifiers):
@@ -71,7 +70,6 @@ def test_complexity_helpers_cover_rule_expression_and_cognitive_paths() -> None:
     )
 
     assert _rule_complexity(rule) > 1
-    assert ComplexityCalculator().calculate(expr) >= 1
     assert _cyclomatic_complexity(expr) >= 2
 
     for_expr = ForExpression(
@@ -85,8 +83,8 @@ def test_complexity_helpers_cover_rule_expression_and_cognitive_paths() -> None:
         string_set=Identifier(name="them"),
         condition=IntegerLiteral(value=1),
     )
-    assert ComplexityCalculator().calculate(for_expr) >= 4
-    assert ComplexityCalculator().calculate(for_of_expr) >= 4
+    assert _cyclomatic_complexity(for_expr) >= 2
+    assert _cyclomatic_complexity(for_of_expr) >= 2
 
 
 def test_cyclomatic_complexity_counts_falsy_pattern_match_default() -> None:

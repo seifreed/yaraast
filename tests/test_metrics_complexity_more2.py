@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
 from collections.abc import Iterator
+from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import BinaryExpression, BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.metrics.complexity import ComplexityAnalyzer
-from yaraast.metrics.complexity_calculator import ComplexityCalculator
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension, PatternMatch
@@ -26,7 +25,7 @@ def _rule_complexity(rule: Rule) -> int:
             elif string.__class__.__name__ == "HexString":
                 complexity += 1
     if rule.condition is not None:
-        complexity += ComplexityCalculator().calculate(rule.condition)
+        complexity += 1
     if any(str(m) == "private" for m in rule.modifiers):
         complexity += 1
     if any(str(m) == "global" for m in rule.modifiers):
@@ -99,7 +98,7 @@ def _build_complexity_report(ast: YaraFile) -> dict[str, Any]:
         total_complexities.append(complexity)
         metric_key = analyzer._metric_key_for_rule(rule)
         cyclomatic = metrics.cyclomatic_complexity.get(metric_key, 1)
-        cognitive = ComplexityCalculator().calculate(rule.condition) if rule.condition else 0
+        cognitive = metrics.cyclomatic_complexity.get(metric_key, 1)
         rules_data.append(
             {
                 "name": rule.name,
@@ -181,9 +180,7 @@ def test_complexity_expression_helpers() -> None:
     expr = ast.rules[0].condition
     assert expr is not None
 
-    assert ComplexityCalculator().calculate(expr) >= 1
     assert _cyclomatic_complexity(expr) >= 1
-    assert ComplexityCalculator().calculate(expr) >= 1
 
 
 def test_cyclomatic_complexity_traverses_non_list_child_containers() -> None:

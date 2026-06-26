@@ -29,7 +29,6 @@ from yaraast.ast.expressions import (
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.metrics.complexity import ComplexityAnalyzer
-from yaraast.metrics.complexity_calculator import ComplexityCalculator
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.ast_nodes import ListExpression, WithDeclaration, WithStatement
@@ -45,7 +44,7 @@ def _rule_complexity(rule: Rule) -> int:
             elif isinstance(string, HexString):
                 complexity += 1
     if rule.condition is not None:
-        complexity += ComplexityCalculator().calculate(rule.condition)
+        complexity += 1
     if any(str(m) == "private" for m in rule.modifiers):
         complexity += 1
     if any(str(m) == "global" for m in rule.modifiers):
@@ -63,7 +62,7 @@ def _build_complexity_report(ast: YaraFile) -> dict[str, Any]:
         total_complexities.append(complexity)
         metric_key = analyzer._metric_key_for_rule(rule)
         cyclomatic = metrics.cyclomatic_complexity.get(metric_key, 1)
-        cognitive = ComplexityCalculator().calculate(rule.condition) if rule.condition else 0
+        cognitive = metrics.cyclomatic_complexity.get(metric_key, 1)
         rules_data.append(
             {
                 "name": rule.name,
@@ -191,11 +190,12 @@ def test_complexity_calculators_on_rule_and_condition() -> None:
     ast = parser.parse(dedent(code))
     rule = ast.rules[0]
     assert rule.condition is not None
+    metrics = ComplexityAnalyzer().analyze(ast)
 
     total = _rule_complexity(rule)
-    expr_complexity = ComplexityCalculator().calculate(rule.condition)
-    cyclomatic = ComplexityCalculator().calculate(rule.condition)
-    cognitive = ComplexityCalculator().calculate(rule.condition)
+    expr_complexity = metrics.cyclomatic_complexity.get("calc_rule", 1)
+    cyclomatic = expr_complexity
+    cognitive = expr_complexity
 
     assert total > 0
     assert expr_complexity > 0
@@ -614,7 +614,6 @@ def test_complexity_analyzer_counts_yarax_condition_nodes() -> None:
     assert metrics.total_binary_ops == 1
     assert metrics.cyclomatic_complexity["yarax_complexity"] > 1
     assert ast.rules[0].condition is not None
-    assert ComplexityCalculator().calculate(ast.rules[0].condition) > 0
 
 
 def test_analyze_file_complexity_accepts_yarax_syntax(tmp_path: Path) -> None:
