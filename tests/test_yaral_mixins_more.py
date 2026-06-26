@@ -40,11 +40,6 @@ class OutcomeVariablesContainer:
     variables: dict[str, object]
 
 
-@dataclass
-class EmptyLegacyOutcome:
-    pass
-
-
 def test_yaral_visitor_base_declares_yaral_node_handlers() -> None:
     visitor = YaraLVisitor[object]()
 
@@ -186,7 +181,7 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
         assignments=[OutcomeAssignment(variable="$x", expression=OutcomeExpression())]
     )
     assert opt._optimize_outcome_section(outcome) is outcome
-    assert opt._optimize_outcome_section(EmptyLegacyOutcome()).assignments == []
+    assert opt._optimize_outcome_section(type("EmptyLegacyOutcome", (), {})()).assignments == []
 
     legacy = OutcomeVariablesContainer(
         variables={"risk_score": 10, "severity": "high", "$drop": 1},
