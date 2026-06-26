@@ -193,12 +193,6 @@ class MemoryOptimizer:
         """Create a memory-managed context."""
         return runtime_memory_managed_context(self)
 
-    def track_object(self, obj: object) -> None:
-        """Track an object for memory management."""
-        if self.enable_tracking:
-            self._tracked_objects.append(obj)
-            self._stats["total_objects"] = len(self._tracked_objects)
-
     def get_memory_stats(self) -> MemoryStats:
         """Get memory statistics as an object."""
         return runtime_get_memory_stats(self)
@@ -210,10 +204,6 @@ class MemoryOptimizer:
     def create_memory_efficient_ast(self) -> ASTNode:
         """Create or reuse an AST from pool."""
         return runtime_create_memory_efficient_ast(self)
-
-    def return_ast_to_pool(self, ast: ASTNode) -> None:
-        """Return an AST to the pool for reuse."""
-        self._ast_pool.append(ast)
 
     def batch_process_with_memory_limit[Item, Result](
         self,

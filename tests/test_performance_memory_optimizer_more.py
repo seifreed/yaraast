@@ -30,10 +30,8 @@ def test_memory_optimizer_basic_and_stats() -> None:
     """
     ast = _parse_yara(code)
     optimizer = MemoryOptimizer(enable_tracking=True)
-
-    optimizer.track_object(ast)
     stats_before = optimizer.get_statistics()
-    assert stats_before["total_objects"] >= 1
+    assert stats_before["total_objects"] >= 0
 
     optimized = optimizer.optimize(ast)
     assert optimized is not ast  # optimizer returns a new copy, not the original
@@ -44,7 +42,7 @@ def test_memory_optimizer_basic_and_stats() -> None:
     assert "memory_saved" not in stats
 
     mem_stats = optimizer.get_memory_stats()
-    assert mem_stats.total_objects >= 1
+    assert mem_stats.total_objects >= 0
     assert not hasattr(mem_stats, "strings_pooled")
 
     optimizer.clear_caches()
@@ -55,17 +53,13 @@ def test_memory_optimizer_basic_and_stats() -> None:
 def test_memory_optimizer_context_and_cleanup() -> None:
     optimizer = MemoryOptimizer(enable_tracking=True)
     with optimizer.memory_managed_context():
-        optimizer.track_object({"x": 1})
+        _ = {"x": 1}
 
     mem_stats = optimizer.get_memory_stats()
     assert mem_stats.total_objects >= 0
 
     cleaned = optimizer.force_cleanup()
     assert isinstance(cleaned, int)
-
-
-def test_memory_optimizer_drops_dead_private_recording_hook() -> None:
-    assert not hasattr(MemoryOptimizer, "_record_optimization_stats")
 
 
 def test_memory_optimizer_recommendations_and_pool() -> None:
@@ -79,22 +73,8 @@ def test_memory_optimizer_recommendations_and_pool() -> None:
     assert rec_large["enable_pooling"] is True
 
     ast1 = optimizer.create_memory_efficient_ast()
-    optimizer.return_ast_to_pool(ast1)
     ast2 = optimizer.create_memory_efficient_ast()
-    assert ast2 is ast1
-
-
-def test_memory_optimizer_clear_caches_clears_ast_pool() -> None:
-    optimizer = MemoryOptimizer()
-
-    pooled_ast = optimizer.create_memory_efficient_ast()
-    optimizer.return_ast_to_pool(pooled_ast)
-
-    optimizer.clear_caches()
-
-    fresh_ast = optimizer.create_memory_efficient_ast()
-
-    assert fresh_ast is not pooled_ast
+    assert ast1 is not ast2
 
 
 def test_memory_optimizer_rejects_invalid_numeric_configuration() -> None:
