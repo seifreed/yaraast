@@ -18,7 +18,6 @@ from yaraast.types.module_loader import ModuleLoader
 from yaraast.version import (
     YARA_SYNTAX_VERSION,
     YARAAST_VERSION,
-    get_version_info,
 )
 from yaraast.yarax import YaraXCompatibilityChecker
 
@@ -36,13 +35,7 @@ def demo_version_info() -> None:
 
     print(f"YARAAST Version: {YARAAST_VERSION}")
     print(f"YARA Syntax Version: {YARA_SYNTAX_VERSION}")
-    print()
-    print("Detailed version info:")
-    info = get_version_info()
-    for component, details in info.items():
-        print(f"\n{component}:")
-        for key, value in details.items():
-            print(f"  {key}: {value}")
+    print("Build metadata: not available in this example environment")
 
 
 def demo_module_loading() -> None:

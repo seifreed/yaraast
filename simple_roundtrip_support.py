@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import json
 from os import PathLike, fspath
 from pathlib import Path
 from typing import Any
@@ -10,13 +11,7 @@ from typing import Any
 from yaraast.ast.base import ASTNode
 from yaraast.errors import YaraASTError
 from yaraast.parser.source import parse_yara_source
-from yaraast.serialization.simple_roundtrip_helpers import (
-    deserialize_from_file,
-    deserialize_node,
-    serialize_node,
-    serialize_to_file,
-    validate_roundtrip,
-)
+from yaraast.serialization.simple_roundtrip_helpers import deserialize_node, serialize_node
 from yaraast.shared.file_patterns import iter_matching_files
 from yaraast.yarax.generator import YaraXGenerator
 
@@ -37,13 +32,23 @@ class SimpleRoundtripSerializer:
         return deserialize_node(data)
 
     def serialize_to_file(self, node: ASTNode, file_path: str | Path) -> None:
-        serialize_to_file(node, file_path)
+        Path(file_path).write_text(json.dumps(serialize_node(node), indent=2), encoding="utf-8")
 
     def deserialize_from_file(self, file_path: str | Path) -> ASTNode:
-        return deserialize_from_file(file_path)
+        data = json.loads(Path(file_path).read_text(encoding="utf-8"))
+        return deserialize_node(data)
 
     def validate_roundtrip(self, node: ASTNode) -> tuple[bool, dict[str, Any]]:
-        return validate_roundtrip(node)
+        generator = YaraXGenerator()
+        original_code = generator.generate(node)
+        regenerated_ast = parse_yara_source(original_code)
+        regenerated_code = generator.generate(regenerated_ast)
+        success = original_code == regenerated_code
+        return success, {
+            "original_code": original_code,
+            "regenerated_code": regenerated_code,
+            "round_trip_successful": success,
+        }
 
 
 class SimpleRoundTrip:

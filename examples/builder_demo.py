@@ -1,7 +1,7 @@
 """Example demonstrating the fluent builder pattern."""
 
 from yaraast.builder.condition_builder import ConditionBuilder
-from yaraast.builder.file_builder import YaraFileBuilder
+from yaraast.builder.fluent_file_builder import yara_file
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 from yaraast.codegen import CodeGenerator
@@ -21,8 +21,11 @@ def main() -> None:
         .with_meta("description", "Detects simple malware patterns")
         .with_plain_string("$mz", "MZ", ascii=True)
         .with_plain_string("$pe", "PE", nocase=True)
-        .with_hex_string_raw("$hex1", "48 65 6C 6C 6F")
-        .with_regex("$url", r"https?://[a-z0-9\.\-]+", case_insensitive=True)
+        .with_hex_string(
+            "$hex1",
+            HexStringBuilder().add(0x48).add(0x65).add(0x6C).add(0x6C).add(0x6F),
+        )
+        .with_regex_string("$url", r"https?://[a-z0-9\.\-]+", nocase=True)
         .with_condition("all of them")
         .build()
     )
@@ -81,11 +84,9 @@ def main() -> None:
     )
 
     # Create a file with imports
-    yara_file = (
-        YaraFileBuilder().with_import("pe").with_import("math").with_rule(module_rule).build()
-    )
+    yara_doc = yara_file().import_module("pe").import_module("math").with_rule(module_rule).build()
 
-    print(generator.generate(yara_file))
+    print(generator.generate(yara_doc))
     print()
 
     # Example 4: Complex conditions with loops
@@ -97,7 +98,10 @@ def main() -> None:
         .with_plain_string("$a", "evil")
         .with_plain_string("$b", "malicious")
         .with_plain_string("$c", "dangerous")
-        .with_hex_string_raw("$hex", "48 8B ?? ?? 48 89 ?? ??")
+        .with_hex_string(
+            "$hex",
+            HexStringBuilder().add(0x48).add(0x8B).wildcard(2).add(0x48).add(0x89).wildcard(2),
+        )
         .with_condition_lambda(
             lambda c:
             # 2 of ($a, $b, $c)
@@ -129,7 +133,7 @@ def main() -> None:
         .build()
     )
 
-    complex_file = YaraFileBuilder().with_import("pe").with_rule(complex_rule).build()
+    complex_file = yara_file().import_module("pe").with_rule(complex_rule).build()
 
     print(generator.generate(complex_file))
     print()
@@ -150,7 +154,7 @@ def main() -> None:
         .build()
     )
 
-    invalid_file = YaraFileBuilder().with_rule(invalid_rule).build()
+    invalid_file = yara_file().with_rule(invalid_rule).build()
 
     is_valid, errors = TypeValidator.validate(invalid_file)
     if not is_valid:

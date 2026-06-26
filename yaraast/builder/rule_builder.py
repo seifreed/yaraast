@@ -29,7 +29,6 @@ from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
 from yaraast.builder.string_identifier_validation import validate_new_string_definitions
 from yaraast.errors import ValidationError, YaraASTError
 from yaraast.lexer.lexer_tables import KEYWORDS, YARA_IDENTIFIER_MAX_LENGTH
-from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 if TYPE_CHECKING:
     from yaraast.builder.hex_string_builder import HexStringBuilder
@@ -275,51 +274,6 @@ class RuleBuilder:
         validate_hex_tokens_for_builder(tokens, identifier)
         self._append_string_definition(
             HexString(identifier=identifier, tokens=tokens, modifiers=[])
-        )
-        return self
-
-    def with_hex_string_raw(self, identifier: str, hex_pattern: str) -> Self:
-        """Add a hex string from raw pattern."""
-        hex_pattern = _validate_hex_pattern(hex_pattern)
-        try:
-            tokens = HexStringParser().parse(hex_pattern)
-        except HexParseError as exc:
-            if exc.position is None and str(exc) == "Hex parse error: Empty hex string":
-                tokens = []
-            else:
-                raise ValidationError(str(exc)) from exc
-
-        validate_hex_tokens_for_builder(tokens, identifier)
-        self._append_string_definition(
-            HexString(identifier=identifier, tokens=tokens, modifiers=[])
-        )
-        return self
-
-    def with_regex(
-        self,
-        identifier: str,
-        pattern: str,
-        case_insensitive: bool = False,
-        dotall: bool = False,
-        multiline: bool = False,
-    ) -> Self:
-        """Add a regex string."""
-        from yaraast.ast.modifiers import StringModifier, StringModifierType
-
-        pattern = _validate_regex_pattern(pattern)
-        case_insensitive = _require_bool_flag(case_insensitive, "case_insensitive")
-        dotall = _require_bool_flag(dotall, "dotall")
-        multiline = _require_bool_flag(multiline, "multiline")
-        mods: list[StringModifier] = []
-        if case_insensitive:
-            mods.append(StringModifier(modifier_type=StringModifierType.NOCASE))
-        if dotall:
-            mods.append(StringModifier(modifier_type=StringModifierType.DOTALL))
-        if multiline:
-            mods.append(StringModifier(modifier_type=StringModifierType.MULTILINE))
-
-        self._append_string_definition(
-            RegexString(identifier=identifier, regex=pattern, modifiers=mods),
         )
         return self
 

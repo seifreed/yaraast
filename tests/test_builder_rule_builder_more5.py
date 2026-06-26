@@ -19,6 +19,7 @@ from yaraast.ast.strings import (
     RegexString,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
+from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.errors import ValidationError
@@ -142,10 +143,12 @@ def test_rule_builder_rejects_invalid_string_content_types() -> None:
         RuleBuilder("string_rule").with_regex_string("$r", cast(Any, 123))
 
     with pytest.raises(TypeError, match="Regex pattern must be a string"):
-        RuleBuilder("string_rule").with_regex("$r", cast(Any, ["x"]))
+        RuleBuilder("string_rule").with_regex_string("$r", cast(Any, ["x"]))
 
-    with pytest.raises(TypeError, match="Hex pattern must be a string"):
-        RuleBuilder("string_rule").with_hex_string_raw("$h", cast(Any, True))
+    with pytest.raises(
+        TypeError, match="Hex string builder must be a HexStringBuilder or token list"
+    ):
+        RuleBuilder("string_rule").with_hex_string("$h", cast(Any, True))
 
 
 def test_rule_builder_rejects_non_boolean_flags() -> None:
@@ -156,7 +159,7 @@ def test_rule_builder_rejects_non_boolean_flags() -> None:
         RuleBuilder("string_rule").with_string("$a", "x", wide=cast(Any, "yes"))
 
     with pytest.raises(TypeError, match="RuleBuilder dotall flag must be a boolean"):
-        RuleBuilder("regex_rule").with_regex("$r", "x", dotall=cast(Any, "yes"))
+        RuleBuilder("regex_rule").with_regex_string("$r", "x", dotall=cast(Any, "yes"))
 
     with pytest.raises(TypeError, match="RuleBuilder nocase flag must be a boolean"):
         RuleBuilder("regex_rule").with_regex_string("$r", "x", nocase=cast(Any, "yes"))
@@ -174,7 +177,9 @@ def test_rule_builder_rejects_invalid_string_identifiers(identifier: str) -> Non
         RuleBuilder("string_rule").with_regex_string(identifier, "x")
 
     with pytest.raises(ValidationError, match="Invalid string identifier"):
-        RuleBuilder("string_rule").with_hex_string_raw(identifier, "4D 5A")
+        RuleBuilder("string_rule").with_hex_string(
+            identifier, HexStringBuilder().add(0x4D).add(0x5A)
+        )
 
 
 def test_rule_builder_rejects_duplicate_string_identifiers_without_partial_update() -> None:
@@ -196,8 +201,8 @@ def test_rule_builder_rejects_duplicate_string_identifiers_without_partial_updat
 def test_rule_builder_hex_regex_and_condition_variants() -> None:
     rule = (
         RuleBuilder("variants")
-        .with_hex_string_raw("$hex", "4D ??")
-        .with_regex("$re", "ab.*", dotall=True, multiline=True)
+        .with_hex_string("$hex", HexStringBuilder().add(0x4D).wildcard())
+        .with_regex_string("$re", "ab.*", dotall=True, multiline=True)
         .set_condition("$a")
         .build()
     )
@@ -216,7 +221,7 @@ def test_rule_builder_hex_regex_and_condition_variants() -> None:
 def test_rule_builder_parses_complex_string_condition_text() -> None:
     rule = (
         RuleBuilder("raw_condition")
-        .with_hex_string_raw("$mz", "4D 5A")
+        .with_hex_string("$mz", HexStringBuilder().add(0x4D).add(0x5A))
         .with_plain_string("$suspicious", "backdoor")
         .with_condition("$mz at 0 and $suspicious")
         .build()
@@ -284,24 +289,36 @@ def test_rule_builder_preserves_falsy_present_condition_expression() -> None:
     assert rule.condition.value is False
 
 
-def test_rule_builder_raw_hex_rejects_invalid_input() -> None:
+def test_rule_builder_hex_builder_rejects_invalid_input() -> None:
     with pytest.raises(
         ValidationError,
-        match="Hex parse error at position 3: Invalid character in hex string: Z",
+        match="Hex string content not set",
     ):
-        RuleBuilder("invalid").with_hex_string_raw("$hex", "4D ZZ ??")
+        RuleBuilder("invalid").with_hex_string("$hex", HexStringBuilder())
 
     with pytest.raises(
         ValidationError,
-        match="Hex parse error at position 3: Incomplete hex byte",
+        match="Nibble must be 2 characters",
     ):
-        RuleBuilder("invalid").with_hex_string_raw("$hex", "4D F")
+        RuleBuilder("invalid").with_hex_string("$hex", HexStringBuilder().nibble("F"))
 
 
-def test_rule_builder_raw_hex_uses_full_hex_parser() -> None:
+def test_rule_builder_hex_builder_uses_complex_tokens() -> None:
     rule = (
         RuleBuilder("full_hex")
-        .with_hex_string_raw("$hex", "4D A? ?F [2-4] (~00 | 41) // comment\n 5A")
+        .with_hex_string(
+            "$hex",
+            HexStringBuilder()
+            .add(0x4D)
+            .nibble("A?")
+            .nibble("?F")
+            .jump(2, 4)
+            .alternative(
+                HexStringBuilder().add(HexNegatedByte(0x00)),
+                HexStringBuilder().add(0x41),
+            )
+            .add(0x5A),
+        )
         .with_condition("$hex")
         .build()
     )
@@ -378,6 +395,6 @@ def test_rule_builder_true_condition_direct_builder_and_plain_regex() -> None:
     assert isinstance(true_rule.condition, BooleanLiteral)
     assert true_rule.condition.value is True
 
-    regex_rule = RuleBuilder("regex_plain").with_regex("$r", "abc").build()
+    regex_rule = RuleBuilder("regex_plain").with_regex_string("$r", "abc").build()
     assert isinstance(regex_rule.strings[0], RegexString)
     assert regex_rule.strings[0].regex == "abc"

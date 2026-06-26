@@ -18,8 +18,8 @@ def test_rule_builder_strings_and_condition() -> None:
     rule = (
         RuleBuilder("rule1")
         .with_plain_string("$a", "x", nocase=True)
-        .with_hex_string_raw("$b", "4D 5A ?? 00")
-        .with_regex("$c", "ab.*", case_insensitive=True)
+        .with_hex_string("$b", HexStringBuilder().add(0x4D).add(0x5A).wildcard().add(0x00))
+        .with_regex_string("$c", "ab.*", nocase=True)
         .with_condition("any of them")
         .build()
     )
@@ -43,7 +43,7 @@ def test_rule_builder_rejects_empty_hex_string_definitions() -> None:
         RuleBuilder("bad").with_hex_string("$h", [])
 
     with pytest.raises(ValidationError, match="Hex string content not set"):
-        RuleBuilder("bad").with_hex_string_raw("$h", "")
+        RuleBuilder("bad").with_hex_string("$h", HexStringBuilder())
 
 
 def test_rule_builder_rejects_standalone_hex_jump_definitions() -> None:
