@@ -203,7 +203,6 @@ def test_workspace_symbols_cache_uses_nanosecond_mtime(
 
     class _FixedStat:
         st_mode = S_IFREG
-        st_mtime = 1.0
         st_mtime_ns = cached_ns + 1
 
     def fake_stat(self: Path, *, follow_symlinks: bool = True) -> object:
