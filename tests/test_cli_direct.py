@@ -11,7 +11,6 @@ import json
 from pathlib import Path
 
 from click.testing import CliRunner
-import pytest
 
 from yaraast.cli.commands.bench_cmd import bench
 from yaraast.cli.commands.diff_cmd import diff
@@ -780,7 +779,3 @@ class TestCLIRoundtripIntegrationDirect:
 
             # Should produce identical results
             assert json1 == json2
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
