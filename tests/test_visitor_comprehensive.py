@@ -591,19 +591,15 @@ class TestBaseVisitorComprehensive:
         class PragmaVisitor(BaseVisitor[None]):
             def __init__(self) -> None:
                 self.pragmas: list[Any] = []
-                self.in_rule_pragmas = 0
-                self.pragma_blocks = 0
 
             def visit_pragma(self, node: Pragma) -> None:
                 self.pragmas.append(node.name)
                 return super().visit_pragma(node)
 
             def visit_in_rule_pragma(self, node: InRulePragma) -> None:
-                self.in_rule_pragmas += 1
                 return super().visit_in_rule_pragma(node)
 
             def visit_pragma_block(self, node: PragmaBlock) -> None:
-                self.pragma_blocks += 1
                 return super().visit_pragma_block(node)
 
         # Pragmas are YARA-X specific
@@ -736,8 +732,6 @@ class TestBaseVisitorComprehensive:
         class OptionalFieldVisitor(BaseVisitor[None]):
             def __init__(self) -> None:
                 self.string_offsets_with_index = 0
-                self.string_lengths_with_index = 0
-                self.for_of_with_condition = 0
 
             def visit_string_offset(self, node: StringOffset) -> None:
                 if node.index is not None:
@@ -745,13 +739,9 @@ class TestBaseVisitorComprehensive:
                 return super().visit_string_offset(node)
 
             def visit_string_length(self, node: StringLength) -> None:
-                if node.index is not None:
-                    self.string_lengths_with_index += 1
                 return super().visit_string_length(node)
 
             def visit_for_of_expression(self, node: ForOfExpression) -> None:
-                if node.condition is not None:
-                    self.for_of_with_condition += 1
                 return super().visit_for_of_expression(node)
 
         yara_code = """
