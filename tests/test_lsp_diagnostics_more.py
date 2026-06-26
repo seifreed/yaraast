@@ -19,12 +19,11 @@ from yaraast.types.semantic_validator_core import ValidationError
 from yaraast.unified_parser import UnifiedParser as RealUnifiedParser
 
 
-class _FailingUnifiedParser:
-    def __init__(self, _text: str, *, dialect: object = None) -> None:
-        pass
-
-    def parse(self) -> NoReturn:
+def _failing_unified_parser(_text: str, *, dialect: object = None) -> object:
+    def parse() -> NoReturn:
         raise RuntimeError("transient parser failure")
+
+    return SimpleNamespace(parse=parse)
 
 
 def _diagnostic_data(diagnostic: Diagnostic) -> dict[str, Any]:
@@ -79,7 +78,7 @@ def test_diagnostics_do_not_cache_internal_parser_failures(
     text = "rule sample { condition: true }\n"
     uri = "file:///sample.yar"
 
-    monkeypatch.setattr(diagnostics_module, "UnifiedParser", _FailingUnifiedParser)
+    monkeypatch.setattr(diagnostics_module, "UnifiedParser", _failing_unified_parser)
     failed = provider.get_diagnostics(text, uri)
     assert len(failed) == 1
     assert failed[0].source == "yaraast"
