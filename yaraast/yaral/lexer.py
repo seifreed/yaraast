@@ -296,8 +296,6 @@ class YaraLLexer:
                 else:
                     value += "".join(result.chars)
                     advance += result.advance_count
-                    if result.ends_string:
-                        break
                 self.position += advance
                 self.column += advance
             else:

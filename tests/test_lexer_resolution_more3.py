@@ -20,7 +20,6 @@ def test_string_escape_handler_covers_remaining_paths() -> None:
 
     eof_after_quote = StringEscapeHandler(r"\"", 1).handle_backslash('"')
     assert eof_after_quote.chars == ['"']
-    assert eof_after_quote.ends_string is False
 
 
 def test_include_resolver_env_tree_and_cache_helpers(tmp_path: Path) -> None:

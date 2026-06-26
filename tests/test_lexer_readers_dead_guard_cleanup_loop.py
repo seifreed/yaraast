@@ -4,9 +4,7 @@
 
 """Regression tests for the simplified lexer string/float readers.
 
-Two dead checks were removed from ``lexer_readers``:
-  - ``if result.ends_string: break`` in the string reader: no escape handler
-    ever returns ``EscapeResult(ends_string=True)``.
+One dead check was removed from ``lexer_readers``:
   - ``if raw_fraction.endswith("_") or "__" in raw_fraction`` in the float
     reader: the preceding ``if "_" in raw_fraction`` already rejects every
     fractional part containing an underscore.

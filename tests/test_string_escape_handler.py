@@ -35,11 +35,9 @@ def test_string_escape_escaped_quote_and_malformed() -> None:
     text = '\\" ascii\n'
     handler = StringEscapeHandler(text, 1)  # position at quote after backslash
     result = handler.handle_backslash('"')
-    assert result.ends_string is False
     assert result.chars == ['"']
 
     normal_text = 'abc\\"def'
     handler = StringEscapeHandler(normal_text, 4)  # position at quote
     result = handler.handle_backslash('"')
-    assert result.ends_string is False
     assert result.chars == ['"']
