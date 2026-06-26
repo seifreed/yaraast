@@ -28,7 +28,7 @@ from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 def test_rule_builder_aliases_and_modifier_paths() -> None:
     rule = (
         RuleBuilder("aliases")
-        .add_string("$a", "text")
+        .with_string("$a", "text")
         .with_string("$b", "wide", wide=True, ascii=True, fullword=True)
         .with_condition("false")
         .build()
@@ -116,7 +116,7 @@ def test_rule_builder_rejects_invalid_meta_keys(meta_key: str) -> None:
         RuleBuilder("metadata_rule").with_meta(meta_key, "x")
 
     with pytest.raises(ValidationError, match="Invalid meta identifier"):
-        RuleBuilder("metadata_rule").add_meta(meta_key, "x")
+        RuleBuilder("metadata_rule").with_meta(meta_key, "x")
 
 
 @pytest.mark.parametrize("meta_value", [1.5, None, ["x"]])
@@ -125,7 +125,7 @@ def test_rule_builder_rejects_invalid_meta_values(meta_value: Any) -> None:
         RuleBuilder("metadata_rule").with_meta("value", meta_value)
 
     with pytest.raises(TypeError, match="Invalid meta value"):
-        RuleBuilder("metadata_rule").add_meta("value", meta_value)
+        RuleBuilder("metadata_rule").with_meta("value", meta_value)
 
 
 def test_rule_builder_rejects_non_string_author_description_without_partial_update() -> None:
@@ -167,7 +167,7 @@ def test_rule_builder_rejects_invalid_string_content_types() -> None:
         RuleBuilder("string_rule").with_plain_string("$a", cast(Any, True))
 
     with pytest.raises(TypeError, match="Plain string value must be a string or bytes"):
-        RuleBuilder("string_rule").add_string("$a", cast(Any, 123))
+        RuleBuilder("string_rule").with_string("$a", cast(Any, 123))
 
     with pytest.raises(TypeError, match="Regex pattern must be a string"):
         RuleBuilder("string_rule").with_regex_string("$r", cast(Any, 123))
@@ -222,33 +222,6 @@ def test_rule_builder_rejects_duplicate_string_identifiers_without_partial_updat
     only_string = rule.strings[0]
     assert isinstance(only_string, PlainString)
     assert only_string.value == "first"
-
-
-def test_rule_builder_copies_direct_string_definitions_when_added() -> None:
-    source = PlainString(identifier="$a", value="first")
-    builder = RuleBuilder("string_rule").add_string_definition(source)
-
-    source.identifier = "$renamed"
-    source.value = "changed"
-
-    built = builder.build()
-    assert len(built.strings) == 1
-    only_string = built.strings[0]
-    assert isinstance(only_string, PlainString)
-    assert only_string.identifier == "$a"
-    assert only_string.value == "first"
-
-    first = PlainString(identifier="$one", value="one")
-    second = PlainString(identifier="$two", value="two")
-    batch_builder = RuleBuilder("batch_rule").add_string_definitions([first, second])
-
-    first.identifier = "$renamed_one"
-    second.identifier = "$renamed_two"
-
-    assert [string_def.identifier for string_def in batch_builder.build().strings] == [
-        "$one",
-        "$two",
-    ]
 
 
 def test_rule_builder_hex_regex_and_condition_variants() -> None:

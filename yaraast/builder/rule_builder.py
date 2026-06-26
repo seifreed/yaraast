@@ -221,16 +221,6 @@ class RuleBuilder:
         )
         return self
 
-    def add_string_definition(self, string_def: StringDefinition) -> Self:
-        """Add a prebuilt string definition."""
-        self._append_string_definition(string_def)
-        return self
-
-    def add_string_definitions(self, string_defs: list[StringDefinition]) -> Self:
-        """Add multiple prebuilt string definitions."""
-        self._extend_string_definitions(string_defs)
-        return self
-
     def with_tags(self, *tags: str) -> Self:
         """Add multiple tags to the rule."""
         _validate_new_tags(self._tags, tags)
@@ -243,10 +233,6 @@ class RuleBuilder:
         _validate_meta_value(value)
         self._meta[key] = value
         return self
-
-    def add_meta(self, key: str, value: str | int | bool) -> Self:
-        """Add a meta field (alias for with_meta)."""
-        return self.with_meta(key, value)
 
     def with_author(self, author: str) -> Self:
         """Add author meta field."""
@@ -291,10 +277,6 @@ class RuleBuilder:
             PlainString(identifier=identifier, value=value, modifiers=modifiers),
         )
         return self
-
-    def add_string(self, identifier: str, value: str) -> Self:
-        """Add a plain string (alias for with_plain_string)."""
-        return self.with_plain_string(identifier, value)
 
     def with_string(
         self,

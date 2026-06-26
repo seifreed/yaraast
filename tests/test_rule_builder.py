@@ -183,7 +183,7 @@ class TestRuleBuilderMetadata:
         """Add_meta should work as alias for with_meta."""
         builder = RuleBuilder(name="MetaRule")
 
-        builder.add_meta("version", 1)
+        builder.with_meta("version", 1)
         rule = builder.build()
 
         assert len(rule.meta) == 1
