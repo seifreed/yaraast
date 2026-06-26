@@ -51,25 +51,12 @@ def test_node_text_returns_string_directly() -> None:
     assert _node_text("hello", "unused") == "hello"
 
 
-# ---------------------------------------------------------------------------
-# Line 70: _string_set_item_text calls formatter.format_expression when item
-#           has an `accept` attribute but no pattern / name / raw_value
-# ---------------------------------------------------------------------------
-
-
-class _AcceptOnly:
-    """Minimal object that has `accept` but no pattern, name, or value."""
-
-    def accept(self, visitor: Any) -> None:
-        pass
-
-
 def test_string_set_item_text_delegates_to_format_expression_via_accept() -> None:
     """Items with an `accept` attr but no pattern/name/value must trigger
     formatter.format_expression (line 70).  The formatter returns a
     non-empty string for any object that defines __class__."""
     formatter = ExpressionStringFormatter()
-    item = _AcceptOnly()
+    item = SimpleNamespace(accept=lambda visitor: None)
     result = _string_set_item_text(item, formatter, 0)
     # The item is an unknown class so format_expression returns "<AcceptOnly>"
     assert result.startswith("<")
