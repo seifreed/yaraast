@@ -523,16 +523,10 @@ class TestBaseVisitorComprehensive:
         """Test visiting defined and string operator expressions."""
 
         class OperatorVisitor(BaseVisitor[None]):
-            def __init__(self) -> None:
-                self.defined_exprs = 0
-                self.string_ops: list[Any] = []
-
             def visit_defined_expression(self, node: DefinedExpression) -> None:
-                self.defined_exprs += 1
                 return super().visit_defined_expression(node)
 
             def visit_string_operator_expression(self, node: StringOperatorExpression) -> None:
-                self.string_ops.append(node.operator)
                 return super().visit_string_operator_expression(node)
 
         yara_code = """
@@ -549,9 +543,6 @@ class TestBaseVisitorComprehensive:
 
         visitor = OperatorVisitor()
         visitor.visit(ast)
-
-        # Check if defined expressions or string operators were visited
-        assert visitor.defined_exprs >= 0  # May or may not be present depending on parsing
 
     def test_visit_comments(self) -> None:
         """Test visiting comments directly."""
