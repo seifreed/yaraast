@@ -27,10 +27,6 @@ from yaraast.ast.strings import HexAlternative, HexByte, HexNegatedByte, HexToke
 from yaraast.visitor.base import BaseVisitor
 
 
-class _Visitor(BaseVisitor[None]):
-    pass
-
-
 class _RecordingVisitor(BaseVisitor[None]):
     def __init__(self) -> None:
         self.identifiers: list[str] = []
@@ -76,7 +72,7 @@ class _HexRecordingVisitor(BaseVisitor[None]):
 
 
 def test_base_visitor_expression_and_condition_methods() -> None:
-    visitor = _Visitor()
+    visitor = BaseVisitor[None]()
     condition = Condition()
     literal = BooleanLiteral(value=True)
 
@@ -86,7 +82,7 @@ def test_base_visitor_expression_and_condition_methods() -> None:
 
 
 def test_base_visitor_string_definition_and_hex_token_methods() -> None:
-    visitor = _Visitor()
+    visitor = BaseVisitor[None]()
 
     assert visitor.visit_string_definition(StringDefinition(identifier="$a")) is None
     assert visitor.visit_hex_token(HexToken()) is None
