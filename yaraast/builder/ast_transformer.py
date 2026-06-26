@@ -153,14 +153,6 @@ class RuleTransformer:
         """Make the rule private."""
         return self.add_modifier("private")
 
-    def make_global(self) -> RuleTransformer:
-        """Make the rule global."""
-        return self.add_modifier("global")
-
-    def make_public(self) -> RuleTransformer:
-        """Make the rule public (remove private)."""
-        return self.remove_modifier("private")
-
     def add_meta(self, key: str, value: str | int | bool) -> RuleTransformer:
         """Add metadata."""
         from yaraast.ast.modifiers import MetaEntry

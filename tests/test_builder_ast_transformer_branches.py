@@ -494,8 +494,7 @@ def test_yara_file_transformer_rejects_non_string_selectors_without_partial_upda
 def test_convenience_transform_functions_and_direct_transform_paths() -> None:
     base = _sample_rule("base")
 
-    via_helper = transform_rule(base).make_public().make_global().build()
-    assert not any(str(m) == "private" for m in via_helper.modifiers)
+    via_helper = transform_rule(base).add_modifier("global").build()
     assert any(str(m) == "global" for m in via_helper.modifiers)
 
     variant = (
