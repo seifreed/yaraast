@@ -715,12 +715,7 @@ class TestBaseVisitorComprehensive:
         """Test visiting nodes with optional/nullable fields."""
 
         class OptionalFieldVisitor(BaseVisitor[None]):
-            def __init__(self) -> None:
-                self.string_offsets_with_index = 0
-
             def visit_string_offset(self, node: StringOffset) -> None:
-                if node.index is not None:
-                    self.string_offsets_with_index += 1
                 return super().visit_string_offset(node)
 
             def visit_string_length(self, node: StringLength) -> None:
