@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any, NoReturn, cast
 
 from lsprotocol.types import Position, Range
@@ -15,12 +16,11 @@ from yaraast.lsp.semantic_tokens import TOKEN_TYPES, SemanticTokensProvider
 from yaraast.lsp.semantic_tokens_helpers import map_token_type
 
 
-class _FailingLexer:
-    def __init__(self, _text: str) -> None:
-        pass
-
-    def tokenize(self) -> NoReturn:
+def _failing_lexer(_text: str) -> object:
+    def tokenize() -> NoReturn:
         raise RuntimeError("transient lexer failure")
+
+    return SimpleNamespace(tokenize=tokenize)
 
 
 def test_semantic_tokens_range_returns_tokens_within_requested_window() -> None:
@@ -64,7 +64,7 @@ def test_semantic_tokens_do_not_cache_full_result_after_lexer_failure(
     text = "rule sample { condition: true }\n"
     uri = "file:///sample.yar"
 
-    monkeypatch.setattr(semantic_tokens_module, "Lexer", _FailingLexer)
+    monkeypatch.setattr(semantic_tokens_module, "Lexer", _failing_lexer)
     failed = provider.get_semantic_tokens(text, uri)
     assert failed.data == []
 
@@ -83,7 +83,7 @@ def test_semantic_tokens_do_not_cache_range_result_after_lexer_failure(
     uri = "file:///sample.yar"
     range_ = Range(start=Position(line=0, character=0), end=Position(line=0, character=30))
 
-    monkeypatch.setattr(semantic_tokens_module, "Lexer", _FailingLexer)
+    monkeypatch.setattr(semantic_tokens_module, "Lexer", _failing_lexer)
     failed = provider.get_semantic_tokens_range(text, range_, uri)
     assert failed.data == []
 

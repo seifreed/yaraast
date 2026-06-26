@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import deque
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, NoReturn, cast
 
 from lsprotocol.types import FileChangeType, FileEvent, Position, Range
@@ -55,15 +56,16 @@ class _ByteStringDocument(DocumentContext):
         )
 
 
-class _FailingUnifiedParser:
-    parse_calls = 0
+_FAILING_UNIFIED_PARSER_CALLS = 0
 
-    def __init__(self, _text: str, *, dialect: object = None) -> None:
-        pass
 
-    def parse(self) -> NoReturn:
-        type(self).parse_calls += 1
+def _failing_unified_parser(_text: str, *, dialect: object = None) -> object:
+    def parse() -> NoReturn:
+        global _FAILING_UNIFIED_PARSER_CALLS
+        _FAILING_UNIFIED_PARSER_CALLS += 1
         raise RuntimeError("transient document parser failure")
+
+    return SimpleNamespace(parse=parse)
 
 
 def test_runtime_persists_workspace_symbol_index(tmp_path: Path) -> None:
@@ -1156,8 +1158,9 @@ def test_document_context_does_not_cache_internal_parser_failures(
     text = "rule sample { condition: true }\n"
     doc = DocumentContext("file://sample.yar", text)
 
-    _FailingUnifiedParser.parse_calls = 0
-    monkeypatch.setattr(document_context_module, "UnifiedParser", _FailingUnifiedParser)
+    global _FAILING_UNIFIED_PARSER_CALLS
+    _FAILING_UNIFIED_PARSER_CALLS = 0
+    monkeypatch.setattr(document_context_module, "UnifiedParser", _failing_unified_parser)
     assert doc.ast() is None
     error = doc.parse_error()
     assert isinstance(error, RuntimeError)
@@ -1165,7 +1168,7 @@ def test_document_context_does_not_cache_internal_parser_failures(
     assert doc.parse_error() is error
     assert doc.ast() is None
     assert doc.symbols() == []
-    assert _FailingUnifiedParser.parse_calls == 1
+    assert _FAILING_UNIFIED_PARSER_CALLS == 1
 
     monkeypatch.setattr(document_context_module, "UnifiedParser", RealUnifiedParser)
     doc.update(text)
