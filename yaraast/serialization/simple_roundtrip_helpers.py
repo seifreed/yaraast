@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import base64
-import json
 import math
-from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import ASTNode, Location, YaraFile
@@ -76,7 +74,7 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
-from yaraast.errors import SerializationError, ValidationError, YaraASTError
+from yaraast.errors import SerializationError, ValidationError
 from yaraast.serialization._serialization_primitives import (
     _HEX_CHARS,
     _deserialize_boolean_literal_value,
@@ -133,7 +131,6 @@ from yaraast.serialization.pragma_scopes import (
     deserialize_pragma_scope,
     serialize_pragma_scope,
 )
-from yaraast.serialization.serializer_helpers import require_input_path
 from yaraast.string_escaping import escape_string_source_value
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -151,7 +148,6 @@ from yaraast.yarax.ast_nodes import (
     WithDeclaration,
     WithStatement,
 )
-from yaraast.yarax.generator import YaraXGenerator
 
 
 def _is_empty_nonempty_field(text: str, context: str, field: str) -> bool:
@@ -2851,39 +2847,3 @@ def deserialize_string(data: dict[str, Any]) -> Any:
         )
     msg = f"Unknown string type: {string_type}"
     raise SerializationError(msg)
-
-
-def serialize_to_file(node: ASTNode, file_path: str | Path) -> None:
-    """Serialize an AST node to a JSON file."""
-    data = serialize_node(node)
-    file_path = require_input_path(file_path, "file_path")
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-
-
-def deserialize_from_file(file_path: str | Path) -> ASTNode:
-    """Deserialize an AST node from a JSON file."""
-    file_path = require_input_path(file_path, "file_path")
-    with open(file_path, encoding="utf-8") as f:
-        data = json.load(f)
-    return deserialize_node(data)
-
-
-def validate_roundtrip(node: ASTNode) -> tuple[bool, dict[str, Any]]:
-    """Validate roundtrip serialization."""
-    generator = YaraXGenerator()
-    try:
-        serialized = serialize_node(node)
-        deserialized = deserialize_node(serialized)
-        original_code = generator.generate(node)
-        roundtrip_code = generator.generate(deserialized)
-        is_valid = original_code.strip() == roundtrip_code.strip()
-        diff = {
-            "original_code": original_code,
-            "roundtrip_code": roundtrip_code,
-            "differences": [] if is_valid else ["Code differs after roundtrip"],
-        }
-        return is_valid, diff
-    except (YaraASTError, ValueError, TypeError) as e:  # serialization + codegen roundtrip errors
-        return False, {"error": str(e)}
-

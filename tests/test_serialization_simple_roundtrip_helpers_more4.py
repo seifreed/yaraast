@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, cast
 
@@ -70,7 +71,6 @@ from yaraast.errors import SerializationError
 from yaraast.serialization.pragma_scopes import deserialize_pragma_scope
 from yaraast.serialization.simple_roundtrip_helpers import (
     deserialize_extern_rule,
-    deserialize_from_file,
     deserialize_meta,
     deserialize_node,
     deserialize_pragma,
@@ -82,9 +82,7 @@ from yaraast.serialization.simple_roundtrip_helpers import (
     serialize_pragma,
     serialize_rule,
     serialize_string,
-    serialize_to_file,
     serialize_yarafile,
-    validate_roundtrip,
 )
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -102,7 +100,6 @@ from yaraast.yarax.ast_nodes import (
     WithDeclaration,
     WithStatement,
 )
-from yaraast.yarax.generator import YaraXGenerator
 
 
 class _FalsyIntegerLiteral(IntegerLiteral):
@@ -200,11 +197,20 @@ def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: 
         deserialize_string({"type": 7, "identifier": "$x", "data": "raw"})
 
     path = tmp_path / "helper.json"
-    serialize_to_file(
-        YaraFile(imports=[Import(module="pe")], includes=[Include(path="inc.yar")], rules=[rule]),
-        path,
+    path.write_text(
+        json.dumps(
+            serialize_node(
+                YaraFile(
+                    imports=[Import(module="pe")],
+                    includes=[Include(path="inc.yar")],
+                    rules=[rule],
+                )
+            ),
+            indent=2,
+        ),
+        encoding="utf-8",
     )
-    restored_file = deserialize_from_file(path)
+    restored_file = deserialize_node(json.loads(path.read_text(encoding="utf-8")))
     assert isinstance(restored_file, YaraFile)
     assert restored_file.rules[0].name == "helper_rule"
 
@@ -3611,32 +3617,11 @@ def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path:
     )
     path = tmp_path / "simple.json"
 
-    serialize_to_file(ast, path)
-    restored = deserialize_from_file(path)
+    path.write_text(json.dumps(serialize_node(ast), indent=2), encoding="utf-8")
+    restored = deserialize_node(json.loads(path.read_text(encoding="utf-8")))
 
     assert isinstance(restored, YaraFile)
     assert restored.rules[0].strings[0].modifiers[0].value == (1, 3)
-
-
-@pytest.mark.parametrize("file_path", [False, 0, object()])
-def test_simple_roundtrip_helpers_file_io_rejects_invalid_path_types(file_path: Any) -> None:
-    ast = YaraFile()
-
-    with pytest.raises(TypeError, match="file_path must be a file path"):
-        serialize_to_file(ast, cast(Any, file_path))
-
-    with pytest.raises(TypeError, match="file_path must be a file path"):
-        deserialize_from_file(cast(Any, file_path))
-
-
-def test_simple_roundtrip_helpers_file_io_rejects_empty_path() -> None:
-    ast = YaraFile()
-
-    with pytest.raises(ValueError, match="file_path must not be empty"):
-        serialize_to_file(ast, "")
-
-    with pytest.raises(ValueError, match="file_path must not be empty"):
-        deserialize_from_file("")
 
 
 def test_simple_roundtrip_helpers_preserve_file_extensions_and_pragmas() -> None:
@@ -3909,8 +3894,8 @@ def test_simple_roundtrip_helpers_preserve_node_comment_metadata(tmp_path: Path)
     ast.trailing_comment = cast(Any, CommentGroup([Comment("file end"), Comment("final")]))
     path = tmp_path / "comments.json"
 
-    serialize_to_file(ast, path)
-    restored = deserialize_from_file(path)
+    path.write_text(json.dumps(serialize_node(ast), indent=2), encoding="utf-8")
+    restored = deserialize_node(json.loads(path.read_text(encoding="utf-8")))
 
     assert isinstance(restored, YaraFile)
     assert restored.location == Location(1, 1, file="sample.yar", end_line=6, end_column=1)
@@ -4004,36 +3989,11 @@ def test_simple_roundtrip_helpers_preserve_nested_extern_and_pragma_metadata() -
     assert restored.namespaces[0].extern_rules[0].location == Location(20, 21)
 
 
-def test_simple_roundtrip_helpers_error_paths(tmp_path: Path) -> None:
-    bad_json = tmp_path / "bad.json"
-    bad_json.write_text("{not-json", encoding="utf-8")
-    try:
-        deserialize_from_file(bad_json)
-    except Exception:
-        pass
-    else:
-        raise AssertionError("deserialize_from_file should fail on invalid JSON")
-
-    valid, diff = validate_roundtrip(cast(Any, None))
-    assert valid is False
-    assert "error" in diff
-
+def test_simple_roundtrip_helpers_error_paths() -> None:
     with pytest.raises(SerializationError, match="HexString tokens must be a list"):
         deserialize_string(
             {"type": "HexString", "identifier": "$h", "tokens": "{ 41 }", "modifiers": []}
         )
-
-
-def test_validate_roundtrip_propagates_internal_generator_errors(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def fail_generate(self: Any, node: ASTNode) -> str:
-        raise AttributeError("broken generator internals")
-
-    monkeypatch.setattr(YaraXGenerator, "generate", fail_generate)
-
-    with pytest.raises(AttributeError, match="broken generator internals"):
-        validate_roundtrip(Rule(name="r1", condition=BooleanLiteral(value=True)))
 
     negated_hex = deserialize_string(
         {
