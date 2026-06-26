@@ -88,7 +88,6 @@ class TokenType(Enum):
     RBRACKET = auto()
     COMMA = auto()
     COLON = auto()
-    SEMICOLON = auto()
 
     # Special
     EOF = auto()

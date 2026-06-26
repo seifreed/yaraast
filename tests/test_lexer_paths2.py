@@ -60,6 +60,11 @@ def test_lexer_rejects_identifiers_longer_than_libyara_limit() -> None:
         _tokens(f"rule {long_name} {{ condition: true }}")
 
 
+def test_lexer_rejects_semicolons_in_yara_source() -> None:
+    with pytest.raises(LexerError, match="Unexpected character: ;"):
+        _tokens("rule r { condition: true; }")
+
+
 @pytest.mark.parametrize(
     "source",
     [
