@@ -199,9 +199,6 @@ class _LocatedMetaEntry(ASTNode):
     def accept(self, visitor: Any) -> Any:
         return None
 
-    def validate_structure(self) -> None:
-        pass
-
 
 class _FakeRuleWithLocatedMeta:
     """Rule-like object whose .meta is a list of _LocatedMetaEntry instances."""
