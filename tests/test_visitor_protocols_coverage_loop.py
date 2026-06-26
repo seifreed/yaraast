@@ -420,28 +420,16 @@ class TestRuntimeCheckableIsinstance:
         assert isinstance(visitor, HexVisitor)
 
     def test_rule_visitor_isinstance_rejects_unrelated_class(self) -> None:
-        class _Unrelated:
-            pass
-
-        assert not isinstance(_Unrelated(), RuleVisitor)
+        assert not isinstance(object(), RuleVisitor)
 
     def test_string_visitor_isinstance_rejects_unrelated_class(self) -> None:
-        class _Unrelated:
-            pass
-
-        assert not isinstance(_Unrelated(), StringVisitor)
+        assert not isinstance(object(), StringVisitor)
 
     def test_expression_visitor_isinstance_rejects_unrelated_class(self) -> None:
-        class _Unrelated:
-            pass
-
-        assert not isinstance(_Unrelated(), ExpressionVisitor)
+        assert not isinstance(object(), ExpressionVisitor)
 
     def test_hex_visitor_isinstance_rejects_unrelated_class(self) -> None:
-        class _Unrelated:
-            pass
-
-        assert not isinstance(_Unrelated(), HexVisitor)
+        assert not isinstance(object(), HexVisitor)
 
     def test_protocol_subclasses_do_not_cross_satisfy_each_other(self) -> None:
         # RuleVisitor should not structurally satisfy StringVisitor because
