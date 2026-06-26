@@ -9,8 +9,6 @@ Targets and gaps:
     - Branch 33->39: to_dict() called on ValidationError whose location is None,
       so the if-location block is skipped and execution falls through to the
       if-suggestion check at line 39.
-    - Branch 74->exit: combine() called where other.is_valid is True, so
-      "if not other.is_valid:" at line 74 is False and the body is not entered.
 
   yaraast.performance.parallel_job_actions  (96.20%)
     - Branches 72->68, 88->84, 106->102: the implicit else-fall-through of the
@@ -52,7 +50,7 @@ from yaraast.performance.parallel_job_actions import (
     process_batch,
 )
 from yaraast.performance.parallel_models import Job, JobStatus
-from yaraast.types.semantic_validator_core import ValidationError, ValidationResult
+from yaraast.types.semantic_validator_core import ValidationError
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -122,67 +120,6 @@ class TestValidationErrorToDictWithoutLocation:
         second = err.to_dict()
 
         assert first == second
-
-
-# ---------------------------------------------------------------------------
-# yaraast.types.semantic_validator_core — branch 74->exit
-# ---------------------------------------------------------------------------
-
-
-class TestValidationResultCombineWithValidOther:
-    """Branch 74->exit: the if-not-other.is_valid guard in combine() is False
-    when other.is_valid is True, so is_valid is never set to False."""
-
-    def test_combine_with_empty_valid_other_leaves_is_valid_true(self) -> None:
-        """Arrange: both self and other are freshly constructed (is_valid=True).
-        Act:    combine(other).
-        Assert: self.is_valid remains True; the 74->exit branch is taken."""
-        receiver = ValidationResult()
-        other = ValidationResult()
-
-        receiver.combine(other)
-
-        assert receiver.is_valid is True
-
-    def test_combine_with_other_that_has_warnings_only_leaves_is_valid_true(
-        self,
-    ) -> None:
-        """A ValidationResult with warnings but no errors has is_valid=True;
-        combining it should not change receiver's is_valid status."""
-        receiver = ValidationResult()
-        other = ValidationResult()
-        other.add_warning("non-fatal warning")
-
-        receiver.combine(other)
-
-        assert receiver.is_valid is True
-
-    def test_combine_with_valid_other_merges_warnings_into_receiver(self) -> None:
-        """The warnings list of other is merged even when the 74->exit branch
-        is taken, confirming the extend() calls before the guard execute."""
-        receiver = ValidationResult()
-        other = ValidationResult()
-        other.add_warning("merged warning")
-
-        receiver.combine(other)
-
-        assert len(receiver.warnings) == 1
-        assert receiver.warnings[0].message == "merged warning"
-
-    def test_combine_valid_other_after_prior_error_preserves_is_valid_false(
-        self,
-    ) -> None:
-        """Once receiver.is_valid is False, combining a valid other must not
-        restore it to True; the 74->exit branch is taken but is_valid stays
-        False because only the invalid-other path sets it False, never resets
-        it to True."""
-        receiver = ValidationResult()
-        receiver.add_error("prior error")
-        other = ValidationResult()
-
-        receiver.combine(other)
-
-        assert receiver.is_valid is False
 
 
 # ---------------------------------------------------------------------------

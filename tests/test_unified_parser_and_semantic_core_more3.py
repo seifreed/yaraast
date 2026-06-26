@@ -9,7 +9,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import Location
-from yaraast.types.semantic_validator_core import ValidationError, ValidationResult
+from yaraast.types.semantic_validator_core import ValidationError
 from yaraast.unified_parser import UnifiedParser
 
 
@@ -108,16 +108,9 @@ def test_unified_parser_parse_file_rejects_negative_threshold(tmp_path: Path) ->
         UnifiedParser.parse_file(rule_file, streaming_threshold_mb=-1)
 
 
-def test_validation_error_without_location_and_combine_invalid_result() -> None:
+def test_validation_error_without_location() -> None:
     err = ValidationError("broken")
     assert str(err) == "error: broken"
-
-    left = ValidationResult()
-    right = ValidationResult()
-    right.add_error("x")
-    left.combine(right)
-    assert left.is_valid is False
-    assert left.total_issues == 1
 
 
 def test_validation_error_to_dict_with_location_and_suggestion() -> None:

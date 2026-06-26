@@ -97,22 +97,6 @@ class TestValidationResult:
         assert result.warnings[0].message == "Test warning"
         assert result.total_issues == 1
 
-    def test_combine_results(self) -> None:
-        """Test combining validation results."""
-        result1 = ValidationResult()
-        result1.add_error("Error 1")
-        result1.add_warning("Warning 1")
-
-        result2 = ValidationResult()
-        result2.add_error("Error 2")
-
-        result1.combine(result2)
-
-        assert result1.is_valid is False
-        assert len(result1.errors) == 2
-        assert len(result1.warnings) == 1
-        assert result1.total_issues == 3
-
 
 class TestStringIdentifierValidator:
     """Tests for string identifier uniqueness validation."""

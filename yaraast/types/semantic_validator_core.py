@@ -68,12 +68,6 @@ class ValidationResult:
         warning = ValidationError(message, location, "semantic", "warning", suggestion)
         self.warnings.append(warning)
 
-    def combine(self, other: ValidationResult) -> None:
-        self.errors.extend(other.errors)
-        self.warnings.extend(other.warnings)
-        if not other.is_valid:
-            self.is_valid = False
-
     @property
     def total_issues(self) -> int:
         return len(self.errors) + len(self.warnings)

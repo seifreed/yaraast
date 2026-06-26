@@ -118,6 +118,8 @@ class FormattingProvider:
         lines = text.split("\n")
         for rule in getattr(ast, "rules", []):
             rule_line = find_rule_line(lines, rule.name)
+            if rule_line < 0:
+                continue
             rule_end = find_rule_end(lines, rule_line)
             if start.line < rule_line or end.line > rule_end:
                 continue
