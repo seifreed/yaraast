@@ -438,7 +438,7 @@ class TestFluentStringBuilderCommonPatterns:
         """Ip_address_pattern should create IP address regex."""
         builder = FluentStringBuilder("$ip")
 
-        result = builder.ip_address_pattern()
+        result = builder.ip_pattern()
         string_def = result.build()
 
         assert isinstance(string_def, RegexString)
@@ -737,7 +737,7 @@ class TestFluentStringBuilderConvenienceFunctions:
 
     def test_ip_regex_function_creates_ip_pattern(self) -> None:
         """Ip_regex function should create IP pattern."""
-        builder = FluentStringBuilder.string("$ip").ip_address_pattern()
+        builder = FluentStringBuilder.string("$ip").ip_pattern()
 
         assert builder.identifier == "$ip"
         string_def = builder.build()

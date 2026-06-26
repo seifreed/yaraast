@@ -131,7 +131,7 @@ class FluentRuleBuilder:
     def ip_pattern(self, identifier: str = "$ip") -> Self:
         """Add IP address regex pattern."""
         return self.with_string(
-            FluentStringBuilder.string(identifier).ip_address_pattern(),
+            FluentStringBuilder.string(identifier).ip_pattern(),
         )
 
     def url_pattern(self, identifier: str = "$url") -> Self:

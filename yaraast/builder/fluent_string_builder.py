@@ -250,7 +250,7 @@ class FluentStringBuilder:
         """Email address regex pattern."""
         return self.regex(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 
-    def ip_address_pattern(self) -> FluentStringBuilder:
+    def ip_pattern(self) -> FluentStringBuilder:
         """IP address regex pattern."""
         return self.regex(r"\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
 
