@@ -16,6 +16,8 @@ No mocks, stubs, or artificial scaffolding are used.
 
 from __future__ import annotations
 
+from typing import Any
+
 from lsprotocol.types import Position, Range
 import pytest
 
@@ -424,23 +426,17 @@ class TestValidateHexTokenStructure:
 
     def test_token_without_validate_structure_is_skipped(self) -> None:
         # Arrange: a token-like object with no validate_structure attribute
-        class _BareToken:
-            pass
-
-        token = _BareToken()
+        token: Any = object()
 
         # Act / Assert: must not raise even though validate_structure is absent
-        _validate_hex_token_structure(token)  # type: ignore[arg-type]
+        _validate_hex_token_structure(token)
 
     def test_token_with_non_callable_validate_structure_is_skipped(self) -> None:
         # Arrange: validate_structure is an attribute but not callable
-        class _TokenWithAttr:
-            validate_structure = "not_callable"
-
-        token = _TokenWithAttr()
+        token: Any = type("TokenWithAttr", (), {"validate_structure": "not_callable"})()
 
         # Act / Assert: must not raise
-        _validate_hex_token_structure(token)  # type: ignore[arg-type]
+        _validate_hex_token_structure(token)
 
 
 class TestValidateHexByteValue:
