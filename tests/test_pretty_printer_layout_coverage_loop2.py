@@ -86,20 +86,17 @@ class _RealPrinter:
         self.indent_level: int = 0
         self.indent_size: int = 4
         self._visit_returns = visit_returns
-
-        class _Options:
-            align_string_definitions: bool = False
-            hex_uppercase: bool = True
-            hex_spacing: bool = True
-            wrap_long_conditions: bool = False
-            max_line_length: int = 80
-            indent_with_tabs: bool = False
-
-        class _Layout:
-            options: _Options = _Options()
-            _string_alignment_column: int = 0
-
-        self._layout = _Layout()
+        self._layout = SimpleNamespace(
+            options=SimpleNamespace(
+                align_string_definitions=False,
+                hex_uppercase=True,
+                hex_spacing=True,
+                wrap_long_conditions=False,
+                max_line_length=80,
+                indent_with_tabs=False,
+            ),
+            _string_alignment_column=0,
+        )
 
     def _write(self, text: str) -> None:
         self.buffer.write(text)
