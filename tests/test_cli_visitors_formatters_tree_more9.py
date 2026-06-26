@@ -37,10 +37,6 @@ class BinaryExpression:
         self.right = right
 
 
-class _CustomMod:
-    pass
-
-
 class _MetaKV:
     def __init__(self, key: str, value: Any) -> None:
         self.key = key
@@ -170,7 +166,7 @@ def test_tree_builder_remaining_paths() -> None:
     assert "Imports" in txt and "Includes" in txt
 
     # Non-list modifiers branch + fallback modifier str conversion.
-    rule = Rule(name="r", modifiers=_CustomMod())
+    rule = Rule(name="r", modifiers=type("CustomMod", (), {})())
     rtxt = _render(builder.visit_rule(rule))
     assert "Rule:" in rtxt
 
