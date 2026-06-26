@@ -81,11 +81,6 @@ def _consume(p: Parser, token_type: TokenType) -> None:
     assert p._match(token_type), f"Expected {token_type}, got {p._peek().type}"
 
 
-def _rule_condition(source: str) -> object:
-    """Parse *source* as a complete YARA rule and return its condition."""
-    return Parser().parse(source).rules[0].condition
-
-
 # ---------------------------------------------------------------------------
 # Lines 83-89: _parse_member_access - ExternRuleReference WITH location
 # ---------------------------------------------------------------------------
