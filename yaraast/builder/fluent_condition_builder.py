@@ -39,14 +39,6 @@ class FluentConditionBuilder(ConditionBuilder):
         """Exactly one of the specified strings."""
         return self.between_n_and_m_of(1, 1, *strings)
 
-    def two_of(self, *strings: str) -> FluentConditionBuilder:
-        """Exactly two of the specified strings."""
-        return self.between_n_and_m_of(2, 2, *strings)
-
-    def three_of(self, *strings: str) -> FluentConditionBuilder:
-        """Exactly three of the specified strings."""
-        return self.between_n_and_m_of(3, 3, *strings)
-
     def at_least_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At least N of the specified strings."""
         self._validate_quantifier_count("Minimum", n)
