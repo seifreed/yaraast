@@ -29,7 +29,7 @@ from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.codegen import CodeGenerator
-from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator, eliminate_dead_code
+from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
 from yaraast.optimization.rule_optimizer import RuleOptimizer
 from yaraast.parser import Parser
 from yaraast.yarax.ast_nodes import (
@@ -97,14 +97,13 @@ def test_binary_and_unary_expressions_are_not_folded() -> None:
 
 
 def test_dead_code_eliminator_does_not_orphan_strings_via_folding() -> None:
-    from yaraast.optimization.dead_code_eliminator import eliminate_dead_code
     from yaraast.parser import Parser
 
     # "true or $a" must not be folded to "true" while $a stays defined; that
     # would make the rule reference no strings yet keep one, which libyara
     # rejects as an unreferenced string.
     ast = Parser('rule r { strings: $a = "aaa" condition: true or $a }').parse()
-    optimized, _ = eliminate_dead_code(ast)
+    optimized, _ = DeadCodeEliminator().eliminate(ast)
 
     rule = optimized.rules[0]
     assert [s.identifier for s in rule.strings] == ["$a"]
@@ -838,7 +837,7 @@ def test_dead_code_eliminator_does_not_mutate_source_conditions() -> None:
     )
 
 
-def test_eliminate_dead_code_single_rule_and_convenience_wrapper() -> None:
+def test_eliminate_dead_code_single_rule_via_eliminator() -> None:
     dce = DeadCodeEliminator()
     rule = Rule(
         name="single",
@@ -850,7 +849,7 @@ def test_eliminate_dead_code_single_rule_and_convenience_wrapper() -> None:
     assert [s.identifier for s in out_rule.strings] == ["$y"]
 
     # Wrapper currently returns the full eliminate() tuple.
-    file_out, elim_count = eliminate_dead_code(YaraFile(rules=[rule]))
+    file_out, elim_count = DeadCodeEliminator().eliminate(YaraFile(rules=[rule]))
     assert isinstance(file_out, YaraFile)
     assert isinstance(elim_count, int)
 

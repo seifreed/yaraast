@@ -684,10 +684,4 @@ class DeadCodeEliminator(ASTTransformer):
             self.local_variable_values.extend(value for _ in variants)
 
 
-def eliminate_dead_code(ast: YaraFile) -> tuple[YaraFile, int]:
-    """Convenience function to eliminate dead code."""
-    eliminator = DeadCodeEliminator()
-    return eliminator.eliminate(ast)
-
-
 _RESERVED_IDENTIFIERS = frozenset({"true", "false", "any", "all", "them"})
