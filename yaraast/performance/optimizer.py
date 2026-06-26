@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from os import PathLike, fspath
-from pathlib import Path
 from typing import Any, TypeVar, overload
 
 from yaraast.ast.base import YaraFile, require_yara_file
@@ -12,7 +10,6 @@ from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefin
 from yaraast.optimization.rule_optimizer import RuleOptimizer
 from yaraast.performance.memory_optimizer import MemoryOptimizer
 from yaraast.performance.string_analysis_helpers import string_value_length
-from yaraast.performance.validation import path_exists_and_is_dir
 
 _Target = TypeVar("_Target")
 _VALID_STRATEGIES = frozenset({"speed", "memory", "balanced"})
@@ -27,33 +24,6 @@ def _require_strategy(strategy: object) -> str:
         msg = f"optimization strategy must be one of: {valid}"
         raise ValueError(msg)
     return strategy
-
-
-def _require_file_path(value: object, name: str) -> Path:
-    if isinstance(value, bool) or not isinstance(value, str | PathLike):
-        msg = f"{name} must be a file path"
-        raise TypeError(msg)
-    raw_path = fspath(value)
-    if not isinstance(raw_path, str):
-        msg = f"{name} must be a file path"
-        raise TypeError(msg)
-    if not raw_path.strip():
-        msg = f"{name} must not be empty"
-        raise ValueError(msg)
-    path = Path(raw_path)
-    if path_exists_and_is_dir(path):
-        msg = f"{name} must not be a directory"
-        raise ValueError(msg)
-    return path
-
-
-def _read_yara_text_file(path: Path) -> str:
-    try:
-        with path.open(encoding="utf-8") as f:
-            return f.read()
-    except UnicodeDecodeError as exc:
-        msg = "YARA file must contain valid UTF-8 text"
-        raise ValueError(msg) from exc
 
 
 class PerformanceOptimizer:
@@ -230,4 +200,3 @@ class PerformanceOptimizer:
     def get_statistics(self) -> dict[str, Any]:
         """Get optimization statistics."""
         return dict(self._stats)
-
