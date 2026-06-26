@@ -30,7 +30,7 @@ def test_parse_primary_expression_supports_slice_and_array_access() -> None:
             _tok(TokenType.RBRACKET, "]"),
         ],
     )
-    sliced = parser.parse_primary_expression()
+    sliced = parser._parse_postfix_expression()
     assert isinstance(sliced, SliceExpression)
     assert sliced.start is None
     assert isinstance(sliced.stop, IntegerLiteral)
@@ -45,7 +45,7 @@ def test_parse_primary_expression_supports_slice_and_array_access() -> None:
             _tok(TokenType.RBRACKET, "]"),
         ],
     )
-    sliced_with_start = parser.parse_primary_expression()
+    sliced_with_start = parser._parse_postfix_expression()
     assert isinstance(sliced_with_start, SliceExpression)
     assert isinstance(sliced_with_start.start, IntegerLiteral)
     assert isinstance(sliced_with_start.stop, IntegerLiteral)
@@ -58,7 +58,7 @@ def test_parse_primary_expression_supports_slice_and_array_access() -> None:
             _tok(TokenType.RBRACKET, "]"),
         ],
     )
-    indexed = parser.parse_primary_expression()
+    indexed = parser._parse_postfix_expression()
     assert isinstance(indexed, ArrayAccess)
     assert indexed.array == Identifier(name="arr")
 

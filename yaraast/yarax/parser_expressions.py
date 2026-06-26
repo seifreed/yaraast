@@ -86,10 +86,6 @@ class YaraXParserExpressionsMixin:
 
         return cast(Expression, cast(Any, super())._parse_primary_expression())
 
-    def parse_primary_expression(self: Any) -> Expression:
-        """Parse primary expression and postfix operators with YARA-X extensions."""
-        return cast(Expression, self._parse_postfix_expression())
-
     def _parse_of_string_set(self: Any) -> Expression:
         """Parse YARA string sets without treating parenthesized sets as tuples."""
         old_value = self._parsing_of_string_set
