@@ -137,13 +137,3 @@ rule test_arrays {
     output = generator.generate(ast)
 
     assert "for any section in pe.sections" in output
-
-
-if __name__ == "__main__":
-    test_defined_operator()
-    test_iequals_operator()
-    test_icontains_operator()
-    test_complex_defined()
-    test_string_operators_with_modules()
-    test_arrays_in_expressions()
-    print("✓ All operator tests passed")
