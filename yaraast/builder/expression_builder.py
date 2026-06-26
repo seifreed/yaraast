@@ -154,22 +154,6 @@ class ExpressionBuilder:
         return SetExpression(elements=elements)
 
     @staticmethod
-    def any_of_them() -> OfExpression:
-        """Create 'any of them' expression."""
-        return OfExpression(
-            quantifier=StringLiteral(value="any"),
-            string_set=Identifier(name="them"),
-        )
-
-    @staticmethod
-    def all_of_them() -> OfExpression:
-        """Create 'all of them' expression."""
-        return OfExpression(
-            quantifier=StringLiteral(value="all"),
-            string_set=Identifier(name="them"),
-        )
-
-    @staticmethod
     def any_of(*strings: str) -> OfExpression:
         """Create 'any of (...)' expression."""
         string_set = ExpressionBuilder._of_string_set(*strings)

@@ -143,17 +143,6 @@ class FluentStringBuilder:
         self._replace_modifier(modifier)
         return self
 
-    # Regex-specific modifiers
-    def dotall(self) -> FluentStringBuilder:
-        """Add dotall modifier for regex (. matches newlines)."""
-        self._add_modifier(StringModifierType.DOTALL)
-        return self
-
-    def multiline(self) -> FluentStringBuilder:
-        """Add multiline modifier for regex."""
-        self._add_modifier(StringModifierType.MULTILINE)
-        return self
-
     # String content pattern helpers
     def mz_header(self) -> FluentStringBuilder:
         """Common MZ header pattern."""
@@ -191,12 +180,6 @@ class FluentStringBuilder:
 
         tokens: list[HexToken] = [HexWildcard() for _ in range(count)]
         self._content = tokens
-        self._string_type = "hex"
-        return self
-
-    def mixed_pattern(self, pattern: str) -> FluentStringBuilder:
-        """Mixed hex/wildcard pattern with ? for wildcards."""
-        self._content = self._parse_hex_pattern(pattern)
         self._string_type = "hex"
         return self
 

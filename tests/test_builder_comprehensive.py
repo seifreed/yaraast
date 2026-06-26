@@ -1006,7 +1006,7 @@ class TestExpressionBuilder:
 
     def test_any_of_them_creates_of_expression(self) -> None:
         """Any_of_them should create 'any of them' expression."""
-        expr = ExpressionBuilder.any_of_them()
+        expr = ExpressionBuilder.any_of("them")
 
         assert isinstance(expr, OfExpression)
         assert isinstance(expr.quantifier, StringLiteral)
@@ -1016,7 +1016,7 @@ class TestExpressionBuilder:
 
     def test_all_of_them_creates_of_expression(self) -> None:
         """All_of_them should create 'all of them' expression."""
-        expr = ExpressionBuilder.all_of_them()
+        expr = ExpressionBuilder.all_of("them")
 
         assert isinstance(expr, OfExpression)
         assert isinstance(expr.quantifier, StringLiteral)

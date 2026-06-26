@@ -475,15 +475,6 @@ class TestFluentStringBuilderAdvancedHexPatterns:
         assert len(tokens) == 5
         assert all(isinstance(t, HexWildcard) for t in tokens)
 
-    def test_mixed_pattern_parses_mixed_hex(self) -> None:
-        """Mixed_pattern should parse hex with wildcards."""
-        builder = FluentStringBuilder("$mixed")
-
-        result = builder.mixed_pattern("FF ?? AA")
-
-        assert result is builder
-        assert len(_hex_content(builder)) == 3
-
     def test_jump_pattern_creates_jump(self) -> None:
         """Jump_pattern should create jump token."""
         builder = FluentStringBuilder("$jump")
