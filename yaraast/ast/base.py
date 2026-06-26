@@ -319,22 +319,6 @@ class YaraFile(ASTNode):
             rule.validate_structure()
         return extern_rules
 
-    def _validated_namespaces(self) -> list[ExternNamespace]:
-        from yaraast.ast.extern import ExternNamespace
-
-        namespaces = cast(
-            "list[ExternNamespace]",
-            _require_ast_node_sequence_type(
-                self.namespaces,
-                "YaraFile.namespaces",
-                ExternNamespace,
-                "ExternNamespace",
-            ),
-        )
-        for namespace in namespaces:
-            namespace.validate_structure()
-        return namespaces
-
 
 def require_yara_file(value: object, name: str) -> YaraFile:
     """Require a YaraFile instance for public AST APIs."""
