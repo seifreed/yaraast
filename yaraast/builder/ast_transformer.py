@@ -5,7 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING, cast
 
-from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -40,14 +40,6 @@ if TYPE_CHECKING:
 
 class CloneTransformer:
     """Utility for cloning and transforming AST nodes."""
-
-    @staticmethod
-    def clone(node: ASTNode) -> ASTNode:
-        """Deep clone an AST node."""
-        if not isinstance(node, ASTNode):
-            msg = "AST node input must be an ASTNode"
-            raise TypeError(msg)
-        return deepcopy(node)
 
     @staticmethod
     def clone_rule(rule: Rule) -> Rule:

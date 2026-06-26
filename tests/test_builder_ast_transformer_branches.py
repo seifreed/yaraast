@@ -74,11 +74,6 @@ def test_clone_helpers_create_deep_independent_copies() -> None:
     assert original_file.rules[0].name == "orig"
 
 
-def test_generic_clone_rejects_invalid_ast_node_inputs() -> None:
-    with pytest.raises(TypeError, match="AST node input must be an ASTNode"):
-        CloneTransformer.clone(cast(Any, object()))
-
-
 def test_rule_clone_and_transform_helpers_reject_invalid_rule_inputs() -> None:
     with pytest.raises(TypeError, match="Rule input must be a Rule"):
         CloneTransformer.clone_rule(cast(Any, object()))
@@ -574,9 +569,7 @@ def test_convenience_transform_functions_and_direct_transform_paths() -> None:
     assert {inc.path for inc in helper_transformed.includes} == {"y.yar"}
 
     direct_clone = CloneTransformer.clone_rule(base)
-    deep_clone = CloneTransformer.clone(base)
     assert isinstance(direct_clone, Rule)
-    assert isinstance(deep_clone, Rule)
 
 
 def test_yara_file_transformer_rejects_duplicate_rule_names_without_partial_update() -> None:
