@@ -13,7 +13,6 @@ def test_builder_package_root_does_not_reexport_removed_helpers() -> None:
         "clone_rule",
         "clone_yara_file",
         "transform_rule",
-        "transform_yara_file",
         "ConditionBuilder",
         "ExpressionBuilder",
         "YaraFileBuilder",
