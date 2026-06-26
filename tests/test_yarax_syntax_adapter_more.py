@@ -7,7 +7,6 @@ from textwrap import dedent
 from yaraast.ast.base import YaraFile
 from yaraast.ast.strings import PlainString, RegexString
 from yaraast.parser import Parser
-from yaraast.yarax.compatibility_checker import CompatibilityIssue
 from yaraast.yarax.feature_flags import YaraXFeatures
 from yaraast.yarax.syntax_adapter import YaraXSyntaxAdapter
 
@@ -72,18 +71,3 @@ def test_syntax_adapter_escapes_regex_braces() -> None:
     string_def = adapted.rules[0].strings[0]
     assert isinstance(string_def, RegexString)
     assert "\\{" in string_def.regex
-
-
-def test_generate_migration_guide() -> None:
-    adapter = YaraXSyntaxAdapter(YaraXFeatures.yarax_strict(), target="yarax")
-    issues = [
-        CompatibilityIssue("error", None, "duplicate_modifier", "Duplicate", ""),
-        CompatibilityIssue("error", None, "base64_too_short", "Base64", ""),
-        CompatibilityIssue("error", None, "unescaped_brace", "Unescaped", ""),
-    ]
-    guide = adapter.generate_migration_guide(issues)
-
-    assert "Migration Guide" in guide
-    assert "Duplicate Modifiers" in guide
-    assert "Base64 Pattern Length" in guide
-    assert "Regex Brace Escaping" in guide

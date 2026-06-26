@@ -14,7 +14,6 @@ from yaraast.yarax.string_lengths import plain_string_byte_length
 
 if TYPE_CHECKING:
     from yaraast.ast.pragmas import InRulePragma
-    from yaraast.yarax.compatibility_checker import CompatibilityIssue
 
 _ASTNodeT = TypeVar("_ASTNodeT", bound=ASTNode)
 
@@ -251,59 +250,3 @@ class YaraXSyntaxAdapter(ASTTransformer):
         # YARA-X accepts hex/octal values in jumps
         # This is actually an enhancement, no adaptation needed
         return node
-
-    def generate_migration_guide(self, issues: list[CompatibilityIssue]) -> str:
-        """Generate a migration guide based on compatibility issues."""
-        guide = ["# YARA to YARA-X Migration Guide\n"]
-
-        # Group issues by type
-        by_type: dict[str, list[CompatibilityIssue]] = {}
-        for issue in issues:
-            if issue.issue_type not in by_type:
-                by_type[issue.issue_type] = []
-            by_type[issue.issue_type].append(issue)
-
-        # Generate sections
-        if "unescaped_brace" in by_type:
-            guide.append("## Regex Brace Escaping\n")
-            guide.append("YARA-X requires braces to be escaped in regex patterns:\n")
-            guide.append("```")
-            guide.append("# YARA:   /abc{/")
-            guide.append("# YARA-X: /abc\\{/")
-            guide.append("```\n")
-
-        if "invalid_escape" in by_type:
-            guide.append("## Invalid Escape Sequences\n")
-            guide.append("YARA-X validates escape sequences more strictly:\n")
-            unique_escapes = set()
-            for issue in by_type["invalid_escape"]:
-                # Extract escape from message
-                if r"'\\" in issue.message:
-                    escape = issue.message.split("'\\")[1].split("'")[0]
-                    unique_escapes.add(escape)
-
-            for escape in sorted(unique_escapes):
-                guide.append(f"- `\\{escape}` is not a valid escape sequence\n")
-            guide.append("\n")
-
-        if "base64_too_short" in by_type:
-            guide.append("## Base64 Pattern Length\n")
-            guide.append(
-                f"YARA-X requires base64 patterns to be at least {self.features.minimum_base64_length} characters.\n",
-            )
-            guide.append("Short patterns should be padded or reconsidered.\n\n")
-
-        if "duplicate_modifier" in by_type:
-            guide.append("## Duplicate Modifiers\n")
-            guide.append("YARA-X does not allow duplicate rule modifiers.\n")
-            guide.append("Remove any duplicate 'global' or 'private' modifiers.\n\n")
-
-        if "yarax_feature" in by_type:
-            guide.append("## YARA-X Specific Features\n")
-            guide.append("Your rules use features specific to YARA-X:\n")
-            for issue in by_type["yarax_feature"]:
-                feature = issue.message.split(": ", 1)[1]
-                guide.append(f"- {feature}\n")
-            guide.append("\nThese features are not backward compatible with YARA.\n")
-
-        return "".join(guide)

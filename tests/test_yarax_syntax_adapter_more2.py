@@ -6,7 +6,6 @@ from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.pragmas import CustomPragma, InRulePragma
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexJump, HexString, PlainString, RegexString
-from yaraast.yarax.compatibility_checker import CompatibilityIssue
 from yaraast.yarax.feature_flags import YaraXFeatures
 from yaraast.yarax.syntax_adapter import YaraXSyntaxAdapter
 
@@ -73,28 +72,6 @@ def test_hex_nodes_and_plain_string_passthrough_are_preserved() -> None:
 
     jump = HexJump(2, 4)
     assert adapter.visit_hex_jump(jump) is jump
-
-
-def test_generate_migration_guide_covers_all_sections() -> None:
-    adapter = YaraXSyntaxAdapter(YaraXFeatures.yarax_strict(), target="yarax")
-    issues = [
-        CompatibilityIssue("error", None, "unescaped_brace", "brace", ""),
-        CompatibilityIssue("error", None, "invalid_escape", "Invalid escape '\\\\g' found", ""),
-        CompatibilityIssue("error", None, "invalid_escape", "Invalid escape '\\\\k' found", ""),
-        CompatibilityIssue("error", None, "base64_too_short", "base64", ""),
-        CompatibilityIssue("error", None, "duplicate_modifier", "dup", ""),
-        CompatibilityIssue("warning", None, "yarax_feature", "YARA-X feature: with statements", ""),
-    ]
-
-    guide = adapter.generate_migration_guide(issues)
-
-    assert "Regex Brace Escaping" in guide
-    assert "Invalid Escape Sequences" in guide
-    assert r"\g" in guide and r"\k" in guide
-    assert "Base64 Pattern Length" in guide
-    assert "Duplicate Modifiers" in guide
-    assert "YARA-X Specific Features" in guide
-    assert "with statements" in guide
 
 
 def test_base64_padding_and_regex_noop_paths() -> None:

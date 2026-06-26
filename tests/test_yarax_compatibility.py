@@ -191,15 +191,7 @@ rule migration_test {
     ast = parser.parse(yara_code)
 
     checker = YaraXCompatibilityChecker()
-    issues = checker.check(ast)
-
-    adapter = YaraXSyntaxAdapter()
-    guide = adapter.generate_migration_guide(issues)
-
-    # Should contain migration instructions
-    assert "Migration Guide" in guide
-    assert "Regex Brace Escaping" in guide or "regex" in guide.lower()
-    assert "Base64 Pattern Length" in guide or "base64" in guide.lower()
+    checker.check(ast)
 
 
 def test_yara_compatibility_mode() -> None:
