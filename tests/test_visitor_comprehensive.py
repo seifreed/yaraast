@@ -133,7 +133,6 @@ class TestBaseVisitorComprehensive:
                 self.hex_bytes: list[Any] = []
                 self.wildcards = 0
                 self.jumps = 0
-                self.alternatives = 0
 
             def visit_hex_byte(self, node: HexByte) -> None:
                 self.hex_bytes.append(node.value)
@@ -148,7 +147,6 @@ class TestBaseVisitorComprehensive:
                 return super().visit_hex_jump(node)
 
             def visit_hex_alternative(self, node: HexAlternative) -> None:
-                self.alternatives += 1
                 return super().visit_hex_alternative(node)
 
         yara_code = """
