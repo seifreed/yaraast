@@ -46,8 +46,9 @@ def main() -> None:
             [0x50, 0x45],  # PE
             [0x45, 0x4C, 0x46],  # ELF
         )
-        .jump_any()  # [-]
-        .add_bytes(0xFF, 0xFE)
+        .jump(None, None)  # [-]
+        .add(0xFF)
+        .add(0xFE)
     )
 
     advanced_rule = (

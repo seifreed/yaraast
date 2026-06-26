@@ -124,7 +124,7 @@ def test_fluent_string_builder_rejects_invalid_hex_alternatives() -> None:
     with pytest.raises(ValidationError, match="Unbounded HexJump"):
         FluentStringBuilder("$h").hex_builder(
             lambda hb: hb.add(0x41)
-            .alternative(HexStringBuilder().add(0x42).jump_any().add(0x43))
+            .alternative(HexStringBuilder().add(0x42).jump(None, None).add(0x43))
             .add(0x44),
         ).build()
 

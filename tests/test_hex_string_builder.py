@@ -15,7 +15,6 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
-    HexNegatedByte,
     HexNibble,
     HexToken,
     HexWildcard,
@@ -108,30 +107,6 @@ class TestHexStringBuilderBasicOperations:
         assert len(tokens[0].alternatives[0]) == 1
         assert _byte_value(tokens[0].alternatives[0][0]) == 0x41
 
-    def test_byte_alias_method(self) -> None:
-        """Byte method should work as alias for add."""
-        builder = HexStringBuilder()
-
-        builder.byte(0xAB)
-        tokens = builder.build()
-
-        assert len(tokens) == 1
-        assert isinstance(tokens[0], HexByte)
-        assert tokens[0].value == 0xAB
-
-    def test_add_bytes_with_multiple_values(self) -> None:
-        """Add_bytes should accept multiple byte values."""
-        builder = HexStringBuilder()
-
-        builder.add_bytes(0x48, 0x65, 0x6C, 0x6C, 0x6F)
-        tokens = builder.build()
-
-        assert len(tokens) == 5
-        expected_values = [0x48, 0x65, 0x6C, 0x6C, 0x6F]
-        for i, expected in enumerate(expected_values):
-            assert isinstance(tokens[i], HexByte)
-            assert _byte_value(tokens[i]) == expected
-
 
 class TestHexStringBuilderHexStringInput:
     """Test hex string input handling."""
@@ -168,31 +143,6 @@ class TestHexStringBuilderHexStringInput:
         assert len(tokens) == 1
         assert isinstance(tokens[0], HexByte)
         assert tokens[0].value == 0xAB
-
-    def test_add_bytes_with_hex_strings(self) -> None:
-        """Add_bytes should accept hex string values."""
-        builder = HexStringBuilder()
-
-        builder.add_bytes("4D", "5A", "90")
-        tokens = builder.build()
-
-        assert len(tokens) == 3
-        assert _byte_value(tokens[0]) == 0x4D
-        assert _byte_value(tokens[1]) == 0x5A
-        assert _byte_value(tokens[2]) == 0x90
-
-    def test_add_mixed_int_and_hex_strings(self) -> None:
-        """Add_bytes should accept mixed integer and hex string values."""
-        builder = HexStringBuilder()
-
-        builder.add_bytes(0x4D, "5A", 0x90, "0xFF")
-        tokens = builder.build()
-
-        assert len(tokens) == 4
-        assert _byte_value(tokens[0]) == 0x4D
-        assert _byte_value(tokens[1]) == 0x5A
-        assert _byte_value(tokens[2]) == 0x90
-        assert _byte_value(tokens[3]) == 0xFF
 
 
 class TestHexStringBuilderErrorHandling:
@@ -428,18 +378,6 @@ class TestHexStringBuilderJumps:
         assert tokens[0].min_jump == 3
         assert tokens[0].max_jump is None
 
-    def test_add_jump_any(self) -> None:
-        """Jump_any should add unlimited jump."""
-        builder = HexStringBuilder()
-
-        builder.jump_any()
-        tokens = builder.build()
-
-        assert len(tokens) == 1
-        assert isinstance(tokens[0], HexJump)
-        assert tokens[0].min_jump is None
-        assert tokens[0].max_jump is None
-
     def test_add_jump_generic(self) -> None:
         """Generic jump method should work with min/max."""
         builder = HexStringBuilder()
@@ -646,217 +584,6 @@ class TestHexStringBuilderGrouping:
             HexStringBuilder().group(cast(Any, 123))
 
 
-class TestHexStringBuilderPattern:
-    """Test pattern string parsing."""
-
-    def test_pattern_with_simple_bytes(self) -> None:
-        """Pattern should parse simple hex bytes."""
-        builder = HexStringBuilder()
-
-        builder.pattern("FF AA BB")
-        tokens = builder.build()
-
-        assert len(tokens) == 3
-        assert _byte_value(tokens[0]) == 0xFF
-        assert _byte_value(tokens[1]) == 0xAA
-        assert _byte_value(tokens[2]) == 0xBB
-
-    def test_pattern_with_wildcards(self) -> None:
-        """Pattern should parse wildcard tokens."""
-        builder = HexStringBuilder()
-
-        builder.pattern("FF ?? AA")
-        tokens = builder.build()
-
-        assert len(tokens) == 3
-        assert isinstance(tokens[0], HexByte)
-        assert isinstance(tokens[1], HexWildcard)
-        assert isinstance(tokens[2], HexByte)
-
-    def test_pattern_with_nibbles(self) -> None:
-        """Pattern should parse nibble patterns."""
-        builder = HexStringBuilder()
-
-        builder.pattern("4? ?A")
-        tokens = builder.build()
-
-        assert len(tokens) == 2
-        assert isinstance(tokens[0], HexNibble)
-        assert tokens[0].high is True
-        assert isinstance(tokens[1], HexNibble)
-        assert tokens[1].high is False
-
-    def test_pattern_with_exact_jump(self) -> None:
-        """Pattern should parse exact jump notation."""
-        builder = HexStringBuilder()
-
-        builder.pattern("FF [5] AA")
-        tokens = builder.build()
-
-        assert len(tokens) == 3
-        assert isinstance(tokens[0], HexByte)
-        assert isinstance(tokens[1], HexJump)
-        assert tokens[1].min_jump == 5
-        assert tokens[1].max_jump == 5
-        assert isinstance(tokens[2], HexByte)
-
-    def test_pattern_with_range_jump(self) -> None:
-        """Pattern should parse range jump notation."""
-        builder = HexStringBuilder()
-
-        builder.pattern("4D 5A [0-100] 50 45")
-        tokens = builder.build()
-
-        assert len(tokens) == 5
-        assert isinstance(tokens[2], HexJump)
-        assert tokens[2].min_jump == 0
-        assert tokens[2].max_jump == 100
-
-    def test_pattern_with_open_ended_jumps(self) -> None:
-        """Pattern should parse open-ended jump ranges."""
-        builder = HexStringBuilder()
-
-        builder.pattern("[4-] [-] [0-8] [0-0]")
-        tokens = builder.build()
-
-        assert len(tokens) == 4
-        # [4-]
-        assert isinstance(tokens[0], HexJump)
-        assert tokens[0].min_jump == 4
-        assert tokens[0].max_jump is None
-        # [-]
-        assert isinstance(tokens[1], HexJump)
-        assert tokens[1].min_jump is None
-        assert tokens[1].max_jump is None
-        # [0-8]
-        assert isinstance(tokens[2], HexJump)
-        assert tokens[2].min_jump == 0
-        assert tokens[2].max_jump == 8
-        # [0-0]
-        assert isinstance(tokens[3], HexJump)
-        assert tokens[3].min_jump == 0
-        assert tokens[3].max_jump == 0
-
-    def test_pattern_complex_mixed(self) -> None:
-        """Pattern should handle complex mixed tokens."""
-        builder = HexStringBuilder()
-
-        builder.pattern("4D 5A ?? [2-4] 4? 50")
-        tokens = builder.build()
-
-        assert len(tokens) == 6
-        assert isinstance(tokens[0], HexByte)
-        assert tokens[0].value == 0x4D
-        assert isinstance(tokens[1], HexByte)
-        assert tokens[1].value == 0x5A
-        assert isinstance(tokens[2], HexWildcard)
-        assert isinstance(tokens[3], HexJump)
-        assert tokens[3].min_jump == 2
-        assert tokens[3].max_jump == 4
-        assert isinstance(tokens[4], HexNibble)
-        assert tokens[4].high is True
-        assert tokens[4].value == 4
-        assert isinstance(tokens[5], HexByte)
-        assert tokens[5].value == 0x50
-
-    def test_pattern_with_alternatives_comments_and_negated_bytes(self) -> None:
-        """Pattern should use the full hex parser, including alternatives."""
-        builder = HexStringBuilder()
-
-        builder.pattern("4D (5A | ~00 | A?) // comment\n ??")
-        tokens = builder.build()
-
-        assert len(tokens) == 3
-        assert isinstance(tokens[0], HexByte)
-        assert isinstance(tokens[1], HexAlternative)
-        assert isinstance(tokens[2], HexWildcard)
-        alternatives = tokens[1].alternatives
-        assert len(alternatives) == 3
-        assert isinstance(alternatives[0][0], HexByte)
-        assert isinstance(alternatives[1][0], HexNegatedByte)
-        assert isinstance(alternatives[2][0], HexNibble)
-
-    def test_pattern_rejects_invalid_jump_ranges(self) -> None:
-        """Pattern parsing should reject invalid jumps."""
-        for pattern in ("[a]", "[5-2]", "[1-2-3]", "[0]", "[-8]"):
-            with pytest.raises(ValidationError):
-                HexStringBuilder().pattern(pattern)
-
-
-class TestHexStringBuilderStaticMethods:
-    """Test static factory methods."""
-
-    def test_from_bytes_creates_builder(self) -> None:
-        """From_bytes should create builder from byte data."""
-        data = b"Hello"
-
-        builder = HexStringBuilder.from_bytes(data)
-        tokens = builder.build()
-
-        assert len(tokens) == 5
-        expected_values = [0x48, 0x65, 0x6C, 0x6C, 0x6F]
-        for i, expected in enumerate(expected_values):
-            assert isinstance(tokens[i], HexByte)
-            assert _byte_value(tokens[i]) == expected
-
-    def test_from_bytes_empty(self) -> None:
-        """From_bytes should handle empty byte data."""
-        builder = HexStringBuilder.from_bytes(b"")
-        tokens = builder.build()
-
-        assert tokens == []
-
-    def test_from_hex_string_creates_builder(self) -> None:
-        """From_hex_string should create builder from hex string."""
-        hex_str = "48656C6C6F"
-
-        builder = HexStringBuilder.from_hex_string(hex_str)
-        tokens = builder.build()
-
-        assert len(tokens) == 5
-        expected_values = [0x48, 0x65, 0x6C, 0x6C, 0x6F]
-        for i, expected in enumerate(expected_values):
-            assert _byte_value(tokens[i]) == expected
-
-    def test_from_hex_string_with_spaces(self) -> None:
-        """From_hex_string should handle spaces in input."""
-        hex_str = "48 65 6C 6C 6F"
-
-        builder = HexStringBuilder.from_hex_string(hex_str)
-        tokens = builder.build()
-
-        assert len(tokens) == 5
-        assert _byte_value(tokens[0]) == 0x48
-        assert _byte_value(tokens[4]) == 0x6F
-
-    def test_from_hex_string_with_tabs_and_newlines(self) -> None:
-        """From_hex_string should handle multiline whitespace-separated input."""
-        hex_str = "48\t65\n6C\r\n6C 6F"
-
-        builder = HexStringBuilder.from_hex_string(hex_str)
-        tokens = builder.build()
-
-        assert [_byte_value(token) for token in tokens] == [0x48, 0x65, 0x6C, 0x6C, 0x6F]
-
-    def test_from_hex_string_lowercase(self) -> None:
-        """From_hex_string should handle lowercase hex."""
-        hex_str = "deadbeef"
-
-        builder = HexStringBuilder.from_hex_string(hex_str)
-        tokens = builder.build()
-
-        assert len(tokens) == 4
-        assert _byte_value(tokens[0]) == 0xDE
-        assert _byte_value(tokens[1]) == 0xAD
-        assert _byte_value(tokens[2]) == 0xBE
-        assert _byte_value(tokens[3]) == 0xEF
-
-    def test_from_hex_string_rejects_odd_length(self) -> None:
-        """From_hex_string should reject truncated byte input."""
-        with pytest.raises(ValidationError, match="Invalid trailing hex byte"):
-            HexStringBuilder.from_hex_string("ABC")
-
-
 class TestHexStringBuilderComplexScenarios:
     """Test complex real-world scenarios."""
 
@@ -864,10 +591,10 @@ class TestHexStringBuilderComplexScenarios:
         """Build MZ/PE header detection pattern."""
         builder = HexStringBuilder(identifier="$pe_header")
 
-        builder.add_bytes(0x4D, 0x5A)  # MZ
+        builder.add(0x4D).add(0x5A)  # MZ
         builder.jump_varying(0, 100)  # Variable offset
-        builder.add_bytes(0x50, 0x45)  # PE
-        builder.add_bytes(0x00, 0x00)  # Null bytes
+        builder.add(0x50).add(0x45)  # PE
+        builder.add(0x00).add(0x00)  # Null bytes
 
         tokens = builder.build()
 
@@ -885,7 +612,7 @@ class TestHexStringBuilderComplexScenarios:
 
         builder.add(0x48).nibble("8?").wildcard(2)
         builder.jump_exact(4)
-        builder.add_bytes(0xFF, 0xD0)
+        builder.add(0xFF).add(0xD0)
 
         tokens = builder.build()
 
@@ -905,11 +632,15 @@ class TestHexStringBuilderComplexScenarios:
             .add(0x4D)
             .add(0x5A)
             .jump_varying(0, 100)
-            .pattern("50 45 00 00")
+            .add(0x50)
+            .add(0x45)
+            .add(0x00)
+            .add(0x00)
             .nibble("4?")
             .wildcard(2)
             .jump_at_least(2)
-            .add_bytes(0xFF, 0xD0)
+            .add(0xFF)
+            .add(0xD0)
             .build()
         )
 
@@ -920,7 +651,7 @@ class TestHexStringBuilderComplexScenarios:
     def test_build_multiple_times_returns_equivalent_snapshots(self) -> None:
         """Build should return equivalent independent token lists on multiple calls."""
         builder = HexStringBuilder()
-        builder.add_bytes(0x48, 0x65, 0x6C, 0x6C, 0x6F)
+        builder.add(0x48).add(0x65).add(0x6C).add(0x6C).add(0x6F)
 
         tokens1 = builder.build()
         tokens2 = builder.build()
@@ -983,16 +714,16 @@ class TestHexStringBuilderComplexScenarios:
         builder = HexStringBuilder(identifier="$malware_signature")
 
         # Entry point stub
-        builder.add_bytes(0x55, 0x8B, 0xEC)  # push ebp; mov ebp, esp
+        builder.add(0x55).add(0x8B).add(0xEC)  # push ebp; mov ebp, esp
         builder.wildcard(1)
 
         # String decryption loop
-        builder.pattern("8B ?? ?? [2-4]")
+        builder.add(0x8B).wildcard(2).jump_varying(2, 4)
         builder.nibble("F?").add(0x07)
 
         # Jump to payload
         builder.jump_varying(10, 50)
-        builder.add_bytes(0xFF, 0x25)
+        builder.add(0xFF).add(0x25)
 
         tokens = builder.build()
 

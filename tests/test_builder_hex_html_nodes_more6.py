@@ -29,26 +29,8 @@ def test_hex_string_builder_invalid_low_nibble_and_unknown_pattern_part() -> Non
     with pytest.raises(TypeError, match="Nibble pattern must be a string"):
         HexStringBuilder().nibble(cast(Any, True))
 
-    with pytest.raises(TypeError, match="Hex pattern must be a string"):
-        HexStringBuilder().pattern(cast(Any, True))
-
-    with pytest.raises(TypeError, match="Hex string must be a string"):
-        HexStringBuilder.from_hex_string(cast(Any, True))
-
-    with pytest.raises(TypeError, match="Raw byte data must be bytes"):
-        HexStringBuilder.from_bytes(cast(Any, "AB"))
-
     with pytest.raises(ValidationError, match="Invalid nibble pattern: \\?G"):
         HexStringBuilder().nibble("?G")
-
-    with pytest.raises(ValidationError, match="Invalid hex value: GG"):
-        HexStringBuilder().pattern("GG")
-
-    with pytest.raises(ValidationError, match="Invalid pattern part: XYZ"):
-        HexStringBuilder().pattern("XYZ")
-
-    with pytest.raises(ValidationError, match="Invalid pattern part: XYZ"):
-        HexStringBuilder().pattern("AA XYZ BB")
 
 
 def test_hex_string_builder_rejects_empty_alternatives_directly() -> None:

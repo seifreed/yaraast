@@ -63,7 +63,7 @@ def test_rule_builder_rejects_invalid_hex_alternatives() -> None:
             "$h",
             HexStringBuilder()
             .add(0x41)
-            .alternative(HexStringBuilder().add(0x42).jump_any().add(0x43))
+            .alternative(HexStringBuilder().add(0x42).jump(None, None).add(0x43))
             .add(0x44),
         )
 

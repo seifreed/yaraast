@@ -19,7 +19,7 @@ class TestHexBuilderProperties:
     def test_byte_values_accepted(self, byte_val: int) -> None:
         """All byte values 0-255 are accepted."""
         builder = HexStringBuilder()
-        result = builder.byte(byte_val)
+        result = builder.add(byte_val)
         assert result is builder  # fluent API
         tokens = builder.build()
         assert len(tokens) == 1
@@ -32,7 +32,7 @@ class TestHexBuilderProperties:
         """Byte values > 255 are rejected."""
         builder = HexStringBuilder()
         with pytest.raises(ValidationError, match="Byte value must be 0-255"):
-            builder.byte(byte_val)
+            builder.add(byte_val)
 
     @given(
         bytes_list=st.lists(
@@ -46,7 +46,7 @@ class TestHexBuilderProperties:
         """Multiple bytes are preserved in order."""
         builder = HexStringBuilder()
         for b in bytes_list:
-            builder.byte(b)
+            builder.add(b)
         tokens = builder.build()
         assert len(tokens) == len(bytes_list)
         for token, expected in zip(tokens, bytes_list, strict=True):

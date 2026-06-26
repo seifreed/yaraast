@@ -54,7 +54,7 @@ def test_hex_builder_implicit_none_return_uses_mutated_builder() -> None:
     """
 
     def populate(builder: HexStringBuilder) -> None:
-        builder.byte(0x4D).byte(0x5A)
+        builder.add(0x4D).add(0x5A)
 
     result = FluentStringBuilder("$s3").hex_builder(populate).build()
     assert isinstance(result, HexString)

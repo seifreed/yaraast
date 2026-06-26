@@ -9,7 +9,6 @@ from typing import Self
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexToken, HexWildcard
 from yaraast.errors import ValidationError
 from yaraast.limits import LIBYARA_HEX_JUMP_MAX
-from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 
 class HexStringBuilder:
@@ -18,10 +17,6 @@ class HexStringBuilder:
     def __init__(self, identifier: str | None = None) -> None:
         self._tokens: list[HexToken] = []
         self.identifier = identifier
-
-    def byte(self, value: int) -> Self:
-        """Add a single byte (alias for add)."""
-        return self.add(value)
 
     def _byte_token_from_value(self, value: int | str) -> HexByte:
         if isinstance(value, bool):
@@ -56,12 +51,6 @@ class HexStringBuilder:
             msg = f"Invalid type for hex value: {type(value)}"
             raise TypeError(msg)
 
-        return self
-
-    def add_bytes(self, *values: int | str) -> Self:
-        """Add multiple hex bytes."""
-        for value in values:
-            self.add(value)
         return self
 
     def wildcard(self, count: int = 1) -> Self:
@@ -130,10 +119,6 @@ class HexStringBuilder:
         """Add a jump at least min [min-]."""
         return self.jump(min_val, None)
 
-    def jump_any(self) -> Self:
-        """Add an unlimited jump [-]."""
-        return self.jump(None, None)
-
     def alternative(self, *alternatives: list[int | str] | HexStringBuilder) -> Self:
         """Add an alternative group (a|b|c)."""
         if not alternatives:
@@ -179,38 +164,6 @@ class HexStringBuilder:
         self._tokens.extend(inner_builder.build())
         return self
 
-    def pattern(self, pattern: str) -> Self:
-        """Add tokens from a pattern string like 'FF ?? [2-4] (AA|BB)'."""
-        if not isinstance(pattern, str):
-            msg = "Hex pattern must be a string"
-            raise TypeError(msg)
-        try:
-            self._tokens.extend(HexStringParser().parse(pattern, validate_placement=False))
-        except HexParseError as exc:
-            raise ValidationError(self._pattern_error_message(pattern, exc)) from exc
-
-        return self
-
-    def _pattern_error_message(self, pattern: str, error: HexParseError) -> str:
-        part = self._pattern_part_at(pattern, error.position)
-        if not part:
-            return str(error)
-        if len(part) == 2:
-            return f"Invalid hex value: {part}"
-        return f"Invalid pattern part: {part}"
-
-    @staticmethod
-    def _pattern_part_at(pattern: str, position: int | None) -> str:
-        if position is None or position < 0 or position >= len(pattern):
-            return ""
-        start = position
-        while start > 0 and not pattern[start - 1].isspace():
-            start -= 1
-        end = position
-        while end < len(pattern) and not pattern[end].isspace():
-            end += 1
-        return pattern[start:end]
-
     def _validate_jump_bounds(self, min_jump: int | None, max_jump: int | None) -> None:
         """Validate jump bounds."""
         self._validate_jump_bound_type("minimum", min_jump)
@@ -239,31 +192,3 @@ class HexStringBuilder:
     def build(self) -> list[HexToken]:
         """Build the list of hex tokens."""
         return deepcopy(self._tokens)
-
-    @staticmethod
-    def from_bytes(data: bytes) -> HexStringBuilder:
-        """Create builder from raw bytes."""
-        if not isinstance(data, bytes):
-            msg = "Raw byte data must be bytes"
-            raise TypeError(msg)
-        builder = HexStringBuilder()
-        for byte in data:
-            builder.add(byte)
-        return builder
-
-    @staticmethod
-    def from_hex_string(hex_str: str) -> HexStringBuilder:
-        """Create builder from hex string."""
-        if not isinstance(hex_str, str):
-            msg = "Hex string must be a string"
-            raise TypeError(msg)
-        builder = HexStringBuilder()
-        hex_str = "".join(hex_str.split()).upper()
-        if len(hex_str) % 2 != 0:
-            msg = f"Invalid trailing hex byte: {hex_str[-1]}"
-            raise ValidationError(msg)
-
-        for i in range(0, len(hex_str), 2):
-            builder.add(hex_str[i : i + 2])
-
-        return builder

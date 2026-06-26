@@ -120,7 +120,8 @@ def demo_complete_features() -> None:
         .with_hex_string(
             "$hex_pattern",
             HexStringBuilder()
-            .add_bytes(0x4D, 0x5A)  # MZ
+            .add(0x4D)
+            .add(0x5A)  # MZ
             .nibble("F?")  # High nibble
             .wildcard(4)  # ?? ?? ?? ??
             .jump(10, 20)  # [10-20]
