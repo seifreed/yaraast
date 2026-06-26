@@ -72,12 +72,12 @@ class FluentRuleBuilder:
 
     def authored_by(self, author: str) -> Self:
         """Set author."""
-        self._rule_builder.with_author(author)
+        self._rule_builder.with_meta("author", author)
         return self
 
     def described_as(self, description: str) -> Self:
         """Set description."""
-        self._rule_builder.with_description(description)
+        self._rule_builder.with_meta("description", description)
         return self
 
     # String definition methods

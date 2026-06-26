@@ -193,7 +193,7 @@ class TestRuleBuilderMetadata:
         """With_author should add author metadata."""
         builder = RuleBuilder(name="AuthoredRule")
 
-        builder.with_author("Jane Smith")
+        builder.with_meta("author", "Jane Smith")
         rule = builder.build()
 
         assert len(rule.meta) == 1
@@ -203,7 +203,7 @@ class TestRuleBuilderMetadata:
         """With_description should add description metadata."""
         builder = RuleBuilder(name="DescribedRule")
 
-        builder.with_description("Detects malware")
+        builder.with_meta("description", "Detects malware")
         rule = builder.build()
 
         assert len(rule.meta) == 1
@@ -213,7 +213,7 @@ class TestRuleBuilderMetadata:
         """With_version should add version metadata."""
         builder = RuleBuilder(name="VersionedRule")
 
-        builder.with_version(2)
+        builder.with_meta("version", 2)
         rule = builder.build()
 
         assert len(rule.meta) == 1
@@ -223,9 +223,9 @@ class TestRuleBuilderMetadata:
         """Builder should support multiple metadata fields."""
         builder = RuleBuilder(name="MetaRule")
 
-        builder.with_author("Alice").with_description("Test rule").with_version(1).with_meta(
-            "date", "2025-01-30"
-        )
+        builder.with_meta("author", "Alice").with_meta("description", "Test rule").with_meta(
+            "version", 1
+        ).with_meta("date", "2025-01-30")
         rule = builder.build()
 
         assert len(rule.meta) == 4
@@ -453,8 +453,8 @@ class TestRuleBuilderCompleteRules:
             RuleBuilder()
             .with_name("SimpleMalware")
             .with_tag("malware")
-            .with_author("Security Researcher")
-            .with_description("Detects simple malware")
+            .with_meta("author", "Security Researcher")
+            .with_meta("description", "Detects simple malware")
             .with_string("$s1", "malicious", nocase=True)
             .with_string("$s2", "payload")
             .with_any_string()
@@ -493,7 +493,7 @@ class TestRuleBuilderCompleteRules:
             RuleBuilder(name="UtilityRule")
             .private()
             .global_()
-            .with_description("Utility rule for other rules")
+            .with_meta("description", "Utility rule for other rules")
             .with_condition(BooleanLiteral(value=True))
             .build()
         )
@@ -507,9 +507,9 @@ class TestRuleBuilderCompleteRules:
         rule = (
             RuleBuilder(name="ComplexTrojan")
             .with_tags("trojan", "apt", "targeted")
-            .with_author("Threat Intel Team")
-            .with_description("Detects advanced trojan")
-            .with_version(2)
+            .with_meta("author", "Threat Intel Team")
+            .with_meta("description", "Detects advanced trojan")
+            .with_meta("version", 2)
             .with_meta("date", "2025-01-30")
             .with_meta("severity", "critical")
             .with_string("$cmd", "cmd.exe", nocase=True)
@@ -555,9 +555,9 @@ class TestRuleBuilderFluentAPI:
             .with_tag("test")
             .with_tags("tag1", "tag2")
             .with_meta("key", "value")
-            .with_author("Author")
-            .with_description("Description")
-            .with_version(1)
+            .with_meta("author", "Author")
+            .with_meta("description", "Description")
+            .with_meta("version", 1)
             .with_string("$s", "test")
         )
 
@@ -606,7 +606,7 @@ class TestRuleBuilderFluentAPI:
             .with_name("FluentRule")
             .private()
             .with_tags("test", "fluent")
-            .with_author("Builder Test")
+            .with_meta("author", "Builder Test")
             .with_string("$s1", "test")
             .with_regex_string("$re", r"\w+")
             .with_hex_string("$hex", HexStringBuilder().add(0xFF))

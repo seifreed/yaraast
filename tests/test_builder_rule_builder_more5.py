@@ -124,29 +124,6 @@ def test_rule_builder_rejects_invalid_meta_values(meta_value: Any) -> None:
     with pytest.raises(TypeError, match="Invalid meta value"):
         RuleBuilder("metadata_rule").with_meta("value", meta_value)
 
-    with pytest.raises(TypeError, match="Invalid meta value"):
-        RuleBuilder("metadata_rule").with_meta("value", meta_value)
-
-
-def test_rule_builder_rejects_non_string_author_description_without_partial_update() -> None:
-    builder = RuleBuilder("metadata_rule").with_author("me").with_description("desc")
-
-    with pytest.raises(TypeError, match="Author must be a string"):
-        builder.with_author(cast(Any, True))
-
-    with pytest.raises(TypeError, match="Description must be a string"):
-        builder.with_description(cast(Any, 123))
-
-    built = builder.build()
-    assert built.get_meta_value("author") == "me"
-    assert built.get_meta_value("description") == "desc"
-
-
-@pytest.mark.parametrize("version", [True, "1", 1.5])
-def test_rule_builder_rejects_invalid_version_value(version: object) -> None:
-    with pytest.raises(TypeError, match="Version value must be an integer"):
-        RuleBuilder("metadata_rule").with_version(cast(Any, version))
-
 
 def test_rule_builder_default_condition_does_not_mutate_builder_state() -> None:
     builder = RuleBuilder("default_condition")
