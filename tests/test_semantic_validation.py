@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -1191,7 +1189,3 @@ class TestSemanticValidator:
         # Should detect unknown function
         assert result.is_valid is False
         assert any("not found in module" in error.message for error in result.errors)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])
