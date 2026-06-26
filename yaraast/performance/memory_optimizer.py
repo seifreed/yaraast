@@ -177,21 +177,6 @@ class MemoryOptimizer:
         maybe_post_optimize_collect(self)
         return optimized
 
-    def optimize_rules(self, rules: list[Rule]) -> list[Rule]:
-        """Optimize memory usage for a list of rules."""
-        self._string_pool.clear()
-        optimized_rules: list[Rule] = []
-        nodes_processed = 0
-        for rule in rules:
-            optimizer = MemoryOptimizerTransformer(self._string_pool, self.aggressive)
-            optimized_rules.append(optimizer.visit(rule))
-            nodes_processed += optimizer.nodes_processed
-
-        self._stats["nodes_processed"] += nodes_processed
-        self._stats["strings_pooled"] += len(self._string_pool)
-        maybe_post_optimize_collect(self)
-        return optimized_rules
-
     def get_memory_usage(self) -> dict[str, Any]:
         """Get current memory usage statistics."""
         return runtime_get_memory_usage()

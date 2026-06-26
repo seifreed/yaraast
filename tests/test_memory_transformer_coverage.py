@@ -59,7 +59,9 @@ def test_optimize_rule_and_rules_preserve_rich_rule() -> None:
     single = optimizer.optimize_rule(parse_yara_source(RICH_SOURCE).rules[0])
     assert single.name == "rich"
 
-    optimized_rules = optimizer.optimize_rules(parse_yara_source(RICH_SOURCE).rules)
+    optimized_rules = [
+        optimizer.optimize_rule(rule) for rule in parse_yara_source(RICH_SOURCE).rules
+    ]
     rebuilt = parse_yara_source(RICH_SOURCE)
     rebuilt.rules = optimized_rules
     assert CodeGenerator().generate(rebuilt) == expected

@@ -254,13 +254,6 @@ class BatchProcessor:
         """Analyze a batch of rules."""
         return self.process_batch(rules, BatchOperation.COMPLEXITY)
 
-    def optimize_rules(self, rules: list[Rule]) -> list[Rule]:
-        """Optimize a batch of rules."""
-        from yaraast.optimization.rule_optimizer import RuleOptimizer
-
-        optimizer = RuleOptimizer()
-        return self.process_batch(rules, optimizer.optimize_rule)
-
     def get_statistics(self) -> dict[str, Any]:
         """Get processing statistics."""
         attempted_items = self._stats["items_processed"] + self._stats["failures"]

@@ -59,9 +59,8 @@ def test_memory_optimizer_rule_list_usage_and_batch_paths() -> None:
 
     optimized_rule = optimizer.optimize_rule(rule)
     assert optimized_rule is not rule  # optimizer returns a new copy
-
-    optimized_rules = optimizer.optimize_rules([rule])
-    assert optimized_rules == [rule]
+    optimized_rules = [optimizer.optimize_rule(item) for item in [rule]]
+    assert optimized_rules == [optimized_rule]
 
     usage = optimizer.get_memory_usage()
     assert {"rss_mb", "vms_mb", "percent", "available_mb"} <= set(usage)

@@ -620,10 +620,6 @@ def test_process_rules_analyze_rules_optimize_rules_and_progress_callback() -> N
     complexity = processor.analyze_rules([rule])
     assert isinstance(complexity[0], dict)
 
-    optimized = processor.optimize_rules([rule])
-    assert len(optimized) == 1
-    assert optimized[0].name == "x"
-
     _ = processor.process_files([], BatchOperation.PARSE)
     # Callback called by batched paths with non-empty inputs.
     assert any(call[0].startswith("Processing") for call in progress_calls)
