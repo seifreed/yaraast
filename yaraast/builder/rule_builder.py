@@ -111,13 +111,6 @@ def _validate_meta_value(value: object) -> None:
     raise TypeError(msg)
 
 
-def _validate_text_value(value: object, field: str) -> str:
-    if isinstance(value, str):
-        return value
-    msg = f"{field} must be a string"
-    raise TypeError(msg)
-
-
 def _coerce_plain_string_value(value: object) -> str:
     if isinstance(value, bytes):
         return value.decode("latin-1")
