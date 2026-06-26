@@ -45,11 +45,6 @@ class FluentRuleBuilder:
         self._rule_builder.private()
         return self
 
-    def global_(self) -> Self:
-        """Mark rule as global."""
-        self._rule_builder.global_()
-        return self
-
     def tagged(self, *tags: str) -> Self:
         """Add tags to the rule."""
         self._rule_builder.with_tags(*tags)

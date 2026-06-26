@@ -111,7 +111,6 @@ def demo_complete_features() -> None:
         RuleBuilder()
         .with_name("comprehensive_malware_detector")
         .private()
-        .global_()
         .with_tags("malware", "trojan", "advanced")
         .with_meta("author", "YARAAST Demo")
         .with_meta("description", "Demonstrates all YARAAST features")

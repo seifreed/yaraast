@@ -268,7 +268,6 @@ def test_rule_metadata_aliases_and_example_rules_paths() -> None:
         FluentRuleBuilder()
         .named("alias_paths")
         .private()
-        .global_()
         .with_tag("demo")
         .meta("author", "me")
         .meta("score", 7)
@@ -284,7 +283,6 @@ def test_rule_metadata_aliases_and_example_rules_paths() -> None:
 
     assert built.name == "alias_paths"
     assert "private" in {m.name for m in built.modifiers}
-    assert "global" in {m.name for m in built.modifiers}
     assert built.get_meta_value("author") == "me"
     assert built.get_meta_value("version") == 3
     assert {t.name for t in built.tags} == {"demo"}
