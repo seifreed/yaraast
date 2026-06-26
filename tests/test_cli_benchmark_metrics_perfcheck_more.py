@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
+from types import SimpleNamespace
 from typing import Any, cast
 
 from click.testing import CliRunner
@@ -638,11 +639,10 @@ def test_metrics_reporting_analyze_pattern_counts_and_string_branches(
 ) -> None:
     ast = _sample_ast()
 
-    class _PatternGenerator:
-        def _analyze_patterns(self, _ast: YaraFile) -> None:
-            return None
-
-    _display_text_pattern_analysis(_PatternGenerator(), ast)
+    _display_text_pattern_analysis(
+        SimpleNamespace(_analyze_patterns=lambda _ast: None),
+        ast,
+    )
 
     analysis = {
         "total_strings": 3,
