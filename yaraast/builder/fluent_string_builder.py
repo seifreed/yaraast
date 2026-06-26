@@ -439,18 +439,3 @@ class FluentStringBuilder:
     def string(identifier: str) -> FluentStringBuilder:
         """Create a new string builder."""
         return FluentStringBuilder(identifier)
-
-    @staticmethod
-    def text_string(identifier: str, content: str) -> FluentStringBuilder:
-        """Create a text string builder."""
-        return FluentStringBuilder(identifier).literal(content)
-
-    @staticmethod
-    def hex_string(identifier: str, pattern: str) -> FluentStringBuilder:
-        """Create a hex string builder."""
-        return FluentStringBuilder(identifier).hex(pattern)
-
-    @staticmethod
-    def regex_string(identifier: str, pattern: str) -> FluentStringBuilder:
-        """Create a regex string builder."""
-        return FluentStringBuilder(identifier).regex(pattern)

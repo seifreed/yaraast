@@ -410,7 +410,7 @@ class TestFluentStringBuilderCommonPatterns:
 
     def test_zip_header_creates_zip_pattern(self) -> None:
         """Zip_header should create ZIP header pattern."""
-        result = FluentStringBuilder.hex_string("$zip", "50 4B 03 04")
+        result = FluentStringBuilder("$zip").hex("50 4B 03 04")
         string_def = result.build()
 
         assert isinstance(string_def, HexString)
@@ -457,10 +457,13 @@ class TestFluentStringBuilderCommonPatterns:
 
     def test_domain_pattern_creates_domain_regex(self) -> None:
         """Domain-style regex should create a regex string."""
-        string_def = FluentStringBuilder.regex_string(
-            "$domain",
-            r"\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b",
-        ).build()
+        string_def = (
+            FluentStringBuilder("$domain")
+            .regex(
+                r"\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b",
+            )
+            .build()
+        )
 
         assert isinstance(string_def, RegexString)
 
@@ -648,26 +651,26 @@ class TestFluentStringBuilderStaticMethods:
 
     def test_text_string_factory_creates_builder_with_content(self) -> None:
         """Text_string should create builder with content."""
-        builder = FluentStringBuilder.text_string("$s", "malware")
+        builder = FluentStringBuilder("$s").literal("malware")
 
         assert builder.identifier == "$s"
         assert builder._content == "malware"
 
     def test_text_string_factory_creates_plain_builder(self) -> None:
         """Text_string should create plain string content."""
-        builder = FluentStringBuilder.text_string("$p", "test")
+        builder = FluentStringBuilder("$p").literal("test")
 
         assert builder._content == "test"
 
     def test_hex_string_factory_creates_hex_builder(self) -> None:
         """Hex_string should create builder with hex pattern."""
-        builder = FluentStringBuilder.hex_string("$h", "4D 5A")
+        builder = FluentStringBuilder("$h").hex("4D 5A")
 
         assert builder._string_type == "hex"
 
     def test_regex_string_factory_creates_regex_builder(self) -> None:
         """Regex_string should create builder with regex pattern."""
-        builder = FluentStringBuilder.regex_string("$r", r"\w+")
+        builder = FluentStringBuilder("$r").regex(r"\w+")
 
         assert builder._string_type == "regex"
         assert builder._content == r"\w+"
@@ -685,19 +688,19 @@ class TestFluentStringBuilderConvenienceFunctions:
 
     def test_text_function_creates_text_builder(self) -> None:
         """Text function should create text builder."""
-        builder = FluentStringBuilder.text_string("$t", "content")
+        builder = FluentStringBuilder("$t").literal("content")
 
         assert builder._content == "content"
 
     def test_hex_pattern_function_creates_hex_builder(self) -> None:
         """Hex_pattern function should create hex builder."""
-        builder = FluentStringBuilder.hex_string("$h", "FF AA")
+        builder = FluentStringBuilder("$h").hex("FF AA")
 
         assert builder._string_type == "hex"
 
     def test_regex_function_creates_regex_builder(self) -> None:
         """Regex function should create regex builder."""
-        builder = FluentStringBuilder.regex_string("$r", r"[0-9]+")
+        builder = FluentStringBuilder("$r").regex(r"[0-9]+")
 
         assert builder._string_type == "regex"
 

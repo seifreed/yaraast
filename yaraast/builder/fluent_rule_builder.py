@@ -79,7 +79,7 @@ class FluentRuleBuilder:
         """Add a string using FluentStringBuilder or simple string."""
         if isinstance(identifier_or_builder, str) and value is not None:
             # Simple string case
-            builder = FluentStringBuilder.text_string(identifier_or_builder, value)
+            builder = FluentStringBuilder(identifier_or_builder).literal(value)
             self._string_builders.append(builder)
         elif isinstance(identifier_or_builder, FluentStringBuilder):
             # Builder case
@@ -98,17 +98,17 @@ class FluentRuleBuilder:
 
     def text_string(self, identifier: str, content: str) -> Self:
         """Add a text string."""
-        builder = FluentStringBuilder.text_string(identifier, content)
+        builder = FluentStringBuilder(identifier).literal(content)
         return self.with_string(builder)
 
     def hex_string(self, identifier: str, pattern: str) -> Self:
         """Add a hex string."""
-        builder = FluentStringBuilder.hex_string(identifier, pattern)
+        builder = FluentStringBuilder(identifier).hex(pattern)
         return self.with_string(builder)
 
     def regex_string(self, identifier: str, pattern: str) -> Self:
         """Add a regex string."""
-        builder = FluentStringBuilder.regex_string(identifier, pattern)
+        builder = FluentStringBuilder(identifier).regex(pattern)
         return self.with_string(builder)
 
     # Common string patterns

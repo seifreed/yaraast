@@ -19,7 +19,7 @@ class TestFluentStringBuilder:
 
     def test_text_string_basic(self) -> None:
         """Test basic text string creation."""
-        string_def = FluentStringBuilder.text_string("$test", "hello world").build()
+        string_def = FluentStringBuilder("$test").literal("hello world").build()
 
         assert isinstance(string_def, PlainString)
         assert string_def.identifier == "$test"
@@ -29,7 +29,7 @@ class TestFluentStringBuilder:
     def test_text_string_with_modifiers(self) -> None:
         """Test text string with modifiers."""
         string_def = (
-            FluentStringBuilder.text_string("$test", "malware").nocase().wide().fullword().build()
+            FluentStringBuilder("$test").literal("malware").nocase().wide().fullword().build()
         )
 
         assert isinstance(string_def, PlainString)
@@ -44,7 +44,7 @@ class TestFluentStringBuilder:
 
     def test_hex_string_basic(self) -> None:
         """Test basic hex string creation."""
-        string_def = FluentStringBuilder.hex_string("$hex", "4D 5A ?? 00").build()
+        string_def = FluentStringBuilder("$hex").hex("4D 5A ?? 00").build()
 
         assert isinstance(string_def, HexString)
         assert string_def.identifier == "$hex"
@@ -52,10 +52,11 @@ class TestFluentStringBuilder:
 
     def test_regex_string_basic(self) -> None:
         """Test basic regex string creation."""
-        string_def = FluentStringBuilder.regex_string(
-            "$email",
-            r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
-        ).build()
+        string_def = (
+            FluentStringBuilder("$email")
+            .regex(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+            .build()
+        )
 
         assert isinstance(string_def, RegexString)
         assert string_def.identifier == "$email"

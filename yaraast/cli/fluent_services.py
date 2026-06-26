@@ -231,7 +231,7 @@ def create_transformation_rules() -> list[Rule]:
         transform_rule(packed_base)
         .rename("upx_packed")
         .add_tag("upx")
-        .add_string(FluentStringBuilder.text_string("$upx", "UPX!").build())
+        .add_string(FluentStringBuilder("$upx").literal("UPX!").build())
         .transform_condition(
             lambda cond: (
                 FluentConditionBuilder(cond)
