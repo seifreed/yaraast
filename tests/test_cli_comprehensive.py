@@ -13,8 +13,6 @@ import subprocess
 import sys
 import tempfile
 
-import pytest
-
 CLI_TIMEOUT = 30
 
 
@@ -1774,7 +1772,3 @@ class TestCLIComplexRules:
 
         finally:
             test_file.unlink()
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
