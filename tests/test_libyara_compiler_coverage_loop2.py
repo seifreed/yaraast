@@ -37,10 +37,8 @@ import pytest
 
 from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
 
-pytestmark = pytest.mark.skipif(
-    not YARA_AVAILABLE,
-    reason="yara-python not available",
-)
+if not YARA_AVAILABLE:
+    pytest.skip("yara-python not available", allow_module_level=True)
 
 
 # ---------------------------------------------------------------------------
