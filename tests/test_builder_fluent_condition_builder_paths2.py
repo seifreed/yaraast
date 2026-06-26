@@ -29,10 +29,9 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert isinstance(b.n_of(1, "$a", "$b").build(), OfExpression)
     assert isinstance(b.n_of(0, "$a", "$b").build(), OfExpression)
 
-    assert isinstance(b.string_count_ge("$a", 2).build(), BinaryExpression)
     assert isinstance(b.string_at_offset("$a", 5).build(), AtExpression)
 
-    assert isinstance(b.filesize_eq(12).build(), BinaryExpression)
+    assert isinstance(ConditionBuilder().filesize().eq(12).build(), BinaryExpression)
     assert isinstance(b.filesize_lt(1024).build(), BinaryExpression)
     assert isinstance(b.filesize_gt(100 * 1024 * 1024).build(), BinaryExpression)
 

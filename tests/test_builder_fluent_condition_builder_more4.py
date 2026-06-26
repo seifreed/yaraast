@@ -30,7 +30,7 @@ def test_fluent_condition_quantifiers_and_strings() -> None:
     expr = ConditionBuilder().any_of("them").not_().build()
     assert isinstance(expr, UnaryExpression)
 
-    expr = FluentConditionBuilder().string_count_gt("$a", 2).build()
+    expr = ConditionBuilder().string_count("$a").gt(2).build()
     assert isinstance(expr, BinaryExpression)
 
 
@@ -89,7 +89,7 @@ def test_fluent_condition_builder_rejects_invalid_string_count_identifiers() -> 
         builder.string_count_eq("#", 1)
 
     with pytest.raises(ValidationError, match="Invalid string reference"):
-        builder.string_count_gt("bad-key", 1)
+        ConditionBuilder().string_count("bad-key").gt(1)
 
 
 def test_fluent_condition_helpers_return_literals() -> None:

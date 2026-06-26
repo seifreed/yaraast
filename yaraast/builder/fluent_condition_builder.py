@@ -43,32 +43,12 @@ class FluentConditionBuilder(ConditionBuilder):
         """String count equals N."""
         return FluentConditionBuilder(make_string_count_compare(string_id, "==", count))
 
-    def string_count_gt(self, string_id: str, count: int) -> FluentConditionBuilder:
-        """String count greater than N."""
-        return FluentConditionBuilder(make_string_count_compare(string_id, ">", count))
-
-    def string_count_ge(self, string_id: str, count: int) -> FluentConditionBuilder:
-        """String count greater than or equal to N."""
-        return FluentConditionBuilder(make_string_count_compare(string_id, ">=", count))
-
-    def string_at_entrypoint(self, string_id: str) -> FluentConditionBuilder:
-        """String at entrypoint."""
-        validate_string_reference(string_id)
-        return FluentConditionBuilder(
-            AtExpression(string_id=string_id, offset=Identifier(name="entrypoint")),
-        )
-
     def string_at_offset(self, string_id: str, offset: int) -> FluentConditionBuilder:
         """String at specific offset."""
         validate_string_reference(string_id)
         return FluentConditionBuilder(
             AtExpression(string_id=string_id, offset=make_integer_literal(offset)),
         )
-
-    # File property helpers
-    def filesize_eq(self, size: int) -> FluentConditionBuilder:
-        """File size equals specific value."""
-        return FluentConditionBuilder(make_filesize_compare("==", size))
 
     def filesize_gt(self, size: int) -> FluentConditionBuilder:
         """File size greater than."""

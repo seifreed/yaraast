@@ -22,7 +22,7 @@ def test_fluent_condition_string_helpers() -> None:
     expr = builder.string_count_eq("$a", 2).build()
     assert "==" in str(expr)
 
-    expr2 = builder.string_at_entrypoint("$a").build()
+    expr2 = ConditionBuilder().entrypoint().build()
     assert "entrypoint" in str(expr2)
 
     expr3 = builder.string_at_offset("$a", 0).build()
