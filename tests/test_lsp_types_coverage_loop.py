@@ -31,13 +31,8 @@ import importlib
 import site
 import sys
 from types import ModuleType
-from typing import TYPE_CHECKING
 
 import pytest
-
-if TYPE_CHECKING:
-    pass
-
 
 # ---------------------------------------------------------------------------
 # Helpers
