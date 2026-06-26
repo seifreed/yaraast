@@ -141,9 +141,7 @@ rule optimize_me {
             "rules": f"{stats['rules_eliminated']} rules removed",
             "strings": f"{original_strings - optimized_strings} strings removed",
             "percentage": (
-                f"{(1 - len(optimized.rules) / len(ast.rules)) * 100:.1f}%"
-                if ast.rules
-                else "0%"
+                f"{(1 - len(optimized.rules) / len(ast.rules)) * 100:.1f}%" if ast.rules else "0%"
             ),
         },
         "optimization_breakdown": {
@@ -227,14 +225,3 @@ rule set_test {
 
     assert count == 0
     assert "(1, 1)" in output
-
-
-if __name__ == "__main__":
-    test_constant_folding()
-    test_boolean_simplification()
-    test_dead_code_elimination()
-    test_comprehensive_optimization()
-    test_nested_expression_optimization()
-    test_range_optimization()
-    test_set_expression_duplicates_are_preserved()
-    print("✓ All optimization tests passed")
