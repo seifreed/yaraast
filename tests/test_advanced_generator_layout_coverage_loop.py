@@ -15,8 +15,6 @@ Targeted uncovered lines (baseline 88.22 %):
 
 from __future__ import annotations
 
-import io
-
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -35,7 +33,6 @@ from yaraast.codegen.advanced_generator_layout import (
     generate_condition_string,
     write_wrapped_condition,
 )
-from yaraast.codegen.advanced_layout import AdvancedLayout
 from yaraast.codegen.formatting import FormattingConfig, IndentStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
@@ -56,32 +53,6 @@ from yaraast.yarax.ast_nodes import (
     WithStatement,
 )
 
-# ---------------------------------------------------------------------------
-# Minimal helper that satisfies the interface expected by write_wrapped_condition
-# without any mocking - it uses the real AdvancedLayout for _layout.config.
-# ---------------------------------------------------------------------------
-
-
-class _RealWriteCapture:
-    """A write-capture that uses the real AdvancedLayout so config is authentic."""
-
-    def __init__(self, config: FormattingConfig) -> None:
-        self._layout = AdvancedLayout(config)
-        self._indent_level = 0
-        self.buffer = io.StringIO()
-
-    def _get_indent(self) -> str:
-        if self._layout.config.indent_style == IndentStyle.TABS:
-            return "\t" * self._indent_level
-        return " " * (self._layout.config.indent_size * self._indent_level)
-
-    def _write(self, text: str) -> None:
-        self.buffer.write(text)
-
-    def _writeline(self, text: str = "") -> None:
-        self.buffer.write(text + "\n")
-
-
 # ===========================================================================
 # write_wrapped_condition
 # ===========================================================================
@@ -92,7 +63,7 @@ def test_write_wrapped_condition_multiline_input_writes_each_line() -> None:
     Lines 187-190: when the condition string already contains newlines the
     function writes each split line individually.
     """
-    gen = _RealWriteCapture(FormattingConfig())
+    gen = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig()))
     write_wrapped_condition(gen, "part_a\npart_b\npart_c")
     result = gen.buffer.getvalue()
     assert result == "part_a\npart_b\npart_c\n"
@@ -103,7 +74,7 @@ def test_write_wrapped_condition_short_condition_written_as_single_line() -> Non
     Lines 193-195: a condition that fits within max_line_length is written as
     a single call to _writeline with no wrapping.
     """
-    gen = _RealWriteCapture(FormattingConfig(max_line_length=120))
+    gen = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig(max_line_length=120)))
     write_wrapped_condition(gen, "filesize < 100KB")
     result = gen.buffer.getvalue()
     assert result == "filesize < 100KB\n"
@@ -116,7 +87,7 @@ def test_write_wrapped_condition_long_input_wraps_at_word_boundary_with_spaces()
     Line 211 (if current_line) takes the True branch and writes the trailing word.
     """
     config = FormattingConfig(indent_style=IndentStyle.SPACES, indent_size=4, max_line_length=20)
-    gen = _RealWriteCapture(config)
+    gen = CodeGenerator(options=GeneratorOptions(advanced=config))
     write_wrapped_condition(gen, "word1 word2 word3 word4 word5")
     result = gen.buffer.getvalue()
     lines = result.rstrip("\n").split("\n")
@@ -131,7 +102,7 @@ def test_write_wrapped_condition_long_input_wraps_with_tab_indent() -> None:
     Line 198: when indent_style is TABS the continuation indent is a single tab.
     """
     config = FormattingConfig(indent_style=IndentStyle.TABS, max_line_length=20)
-    gen = _RealWriteCapture(config)
+    gen = CodeGenerator(options=GeneratorOptions(advanced=config))
     write_wrapped_condition(gen, "word1 word2 word3 word4 word5")
     result = gen.buffer.getvalue()
     lines = result.rstrip("\n").split("\n")
@@ -148,7 +119,7 @@ def test_write_wrapped_condition_empty_after_split_skips_final_writeline() -> No
     """
     # max_line_length=1 makes base_limit=max(1,1)=1; '   '.split() returns []
     config = FormattingConfig(max_line_length=1)
-    gen = _RealWriteCapture(config)
+    gen = CodeGenerator(options=GeneratorOptions(advanced=config))
     write_wrapped_condition(gen, "   ")
     # Nothing written because: no newlines, len > base_limit, split returns [],
     # current_line stays '' so line 211 takes the False branch.
