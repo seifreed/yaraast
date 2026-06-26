@@ -31,7 +31,7 @@ Missing lines targeted (as of the baseline run):
 
 from __future__ import annotations
 
-from lsprotocol.types import Position, Range, TextEdit
+from lsprotocol.types import Range, TextEdit
 
 from yaraast.ast.base import Location as AstLocation
 from yaraast.ast.conditions import AtExpression
@@ -69,10 +69,6 @@ _URI = "file://test.yar"
 
 def _doc(text: str) -> DocumentContext:
     return DocumentContext(uri=_URI, text=text)
-
-
-def _pos(line: int, char: int) -> Position:
-    return Position(line=line, character=char)
 
 
 # ---------------------------------------------------------------------------
