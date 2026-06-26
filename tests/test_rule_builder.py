@@ -80,45 +80,16 @@ class TestRuleBuilderBasicProperties:
         assert isinstance(rule.modifiers[0], RuleModifier)
         assert rule.modifiers[0].name == "private"
 
-    def test_global_modifier(self) -> None:
-        """Global_ method should add global modifier."""
-        builder = RuleBuilder(name="GlobalRule")
-
-        builder.global_()
-        rule = builder.build()
-
-        assert len(rule.modifiers) == 1
-        assert rule.modifiers[0].name == "global"
-
     def test_multiple_modifiers(self) -> None:
         """Builder should support multiple modifiers."""
         builder = RuleBuilder(name="ModifiedRule")
-
-        builder.private().global_()
-        rule = builder.build()
-
-        assert len(rule.modifiers) == 2
-        modifier_names = [m.name for m in rule.modifiers]
-        assert "private" in modifier_names
-        assert "global" in modifier_names
-
-    def test_private_modifier_idempotent(self) -> None:
-        """Calling private multiple times should only add once."""
-        builder = RuleBuilder(name="TestRule")
 
         builder.private().private()
         rule = builder.build()
 
         assert len(rule.modifiers) == 1
-
-    def test_global_modifier_idempotent(self) -> None:
-        """Calling global_ multiple times should only add once."""
-        builder = RuleBuilder(name="TestRule")
-
-        builder.global_().global_()
-        rule = builder.build()
-
-        assert len(rule.modifiers) == 1
+        modifier_names = [m.name for m in rule.modifiers]
+        assert "private" in modifier_names
 
 
 class TestRuleBuilderTags:
@@ -492,14 +463,13 @@ class TestRuleBuilderCompleteRules:
         rule = (
             RuleBuilder(name="UtilityRule")
             .private()
-            .global_()
             .with_meta("description", "Utility rule for other rules")
             .with_condition(BooleanLiteral(value=True))
             .build()
         )
 
         assert rule.name == "UtilityRule"
-        assert len(rule.modifiers) == 2
+        assert len(rule.modifiers) == 1
         assert rule.condition is not None
 
     def test_build_complex_malware_rule(self) -> None:
@@ -551,7 +521,6 @@ class TestRuleBuilderFluentAPI:
         result = (
             builder.with_name("Test")
             .private()
-            .global_()
             .with_tag("test")
             .with_tags("tag1", "tag2")
             .with_meta("key", "value")

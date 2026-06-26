@@ -99,14 +99,6 @@ def test_rule_builder_rejects_duplicate_rule_tags_without_partial_update() -> No
     assert [tag.name for tag in builder.build().tags] == ["duplicate"]
 
 
-def test_rule_builder_public_removes_private_modifier() -> None:
-    built = RuleBuilder("visibility").private().global_().public().build()
-
-    modifier_names = {modifier.name for modifier in built.modifiers}
-    assert "private" not in modifier_names
-    assert "global" in modifier_names
-
-
 @pytest.mark.parametrize(
     "meta_key",
     ["bad key", "bad-key", "for", "1bad", "", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)],

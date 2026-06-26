@@ -180,20 +180,6 @@ class RuleBuilder:
             self._modifiers.append(RuleModifier.from_string("private"))
         return self
 
-    def global_(self) -> Self:
-        """Mark rule as global."""
-        if not any(mod.name == "global" for mod in self._modifiers):
-            self._modifiers.append(RuleModifier.from_string("global"))
-        return self
-
-    def public(self) -> Self:
-        """Mark rule as public.
-
-        Public is the default visibility, so remove any private modifier.
-        """
-        self._modifiers = [modifier for modifier in self._modifiers if modifier.name != "private"]
-        return self
-
     def with_tag(self, tag: str) -> Self:
         """Add a tag to the rule."""
         _validate_new_tags(self._tags, (tag,))
