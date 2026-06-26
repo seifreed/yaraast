@@ -136,7 +136,7 @@ rule ok {
     assert result.compiled_rules is not None
 
     out_file = tmp_path / "ok.compiled"
-    assert compiler.save_compiled_rules(result.compiled_rules, out_file) is True
+    result.compiled_rules.save(str(out_file))
     assert out_file.exists()
     assert out_file.stat().st_size > 0
 

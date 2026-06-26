@@ -9,7 +9,7 @@ from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
-def test_libyara_compiler_handles_read_and_save_failures(tmp_path: Path) -> None:
+def test_libyara_compiler_handles_read_failures(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
 
     directory = tmp_path / "adir"
@@ -18,8 +18,6 @@ def test_libyara_compiler_handles_read_and_save_failures(tmp_path: Path) -> None
     assert read_result.success is False
     assert read_result.errors
     assert "Error reading file" in read_result.errors[0]
-
-    assert compiler.save_compiled_rules(object(), tmp_path / "rules.bin") is False
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")

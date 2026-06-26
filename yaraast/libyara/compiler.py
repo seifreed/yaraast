@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from os import PathLike
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from yaraast.libyara._availability import is_missing_yara_import
@@ -327,20 +326,3 @@ class LibyaraCompiler:
             return CompilationResult(
                 success=False, errors=[f"Unexpected error: {e!s}"], source_code=source
             )
-
-    def save_compiled_rules(self, rules: Any, filepath: str | Path) -> bool:
-        """Save compiled rules to file.
-
-        Args:
-            rules: Compiled yara.Rules object
-            filepath: Output file path
-
-        Returns:
-            True if successful
-
-        """
-        try:
-            rules.save(str(filepath))
-            return True
-        except (ValueError, TypeError, AttributeError, OSError, yara.Error):
-            return False

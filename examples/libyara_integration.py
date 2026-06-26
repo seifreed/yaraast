@@ -52,8 +52,8 @@ def example_compilation() -> None:
         # Save compiled rules
         with tempfile.TemporaryDirectory() as temp_dir:
             compiled_path = Path(temp_dir) / "compiled.yarc"
-            if compiler.save_compiled_rules(result.compiled_rules, str(compiled_path)):
-                print(f"✓ Saved compiled rules to '{compiled_path}'")
+            result.compiled_rules.save(str(compiled_path))
+            print(f"✓ Saved compiled rules to '{compiled_path}'")
     else:
         print("✗ Compilation failed!")
         for error in result.errors:
