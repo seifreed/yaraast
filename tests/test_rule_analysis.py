@@ -270,13 +270,3 @@ rule test_them {
     assert len(rule_analysis["used"]) == 3
     assert len(rule_analysis["unused"]) == 0
     assert abs(rule_analysis["usage_rate"] - 1.0) < 1e-9
-
-
-if __name__ == "__main__":
-    test_unused_string_detection()
-    test_undefined_string_detection()
-    test_dependency_analysis()
-    test_circular_dependency_detection()
-    test_comprehensive_analysis()
-    test_them_keyword_handling()
-    print("✓ All rule analysis tests passed")
