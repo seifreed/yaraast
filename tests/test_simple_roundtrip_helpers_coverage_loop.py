@@ -12,7 +12,8 @@ used anywhere in this file.
 
 from __future__ import annotations
 
-from typing import Any
+from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 
@@ -498,13 +499,12 @@ def test_deserialize_string_set_item_accepts_dict_expression() -> None:
 
 def test_with_dynamic_node_metadata_serializes_location() -> None:
     """A dynamic (non-ASTNode) object with a location gets it serialized."""
-
-    class _FakeNode:
-        location = Location(line=5, column=10)
-        leading_comments: list[Any] = []
-        trailing_comment = None
-
-    result = _with_dynamic_node_metadata(_FakeNode(), {"type": "Meta", "key": "k", "value": "v"})
+    result = _with_dynamic_node_metadata(
+        SimpleNamespace(
+            location=Location(line=5, column=10), leading_comments=[], trailing_comment=None
+        ),
+        {"type": "Meta", "key": "k", "value": "v"},
+    )
     assert "location" in result
     assert result["location"]["line"] == 5
     assert result["location"]["column"] == 10
@@ -517,13 +517,14 @@ def test_with_dynamic_node_metadata_serializes_location() -> None:
 
 def test_with_dynamic_node_metadata_serializes_leading_comments() -> None:
     """A dynamic node with leading_comments gets them serialized."""
-
-    class _FakeNode:
-        location = None
-        leading_comments = [Comment("// note", is_multiline=False)]
-        trailing_comment = None
-
-    result = _with_dynamic_node_metadata(_FakeNode(), {"type": "Meta", "key": "k", "value": 0})
+    result = _with_dynamic_node_metadata(
+        SimpleNamespace(
+            location=None,
+            leading_comments=[Comment("// note", is_multiline=False)],
+            trailing_comment=None,
+        ),
+        {"type": "Meta", "key": "k", "value": 0},
+    )
     assert "leading_comments" in result
     assert len(result["leading_comments"]) == 1
     assert result["leading_comments"][0]["type"] == "Comment"
@@ -536,14 +537,13 @@ def test_with_dynamic_node_metadata_serializes_leading_comments() -> None:
 
 def test_with_dynamic_node_metadata_rejects_invalid_trailing_comment() -> None:
     """A trailing_comment that is not Comment/CommentGroup raises."""
-
-    class _FakeNode:
-        location = None
-        leading_comments: list[Any] = []
-        trailing_comment = "raw string, not a Comment"
-
     with pytest.raises(SerializationError, match="trailing_comment must be a Comment"):
-        _with_dynamic_node_metadata(_FakeNode(), {})
+        _with_dynamic_node_metadata(
+            SimpleNamespace(
+                location=None, leading_comments=[], trailing_comment="raw string, not a Comment"
+            ),
+            {},
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1031,17 +1031,19 @@ def test_comment_group_deserialization_uses_cast_comment() -> None:
 
 def test_serialize_meta_with_dynamic_object_trailing_comment() -> None:
     """serialize_meta on a non-ASTNode dynamic object with trailing_comment."""
-
-    class _DynMeta:
-        key = "k"
-        value = "v"
-        scope = None
-        location = None
-        leading_comments: list[Any] = []
-        trailing_comment = Comment("// end", is_multiline=False)
-
-    dyn_meta_instance: Any = _DynMeta()
-    result = serialize_meta(dyn_meta_instance)
+    result = serialize_meta(
+        cast(
+            Any,
+            SimpleNamespace(
+                key="k",
+                value="v",
+                scope=None,
+                location=None,
+                leading_comments=[],
+                trailing_comment=Comment("// end", is_multiline=False),
+            ),
+        ),
+    )
     assert "trailing_comment" in result
     assert result["trailing_comment"]["type"] == "Comment"
 
