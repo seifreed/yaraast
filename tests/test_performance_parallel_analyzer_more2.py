@@ -220,23 +220,24 @@ def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> 
     large_rules = Parser().parse("\n".join(_rule_code(f"l{i}") for i in range(60))).rules
     huge_rules = Parser().parse("\n".join(_rule_code(f"h{i}") for i in range(210))).rules
 
-    assert analyzer.optimize_worker_count(small_rules) == 1
-    assert analyzer.optimize_worker_count(medium_rules) <= 4
-    assert analyzer.optimize_worker_count(large_rules) <= 8
-    assert analyzer.optimize_worker_count(huge_rules) >= 1
-
-    with pytest.raises(TypeError, match="rules must be a sequence of Rule nodes"):
-        analyzer.optimize_worker_count(cast(Any, "not-rules"))
-    with pytest.raises(TypeError, match="rules must contain Rule nodes"):
-        analyzer.optimize_worker_count(cast(Any, [object()]))
-
     profile = analyzer.profile_performance(small_rules)
     assert profile["rule_count"] == len(small_rules)
     assert profile["optimal_workers"] in profile["worker_performance"]
 
-    limited_profile = analyzer.profile_performance(small_rules, worker_counts=[1, 10_000])
+    limited_profile = analyzer.profile_performance(
+        small_rules,
+        worker_counts=[1, 10_000],
+    )
     assert 1 in limited_profile["worker_performance"]
     assert 10_000 not in limited_profile["worker_performance"]
+
+    medium_profile = analyzer.profile_performance(medium_rules, worker_counts=[1, 4, 8])
+    large_profile = analyzer.profile_performance(large_rules, worker_counts=[1, 4, 8])
+    huge_profile = analyzer.profile_performance(huge_rules, worker_counts=[1, 4, 8])
+
+    assert medium_profile["optimal_workers"] in medium_profile["worker_performance"]
+    assert large_profile["optimal_workers"] in large_profile["worker_performance"]
+    assert huge_profile["optimal_workers"] in huge_profile["worker_performance"]
 
     invalid_profile = analyzer.profile_performance(small_rules, worker_counts=[10_000])
     assert invalid_profile == {

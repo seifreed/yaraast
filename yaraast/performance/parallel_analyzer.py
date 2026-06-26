@@ -176,28 +176,6 @@ class ParallelAnalyzer:
             "max_workers": self.max_workers,
         }
 
-    def optimize_worker_count(self, rules: list[Rule]) -> int:
-        """Determine optimal worker count for rule set.
-
-        Args:
-            rules: Rules to analyze
-
-        Returns:
-            Optimal worker count
-
-        """
-        rule_count = len(_require_rule_sequence(rules))
-        cpu_count = mp.cpu_count()
-
-        # Heuristics for worker count
-        if rule_count < 10:
-            return 1  # Serial processing for small sets
-        if rule_count < 50:
-            return min(4, cpu_count)
-        if rule_count < 200:
-            return min(8, cpu_count)
-        return cpu_count
-
     def analyze_complexity_parallel(
         self,
         asts: Sequence[YaraFile],
