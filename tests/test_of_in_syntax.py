@@ -925,7 +925,3 @@ class TestExpressionQuantifierOf:
         """
         with pytest.raises(ParserError):
             Parser().parse(yara_code)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
