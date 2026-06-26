@@ -297,16 +297,3 @@ class PredefinedStyles:
             sort_meta=True,
             sort_strings=True,
         )
-
-    @staticmethod
-    def yara_default() -> FormattingConfig:
-        """Default YARA style."""
-        return FormattingConfig(
-            indent_size=2,
-            brace_style=BraceStyle.SAME_LINE,
-            space_before_colon=True,
-            space_after_colon=True,
-            space_around_operators=True,
-            space_after_comma=True,
-            string_style=StringStyle.ALIGNED,
-        )

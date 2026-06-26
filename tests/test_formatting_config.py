@@ -337,22 +337,6 @@ class TestPredefinedStylesVerbose:
         assert config.sort_imports is True
 
 
-class TestPredefinedStylesYaraDefault:
-    """Test YARA default predefined style."""
-
-    def test_yara_default_style(self) -> None:
-        """YARA default style should match typical YARA formatting."""
-        config = PredefinedStyles.yara_default()
-
-        assert config.indent_size == 2
-        assert config.brace_style == BraceStyle.SAME_LINE
-        assert config.space_before_colon is True
-        assert config.space_after_colon is True
-        assert config.space_around_operators is True
-        assert config.space_after_comma is True
-        assert config.string_style == StringStyle.ALIGNED
-
-
 class TestFormattingConfigIndentation:
     """Test indentation configuration."""
 
