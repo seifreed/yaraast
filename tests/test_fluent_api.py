@@ -3,7 +3,7 @@
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.builder.ast_transformer import clone_rule, transform_rule
+from yaraast.builder.ast_transformer import CloneTransformer, transform_rule
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.fluent_condition_builder import (
     FluentConditionBuilder,
@@ -248,7 +248,7 @@ class TestRuleTransformations:
         """Test rule cloning."""
         original = rule("original").tagged("test").text_string("$a", "hello").matches_any().build()
 
-        cloned = clone_rule(original)
+        cloned = CloneTransformer.clone_rule(original)
 
         assert cloned.name == original.name
         assert cloned is not original  # Different object

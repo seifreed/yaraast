@@ -30,8 +30,6 @@ from yaraast.builder.ast_transformer import (
     CloneTransformer,
     RuleTransformer,
     YaraFileTransformer,
-    clone_rule,
-    clone_yara_file,
     transform_rule,
     transform_yara_file,
 )
@@ -51,7 +49,7 @@ def _sample_rule(name: str = "r1") -> Rule:
 
 def test_clone_helpers_create_deep_independent_copies() -> None:
     original_rule = _sample_rule("orig")
-    cloned_rule = clone_rule(original_rule)
+    cloned_rule = CloneTransformer.clone_rule(original_rule)
 
     cloned_rule.name = "changed"
     cloned_rule.tags[0].name = "changed_tag"
@@ -68,7 +66,7 @@ def test_clone_helpers_create_deep_independent_copies() -> None:
         includes=[Include(path="inc.yar")],
         rules=[original_rule],
     )
-    cloned_file = clone_yara_file(original_file)
+    cloned_file = CloneTransformer.clone_yara_file(original_file)
     cloned_file.imports[0].module = "math"
     cloned_file.rules[0].name = "mutated"
 
@@ -83,7 +81,7 @@ def test_generic_clone_rejects_invalid_ast_node_inputs() -> None:
 
 def test_rule_clone_and_transform_helpers_reject_invalid_rule_inputs() -> None:
     with pytest.raises(TypeError, match="Rule input must be a Rule"):
-        clone_rule(cast(Any, object()))
+        CloneTransformer.clone_rule(cast(Any, object()))
 
     with pytest.raises(TypeError, match="Rule input must be a Rule"):
         RuleTransformer(cast(Any, object()))
@@ -94,7 +92,7 @@ def test_rule_clone_and_transform_helpers_reject_invalid_rule_inputs() -> None:
 
 def test_yara_file_clone_and_transform_helpers_reject_invalid_file_inputs() -> None:
     with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
-        clone_yara_file(cast(Any, object()))
+        CloneTransformer.clone_yara_file(cast(Any, object()))
 
     with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
         YaraFileTransformer(cast(Any, object()))
@@ -115,7 +113,7 @@ def test_clone_helpers_preserve_rule_metadata_and_pragmas() -> None:
         )
     ]
 
-    cloned_rule = clone_rule(original_rule)
+    cloned_rule = CloneTransformer.clone_rule(original_rule)
 
     assert cloned_rule.location == original_rule.location
     assert cloned_rule.leading_comments[0].text == "rule lead"

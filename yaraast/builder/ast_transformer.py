@@ -636,17 +636,6 @@ class YaraFileTransformer:
         return CloneTransformer.clone_yara_file(self.yara_file)
 
 
-# Convenience functions
-def clone_rule(rule: Rule) -> Rule:
-    """Clone a rule."""
-    return CloneTransformer.clone_rule(rule)
-
-
-def clone_yara_file(yara_file: YaraFile) -> YaraFile:
-    """Clone a YARA file."""
-    return CloneTransformer.clone_yara_file(yara_file)
-
-
 def transform_rule(rule: Rule) -> RuleTransformer:
     """Create a rule transformer."""
     return RuleTransformer(rule)
