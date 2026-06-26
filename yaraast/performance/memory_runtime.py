@@ -23,13 +23,6 @@ def init_optimizer_state(optimizer: Any) -> None:
     }
 
 
-def clear_caches(optimizer: Any) -> None:
-    optimizer._cache.clear()
-    optimizer._string_pool.clear()
-    optimizer._ast_pool.clear()
-    gc.collect()
-
-
 def get_statistics(optimizer: Any) -> dict[str, Any]:
     return {
         **optimizer._stats,

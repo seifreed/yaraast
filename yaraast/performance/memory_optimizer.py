@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from yaraast.performance.memory_helpers import MemoryStats
 from yaraast.performance.memory_runtime import (
-    clear_caches as runtime_clear_caches,
     force_cleanup as runtime_force_cleanup,
     get_memory_stats as runtime_get_memory_stats,
     get_statistics as runtime_get_statistics,
@@ -172,10 +171,6 @@ class MemoryOptimizer:
         self._stats["strings_pooled"] += len(self._string_pool)
         maybe_post_optimize_collect(self)
         return optimized
-
-    def clear_caches(self) -> None:
-        """Clear all internal caches."""
-        runtime_clear_caches(self)
 
     def get_statistics(self) -> dict[str, Any]:
         """Get optimization statistics."""

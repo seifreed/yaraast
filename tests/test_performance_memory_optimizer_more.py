@@ -45,10 +45,6 @@ def test_memory_optimizer_basic_and_stats() -> None:
     assert mem_stats.total_objects >= 0
     assert not hasattr(mem_stats, "strings_pooled")
 
-    optimizer.clear_caches()
-    stats_after = optimizer.get_statistics()
-    assert stats_after["string_pool_size"] == 0
-
 
 def test_memory_optimizer_context_and_cleanup() -> None:
     optimizer = MemoryOptimizer(enable_tracking=True)
