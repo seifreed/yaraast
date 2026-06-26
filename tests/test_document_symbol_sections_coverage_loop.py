@@ -34,6 +34,7 @@ Unreachable lines / branches
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any
 
 from lsprotocol.types import Position, Range
@@ -230,17 +231,6 @@ class _FakeSectionWithLocation:
 
     def __init__(self, loc: Location) -> None:
         self.location = loc
-
-
-class _FakeRuleWithLocatedSection:
-    """Rule-like object carrying a section attribute with a real Location."""
-
-    def __init__(self, section_name: str, loc: Location) -> None:
-        self.meta: list[Any] = []
-        setattr(self, section_name, _FakeSectionWithLocation(loc))
-
-    def __getattr__(self, item: str) -> None:
-        return None
 
 
 # ---------------------------------------------------------------------------
@@ -1134,7 +1124,7 @@ class TestAppendExtraSectionSymbolsSuccessPath:
             end_line=next_line + 1,
             end_column=30,
         )
-        fake_rule: Any = _FakeRuleWithLocatedSection("events", loc)
+        fake_rule: Any = SimpleNamespace(meta=[], events=_FakeSectionWithLocation(loc))
         rule_rng = Range(
             start=Position(line=0, character=0),
             end=Position(line=len(doc.lines) - 1, character=1),
