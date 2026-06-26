@@ -113,12 +113,12 @@ class _FullRuntime:
 
     def get_document(self, uri: str, load_workspace: bool = True) -> None:
         # Returns None so that get_document_source falls back to the workspace
-        return None
+        _ = load_workspace
 
     def get_status(self) -> dict[str, object]:
         return {"open_documents": len(self.opened), "language_mode": "auto"}
 
-    def should_debounce(self, uri: str, operation: str) -> bool:
+    def should_debounce(self, uri: str, _operation: str) -> bool:
         return self._debounce
 
 
@@ -156,7 +156,7 @@ def test_latest_change_text_returns_none_on_subscript_exception() -> None:
     """Lines 35-36: objects that raise TypeError on [-1] hit the except branch."""
 
     class _Unindexable:
-        def __getitem__(self, key: Any) -> Any:
+        def __getitem__(self, _key: Any) -> Any:
             raise TypeError("not subscriptable")
 
         def __bool__(self) -> bool:
