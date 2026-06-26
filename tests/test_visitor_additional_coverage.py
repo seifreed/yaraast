@@ -373,6 +373,3 @@ class TestAdditionalParserBasedCoverage:
 
         visitor = SetVisitor()
         visitor.visit(ast)
-
-        # Set expressions may or may not be present depending on parsing
-        assert visitor.sets >= 0

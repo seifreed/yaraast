@@ -744,11 +744,6 @@ class TestBaseVisitorComprehensive:
         visitor = OptionalFieldVisitor()
         visitor.visit(ast)
 
-        # Verify visitor handles optional fields correctly
-        assert (
-            visitor.string_offsets_with_index >= 0
-        )  # May or may not have index depending on parsing
-
     def test_visitor_traverses_falsy_present_optional_node(self) -> None:
         """Test optional AST fields are skipped only when absent."""
 
