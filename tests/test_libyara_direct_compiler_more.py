@@ -111,3 +111,23 @@ def test_direct_compiler_compile_ast_rejects_invalid_source_path() -> None:
     assert type_result.errors == [
         "Direct compilation error: source_path must be a string or path-like object",
     ]
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_direct_compiler_compile_ast_rejects_symlink_ancestor_source_path(
+    tmp_path: Path,
+) -> None:
+    ast = Parser().parse("rule main_rule { condition: true }")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(outside, target_is_directory=True)
+    nested = link / "nested"
+    nested.mkdir()
+    source_path = nested / "main.yar"
+
+    compiler = DirectASTCompiler(enable_optimization=False)
+    result = compiler.compile_ast(ast, source_path=source_path)
+
+    assert result.success is False
+    assert result.errors == ["Direct compilation error: source_path must not traverse a symlink"]
