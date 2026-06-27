@@ -63,6 +63,16 @@ def test_require_file_path_rejects_null_byte_string() -> None:
         require_file_path("\x00broken", "filepath")
 
 
+def test_require_file_path_rejects_symlink_path(tmp_path: Path) -> None:
+    target = tmp_path / "target.yar"
+    target.write_text("rule simple { condition: true }", encoding="utf-8")
+    link = tmp_path / "link.yar"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="filepath must not traverse a symlink"):
+        require_file_path(link, "filepath")
+
+
 # ---------------------------------------------------------------------------
 # yaraast.libyara._paths — missing lines 41-42
 # ---------------------------------------------------------------------------

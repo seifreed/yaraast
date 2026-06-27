@@ -5,6 +5,8 @@ from __future__ import annotations
 from os import PathLike, fspath, stat_result
 from pathlib import Path
 
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
+
 
 def _path_access_error(path: Path) -> ValueError:
     msg = f"path could not be accessed: {path}"
@@ -26,7 +28,11 @@ def require_file_path(filepath: object, name: str) -> Path:
     if "\x00" in raw_path:
         msg = f"{name} must not contain null bytes"
         raise ValueError(msg)
-    return Path(raw_path)
+    path = Path(raw_path)
+    if path_is_symlink(path) or path_has_symlink_ancestor(path):
+        msg = f"{name} must not traverse a symlink"
+        raise ValueError(msg)
+    return path
 
 
 def path_exists(path: Path) -> bool:
