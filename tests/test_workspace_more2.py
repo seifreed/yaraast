@@ -70,6 +70,28 @@ def test_workspace_preserves_symlinked_ancestor_path(tmp_path: Path) -> None:
     assert workspace.get_all_rules() == [("leak", str(rule_file))]
 
 
+def test_workspace_preserves_symlinked_ancestor_path_for_fallback_resolution(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(outside, target_is_directory=True)
+    workspace_root = link / "workspace"
+    workspace_root.mkdir()
+    main = _write(
+        workspace_root / "main.yar",
+        'include "missing.yar"\nrule main { condition: true }',
+    )
+
+    workspace = Workspace(root_path=workspace_root)
+    result = workspace.add_file("main.yar")
+
+    assert result.path == main
+    assert result.resolved is not None
+    assert result.resolved.path == main
+
+
 def test_workspace_dependency_queries_accept_resolved_and_alias_paths(tmp_path: Path) -> None:
     outside = tmp_path / "outside"
     outside.mkdir()

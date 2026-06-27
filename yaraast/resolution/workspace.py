@@ -142,7 +142,7 @@ class Workspace:
         content = path.read_text(encoding="utf-8")
         ast = parse_yara_source(content)
         resolved = ResolvedFile(
-            path=path.resolve(),
+            path=path.absolute(),
             content=content,
             ast=ast,
             checksum=hashlib.sha256(content.encode()).hexdigest(),
