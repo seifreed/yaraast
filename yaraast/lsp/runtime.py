@@ -212,24 +212,30 @@ class LspRuntime:
                 return path_to_uri(direct_candidate)
 
         include_path_obj = Path(include_path)
-        exact_match: Path | None = None
+        exact_match: tuple[int, Path] | None = None
+        resolved_roots: list[tuple[int, Path]] = []
+        for root in self.index.workspace_folders:
+            try:
+                resolved_root = root.resolve()
+            except OSError:
+                continue
+            resolved_roots.append((len(str(resolved_root)), resolved_root))
+        resolved_roots.sort(key=lambda item: item[0], reverse=True)
         for candidate in self.index.iter_candidate_files():
             if candidate.name == include_path:
                 return path_to_uri(candidate)
-            if exact_match is None:
-                for root in self.index.workspace_folders:
-                    try:
-                        resolved_root = root.resolve()
-                        relative_candidate = candidate.relative_to(resolved_root)
-                    except OSError:
-                        continue
-                    except ValueError:
-                        continue
-                    if relative_candidate == include_path_obj:
-                        exact_match = candidate
-                        break
+            for root_length, resolved_root in resolved_roots:
+                try:
+                    relative_candidate = candidate.relative_to(resolved_root)
+                except ValueError:
+                    continue
+                if relative_candidate != include_path_obj:
+                    continue
+                if exact_match is None or root_length > exact_match[0]:
+                    exact_match = (root_length, candidate)
+                break
         if exact_match is not None:
-            return path_to_uri(exact_match)
+            return path_to_uri(exact_match[1])
         return None
 
     def _sync_document_to_index(self, uri: str) -> None:

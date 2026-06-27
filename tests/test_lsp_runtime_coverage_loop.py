@@ -261,6 +261,29 @@ def test_resolve_include_target_uri_prefers_exact_relative_match_over_suffix_col
     assert result == path_to_uri(target)
 
 
+def test_resolve_include_target_uri_prefers_deeper_workspace_root_for_exact_matches(
+    tmp_path: Path,
+) -> None:
+    src = tmp_path / "src"
+    shallow_root = tmp_path
+    deep_root = tmp_path / "z"
+    shallow_target = shallow_root / "sub" / "shared.yar"
+    deep_target = deep_root / "sub" / "shared.yar"
+    main = src / "main.yar"
+    src.mkdir()
+    shallow_target.parent.mkdir()
+    deep_target.parent.mkdir(parents=True)
+    main.write_text("rule a { condition: true }", encoding="utf-8")
+    shallow_target.write_text("rule shallow { condition: true }", encoding="utf-8")
+    deep_target.write_text("rule deep { condition: true }", encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.index.workspace_folders = [shallow_root, deep_root]
+
+    result = runtime.resolve_include_target_uri(path_to_uri(main), "sub/shared.yar")
+    assert result == path_to_uri(deep_target)
+
+
 def test_resolve_include_target_uri_skips_inaccessible_workspace_roots(tmp_path: Path) -> None:
     main = tmp_path / "main.yar"
     subdir = tmp_path / "sub"
