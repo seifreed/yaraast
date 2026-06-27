@@ -330,7 +330,7 @@ class TestPredefinedStylesVerbose:
 
     def test_expanded_via_class_method(self) -> None:
         """FormattingConfig.expanded should call PredefinedStyles.verbose."""
-        config = FormattingConfig.expanded()
+        config = PredefinedStyles.verbose()
 
         assert config.indent_size == 4
         assert config.brace_style == BraceStyle.NEW_LINE

@@ -5,6 +5,7 @@ from yaraast.codegen.formatting import (
     FormattingConfig,
     HexStyle,
     IndentStyle,
+    PredefinedStyles,
     StringStyle,
 )
 from yaraast.codegen.generator import CodeGenerator
@@ -57,7 +58,7 @@ rule test_rule {
     parser = Parser()
     ast = parser.parse(yara_code)
 
-    config = FormattingConfig.expanded()
+    config = PredefinedStyles.verbose()
     generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 
