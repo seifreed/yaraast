@@ -100,7 +100,10 @@ def _require_file_path(value: object, name: str = "file_path") -> Path:
 
 def _read_yara_text_file(path: str | Path) -> str:
     try:
-        return Path(path).read_text(encoding="utf-8")
+        path_obj = Path(path)
+        if path_is_symlink(path_obj) or path_has_symlink_ancestor(path_obj):
+            raise ValueError("YARA file must not traverse a symlink")
+        return path_obj.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
         msg = "YARA file must contain valid UTF-8 text"
         raise ValueError(msg) from exc

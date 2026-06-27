@@ -11,7 +11,7 @@ import pytest
 
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
-from yaraast.performance.streaming_parser import StreamingParser
+from yaraast.performance.streaming_parser import StreamingParser, _read_yara_text_file
 from yaraast.performance.validation import validate_file_path_sequence
 
 
@@ -302,6 +302,16 @@ def test_streaming_parser_parse_file_rejects_symlink_path(tmp_path: Path) -> Non
 
     with pytest.raises(ValueError, match="file_path must not traverse a symlink"):
         list(StreamingParser().parse_file(link))
+
+
+def test_streaming_parser_private_reader_rejects_symlink_path(tmp_path: Path) -> None:
+    target = tmp_path / "target.yar"
+    target.write_text("rule sample { condition: true }", encoding="utf-8")
+    link = tmp_path / "link.yar"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="YARA file must not traverse a symlink"):
+        _read_yara_text_file(link)
 
 
 def test_streaming_parser_chunk_residual_callbacks_and_cancellation(tmp_path: Path) -> None:
