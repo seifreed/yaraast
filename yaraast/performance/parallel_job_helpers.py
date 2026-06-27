@@ -92,6 +92,9 @@ def require_output_dir_path(output_dir: object) -> Path:
     if not raw_path.strip():
         msg = "output_dir must not be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = "output_dir must not contain null bytes"
+        raise ValueError(msg)
     path = Path(raw_path)
     if path_exists_and_not_dir(path):
         msg = "output_dir must not be a file"
@@ -110,6 +113,9 @@ def _require_file_path(path: object) -> Path:
         raise TypeError(FILE_PATH_TYPE_ERROR)
     if not raw_path.strip():
         msg = "file_path must not be empty"
+        raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = "file_path must not contain null bytes"
         raise ValueError(msg)
     path_obj = Path(raw_path)
     if path_exists_and_is_dir(path_obj):

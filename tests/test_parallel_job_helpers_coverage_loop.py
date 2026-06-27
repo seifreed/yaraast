@@ -312,6 +312,11 @@ def test_require_output_dir_path_rejects_pathlike_returning_bytes() -> None:
         require_output_dir_path(BytesPathLike())
 
 
+def test_require_output_dir_path_rejects_null_byte_string() -> None:
+    with pytest.raises(ValueError, match="output_dir must not contain null bytes"):
+        require_output_dir_path("\x00broken")
+
+
 # ---------------------------------------------------------------------------
 # _require_file_path
 # ---------------------------------------------------------------------------
@@ -362,6 +367,11 @@ def test_require_file_path_rejects_pathlike_returning_bytes() -> None:
 
     with pytest.raises(TypeError, match=FILE_PATH_TYPE_ERROR):
         _require_file_path(BytesPathLike())
+
+
+def test_require_file_path_rejects_null_byte_string() -> None:
+    with pytest.raises(ValueError, match="file_path must not contain null bytes"):
+        _require_file_path("\x00broken")
 
 
 # ---------------------------------------------------------------------------
