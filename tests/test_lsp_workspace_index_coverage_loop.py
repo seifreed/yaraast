@@ -262,7 +262,9 @@ def test_load_skips_raw_symbols_entry_with_non_list_symbols(tmp_path: Path) -> N
 def test_load_symbol_records_skips_non_dict_symbol_entries(tmp_path: Path) -> None:
     """Non-object entries inside a symbol list (e.g. strings or ints) must be
     silently discarded; valid entries that follow must still be loaded."""
-    uri = path_to_uri(tmp_path / "mixed.yar")
+    mixed = tmp_path / "mixed.yar"
+    mixed.write_text("rule mixed { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(mixed)
     valid_entry = {
         "name": "valid_rule",
         "kind": "rule",

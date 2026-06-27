@@ -161,6 +161,9 @@ class WorkspaceIndex:
             for uri, symbols in raw_symbols.items():
                 if not isinstance(uri, str) or not isinstance(symbols, list):
                     continue
+                uri_path = uri_to_path(uri)
+                if uri_path is not None and not path_exists(uri_path):
+                    continue
                 root = self._workspace_root_for_uri(uri)
                 if root is not None and self._cache_path_for_root(root) != cache_path:
                     continue

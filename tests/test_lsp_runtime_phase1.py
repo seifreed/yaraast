@@ -356,6 +356,7 @@ def test_workspace_index_ignores_stale_parent_cache_for_nested_roots(
 
     document = child / "alpha.yar"
     uri = path_to_uri(document)
+    document.write_text("rule alpha { condition: true }\n", encoding="utf-8")
     stale_record = SymbolRecord(
         "alpha_stale",
         "rule",
@@ -498,6 +499,9 @@ def test_workspace_index_treats_inaccessible_workspace_folders_as_empty() -> Non
 def test_workspace_index_skips_malformed_cached_symbols(tmp_path: Path) -> None:
     cache_dir = tmp_path / ".yaraast"
     cache_dir.mkdir()
+    good = tmp_path / "good.yar"
+    good.write_text("rule good { condition: true }\n", encoding="utf-8")
+    good_uri = path_to_uri(good)
     cache_file = cache_dir / "lsp-workspace-index.json"
     cache_file.write_text(
         """
@@ -547,11 +551,11 @@ def test_workspace_index_skips_malformed_cached_symbols(tmp_path: Path) -> None:
         }
       }
     ],
-    "file:///good.yar": [
+    "GOOD_URI": [
       {
         "name": "good",
         "kind": "rule",
-        "uri": "file:///good.yar",
+        "uri": "GOOD_URI",
         "range": {
           "start": {"line": 0, "character": 0},
           "end": {"line": 0, "character": 4}
@@ -560,7 +564,7 @@ def test_workspace_index_skips_malformed_cached_symbols(tmp_path: Path) -> None:
     ]
   }
 }
-""".strip(),
+""".replace("GOOD_URI", good_uri).strip(),
         encoding="utf-8",
     )
 
@@ -575,6 +579,9 @@ def test_workspace_index_skips_cached_symbols_with_invalid_position_scalars(
 ) -> None:
     cache_dir = tmp_path / ".yaraast"
     cache_dir.mkdir()
+    good = tmp_path / "good.yar"
+    good.write_text("rule good { condition: true }\n", encoding="utf-8")
+    good_uri = path_to_uri(good)
     cache_file = cache_dir / "lsp-workspace-index.json"
     cache_file.write_text(
         """
@@ -602,11 +609,11 @@ def test_workspace_index_skips_cached_symbols_with_invalid_position_scalars(
         }
       }
     ],
-    "file:///good.yar": [
+    "GOOD_URI": [
       {
         "name": "good",
         "kind": "rule",
-        "uri": "file:///good.yar",
+        "uri": "GOOD_URI",
         "range": {
           "start": {"line": 0, "character": 0},
           "end": {"line": 0, "character": 4}
@@ -615,7 +622,7 @@ def test_workspace_index_skips_cached_symbols_with_invalid_position_scalars(
     ]
   }
 }
-""".strip(),
+""".replace("GOOD_URI", good_uri).strip(),
         encoding="utf-8",
     )
 
@@ -628,6 +635,9 @@ def test_workspace_index_skips_cached_symbols_with_invalid_position_scalars(
 def test_workspace_index_skips_cached_symbols_with_inverted_ranges(tmp_path: Path) -> None:
     cache_dir = tmp_path / ".yaraast"
     cache_dir.mkdir()
+    good = tmp_path / "good.yar"
+    good.write_text("rule good { condition: true }\n", encoding="utf-8")
+    good_uri = path_to_uri(good)
     cache_file = cache_dir / "lsp-workspace-index.json"
     cache_file.write_text(
         """
@@ -655,11 +665,11 @@ def test_workspace_index_skips_cached_symbols_with_inverted_ranges(tmp_path: Pat
         }
       }
     ],
-    "file:///good.yar": [
+    "GOOD_URI": [
       {
         "name": "good",
         "kind": "rule",
-        "uri": "file:///good.yar",
+        "uri": "GOOD_URI",
         "range": {
           "start": {"line": 0, "character": 0},
           "end": {"line": 0, "character": 4}
@@ -668,7 +678,7 @@ def test_workspace_index_skips_cached_symbols_with_inverted_ranges(tmp_path: Pat
     ]
   }
 }
-""".strip(),
+""".replace("GOOD_URI", good_uri).strip(),
         encoding="utf-8",
     )
 
