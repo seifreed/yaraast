@@ -22,7 +22,7 @@ from typing import Any
 
 import pytest
 
-from yaraast.resolution.workspace import Workspace
+from yaraast.resolution.workspace import Workspace, _require_path_within_root
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -88,6 +88,11 @@ def test_workspace_bytes_pathlike_root_path_raises_type_error() -> None:
 
     with pytest.raises(TypeError, match="root_path must be a text path"):
         Workspace(root_path=fake)
+
+
+def test_workspace_path_within_root_rejects_null_byte_path() -> None:
+    with pytest.raises(ValueError, match="ctx must not contain null bytes"):
+        _require_path_within_root(Path("\x00broken"), Path("/tmp"), name="ctx")
 
 
 # ---------------------------------------------------------------------------

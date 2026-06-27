@@ -16,6 +16,11 @@ def test_iter_matching_files_rejects_empty_directory(directory: str) -> None:
         list(iter_matching_files(directory))
 
 
+def test_iter_matching_files_rejects_null_byte_directory() -> None:
+    with pytest.raises(ValueError, match="directory must not contain null bytes"):
+        list(iter_matching_files("\x00broken"))
+
+
 @pytest.mark.parametrize("directory", [None, False, 123, object(), b"."])
 def test_iter_matching_files_rejects_invalid_directory_types(directory: Any) -> None:
     with pytest.raises(TypeError, match="directory must be a directory path"):

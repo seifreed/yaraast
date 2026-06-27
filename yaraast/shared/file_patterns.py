@@ -69,6 +69,9 @@ def iter_matching_files(
     if not raw_path.strip():
         msg = "directory must not be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = "directory must not contain null bytes"
+        raise ValueError(msg)
     directory_path = Path(raw_path)
     if not _path_exists(directory_path):
         msg = f"directory does not exist: {directory_path}"

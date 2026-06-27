@@ -53,6 +53,9 @@ def _path_exists_and_not_dir(path: Path) -> bool:
 
 
 def _require_path_within_root(path: Path, root_path: Path, *, name: str) -> Path:
+    if "\x00" in str(path) or "\x00" in str(root_path):
+        msg = f"{name} must not contain null bytes"
+        raise ValueError(msg)
     if not path.is_absolute():
         path = root_path / path
     if not path_is_within_directory(path, root_path):
