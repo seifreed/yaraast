@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from yaraast.shared.path_safety import path_has_symlink_ancestor
 
 
@@ -19,5 +21,22 @@ def test_path_has_symlink_ancestor_detects_nested_symlink_ancestor(tmp_path: Pat
 
     nested = link_dir / "nested" / "file.yar"
     nested.parent.mkdir()
+
+    assert path_has_symlink_ancestor(nested) is True
+
+
+def test_path_has_symlink_ancestor_fails_closed_on_oserror(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    nested = tmp_path / "nested" / "file.yar"
+
+    original_is_symlink = Path.is_symlink
+
+    def fake_is_symlink(self: Path) -> bool:
+        if self == tmp_path:
+            raise OSError("cannot inspect ancestor")
+        return original_is_symlink(self)
+
+    monkeypatch.setattr(Path, "is_symlink", fake_is_symlink)
 
     assert path_has_symlink_ancestor(nested) is True

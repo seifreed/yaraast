@@ -33,5 +33,5 @@ def path_has_symlink_ancestor(path: Path) -> bool:
             if ancestor.is_symlink():
                 return True
         except OSError:
-            return False
+            return True
     return False
