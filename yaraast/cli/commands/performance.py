@@ -96,7 +96,8 @@ def batch(
         default_output_dir = _validate_output_dir_path(
             str(input_path_obj.parent / f"{input_path_obj.name}_batch_output")
         )
-        assert default_output_dir is not None
+        if default_output_dir is None:
+            raise click.ClickException("failed to resolve default output directory")
         output_dir_path = Path(default_output_dir)
     else:
         output_dir_path = Path(validated_output_dir)
@@ -306,7 +307,8 @@ def parallel(
             default_output_dir = _validate_output_dir_path(
                 str(Path.cwd() / "parallel_analysis_output")
             )
-            assert default_output_dir is not None
+            if default_output_dir is None:
+                raise click.ClickException("failed to resolve default output directory")
             output_dir_path = Path(default_output_dir)
         else:
             output_dir_path = Path(validated_output_dir)
