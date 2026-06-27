@@ -83,7 +83,7 @@ def uri_to_path(uri: object) -> Path | None:
         return Path(decoded)
     if "://" in uri:
         return None
-    return Path(uri)
+    return None
 
 
 def path_to_uri(path: Path) -> str:

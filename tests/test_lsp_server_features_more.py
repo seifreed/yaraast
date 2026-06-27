@@ -377,7 +377,7 @@ def test_lsp_path_helpers_reject_empty_workspace_paths() -> None:
     assert uri_to_path("file:relative/ws") is None
     assert uri_to_path("file:///tmp/a%00b.yar") is None
     assert uri_to_path("relative/\x00broken") is None
-    assert str(uri_to_path("relative/ws")) == "relative/ws"
+    assert uri_to_path("relative/ws") is None
     params = SimpleNamespace(
         root_uri="file:relative/ws",
         root_path="   ",
@@ -413,6 +413,10 @@ def test_path_to_uri_rejects_invalid_path_values() -> None:
 
     with pytest.raises(ValueError, match="path must not contain null bytes"):
         path_to_uri(Path("\x00broken"))
+
+
+def test_uri_to_path_rejects_plain_relative_paths() -> None:
+    assert uri_to_path("relative/ws") is None
 
 
 def test_did_change_uses_workspace_source_for_incremental_updates() -> None:
