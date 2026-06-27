@@ -399,6 +399,9 @@ def test_path_to_uri_rejects_invalid_path_values() -> None:
         with pytest.raises(TypeError, match=r"path must be a pathlib\.Path"):
             path_to_uri(cast(Any, path))
 
+    with pytest.raises(ValueError, match="path must not contain null bytes"):
+        path_to_uri(Path("\x00broken"))
+
 
 def test_did_change_uses_workspace_source_for_incremental_updates() -> None:
     server = FakeServer()

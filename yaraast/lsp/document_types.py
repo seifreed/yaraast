@@ -86,6 +86,9 @@ def path_to_uri(path: Path) -> str:
     if not isinstance(path, Path):
         msg = "path must be a pathlib.Path"
         raise TypeError(msg)
+    if "\x00" in str(path):
+        msg = "path must not contain null bytes"
+        raise ValueError(msg)
     return path.resolve().as_uri()
 
 
