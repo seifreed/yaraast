@@ -13,6 +13,7 @@ from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.cli.utils import _path_exists_and_is_dir
 from yaraast.parser.source import parse_yara_source
 from yaraast.shared.numeric_validation import validate_positive_int_setting
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 from yaraast.yarax.generator import YaraXGenerator
 
 
@@ -33,6 +34,9 @@ def _require_benchmark_file_path(file_path: object) -> Path:
     path = Path(raw_path)
     if _path_exists_and_is_dir(path):
         msg = "file_path must not be a directory"
+        raise ValueError(msg)
+    if path_is_symlink(path) or path_has_symlink_ancestor(path):
+        msg = "file_path must not traverse a symlink"
         raise ValueError(msg)
     return path
 

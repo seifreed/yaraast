@@ -309,6 +309,25 @@ def test_ast_benchmarker_reports_inaccessible_file_paths() -> None:
     assert roundtrip.error.startswith("path could not be accessed")
 
 
+def test_ast_benchmarker_rejects_symlinked_file_paths(tmp_path: Path) -> None:
+    benchmarker = ASTBenchmarker()
+    target = tmp_path / "target.yar"
+    target.write_text("rule bench { condition: true }", encoding="utf-8")
+    link = tmp_path / "linked.yar"
+    link.symlink_to(target)
+
+    parsing = benchmarker.benchmark_parsing(link, iterations=1)
+    codegen = benchmarker.benchmark_codegen(link, iterations=1)
+    roundtrip = benchmarker.benchmark_roundtrip(link, iterations=1)[0]
+
+    assert parsing.success is False
+    assert parsing.error == "file_path must not traverse a symlink"
+    assert codegen.success is False
+    assert codegen.error == "file_path must not traverse a symlink"
+    assert roundtrip.success is False
+    assert roundtrip.error == "file_path must not traverse a symlink"
+
+
 def test_ast_benchmarker_reports_invalid_utf8_inputs(tmp_path: Path) -> None:
     bad = tmp_path / "bad.yar"
     bad.write_bytes(b"\xff")
