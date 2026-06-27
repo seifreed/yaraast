@@ -326,6 +326,13 @@ def test_metrics_services_build_report_rejects_output_dir_under_symlink_ancestor
         metrics_workflows.build_report(_ast(), output_dir, "rules", "svg")
 
 
+def test_metrics_services_build_report_rejects_path_like_image_format(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="image_format must contain only letters and numbers"):
+        metrics_workflows.build_report(_ast(), tmp_path, "rules", "svg/../../pwn")
+
+
 def test_metrics_services_error_paths_and_dependency_generator_success(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

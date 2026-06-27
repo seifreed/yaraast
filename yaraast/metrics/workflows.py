@@ -82,6 +82,19 @@ def _require_output_directory(output_dir: object) -> Path:
     return output_dir
 
 
+def _require_image_format(image_format: object) -> str:
+    if not isinstance(image_format, str):
+        msg = "image_format must be a string"
+        raise TypeError(msg)
+    if not image_format.strip():
+        msg = "image_format must not be empty"
+        raise ValueError(msg)
+    if not image_format.isalnum():
+        msg = "image_format must contain only letters and numbers"
+        raise ValueError(msg)
+    return image_format
+
+
 def generate_dependency_graphs(
     ast: YaraFile,
     output_dir: Path,
@@ -93,6 +106,7 @@ def generate_dependency_graphs(
         msg = "Graph visualization requires the 'graphviz' Python package."
         raise RuntimeError(msg)
     output_dir = _require_output_directory(output_dir)
+    image_format = _require_image_format(image_format)
     generator = (
         generator_factory()
         if generator_factory is not DependencyGraphGenerator
@@ -144,6 +158,7 @@ def generate_pattern_diagrams(
     generator_factory: Callable[[], Any] = StringDiagramGenerator,
 ) -> list[str]:
     output_dir = _require_output_directory(output_dir)
+    image_format = _require_image_format(image_format)
     generator = (
         generator_factory()
         if generator_factory is not StringDiagramGenerator
@@ -169,6 +184,7 @@ def build_report(
     ast: YaraFile, output_dir: Path, base_name: str, image_format: str
 ) -> MetricsReportData:
     output_dir = _require_output_directory(output_dir)
+    image_format = _require_image_format(image_format)
     metrics = analyze_complexity(ast)
 
     generated_files = []
