@@ -18,6 +18,7 @@ from yaraast.performance.validation import (
     validate_file_path_sequence,
     validate_positive_int_setting,
 )
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 _EXPECTED_PARSE_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
 GRAPH_TYPES_TYPE_ERROR = "graph_types must be a sequence of strings"
@@ -94,6 +95,9 @@ def require_output_dir_path(output_dir: object) -> Path:
     path = Path(raw_path)
     if path_exists_and_not_dir(path):
         msg = "output_dir must not be a file"
+        raise ValueError(msg)
+    if path_is_symlink(path) or path_has_symlink_ancestor(path):
+        msg = "output_dir must not traverse a symlink"
         raise ValueError(msg)
     return path
 

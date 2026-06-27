@@ -291,6 +291,16 @@ def test_require_output_dir_path_rejects_existing_file(tmp_path: Path) -> None:
         require_output_dir_path(str(file_path))
 
 
+def test_require_output_dir_path_rejects_symlink_ancestors(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(target, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="output_dir must not traverse a symlink"):
+        require_output_dir_path(str(link / "child"))
+
+
 def test_require_output_dir_path_rejects_pathlike_returning_bytes() -> None:
     """A PathLike whose __fspath__ returns bytes must be rejected."""
 
