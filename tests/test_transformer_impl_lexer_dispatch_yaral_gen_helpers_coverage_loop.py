@@ -204,38 +204,6 @@ class _MinimalLexerLike:
     def _is_hex_string_context(self) -> bool:
         return False
 
-    # The remaining methods are required by the protocol but are intentionally
-    # not implemented here because the tests only exercise the dispatch paths
-    # that do not reach them.  Each raises AssertionError so a test failure is
-    # explicit if the flow somehow reaches them.
-
-    def _read_string(self) -> Token:
-        raise AssertionError("_read_string should not be called in this test")
-
-    def _read_hex_string(self) -> Token:
-        raise AssertionError("_read_hex_string should not be called in this test")
-
-    def _read_regex(self) -> Token:
-        raise AssertionError("_read_regex should not be called in this test")
-
-    def _read_number(self) -> Token:
-        raise AssertionError("_read_number should not be called in this test")
-
-    def _read_identifier(self) -> Token:
-        raise AssertionError("_read_identifier should not be called in this test")
-
-    def _read_string_identifier(self) -> Token:
-        raise AssertionError("_read_string_identifier should not be called in this test")
-
-    def _read_string_count(self) -> Token:
-        raise AssertionError("_read_string_count should not be called in this test")
-
-    def _read_string_offset(self) -> Token:
-        raise AssertionError("_read_string_offset should not be called in this test")
-
-    def _read_string_length(self) -> Token:
-        raise AssertionError("_read_string_length should not be called in this test")
-
 
 # ===========================================================================
 # MODULE 1: yaraast/visitor/transformer_impl.py
