@@ -267,6 +267,23 @@ def test_performance_output_dir_commands_reject_empty_path(tmp_path: Path) -> No
     assert not (tmp_path / "rule.yar_batch_output").exists()
 
 
+def test_performance_batch_rejects_default_output_dir_under_symlinked_parent(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "link"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    input_file = link_dir / "rule.yar"
+    input_file.write_text(dedent(_sample_yara()).strip() + "\n", encoding="utf-8")
+
+    result = CliRunner().invoke(performance, ["batch", str(input_file), "--operations", "parse"])
+
+    assert result.exit_code == 2
+    assert "output path must not traverse a symlink" in result.output
+    assert not (outside / "rule.yar_batch_output").exists()
+
+
 def test_performance_stream_rejects_zero_memory_limit(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     result = CliRunner().invoke(

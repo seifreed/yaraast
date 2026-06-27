@@ -93,7 +93,11 @@ def batch(
     input_path_obj = Path(input_path)
 
     if output_dir is None:
-        output_dir_path = input_path_obj.parent / f"{input_path_obj.name}_batch_output"
+        output_dir_path = Path(
+            _validate_output_dir_path(
+                str(input_path_obj.parent / f"{input_path_obj.name}_batch_output")
+            )
+        )
     else:
         output_dir_path = Path(output_dir)
     output_dir_path.mkdir(parents=True, exist_ok=True)
@@ -299,7 +303,9 @@ def parallel(
             return
 
         if output_dir is None:
-            output_dir_path = Path.cwd() / "parallel_analysis_output"
+            output_dir_path = Path(
+                _validate_output_dir_path(str(Path.cwd() / "parallel_analysis_output"))
+            )
         else:
             output_dir_path = Path(output_dir)
         output_dir_path.mkdir(parents=True, exist_ok=True)
