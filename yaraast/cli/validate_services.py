@@ -36,6 +36,9 @@ def read_test_data(test_data_path: str | PathLike[str] | None) -> bytes | None:
     if not raw_path.strip():
         msg = "test data path cannot be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = "test data path cannot contain null bytes"
+        raise ValueError(msg)
 
     try:
         with Path(raw_path).open("rb") as f:

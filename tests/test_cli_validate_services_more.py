@@ -60,6 +60,11 @@ def test_read_test_data_rejects_empty_pathlike_path() -> None:
         vs.read_test_data(cast(Any, EmptyPathLike()))
 
 
+def test_read_test_data_rejects_null_byte_path() -> None:
+    with pytest.raises(ValueError, match="test data path cannot contain null bytes"):
+        vs.read_test_data("\x00broken")
+
+
 def test_yarax_check_varies_with_strict_flag() -> None:
     ast = _ast_with_regex_issue()
 
