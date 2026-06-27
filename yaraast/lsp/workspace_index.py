@@ -231,6 +231,8 @@ class WorkspaceIndex:
         exclude_uris: object = None,
     ) -> list[SymbolRecord]:
         query = require_workspace_symbol_query(query)
+        if not self.workspace_folders:
+            return []
         query_lower = query.lower()
         excluded = _normalize_excluded_uris(exclude_uris)
         hidden_kinds = {"rule_block", "section_header"}

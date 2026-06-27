@@ -251,8 +251,11 @@ def test_workspace_index_discovers_multidialect_extensions(tmp_path: Path) -> No
     }
 
 
-def test_workspace_index_search_rejects_invalid_query_and_exclusions() -> None:
+def test_workspace_index_search_rejects_invalid_query_and_exclusions(
+    tmp_path: Path,
+) -> None:
     index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
     uri = "file:///sample.yar"
     index.persisted_symbols[uri] = [
         SymbolRecord(
@@ -283,8 +286,11 @@ def test_workspace_index_search_rejects_invalid_query_and_exclusions() -> None:
     assert all(record.kind == "rule" for record in index.search_records(""))
 
 
-def test_workspace_index_rejects_invalid_document_mutation_inputs() -> None:
+def test_workspace_index_rejects_invalid_document_mutation_inputs(
+    tmp_path: Path,
+) -> None:
     index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
     uri = "file:///sample.yar"
     index.persisted_symbols[uri] = [
         SymbolRecord(
@@ -308,6 +314,21 @@ def test_workspace_index_rejects_invalid_document_mutation_inputs() -> None:
     assert "sample" not in updated_names
 
     index.remove_document(uri)
+    assert index.search_records("") == []
+
+
+def test_workspace_index_search_returns_empty_without_workspace_folders() -> None:
+    index = WorkspaceIndex()
+    uri = "file:///sample.yar"
+    index.persisted_symbols[uri] = [
+        SymbolRecord(
+            "sample",
+            "rule",
+            uri,
+            Range(Position(line=0, character=0), Position(line=0, character=6)),
+        )
+    ]
+
     assert index.search_records("") == []
 
 

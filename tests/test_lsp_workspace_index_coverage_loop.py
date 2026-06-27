@@ -363,13 +363,14 @@ def test_load_and_save_skip_symlinked_cache_dir_outside_workspace_root(
 # ---------------------------------------------------------------------------
 
 
-def test_search_records_skips_excluded_uris() -> None:
+def test_search_records_skips_excluded_uris(tmp_path: Path) -> None:
     """Symbols belonging to URIs in the exclude_uris set must be absent from
     the results; symbols from other URIs must still be returned."""
     uri_a = "file:///a.yar"
     uri_b = "file:///b.yar"
 
     index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
     index.persisted_symbols[uri_a] = [_make_symbol("rule_a", uri_a)]
     index.persisted_symbols[uri_b] = [_make_symbol("rule_b", uri_b)]
 
@@ -386,6 +387,7 @@ def test_search_records_non_matching_query_skips_symbol(tmp_path: Path) -> None:
     uri = "file:///mixed.yar"
 
     index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
     index.persisted_symbols[uri] = [
         _make_symbol("alpha_rule", uri),
         _make_symbol("beta_rule", uri),
