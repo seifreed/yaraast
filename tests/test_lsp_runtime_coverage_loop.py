@@ -639,6 +639,19 @@ def test_get_document_returns_none_when_read_fails(tmp_path: Path) -> None:
         os.chmod(rule_file, stat.S_IRUSR | stat.S_IWUSR)
 
 
+def test_get_document_returns_none_for_symlinked_ancestor_path(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    rule_file = link_dir / "ancestor.yar"
+    rule_file.write_text("rule ancestor { condition: true }\n", encoding="utf-8")
+
+    runtime = LspRuntime()
+
+    assert runtime.get_document(rule_file.as_uri()) is None
+
+
 def test_get_document_loads_from_disk_without_cache(tmp_path: Path) -> None:
     # line 335->338 skipped: cache_workspace=False -> read but don't cache
     rule_file = tmp_path / "load_test.yar"

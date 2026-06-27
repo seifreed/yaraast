@@ -358,7 +358,7 @@ class LspRuntime:
         path = uri_to_path(uri)
         if path is None or not path_exists(path) or path_is_dir(path):
             return None
-        if path_is_symlink(path):
+        if path_is_symlink(path) or path_has_symlink_ancestor(path):
             return None
         if self.index.workspace_folders and self.index._workspace_root_for_uri(uri) is None:
             return None
