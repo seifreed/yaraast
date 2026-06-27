@@ -396,6 +396,16 @@ def test_lsp_root_path_file_uri_is_normalized() -> None:
     assert get_workspace_folders(cast(Any, params)) == ["/tmp/ws2"]
 
 
+def test_lsp_relative_root_path_is_ignored() -> None:
+    params = SimpleNamespace(
+        root_uri=None,
+        root_path="relative/ws",
+        workspace_folders=[],
+    )
+
+    assert get_workspace_folders(cast(Any, params)) == []
+
+
 def test_path_to_uri_rejects_invalid_path_values() -> None:
     for path in [None, False, 123, object(), b"/tmp/sample.yar", "", "   "]:
         with pytest.raises(TypeError, match=r"path must be a pathlib\.Path"):

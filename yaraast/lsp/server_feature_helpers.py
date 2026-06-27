@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from lsprotocol.types import Diagnostic, SemanticTokens
@@ -67,6 +68,6 @@ def get_workspace_folders(params: InitializeParams) -> list[str]:
             path = uri_to_path(root_path)
             if path is not None:
                 folders.append(str(path))
-        else:
+        elif Path(root_path).is_absolute():
             folders.append(root_path)
     return [folder for idx, folder in enumerate(folders) if folder and folder not in folders[:idx]]
