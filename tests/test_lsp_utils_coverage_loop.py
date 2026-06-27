@@ -295,6 +295,19 @@ class TestGetLocationLineText:
 
         assert result is None
 
+    def test_returns_none_for_symlink_ancestor_file(self, tmp_path: Path) -> None:
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        link_dir = tmp_path / "linked"
+        link_dir.symlink_to(outside, target_is_directory=True)
+        nested = link_dir / "rule.yar"
+        nested.write_text("first\nsecond", encoding="utf-8")
+        loc = Location(line=1, column=1, file=str(nested))
+
+        result = _get_location_line_text(loc, source_text=None)
+
+        assert result is None
+
     def test_source_text_takes_priority_over_file(self, tmp_path: Path) -> None:
         yar = tmp_path / "rule.yar"
         yar.write_text("file content", encoding="utf-8")

@@ -8,7 +8,7 @@ from lsprotocol.types import Position, Range
 
 from yaraast.ast.base import ASTNode, Location
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
-from yaraast.shared.path_safety import path_is_symlink
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 
 def path_exists(path: Path) -> bool:
@@ -131,7 +131,7 @@ def _get_location_line_text(location: Location, source_text: str | None) -> str 
         if "\x00" in location.file:
             return None
         path = Path(location.file)
-        if path_is_symlink(path):
+        if path_is_symlink(path) or path_has_symlink_ancestor(path):
             return None
         if path_exists(path) and path_is_file(path):
             try:

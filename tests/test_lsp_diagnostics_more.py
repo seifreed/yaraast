@@ -461,6 +461,20 @@ def test_diagnostics_source_line_treats_inaccessible_paths_as_missing() -> None:
     assert _location_source_line(location, 0) == ""
 
 
+def test_diagnostics_source_line_treats_symlink_ancestor_paths_as_missing(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    nested = link_dir / "rule.yar"
+    nested.write_text("line1\nline2\n", encoding="utf-8")
+    location = type("Location", (), {"file": str(nested)})()
+
+    assert _location_source_line(location, 0) == ""
+
+
 def test_compiler_undefined_identifier_and_syntax_error_are_structured() -> None:
     provider = DiagnosticsProvider()
 
