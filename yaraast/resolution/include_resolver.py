@@ -243,12 +243,18 @@ class IncludeResolver:
 
         # If absolute and exists, return it
         if path.is_absolute() and _path_is_file(path):
+            if path_is_symlink(path) or path_has_symlink_ancestor(path):
+                msg = "file_path must not traverse a symlink"
+                raise ValueError(msg)
             return path.absolute()
 
         # First try relative to base path
         if base_path:
             full_path = base_path / path
             if _path_is_file(full_path):
+                if path_is_symlink(full_path) or path_has_symlink_ancestor(full_path):
+                    msg = "file_path must not traverse a symlink"
+                    raise ValueError(msg)
                 resolved = full_path.resolve()
                 if path_is_within_directory(resolved, base_path):
                     return full_path.absolute()
@@ -257,6 +263,9 @@ class IncludeResolver:
         for search_dir in self.search_paths:
             full_path = search_dir / path
             if _path_is_file(full_path):
+                if path_is_symlink(full_path) or path_has_symlink_ancestor(full_path):
+                    msg = "file_path must not traverse a symlink"
+                    raise ValueError(msg)
                 resolved = full_path.resolve()
                 # Prevent path traversal — resolved path must be within search directory
                 try:

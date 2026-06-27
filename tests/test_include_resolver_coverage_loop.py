@@ -144,6 +144,22 @@ class TestResolveFileSymlinkRejection:
             with pytest.raises(ValueError, match="file_path must not traverse a symlink"):
                 resolver.resolve_file(str(link))
 
+    def test_resolve_file_rejects_symlink_ancestor_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            outside = tmpdir / "outside"
+            outside.mkdir()
+            link = tmpdir / "linked"
+            link.symlink_to(outside, target_is_directory=True)
+            workspace = link / "workspace"
+            workspace.mkdir()
+            yar = workspace / "main.yar"
+            yar.write_text(_SIMPLE_RULE, encoding="utf-8")
+
+            resolver = IncludeResolver([str(tmpdir)])
+            with pytest.raises(ValueError, match="file_path must not traverse a symlink"):
+                resolver.resolve_file(str(yar))
+
 
 # ---------------------------------------------------------------------------
 # _init_search_paths — YARA_INCLUDE_PATH env var (lines 99-103)
@@ -267,8 +283,8 @@ class TestFindFileAbsoluteNotFile:
 class TestFindFilePathTraversalPrevention:
     """Symlinks that escape the search directory must be silently skipped."""
 
-    def test_symlink_escaping_search_dir_raises_file_not_found(self) -> None:
-        """A symlink inside the search dir whose target is outside raises FileNotFoundError."""
+    def test_symlink_escaping_search_dir_is_rejected(self) -> None:
+        """A symlink inside the search dir whose target is outside is rejected."""
         with tempfile.TemporaryDirectory() as outer_str:
             outer = Path(outer_str)
             # A real file outside the search directory
@@ -282,8 +298,7 @@ class TestFindFilePathTraversalPrevention:
                 link.symlink_to(real_file)
 
                 resolver = IncludeResolver(search_paths=[str(inner)])
-                # The traversal guard should skip the link; no file found
-                with pytest.raises(FileNotFoundError):
+                with pytest.raises(ValueError, match="file_path must not traverse a symlink"):
                     resolver.resolve_file("escape.yar")
 
     def test_symlink_file_inside_search_dir_is_rejected(self) -> None:
@@ -296,7 +311,7 @@ class TestFindFilePathTraversalPrevention:
             link.symlink_to(real_file)
 
             resolver = IncludeResolver(search_paths=[str(tmpdir)])
-            with pytest.raises(ValueError, match="YARA file must not traverse a symlink"):
+            with pytest.raises(ValueError, match="file_path must not traverse a symlink"):
                 resolver.resolve_file("linked.yar")
 
     def test_relative_path_found_in_search_dir_uses_traversal_success_path(self) -> None:
