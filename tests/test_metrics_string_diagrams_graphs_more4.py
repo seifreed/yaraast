@@ -261,7 +261,11 @@ def test_similarity_diagram_orders_patterns_within_groups() -> None:
 
 def test_string_diagram_graphs_module_is_removed() -> None:
     result = subprocess.run(
-        [sys.executable, "-c", "import importlib; importlib.import_module('yaraast.metrics.string_diagrams_graphs')"],
+        [
+            sys.executable,
+            "-c",
+            "import importlib; importlib.import_module('yaraast.metrics.string_diagrams_graphs')",
+        ],
         cwd=Path(__file__).resolve().parents[1],
         capture_output=True,
         text=True,

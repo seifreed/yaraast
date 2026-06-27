@@ -43,6 +43,13 @@ def _path_is_dir(path: Path) -> bool:
         raise _path_access_error(path) from exc
 
 
+def _path_is_symlink(path: Path) -> bool:
+    try:
+        return path.is_symlink()
+    except OSError as exc:
+        raise _path_access_error(path) from exc
+
+
 def _normalize_module_name(name: object) -> str:
     if not isinstance(name, str) or not name.strip():
         raise ValueError("Module name must be a non-empty string")
@@ -156,10 +163,15 @@ class ModuleLoader:
         # Load modules from all paths
         for path_str in module_paths:
             path = Path(path_str)
+            if _path_is_symlink(path):
+                msg = f"Module specification path '{path}' must not be a symlink"
+                raise ModuleSpecError(msg)
             if _path_is_file(path) and path.suffix == ".json":
                 self._load_module_file(path)
             elif _path_is_dir(path):
                 for json_file in path.glob("*.json"):
+                    if _path_is_symlink(json_file):
+                        continue
                     self._load_module_file(json_file)
             else:
                 msg = (

@@ -68,6 +68,7 @@ class DependencyGraph:
             },
         }
 
+
 def build_dependency_graph(ast: YaraFile) -> DependencyGraph:
     """Build dependency graph from YARA AST."""
     ast = require_yara_file(ast, "ast")

@@ -112,6 +112,42 @@ def test_module_loader_rejects_inaccessible_env_spec_paths(
         ModuleLoader()
 
 
+def test_module_loader_rejects_symlinked_env_spec_paths(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    module_dir = tmp_path / "modules"
+    module_dir.mkdir()
+    (module_dir / "real.json").write_text(
+        json.dumps({"name": "real", "attributes": {}}),
+        encoding="utf-8",
+    )
+    symlink_path = tmp_path / "linked-modules"
+    symlink_path.symlink_to(module_dir, target_is_directory=True)
+
+    monkeypatch.setenv("YARAAST_MODULE_SPEC_PATH_EXCLUSIVE", str(symlink_path))
+
+    with pytest.raises(ModuleSpecError, match="must not be a symlink"):
+        ModuleLoader()
+
+
+def test_module_loader_skips_symlinked_json_files_in_spec_directories(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    spec_dir = tmp_path / "specs"
+    spec_dir.mkdir()
+    real_spec = spec_dir / "real.json"
+    real_spec.write_text(json.dumps({"name": "real", "attributes": {}}), encoding="utf-8")
+    linked_spec = spec_dir / "linked.json"
+    linked_spec.symlink_to(real_spec)
+
+    monkeypatch.setenv("YARAAST_MODULE_SPEC_PATH_EXCLUSIVE", str(spec_dir))
+    loader = ModuleLoader()
+
+    assert sorted(loader.modules) == ["real"]
+
+
 @pytest.mark.parametrize(
     "env_name",
     ["YARAAST_MODULE_SPEC_PATH", "YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"],

@@ -45,4 +45,3 @@ def _require_single_benchmark_operation(op: object) -> str:
         valid = ", ".join(sorted(_SINGLE_BENCHMARK_OPERATIONS))
         raise ValueError(f"benchmark operation must be one of: {valid}")
     return op
-

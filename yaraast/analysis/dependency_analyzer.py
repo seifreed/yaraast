@@ -30,6 +30,7 @@ if TYPE_CHECKING:
         WithStatement,
     )
 
+
 class DependencyAnalyzer(BaseVisitor[None]):
     """Analyze dependencies between YARA rules."""
 

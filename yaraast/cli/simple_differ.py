@@ -195,12 +195,12 @@ def _process_insert(
     for idx in range(count):
         line_num += 1
         diff_lines.append(
-                DiffLine(
-                    type=DiffType.ADD,
-                    line_num=line_num,
-                    content=f"+ {lines2[j1 + idx]}",
-                ),
-            )
+            DiffLine(
+                type=DiffType.ADD,
+                line_num=line_num,
+                content=f"+ {lines2[j1 + idx]}",
+            ),
+        )
     return diff_lines, line_num, count
 
 
@@ -213,12 +213,12 @@ def _process_delete(
     for idx in range(count):
         line_num += 1
         diff_lines.append(
-                DiffLine(
-                    type=DiffType.REMOVE,
-                    line_num=line_num,
-                    content=f"- {lines1[i1 + idx]}",
-                ),
-            )
+            DiffLine(
+                type=DiffType.REMOVE,
+                line_num=line_num,
+                content=f"- {lines1[i1 + idx]}",
+            ),
+        )
     return diff_lines, line_num, count
 
 

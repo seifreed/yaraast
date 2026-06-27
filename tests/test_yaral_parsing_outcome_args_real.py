@@ -461,6 +461,8 @@ def test_parse_outcome_argument_identifier_call_ops_regex_and_error() -> None:
     _set_tokens(parser4, [_tok(T.RBRACKET, "]"), _tok(T.EOF, None, YaraLTokenType.EOF)])
     with pytest.raises(YaraLParserError, match="Unexpected token in outcome"):
         parser4._parse_outcome_argument()
+
+
 def test_parse_outcome_field_path_supports_dot_and_bracket_forms() -> None:
     parser = YaraLParser("")
     _set_tokens(

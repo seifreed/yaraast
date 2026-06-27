@@ -17,6 +17,8 @@ rule perf_rule {
         any of them
 }
 """
+
+
 def test_performance_optimizer_rule_sorting() -> None:
     parser = Parser()
     ast = parser.parse(_sample_rule())

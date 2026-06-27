@@ -247,7 +247,9 @@ def run_parallel_analysis(
 
     if analysis_type in ["complexity", "all"]:
         complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts, max_workers)
-        complexity_results = [job.result for job in complexity_jobs if job.status.value == "completed"]
+        complexity_results = [
+            job.result for job in complexity_jobs if job.status.value == "completed"
+        ]
         _raise_if_analysis_timed_out(start_time, timeout, "complexity analysis")
     else:
         complexity_results = []
@@ -359,9 +361,9 @@ def build_optimization_plan(
             "available_mb": memory_mb,
             "estimated_mb": estimated_memory,
             "sufficient": estimated_memory <= memory_mb,
-            "suggested_batch_size": max(1, (memory_mb * 2) // collection_size)
-            if collection_size
-            else 1,
+            "suggested_batch_size": (
+                max(1, (memory_mb * 2) // collection_size) if collection_size else 1
+            ),
             "memory_limit_mb": memory_limit,
         }
 
@@ -377,7 +379,9 @@ def build_optimization_plan(
                 if max_workers > 0
                 else estimated_time_sequential
             ),
-            "needed_workers": int(estimated_time_sequential / target_time) if target_time > 0 else 0,
+            "needed_workers": (
+                int(estimated_time_sequential / target_time) if target_time > 0 else 0
+            ),
             "max_workers": max_workers,
         }
 

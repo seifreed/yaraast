@@ -310,4 +310,3 @@ class EnhancedYamlSerializer(YamlSerializer):
         ast = _require_yara_file(ast, "ast")
         manifest = build_rules_manifest(ast)
         return dump_pipeline_yaml(manifest, output_path)
-

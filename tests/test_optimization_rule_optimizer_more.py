@@ -108,9 +108,7 @@ def test_rule_optimizer_report_uses_original_string_count() -> None:
             "rules": f"{stats['rules_eliminated']} rules removed",
             "strings": f"{original_strings - optimized_strings} strings removed",
             "percentage": (
-                f"{(1 - len(optimized.rules) / len(ast.rules)) * 100:.1f}%"
-                if ast.rules
-                else "0%"
+                f"{(1 - len(optimized.rules) / len(ast.rules)) * 100:.1f}%" if ast.rules else "0%"
             ),
         },
         "optimization_breakdown": {

@@ -41,6 +41,7 @@ def test_compare_structural_detects_different_rule_counts() -> None:
 
     assert diff == ["Different number of rules: 1 vs 2"]
 
+
 def test_parse_yaral_handles_standard_and_enhanced_modes() -> None:
     code = """
     rule login_attempts {
