@@ -288,6 +288,26 @@ class TestValidateFilePathSequenceBytesEntry:
         result = validate_file_path_sequence([str(a), b])
         assert result == [str(a), str(b)]
 
+    def test_symlink_entry_in_list_raises_value_error(self, tmp_path: Path) -> None:
+        target = tmp_path / "target.yar"
+        target.write_text("", encoding="utf-8")
+        link = tmp_path / "link.yar"
+        link.symlink_to(target)
+
+        with pytest.raises(ValueError, match="file_paths must not traverse a symlink"):
+            validate_file_path_sequence([link])
+
+    def test_symlink_ancestor_entry_in_list_raises_value_error(self, tmp_path: Path) -> None:
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        link_dir = tmp_path / "linked"
+        link_dir.symlink_to(outside, target_is_directory=True)
+        file_path = link_dir / "nested.yar"
+        file_path.write_text("", encoding="utf-8")
+
+        with pytest.raises(ValueError, match="file_paths must not traverse a symlink"):
+            validate_file_path_sequence([file_path])
+
 
 # ---------------------------------------------------------------------------
 # performance/validation.py — line 61: PathLike whose __fspath__ returns bytes

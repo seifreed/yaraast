@@ -11,6 +11,7 @@ from yaraast.shared.numeric_validation import (
     validate_positive_int_setting,
     validate_positive_number_setting,
 )
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 FILE_PATHS_TYPE_ERROR = "file_paths must be a sequence of paths"
 FILE_PATH_ENTRY_TYPE_ERROR = "file_paths must contain path strings or path-like objects"
@@ -64,6 +65,10 @@ def validate_file_path_sequence(file_paths: object) -> list[str]:
             raise ValueError(msg)
         if "\x00" in normalized_path:
             msg = "file_paths must not contain null bytes"
+            raise ValueError(msg)
+        path = Path(normalized_path)
+        if path_is_symlink(path) or path_has_symlink_ancestor(path):
+            msg = "file_paths must not traverse a symlink"
             raise ValueError(msg)
         normalized_paths.append(normalized_path)
     return normalized_paths
