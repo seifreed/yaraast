@@ -575,6 +575,19 @@ def test_include_resolver_rejects_parent_relative_includes(tmp_path: Path) -> No
     assert shared.exists()
 
 
+def test_include_resolver_rejects_absolute_includes(tmp_path: Path) -> None:
+    shared = _write(tmp_path / "shared.yar", "rule shared { condition: true }")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    main = _write(
+        rules_dir / "main.yar",
+        'include "' + str(shared.resolve()) + '"\nrule main { condition: true }',
+    )
+
+    with pytest.raises(FileNotFoundError):
+        IncludeResolver().resolve_file(str(main))
+
+
 def test_include_resolver_reports_missing_nested_includes(tmp_path: Path) -> None:
     main = _write(
         tmp_path / "main.yar",

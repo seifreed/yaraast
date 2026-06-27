@@ -214,6 +214,13 @@ class IncludeResolver:
         file_path_text = self._require_file_path(file_path)
         path = Path(file_path_text)
 
+        # Absolute include paths are rejected; resolution must stay within the
+        # including file's directory or the configured search paths.
+        if base_path is not None and path.is_absolute():
+            searched = self._format_searched_directories([base_path, *self.search_paths])
+            msg = f"Cannot find include file '{file_path_text}'. Searched in: {searched}"
+            raise FileNotFoundError(msg)
+
         # If absolute and exists, return it
         if path.is_absolute() and _path_is_file(path):
             return path.resolve()
