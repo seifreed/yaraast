@@ -8,7 +8,7 @@ from pathlib import Path
 
 from lsprotocol.types import SymbolInformation
 
-from yaraast.lsp.document_types import YARA_FILE_SUFFIXES
+from yaraast.lsp.document_types import YARA_FILE_SUFFIXES, uri_to_path
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
 
@@ -60,7 +60,13 @@ def _require_workspace_root(root_path: object) -> Path:
     if not raw_path.strip():
         msg = "root_path must not be empty"
         raise ValueError(msg)
-    path = Path(raw_path)
+    if raw_path.lower().startswith("file:"):
+        path = uri_to_path(raw_path)
+        if path is None:
+            msg = "root_path must be a valid file URI or path"
+            raise ValueError(msg)
+    else:
+        path = Path(raw_path)
     if _path_exists_and_not_dir(path):
         msg = "root_path must not be a file"
         raise ValueError(msg)

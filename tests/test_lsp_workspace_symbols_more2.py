@@ -99,6 +99,14 @@ def test_workspace_symbols_accepts_pathlike_workspace_root(tmp_path: Path) -> No
     assert provider.workspace_root == tmp_path
 
 
+def test_workspace_symbols_normalize_file_uri_workspace_root() -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    provider.set_workspace_root("file:///tmp/ws")
+
+    assert provider.workspace_root == Path("/tmp/ws")
+
+
 def test_workspace_symbols_rejects_symlinked_workspace_root(tmp_path: Path) -> None:
     outside = tmp_path / "outside"
     outside.mkdir()
