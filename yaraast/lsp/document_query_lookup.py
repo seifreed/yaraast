@@ -216,7 +216,12 @@ def get_include_info(ctx: DocumentContext, include_path: str) -> dict[str, Any]:
         and not path_has_symlink_ancestor(doc_path)
     ):
         candidate = doc_path.parent / include_path
-        if path_exists(candidate) and path_is_within_directory(candidate, doc_path.parent):
+        if (
+            path_exists(candidate)
+            and not path_is_symlink(candidate)
+            and not path_has_symlink_ancestor(candidate)
+            and path_is_within_directory(candidate, doc_path.parent)
+        ):
             resolved_path = candidate
     result = {"path": include_path, "resolved_path": str(resolved_path) if resolved_path else None}
     ctx.set_cached(cache_key, result)

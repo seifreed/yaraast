@@ -147,6 +147,21 @@ def test_include_target_uri_rejects_symlinked_document_parents(tmp_path: Path) -
     assert doc.get_include_target_uri("inc.yar") is None
 
 
+def test_include_target_uri_rejects_symlinked_include_target(tmp_path: Path) -> None:
+    include_dir = tmp_path / "include"
+    include_dir.mkdir()
+    target = include_dir / "real.yar"
+    target.write_text("rule inc { condition: true }", encoding="utf-8")
+    link = include_dir / "linked.yar"
+    link.symlink_to(target)
+    doc = DocumentContext(
+        path_to_uri(tmp_path / "main.yar"),
+        'include "include/linked.yar"\n',
+    )
+
+    assert doc.get_include_target_uri("include/linked.yar") is None
+
+
 @pytest.mark.parametrize("include_path", ["", "   ", "\t"])
 def test_include_target_uri_rejects_empty_include_paths(
     tmp_path: Path,
