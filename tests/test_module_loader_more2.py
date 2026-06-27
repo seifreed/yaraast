@@ -106,9 +106,9 @@ def test_module_loader_rejects_inaccessible_env_spec_paths(
     monkeypatch: pytest.MonkeyPatch,
     env_name: str,
 ) -> None:
-    monkeypatch.setenv(env_name, "a" * 5000)
+    monkeypatch.setenv(env_name, "/" + "a" * 5000)
 
-    with pytest.raises(ModuleSpecError, match="path could not be accessed"):
+    with pytest.raises(ModuleSpecError, match="must not be a symlink"):
         ModuleLoader()
 
 
@@ -167,6 +167,25 @@ def test_module_loader_skips_symlinked_json_files_in_spec_directories(
     loader = ModuleLoader()
 
     assert sorted(loader.modules) == ["real"]
+
+
+def test_module_loader_path_is_symlink_fails_closed_on_oserror(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    path = tmp_path / "module.json"
+
+    original_is_symlink = Path.is_symlink
+
+    def fake_is_symlink(self: Path) -> bool:
+        if self == path:
+            raise OSError("cannot inspect symlink state")
+        return original_is_symlink(self)
+
+    monkeypatch.setattr(Path, "is_symlink", fake_is_symlink)
+
+    from yaraast.types.module_loader import _path_is_symlink
+
+    assert _path_is_symlink(path) is True
 
 
 @pytest.mark.parametrize(

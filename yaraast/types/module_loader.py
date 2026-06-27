@@ -47,8 +47,8 @@ def _path_is_dir(path: Path) -> bool:
 def _path_is_symlink(path: Path) -> bool:
     try:
         return path.is_symlink()
-    except OSError as exc:
-        raise _path_access_error(path) from exc
+    except OSError:
+        return True
 
 
 def _normalize_module_name(name: object) -> str:
