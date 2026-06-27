@@ -400,3 +400,9 @@ def test_optional_output_path_valid_str_returns_path(tmp_path: Path) -> None:
     result = formatter._optional_output_path(out)
     assert isinstance(result, Path)
     assert result == Path(out)
+
+
+def test_optional_output_path_rejects_null_byte_string() -> None:
+    formatter = ASTFormatter()
+    with pytest.raises(ValueError, match="output_path must not contain null bytes"):
+        formatter._optional_output_path("\x00broken")

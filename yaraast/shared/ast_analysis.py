@@ -435,6 +435,9 @@ class ASTFormatter:
         if not raw_path.strip():
             msg = "output_path must not be empty"
             raise ValueError(msg)
+        if "\x00" in raw_path:
+            msg = "output_path must not contain null bytes"
+            raise ValueError(msg)
         path = Path(raw_path)
         if _path_exists_and_is_dir(path):
             msg = "output_path must not be a directory"
