@@ -160,6 +160,9 @@ def collect_file_paths(input_paths: tuple) -> list[Path]:
         if not path_text.strip():
             msg = "input path must not be empty"
             raise ValueError(msg)
+        if "\x00" in path_text:
+            msg = "input path must not contain null bytes"
+            raise ValueError(msg)
         path = Path(path_text)
         candidates: Iterable[Path]
         if _path_exists_and_is_file(path):

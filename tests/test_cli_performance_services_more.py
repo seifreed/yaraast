@@ -84,6 +84,11 @@ def test_collect_file_paths_rejects_empty_path(raw_path: str) -> None:
         ps.collect_file_paths((raw_path,))
 
 
+def test_collect_file_paths_rejects_null_byte_path() -> None:
+    with pytest.raises(ValueError, match="input path must not contain null bytes"):
+        ps.collect_file_paths(("\x00broken",))
+
+
 def test_performance_services_reject_inaccessible_paths(tmp_path: Path) -> None:
     inaccessible = Path("a" * 5000)
 
