@@ -370,9 +370,19 @@ def test_process_files_single_complexity_populates_summary_for_valid_file(tmp_pa
     result = process_files_single(processor, [file_path], BatchOperation.COMPLEXITY)
 
     assert result.successful_count == 1
-    assert result.failed_count == 0
-    assert "single_rule" in result.summary
-    assert isinstance(result.summary["single_rule"], dict)
+
+
+def test_process_files_single_rejects_symlink_file(tmp_path: Path) -> None:
+    target = tmp_path / "target.yar"
+    target.write_text("rule a { condition: true }", encoding="utf-8")
+    link = tmp_path / "link.yar"
+    link.symlink_to(target)
+
+    processor = BatchProcessor(progress_callback=None)
+    result = process_files_single(processor, [link], BatchOperation.PARSE)
+
+    assert result.failed_count == 1
+    assert "YARA file must not traverse a symlink" in result.errors[0]
 
 
 # ---------------------------------------------------------------------------

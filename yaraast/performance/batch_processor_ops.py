@@ -28,6 +28,8 @@ OUTPUT_DIR_TYPE_ERROR = "output_dir must be a directory path"
 
 def _read_yara_text_file(file_path: Path) -> str:
     try:
+        if path_is_symlink(file_path) or path_has_symlink_ancestor(file_path):
+            raise ValueError("YARA file must not traverse a symlink")
         with open(file_path, encoding="utf-8") as handle:
             return handle.read()
     except UnicodeDecodeError as exc:
