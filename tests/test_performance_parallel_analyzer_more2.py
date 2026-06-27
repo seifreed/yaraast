@@ -368,6 +368,24 @@ def test_parallel_graph_export_rejects_invalid_graph_type_entries(
         )
 
 
+@pytest.mark.parametrize("graph_types", [["../escape"], ["full/escape"], ["full\\escape"]])
+def test_parallel_graph_export_rejects_path_like_graph_type_entries(
+    tmp_path: Path,
+    graph_types: object,
+) -> None:
+    analyzer = ParallelAnalyzer(max_workers=1)
+    ast = _parsed_ast("graph_rule")
+
+    with pytest.raises(
+        ValueError, match="graph_types entries must contain only letters and numbers"
+    ):
+        analyzer.generate_graphs_parallel(
+            [ast],
+            tmp_path / "graphs",
+            cast(Any, graph_types),
+        )
+
+
 @pytest.mark.parametrize("output_dir", ["", "   ", "\t"])
 def test_parallel_graph_export_rejects_empty_output_dir(output_dir: str) -> None:
     analyzer = ParallelAnalyzer(max_workers=1)

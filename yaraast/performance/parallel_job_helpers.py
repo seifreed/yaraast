@@ -23,6 +23,7 @@ from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlin
 _EXPECTED_PARSE_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
 GRAPH_TYPES_TYPE_ERROR = "graph_types must be a sequence of strings"
 GRAPH_TYPE_ENTRY_ERROR = "graph_types must contain non-empty strings"
+GRAPH_TYPE_VALUE_ERROR = "graph_types entries must contain only letters and numbers"
 YARA_FILE_SEQUENCE_TYPE_ERROR = "asts must be a sequence of YaraFile objects"
 OUTPUT_DIR_TYPE_ERROR = "output_dir must be a directory path"
 FILE_PATH_TYPE_ERROR = "file_path must be a file path"
@@ -71,6 +72,8 @@ def validate_graph_types(graph_types: object) -> list[str]:
     for graph_type in graph_types:
         if not isinstance(graph_type, str) or not graph_type.strip():
             raise TypeError(GRAPH_TYPE_ENTRY_ERROR)
+        if not graph_type.isalnum():
+            raise ValueError(GRAPH_TYPE_VALUE_ERROR)
         normalized.append(graph_type)
     return normalized
 
