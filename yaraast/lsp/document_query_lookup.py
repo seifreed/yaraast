@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, cast
 from lsprotocol.types import Position, Range
 
 from yaraast.codegen.generator_helpers import escape_plain_string_value
-from yaraast.lsp.document_types import path_to_uri
 from yaraast.lsp.meta_value_parsing import parse_meta_scalar
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8, utf16_len
 from yaraast.lsp.utils import path_exists
@@ -207,10 +206,7 @@ def get_include_info(ctx: DocumentContext, include_path: str) -> dict[str, Any]:
     if doc_path is not None and not path_is_symlink(doc_path.parent):
         candidate = doc_path.parent / include_path
         if path_exists(candidate) and path_is_within_directory(candidate, doc_path.parent):
-            try:
-                resolved_path = candidate.resolve()
-            except OSError:
-                resolved_path = None
+            resolved_path = candidate
     result = {"path": include_path, "resolved_path": str(resolved_path) if resolved_path else None}
     ctx.set_cached(cache_key, result)
     return dict(result)
@@ -220,7 +216,7 @@ def get_include_target_uri(ctx: DocumentContext, include_path: str) -> str | Non
     include_path = _require_include_path(include_path)
     include_info = ctx.get_include_info(include_path)
     resolved_path = include_info.get("resolved_path")
-    return path_to_uri(Path(resolved_path)) if resolved_path else None
+    return Path(resolved_path).absolute().as_uri() if resolved_path else None
 
 
 def get_dotted_symbol_at_position(

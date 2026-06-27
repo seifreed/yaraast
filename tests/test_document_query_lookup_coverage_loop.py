@@ -608,6 +608,26 @@ def test_get_include_target_uri_returns_file_uri_when_resolved() -> None:
         assert "other.yar" in result
 
 
+def test_get_include_target_uri_keeps_symlinked_ancestor_path() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        outside = tmp / "outside"
+        outside.mkdir()
+        link = tmp / "linked"
+        link.symlink_to(outside, target_is_directory=True)
+        workspace = link / "workspace"
+        workspace.mkdir()
+        include_file = workspace / "other.yar"
+        include_file.write_text("rule other { condition: true }")
+        main_file = workspace / "main.yar"
+        main_file.write_text('include "other.yar"\nrule x { condition: true }')
+        doc = DocumentContext(uri=main_file.as_uri(), text=main_file.read_text())
+
+        result = lookup.get_include_target_uri(doc, "other.yar")
+
+        assert result == include_file.as_uri()
+
+
 # ---------------------------------------------------------------------------
 # get_dotted_symbol_at_position -- lines 237, 241-255
 # ---------------------------------------------------------------------------
