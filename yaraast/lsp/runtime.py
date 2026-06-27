@@ -219,7 +219,8 @@ class LspRuntime:
             if exact_match is None:
                 for root in self.index.workspace_folders:
                     try:
-                        relative_candidate = candidate.relative_to(root.resolve())
+                        resolved_root = root.resolve()
+                        relative_candidate = candidate.relative_to(resolved_root)
                     except OSError:
                         continue
                     except ValueError:

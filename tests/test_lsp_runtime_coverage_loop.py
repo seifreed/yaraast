@@ -261,6 +261,21 @@ def test_resolve_include_target_uri_prefers_exact_relative_match_over_suffix_col
     assert result == path_to_uri(target)
 
 
+def test_resolve_include_target_uri_skips_inaccessible_workspace_roots(tmp_path: Path) -> None:
+    main = tmp_path / "main.yar"
+    subdir = tmp_path / "sub"
+    subdir.mkdir()
+    target = subdir / "shared.yar"
+    main.write_text("rule a { condition: true }", encoding="utf-8")
+    target.write_text("rule shared { condition: true }", encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.index.workspace_folders = [Path("a" * 5000), tmp_path]
+
+    result = runtime.resolve_include_target_uri(path_to_uri(main), "sub/shared.yar")
+    assert result == path_to_uri(target)
+
+
 def test_resolve_include_target_uri_rejects_parent_relative_escape(tmp_path: Path) -> None:
     rules_dir = tmp_path / "rules"
     rules_dir.mkdir()
