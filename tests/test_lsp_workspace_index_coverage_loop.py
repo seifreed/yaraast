@@ -114,6 +114,50 @@ def test_save_skips_symlinked_cache_file(tmp_path: Path) -> None:
     assert not outside.exists()
 
 
+def test_load_and_save_skip_cache_paths_under_symlink_ancestors(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(outside, target_is_directory=True)
+    root = link / "workspace"
+    root.mkdir()
+
+    cache_path = root / ".yaraast" / "lsp-workspace-index.json"
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+
+    cached_uri = path_to_uri(root / "cached.yar")
+    cache_payload = {
+        "symbols": {
+            cached_uri: [
+                {
+                    "name": "cached",
+                    "kind": "rule",
+                    "uri": cached_uri,
+                    "range": {
+                        "start": {"line": 0, "character": 0},
+                        "end": {"line": 0, "character": 6},
+                    },
+                }
+            ]
+        }
+    }
+    cache_path.write_text(json.dumps(cache_payload, indent=2), encoding="utf-8")
+
+    index = WorkspaceIndex()
+    index.workspace_folders = [root]
+    index.load()
+
+    assert index.persisted_symbols == {}
+
+    fresh_uri = path_to_uri(root / "fresh.yar")
+    index.persisted_symbols[fresh_uri] = [_make_symbol("fresh", fresh_uri)]
+    index.save()
+
+    assert json.loads(cache_path.read_text(encoding="utf-8")) == cache_payload
+
+
 # ---------------------------------------------------------------------------
 # Line 85 — _cache_path_for_root when root is an existing file
 # ---------------------------------------------------------------------------

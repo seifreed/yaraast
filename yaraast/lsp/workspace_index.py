@@ -106,9 +106,10 @@ class WorkspaceIndex:
 
     def _cache_path_is_safe(self, root: Path) -> bool:
         cache_path = self._cache_path_for_root(root)
-        return not path_is_symlink(cache_path) and path_is_within_directory(
-            cache_path,
-            self._cache_root_for_root(root),
+        return (
+            not path_is_symlink(cache_path)
+            and not path_has_symlink_ancestor(cache_path)
+            and path_is_within_directory(cache_path, self._cache_root_for_root(root))
         )
 
     def _workspace_root_for_uri(self, uri: str) -> Path | None:
