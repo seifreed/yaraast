@@ -233,7 +233,7 @@ class IncludeResolver:
 
         # If absolute and exists, return it
         if path.is_absolute() and _path_is_file(path):
-            return path.resolve()
+            return path.absolute()
 
         # First try relative to base path
         if base_path:
@@ -241,7 +241,7 @@ class IncludeResolver:
             if _path_is_file(full_path):
                 resolved = full_path.resolve()
                 if path_is_within_directory(resolved, base_path):
-                    return resolved
+                    return full_path.absolute()
 
         # Then try search paths
         for search_dir in self.search_paths:
@@ -253,7 +253,7 @@ class IncludeResolver:
                     resolved.relative_to(search_dir.resolve())
                 except ValueError:
                     continue  # Skip paths that escape the search directory
-                return resolved
+                return full_path.absolute()
 
         # Not found
         search_dirs = [base_path, *self.search_paths] if base_path else list(self.search_paths)
