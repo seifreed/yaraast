@@ -76,6 +76,7 @@ def test_protobuf_serializer_roundtrip_paths_and_files(tmp_path: Path) -> None:
 
     assert binary
     assert "metadata" in text
+    assert "timestamp" not in text
     assert "alias" in text
     assert bin_path.exists()
     assert txt_path.exists()

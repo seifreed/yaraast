@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import math
-import time
 from typing import Any
 
 from yaraast.errors import SerializationError
@@ -320,7 +319,6 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
         pb_file.metadata.rules_count = len(rules)
         pb_file.metadata.imports_count = len(imports)
         pb_file.metadata.includes_count = len(includes)
-        pb_file.metadata.timestamp = int(time.time())
 
     _copy_node_metadata_to_protobuf(ast, pb_file)
     return pb_file
