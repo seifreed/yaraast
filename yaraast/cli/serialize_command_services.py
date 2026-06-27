@@ -14,6 +14,7 @@ from yaraast.cli.serialize_display_services import (
 )
 from yaraast.cli.serialize_services import compare_yara_files, import_ast
 from yaraast.cli.utils import _path_exists_and_is_dir
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 
 def diff_serialized(
@@ -59,6 +60,9 @@ def build_diff_output_path(
     output_path = Path(raw_path)
     if _path_exists_and_is_dir(output_path):
         msg = "output path must not be a directory"
+        raise ValueError(msg)
+    if path_is_symlink(output_path) or path_has_symlink_ancestor(output_path):
+        msg = "output path must not traverse a symlink"
         raise ValueError(msg)
     return str(output_path)
 

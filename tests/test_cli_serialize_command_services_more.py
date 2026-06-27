@@ -46,6 +46,26 @@ def test_build_diff_output_path_rejects_directory_output_path(tmp_path: Path) ->
         build_diff_output_path("old.yar", "new.yar", output_dir, "json")
 
 
+def test_build_diff_output_path_rejects_symlink_output_path(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    target.write_text("x", encoding="utf-8")
+    link = tmp_path / "output.json"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="output path must not traverse a symlink"):
+        build_diff_output_path("old.yar", "new.yar", link, "json")
+
+
+def test_build_diff_output_path_rejects_symlink_ancestor_output_path(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="output path must not traverse a symlink"):
+        build_diff_output_path("old.yar", "new.yar", link_dir / "output.json", "json")
+
+
 def test_build_diff_output_path_rejects_inaccessible_output_path() -> None:
     output = "a" * 5000
 
