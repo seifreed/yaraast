@@ -129,7 +129,7 @@ class YaraTestFileGenerator:
         # Add jumps occasionally
         hex_str = " ".join(hex_bytes)
         if random.random() > 0.7:
-            insert_pos = random.randint(0, len(hex_bytes) // 2)
+            insert_pos = random.randint(1, len(hex_bytes) - 1)
             jump_size = random.randint(1, 10)
             hex_list = hex_str.split()
             hex_list.insert(insert_pos, f"[{jump_size}]")
@@ -146,7 +146,7 @@ class YaraTestFileGenerator:
         patterns = [
             r"[A-Za-z0-9]{32}",
             r"\w+@\w+\.\w+",
-            r"https?://[^\s]+",
+            r"https?:\/\/[^\s]+",
             r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}",
             r"^MZ.*PE\x00\x00",
             r"(cmd|powershell)\.exe",
@@ -159,9 +159,6 @@ class YaraTestFileGenerator:
             modifiers.append("s")
 
         modifier_str = "".join(modifiers)
-        if modifier_str:
-            modifier_str = f"/{modifier_str}"
-
         return f"/{random.choice(patterns)}/{modifier_str}"
 
     def generate_strings_section(self, count: int | None = None) -> str:
