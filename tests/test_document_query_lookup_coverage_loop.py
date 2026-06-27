@@ -616,6 +616,18 @@ def test_get_include_target_uri_returns_file_uri_when_resolved() -> None:
         assert "other.yar" in result
 
 
+def test_get_include_target_uri_rejects_symlink_document_file() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        target = tmp / "target.yar"
+        target.write_text('include "other.yar"\nrule x { condition: true }')
+        link = tmp / "link.yar"
+        link.symlink_to(target)
+        doc = DocumentContext(uri=link.as_uri(), text=target.read_text())
+
+        assert lookup.get_include_target_uri(doc, "other.yar") is None
+
+
 def test_get_include_target_uri_keeps_symlinked_ancestor_path() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp = Path(tmpdir)
