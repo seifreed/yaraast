@@ -374,6 +374,16 @@ def test_require_file_path_rejects_null_byte_string() -> None:
         _require_file_path("\x00broken")
 
 
+def test_require_file_path_rejects_symlink_path(tmp_path: Path) -> None:
+    target = tmp_path / "target.yar"
+    target.write_text(_yara_source("target"), encoding="utf-8")
+    link = tmp_path / "link.yar"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="file_path must not traverse a symlink"):
+        _require_file_path(link)
+
+
 # ---------------------------------------------------------------------------
 # _read_yara_text_file
 # ---------------------------------------------------------------------------
