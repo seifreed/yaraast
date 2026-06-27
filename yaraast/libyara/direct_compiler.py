@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.errors import EvaluationError
 from yaraast.libyara._availability import is_missing_yara_import
-from yaraast.libyara._paths import path_exists, path_stat
+from yaraast.libyara._paths import path_exists, path_stat, require_file_path
 from yaraast.libyara.ast_optimizer import ASTOptimizer
 from yaraast.libyara.compiler import normalize_libyara_externals
 from yaraast.libyara.direct_helpers import (
@@ -221,7 +221,7 @@ class OptimizedMatcher:
             scan_args["data"] = data
             return scan_args, len(data)
         if isinstance(data, str | Path):
-            data_path = Path(data)
+            data_path = require_file_path(data, "data")
             scan_args["filepath"] = str(data_path)
             return scan_args, path_stat(data_path).st_size if path_exists(data_path) else 0
         if isinstance(data, int) and not isinstance(data, bool):

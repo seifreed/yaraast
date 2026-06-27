@@ -193,6 +193,10 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
     assert bad_type["success"] is False
     assert "Unsupported data type" in bad_type["error"]
 
+    null_path = matcher.scan("\x00broken")
+    assert null_path["success"] is False
+    assert "must not contain null bytes" in null_path["error"]
+
     inaccessible = matcher.scan("a" * 5000)
     assert inaccessible["success"] is False
     assert inaccessible["error"].startswith("path could not be accessed")
