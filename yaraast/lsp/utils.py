@@ -127,6 +127,8 @@ def _get_location_line_text(location: Location, source_text: str | None) -> str 
             return lines[line_index]
         return None
     if location.file:
+        if "\x00" in location.file:
+            return None
         path = Path(location.file)
         if path_exists(path) and path_is_file(path):
             try:

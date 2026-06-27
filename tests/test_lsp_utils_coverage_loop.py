@@ -279,6 +279,11 @@ class TestGetLocationLineText:
         result = _get_location_line_text(loc, source_text=None)
         assert result is None
 
+    def test_returns_none_when_file_contains_null_bytes(self) -> None:
+        loc = Location(line=1, column=1, file="\x00broken.yar")
+        result = _get_location_line_text(loc, source_text=None)
+        assert result is None
+
     def test_source_text_takes_priority_over_file(self, tmp_path: Path) -> None:
         yar = tmp_path / "rule.yar"
         yar.write_text("file content", encoding="utf-8")
