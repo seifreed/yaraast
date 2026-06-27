@@ -193,6 +193,13 @@ def test_metrics_services_path_helpers_reject_invalid_yara_file_values(value: An
         metrics_workflows.determine_pattern_output_path(cast(Any, value), None, "flow", "dot")
 
 
+def test_metrics_services_path_helpers_reject_null_byte_yara_file() -> None:
+    with pytest.raises(ValueError, match="yara_file must not contain null bytes"):
+        metrics_workflows.determine_graph_output_path("\x00broken.yar", None, "full", "svg")
+    with pytest.raises(ValueError, match="yara_file must not contain null bytes"):
+        metrics_workflows.determine_pattern_output_path("\x00broken.yar", None, "flow", "dot")
+
+
 @pytest.mark.parametrize("graph_type", [None, False, 123, object(), b"full", "", "   "])
 def test_metrics_services_path_helpers_reject_invalid_graph_types(graph_type: Any) -> None:
     error_type = ValueError if isinstance(graph_type, str) else TypeError

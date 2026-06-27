@@ -167,6 +167,9 @@ def determine_graph_output_path(yara_file: str, output: object, graph_type: str,
     yara_file = _require_non_empty_text(yara_file, "yara_file")
     graph_type = _require_non_empty_text(graph_type, "graph_type")
     fmt = _require_non_empty_text(fmt, "output format")
+    if "\x00" in yara_file:
+        msg = "yara_file must not contain null bytes"
+        raise ValueError(msg)
     if output is not None:
         return str(require_output_path(output))
     base_name = Path(yara_file).stem
@@ -179,6 +182,9 @@ def determine_pattern_output_path(
     yara_file = _require_non_empty_text(yara_file, "yara_file")
     pattern_type = _require_non_empty_text(pattern_type, "pattern_type")
     fmt = _require_non_empty_text(fmt, "output format")
+    if "\x00" in yara_file:
+        msg = "yara_file must not contain null bytes"
+        raise ValueError(msg)
     if output is not None:
         return str(require_output_path(output))
     base_name = Path(yara_file).stem
