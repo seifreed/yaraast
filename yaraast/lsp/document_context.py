@@ -190,7 +190,12 @@ class DocumentContext:
 
     @property
     def path(self) -> Path | None:
-        return uri_to_path(self.uri)
+        path = uri_to_path(self.uri)
+        if path is not None:
+            return path
+        if "://" in self.uri or "\x00" in self.uri:
+            return None
+        return Path(self.uri)
 
     def update(self, text: str, version: int | None = None, *, is_open: bool | None = None) -> None:
         self.text = _require_document_string(text, "Document text")

@@ -29,6 +29,12 @@ def require_file_path(filepath: object, name: str) -> Path:
         msg = f"{name} must not contain null bytes"
         raise ValueError(msg)
     path = Path(raw_path)
+    try:
+        path.stat()
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        raise _path_access_error(path) from exc
     if path_is_symlink(path) or path_has_symlink_ancestor(path):
         msg = f"{name} must not traverse a symlink"
         raise ValueError(msg)
@@ -38,7 +44,10 @@ def require_file_path(filepath: object, name: str) -> Path:
 def path_exists(path: Path) -> bool:
     """Return whether a path exists, converting access failures to ValueError."""
     try:
-        return path.exists()
+        path.stat()
+        return True
+    except FileNotFoundError:
+        return False
     except OSError as exc:
         raise _path_access_error(path) from exc
 

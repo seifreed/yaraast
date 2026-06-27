@@ -16,7 +16,10 @@ def _path_access_error(path: Path) -> ValueError:
 
 def _path_exists(path: Path) -> bool:
     try:
-        return path.exists()
+        path.stat()
+        return True
+    except FileNotFoundError:
+        return False
     except OSError as exc:
         raise _path_access_error(path) from exc
 

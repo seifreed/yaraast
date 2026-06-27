@@ -25,7 +25,10 @@ def _path_access_error(path: Path) -> ValueError:
 def path_exists(path: Path) -> bool:
     """Return whether a path exists, converting access failures to ValueError."""
     try:
-        return path.exists()
+        path.stat()
+        return True
+    except FileNotFoundError:
+        return False
     except OSError as exc:
         raise _path_access_error(path) from exc
 

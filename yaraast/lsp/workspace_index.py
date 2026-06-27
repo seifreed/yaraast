@@ -39,9 +39,14 @@ def _normalize_workspace_folders(folders: object) -> list[Path]:
     if any(not folder.is_absolute() for folder in normalized):
         msg = "Workspace folder paths must be absolute"
         raise ValueError(msg)
-    if any(path_is_symlink(folder) for folder in normalized):
-        msg = "Workspace folder paths must not be a symlink"
-        raise ValueError(msg)
+    for folder in normalized:
+        try:
+            folder.stat()
+        except OSError:
+            continue
+        if path_is_symlink(folder):
+            msg = "Workspace folder paths must not be a symlink"
+            raise ValueError(msg)
     return normalized
 
 

@@ -358,7 +358,11 @@ class LspRuntime:
         path = uri_to_path(uri)
         if path is None or not path_exists(path) or path_is_dir(path):
             return None
-        if path_is_symlink(path) or path_has_symlink_ancestor(path):
+        if path_is_symlink(path):
+            return None
+        if path_has_symlink_ancestor(path) and (
+            not self.index.workspace_folders or self.index._workspace_root_for_uri(uri) is None
+        ):
             return None
         if self.index.workspace_folders and self.index._workspace_root_for_uri(uri) is None:
             return None
@@ -478,28 +482,7 @@ class LspRuntime:
                 continue
             if self.index.workspace_folders and self.index._workspace_root_for_uri(uri) is None:
                 continue
-            if path_is_symlink(path) or path_has_symlink_ancestor(path):
-                continue
-            if path_exists(path) and path_is_file(path):
-                ctx = self.documents.get(uri)
-                if ctx is not None and ctx.is_open:
-                    ctx.backed_by_file = True
-                    self._sync_document_to_index(uri)
-                    continue
-                try:
-                    text = path.read_text(encoding="utf-8")
-                except Exception:
-                    logger.debug("Operation failed in %s", __name__, exc_info=True)
-                    self.documents.pop(uri, None)
-                    continue
-                if self.config.cache_workspace:
-                    ctx = self.open_document(uri, text)
-                    ctx.is_open = False
-                    self._sync_document_to_index(uri)
-                else:
-                    self.documents.pop(uri, None)
-                    self.cache.bump_generation()
-            else:
+            if not path_exists(path) or not path_is_file(path):
                 ctx = self.documents.get(uri)
                 if ctx is not None and ctx.is_open and ctx.backed_by_file:
                     self.index.remove_document(uri)
@@ -509,6 +492,27 @@ class LspRuntime:
                 self.documents.pop(uri, None)
                 self.index.remove_document(uri)
                 self._dirty_documents.discard(uri)
+                self.cache.bump_generation()
+                continue
+            if path_is_symlink(path) or path_has_symlink_ancestor(path):
+                continue
+            ctx = self.documents.get(uri)
+            if ctx is not None and ctx.is_open:
+                ctx.backed_by_file = True
+                self._sync_document_to_index(uri)
+                continue
+            try:
+                text = path.read_text(encoding="utf-8")
+            except Exception:
+                logger.debug("Operation failed in %s", __name__, exc_info=True)
+                self.documents.pop(uri, None)
+                continue
+            if self.config.cache_workspace:
+                ctx = self.open_document(uri, text)
+                ctx.is_open = False
+                self._sync_document_to_index(uri)
+            else:
+                self.documents.pop(uri, None)
                 self.cache.bump_generation()
 
     def workspace_symbols(self, query: object) -> list[SymbolInformation]:

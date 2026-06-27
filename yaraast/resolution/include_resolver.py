@@ -9,6 +9,7 @@ import hashlib
 import os
 from os import PathLike, fspath
 from pathlib import Path
+import stat
 from typing import TYPE_CHECKING, Any
 
 from yaraast.parser.source import parse_yara_source
@@ -66,7 +67,9 @@ def _path_access_error(path: Path) -> ValueError:
 
 def _path_is_file(path: Path) -> bool:
     try:
-        return path.is_file()
+        return stat.S_ISREG(path.stat().st_mode)
+    except FileNotFoundError:
+        return False
     except OSError as exc:
         raise _path_access_error(path) from exc
 
@@ -310,6 +313,12 @@ class IncludeResolver:
             msg = "file_path must not contain null bytes"
             raise ValueError(msg)
         path = Path(raw_path)
+        try:
+            path.stat()
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            raise _path_access_error(path) from exc
         if path_is_symlink(path):
             msg = "file_path must not traverse a symlink"
             raise ValueError(msg)

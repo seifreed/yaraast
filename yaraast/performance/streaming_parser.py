@@ -57,6 +57,12 @@ def _require_pathlike(value: object, name: str) -> Path:
         msg = f"{name} must not contain null bytes"
         raise ValueError(msg)
     path = Path(raw_path)
+    try:
+        path.stat()
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        raise _path_access_error(path) from exc
     if path_is_symlink(path) or path_has_symlink_ancestor(path):
         msg = f"{name} must not traverse a symlink"
         raise ValueError(msg)
@@ -92,6 +98,7 @@ def _path_exists_and_not_dir(path: Path) -> bool:
 
 def _require_file_path(value: object, name: str = "file_path") -> Path:
     path = _require_pathlike(value, name)
+    _path_exists(path)
     if _path_exists_and_is_dir(path):
         msg = f"{name} must not be a directory"
         raise IsADirectoryError(msg)

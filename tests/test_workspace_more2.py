@@ -111,13 +111,13 @@ def test_workspace_dependency_queries_accept_resolved_and_alias_paths(tmp_path: 
     main = _write(workspace_root / "main.yar", 'include "child.yar"\nrule main { condition: true }')
     child = _write(workspace_root / "child.yar", "rule child { condition: true }")
 
-    workspace = Workspace(root_path=workspace_root)
+    workspace = Workspace(root_path=workspace_root.resolve())
     workspace.add_file("main.yar")
 
-    assert str(child) in workspace.get_file_dependencies(str(main))
-    assert str(child) in workspace.get_file_dependencies(str(main.resolve()))
-    assert str(main) in workspace.get_file_dependents(str(child))
-    assert str(main) in workspace.get_file_dependents(str(child.resolve()))
+    assert str(child.resolve()) in workspace.get_file_dependencies(str(main))
+    assert str(child.resolve()) in workspace.get_file_dependencies(str(main.resolve()))
+    assert str(main.resolve()) in workspace.get_file_dependents(str(child))
+    assert str(main.resolve()) in workspace.get_file_dependents(str(child.resolve()))
 
 
 def test_workspace_dependency_queries_skip_malformed_graph_nodes(tmp_path: Path) -> None:

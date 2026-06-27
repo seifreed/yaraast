@@ -133,6 +133,13 @@ def related_info(error: Any, diagnostic_range: Range) -> list[DiagnosticRelatedI
         return None
     path = uri_to_path(error.location.file)
     if path is None:
+        file_name = error.location.file
+        if not isinstance(file_name, str) or not file_name.strip() or "://" in file_name:
+            return None
+        if "\x00" in file_name:
+            return None
+        path = Path(file_name)
+    if path is None:
         return None
     return [
         DiagnosticRelatedInformation(

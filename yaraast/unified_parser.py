@@ -31,6 +31,16 @@ def _require_text_file_path(file_path: object) -> Path:
         msg = "YARA file path must not contain null bytes"
         raise ValueError(msg)
     path = Path(file_path) if isinstance(file_path, str) else file_path
+    try:
+        path.stat()
+    except FileNotFoundError:
+        pass
+    except PermissionError as exc:
+        msg = f"Permission denied reading file: {file_path}"
+        raise PermissionError(msg) from exc
+    except OSError as exc:
+        msg = f"Error accessing file {file_path}: {exc}"
+        raise OSError(msg) from exc
     if path_is_symlink(path) or path_has_symlink_ancestor(path):
         msg = "YARA file path must not traverse a symlink"
         raise ValueError(msg)
