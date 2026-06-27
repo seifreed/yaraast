@@ -75,6 +75,8 @@ class WorkspaceIndex:
         seen: set[Path] = set()
         for root in self.workspace_folders:
             cache_path = self._cache_path_for_root(root)
+            if not self._cache_path_is_safe(root):
+                continue
             if cache_path in seen:
                 continue
             seen.add(cache_path)
@@ -85,6 +87,17 @@ class WorkspaceIndex:
         if path_is_file(root):
             root = root.parent
         return root / ".yaraast" / "lsp-workspace-index.json"
+
+    def _cache_root_for_root(self, root: Path) -> Path:
+        if path_is_file(root):
+            return root.parent
+        return root
+
+    def _cache_path_is_safe(self, root: Path) -> bool:
+        return path_is_within_directory(
+            self._cache_path_for_root(root),
+            self._cache_root_for_root(root),
+        )
 
     def _workspace_root_for_uri(self, uri: str) -> Path | None:
         path = uri_to_path(uri)

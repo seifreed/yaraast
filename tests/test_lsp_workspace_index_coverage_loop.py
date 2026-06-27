@@ -314,6 +314,48 @@ def test_save_logs_and_continues_on_oserror(tmp_path: Path) -> None:
         cache_dir.chmod(stat.S_IRWXU)
 
 
+def test_load_and_save_skip_symlinked_cache_dir_outside_workspace_root(
+    tmp_path: Path,
+) -> None:
+    """A symlinked .yaraast cache directory that points outside the workspace
+    must be ignored for both reading and writing."""
+    root = tmp_path / "root"
+    root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    payload_text = json.dumps(
+        {
+            "symbols": {
+                path_to_uri(root / "alpha.yar"): [
+                    {
+                        "name": "alpha",
+                        "kind": "rule",
+                        "uri": path_to_uri(root / "alpha.yar"),
+                        "range": {
+                            "start": {"line": 0, "character": 0},
+                            "end": {"line": 0, "character": 5},
+                        },
+                    }
+                ]
+            }
+        },
+        indent=2,
+    )
+    (outside / "lsp-workspace-index.json").write_text(payload_text, encoding="utf-8")
+    (root / ".yaraast").symlink_to(outside, target_is_directory=True)
+
+    index = WorkspaceIndex()
+    index.workspace_folders = [root]
+    index.load()
+    assert index.persisted_symbols == {}
+
+    uri = path_to_uri(root / "alpha.yar")
+    index.persisted_symbols[uri] = [_make_symbol("alpha", uri)]
+    index.save()
+
+    assert (outside / "lsp-workspace-index.json").read_text(encoding="utf-8") == payload_text
+
+
 # ---------------------------------------------------------------------------
 # Line 221 — search_records skips URIs in the excluded set
 # ---------------------------------------------------------------------------
