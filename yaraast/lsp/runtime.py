@@ -407,7 +407,7 @@ class LspRuntime:
         self.cache.bump_generation()
         if self.config.cache_workspace:
             for path in self.index.iter_candidate_files():
-                self.get_document(path_to_uri(path))
+                self.get_document(path.absolute().as_uri())
 
     def update_config(self, settings: dict[str, Any] | None) -> None:
         if settings is None:
@@ -456,7 +456,7 @@ class LspRuntime:
                 if doc.is_open:
                     self._sync_document_to_index(doc.uri)
             for path in self.index.iter_candidate_files():
-                self.get_document(path_to_uri(path))
+                self.get_document(path.absolute().as_uri())
         self.cache.bump_generation()
 
     def handle_watched_files(self, changes: list[Any]) -> None:
