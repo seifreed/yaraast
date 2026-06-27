@@ -7,6 +7,8 @@ returned field metadata.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from lsprotocol.types import Position
 
 from yaraast.lsp import document_query_lookup as lookup
@@ -94,3 +96,13 @@ def test_include_info_and_dotted_symbol_at_position() -> None:
 
     dotted = lookup.get_dotted_symbol_at_position(doc, Position(line=11, character=30))
     assert dotted is None or isinstance(dotted[0], str)
+
+
+def test_get_include_info_rejects_parent_relative_escape(tmp_path: Path) -> None:
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    main = rules_dir / "main.yar"
+    (tmp_path / "shared.yar").write_text("rule shared { condition: true }", encoding="utf-8")
+    main.write_text('include "../shared.yar"\nrule broken { condition: true }\n', encoding="utf-8")
+    doc = DocumentContext(uri=main.as_uri(), text=main.read_text(encoding="utf-8"))
+    assert lookup.get_include_info(doc, "../shared.yar")["resolved_path"] is None

@@ -12,6 +12,7 @@ from yaraast.lsp.document_types import path_to_uri
 from yaraast.lsp.meta_value_parsing import parse_meta_scalar
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8, utf16_len
 from yaraast.lsp.utils import path_exists
+from yaraast.shared.path_safety import path_is_within_directory
 from yaraast.types.module_loader import ModuleLoader
 
 if TYPE_CHECKING:
@@ -205,7 +206,7 @@ def get_include_info(ctx: DocumentContext, include_path: str) -> dict[str, Any]:
     doc_path = ctx.path
     if doc_path is not None:
         candidate = doc_path.parent / include_path
-        if path_exists(candidate):
+        if path_exists(candidate) and path_is_within_directory(candidate, doc_path.parent):
             try:
                 resolved_path = candidate.resolve()
             except OSError:

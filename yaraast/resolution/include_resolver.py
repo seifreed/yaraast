@@ -12,10 +12,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.parser.source import parse_yara_source
+from yaraast.shared.path_safety import path_is_within_directory
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Rule
+
 
 @dataclass
 class ResolvedFile:
@@ -220,7 +222,9 @@ class IncludeResolver:
         if base_path:
             full_path = base_path / path
             if _path_is_file(full_path):
-                return full_path.resolve()
+                resolved = full_path.resolve()
+                if path_is_within_directory(resolved, base_path):
+                    return resolved
 
         # Then try search paths
         for search_dir in self.search_paths:

@@ -40,6 +40,7 @@ from yaraast.lsp.runtime_workspace import (
 )
 from yaraast.lsp.utils import path_exists, path_is_dir, path_is_file
 from yaraast.lsp.workspace_index import WorkspaceIndex
+from yaraast.shared.path_safety import path_is_within_directory
 
 logger = logging.getLogger(__name__)
 
@@ -203,6 +204,7 @@ class LspRuntime:
                 direct_candidate = None
             if (
                 direct_candidate is not None
+                and path_is_within_directory(direct_candidate, path.parent)
                 and path_exists(direct_candidate)
                 and path_is_file(direct_candidate)
             ):

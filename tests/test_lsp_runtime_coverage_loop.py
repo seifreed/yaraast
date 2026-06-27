@@ -238,6 +238,20 @@ def test_resolve_include_target_uri_falls_through_to_suffix_scan(tmp_path: Path)
     assert result == path_to_uri(shared)
 
 
+def test_resolve_include_target_uri_rejects_parent_relative_escape(tmp_path: Path) -> None:
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    main = rules_dir / "main.yar"
+    shared = tmp_path / "shared.yar"
+    main.write_text('include "../shared.yar"\nrule a { condition: true }', encoding="utf-8")
+    shared.write_text("rule shared { condition: true }", encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+
+    assert runtime.resolve_include_target_uri(path_to_uri(main), "../shared.yar") is None
+
+
 def test_resolve_include_target_uri_with_null_path_uri_uses_suffix_scan(tmp_path: Path) -> None:
     # A non-file URI yields path=None from uri_to_path, which skips the
     # direct-candidate check (line 199->211) and goes straight to the suffix scan.

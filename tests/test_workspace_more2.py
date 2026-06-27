@@ -560,7 +560,7 @@ def test_include_resolver_rechecks_nested_cached_files_with_missing_includes(
     assert [included.path for included in second.includes[0].includes] == [grandchild.resolve()]
 
 
-def test_include_resolver_allows_parent_relative_includes(tmp_path: Path) -> None:
+def test_include_resolver_rejects_parent_relative_includes(tmp_path: Path) -> None:
     shared = _write(tmp_path / "shared.yar", "rule shared { condition: true }")
     rules_dir = tmp_path / "rules"
     rules_dir.mkdir()
@@ -569,9 +569,10 @@ def test_include_resolver_allows_parent_relative_includes(tmp_path: Path) -> Non
         'include "../shared.yar"\nrule main { condition: true }',
     )
 
-    resolved = IncludeResolver().resolve_file(str(main))
+    with pytest.raises(FileNotFoundError):
+        IncludeResolver().resolve_file(str(main))
 
-    assert [included.path for included in resolved.includes] == [shared.resolve()]
+    assert shared.exists()
 
 
 def test_include_resolver_reports_missing_nested_includes(tmp_path: Path) -> None:
