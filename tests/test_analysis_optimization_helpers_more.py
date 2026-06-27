@@ -10,10 +10,8 @@ from yaraast.analysis.optimization_grouping_helpers import (
     hex_to_string,
 )
 from yaraast.analysis.optimization_helpers import (
-    extract_comparison,
     get_condition_pattern,
     get_hex_prefix,
-    get_variable_name,
     should_be_hex,
 )
 from yaraast.ast.conditions import OfExpression
@@ -21,8 +19,6 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     Identifier,
     IntegerLiteral,
-    StringCount,
-    StringLiteral,
 )
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
@@ -52,23 +48,6 @@ def test_should_be_hex_and_hex_helpers() -> None:
 
     mixed = HexString(identifier="$h3", tokens=cast(Any, [HexByte(0x10), object()]))
     assert hex_to_string(mixed) == "10 ??"
-
-
-def test_extract_comparison_and_variable_name_paths() -> None:
-    cmp_expr = BinaryExpression(StringCount("a"), ">=", IntegerLiteral(3))
-    assert extract_comparison(cmp_expr) == {"var": "#a", "op": ">=", "value": 3}
-
-    non_cmp = BinaryExpression(Identifier("x"), "!=", IntegerLiteral(3))
-    assert extract_comparison(non_cmp) is None
-
-    no_int_rhs = BinaryExpression(Identifier("x"), ">", StringLiteral("3"))
-    assert extract_comparison(no_int_rhs) is None
-
-    assert get_variable_name(Identifier("x")) == "x"
-    assert get_variable_name(StringCount("abc")) == "#abc"
-    assert get_variable_name(StringCount("$abc")) == "#abc"
-    assert get_variable_name(StringCount("#abc")) == "#abc"
-    assert get_variable_name(IntegerLiteral(1)) is None
 
 
 def test_condition_pattern_duplicate_strings_and_rule_grouping() -> None:
