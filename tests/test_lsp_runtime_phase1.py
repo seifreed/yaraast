@@ -260,7 +260,13 @@ def test_workspace_index_search_rejects_invalid_query_and_exclusions() -> None:
             "rule",
             uri,
             Range(Position(line=0, character=0), Position(line=0, character=6)),
-        )
+        ),
+        SymbolRecord(
+            "sample",
+            "rule_block",
+            uri,
+            Range(Position(line=0, character=0), Position(line=0, character=6)),
+        ),
     ]
 
     with pytest.raises(TypeError, match="Workspace symbol query must be a string"):
@@ -274,6 +280,7 @@ def test_workspace_index_search_rejects_invalid_query_and_exclusions() -> None:
         index.search_records("", exclude_uris=cast(Any, {object()}))
 
     assert [record.name for record in index.search_records("")] == ["sample"]
+    assert all(record.kind == "rule" for record in index.search_records(""))
 
 
 def test_workspace_index_rejects_invalid_document_mutation_inputs() -> None:

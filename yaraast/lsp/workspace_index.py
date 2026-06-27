@@ -230,11 +230,14 @@ class WorkspaceIndex:
         query = require_workspace_symbol_query(query)
         query_lower = query.lower()
         excluded = _normalize_excluded_uris(exclude_uris)
+        hidden_kinds = {"rule_block", "section_header"}
         result: list[SymbolRecord] = []
         for uri, symbols in self.persisted_symbols.items():
             if uri in excluded:
                 continue
             for symbol in symbols:
+                if symbol.kind in hidden_kinds:
+                    continue
                 if query and query_lower not in symbol.name.lower():
                     continue
                 result.append(symbol)
