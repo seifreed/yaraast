@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import stat
+import tempfile
 from typing import Any
 
 from lsprotocol.types import FileChangeType, FileEvent
@@ -217,6 +218,27 @@ def test_resolve_include_target_uri_finds_direct_sibling(tmp_path: Path) -> None
 
     result = runtime.resolve_include_target_uri(path_to_uri(main), "common.yar")
     assert result == path_to_uri(common)
+
+
+def test_resolve_include_target_uri_keeps_symlinked_ancestor_path() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        outside = root / "outside"
+        outside.mkdir()
+        link = root / "linked"
+        link.symlink_to(outside, target_is_directory=True)
+        workspace = link / "workspace"
+        workspace.mkdir()
+        main = workspace / "main.yar"
+        common = workspace / "common.yar"
+        main.write_text('include "common.yar"\nrule a { condition: true }', encoding="utf-8")
+        common.write_text("rule shared { condition: true }", encoding="utf-8")
+
+        runtime = LspRuntime()
+        runtime.set_workspace_folders([str(workspace)])
+
+        result = runtime.resolve_include_target_uri(f"file://{main}", "common.yar")
+        assert result == f"file://{common}"
 
 
 def test_resolve_include_target_uri_falls_through_to_suffix_scan(tmp_path: Path) -> None:

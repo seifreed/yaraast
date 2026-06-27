@@ -207,17 +207,13 @@ class LspRuntime:
     def resolve_include_target_uri(self, uri: str, include_path: str) -> str | None:
         path = uri_to_path(uri)
         if path is not None:
-            try:
-                direct_candidate = (path.parent / include_path).resolve()
-            except OSError:
-                direct_candidate = None
+            direct_candidate = path.parent / include_path
             if (
-                direct_candidate is not None
-                and path_is_within_directory(direct_candidate, path.parent)
+                path_is_within_directory(direct_candidate, path.parent)
                 and path_exists(direct_candidate)
                 and path_is_file(direct_candidate)
             ):
-                return path_to_uri(direct_candidate)
+                return direct_candidate.absolute().as_uri()
 
         include_path_obj = Path(include_path)
         exact_match: tuple[int, Path] | None = None
@@ -231,7 +227,7 @@ class LspRuntime:
         resolved_roots.sort(key=lambda item: item[0], reverse=True)
         for candidate in self.index.iter_candidate_files():
             if candidate.name == include_path:
-                return path_to_uri(candidate)
+                return candidate.absolute().as_uri()
             for root_length, resolved_root in resolved_roots:
                 try:
                     relative_candidate = candidate.relative_to(resolved_root)
@@ -243,7 +239,7 @@ class LspRuntime:
                     exact_match = (root_length, candidate)
                 break
         if exact_match is not None:
-            return path_to_uri(exact_match[1])
+            return exact_match[1].absolute().as_uri()
         return None
 
     def _sync_document_to_index(self, uri: str) -> None:
