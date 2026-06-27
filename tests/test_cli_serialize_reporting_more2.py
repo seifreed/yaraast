@@ -193,6 +193,28 @@ def test_serialize_reporting_escapes_markup_in_dynamic_values() -> None:
     assert bad in output
 
 
+def test_serialize_reporting_handles_null_byte_input_files() -> None:
+    console = Console(record=True, width=120)
+
+    sr.display_info(
+        console,
+        "bad\x00name.json",
+        {
+            "rule_samples": ["rule a"],
+            "rule_count": 1,
+            "import_count": 0,
+            "include_count": 0,
+            "import_list": [],
+            "include_list": [],
+            "rule_details": [],
+            "has_more_rules": False,
+            "ast_hash": "hash",
+        },
+    )
+
+    assert "bad\x00name.json" in console.export_text()
+
+
 def test_serialize_reporting_rejects_null_byte_output_paths() -> None:
     with pytest.raises(ValueError, match="output path must not contain null bytes"):
         sr._has_output_path("\x00broken")

@@ -114,7 +114,8 @@ def display_validation_result(console: Console, panel) -> None:
 
 
 def display_info(console: Console, input_file: str, info_data: dict[str, Any]) -> None:
-    info_table = Table(title=f"AST Information: {escape(Path(input_file).name)}")
+    display_name = input_file if "\x00" in input_file else Path(input_file).name
+    info_table = Table(title=f"AST Information: {escape(display_name)}")
     info_table.add_column("Component", style="cyan")
     info_table.add_column("Count", style="green", justify="right")
     info_table.add_column("Details", style="dim")
