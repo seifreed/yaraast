@@ -548,6 +548,8 @@ def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
         index.set_workspace_folders(["   "])
     with pytest.raises(ValueError, match="Workspace folder paths must not be empty"):
         index.set_workspace_folders(["\t"])
+    with pytest.raises(ValueError, match="Workspace folder paths must be absolute"):
+        index.set_workspace_folders(["relative/workspace"])
 
     assert index.workspace_folders == [tmp_path]
 
@@ -576,7 +578,7 @@ def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
 
 
 def test_workspace_index_treats_inaccessible_workspace_folders_as_empty() -> None:
-    inaccessible_root = "a" * 5000
+    inaccessible_root = "/" + "a" * 5000
     index = WorkspaceIndex()
 
     index.set_workspace_folders([inaccessible_root])
