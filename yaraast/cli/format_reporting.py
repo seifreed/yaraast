@@ -14,23 +14,25 @@ def display_format_success(console: Console, output_file: str) -> None:
 
 
 def display_validation_success(console: Console, input_file: str, stats: dict[str, int]) -> None:
+    display_name = input_file if "\x00" in input_file else Path(input_file).name
     console.print(
         Panel(
             f"[green]Valid YARA file[/green]\n\n"
             f"Statistics:\n"
             f"  - Rules: {stats['rules']}\n"
             f"  - Imports: {stats['imports']}",
-            title=f"Validation Result: {escape(Path(input_file).name)}",
+            title=f"Validation Result: {escape(display_name)}",
             border_style="green",
         ),
     )
 
 
 def display_validation_error(console: Console, input_file: str, error: Exception) -> None:
+    display_name = input_file if "\x00" in input_file else Path(input_file).name
     console.print(
         Panel(
             f"[red]Invalid YARA file[/red]\n\nError: {escape(str(error))}",
-            title=f"Validation Result: {escape(Path(input_file).name)}",
+            title=f"Validation Result: {escape(display_name)}",
             border_style="red",
         ),
     )

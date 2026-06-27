@@ -71,6 +71,16 @@ def test_format_reporting_escapes_markup_in_dynamic_values() -> None:
     assert bad in output
 
 
+def test_format_reporting_handles_null_byte_input_file_names() -> None:
+    console = Console(record=True, width=120)
+
+    display_validation_success(console, "bad\x00name.yar", {"rules": 1, "imports": 0})
+    display_validation_error(console, "bad\x00name.yar", ValueError("broken"))
+
+    output = console.export_text()
+    assert "bad\x00name.yar" in output
+
+
 def test_format_services_format_ast_and_stats() -> None:
     ast = Parser().parse("""
         import "pe"
