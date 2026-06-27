@@ -24,6 +24,7 @@ from yaraast.cli.metrics_reporting_display import (
     graphviz_fallback_message as _graphviz_fallback_message,
 )
 from yaraast.cli.utils import format_json, write_text
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 _STRING_OUTPUT_FORMATS = frozenset({"json", "text"})
 
@@ -198,11 +199,17 @@ def _output_string_analysis_results(output_text: str, output: str | None) -> Non
         click.echo(output_text)
 
 
+def _require_output_directory(output_path: Path) -> None:
+    if path_is_symlink(output_path) or path_has_symlink_ancestor(output_path):
+        raise ValueError("output_path must not traverse a symlink")
+
+
 def write_complexity_report_files(
     output_path: Path,
     base_name: str,
     complexity_metrics: Any,
 ) -> list[str]:
+    _require_output_directory(output_path)
     json_name = f"{base_name}_complexity.json"
     text_name = f"{base_name}_complexity.txt"
 
@@ -219,6 +226,7 @@ def write_complexity_report_files(
 
 
 def write_report_summary(output_path: Path, summary: dict[str, Any]) -> None:
+    _require_output_directory(output_path)
     (output_path / "summary.json").write_text(
         format_json(summary),
         encoding="utf-8",

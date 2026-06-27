@@ -752,3 +752,21 @@ def test_metrics_reporting_report_files_and_summary(
     assert "Comprehensive report generated" in out
     assert "Quality Score" in out
     assert "Generated 3 files" in out
+
+
+def test_metrics_reporting_report_files_reject_symlinked_output_dir(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "link"
+    link_dir.symlink_to(outside, target_is_directory=True)
+
+    ast = _sample_ast()
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
+        write_complexity_report_files(link_dir, "sample", metrics)
+
+    with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
+        write_report_summary(link_dir, {"generated_files": []})
