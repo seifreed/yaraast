@@ -16,6 +16,7 @@ from yaraast.dialects import DialectRegistry, YaraDialect, detect_dialect
 from yaraast.errors import YaraASTError
 from yaraast.parser.parser import Parser as YaraParser
 from yaraast.performance.streaming_parser import StreamingParser
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 from yaraast.yaral.ast_nodes import YaraLFile
 
 
@@ -29,7 +30,11 @@ def _require_text_file_path(file_path: object) -> Path:
     if "\x00" in str(file_path):
         msg = "YARA file path must not contain null bytes"
         raise ValueError(msg)
-    return Path(file_path) if isinstance(file_path, str) else file_path
+    path = Path(file_path) if isinstance(file_path, str) else file_path
+    if path_is_symlink(path) or path_has_symlink_ancestor(path):
+        msg = "YARA file path must not traverse a symlink"
+        raise ValueError(msg)
+    return path
 
 
 def _read_yara_file_text(file_path: Path) -> str:

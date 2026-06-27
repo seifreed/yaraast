@@ -72,6 +72,19 @@ def test_unified_parser_detect_file_dialect_rejects_directory_path(tmp_path: Pat
         UnifiedParser.detect_file_dialect(tmp_path)
 
 
+def test_unified_parser_file_apis_reject_symlink_paths(tmp_path: Path) -> None:
+    target = tmp_path / "target.yar"
+    target.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    link = tmp_path / "link.yar"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="YARA file path must not traverse a symlink"):
+        UnifiedParser.parse_file(link)
+
+    with pytest.raises(ValueError, match="YARA file path must not traverse a symlink"):
+        UnifiedParser.detect_file_dialect(link)
+
+
 @pytest.mark.parametrize(
     "parser_call",
     [
