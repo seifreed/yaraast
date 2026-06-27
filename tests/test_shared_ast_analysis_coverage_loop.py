@@ -106,6 +106,11 @@ def test_require_file_path_directory_raises_value_error(tmp_path: Path) -> None:
         _require_file_path(directory, "input_path")
 
 
+def test_require_file_path_rejects_null_byte_string() -> None:
+    with pytest.raises(ValueError, match="input_path must not contain null bytes"):
+        _require_file_path("\x00broken", "input_path")
+
+
 # ---------------------------------------------------------------------------
 # ASTStructuralAnalyzer.visit_rule — lines 134-135
 # Calling visit_rule directly (not via visit_yara_file / analyze())
