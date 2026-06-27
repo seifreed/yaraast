@@ -118,3 +118,28 @@ def test_cli_optimize_rejects_symlink_output_path(tmp_path: Path) -> None:
 
     assert result.exit_code != 0
     assert "output path must not traverse a symlink" in result.output
+
+
+def test_cli_optimize_rejects_output_path_under_symlink_ancestor(tmp_path: Path) -> None:
+    infile = _write(
+        tmp_path,
+        "ok.yar",
+        """
+        rule ok {
+            strings:
+                $a = "abc"
+            condition:
+                $a
+        }
+        """,
+    )
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    out_file = link_dir / "out.yar"
+
+    result = CliRunner().invoke(optimize, [infile, str(out_file)])
+
+    assert result.exit_code != 0
+    assert "output path must not traverse a symlink" in result.output
