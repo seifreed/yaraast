@@ -14,6 +14,7 @@ document cache — no mocks.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 from typing import Any, cast
@@ -401,6 +402,16 @@ def test_location_source_line_out_of_bounds_returns_empty_string() -> None:
 
 def test_location_source_line_rejects_null_byte_file_name() -> None:
     location = SimpleNamespace(file="\x00broken.yar")
+
+    assert _location_source_line(location, 0) == ""
+
+
+def test_location_source_line_rejects_symlink_file(tmp_path: Path) -> None:
+    target = tmp_path / "target.yar"
+    target.write_text("line one\nline two\n", encoding="utf-8")
+    link = tmp_path / "link.yar"
+    link.symlink_to(target)
+    location = SimpleNamespace(file=str(link))
 
     assert _location_source_line(location, 0) == ""
 

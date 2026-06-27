@@ -31,6 +31,7 @@ from yaraast.lsp.runtime import LspRuntime, get_optional_document_context
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.lsp.utils import path_is_file
 from yaraast.parser._shared import ParserError
+from yaraast.shared.path_safety import path_is_symlink
 from yaraast.types.semantic_validator import SemanticValidator
 from yaraast.unified_parser import UnifiedParser
 
@@ -388,6 +389,8 @@ def _location_source_line(location: Any, line: int) -> str:
     if "\x00" in file_name:
         return ""
     path = Path(file_name)
+    if path_is_symlink(path):
+        return ""
     if not path_is_file(path):
         return ""
     try:

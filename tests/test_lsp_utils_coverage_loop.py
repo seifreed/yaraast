@@ -284,6 +284,17 @@ class TestGetLocationLineText:
         result = _get_location_line_text(loc, source_text=None)
         assert result is None
 
+    def test_returns_none_for_symlink_file(self, tmp_path: Path) -> None:
+        target = tmp_path / "target.yar"
+        target.write_text("first\nsecond", encoding="utf-8")
+        link = tmp_path / "link.yar"
+        link.symlink_to(target)
+        loc = Location(line=1, column=1, file=str(link))
+
+        result = _get_location_line_text(loc, source_text=None)
+
+        assert result is None
+
     def test_source_text_takes_priority_over_file(self, tmp_path: Path) -> None:
         yar = tmp_path / "rule.yar"
         yar.write_text("file content", encoding="utf-8")
