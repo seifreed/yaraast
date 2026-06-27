@@ -201,6 +201,23 @@ class TestInitSearchPathsEnvVar:
                 else:
                     os.environ["YARA_INCLUDE_PATH"] = old
 
+    def test_search_path_under_symlink_ancestor_is_rejected(self) -> None:
+        """A search path that traverses a symlink must be rejected up front."""
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            outside = tmpdir / "outside"
+            outside.mkdir()
+            link = tmpdir / "linked"
+            link.symlink_to(outside, target_is_directory=True)
+            search_path = link / "workspace"
+            search_path.mkdir()
+
+            with pytest.raises(
+                ValueError,
+                match="IncludeResolver search paths must not be symlinks",
+            ):
+                IncludeResolver(search_paths=[str(search_path)])
+
 
 # ---------------------------------------------------------------------------
 # _init_search_paths — deduplication branch (line 109->108)

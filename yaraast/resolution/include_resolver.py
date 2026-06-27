@@ -12,7 +12,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.parser.source import parse_yara_source
-from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
+from yaraast.shared.path_safety import (
+    path_has_symlink_ancestor,
+    path_is_symlink,
+    path_is_within_directory,
+)
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -123,7 +127,7 @@ class IncludeResolver:
     def _normalize_search_path(self, search_path: str) -> Path:
         path = Path(search_path)
         try:
-            if path.is_symlink():
+            if path.is_symlink() or path_has_symlink_ancestor(path):
                 msg = "IncludeResolver search paths must not be symlinks"
                 raise ValueError(msg)
         except OSError as exc:
