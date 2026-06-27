@@ -221,6 +221,8 @@ class LspRuntime:
                 path_is_within_directory(direct_candidate, path.parent)
                 and path_exists(direct_candidate)
                 and path_is_file(direct_candidate)
+                and not path_is_symlink(direct_candidate)
+                and not path_has_symlink_ancestor(direct_candidate)
             ):
                 return direct_candidate.absolute().as_uri()
 

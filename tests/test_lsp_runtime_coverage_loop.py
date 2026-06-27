@@ -246,6 +246,22 @@ def test_resolve_include_target_uri_keeps_symlinked_ancestor_path() -> None:
         assert result == f"file://{common}"
 
 
+def test_resolve_include_target_uri_rejects_symlink_include_target_file() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        outside = root / "outside.yar"
+        outside.write_text("rule outside { condition: true }", encoding="utf-8")
+        main = root / "main.yar"
+        main.write_text('include "linked.yar"\nrule a { condition: true }', encoding="utf-8")
+        (root / "linked.yar").symlink_to(outside)
+
+        runtime = LspRuntime()
+        runtime.set_workspace_folders([str(root)])
+
+        result = runtime.resolve_include_target_uri(path_to_uri(main), "linked.yar")
+        assert result is None
+
+
 def test_resolve_include_target_uri_falls_through_to_suffix_scan(tmp_path: Path) -> None:
     # The URI has a real path but the direct candidate doesn't exist,
     # so the scan at line 211 must find the file via suffix matching.
