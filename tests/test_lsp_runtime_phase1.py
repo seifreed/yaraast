@@ -522,6 +522,8 @@ def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
     symlink_root.symlink_to(tmp_path, target_is_directory=True)
     with pytest.raises(ValueError, match="Workspace folder paths must not be a symlink"):
         index.set_workspace_folders([str(symlink_root)])
+    with pytest.raises(ValueError, match="Workspace folder paths must not contain null bytes"):
+        index.set_workspace_folders(["\x00broken"])
 
     runtime = LspRuntime()
     runtime.set_workspace_folders([str(tmp_path)])
@@ -534,6 +536,8 @@ def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
         runtime.set_workspace_folders(["   "])
     with pytest.raises(ValueError, match="Workspace folder paths must not be a symlink"):
         runtime.set_workspace_folders([str(symlink_root)])
+    with pytest.raises(ValueError, match="Workspace folder paths must not contain null bytes"):
+        runtime.set_workspace_folders(["\x00broken"])
 
     assert runtime.index.workspace_folders == [tmp_path]
 

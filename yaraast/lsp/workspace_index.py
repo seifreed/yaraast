@@ -28,6 +28,9 @@ def _normalize_workspace_folders(folders: object) -> list[Path]:
     if any(not folder.strip() for folder in folders):
         msg = "Workspace folder paths must not be empty"
         raise ValueError(msg)
+    if any("\x00" in folder for folder in folders):
+        msg = "Workspace folder paths must not contain null bytes"
+        raise ValueError(msg)
     normalized = [Path(folder) for folder in folders]
     if any(path_is_symlink(folder) for folder in normalized):
         msg = "Workspace folder paths must not be a symlink"
