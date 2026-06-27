@@ -90,6 +90,11 @@ def test_workspace_bytes_pathlike_root_path_raises_type_error() -> None:
         Workspace(root_path=fake)
 
 
+def test_workspace_null_byte_root_path_raises_value_error() -> None:
+    with pytest.raises(ValueError, match="root_path must not contain null bytes"):
+        Workspace(root_path="\x00broken")
+
+
 def test_workspace_path_within_root_rejects_null_byte_path() -> None:
     with pytest.raises(ValueError, match="ctx must not contain null bytes"):
         _require_path_within_root(Path("\x00broken"), Path("/tmp"), name="ctx")

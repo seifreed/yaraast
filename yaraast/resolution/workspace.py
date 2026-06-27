@@ -97,6 +97,9 @@ class Workspace:
         if not raw_path.strip():
             msg = "root_path must not be empty"
             raise ValueError(msg)
+        if "\x00" in raw_path:
+            msg = "root_path must not contain null bytes"
+            raise ValueError(msg)
         path = uri_to_path(raw_path) if raw_path.lower().startswith("file:") else Path(raw_path)
         if path is None:
             msg = "root_path must be a valid file URI or path"
