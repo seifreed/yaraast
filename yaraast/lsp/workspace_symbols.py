@@ -9,7 +9,7 @@ from pathlib import Path
 from lsprotocol.types import SymbolInformation
 
 from yaraast.lsp.document_types import YARA_FILE_SUFFIXES, uri_to_path
-from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
+from yaraast.lsp.runtime import DocumentContext, LspRuntime
 from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
 
 logger = logging.getLogger(__name__)
@@ -148,7 +148,7 @@ class WorkspaceSymbolsProvider:
             with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
-            file_uri = path_to_uri(file_path)
+            file_uri = file_path.absolute().as_uri()
             doc = DocumentContext(file_uri, content)
             for record in doc.symbols():
                 if record.kind not in {"rule", "string"}:

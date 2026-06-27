@@ -107,6 +107,25 @@ def test_workspace_symbols_normalize_file_uri_workspace_root() -> None:
     assert provider.workspace_root == Path("/tmp/ws")
 
 
+def test_workspace_symbols_keep_workspace_path_for_symlinked_ancestor(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(outside, target_is_directory=True)
+    ws_root = link / "workspace"
+    ws_root.mkdir()
+    yara_file = ws_root / "leak.yar"
+    yara_file.write_text("rule leak { condition: true }\n", encoding="utf-8")
+
+    provider = WorkspaceSymbolsProvider()
+    provider.set_workspace_root(str(ws_root))
+
+    symbols = provider.get_workspace_symbols("leak")
+
+    assert symbols
+    assert symbols[0].location.uri == yara_file.absolute().as_uri()
+
+
 def test_workspace_symbols_rejects_symlinked_workspace_root(tmp_path: Path) -> None:
     outside = tmp_path / "outside"
     outside.mkdir()
