@@ -195,6 +195,21 @@ class TestCompileSourceWithFileContext:
         with pytest.raises(ValueError, match="source_path must not traverse a symlink"):
             compile_source_with_file_context(source, {}, alias, False)
 
+    def test_rejects_symlink_ancestor_source_path(self, tmp_path: Path) -> None:
+        """A source path under a symlinked directory must also be rejected."""
+        source = _minimal_rule()
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        link = tmp_path / "linked"
+        link.symlink_to(outside, target_is_directory=True)
+        nested = link / "nested"
+        nested.mkdir()
+        source_path = nested / "real_input.yar"
+        source_path.write_text(source, encoding="utf-8")
+
+        with pytest.raises(ValueError, match="source_path must not traverse a symlink"):
+            compile_source_with_file_context(source, {}, source_path, False)
+
     def test_compile_failure_reported_not_raised(self, tmp_path: Path) -> None:
         """Invalid YARA source yields a failed DirectCompilationResult, not an exception."""
         source = "this is not valid yara syntax {"
