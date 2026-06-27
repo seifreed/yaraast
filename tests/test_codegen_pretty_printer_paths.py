@@ -570,7 +570,6 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
 
     layout2 = printer2._layout
     assert isinstance(layout2, PrettyLayout)
-    layout2._meta_alignment_column = 0
     from yaraast.ast.modifiers import MetaEntry
 
     printer2._write_meta_section([MetaEntry(key="b", value=2), MetaEntry(key="a", value="x")])
