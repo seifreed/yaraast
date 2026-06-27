@@ -110,6 +110,11 @@ def test_batch_processor_rejects_empty_temp_dir(temp_dir: str) -> None:
         BatchProcessor(temp_dir=temp_dir)
 
 
+def test_batch_processor_rejects_null_byte_temp_dir() -> None:
+    with pytest.raises(ValueError, match="temp_dir must not contain null bytes"):
+        BatchProcessor(temp_dir="\x00broken")
+
+
 @pytest.mark.parametrize("temp_dir", [False, 0, object()])
 def test_batch_processor_rejects_invalid_temp_dir_types(temp_dir: Any) -> None:
     with pytest.raises(TypeError, match="temp_dir must be a path"):

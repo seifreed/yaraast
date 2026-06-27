@@ -127,6 +127,9 @@ class BatchProcessor:
         if not raw_path.strip():
             msg = "temp_dir must not be empty"
             raise ValueError(msg)
+        if "\x00" in raw_path:
+            msg = "temp_dir must not contain null bytes"
+            raise ValueError(msg)
         path = Path(raw_path)
         if path_exists_and_not_dir(path):
             msg = "temp_dir must be a directory"
