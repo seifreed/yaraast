@@ -101,8 +101,9 @@ class WorkspaceIndex:
         return root
 
     def _cache_path_is_safe(self, root: Path) -> bool:
-        return path_is_within_directory(
-            self._cache_path_for_root(root),
+        cache_path = self._cache_path_for_root(root)
+        return not path_is_symlink(cache_path) and path_is_within_directory(
+            cache_path,
             self._cache_root_for_root(root),
         )
 
@@ -274,7 +275,7 @@ class WorkspaceIndex:
                 if resolved_folder in seen_resolved:
                     continue
                 seen_resolved.add(resolved_folder)
-                files.append(folder)
+                files.append(resolved_folder)
                 continue
             if not path_is_dir(folder):
                 continue
@@ -292,7 +293,7 @@ class WorkspaceIndex:
                             and resolved_path not in seen_resolved
                         ):
                             seen_resolved.add(resolved_path)
-                            files.append(path)
+                            files.append(resolved_path)
                 except OSError:
                     logger.debug("Operation failed in %s", __name__, exc_info=True)
         return sorted(files)

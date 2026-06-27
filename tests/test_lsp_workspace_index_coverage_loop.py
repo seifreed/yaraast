@@ -96,6 +96,24 @@ def test_cache_paths_deduplicates_repeated_workspace_folder(tmp_path: Path) -> N
     assert len(restored.persisted_symbols.get(uri, [])) == 1
 
 
+def test_save_skips_symlinked_cache_file(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    outside = tmp_path / "outside-cache.json"
+    cache_path = root / ".yaraast" / "lsp-workspace-index.json"
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.symlink_to(outside)
+
+    index = WorkspaceIndex()
+    index.workspace_folders = [root]
+    uri = path_to_uri(root / "alpha.yar")
+    index.persisted_symbols = {uri: [_make_symbol("alpha", uri)]}
+
+    index.save()
+
+    assert not outside.exists()
+
+
 # ---------------------------------------------------------------------------
 # Line 85 — _cache_path_for_root when root is an existing file
 # ---------------------------------------------------------------------------
