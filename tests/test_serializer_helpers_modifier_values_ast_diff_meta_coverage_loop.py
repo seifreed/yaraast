@@ -268,6 +268,10 @@ class TestRequireInputPath:
         with pytest.raises(ValueError, match="must not be empty"):
             require_input_path("   ", "source")
 
+    def test_raises_value_error_for_null_byte_string(self) -> None:
+        with pytest.raises(ValueError, match="must not contain null bytes"):
+            require_input_path("\x00broken", "source")
+
     def test_returns_path_for_valid_nonexistent_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             target = str(Path(tmpdir) / "rule.yar")
