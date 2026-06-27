@@ -24,6 +24,9 @@ def _optional_output_path(output: object, name: str = "output") -> Path | None:
     if not raw_path.strip():
         msg = f"{name} path must not be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = f"{name} path must not contain null bytes"
+        raise ValueError(msg)
     output_path = Path(raw_path)
     if _path_exists_and_is_dir(output_path):
         msg = f"{name} path must not be a directory"

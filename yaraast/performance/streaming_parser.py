@@ -52,6 +52,9 @@ def _require_pathlike(value: object, name: str) -> Path:
     if not raw_path.strip():
         msg = f"{name} must not be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = f"{name} must not contain null bytes"
+        raise ValueError(msg)
     return Path(raw_path)
 
 

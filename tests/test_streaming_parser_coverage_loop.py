@@ -67,6 +67,11 @@ def test_require_pathlike_raises_for_bytes_returning_fspath() -> None:
         _require_pathlike(obj, "test_name")
 
 
+def test_require_pathlike_rejects_null_byte_string() -> None:
+    with pytest.raises(ValueError, match="test_name must not contain null bytes"):
+        _require_pathlike("\x00broken", "test_name")
+
+
 # ---------------------------------------------------------------------------
 # Lines 73-74: _path_is_dir OSError
 # UNREACHABLE via deterministic real code on POSIX systems.

@@ -167,6 +167,10 @@ class TestOptionalOutputPathInternalBranches:
         with pytest.raises(TypeError, match="output path must be a file path"):
             rr._optional_output_path(BytesPathLike())
 
+    def test_null_byte_string_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="output path must not contain null bytes"):
+            rr._optional_output_path("\x00broken")
+
 
 # ---------------------------------------------------------------------------
 # yaraast.cli.roundtrip_reporting — _display_test_success (lines 36-39)
