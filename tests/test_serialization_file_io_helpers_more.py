@@ -113,6 +113,20 @@ def test_file_io_helpers_reject_empty_pathlike_paths() -> None:
         require_input_path(cast(Any, empty_path), "input_path")
 
 
+def test_file_io_helpers_reject_null_byte_pathlike_paths() -> None:
+    class NullPathLike:
+        def __fspath__(self) -> str:
+            return "\x00broken"
+
+    null_path = NullPathLike()
+
+    with pytest.raises(ValueError, match="path must not contain null bytes"):
+        read_utf8(cast(Any, null_path))
+
+    with pytest.raises(ValueError, match="path must not contain null bytes"):
+        write_utf8(cast(Any, null_path), "content")
+
+
 def test_file_io_helpers_reject_directory_paths(tmp_path: Path) -> None:
     directory = tmp_path / "dir"
     directory.mkdir()

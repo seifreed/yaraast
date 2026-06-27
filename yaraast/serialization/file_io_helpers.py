@@ -42,6 +42,9 @@ def _require_file_path(path: object) -> Path:
     if not raw_path.strip():
         msg = "path must not be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = "path must not contain null bytes"
+        raise ValueError(msg)
     path_obj = Path(raw_path)
     if _path_exists_and_is_dir(path_obj):
         msg = "path must not be a directory"

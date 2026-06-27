@@ -171,6 +171,11 @@ def test_require_file_path_rejects_pathlike_returning_bytes() -> None:
         utils._require_file_path(bad_path)
 
 
+def test_require_file_path_rejects_null_byte_string() -> None:
+    with pytest.raises(ValueError, match="path must not contain null bytes"):
+        utils._require_file_path("\x00broken")
+
+
 def test_read_text_rejects_pathlike_returning_bytes() -> None:
     """Lines 74-76 reached through read_text public surface."""
     bad_path: Any = _BytesPathLike()
