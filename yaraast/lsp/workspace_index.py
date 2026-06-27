@@ -246,17 +246,24 @@ class WorkspaceIndex:
             if not path_exists(folder):
                 continue
             if path_is_file(folder) and folder.suffix.lower() in YARA_FILE_SUFFIXES:
-                files.add(folder)
+                try:
+                    files.add(folder.resolve())
+                except OSError:
+                    continue
                 continue
             if not path_is_dir(folder):
                 continue
             for suffix in YARA_FILE_SUFFIXES:
                 try:
-                    files.update(
-                        path
-                        for path in folder.rglob(f"*{suffix}")
-                        if path.is_file() and path_is_within_directory(path, folder)
-                    )
+                    for path in folder.rglob(f"*{suffix}"):
+                        if not path.is_file():
+                            continue
+                        try:
+                            resolved_path = path.resolve()
+                        except OSError:
+                            continue
+                        if path_is_within_directory(resolved_path, folder):
+                            files.add(resolved_path)
                 except OSError:
                     logger.debug("Operation failed in %s", __name__, exc_info=True)
         return sorted(files)
