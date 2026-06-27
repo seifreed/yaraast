@@ -386,7 +386,7 @@ class LspRuntime:
     def iter_workspace_documents(self) -> list[DocumentContext]:
         docs: dict[str, DocumentContext] = dict(self.documents)
         for path in self.index.iter_candidate_files():
-            uri = path_to_uri(path)
+            uri = path.absolute().as_uri()
             if uri not in docs:
                 ctx = self.get_document(uri)
                 if ctx is not None:

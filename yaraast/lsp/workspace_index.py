@@ -258,15 +258,20 @@ class WorkspaceIndex:
         return result
 
     def iter_candidate_files(self) -> list[Path]:
-        files: set[Path] = set()
+        files: list[Path] = []
+        seen_resolved: set[Path] = set()
         for folder in self.workspace_folders:
             if not path_exists(folder):
                 continue
             if path_is_file(folder) and folder.suffix.lower() in YARA_FILE_SUFFIXES:
                 try:
-                    files.add(folder.resolve())
+                    resolved_folder = folder.resolve()
                 except OSError:
                     continue
+                if resolved_folder in seen_resolved:
+                    continue
+                seen_resolved.add(resolved_folder)
+                files.append(folder)
                 continue
             if not path_is_dir(folder):
                 continue
@@ -279,8 +284,12 @@ class WorkspaceIndex:
                             resolved_path = path.resolve()
                         except OSError:
                             continue
-                        if path_is_within_directory(resolved_path, folder):
-                            files.add(resolved_path)
+                        if (
+                            path_is_within_directory(resolved_path, folder)
+                            and resolved_path not in seen_resolved
+                        ):
+                            seen_resolved.add(resolved_path)
+                            files.append(path)
                 except OSError:
                     logger.debug("Operation failed in %s", __name__, exc_info=True)
         return sorted(files)

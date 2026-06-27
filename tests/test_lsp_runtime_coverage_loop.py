@@ -635,6 +635,25 @@ def test_iter_workspace_documents_includes_index_files(tmp_path: Path) -> None:
     assert path_to_uri(rule_file) in uris
 
 
+def test_iter_workspace_documents_keeps_symlinked_ancestor_path(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(outside, target_is_directory=True)
+    workspace_root = link / "workspace"
+    workspace_root.mkdir()
+    rule_file = workspace_root / "indexed.yar"
+    rule_file.write_text("rule indexed { condition: true }\n", encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(workspace_root)])
+    runtime.documents.clear()
+
+    docs = runtime.iter_workspace_documents()
+    uris = {d.uri for d in docs}
+    assert rule_file.absolute().as_uri() in uris
+
+
 def test_iter_workspace_documents_skips_unreadable_index_file(tmp_path: Path) -> None:
     # False branch of line 359 (359->355): get_document returns None -> skip, continue loop
     rule_file = tmp_path / "unreadable_iter.yar"
