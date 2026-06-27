@@ -10,7 +10,7 @@ from lsprotocol.types import SymbolInformation
 
 from yaraast.lsp.document_types import YARA_FILE_SUFFIXES
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
-from yaraast.shared.path_safety import path_is_within_directory
+from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,9 @@ def _require_workspace_root(root_path: object) -> Path:
     path = Path(raw_path)
     if _path_exists_and_not_dir(path):
         msg = "root_path must not be a file"
+        raise ValueError(msg)
+    if path_is_symlink(path):
+        msg = "root_path must not be a symlink"
         raise ValueError(msg)
     return path
 

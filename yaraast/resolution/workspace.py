@@ -15,6 +15,7 @@ from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace_analysis import WorkspaceAnalyzer
 from yaraast.resolution.workspace_models import FileAnalysisResult, WorkspaceReport
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
+from yaraast.shared.path_safety import path_is_symlink
 
 if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
@@ -86,6 +87,9 @@ class Workspace:
         path = Path(raw_path)
         if _path_exists_and_not_dir(path):
             msg = "root_path must be a directory"
+            raise ValueError(msg)
+        if path_is_symlink(path):
+            msg = "root_path must not be a symlink"
             raise ValueError(msg)
         return path
 

@@ -305,6 +305,16 @@ class TestIterMatchingFilesGlob:
         assert len(result) == 1
         assert result[0].name == "custom.yar"
 
+    def test_rejects_symlinked_directory_root(self, tmp_path: Path) -> None:
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "outside.yar").write_text("rule outside { condition: true }", encoding="utf-8")
+        link = tmp_path / "linked"
+        link.symlink_to(outside, target_is_directory=True)
+
+        with pytest.raises(ValueError, match="directory must not be a symlink"):
+            list(iter_matching_files(link, "*.yar", recursive=True))
+
 
 # ---------------------------------------------------------------------------
 # _path_is_dir OSError branch (lines 31-32)

@@ -6,7 +6,7 @@ from collections.abc import Iterable, Iterator
 from os import PathLike, fspath
 from pathlib import Path
 
-from yaraast.shared.path_safety import path_is_within_directory
+from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
 
 DEFAULT_CLASSIC_YARA_FILE_PATTERNS = ("*.yar", "*.yara")
 FilePatterns = str | Iterable[str] | None
@@ -75,6 +75,9 @@ def iter_matching_files(
         raise FileNotFoundError(msg)
     if not _path_is_dir(directory_path):
         msg = "directory must not be a file"
+        raise ValueError(msg)
+    if path_is_symlink(directory_path):
+        msg = "directory must not be a symlink"
         raise ValueError(msg)
     if not isinstance(recursive, bool):
         msg = "recursive must be a boolean"

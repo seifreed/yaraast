@@ -99,6 +99,18 @@ def test_workspace_symbols_accepts_pathlike_workspace_root(tmp_path: Path) -> No
     assert provider.workspace_root == tmp_path
 
 
+def test_workspace_symbols_rejects_symlinked_workspace_root(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(outside, target_is_directory=True)
+
+    provider = WorkspaceSymbolsProvider()
+
+    with pytest.raises(ValueError, match="root_path must not be a symlink"):
+        provider.set_workspace_root(link)
+
+
 def test_workspace_symbols_cache_helpers_and_not_found_paths() -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
