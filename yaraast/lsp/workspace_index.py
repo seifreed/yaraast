@@ -267,6 +267,8 @@ class WorkspaceIndex:
         for folder in self.workspace_folders:
             if not path_exists(folder):
                 continue
+            if path_is_symlink(folder):
+                continue
             if path_is_file(folder) and folder.suffix.lower() in YARA_FILE_SUFFIXES:
                 try:
                     resolved_folder = folder.resolve()

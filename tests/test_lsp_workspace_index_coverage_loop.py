@@ -474,6 +474,18 @@ def test_iter_candidate_files_includes_yara_file_root_directly(tmp_path: Path) -
     assert yar in candidates
 
 
+def test_iter_candidate_files_skips_symlink_yara_file_root(tmp_path: Path) -> None:
+    real = tmp_path / "real.yar"
+    real.write_text("rule real { condition: true }\n", encoding="utf-8")
+    alias = tmp_path / "alias.yar"
+    alias.symlink_to(real)
+
+    index = WorkspaceIndex()
+    index.workspace_folders = [alias]
+
+    assert index.iter_candidate_files() == []
+
+
 def test_iter_candidate_files_deduplicates_symlink_aliases(tmp_path: Path) -> None:
     real = tmp_path / "real.yar"
     real.write_text("rule real { condition: true }\n", encoding="utf-8")
