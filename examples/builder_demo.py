@@ -74,11 +74,24 @@ def main() -> None:
         .private()
         .with_meta("platform", "windows")
         .with_plain_string("$suspicious", "cmd.exe")
-        .with_condition_lambda(
-            lambda c: c.string("$suspicious")
-            .and_(c.member_access(c.identifier("pe"), "machine").eq(c.integer(0x14C)))
-            .and_(c.member_access(c.identifier("pe"), "number_of_sections").gt(c.integer(3)))
-            .and_(c.member_access(c.identifier("pe"), "is_dll").not_())
+        .with_condition(
+            ConditionBuilder()
+            .string("$suspicious")
+            .and_(
+                ConditionBuilder()
+                .member_access(ConditionBuilder().identifier("pe"), "machine")
+                .eq(ConditionBuilder().integer(0x14C)),
+            )
+            .and_(
+                ConditionBuilder()
+                .member_access(ConditionBuilder().identifier("pe"), "number_of_sections")
+                .gt(ConditionBuilder().integer(3)),
+            )
+            .and_(
+                ConditionBuilder()
+                .member_access(ConditionBuilder().identifier("pe"), "is_dll")
+                .not_(),
+            ),
         )
         .build()
     )
@@ -102,32 +115,32 @@ def main() -> None:
             "$hex",
             HexStringBuilder().add(0x48).add(0x8B).wildcard(2).add(0x48).add(0x89).wildcard(2),
         )
-        .with_condition_lambda(
-            lambda c:
-            # 2 of ($a, $b, $c)
-            c.n_of(2, "$a", "$b", "$c")
+        .with_condition(
+            ConditionBuilder()
+            .n_of(2, "$a", "$b", "$c")
+            .and_(ConditionBuilder().string("$hex").at(ConditionBuilder().entrypoint()))
             .and_(
-                # $hex at entrypoint
-                c.string("$hex").at(c.entrypoint())
-            )
-            .and_(
-                # for any i in (0..pe.number_of_sections):
-                c.for_any(
+                ConditionBuilder().for_any(
                     "i",
-                    c.range(
-                        c.integer(0),
-                        c.member_access(c.identifier("pe"), "number_of_sections"),
+                    ConditionBuilder().range(
+                        ConditionBuilder().integer(0),
+                        ConditionBuilder().member_access(
+                            ConditionBuilder().identifier("pe"), "number_of_sections"
+                        ),
                     ),
-                    c.member_access(
-                        c.array_access(
-                            c.member_access(c.identifier("pe"), "sections"),
-                            c.identifier("i"),
+                    ConditionBuilder()
+                    .member_access(
+                        ConditionBuilder().array_access(
+                            ConditionBuilder().member_access(
+                                ConditionBuilder().identifier("pe"), "sections"
+                            ),
+                            ConditionBuilder().identifier("i"),
                         ),
                         "characteristics",
                     )
-                    .bitwise_and(c.integer(0x20000000))
-                    .ne(c.integer(0)),
-                )
+                    .bitwise_and(ConditionBuilder().integer(0x20000000))
+                    .ne(ConditionBuilder().integer(0)),
+                ),
             )
         )
         .build()
@@ -146,11 +159,7 @@ def main() -> None:
         RuleBuilder()
         .with_name("type_errors")
         .with_plain_string("$str", "test")
-        .with_condition_lambda(
-            lambda c:
-            # Type error: string comparison with integer
-            c.string("$str").gt(c.integer(5))
-        )
+        .with_condition(ConditionBuilder().string("$str").gt(ConditionBuilder().integer(5)))
         .build()
     )
 

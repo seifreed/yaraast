@@ -10,7 +10,7 @@ from yaraast.analysis import RuleAnalyzer
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 from yaraast.codegen import CodeGenerator
-from yaraast.codegen.formatting import FormattingConfig, StringStyle
+from yaraast.codegen.formatting import FormattingConfig, PredefinedStyles, StringStyle
 from yaraast.codegen.options import GeneratorOptions
 from yaraast.optimization import RuleOptimizer
 from yaraast.parser import Parser
@@ -169,12 +169,12 @@ def demo_complete_features() -> None:
 
     # Compact style
     print("\nCompact Style:")
-    compact_gen = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig.compact()))
+    compact_gen = CodeGenerator(options=GeneratorOptions(advanced=PredefinedStyles.compact()))
     print(compact_gen.generate(optimized))
 
     # Expanded style
     print("\nExpanded Style:")
-    expanded_gen = CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig.expanded()))
+    expanded_gen = CodeGenerator(options=GeneratorOptions(advanced=PredefinedStyles.readable()))
     print(expanded_gen.generate(optimized))
 
     # Custom style with sorting

@@ -6,7 +6,7 @@ Analyzes YARA rules for optimization opportunities using AST structure.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from yaraast.analysis.optimization_rule_analysis import (
     analyze_condition_patterns,
@@ -18,11 +18,16 @@ from yaraast.ast.base import YaraFile, require_string, require_yara_file
 from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
+    DoubleLiteral,
     Identifier,
+    IntegerLiteral,
     ParenthesesExpression,
     SetExpression,
+    StringCount,
     StringIdentifier,
+    StringLength,
     StringLiteral,
+    StringOffset,
     StringWildcard,
 )
 from yaraast.ast.rules import Rule
@@ -158,6 +163,25 @@ class OptimizationAnalyzer(BaseVisitor[None]):
         """Analyze binary expressions."""
         visit_binary_expression(self, node)
 
+    def _extract_comparison(self, value: Any) -> dict[str, Any] | None:
+        value = self._unwrap_parentheses(value)
+        if not isinstance(value, BinaryExpression):
+            return None
+        if value.operator not in {"<", "<=", ">", ">="}:
+            return None
+
+        left = self._comparison_term_text(value.left)
+        right = self._comparison_term_text(value.right)
+        if left is not None and self._is_numeric_literal(value.right):
+            return {"var": left, "op": value.operator, "value": self._literal_value(value.right)}
+        if right is not None and self._is_numeric_literal(value.left):
+            return {
+                "var": right,
+                "op": self._reverse_comparison_operator(value.operator),
+                "value": self._literal_value(value.left),
+            }
+        return None
+
     def visit_string_identifier(self, node: StringIdentifier) -> None:
         """Track string references."""
         name = _require_string_reference(node.name)
@@ -249,6 +273,51 @@ class OptimizationAnalyzer(BaseVisitor[None]):
 
     def _is_local(self, name: str) -> bool:
         return any(name in scope for scope in reversed(self._local_scopes))
+
+    @staticmethod
+    def _reverse_comparison_operator(operator: str) -> str:
+        return {">": "<", ">=": "<=", "<": ">", "<=": ">="}[operator]
+
+    @staticmethod
+    def _is_numeric_literal(value: Any) -> bool:
+        return isinstance(value, IntegerLiteral | DoubleLiteral)
+
+    @staticmethod
+    def _literal_value(value: Any) -> int | float:
+        return cast(IntegerLiteral | DoubleLiteral, value).value
+
+    def _comparison_term_text(self, value: Any) -> str | None:
+        value = self._unwrap_parentheses(value)
+        if isinstance(value, Identifier):
+            return require_string(value.name, "Comparison identifier")
+        if isinstance(value, StringCount):
+            if self._comparison_string_is_local(value.string_id):
+                return None
+            return f"#{self._comparison_string_name(value.string_id)}"
+        if isinstance(value, StringOffset):
+            if self._comparison_string_is_local(value.string_id):
+                return None
+            return f"@{self._comparison_string_name(value.string_id)}"
+        if isinstance(value, StringLength):
+            if self._comparison_string_is_local(value.string_id):
+                return None
+            return f"!{self._comparison_string_name(value.string_id)}"
+        return _expression_text(value)
+
+    def _comparison_string_is_local(self, string_id: str) -> bool:
+        return self._is_local(string_id) or (
+            not string_id.startswith("$") and self._is_local(f"${string_id}")
+        )
+
+    @staticmethod
+    def _comparison_string_name(string_id: str) -> str:
+        return string_id if string_id.startswith("$") else f"${string_id}"
+
+    @staticmethod
+    def _unwrap_parentheses(value: Any) -> Any:
+        while isinstance(value, ParenthesesExpression):
+            value = value.expression
+        return value
 
     def _local_value(self, name: str) -> object:
         for scope in reversed(self._local_scopes):

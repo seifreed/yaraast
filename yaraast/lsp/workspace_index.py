@@ -16,7 +16,11 @@ from yaraast.lsp.document_types import (
     uri_to_path,
 )
 from yaraast.lsp.utils import path_exists, path_is_dir, path_is_file
-from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
+from yaraast.shared.path_safety import (
+    path_has_symlink_ancestor,
+    path_is_symlink,
+    path_is_within_directory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -295,7 +299,7 @@ class WorkspaceIndex:
                             and resolved_path not in seen_resolved
                         ):
                             seen_resolved.add(resolved_path)
-                            files.append(resolved_path)
+                            files.append(path if path_has_symlink_ancestor(path) else resolved_path)
                 except OSError:
                     logger.debug("Operation failed in %s", __name__, exc_info=True)
         return sorted(files)

@@ -40,6 +40,14 @@ if TYPE_CHECKING:
     from yaraast.codegen.options import GeneratorOptions
 
 
+def _write_line(gen: Any, text: str = "") -> None:
+    if hasattr(gen, "_writeline"):
+        gen._writeline(text)
+        return
+    gen._write(text)
+    gen._write("\n")
+
+
 class GeneratorLayout(ABC):
     """Structural rendering policy for :class:`CodeGenerator`.
 
@@ -122,12 +130,12 @@ class GeneratorLayout(ABC):
                 raise ValueError(msg)
             gen._write(f"  // {text}")
         elif "\n" in text or len(text) > 80:
-            gen._writeline("/*")
+            _write_line(gen, "/*")
             for line in text.split("\n"):
-                gen._writeline(f" * {line.strip()}")
-            gen._writeline(" */")
+                _write_line(gen, f" * {line.strip()}")
+            _write_line(gen, " */")
         else:
-            gen._writeline(f"// {text}")
+            _write_line(gen, f"// {text}")
 
     # Per-string renderers (plain defaults; advanced overrides)
     def plain_string(self, gen: CodeGenerator, node: Any) -> str:

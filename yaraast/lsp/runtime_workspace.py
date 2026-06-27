@@ -51,8 +51,17 @@ def workspace_symbol_records(runtime: LspRuntime, query: object = "") -> list[Sy
             if query and query_lower not in record.name.lower():
                 continue
             records.append(record)
-    persisted = runtime.index.search_records(query, exclude_uris=open_uris)
-    records.extend(record for record in persisted if record.kind not in hidden_kinds)
+    for uri, symbols in runtime.index.persisted_symbols.items():
+        if uri in open_uris:
+            continue
+        if runtime.index.workspace_folders and runtime.index._workspace_root_for_uri(uri) is None:
+            continue
+        for record in symbols:
+            if record.kind in hidden_kinds:
+                continue
+            if query and query_lower not in record.name.lower():
+                continue
+            records.append(record)
     runtime.cache.workspace_symbol_cache[cache_key] = list(records)
     return records
 
