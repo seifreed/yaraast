@@ -467,6 +467,16 @@ def test_include_resolver_rejects_invalid_search_paths() -> None:
         IncludeResolver(cast(Any, [object()]))
 
 
+def test_include_resolver_rejects_symlink_search_paths(tmp_path: Path) -> None:
+    real_dir = tmp_path / "real"
+    real_dir.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(real_dir, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="IncludeResolver search paths must not be symlinks"):
+        IncludeResolver([str(link)])
+
+
 @pytest.mark.parametrize("search_path", ["", "   ", "\t"])
 def test_include_resolver_rejects_empty_search_path_entries(search_path: str) -> None:
     with pytest.raises(
@@ -484,6 +494,20 @@ def test_include_resolver_rejects_empty_env_search_path_entries(
     monkeypatch.setenv("YARA_INCLUDE_PATH", env_value)
 
     with pytest.raises(ValueError, match="YARA_INCLUDE_PATH must not contain empty paths"):
+        IncludeResolver([])
+
+
+def test_include_resolver_rejects_symlink_env_search_paths(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    real_dir = tmp_path / "real"
+    real_dir.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(real_dir, target_is_directory=True)
+    monkeypatch.setenv("YARA_INCLUDE_PATH", str(link))
+
+    with pytest.raises(ValueError, match="IncludeResolver search paths must not be symlinks"):
         IncludeResolver([])
 
 

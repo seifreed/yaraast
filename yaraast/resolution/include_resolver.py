@@ -90,7 +90,7 @@ class IncludeResolver:
             if any(not search_path.strip() for search_path in search_paths):
                 msg = "IncludeResolver search_paths must not contain empty paths"
                 raise ValueError(msg)
-            paths.extend(Path(p).resolve() for p in search_paths)
+            paths.extend(self._normalize_search_path(p) for p in search_paths)
 
         # Add current directory
         paths.append(Path.cwd())
@@ -102,7 +102,7 @@ class IncludeResolver:
             if any(not env_path.strip() for env_path in env_path_entries):
                 msg = "YARA_INCLUDE_PATH must not contain empty paths"
                 raise ValueError(msg)
-            paths.extend(Path(env_path).resolve() for env_path in env_path_entries)
+            paths.extend(self._normalize_search_path(env_path) for env_path in env_path_entries)
 
         # Remove duplicates while preserving order
         seen: set[Path] = set()
@@ -113,6 +113,16 @@ class IncludeResolver:
                 unique_paths.append(candidate_path)
 
         return unique_paths
+
+    def _normalize_search_path(self, search_path: str) -> Path:
+        path = Path(search_path)
+        try:
+            if path.is_symlink():
+                msg = "IncludeResolver search paths must not be symlinks"
+                raise ValueError(msg)
+        except OSError as exc:
+            raise _path_access_error(path) from exc
+        return path.resolve()
 
     def resolve_file(
         self,
