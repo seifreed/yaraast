@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from typing import Any
 
 
@@ -26,6 +27,8 @@ def parse_meta_scalar(raw_value: str) -> tuple[bool, Any]:
     except (json.JSONDecodeError, TypeError, ValueError):
         parsed = None
     else:
+        if isinstance(parsed, float) and not math.isfinite(parsed):
+            return False, None
         if isinstance(parsed, (str, bool, int, float)) or parsed is None:
             return True, parsed
 

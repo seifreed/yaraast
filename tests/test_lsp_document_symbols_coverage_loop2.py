@@ -202,6 +202,10 @@ def test_parse_text_meta_value_rejects_complex_python_literals() -> None:
     assert _parse_text_meta_value("[1, 2, 3]") is None
 
 
+def test_parse_text_meta_value_rejects_non_finite_numbers() -> None:
+    assert _parse_text_meta_value("NaN") is None
+
+
 # ---------------------------------------------------------------------------
 # build_text_symbols with import + include: integration path covering 77-79 and 96-98
 # ---------------------------------------------------------------------------
