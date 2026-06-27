@@ -649,6 +649,10 @@ def test_metrics_reporting_treats_inaccessible_result_paths_as_non_files(
     assert path_size_for_display(result_path) is None
 
 
+def test_metrics_reporting_treats_null_byte_result_paths_as_non_files() -> None:
+    assert path_size_for_display("\x00broken") is None
+
+
 def test_metrics_reporting_analyze_pattern_counts_and_string_branches(
     capsys: pytest.CaptureFixture[str],
 ) -> None:

@@ -10,6 +10,8 @@ from yaraast.ast.base import YaraFile
 
 
 def path_size_for_display(path: str) -> int | None:
+    if "\x00" in path:
+        return None
     try:
         from pathlib import Path
 
