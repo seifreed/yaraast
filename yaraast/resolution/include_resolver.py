@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.parser.source import parse_yara_source
-from yaraast.shared.path_safety import path_is_within_directory
+from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -289,6 +289,10 @@ class IncludeResolver:
             raise ValueError(msg)
         if "\x00" in raw_path:
             msg = "file_path must not contain null bytes"
+            raise ValueError(msg)
+        path = Path(raw_path)
+        if path_is_symlink(path):
+            msg = "file_path must not traverse a symlink"
             raise ValueError(msg)
         return raw_path
 

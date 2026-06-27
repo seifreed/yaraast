@@ -129,6 +129,22 @@ class TestInitSearchPathsValidation:
             IncludeResolver(search_paths=["   "])
 
 
+class TestResolveFileSymlinkRejection:
+    """Top-level file resolution must reject symlink traversal."""
+
+    def test_resolve_file_rejects_symlink_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            target = tmpdir / "target.yar"
+            target.write_text(_SIMPLE_RULE, encoding="utf-8")
+            link = tmpdir / "link.yar"
+            link.symlink_to(target)
+
+            resolver = IncludeResolver([str(tmpdir)])
+            with pytest.raises(ValueError, match="file_path must not traverse a symlink"):
+                resolver.resolve_file(str(link))
+
+
 # ---------------------------------------------------------------------------
 # _init_search_paths — YARA_INCLUDE_PATH env var (lines 99-103)
 # ---------------------------------------------------------------------------
