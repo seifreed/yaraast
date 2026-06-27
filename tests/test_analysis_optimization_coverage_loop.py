@@ -9,7 +9,6 @@ coverage (coverage combine + coverage report --show-missing):
   line  36            _expression_text str early-return path
   233->235            visit_dict_comprehension: value_variable is truthy branch
   271->exit           _define_local called with empty local-scope stack
-  281-282             _extract_comparison raises TypeError for non-str var
   296-297             _visit_ast_value list/tuple/set/frozenset branch
   301-302             _visit_string_set_value str early-return path
   314-315             _visit_string_set_value Identifier not "them" not "$"-prefixed
@@ -32,7 +31,6 @@ from yaraast.analysis.optimization import (
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
-    BinaryExpression,
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
@@ -168,52 +166,6 @@ def test_define_local_does_nothing_when_scope_stack_is_empty() -> None:
 
     # Assert — scope stack remains empty
     assert analyzer._local_scopes == []
-
-
-# ---------------------------------------------------------------------------
-# _extract_comparison reachable paths
-# ---------------------------------------------------------------------------
-
-
-def test_extract_comparison_returns_none_for_missing_var() -> None:
-    """_extract_comparison returns None when extract_comparison finds no variable.
-
-    Line 277-278: the outer None guard fires when extract_comparison() itself
-    returns None (e.g. when the expression is not a recognised comparison form).
-    """
-    # Arrange — a binary expression that is not a comparison (operator "and")
-    expr = BinaryExpression(
-        left=IntegerLiteral(value=1),
-        operator="and",
-        right=IntegerLiteral(value=2),
-    )
-    analyzer = OptimizationAnalyzer()
-
-    # Act
-    result = analyzer._extract_comparison(expr)
-
-    # Assert
-    assert result is None
-
-
-def test_extract_comparison_returns_result_for_non_local_variable() -> None:
-    """_extract_comparison returns a comparison dict for an unscoped variable."""
-    # Arrange
-    comparison = BinaryExpression(
-        left=Identifier(name="filesize"),
-        operator="<",
-        right=IntegerLiteral(value=1024),
-    )
-    analyzer = OptimizationAnalyzer()
-
-    # Act
-    result = analyzer._extract_comparison(comparison)
-
-    # Assert
-    assert result is not None
-    assert result["var"] == "filesize"
-    assert result["op"] == "<"
-    assert result["value"] == 1024
 
 
 # ---------------------------------------------------------------------------
