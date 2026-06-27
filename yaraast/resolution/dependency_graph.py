@@ -494,22 +494,26 @@ class DependencyGraph:
     def get_file_dependencies(self, file_path: object) -> set[str]:
         """Get all dependencies of a file (transitive)."""
         query_path = _require_path(file_path, "DependencyGraph file_path")
-
-        # Resolve path to handle symlinks (e.g., /var -> /private/var on macOS)
-        resolved_path = str(query_path.resolve())
-
-        # Try both resolved and original paths
-        if resolved_path in self.nodes:
-            return self._get_transitive_dependencies(resolved_path)
-        return self._get_transitive_dependencies(str(query_path))
+        for candidate in self.nodes:
+            if self._path_matches_query(candidate, query_path):
+                return self._get_transitive_dependencies(candidate)
+        return set()
 
     def get_file_dependents(self, file_path: object) -> set[str]:
         """Get all files that depend on this file (transitive)."""
         query_path = _require_path(file_path, "DependencyGraph file_path")
-        resolved_path = str(query_path.resolve())
-        if resolved_path in self.nodes:
-            return self._get_transitive_dependents(resolved_path)
-        return self._get_transitive_dependents(str(query_path))
+        for candidate in self.nodes:
+            if self._path_matches_query(candidate, query_path):
+                return self._get_transitive_dependents(candidate)
+        return set()
+
+    def _path_matches_query(self, node_key: str, query_path: Path) -> bool:
+        if node_key.startswith("rule:"):
+            return False
+        node_path = Path(node_key)
+        query_candidates = {str(query_path), str(query_path.absolute()), str(query_path.resolve())}
+        node_candidates = {str(node_path), str(node_path.absolute()), str(node_path.resolve())}
+        return not query_candidates.isdisjoint(node_candidates)
 
     def get_rule_dependencies(self, rule_name: str) -> set[str]:
         """Get all dependencies of a rule."""

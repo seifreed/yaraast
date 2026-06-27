@@ -69,6 +69,25 @@ def test_workspace_preserves_symlinked_ancestor_path(tmp_path: Path) -> None:
     assert workspace.get_all_rules() == [("leak", str(rule_file))]
 
 
+def test_workspace_dependency_queries_accept_resolved_and_alias_paths(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(outside, target_is_directory=True)
+    workspace_root = link / "workspace"
+    workspace_root.mkdir()
+    main = _write(workspace_root / "main.yar", 'include "child.yar"\nrule main { condition: true }')
+    child = _write(workspace_root / "child.yar", "rule child { condition: true }")
+
+    workspace = Workspace(root_path=workspace_root)
+    workspace.add_file("main.yar")
+
+    assert str(child) in workspace.get_file_dependencies(str(main))
+    assert str(child) in workspace.get_file_dependencies(str(main.resolve()))
+    assert str(main) in workspace.get_file_dependents(str(child))
+    assert str(main) in workspace.get_file_dependents(str(child.resolve()))
+
+
 def test_workspace_rejects_invalid_file_uri_root_path() -> None:
     with pytest.raises(ValueError, match="root_path must be a valid file URI or path"):
         Workspace("file://example.com/tmp/ws")
