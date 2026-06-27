@@ -123,6 +123,15 @@ def test_dependency_graph_render_rejects_directory_output_path(tmp_path: Path) -
         render_graph(SimpleNamespace(source="digraph G {}"), tmp_path, "dot")
 
 
+def test_dependency_graph_render_rejects_symlink_output_path(tmp_path: Path) -> None:
+    target = tmp_path / "target.dot"
+    link = tmp_path / "link.dot"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="output_path must not be a symlink"):
+        render_graph(SimpleNamespace(source="digraph G {}"), link, "dot")
+
+
 def test_dependency_graph_render_rejects_inaccessible_output_path() -> None:
     with pytest.raises(ValueError, match="path could not be accessed"):
         render_graph(SimpleNamespace(source="digraph G {}"), "a" * 5000, "dot")

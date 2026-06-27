@@ -94,3 +94,27 @@ def test_cli_optimize_does_not_warn_on_valid_input(tmp_path: Path) -> None:
     outfile = tmp_path / "out.yar"
     result = CliRunner().invoke(optimize, [infile, str(outfile)])
     assert "Recovered from" not in result.output
+
+
+def test_cli_optimize_rejects_symlink_output_path(tmp_path: Path) -> None:
+    infile = _write(
+        tmp_path,
+        "ok.yar",
+        """
+        rule ok {
+            strings:
+                $a = "abc"
+            condition:
+                $a
+        }
+        """,
+    )
+    target = tmp_path / "target.yar"
+    target.write_text("target", encoding="utf-8")
+    link = tmp_path / "out.yar"
+    link.symlink_to(target)
+
+    result = CliRunner().invoke(optimize, [infile, str(link)])
+
+    assert result.exit_code != 0
+    assert "output path must not be a symlink" in result.output

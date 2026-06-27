@@ -16,6 +16,7 @@ from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.parser.source import parse_yara_source
 from yaraast.performance.validation import path_exists_and_not_dir
 from yaraast.serialization.json_serializer import JsonSerializer
+from yaraast.shared.path_safety import path_is_symlink
 
 if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
@@ -209,6 +210,9 @@ def require_output_dir_path(output_dir: object) -> Path | None:
     path = Path(raw_path)
     if path_exists_and_not_dir(path):
         msg = "output_dir must not be a file"
+        raise ValueError(msg)
+    if path_is_symlink(path):
+        msg = "output_dir must not be a symlink"
         raise ValueError(msg)
     return path
 

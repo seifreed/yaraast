@@ -23,6 +23,24 @@ def test_cli_utils_read_write_text_and_json(tmp_path: Path) -> None:
     assert json.loads(utils.read_text(json_path)) == {"value": 1}
 
 
+def test_cli_utils_rejects_symlink_output_paths(tmp_path: Path) -> None:
+    target = tmp_path / "target.txt"
+    target.write_text("target", encoding="utf-8")
+    link = tmp_path / "link.txt"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="path must not be a symlink"):
+        utils.write_text(link, "hello")
+
+    with pytest.raises(click.BadParameter, match="output path must not be a symlink"):
+        utils._validate_output_path(str(link))
+
+    link_dir = tmp_path / "dir-link"
+    link_dir.symlink_to(tmp_path, target_is_directory=True)
+    with pytest.raises(click.BadParameter, match="output path must not be a symlink"):
+        utils._validate_output_dir_path(str(link_dir))
+
+
 def test_cli_utils_rejects_non_utf8_encodable_text(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="content must be UTF-8 encodable"):
         utils.write_text(tmp_path / "sample.txt", "\ud800")

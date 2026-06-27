@@ -301,6 +301,16 @@ def test_require_output_dir_path_rejects_pathlike_with_bytes_fspath() -> None:
         require_output_dir_path(bad_pathlike)
 
 
+def test_require_output_dir_path_rejects_symlink_directory(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(target, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="output_dir must not be a symlink"):
+        require_output_dir_path(str(link))
+
+
 # ---------------------------------------------------------------------------
 # Line 240 - process_files_single COMPLEXITY with a successfully-parsed file
 # ---------------------------------------------------------------------------

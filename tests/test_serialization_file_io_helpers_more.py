@@ -21,6 +21,16 @@ def test_file_io_helpers_read_and_write_utf8_paths(tmp_path: Path) -> None:
     assert read_utf8(str(path)) == "hello"
 
 
+def test_file_io_helpers_reject_symlink_output_path(tmp_path: Path) -> None:
+    target = tmp_path / "target.txt"
+    target.write_text("target", encoding="utf-8")
+    link = tmp_path / "link.txt"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="path must not be a symlink"):
+        write_utf8(link, "hello")
+
+
 def test_serializer_helpers_drop_duplicate_text_wrappers() -> None:
     assert not hasattr(sh, "read_text")
     assert not hasattr(sh, "write_text")

@@ -5,6 +5,8 @@ from __future__ import annotations
 from os import PathLike, fspath
 from pathlib import Path
 
+from yaraast.shared.path_safety import path_is_symlink
+
 
 def _path_access_error(path: Path) -> ValueError:
     msg = f"path could not be accessed: {path}"
@@ -71,7 +73,10 @@ def write_utf8(path: str | Path, text: str) -> None:
         msg = "text must be UTF-8 encodable"
         raise ValueError(msg) from exc
     try:
-        with _require_file_path(path).open("w", encoding="utf-8") as handle:
+        path_obj = _require_file_path(path)
+        if path_is_symlink(path_obj):
+            raise ValueError("path must not be a symlink")
+        with path_obj.open("w", encoding="utf-8") as handle:
             handle.write(text)
     except OSError as exc:
         msg = f"path could not be accessed: {path}"
