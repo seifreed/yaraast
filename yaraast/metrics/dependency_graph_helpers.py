@@ -71,6 +71,9 @@ def require_output_path(output_path: object, name: str = "output_path") -> Path:
     if not raw_path.strip():
         msg = f"{name} must not be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = f"{name} must not contain null bytes"
+        raise ValueError(msg)
     path = Path(raw_path)
     if _path_exists_and_is_dir(path):
         msg = f"{name} must not be a directory"

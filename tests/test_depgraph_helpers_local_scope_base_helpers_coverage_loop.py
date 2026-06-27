@@ -99,6 +99,12 @@ def test_require_output_path_custom_name_appears_in_bytes_backed_error() -> None
         require_output_path(bytes_path, name="destination")
 
 
+def test_require_output_path_rejects_null_byte_string() -> None:
+    """require_output_path must reject embedded null bytes before Path() use."""
+    with pytest.raises(ValueError, match="output_path must not contain null bytes"):
+        require_output_path("\x00broken")
+
+
 # ---------------------------------------------------------------------------
 # yaraast/shared/local_scope.py — lines 35-36
 #
