@@ -63,5 +63,10 @@ def get_workspace_folders(params: InitializeParams) -> list[str]:
             folders.append(str(path))
     root_path = getattr(params, "root_path", None)
     if isinstance(root_path, str) and root_path.strip():
-        folders.append(root_path)
+        if root_path.lower().startswith("file:"):
+            path = uri_to_path(root_path)
+            if path is not None:
+                folders.append(str(path))
+        else:
+            folders.append(root_path)
     return [folder for idx, folder in enumerate(folders) if folder and folder not in folders[:idx]]
