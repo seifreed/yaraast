@@ -171,6 +171,15 @@ class TestCompileSourceWithFileContext:
         with pytest.raises(ValueError, match="source_path must not be empty"):
             compile_source_with_file_context(source, {}, "   ", False)
 
+    def test_rejects_null_byte_source_path(self) -> None:
+        """A null byte in the source path must be rejected before Path.resolve().
+
+        Branch: null-byte validation at the trust boundary.
+        """
+        source = _minimal_rule()
+        with pytest.raises(ValueError, match="source_path must not contain null bytes"):
+            compile_source_with_file_context(source, {}, "\x00broken", False)
+
     def test_compile_failure_reported_not_raised(self, tmp_path: Path) -> None:
         """Invalid YARA source yields a failed DirectCompilationResult, not an exception."""
         source = "this is not valid yara syntax {"

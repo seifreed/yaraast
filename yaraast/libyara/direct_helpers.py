@@ -61,6 +61,9 @@ def compile_source_with_file_context(
     if not raw_path.strip():
         msg = "source_path must not be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = "source_path must not contain null bytes"
+        raise ValueError(msg)
     source_dir = Path(raw_path).resolve().parent
     temp_path = None
     with tempfile.NamedTemporaryFile(
