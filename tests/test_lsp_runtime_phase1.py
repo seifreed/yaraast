@@ -132,6 +132,20 @@ def test_runtime_ignores_watched_workspace_symlink_file_changes(
     assert path_to_uri(link) not in runtime.documents
 
 
+def test_runtime_rejects_workspace_symlink_file_alias_inside_root(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    target = root / "target.yar"
+    target.write_text("rule inside { condition: true }\n", encoding="utf-8")
+    alias = root / "alias.yar"
+    alias.symlink_to(target)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(root)])
+
+    assert runtime.get_document(alias.absolute().as_uri()) is None
+
+
 def test_navigation_and_rename_keep_working_in_partially_broken_documents(
     tmp_path: Path,
 ) -> None:
