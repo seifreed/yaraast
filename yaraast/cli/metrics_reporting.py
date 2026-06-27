@@ -57,7 +57,7 @@ def _display_pattern_result(result_path: str) -> None:
 
         try:
             exists = Path(result_path).exists()
-        except OSError:
+        except (OSError, ValueError):
             exists = False
     else:
         exists = False

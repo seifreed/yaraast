@@ -187,6 +187,15 @@ def test_benchmark_result_does_not_expose_dead_memory_field() -> None:
     assert "memory_usage" not in BenchmarkResult.__annotations__
 
 
+def test_metrics_display_helpers_handle_null_byte_result_paths(capsys) -> None:
+    _display_pattern_result("\x00broken.dot")
+    _display_successful_graph_result("\x00broken.dot", object())
+
+    output = capsys.readouterr().out
+    assert "Diagram source:" in output
+    assert "\x00broken.dot" in output
+
+
 def test_ast_benchmarker_supports_yarax_roundtrip(tmp_path: Path) -> None:
     yara_path = tmp_path / "bench_yarax.yar"
     yara_path.write_text(_yarax_rule(), encoding="utf-8")

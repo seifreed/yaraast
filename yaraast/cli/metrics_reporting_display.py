@@ -40,7 +40,7 @@ def display_successful_graph_result(result_path: str, generator: Any) -> None:
 
         try:
             exists = Path(result_path).exists()
-        except OSError:
+        except (OSError, ValueError):
             exists = False
     else:
         exists = False
