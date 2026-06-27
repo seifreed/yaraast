@@ -41,7 +41,11 @@ from yaraast.lsp.runtime_workspace import (
 )
 from yaraast.lsp.utils import path_exists, path_is_dir, path_is_file
 from yaraast.lsp.workspace_index import WorkspaceIndex
-from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
+from yaraast.shared.path_safety import (
+    path_has_symlink_ancestor,
+    path_is_symlink,
+    path_is_within_directory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -472,7 +476,7 @@ class LspRuntime:
                 continue
             if self.index.workspace_folders and self.index._workspace_root_for_uri(uri) is None:
                 continue
-            if path_is_symlink(path):
+            if path_is_symlink(path) or path_has_symlink_ancestor(path):
                 continue
             if path_exists(path) and path_is_file(path):
                 ctx = self.documents.get(uri)

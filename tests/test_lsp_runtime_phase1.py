@@ -132,6 +132,25 @@ def test_runtime_ignores_watched_workspace_symlink_file_changes(
     assert path_to_uri(link) not in runtime.documents
 
 
+def test_runtime_ignores_watched_workspace_symlink_ancestor_file_changes(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = root / "link"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    watched = link_dir / "watched.yar"
+    watched.write_text("rule watched { condition: true }\n", encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(root)])
+    runtime.handle_watched_files([FileEvent(uri=path_to_uri(watched), type=FileChangeType.Changed)])
+
+    assert path_to_uri(watched) not in runtime.documents
+
+
 def test_runtime_rejects_workspace_symlink_file_alias_inside_root(tmp_path: Path) -> None:
     root = tmp_path / "root"
     root.mkdir()
