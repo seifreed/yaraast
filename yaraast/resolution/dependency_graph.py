@@ -522,7 +522,7 @@ class DependencyGraph:
                 str(node_path.absolute()),
                 str(node_path.resolve()),
             }
-        except OSError:
+        except (OSError, ValueError):
             return False
         return not query_candidates.isdisjoint(node_candidates)
 

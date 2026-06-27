@@ -122,6 +122,17 @@ def test_workspace_dependency_queries_skip_malformed_graph_nodes(tmp_path: Path)
     assert workspace.get_file_dependents(str(tmp_path / "missing.yar")) == set()
 
 
+def test_workspace_dependency_queries_skip_nodes_with_embedded_nul(tmp_path: Path) -> None:
+    workspace = Workspace(root_path=tmp_path)
+    workspace.dependency_graph.nodes["\x00broken"] = DependencyNode(
+        name="broken",
+        type="file",
+    )
+
+    assert workspace.get_file_dependencies(str(tmp_path / "missing.yar")) == set()
+    assert workspace.get_file_dependents(str(tmp_path / "missing.yar")) == set()
+
+
 def test_workspace_rejects_invalid_file_uri_root_path() -> None:
     with pytest.raises(ValueError, match="root_path must be a valid file URI or path"):
         Workspace("file://example.com/tmp/ws")
