@@ -10,6 +10,7 @@ from pathlib import Path
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
+from yaraast.cli.utils import read_text
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.parser.parser import Parser
 from yaraast.parser.source import parse_yara_source
@@ -52,10 +53,14 @@ def _require_text(value: object, name: str) -> str:
 
 def _read_yara_text_file(path: Path) -> str:
     try:
-        return path.read_text(encoding="utf-8")
-    except UnicodeDecodeError as exc:
-        msg = "YARA file must contain valid UTF-8 text"
-        raise ValueError(msg) from exc
+        return read_text(path)
+    except ValueError as exc:
+        msg = str(exc)
+        if msg == "path must not traverse a symlink":
+            raise
+        if msg == "file must contain valid UTF-8 text":
+            raise ValueError("YARA file must contain valid UTF-8 text") from exc
+        raise
 
 
 class SimpleDiffer:

@@ -38,3 +38,13 @@ def test_simple_ast_differ_diff_files_rejects_invalid_utf8(tmp_path: Path) -> No
 
     with pytest.raises(ValueError, match="YARA file must contain valid UTF-8 text"):
         SimpleASTDiffer().diff_files(bad, good)
+
+
+def test_simple_ast_differ_diff_files_rejects_symlink_paths(tmp_path: Path) -> None:
+    target = tmp_path / "target.yar"
+    target.write_text("rule good { condition: true }", encoding="utf-8")
+    link = tmp_path / "link.yar"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="path must not traverse a symlink"):
+        SimpleASTDiffer().diff_files(link, target)
