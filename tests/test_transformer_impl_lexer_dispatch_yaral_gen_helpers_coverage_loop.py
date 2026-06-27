@@ -161,14 +161,11 @@ class _MinimalLexerLike:
     that guard can execute.
     """
 
-    KEYWORDS: dict[str, TokenType] = {}
-
     def __init__(self, text: str) -> None:
         self.text = text
         self.position = 0
         self.line = 1
         self.column = 1
-        self.tokens: list[Token] = []
 
     def _current_char(self) -> str | None:
         if self.position < len(self.text):
@@ -197,12 +194,6 @@ class _MinimalLexerLike:
         while pos < len(self.text) and self.text[pos] in " \t":
             pos += 1
         return bool(pos < len(self.text) and self.text[pos] in "\r\n")
-
-    def _is_regex_context(self) -> bool:
-        return False
-
-    def _is_hex_string_context(self) -> bool:
-        return False
 
 
 # ===========================================================================
