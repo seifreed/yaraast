@@ -70,7 +70,7 @@ def test_workspace_symbols_rejects_inaccessible_workspace_root() -> None:
     provider = WorkspaceSymbolsProvider()
 
     with pytest.raises(ValueError, match="path could not be accessed"):
-        provider.set_workspace_root("a" * 5000)
+        provider.set_workspace_root("/" + "a" * 5000)
 
 
 def test_workspace_symbols_rejects_pathlike_with_non_string_fspath() -> None:
@@ -112,6 +112,13 @@ def test_workspace_symbols_normalize_file_uri_workspace_root() -> None:
     provider.set_workspace_root("file:///tmp/ws")
 
     assert provider.workspace_root == Path("/tmp/ws")
+
+
+def test_workspace_symbols_rejects_relative_workspace_root() -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    with pytest.raises(ValueError, match="root_path must be an absolute path or file URI"):
+        provider.set_workspace_root("relative/ws")
 
 
 def test_workspace_symbols_keep_workspace_path_for_symlinked_ancestor(tmp_path: Path) -> None:

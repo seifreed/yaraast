@@ -104,6 +104,9 @@ class Workspace:
         if path is None:
             msg = "root_path must be a valid file URI or path"
             raise ValueError(msg)
+        if not path.is_absolute():
+            msg = "root_path must be an absolute path or file URI"
+            raise ValueError(msg)
         if _path_exists_and_not_dir(path):
             msg = "root_path must be a directory"
             raise ValueError(msg)

@@ -70,6 +70,9 @@ def _require_workspace_root(root_path: object) -> Path:
             raise ValueError(msg)
     else:
         path = Path(raw_path)
+    if not path.is_absolute():
+        msg = "root_path must be an absolute path or file URI"
+        raise ValueError(msg)
     if _path_exists_and_not_dir(path):
         msg = "root_path must not be a file"
         raise ValueError(msg)

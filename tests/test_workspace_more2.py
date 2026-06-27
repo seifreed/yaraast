@@ -53,6 +53,11 @@ def test_workspace_normalizes_file_uri_root_path(tmp_path: Path) -> None:
     assert workspace.root_path == tmp_path
 
 
+def test_workspace_rejects_relative_root_path() -> None:
+    with pytest.raises(ValueError, match="root_path must be an absolute path or file URI"):
+        Workspace("relative/ws")
+
+
 def test_workspace_preserves_symlinked_ancestor_path(tmp_path: Path) -> None:
     outside = tmp_path / "outside"
     outside.mkdir()
@@ -173,7 +178,7 @@ def test_workspace_rejects_file_root_path(tmp_path: Path) -> None:
 
 def test_workspace_rejects_inaccessible_root_path() -> None:
     with pytest.raises(ValueError, match="path could not be accessed"):
-        Workspace("a" * 5000)
+        Workspace("/" + "a" * 5000)
 
 
 @pytest.mark.parametrize("file_path", ["", "   ", "\t"])
