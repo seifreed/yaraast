@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 import logging
+from pathlib import Path
 from typing import Any
 
 from lsprotocol.types import Location, Position, SymbolInformation, TextEdit
@@ -210,11 +211,30 @@ class LspRuntime:
             ):
                 return path_to_uri(direct_candidate)
 
+        include_path_obj = Path(include_path)
         suffix = f"/{include_path}"
+        exact_match: Path | None = None
+        suffix_match: Path | None = None
         for candidate in self.index.iter_candidate_files():
-            candidate_text = str(candidate)
-            if candidate.name == include_path or candidate_text.endswith(suffix):
+            if candidate.name == include_path:
                 return path_to_uri(candidate)
+            if exact_match is None:
+                for root in self.index.workspace_folders:
+                    try:
+                        relative_candidate = candidate.relative_to(root.resolve())
+                    except OSError:
+                        continue
+                    except ValueError:
+                        continue
+                    if relative_candidate == include_path_obj:
+                        exact_match = candidate
+                        break
+            if suffix_match is None and str(candidate).endswith(suffix):
+                suffix_match = candidate
+        if exact_match is not None:
+            return path_to_uri(exact_match)
+        if suffix_match is not None:
+            return path_to_uri(suffix_match)
         return None
 
     def _sync_document_to_index(self, uri: str) -> None:

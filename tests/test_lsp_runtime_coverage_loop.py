@@ -238,6 +238,29 @@ def test_resolve_include_target_uri_falls_through_to_suffix_scan(tmp_path: Path)
     assert result == path_to_uri(shared)
 
 
+def test_resolve_include_target_uri_prefers_exact_relative_match_over_suffix_collision(
+    tmp_path: Path,
+) -> None:
+    main = tmp_path / "main.yar"
+    collision_root = tmp_path / "aaa"
+    collision_root.mkdir()
+    collision = collision_root / "sub"
+    collision.mkdir()
+    wrong = collision / "shared.yar"
+    right = tmp_path / "sub"
+    right.mkdir()
+    target = right / "shared.yar"
+    main.write_text("rule a { condition: true }", encoding="utf-8")
+    wrong.write_text("rule wrong { condition: true }", encoding="utf-8")
+    target.write_text("rule right { condition: true }", encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+
+    result = runtime.resolve_include_target_uri(path_to_uri(main), "sub/shared.yar")
+    assert result == path_to_uri(target)
+
+
 def test_resolve_include_target_uri_rejects_parent_relative_escape(tmp_path: Path) -> None:
     rules_dir = tmp_path / "rules"
     rules_dir.mkdir()
