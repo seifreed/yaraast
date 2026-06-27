@@ -23,6 +23,8 @@ Missing lines before this file:
 
 from __future__ import annotations
 
+from pathlib import Path
+import tempfile
 from types import SimpleNamespace
 
 from lsprotocol.types import Position, Range
@@ -475,6 +477,27 @@ def test_related_info_returns_list_when_location_file_is_present() -> None:
     assert result[0].message == "some error"
     assert result[0].location.uri == "file:///rule.yar"
     assert result[0].location.range is diag_range
+
+
+def test_related_info_preserves_symlinked_ancestor_path() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        outside = root / "outside"
+        outside.mkdir()
+        link = root / "linked"
+        link.symlink_to(outside, target_is_directory=True)
+        workspace = link / "workspace"
+        workspace.mkdir()
+        rule_file = workspace / "rule.yar"
+        rule_file.write_text("rule r { condition: true }\n", encoding="utf-8")
+
+        location = SimpleNamespace(file=str(rule_file))
+        error = SimpleNamespace(message="some error", location=location)
+
+        result = related_info(error, _dummy_range())
+
+        assert result is not None
+        assert result[0].location.uri == rule_file.as_uri()
 
 
 # ---------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import difflib
+from pathlib import Path
 import re
 from typing import Any
 
@@ -15,6 +16,7 @@ from lsprotocol.types import (
     Range,
 )
 
+from yaraast.lsp.document_types import uri_to_path
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, MODULE_DOCS
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
@@ -129,9 +131,12 @@ def error_code(error: Any) -> str:
 def related_info(error: Any, diagnostic_range: Range) -> list[DiagnosticRelatedInformation] | None:
     if not error.location or not error.location.file:
         return None
+    path = uri_to_path(error.location.file)
+    if path is None:
+        return None
     return [
         DiagnosticRelatedInformation(
-            location=Location(uri=error.location.file, range=diagnostic_range),
+            location=Location(uri=Path(path).absolute().as_uri(), range=diagnostic_range),
             message=error.message,
         )
     ]
