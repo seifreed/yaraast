@@ -98,4 +98,4 @@ def iter_matching_files(
             if resolved_path in seen:
                 continue
             seen.add(resolved_path)
-            yield resolved_path
+            yield path

@@ -40,6 +40,21 @@ def test_iter_matching_files_rejects_inaccessible_directory() -> None:
         list(iter_matching_files("a" * 5000))
 
 
+def test_iter_matching_files_preserves_symlinked_ancestor_path(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(outside, target_is_directory=True)
+    workspace = link / "workspace"
+    workspace.mkdir()
+    yara_file = workspace / "sample.yar"
+    yara_file.write_text("rule sample { condition: true }", encoding="utf-8")
+
+    result = list(iter_matching_files(workspace, "*.yar", recursive=True))
+
+    assert result == [yara_file]
+
+
 def test_normalize_file_patterns_rejects_non_string_entries(tmp_path: Path) -> None:
     with pytest.raises(TypeError, match="File patterns must be a string or iterable of strings"):
         normalize_file_patterns(cast(Any, [object()]))
