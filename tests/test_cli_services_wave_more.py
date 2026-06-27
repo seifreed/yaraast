@@ -155,7 +155,7 @@ def test_bench_services_operations_and_summary() -> None:
     assert "roundtrip" in file_results
     assert "codegen" not in file_results
 
-    assert bs._get_benchmark_summary(bench)["total"] == 3
+    assert bench.get_benchmark_summary()["total"] == 3
 
 
 def test_bench_services_does_not_expose_dead_benchmark_wrapper() -> None:

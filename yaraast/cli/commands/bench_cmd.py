@@ -17,7 +17,6 @@ from yaraast.cli.bench_reporting import (
 )
 from yaraast.cli.bench_services import (
     _determine_operations_to_run,
-    _get_benchmark_summary,
     _run_single_operation,
 )
 from yaraast.cli.utils import _validate_output_path
@@ -85,7 +84,7 @@ def bench(
                     "results": file_results,
                 }
             )
-        summary = _get_benchmark_summary(benchmarker)
+        summary = benchmarker.get_benchmark_summary()
         display_benchmark_summary(summary)
 
         if compare and len(file_paths) > 1:

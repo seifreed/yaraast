@@ -46,7 +46,3 @@ def _require_single_benchmark_operation(op: object) -> str:
         raise ValueError(f"benchmark operation must be one of: {valid}")
     return op
 
-
-def _get_benchmark_summary(benchmarker) -> dict:
-    """Return benchmark summary data."""
-    return benchmarker.get_benchmark_summary()
