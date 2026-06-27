@@ -312,6 +312,20 @@ def test_metrics_services_build_report_and_generator_none(tmp_path: Path) -> Non
     assert out.endswith("flow_real.svg")
 
 
+def test_metrics_services_build_report_rejects_output_dir_under_symlink_ancestor(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(outside, target_is_directory=True)
+    output_dir = link / "reports"
+    output_dir.mkdir()
+
+    with pytest.raises(ValueError, match="output_dir must not traverse a symlink"):
+        metrics_workflows.build_report(_ast(), output_dir, "rules", "svg")
+
+
 def test_metrics_services_error_paths_and_dependency_generator_success(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

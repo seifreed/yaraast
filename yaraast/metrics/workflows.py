@@ -15,6 +15,7 @@ from yaraast.metrics.dependency_graph_helpers import require_output_path
 from yaraast.metrics.graphviz_errors import is_graphviz_error
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 try:
     from yaraast.metrics.dependency_graph import DependencyGraphGenerator
@@ -71,6 +72,16 @@ def _require_non_empty_text(value: object, name: str) -> str:
     return value
 
 
+def _require_output_directory(output_dir: object) -> Path:
+    if not isinstance(output_dir, Path):
+        msg = "output_dir must be a pathlib.Path"
+        raise TypeError(msg)
+    if path_is_symlink(output_dir) or path_has_symlink_ancestor(output_dir):
+        msg = "output_dir must not traverse a symlink"
+        raise ValueError(msg)
+    return output_dir
+
+
 def generate_dependency_graphs(
     ast: YaraFile,
     output_dir: Path,
@@ -81,6 +92,7 @@ def generate_dependency_graphs(
     if generator_factory is None:
         msg = "Graph visualization requires the 'graphviz' Python package."
         raise RuntimeError(msg)
+    output_dir = _require_output_directory(output_dir)
     generator = (
         generator_factory()
         if generator_factory is not DependencyGraphGenerator
@@ -112,6 +124,7 @@ def generate_html_tree(
     interactive: bool = True,
     generator_factory: Callable[[], Any] = HtmlTreeGenerator,
 ) -> str:
+    output_dir = _require_output_directory(output_dir)
     generator = (
         generator_factory() if generator_factory is not HtmlTreeGenerator else HtmlTreeGenerator()
     )
@@ -130,6 +143,7 @@ def generate_pattern_diagrams(
     image_format: str,
     generator_factory: Callable[[], Any] = StringDiagramGenerator,
 ) -> list[str]:
+    output_dir = _require_output_directory(output_dir)
     generator = (
         generator_factory()
         if generator_factory is not StringDiagramGenerator
@@ -154,6 +168,7 @@ def generate_pattern_diagrams(
 def build_report(
     ast: YaraFile, output_dir: Path, base_name: str, image_format: str
 ) -> MetricsReportData:
+    output_dir = _require_output_directory(output_dir)
     metrics = analyze_complexity(ast)
 
     generated_files = []
