@@ -224,6 +224,26 @@ def test_metrics_services_path_helpers_reject_invalid_pattern_types(pattern_type
         )
 
 
+@pytest.mark.parametrize("graph_type", ["../escape", "full/escape", "full\\escape"])
+def test_metrics_services_path_helpers_reject_path_like_graph_types(graph_type: str) -> None:
+    with pytest.raises(ValueError, match="graph_type must contain only letters and numbers"):
+        metrics_workflows.determine_graph_output_path("/tmp/rules.yar", None, graph_type, "svg")
+
+
+@pytest.mark.parametrize("pattern_type", ["../escape", "flow/escape", "flow\\escape"])
+def test_metrics_services_path_helpers_reject_path_like_pattern_types(pattern_type: str) -> None:
+    with pytest.raises(ValueError, match="pattern_type must contain only letters and numbers"):
+        metrics_workflows.determine_pattern_output_path("/tmp/rules.yar", None, pattern_type, "svg")
+
+
+@pytest.mark.parametrize("fmt", ["../escape", "svg/escape", "svg\\escape"])
+def test_metrics_services_path_helpers_reject_path_like_output_formats(fmt: str) -> None:
+    with pytest.raises(ValueError, match="output format must contain only letters and numbers"):
+        metrics_workflows.determine_graph_output_path("/tmp/rules.yar", None, "full", fmt)
+    with pytest.raises(ValueError, match="output format must contain only letters and numbers"):
+        metrics_workflows.determine_pattern_output_path("/tmp/rules.yar", None, "flow", fmt)
+
+
 @pytest.mark.parametrize("fmt", [None, False, 123, object(), b"svg", "", "   "])
 def test_metrics_services_path_helpers_reject_invalid_output_formats(fmt: Any) -> None:
     error_type = ValueError if isinstance(fmt, str) else TypeError
