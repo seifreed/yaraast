@@ -114,7 +114,7 @@ class Workspace:
         if _path_exists_and_not_dir(path):
             msg = "root_path must be a directory"
             raise ValueError(msg)
-        if path_is_symlink(path):
+        if path_is_symlink(path) or path_has_symlink_ancestor(path):
             msg = "root_path must not be a symlink"
             raise ValueError(msg)
         return path

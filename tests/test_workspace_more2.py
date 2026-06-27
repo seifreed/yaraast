@@ -65,15 +65,10 @@ def test_workspace_rejects_symlinked_ancestor_path(tmp_path: Path) -> None:
     link.symlink_to(outside, target_is_directory=True)
     workspace_root = link / "workspace"
     workspace_root.mkdir()
-    rule_file = _write(workspace_root / "leak.yar", "rule leak { condition: true }")
+    _write(workspace_root / "leak.yar", "rule leak { condition: true }")
 
-    workspace = Workspace(root_path=workspace_root)
-    result = workspace.add_file("leak.yar")
-
-    assert result.resolved is None
-    assert result.errors
-    assert "file_path must not traverse a symlink" in result.errors[0]
-    assert workspace.files[str(rule_file)].resolved is None
+    with pytest.raises(ValueError, match="root_path must not be a symlink"):
+        Workspace(root_path=workspace_root)
 
 
 def test_workspace_rejects_symlinked_ancestor_path_for_fallback_resolution(
@@ -85,17 +80,10 @@ def test_workspace_rejects_symlinked_ancestor_path_for_fallback_resolution(
     link.symlink_to(outside, target_is_directory=True)
     workspace_root = link / "workspace"
     workspace_root.mkdir()
-    _write(
-        workspace_root / "main.yar",
-        'include "missing.yar"\nrule main { condition: true }',
-    )
+    _write(workspace_root / "main.yar", 'include "missing.yar"\nrule main { condition: true }')
 
-    workspace = Workspace(root_path=workspace_root)
-    result = workspace.add_file("main.yar")
-
-    assert result.resolved is None
-    assert result.errors
-    assert "file_path must not traverse a symlink" in result.errors[0]
+    with pytest.raises(ValueError, match="root_path must not be a symlink"):
+        Workspace(root_path=workspace_root)
 
 
 def test_workspace_rejects_symlink_file_inside_root(tmp_path: Path) -> None:
