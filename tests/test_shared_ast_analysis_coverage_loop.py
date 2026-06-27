@@ -411,3 +411,17 @@ def test_optional_output_path_rejects_null_byte_string() -> None:
     formatter = ASTFormatter()
     with pytest.raises(ValueError, match="output_path must not contain null bytes"):
         formatter._optional_output_path("\x00broken")
+
+
+def test_optional_output_path_rejects_symlink_ancestor_path(tmp_path: Path) -> None:
+    formatter = ASTFormatter()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(outside, target_is_directory=True)
+    nested = link / "nested"
+    nested.mkdir()
+    out = nested / "output.yar"
+
+    with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
+        formatter._optional_output_path(out)
