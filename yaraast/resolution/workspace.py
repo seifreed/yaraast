@@ -16,7 +16,11 @@ from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace_analysis import WorkspaceAnalyzer
 from yaraast.resolution.workspace_models import FileAnalysisResult, WorkspaceReport
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
-from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
+from yaraast.shared.path_safety import (
+    path_has_symlink_ancestor,
+    path_is_symlink,
+    path_is_within_directory,
+)
 
 if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
@@ -129,7 +133,7 @@ class Workspace:
         result = FileAnalysisResult(path=path)
 
         try:
-            if path_is_symlink(path):
+            if path_is_symlink(path) or path_has_symlink_ancestor(path):
                 msg = "file_path must not traverse a symlink"
                 raise ValueError(msg)
             # Resolve file and includes
@@ -151,6 +155,9 @@ class Workspace:
         return result
 
     def _resolve_main_file_with_available_includes(self, path: Path) -> ResolvedFile:
+        if path_is_symlink(path) or path_has_symlink_ancestor(path):
+            msg = "file_path must not traverse a symlink"
+            raise ValueError(msg)
         content = path.read_text(encoding="utf-8")
         ast = parse_yara_source(content)
         resolved = ResolvedFile(

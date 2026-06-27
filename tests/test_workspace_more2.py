@@ -58,7 +58,7 @@ def test_workspace_rejects_relative_root_path() -> None:
         Workspace("relative/ws")
 
 
-def test_workspace_preserves_symlinked_ancestor_path(tmp_path: Path) -> None:
+def test_workspace_rejects_symlinked_ancestor_path(tmp_path: Path) -> None:
     outside = tmp_path / "outside"
     outside.mkdir()
     link = tmp_path / "linked"
@@ -70,12 +70,13 @@ def test_workspace_preserves_symlinked_ancestor_path(tmp_path: Path) -> None:
     workspace = Workspace(root_path=workspace_root)
     result = workspace.add_file("leak.yar")
 
-    assert result.path == rule_file
-    assert list(workspace.files) == [str(rule_file)]
-    assert workspace.get_all_rules() == [("leak", str(rule_file))]
+    assert result.resolved is None
+    assert result.errors
+    assert "file_path must not traverse a symlink" in result.errors[0]
+    assert workspace.files[str(rule_file)].resolved is None
 
 
-def test_workspace_preserves_symlinked_ancestor_path_for_fallback_resolution(
+def test_workspace_rejects_symlinked_ancestor_path_for_fallback_resolution(
     tmp_path: Path,
 ) -> None:
     outside = tmp_path / "outside"
@@ -84,7 +85,7 @@ def test_workspace_preserves_symlinked_ancestor_path_for_fallback_resolution(
     link.symlink_to(outside, target_is_directory=True)
     workspace_root = link / "workspace"
     workspace_root.mkdir()
-    main = _write(
+    _write(
         workspace_root / "main.yar",
         'include "missing.yar"\nrule main { condition: true }',
     )
@@ -92,9 +93,9 @@ def test_workspace_preserves_symlinked_ancestor_path_for_fallback_resolution(
     workspace = Workspace(root_path=workspace_root)
     result = workspace.add_file("main.yar")
 
-    assert result.path == main
-    assert result.resolved is not None
-    assert result.resolved.path == main
+    assert result.resolved is None
+    assert result.errors
+    assert "file_path must not traverse a symlink" in result.errors[0]
 
 
 def test_workspace_rejects_symlink_file_inside_root(tmp_path: Path) -> None:
