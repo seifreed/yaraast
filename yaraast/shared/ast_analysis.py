@@ -66,7 +66,7 @@ def _require_file_path(value: object, name: str) -> Path:
     if _path_exists_and_is_dir(path):
         msg = f"{name} must not be a directory"
         raise ValueError(msg)
-    if path_is_symlink(path):
+    if path_is_symlink(path) or path_has_symlink_ancestor(path):
         msg = f"{name} must not traverse a symlink"
         raise ValueError(msg)
     return path

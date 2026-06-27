@@ -268,6 +268,24 @@ def test_ast_differ_rejects_symlink_input_file(tmp_path: Path) -> None:
     ]
 
 
+def test_ast_differ_rejects_symlink_ancestor_input_file(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    nested = link_dir / "nested.yar"
+    nested.write_text("rule a { condition: true }", encoding="utf-8")
+    good = tmp_path / "good.yar"
+    good.write_text("rule b { condition: true }", encoding="utf-8")
+
+    result = ASTDiffer().diff_files(nested, good)
+
+    assert result.has_changes is True
+    assert result.logical_changes == [
+        "Error comparing files: file1_path must not traverse a symlink"
+    ]
+
+
 def test_ast_formatter_format_file_propagates_internal_generator_errors(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
