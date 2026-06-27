@@ -14,6 +14,7 @@ from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Include, Rule
 from yaraast.ast.strings import StringDefinition
 from yaraast.errors import ValidationError
+from yaraast.resolution.dependency_graph import DependencyNode
 from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace import (
     FileAnalysisResult,
@@ -86,6 +87,17 @@ def test_workspace_dependency_queries_accept_resolved_and_alias_paths(tmp_path: 
     assert str(child) in workspace.get_file_dependencies(str(main.resolve()))
     assert str(main) in workspace.get_file_dependents(str(child))
     assert str(main) in workspace.get_file_dependents(str(child.resolve()))
+
+
+def test_workspace_dependency_queries_skip_malformed_graph_nodes(tmp_path: Path) -> None:
+    workspace = Workspace(root_path=tmp_path)
+    workspace.dependency_graph.nodes["a" * 5000] = DependencyNode(
+        name="broken",
+        type="file",
+    )
+
+    assert workspace.get_file_dependencies(str(tmp_path / "missing.yar")) == set()
+    assert workspace.get_file_dependents(str(tmp_path / "missing.yar")) == set()
 
 
 def test_workspace_rejects_invalid_file_uri_root_path() -> None:

@@ -510,9 +510,20 @@ class DependencyGraph:
     def _path_matches_query(self, node_key: str, query_path: Path) -> bool:
         if node_key.startswith("rule:"):
             return False
-        node_path = Path(node_key)
-        query_candidates = {str(query_path), str(query_path.absolute()), str(query_path.resolve())}
-        node_candidates = {str(node_path), str(node_path.absolute()), str(node_path.resolve())}
+        try:
+            node_path = Path(node_key)
+            query_candidates = {
+                str(query_path),
+                str(query_path.absolute()),
+                str(query_path.resolve()),
+            }
+            node_candidates = {
+                str(node_path),
+                str(node_path.absolute()),
+                str(node_path.resolve()),
+            }
+        except OSError:
+            return False
         return not query_candidates.isdisjoint(node_candidates)
 
     def get_rule_dependencies(self, rule_name: str) -> set[str]:
