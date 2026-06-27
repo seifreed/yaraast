@@ -89,7 +89,13 @@ def iter_matching_files(
         for path in matches:
             if not path.is_file() or path in seen:
                 continue
-            if not path_is_within_directory(path, directory_path):
+            try:
+                resolved_path = path.resolve()
+            except OSError:
                 continue
-            seen.add(path)
-            yield path
+            if not path_is_within_directory(resolved_path, directory_path):
+                continue
+            if resolved_path in seen:
+                continue
+            seen.add(resolved_path)
+            yield resolved_path

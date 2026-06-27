@@ -668,6 +668,19 @@ def test_workspace_add_directory_skips_symlinked_files_outside_root(tmp_path: Pa
     assert str(link) not in workspace.files
 
 
+def test_workspace_add_directory_deduplicates_symlink_aliases(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    real = _write(root / "real.yar", "rule real { condition: true }")
+    alias = root / "alias.yar"
+    alias.symlink_to(real)
+
+    workspace = Workspace(str(root))
+    workspace.add_directory(str(root))
+
+    assert sorted(workspace.files) == [str(real.resolve())]
+
+
 @pytest.mark.parametrize("directory", ["", "   ", "\t"])
 def test_workspace_add_directory_rejects_empty_directory(
     tmp_path: Path,

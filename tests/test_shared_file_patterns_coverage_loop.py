@@ -315,6 +315,16 @@ class TestIterMatchingFilesGlob:
         with pytest.raises(ValueError, match="directory must not be a symlink"):
             list(iter_matching_files(link, "*.yar", recursive=True))
 
+    def test_deduplicates_symlink_aliases_to_the_same_file(self, tmp_path: Path) -> None:
+        real = tmp_path / "real.yar"
+        real.write_text("rule real { condition: true }", encoding="utf-8")
+        alias = tmp_path / "alias.yar"
+        alias.symlink_to(real)
+
+        result = list(iter_matching_files(tmp_path, "*.yar"))
+
+        assert result == [real.resolve()]
+
 
 # ---------------------------------------------------------------------------
 # _path_is_dir OSError branch (lines 31-32)

@@ -57,7 +57,7 @@ def _require_path_within_root(path: Path, root_path: Path, *, name: str) -> Path
     if not path_is_within_directory(path, root_path):
         msg = f"{name} must stay within root_path"
         raise ValueError(msg)
-    return path
+    return path.resolve()
 
 
 class Workspace:
