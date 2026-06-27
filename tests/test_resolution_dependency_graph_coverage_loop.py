@@ -67,6 +67,10 @@ class TestRequirePath:
         with pytest.raises(ValidationError, match="must not be empty"):
             _require_path(Path("   "), "ctx")
 
+    def test_null_byte_path_object_raises(self) -> None:
+        with pytest.raises(ValidationError, match="must not contain null bytes"):
+            _require_path(Path("\x00broken"), "ctx")
+
     def test_empty_string_raises(self) -> None:
         """An all-whitespace str raises ValidationError."""
         with pytest.raises(ValidationError, match="must not be empty"):
@@ -148,6 +152,14 @@ class TestRequireStringOrPath:
         """A Path with only-whitespace str representation raises."""
         with pytest.raises(ValidationError, match="must not be empty"):
             _require_string_or_path(Path("  "), "ctx")
+
+    def test_null_byte_string_raises(self) -> None:
+        with pytest.raises(ValidationError, match="must not contain null bytes"):
+            _require_string_or_path("\x00broken", "ctx")
+
+    def test_null_byte_path_raises(self) -> None:
+        with pytest.raises(ValidationError, match="must not contain null bytes"):
+            _require_string_or_path(Path("\x00broken"), "ctx")
 
     def test_wrong_type_raises(self) -> None:
         with pytest.raises(ValidationError, match="must be a string or path"):

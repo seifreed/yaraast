@@ -21,6 +21,9 @@ def _require_path(value: object, context: str) -> Path:
         if not str(value).strip():
             msg = f"{context} must not be empty"
             raise ValidationError(msg)
+        if "\x00" in str(value):
+            msg = f"{context} must not contain null bytes"
+            raise ValidationError(msg)
         return value
     if isinstance(value, str):
         if not value.strip():
@@ -53,10 +56,16 @@ def _require_string_or_path(value: object, context: str) -> str | Path:
         if not value.strip():
             msg = f"{context} must not be empty"
             raise ValidationError(msg)
+        if "\x00" in value:
+            msg = f"{context} must not contain null bytes"
+            raise ValidationError(msg)
         return value
     if isinstance(value, Path):
         if not str(value).strip():
             msg = f"{context} must not be empty"
+            raise ValidationError(msg)
+        if "\x00" in str(value):
+            msg = f"{context} must not contain null bytes"
             raise ValidationError(msg)
         return value
     msg = f"{context} must be a string or path"
