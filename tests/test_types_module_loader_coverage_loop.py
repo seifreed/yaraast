@@ -147,6 +147,24 @@ def test_load_json_modules_skips_duplicate_default_path(
     assert loader.list_modules() == baseline
 
 
+def test_load_json_modules_rejects_symlink_ancestor_spec_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    real_dir = tmp_path / "real"
+    real_dir.mkdir()
+    (real_dir / "spec.json").write_text(
+        json.dumps({"name": "spec", "attributes": {}}),
+        encoding="utf-8",
+    )
+    link = tmp_path / "link"
+    link.symlink_to(real_dir, target_is_directory=True)
+    monkeypatch.setenv("YARAAST_MODULE_SPEC_PATH_EXCLUSIVE", str(link))
+
+    with pytest.raises(ModuleSpecError, match="must not be a symlink"):
+        ModuleLoader()
+
+
 # ---------------------------------------------------------------------------
 # Lines 195-196  list item inside a JSON array is not a dict
 # ---------------------------------------------------------------------------

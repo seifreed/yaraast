@@ -89,17 +89,17 @@ def batch(
     progress: bool,
 ) -> None:
     """Process large collections of YARA files in batches."""
-    output_dir = _validate_output_dir_path(output_dir)
+    validated_output_dir = _validate_output_dir_path(output_dir)
     input_path_obj = Path(input_path)
 
-    if output_dir is None:
-        output_dir_path = Path(
-            _validate_output_dir_path(
-                str(input_path_obj.parent / f"{input_path_obj.name}_batch_output")
-            )
+    if validated_output_dir is None:
+        default_output_dir = _validate_output_dir_path(
+            str(input_path_obj.parent / f"{input_path_obj.name}_batch_output")
         )
+        assert default_output_dir is not None
+        output_dir_path = Path(default_output_dir)
     else:
-        output_dir_path = Path(output_dir)
+        output_dir_path = Path(validated_output_dir)
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     batch_operations = convert_operations(operations)
@@ -294,7 +294,7 @@ def parallel(
     chunk_size: int,
 ) -> None:
     """Analyze YARA files in parallel using thread pooling."""
-    output_dir = _validate_output_dir_path(output_dir)
+    validated_output_dir = _validate_output_dir_path(output_dir)
     try:
         file_paths = collect_file_paths(input_paths)
 
@@ -302,12 +302,14 @@ def parallel(
             click.echo("❌ No YARA files found to process")
             return
 
-        if output_dir is None:
-            output_dir_path = Path(
-                _validate_output_dir_path(str(Path.cwd() / "parallel_analysis_output"))
+        if validated_output_dir is None:
+            default_output_dir = _validate_output_dir_path(
+                str(Path.cwd() / "parallel_analysis_output")
             )
+            assert default_output_dir is not None
+            output_dir_path = Path(default_output_dir)
         else:
-            output_dir_path = Path(output_dir)
+            output_dir_path = Path(validated_output_dir)
         output_dir_path.mkdir(parents=True, exist_ok=True)
 
         click.echo(f"🚀 Starting parallel analysis of {len(file_paths)} files...")

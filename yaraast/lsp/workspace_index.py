@@ -30,7 +30,7 @@ def _normalize_workspace_folders(folders: object) -> list[Path]:
         raise ValueError(msg)
     normalized = [Path(folder) for folder in folders]
     if any(path_is_symlink(folder) for folder in normalized):
-        msg = "Workspace folder paths must not be symlinks"
+        msg = "Workspace folder paths must not be a symlink"
         raise ValueError(msg)
     return normalized
 
