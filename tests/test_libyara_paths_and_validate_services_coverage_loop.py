@@ -58,6 +58,11 @@ def test_require_file_path_rejects_bytes_returning_pathlike() -> None:
         require_file_path(obj, "filepath")
 
 
+def test_require_file_path_rejects_null_byte_string() -> None:
+    with pytest.raises(ValueError, match="filepath must not contain null bytes"):
+        require_file_path("\x00broken", "filepath")
+
+
 # ---------------------------------------------------------------------------
 # yaraast.libyara._paths — missing lines 41-42
 # ---------------------------------------------------------------------------
