@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -127,6 +128,18 @@ def test_json_serialize_deserialize_roundtrip() -> None:
     restored = serializer.deserialize(json_str)
     assert restored.rules[0].name == "r1"
     assert restored.rules[0].strings
+
+
+def test_json_serializer_rejects_symlink_output_path(tmp_path: Path) -> None:
+    serializer = JsonSerializer(include_metadata=True)
+    ast = _sample_ast()
+    target = tmp_path / "target.json"
+    target.write_text("target", encoding="utf-8")
+    link = tmp_path / "link.json"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="output_path must not be a symlink"):
+        serializer.serialize(ast, output_path=link)
 
 
 def test_json_roundtrip_preserves_plain_string_bytes() -> None:

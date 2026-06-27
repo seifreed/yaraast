@@ -6,6 +6,8 @@ from os import PathLike, fspath
 from pathlib import Path
 from typing import Any
 
+from yaraast.shared.path_safety import path_is_symlink
+
 
 def _path_access_error(path: Path) -> ValueError:
     msg = f"path could not be accessed: {path}"
@@ -76,5 +78,14 @@ def require_input_path(value: object, name: str) -> Path:
     path = Path(raw_path)
     if _path_exists_and_is_dir(path):
         msg = f"{name} must not be a directory"
+        raise ValueError(msg)
+    return path
+
+
+def require_output_path(value: object, name: str) -> Path:
+    """Validate a serializer output path before writing to disk."""
+    path = require_input_path(value, name)
+    if path_is_symlink(path):
+        msg = f"{name} must not be a symlink"
         raise ValueError(msg)
     return path

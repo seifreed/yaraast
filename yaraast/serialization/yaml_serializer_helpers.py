@@ -11,7 +11,7 @@ from yaraast.config import YAML_DEFAULT_WIDTH
 from yaraast.serialization.file_io_helpers import write_utf8 as write_text
 from yaraast.serialization.serializer_helpers import (
     require_bool_option,
-    require_input_path,
+    require_output_path,
     require_positive_int_option,
 )
 
@@ -40,7 +40,7 @@ def serialize_yaml(
     """Dump YAML and optionally write it to disk."""
     yaml_str = dump_yaml(data, flow_style=flow_style, width=width)
     if output_path is not None:
-        write_text(require_input_path(output_path, "output_path"), yaml_str)
+        write_text(require_output_path(output_path, "output_path"), yaml_str)
     return yaml_str
 
 

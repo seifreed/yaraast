@@ -23,7 +23,7 @@ from yaraast.serialization._serialization_primitives import (
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.serializer_helpers import (
     require_bool_option,
-    require_input_path,
+    require_output_path,
     require_positive_int_option,
 )
 
@@ -288,6 +288,6 @@ def dump_pipeline_yaml(
         explicit_end=yaml_explicit_markers,
     )
     if output_path is not None:
-        with require_input_path(output_path, "output_path").open("w", encoding="utf-8") as handle:
+        with require_output_path(output_path, "output_path").open("w", encoding="utf-8") as handle:
             handle.write(yaml_str)
     return yaml_str

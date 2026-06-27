@@ -98,6 +98,7 @@ from yaraast.serialization.serializer_helpers import (
     build_base_metadata,
     require_bool_option,
     require_input_path,
+    require_output_path,
 )
 from yaraast.visitor.visitor import ASTVisitor
 
@@ -236,7 +237,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         )
 
         if output_path is not None:
-            write_text(require_input_path(output_path, "output_path"), json_str)
+            write_text(require_output_path(output_path, "output_path"), json_str)
 
         return json_str
 

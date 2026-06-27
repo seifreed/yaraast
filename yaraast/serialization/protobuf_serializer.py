@@ -14,7 +14,11 @@ from yaraast.serialization.protobuf_conversion import (
     ast_to_protobuf,
     protobuf_to_ast,
 )
-from yaraast.serialization.serializer_helpers import require_bool_option, require_input_path
+from yaraast.serialization.serializer_helpers import (
+    require_bool_option,
+    require_input_path,
+    require_output_path,
+)
 from yaraast.visitor.defaults import DefaultASTVisitor
 
 from . import yara_ast_pb2
@@ -42,7 +46,7 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
         binary_data = pb_yara_file.SerializeToString(deterministic=True)
 
         if output_path is not None:
-            with require_input_path(output_path, "output_path").open("wb") as f:
+            with require_output_path(output_path, "output_path").open("wb") as f:
                 f.write(binary_data)
 
         return binary_data
@@ -58,7 +62,7 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
         text_data = str(pb_yara_file)
 
         if output_path is not None:
-            with require_input_path(output_path, "output_path").open("w", encoding="utf-8") as f:
+            with require_output_path(output_path, "output_path").open("w", encoding="utf-8") as f:
                 f.write(text_data)
 
         return text_data
