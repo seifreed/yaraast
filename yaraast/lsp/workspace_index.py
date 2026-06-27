@@ -132,9 +132,15 @@ class WorkspaceIndex:
             return path == resolved_root
         return path == resolved_root or path.is_relative_to(resolved_root)
 
+    def _uri_has_existing_path(self, uri: str) -> bool:
+        path = uri_to_path(uri)
+        return path is None or path_exists(path)
+
     def _cache_payloads(self) -> dict[Path, dict[str, list[SymbolRecord]]]:
         payloads: dict[Path, dict[str, list[SymbolRecord]]] = {}
         for uri, symbols in self.persisted_symbols.items():
+            if not self._uri_has_existing_path(uri):
+                continue
             root = self._workspace_root_for_uri(uri)
             if root is None:
                 continue
@@ -161,8 +167,7 @@ class WorkspaceIndex:
             for uri, symbols in raw_symbols.items():
                 if not isinstance(uri, str) or not isinstance(symbols, list):
                     continue
-                uri_path = uri_to_path(uri)
-                if uri_path is not None and not path_exists(uri_path):
+                if not self._uri_has_existing_path(uri):
                     continue
                 root = self._workspace_root_for_uri(uri)
                 if root is not None and self._cache_path_for_root(root) != cache_path:
@@ -240,13 +245,9 @@ class WorkspaceIndex:
         for uri, symbols in self.persisted_symbols.items():
             if uri in excluded:
                 continue
-            uri_path = uri_to_path(uri)
-            if (
-                self.workspace_folders
-                and uri_path is not None
-                and path_exists(uri_path)
-                and self._workspace_root_for_uri(uri) is None
-            ):
+            if not self._uri_has_existing_path(uri):
+                continue
+            if self.workspace_folders and self._workspace_root_for_uri(uri) is None:
                 continue
             for symbol in symbols:
                 if symbol.kind in hidden_kinds:

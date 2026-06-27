@@ -366,8 +366,12 @@ def test_load_and_save_skip_symlinked_cache_dir_outside_workspace_root(
 def test_search_records_skips_excluded_uris(tmp_path: Path) -> None:
     """Symbols belonging to URIs in the exclude_uris set must be absent from
     the results; symbols from other URIs must still be returned."""
-    uri_a = "file:///a.yar"
-    uri_b = "file:///b.yar"
+    file_a = tmp_path / "a.yar"
+    file_b = tmp_path / "b.yar"
+    file_a.write_text("rule rule_a { condition: true }\n", encoding="utf-8")
+    file_b.write_text("rule rule_b { condition: true }\n", encoding="utf-8")
+    uri_a = path_to_uri(file_a)
+    uri_b = path_to_uri(file_b)
 
     index = WorkspaceIndex()
     index.set_workspace_folders([str(tmp_path)])
@@ -384,7 +388,9 @@ def test_search_records_skips_excluded_uris(tmp_path: Path) -> None:
 def test_search_records_non_matching_query_skips_symbol(tmp_path: Path) -> None:
     """When a non-empty query is provided, symbols whose names do not contain
     the query substring must be skipped (exercises the continue on line 221)."""
-    uri = "file:///mixed.yar"
+    mixed = tmp_path / "mixed.yar"
+    mixed.write_text("rule mixed { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(mixed)
 
     index = WorkspaceIndex()
     index.set_workspace_folders([str(tmp_path)])
@@ -407,6 +413,29 @@ def test_search_records_non_matching_query_skips_symbol(tmp_path: Path) -> None:
     symbol_infos = index.search("beta")
     assert len(symbol_infos) == 1
     assert symbol_infos[0].name == "beta_rule"
+
+
+def test_search_records_skips_deleted_files_and_save_prunes_cache(
+    tmp_path: Path,
+) -> None:
+    yar = tmp_path / "stale.yar"
+    yar.write_text("rule stale { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(yar)
+
+    index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
+    index.persisted_symbols[uri] = [_make_symbol("stale", uri)]
+
+    assert [record.name for record in index.search_records("")] == ["stale"]
+
+    yar.unlink()
+
+    assert index.search_records("") == []
+
+    index.save()
+    cache_path = tmp_path / ".yaraast" / "lsp-workspace-index.json"
+    payload = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert uri not in payload["symbols"]
 
 
 # ---------------------------------------------------------------------------

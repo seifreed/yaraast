@@ -254,9 +254,12 @@ def test_workspace_index_discovers_multidialect_extensions(tmp_path: Path) -> No
 def test_workspace_index_search_rejects_invalid_query_and_exclusions(
     tmp_path: Path,
 ) -> None:
+    sample = tmp_path / "sample.yar"
+    sample.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(sample)
+
     index = WorkspaceIndex()
     index.set_workspace_folders([str(tmp_path)])
-    uri = "file:///sample.yar"
     index.persisted_symbols[uri] = [
         SymbolRecord(
             "sample",
@@ -289,9 +292,12 @@ def test_workspace_index_search_rejects_invalid_query_and_exclusions(
 def test_workspace_index_rejects_invalid_document_mutation_inputs(
     tmp_path: Path,
 ) -> None:
+    sample = tmp_path / "sample.yar"
+    sample.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(sample)
+
     index = WorkspaceIndex()
     index.set_workspace_folders([str(tmp_path)])
-    uri = "file:///sample.yar"
     index.persisted_symbols[uri] = [
         SymbolRecord(
             "sample",
