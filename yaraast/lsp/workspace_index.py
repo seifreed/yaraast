@@ -146,7 +146,9 @@ class WorkspaceIndex:
 
     def _uri_has_existing_path(self, uri: str) -> bool:
         path = uri_to_path(uri)
-        return path is None or path_exists(path)
+        return path is None or (
+            path_exists(path) and not path_has_symlink_ancestor(path) and not path_is_symlink(path)
+        )
 
     def _cache_payloads(self) -> dict[Path, dict[str, list[SymbolRecord]]]:
         payloads: dict[Path, dict[str, list[SymbolRecord]]] = {}

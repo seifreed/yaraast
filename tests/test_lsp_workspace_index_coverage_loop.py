@@ -151,6 +151,9 @@ def test_load_and_save_skip_cache_paths_under_symlink_ancestors(
 
     assert index.persisted_symbols == {}
 
+    index.persisted_symbols[cached_uri] = [_make_symbol("cached", cached_uri)]
+    assert index.search_records("") == []
+
     fresh_uri = path_to_uri(root / "fresh.yar")
     index.persisted_symbols[fresh_uri] = [_make_symbol("fresh", fresh_uri)]
     index.save()
