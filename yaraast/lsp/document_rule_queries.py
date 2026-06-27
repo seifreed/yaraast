@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import ast
 import re
 from typing import TYPE_CHECKING, Any
 
+from yaraast.lsp.meta_value_parsing import parse_meta_scalar
 from yaraast.lsp.structure import find_rule_end, find_rule_line, find_section_header_position
 
 if TYPE_CHECKING:
@@ -199,10 +199,7 @@ def _parse_meta_assignment(line: str) -> tuple[str | None, Any]:
     raw_value = value_text.strip()
     if not raw_value:
         return key, ""
-    try:
-        return key, ast.literal_eval(raw_value)
-    except (SyntaxError, ValueError):
-        lowered = raw_value.lower()
-        if lowered in {"true", "false"}:
-            return key, lowered == "true"
-        return key, raw_value.strip('"')
+    found, parsed = parse_meta_scalar(raw_value)
+    if found:
+        return key, parsed
+    return key, raw_value.strip('"')

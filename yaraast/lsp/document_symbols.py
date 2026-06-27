@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import ast
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -21,6 +20,7 @@ from yaraast.lsp.document_symbol_sections import (
     append_string_symbols,
 )
 from yaraast.lsp.document_types import SymbolRecord
+from yaraast.lsp.meta_value_parsing import parse_meta_scalar
 from yaraast.lsp.structure import (
     find_line_containing,
     find_quoted_value_range,
@@ -310,17 +310,8 @@ def _quoted_text_range(line: str, line_num: int, value: str) -> Range | None:
 
 
 def _parse_text_meta_value(raw_value: str) -> Any | None:
-    try:
-        return ast.literal_eval(raw_value)
-    except (SyntaxError, ValueError):
-        lowered = raw_value.lower()
-        if lowered == "true":
-            return True
-        if lowered == "false":
-            return False
-        if lowered in {"null", "none"}:
-            return None
-    return None
+    found, parsed = parse_meta_scalar(raw_value)
+    return parsed if found else None
 
 
 def _build_import_symbols(

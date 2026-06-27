@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import ast
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -10,6 +9,7 @@ from lsprotocol.types import Position, Range
 
 from yaraast.codegen.generator_helpers import escape_plain_string_value
 from yaraast.lsp.document_types import path_to_uri
+from yaraast.lsp.meta_value_parsing import parse_meta_scalar
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8, utf16_len
 from yaraast.lsp.utils import path_exists
 from yaraast.types.module_loader import ModuleLoader
@@ -101,16 +101,9 @@ def _fallback_meta_value(ctx: DocumentContext, key: str) -> Any | None:
 
 
 def _parse_meta_value(raw_value: str) -> Any | None:
-    try:
-        return ast.literal_eval(raw_value)
-    except (SyntaxError, ValueError):
-        lowered = raw_value.lower()
-        if lowered == "true":
-            return True
-        if lowered == "false":
-            return False
-        if lowered == "null":
-            return None
+    found, parsed = parse_meta_scalar(raw_value)
+    if found:
+        return parsed
     return raw_value.strip('"')
 
 

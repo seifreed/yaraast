@@ -21,10 +21,8 @@ Coverage targets added by this file (module yaraast.lsp.document_symbols):
                    (c) quoted form present, normal success path
                        covers lines 302-304, 308 if-branch, 309-310
 
-- Line  322    : _parse_text_meta_value except-branch: lowered == "true" -> return True.
-                 Reached by a meta entry whose raw value is the YARA boolean literal
-                 "true" (lowercase). Python ast.literal_eval("true") raises ValueError
-                 because Python requires capital T; the except block handles it.
+- Line  322    : _parse_text_meta_value returns True for the YARA boolean literal
+                 "true" (lowercase).
 
 - Line  324    : _parse_text_meta_value except-branch: lowered == "false" -> return False.
 
@@ -39,6 +37,7 @@ from yaraast.lsp.document_context import DocumentContext
 from yaraast.lsp.document_symbols import (
     _build_text_import_symbols,
     _build_text_include_symbols,
+    _parse_text_meta_value,
     _quoted_text_range,
     build_text_symbols,
 )
@@ -197,6 +196,10 @@ def test_build_text_include_symbols_appends_symbol_for_valid_include() -> None:
     assert len(include_syms) == 1
     assert include_syms[0].name == "helpers.yar"
     assert include_syms[0].range.start.line == 0
+
+
+def test_parse_text_meta_value_rejects_complex_python_literals() -> None:
+    assert _parse_text_meta_value("[1, 2, 3]") is None
 
 
 # ---------------------------------------------------------------------------

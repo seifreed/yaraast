@@ -51,6 +51,14 @@ def test_get_meta_value_text_fallback() -> None:
     assert lookup.get_meta_value(doc, "flag") is True
 
 
+def test_get_meta_value_text_fallback_keeps_complex_literals_as_text() -> None:
+    doc = _doc('rule broken {\n  meta:\n    payload = [1, 2, 3]\n  condition:\n')
+    assert doc.ast() is None
+    value = lookup.get_meta_value(doc, "payload")
+    assert value == "[1, 2, 3]"
+    assert isinstance(value, str)
+
+
 def test_string_definition_lookups() -> None:
     doc = _doc(PARSEABLE)
     assert lookup.get_string_definition_node(doc, "$a") is not None
