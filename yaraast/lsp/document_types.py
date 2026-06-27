@@ -62,6 +62,8 @@ def _validate_range_order(start: Position, end: Position) -> None:
 def uri_to_path(uri: object) -> Path | None:
     if not isinstance(uri, str) or not uri.strip():
         return None
+    if "\x00" in uri:
+        return None
     if uri.lower().startswith("file:"):
         parsed = urlparse(uri)
         if parsed.netloc and parsed.netloc.lower() != "localhost":

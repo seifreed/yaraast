@@ -376,6 +376,7 @@ def test_lsp_path_helpers_reject_empty_workspace_paths() -> None:
     assert str(uri_to_path("file:/tmp/ws")) == "/tmp/ws"
     assert uri_to_path("file:relative/ws") is None
     assert uri_to_path("file:///tmp/a%00b.yar") is None
+    assert uri_to_path("relative/\x00broken") is None
     assert str(uri_to_path("relative/ws")) == "relative/ws"
     params = SimpleNamespace(
         root_uri="file:relative/ws",
