@@ -385,6 +385,8 @@ def _location_source_line(location: Any, line: int) -> str:
     file_name = getattr(location, "file", None)
     if not file_name:
         return ""
+    if "\x00" in file_name:
+        return ""
     path = Path(file_name)
     if not path_is_file(path):
         return ""

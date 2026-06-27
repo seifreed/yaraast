@@ -399,6 +399,12 @@ def test_location_source_line_out_of_bounds_returns_empty_string() -> None:
     assert result == ""
 
 
+def test_location_source_line_rejects_null_byte_file_name() -> None:
+    location = SimpleNamespace(file="\x00broken.yar")
+
+    assert _location_source_line(location, 0) == ""
+
+
 def test_location_source_line_valid_line_returns_content() -> None:
     """
     Purpose: confirm the happy path of _location_source_line returns the
