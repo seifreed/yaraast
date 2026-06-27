@@ -266,6 +266,21 @@ def test_ast_benchmarker_reports_invalid_file_paths(tmp_path: Path) -> None:
     assert roundtrip_invalid_type.error == "file_path must be a string or path-like object"
 
 
+def test_ast_benchmarker_rejects_null_byte_file_paths() -> None:
+    benchmarker = ASTBenchmarker()
+
+    parsing = benchmarker.benchmark_parsing("\x00broken", iterations=1)
+    codegen = benchmarker.benchmark_codegen("\x00broken", iterations=1)
+    roundtrip = benchmarker.benchmark_roundtrip("\x00broken", iterations=1)[0]
+
+    assert parsing.success is False
+    assert parsing.error == "file_path must not contain null bytes"
+    assert codegen.success is False
+    assert codegen.error == "file_path must not contain null bytes"
+    assert roundtrip.success is False
+    assert roundtrip.error == "file_path must not contain null bytes"
+
+
 def test_ast_benchmarker_reports_inaccessible_file_paths() -> None:
     benchmarker = ASTBenchmarker()
     inaccessible = "a" * 5000

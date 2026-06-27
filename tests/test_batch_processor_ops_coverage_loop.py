@@ -301,6 +301,11 @@ def test_require_output_dir_path_rejects_pathlike_with_bytes_fspath() -> None:
         require_output_dir_path(bad_pathlike)
 
 
+def test_require_output_dir_path_rejects_null_byte_string() -> None:
+    with pytest.raises(ValueError, match="output_dir must not contain null bytes"):
+        require_output_dir_path("\x00broken")
+
+
 def test_require_output_dir_path_rejects_symlink_directory(tmp_path: Path) -> None:
     target = tmp_path / "target"
     target.mkdir()

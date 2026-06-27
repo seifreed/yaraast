@@ -27,6 +27,9 @@ def _require_benchmark_file_path(file_path: object) -> Path:
     if not raw_path.strip():
         msg = "file_path must not be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = "file_path must not contain null bytes"
+        raise ValueError(msg)
     path = Path(raw_path)
     if _path_exists_and_is_dir(path):
         msg = "file_path must not be a directory"
