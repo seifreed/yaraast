@@ -16,7 +16,7 @@ from yaraast.lsp.document_types import (
     uri_to_path,
 )
 from yaraast.lsp.utils import path_exists, path_is_dir, path_is_file
-from yaraast.shared.path_safety import path_is_within_directory
+from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,11 @@ def _normalize_workspace_folders(folders: object) -> list[Path]:
     if any(not folder.strip() for folder in folders):
         msg = "Workspace folder paths must not be empty"
         raise ValueError(msg)
-    return [Path(folder) for folder in folders]
+    normalized = [Path(folder) for folder in folders]
+    if any(path_is_symlink(folder) for folder in normalized):
+        msg = "Workspace folder paths must not be symlinks"
+        raise ValueError(msg)
+    return normalized
 
 
 def _normalize_excluded_uris(exclude_uris: object) -> set[str]:
