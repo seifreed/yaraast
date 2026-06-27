@@ -453,6 +453,25 @@ def test_include_resolver_rechecks_cached_files_with_missing_includes(tmp_path: 
     assert [included.path for included in second.includes] == [child.resolve()]
 
 
+def test_include_resolver_does_not_add_cwd_when_search_paths_are_explicit(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    cwd = tmp_path / "cwd"
+    cwd.mkdir()
+    explicit = tmp_path / "explicit"
+    explicit.mkdir()
+    (cwd / "common.yar").write_text("rule cwd { condition: true }\n", encoding="utf-8")
+    main = explicit / "main.yar"
+    main.write_text('include "common.yar"\nrule main { condition: true }', encoding="utf-8")
+
+    monkeypatch.chdir(cwd)
+    resolver = IncludeResolver([str(explicit)])
+
+    with pytest.raises(FileNotFoundError, match=r"Cannot find include file 'common\.yar'"):
+        resolver.resolve_file(str(main))
+
+
 def test_include_resolver_rejects_invalid_search_paths() -> None:
     with pytest.raises(TypeError, match="IncludeResolver search_paths must be a list of strings"):
         IncludeResolver(cast(Any, "abc"))

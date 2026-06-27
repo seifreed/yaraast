@@ -91,9 +91,9 @@ class IncludeResolver:
                 msg = "IncludeResolver search_paths must not contain empty paths"
                 raise ValueError(msg)
             paths.extend(self._normalize_search_path(p) for p in search_paths)
-
-        # Add current directory
-        paths.append(Path.cwd())
+        else:
+            # Add current directory only for the default search path set.
+            paths.append(Path.cwd())
 
         # Add paths from environment variable
         env_paths = os.environ.get("YARA_INCLUDE_PATH", "")
