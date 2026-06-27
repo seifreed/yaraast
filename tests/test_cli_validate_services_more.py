@@ -86,6 +86,20 @@ def test_read_test_data_rejects_symlink_paths(tmp_path: Path) -> None:
         vs.read_test_data(link_dir / "real.bin")
 
 
+def test_read_test_data_rejects_symlink_ancestor_path(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    nested = link_dir / "nested"
+    nested.mkdir()
+    data = nested / "real.bin"
+    data.write_bytes(b"abc")
+
+    with pytest.raises(ValidationError, match="test data path must not traverse a symlink"):
+        vs.read_test_data(data)
+
+
 def test_yarax_check_varies_with_strict_flag() -> None:
     ast = _ast_with_regex_issue()
 
