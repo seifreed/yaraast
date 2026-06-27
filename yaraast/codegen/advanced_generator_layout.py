@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from yaraast.codegen.formatting import BraceStyle, FormattingConfig, IndentStyle, StringStyle
+from yaraast.codegen.formatting import (
+    BraceStyle,
+    FormattingConfig,
+    IndentStyle,
+    StringStyle,
+)
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
@@ -103,7 +108,7 @@ def visit_rule(generator: Any, node: Any) -> str:
             generator._write(" ")
         generator._write(format_rule_tags(node.tags))
 
-    if generator._layout.config.brace_style == BraceStyle.SAME_LINE:
+    if generator._layout.config.brace_style in (BraceStyle.SAME_LINE, BraceStyle.K_AND_R):
         generator._write(" {")
         generator._writeline()
     else:

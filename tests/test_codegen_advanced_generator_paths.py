@@ -45,7 +45,7 @@ def test_advanced_generator_brace_styles_and_section_layout() -> None:
     kandr = CodeGenerator(
         options=GeneratorOptions(advanced=FormattingConfig(brace_style=BraceStyle.K_AND_R))
     ).generate(yara_file)
-    assert "rule r\n{" in kandr or "rule r\r\n{" in kandr
+    assert "rule r {" in kandr
 
 
 def test_advanced_generator_yara_file_preserves_top_level_extensions() -> None:
