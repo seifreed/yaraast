@@ -46,6 +46,17 @@ def test_workspace_accepts_pathlike_root_path(tmp_path: Path) -> None:
     assert workspace.root_path == tmp_path
 
 
+def test_workspace_normalizes_file_uri_root_path(tmp_path: Path) -> None:
+    workspace = Workspace(f"file://{tmp_path}")
+
+    assert workspace.root_path == tmp_path
+
+
+def test_workspace_rejects_invalid_file_uri_root_path() -> None:
+    with pytest.raises(ValueError, match="root_path must be a valid file URI or path"):
+        Workspace("file://example.com/tmp/ws")
+
+
 def test_workspace_rejects_symlinked_root_path(tmp_path: Path) -> None:
     outside = tmp_path / "outside"
     outside.mkdir()

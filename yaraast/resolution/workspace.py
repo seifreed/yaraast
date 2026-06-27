@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from yaraast.errors import YaraASTError
+from yaraast.lsp.document_types import uri_to_path
 from yaraast.parser.source import parse_yara_source
 from yaraast.resolution.dependency_graph import DependencyGraph, require_rule_lookup_name
 from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
@@ -93,7 +94,10 @@ class Workspace:
         if not raw_path.strip():
             msg = "root_path must not be empty"
             raise ValueError(msg)
-        path = Path(raw_path)
+        path = uri_to_path(raw_path) if raw_path.lower().startswith("file:") else Path(raw_path)
+        if path is None:
+            msg = "root_path must be a valid file URI or path"
+            raise ValueError(msg)
         if _path_exists_and_not_dir(path):
             msg = "root_path must be a directory"
             raise ValueError(msg)
