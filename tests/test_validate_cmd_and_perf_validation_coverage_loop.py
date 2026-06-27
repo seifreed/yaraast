@@ -268,6 +268,10 @@ class TestValidateFilePathSequenceBytesEntry:
         with pytest.raises(TypeError, match=FILE_PATH_ENTRY_TYPE_ERROR):
             validate_file_path_sequence([None])
 
+    def test_null_byte_entry_in_list_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="file_paths must not contain null bytes"):
+            validate_file_path_sequence(["\x00broken"])
+
     def test_valid_mixed_str_and_path_entries_succeed(
         self,
         tmp_path: Path,

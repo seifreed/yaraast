@@ -62,6 +62,9 @@ def validate_file_path_sequence(file_paths: object) -> list[str]:
         if not normalized_path.strip():
             msg = "file_paths must not contain empty paths"
             raise ValueError(msg)
+        if "\x00" in normalized_path:
+            msg = "file_paths must not contain null bytes"
+            raise ValueError(msg)
         normalized_paths.append(normalized_path)
     return normalized_paths
 
