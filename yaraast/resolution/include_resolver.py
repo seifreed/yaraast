@@ -40,6 +40,12 @@ class ResolvedFile:
 
 def _read_yara_text(file_path: Path, *, is_include: bool) -> str:
     try:
+        if path_is_symlink(file_path):
+            if is_include:
+                msg = "YARA include file must not traverse a symlink"
+            else:
+                msg = "YARA file must not traverse a symlink"
+            raise ValueError(msg)
         return file_path.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
         if is_include:
