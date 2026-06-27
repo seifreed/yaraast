@@ -194,7 +194,15 @@ class LspRuntime:
 
     def _document_is_backed_by_file(self, uri: str) -> bool:
         path = uri_to_path(uri)
-        return path is not None and path_exists(path) and path_is_file(path)
+        return bool(
+            path is not None
+            and path_exists(path)
+            and path_is_file(path)
+            and (
+                not self.index.workspace_folders
+                or self.index._workspace_root_for_uri(uri) is not None
+            )
+        )
 
     def resolve_include_target_uri(self, uri: str, include_path: str) -> str | None:
         path = uri_to_path(uri)
@@ -342,6 +350,8 @@ class LspRuntime:
             return None
         path = uri_to_path(uri)
         if path is None or not path_exists(path) or path_is_dir(path):
+            return None
+        if self.index.workspace_folders and self.index._workspace_root_for_uri(uri) is None:
             return None
         try:
             text = path.read_text(encoding="utf-8")
