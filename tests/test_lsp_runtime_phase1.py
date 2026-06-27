@@ -390,6 +390,31 @@ def test_workspace_index_ignores_stale_parent_cache_for_nested_roots(
     ]
 
 
+def test_workspace_index_ignores_persisted_symbols_outside_workspace_roots(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "root"
+    other = tmp_path / "other"
+    root.mkdir()
+    other.mkdir()
+    orphan = other / "orphan.yar"
+    orphan.write_text("rule orphan { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(orphan)
+
+    index = WorkspaceIndex()
+    index.set_workspace_folders([str(root)])
+    index.persisted_symbols[uri] = [
+        SymbolRecord(
+            "orphan",
+            "rule",
+            uri,
+            Range(Position(line=0, character=0), Position(line=0, character=6)),
+        )
+    ]
+
+    assert index.search_records("") == []
+
+
 @pytest.mark.parametrize(
     ("persisted_symbols", "message"),
     [

@@ -235,6 +235,14 @@ class WorkspaceIndex:
         for uri, symbols in self.persisted_symbols.items():
             if uri in excluded:
                 continue
+            uri_path = uri_to_path(uri)
+            if (
+                self.workspace_folders
+                and uri_path is not None
+                and path_exists(uri_path)
+                and self._workspace_root_for_uri(uri) is None
+            ):
+                continue
             for symbol in symbols:
                 if symbol.kind in hidden_kinds:
                     continue
