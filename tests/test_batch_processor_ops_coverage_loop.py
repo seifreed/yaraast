@@ -307,8 +307,18 @@ def test_require_output_dir_path_rejects_symlink_directory(tmp_path: Path) -> No
     link = tmp_path / "link"
     link.symlink_to(target, target_is_directory=True)
 
-    with pytest.raises(ValueError, match="output_dir must not be a symlink"):
+    with pytest.raises(ValueError, match="output_dir must not traverse a symlink"):
         require_output_dir_path(str(link))
+
+
+def test_require_output_dir_path_rejects_symlink_ancestors(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(target, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="output_dir must not traverse a symlink"):
+        require_output_dir_path(str(link / "child"))
 
 
 # ---------------------------------------------------------------------------

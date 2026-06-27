@@ -117,4 +117,4 @@ def test_cli_optimize_rejects_symlink_output_path(tmp_path: Path) -> None:
     result = CliRunner().invoke(optimize, [infile, str(link)])
 
     assert result.exit_code != 0
-    assert "output path must not be a symlink" in result.output
+    assert "output path must not traverse a symlink" in result.output

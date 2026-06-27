@@ -128,8 +128,20 @@ def test_dependency_graph_render_rejects_symlink_output_path(tmp_path: Path) -> 
     link = tmp_path / "link.dot"
     link.symlink_to(target)
 
-    with pytest.raises(ValueError, match="output_path must not be a symlink"):
+    with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
         render_graph(SimpleNamespace(source="digraph G {}"), link, "dot")
+
+
+def test_dependency_graph_render_rejects_output_paths_under_symlink_ancestors(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "link"
+    link_dir.symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
+        render_graph(SimpleNamespace(source="digraph G {}"), link_dir / "deps.dot", "dot")
 
 
 def test_dependency_graph_render_rejects_inaccessible_output_path() -> None:

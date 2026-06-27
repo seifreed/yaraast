@@ -29,16 +29,32 @@ def test_cli_utils_rejects_symlink_output_paths(tmp_path: Path) -> None:
     link = tmp_path / "link.txt"
     link.symlink_to(target)
 
-    with pytest.raises(ValueError, match="path must not be a symlink"):
+    with pytest.raises(ValueError, match="path must not traverse a symlink"):
         utils.write_text(link, "hello")
 
-    with pytest.raises(click.BadParameter, match="output path must not be a symlink"):
+    with pytest.raises(click.BadParameter, match="output path must not traverse a symlink"):
         utils._validate_output_path(str(link))
 
     link_dir = tmp_path / "dir-link"
     link_dir.symlink_to(tmp_path, target_is_directory=True)
-    with pytest.raises(click.BadParameter, match="output path must not be a symlink"):
+    with pytest.raises(click.BadParameter, match="output path must not traverse a symlink"):
         utils._validate_output_dir_path(str(link_dir))
+
+
+def test_cli_utils_rejects_output_paths_under_symlink_ancestors(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "link"
+    link_dir.symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="path must not traverse a symlink"):
+        utils.write_text(link_dir / "out.txt", "hello")
+
+    with pytest.raises(click.BadParameter, match="output path must not traverse a symlink"):
+        utils._validate_output_path(str(link_dir / "out.txt"))
+
+    with pytest.raises(click.BadParameter, match="output path must not traverse a symlink"):
+        utils._validate_output_dir_path(str(link_dir / "outdir"))
 
 
 def test_cli_utils_rejects_non_utf8_encodable_text(tmp_path: Path) -> None:

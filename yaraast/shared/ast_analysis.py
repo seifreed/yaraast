@@ -18,7 +18,7 @@ from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.codegen.pretty_printer import pretty_print
 from yaraast.errors import YaraASTError
 from yaraast.parser.source import parse_yara_source, parse_yara_source_with_comments
-from yaraast.shared.path_safety import path_is_symlink
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 from yaraast.visitor.base import BaseVisitor
 from yaraast.yarax.generator import YaraXGenerator
 
@@ -63,8 +63,8 @@ def _require_file_path(value: object, name: str) -> Path:
     if _path_exists_and_is_dir(path):
         msg = f"{name} must not be a directory"
         raise ValueError(msg)
-    if path_is_symlink(path):
-        msg = f"{name} must not be a symlink"
+    if path_is_symlink(path) or path_has_symlink_ancestor(path):
+        msg = f"{name} must not traverse a symlink"
         raise ValueError(msg)
     return path
 
@@ -439,8 +439,8 @@ class ASTFormatter:
         if _path_exists_and_is_dir(path):
             msg = "output_path must not be a directory"
             raise ValueError(msg)
-        if path_is_symlink(path):
-            msg = "output_path must not be a symlink"
+        if path_is_symlink(path) or path_has_symlink_ancestor(path):
+            msg = "output_path must not traverse a symlink"
             raise ValueError(msg)
         return path
 

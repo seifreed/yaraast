@@ -20,7 +20,7 @@ from yaraast.cli.utils import (
     read_text,
 )
 from yaraast.parser.source import parse_yara_source_with_comments
-from yaraast.shared.path_safety import path_is_symlink
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 console = Console()
 
@@ -33,9 +33,9 @@ def _validate_output_file(output_file: str) -> Path:
                 "output path must not be a directory",
                 param_hint="OUTPUT_FILE",
             )
-        if path_is_symlink(output_path):
+        if path_is_symlink(output_path) or path_has_symlink_ancestor(output_path):
             raise click.BadParameter(
-                "output path must not be a symlink",
+                "output path must not traverse a symlink",
                 param_hint="OUTPUT_FILE",
             )
     except (TypeError, ValueError) as exc:

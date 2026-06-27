@@ -13,7 +13,7 @@ from rich.console import Console
 from rich.markup import escape
 
 from yaraast.ast.base import YaraFile
-from yaraast.shared.path_safety import path_is_symlink
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 
 def _validate_output_path(output: str | None) -> str | None:
@@ -29,8 +29,8 @@ def _validate_output_path(output: str | None) -> str | None:
         output_path = _require_file_path(output)
         if _path_exists_and_is_dir(output_path):
             raise ValueError("output path must not be a directory")
-        if path_is_symlink(output_path):
-            raise ValueError("output path must not be a symlink")
+        if path_is_symlink(output_path) or path_has_symlink_ancestor(output_path):
+            raise ValueError("output path must not traverse a symlink")
     except (TypeError, ValueError) as exc:
         raise click.BadParameter(str(exc), param_hint="--output") from exc
     return output
@@ -48,8 +48,8 @@ def _resolve_output_path(output: str | None) -> Path | None:
         output_path = _require_file_path(output)
         if _path_exists_and_is_dir(output_path):
             raise ValueError("output path must not be a directory")
-        if path_is_symlink(output_path):
-            raise ValueError("output path must not be a symlink")
+        if path_is_symlink(output_path) or path_has_symlink_ancestor(output_path):
+            raise ValueError("output path must not traverse a symlink")
     except (TypeError, ValueError) as exc:
         raise click.BadParameter(str(exc), param_hint="--output") from exc
     return output_path
@@ -66,8 +66,8 @@ def _validate_output_dir_path(output_dir: str | None) -> str | None:
         output_path = _require_file_path(output_dir)
         if _path_exists_and_not_dir(output_path):
             raise ValueError("output path must be a directory")
-        if path_is_symlink(output_path):
-            raise ValueError("output path must not be a symlink")
+        if path_is_symlink(output_path) or path_has_symlink_ancestor(output_path):
+            raise ValueError("output path must not traverse a symlink")
     except (TypeError, ValueError) as exc:
         raise click.BadParameter(str(exc), param_hint="--output-dir") from exc
     return output_dir
@@ -151,8 +151,8 @@ def write_text(path: str | Path, content: str) -> None:
         msg = "content must be UTF-8 encodable"
         raise ValueError(msg) from exc
     output_path = _require_existing_file_path(path)
-    if path_is_symlink(output_path):
-        raise ValueError("path must not be a symlink")
+    if path_is_symlink(output_path) or path_has_symlink_ancestor(output_path):
+        raise ValueError("path must not traverse a symlink")
     output_path.write_text(content, encoding="utf-8")
 
 

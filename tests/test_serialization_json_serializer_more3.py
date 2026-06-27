@@ -138,8 +138,20 @@ def test_json_serializer_rejects_symlink_output_path(tmp_path: Path) -> None:
     link = tmp_path / "link.json"
     link.symlink_to(target)
 
-    with pytest.raises(ValueError, match="output_path must not be a symlink"):
+    with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
         serializer.serialize(ast, output_path=link)
+
+
+def test_json_serializer_rejects_output_paths_under_symlink_ancestors(tmp_path: Path) -> None:
+    serializer = JsonSerializer(include_metadata=True)
+    ast = _sample_ast()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "link"
+    link_dir.symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
+        serializer.serialize(ast, output_path=link_dir / "out.json")
 
 
 def test_json_roundtrip_preserves_plain_string_bytes() -> None:

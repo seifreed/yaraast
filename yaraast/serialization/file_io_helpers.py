@@ -5,7 +5,7 @@ from __future__ import annotations
 from os import PathLike, fspath
 from pathlib import Path
 
-from yaraast.shared.path_safety import path_is_symlink
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 
 def _path_access_error(path: Path) -> ValueError:
@@ -74,8 +74,8 @@ def write_utf8(path: str | Path, text: str) -> None:
         raise ValueError(msg) from exc
     try:
         path_obj = _require_file_path(path)
-        if path_is_symlink(path_obj):
-            raise ValueError("path must not be a symlink")
+        if path_is_symlink(path_obj) or path_has_symlink_ancestor(path_obj):
+            raise ValueError("path must not traverse a symlink")
         with path_obj.open("w", encoding="utf-8") as handle:
             handle.write(text)
     except OSError as exc:

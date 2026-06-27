@@ -27,7 +27,7 @@ def test_serializer_helpers_reject_symlink_output_paths(tmp_path: Path) -> None:
     link = tmp_path / "link.txt"
     link.symlink_to(target)
 
-    with pytest.raises(ValueError, match="output_path must not be a symlink"):
+    with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
         require_output_path(link, "output_path")
 
 
@@ -37,8 +37,18 @@ def test_file_io_helpers_reject_symlink_output_path(tmp_path: Path) -> None:
     link = tmp_path / "link.txt"
     link.symlink_to(target)
 
-    with pytest.raises(ValueError, match="path must not be a symlink"):
+    with pytest.raises(ValueError, match="path must not traverse a symlink"):
         write_utf8(link, "hello")
+
+
+def test_file_io_helpers_reject_output_paths_under_symlink_ancestors(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "link"
+    link_dir.symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="path must not traverse a symlink"):
+        write_utf8(link_dir / "out.txt", "hello")
 
 
 def test_serializer_helpers_drop_duplicate_text_wrappers() -> None:
