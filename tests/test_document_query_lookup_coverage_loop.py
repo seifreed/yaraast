@@ -628,7 +628,7 @@ def test_get_include_target_uri_rejects_symlink_document_file() -> None:
         assert lookup.get_include_target_uri(doc, "other.yar") is None
 
 
-def test_get_include_target_uri_keeps_symlinked_ancestor_path() -> None:
+def test_get_include_target_uri_rejects_symlinked_ancestor_path() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp = Path(tmpdir)
         outside = tmp / "outside"
@@ -645,7 +645,7 @@ def test_get_include_target_uri_keeps_symlinked_ancestor_path() -> None:
 
         result = lookup.get_include_target_uri(doc, "other.yar")
 
-        assert result == include_file.as_uri()
+        assert result is None
 
 
 # ---------------------------------------------------------------------------

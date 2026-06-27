@@ -11,7 +11,11 @@ from yaraast.codegen.generator_helpers import escape_plain_string_value
 from yaraast.lsp.meta_value_parsing import parse_meta_scalar
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8, utf16_len
 from yaraast.lsp.utils import path_exists
-from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
+from yaraast.shared.path_safety import (
+    path_has_symlink_ancestor,
+    path_is_symlink,
+    path_is_within_directory,
+)
 from yaraast.types.module_loader import ModuleLoader
 
 if TYPE_CHECKING:
@@ -209,7 +213,7 @@ def get_include_info(ctx: DocumentContext, include_path: str) -> dict[str, Any]:
     if (
         doc_path is not None
         and not path_is_symlink(doc_path)
-        and not path_is_symlink(doc_path.parent)
+        and not path_has_symlink_ancestor(doc_path)
     ):
         candidate = doc_path.parent / include_path
         if path_exists(candidate) and path_is_within_directory(candidate, doc_path.parent):
