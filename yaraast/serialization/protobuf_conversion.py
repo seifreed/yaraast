@@ -315,10 +315,8 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
     if include_metadata:
         pb_file.metadata.format = "yaraast-protobuf"
         pb_file.metadata.version = "1.0"
-        pb_file.metadata.ast_type = "YaraFile"
         pb_file.metadata.rules_count = len(rules)
         pb_file.metadata.imports_count = len(imports)
-        pb_file.metadata.includes_count = len(includes)
 
     _copy_node_metadata_to_protobuf(ast, pb_file)
     return pb_file
