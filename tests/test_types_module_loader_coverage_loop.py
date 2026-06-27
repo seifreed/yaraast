@@ -165,6 +165,18 @@ def test_load_json_modules_rejects_symlink_ancestor_spec_path(
         ModuleLoader()
 
 
+def test_load_json_modules_rejects_null_byte_spec_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "yaraast.types.module_loader._module_spec_path_entries",
+        lambda env_name: ["\x00broken"],
+    )
+
+    with pytest.raises(ModuleSpecError, match="must not contain null bytes"):
+        ModuleLoader()
+
+
 # ---------------------------------------------------------------------------
 # Lines 195-196  list item inside a JSON array is not a dict
 # ---------------------------------------------------------------------------

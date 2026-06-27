@@ -162,6 +162,9 @@ class ModuleLoader:
 
         # Load modules from all paths
         for path_str in module_paths:
+            if "\x00" in path_str:
+                msg = f"Module specification path '{path_str}' must not contain null bytes"
+                raise ModuleSpecError(msg)
             path = Path(path_str)
             if _path_is_symlink(path):
                 msg = f"Module specification path '{path}' must not be a symlink"
