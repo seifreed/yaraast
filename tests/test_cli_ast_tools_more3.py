@@ -254,6 +254,18 @@ def test_ast_differ_reports_inaccessible_file_path(tmp_path: Path) -> None:
     assert result.logical_changes[0].startswith("Error comparing files: path could not be accessed")
 
 
+def test_ast_differ_rejects_symlink_input_file(tmp_path: Path) -> None:
+    target = tmp_path / "target.yar"
+    target.write_text("rule a { condition: true }", encoding="utf-8")
+    link = tmp_path / "link.yar"
+    link.symlink_to(target)
+
+    result = ASTDiffer().diff_files(link, target)
+
+    assert result.has_changes is True
+    assert result.logical_changes == ["Error comparing files: file1_path must not traverse a symlink"]
+
+
 def test_ast_formatter_format_file_propagates_internal_generator_errors(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
