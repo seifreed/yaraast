@@ -282,6 +282,22 @@ def test_workspace_symbols_skips_symlinked_files_outside_root(tmp_path: Path) ->
     assert "outside" not in names
 
 
+def test_workspace_symbols_skips_symlinked_files_inside_root(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    target = root / "target.yar"
+    target.write_text("rule inside { condition: true }\n", encoding="utf-8")
+    (root / "linked.yar").symlink_to(target)
+
+    provider = WorkspaceSymbolsProvider()
+    provider.set_workspace_root(root)
+
+    names = {symbol.name for symbol in provider.get_workspace_symbols("")}
+
+    assert "inside" in names
+    assert len(names) == 1
+
+
 def test_workspace_symbols_returns_empty_list_on_mid_file_symbol_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

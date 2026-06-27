@@ -108,6 +108,7 @@ class WorkspaceSymbolsProvider:
             path
             for path in self.workspace_root.rglob("*")
             if path.is_file()
+            and not path_is_symlink(path)
             and path.suffix.lower() in YARA_FILE_SUFFIXES
             and path_is_within_directory(path, self.workspace_root)
         ]
