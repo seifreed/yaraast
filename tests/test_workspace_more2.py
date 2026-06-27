@@ -650,7 +650,7 @@ def test_include_resolver_accepts_pathlike_file_path(tmp_path: Path) -> None:
 
     resolved = resolver.resolve_file(rule_file)
 
-    assert resolved.path == rule_file.resolve()
+    assert resolved.path == rule_file
 
 
 def test_include_resolver_reports_missing_root_file_context(tmp_path: Path) -> None:
