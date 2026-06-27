@@ -15,7 +15,7 @@ from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace_analysis import WorkspaceAnalyzer
 from yaraast.resolution.workspace_models import FileAnalysisResult, WorkspaceReport
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
-from yaraast.shared.path_safety import path_is_symlink
+from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
 
 if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
@@ -49,6 +49,15 @@ def _path_is_dir(path: Path) -> bool:
 
 def _path_exists_and_not_dir(path: Path) -> bool:
     return _path_exists(path) and not _path_is_dir(path)
+
+
+def _require_path_within_root(path: Path, root_path: Path, *, name: str) -> Path:
+    if not path.is_absolute():
+        path = root_path / path
+    if not path_is_within_directory(path, root_path):
+        msg = f"{name} must stay within root_path"
+        raise ValueError(msg)
+    return path
 
 
 class Workspace:
@@ -102,8 +111,7 @@ class Workspace:
     ) -> FileAnalysisResult:
         """Add a file and optionally rebuild the workspace dependency graph."""
         path = self._require_workspace_path(file_path, name="file_path")
-        if not path.is_absolute():
-            path = self.root_path / path
+        path = _require_path_within_root(path, self.root_path, name="file_path")
 
         result = FileAnalysisResult(path=path)
 
@@ -166,8 +174,7 @@ class Workspace:
             raise TypeError(msg)
 
         dir_path = self._require_workspace_path(directory, name="directory")
-        if not dir_path.is_absolute():
-            dir_path = self.root_path / dir_path
+        dir_path = _require_path_within_root(dir_path, self.root_path, name="directory")
 
         for file_path in iter_matching_files(dir_path, pattern, recursive):
             self._add_file(str(file_path), rebuild_graph=False)

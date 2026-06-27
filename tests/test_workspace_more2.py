@@ -122,6 +122,29 @@ def test_workspace_add_file_error_paths_and_getters(tmp_path: Path) -> None:
     assert isinstance(workspace.get_file_dependents(str(ok)), set)
 
 
+def test_workspace_add_file_rejects_paths_outside_root(tmp_path: Path) -> None:
+    outside_root = tmp_path.parent / f"{tmp_path.name}_escape"
+    outside_root.mkdir()
+    _write(outside_root / "escape.yar", "rule escape { condition: true }")
+
+    workspace = Workspace(str(tmp_path))
+
+    with pytest.raises(ValueError, match="file_path must stay within root_path"):
+        workspace.add_file(f"../{outside_root.name}/escape.yar")
+
+
+def test_workspace_add_directory_rejects_paths_outside_root(tmp_path: Path) -> None:
+    outside_root = tmp_path.parent / f"{tmp_path.name}_scan_escape"
+    nested = outside_root / "rules"
+    nested.mkdir(parents=True)
+    _write(nested / "escape.yar", "rule escape { condition: true }")
+
+    workspace = Workspace(str(tmp_path))
+
+    with pytest.raises(ValueError, match="directory must stay within root_path"):
+        workspace.add_directory(f"../{outside_root.name}")
+
+
 def test_workspace_missing_include_keeps_resolved_sibling_include(
     tmp_path: Path,
 ) -> None:
