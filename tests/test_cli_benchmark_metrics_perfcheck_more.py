@@ -119,6 +119,19 @@ def test_performance_check_command_escapes_error_markup(
     assert "closing tag" not in result.output
 
 
+def test_performance_check_rejects_symlink_input_file(tmp_path: Path) -> None:
+    runner = CliRunner()
+    target = tmp_path / "target.yar"
+    target.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    link = tmp_path / "linked.yar"
+    link.symlink_to(target)
+
+    result = runner.invoke(performance_check, [str(link)])
+
+    assert result.exit_code != 0
+    assert "path must not traverse a symlink" in result.output
+
+
 def test_ast_benchmarker_success_error_and_summary(tmp_path: Path) -> None:
     yara_path = tmp_path / "bench.yar"
     yara_path.write_text(

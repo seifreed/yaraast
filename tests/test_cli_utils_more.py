@@ -76,6 +76,26 @@ def test_cli_utils_rejects_non_utf8_file_contents(tmp_path: Path) -> None:
         utils.read_text(path)
 
 
+def test_cli_utils_rejects_symlinked_input_paths(tmp_path: Path) -> None:
+    target = tmp_path / "target.txt"
+    target.write_text("target", encoding="utf-8")
+    link = tmp_path / "link.txt"
+    link.symlink_to(target)
+
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "dir-link"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    nested = link_dir / "nested.txt"
+    nested.write_text("nested", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="path must not traverse a symlink"):
+        utils.read_text(link)
+
+    with pytest.raises(ValueError, match="path must not traverse a symlink"):
+        utils.read_text(nested)
+
+
 @pytest.mark.parametrize("path", [False, 0, object()])
 def test_cli_utils_reject_invalid_path_types(path: Any) -> None:
     with pytest.raises(TypeError, match="path must be a file path"):

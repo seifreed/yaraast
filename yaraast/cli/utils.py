@@ -137,7 +137,10 @@ def _require_existing_file_path(path: str | Path) -> Path:
 def read_text(path: str | Path) -> str:
     """Read a text file with UTF-8 encoding."""
     try:
-        return _require_existing_file_path(path).read_text(encoding="utf-8")
+        path_obj = _require_existing_file_path(path)
+        if path_is_symlink(path_obj) or path_has_symlink_ancestor(path_obj):
+            raise ValueError("path must not traverse a symlink")
+        return path_obj.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
         msg = "file must contain valid UTF-8 text"
         raise ValueError(msg) from exc
