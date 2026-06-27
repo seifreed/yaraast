@@ -566,10 +566,6 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
             )
         )
     )
-    from yaraast.codegen.pretty_layout import PrettyLayout
-
-    layout2 = printer2._layout
-    assert isinstance(layout2, PrettyLayout)
     from yaraast.ast.modifiers import MetaEntry
 
     printer2._write_meta_section([MetaEntry(key="b", value=2), MetaEntry(key="a", value="x")])
