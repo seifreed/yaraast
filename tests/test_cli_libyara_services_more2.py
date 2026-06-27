@@ -84,6 +84,23 @@ def test_scan_yara_rejects_non_positive_timeouts(timeout: int) -> None:
         )
 
 
+def test_scan_yara_rejects_null_byte_target(tmp_path: Path) -> None:
+    rule_file = tmp_path / "r.yar"
+    rule_file.write_text("rule a { condition: true }", encoding="utf-8")
+
+    if not lib.YARA_AVAILABLE:
+        pytest.skip("yara-python is not installed")
+
+    with pytest.raises(ValueError, match="target must not contain null bytes"):
+        ls.scan_yara(
+            str(rule_file),
+            "\x00broken",
+            optimize=False,
+            timeout=1,
+            fast=False,
+        )
+
+
 def test_libyara_services_reject_yarax_only_syntax(tmp_path: Path) -> None:
     rule_file = tmp_path / "native_yarax.yar"
     rule_file.write_text(

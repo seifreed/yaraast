@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.libyara._paths import require_file_path
 from yaraast.libyara.compatibility import ensure_libyara_compatible_ast
 from yaraast.shared.numeric_validation import validate_positive_int_setting
 
@@ -76,7 +76,7 @@ def scan_yara(
 
     matcher = OptimizedMatcher(compile_result.compiled_rules, ast)
     scan_result = matcher.scan(
-        Path(target),
+        require_file_path(target, "target"),
         timeout=timeout_value,
         fast_mode=fast,
     )
