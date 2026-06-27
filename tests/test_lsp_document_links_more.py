@@ -134,6 +134,19 @@ def test_include_info_treats_inaccessible_include_paths_as_unresolved(tmp_path: 
     assert doc.get_include_target_uri("a" * 5000) is None
 
 
+def test_include_target_uri_rejects_symlinked_document_parents(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "inc.yar").write_text("rule inc { condition: true }", encoding="utf-8")
+    real_doc = outside / "main.yar"
+    real_doc.write_text('include "inc.yar"\n', encoding="utf-8")
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    doc = DocumentContext((link_dir / "main.yar").as_uri(), real_doc.read_text(encoding="utf-8"))
+
+    assert doc.get_include_target_uri("inc.yar") is None
+
+
 @pytest.mark.parametrize("include_path", ["", "   ", "\t"])
 def test_include_target_uri_rejects_empty_include_paths(
     tmp_path: Path,
