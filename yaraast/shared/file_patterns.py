@@ -6,6 +6,8 @@ from collections.abc import Iterable, Iterator
 from os import PathLike, fspath
 from pathlib import Path
 
+from yaraast.shared.path_safety import path_is_within_directory
+
 DEFAULT_CLASSIC_YARA_FILE_PATTERNS = ("*.yar", "*.yara")
 FilePatterns = str | Iterable[str] | None
 FILE_PATTERNS_TYPE_ERROR = "File patterns must be a string or iterable of strings"
@@ -83,6 +85,8 @@ def iter_matching_files(
         matches = directory_path.rglob(pattern) if recursive else directory_path.glob(pattern)
         for path in matches:
             if not path.is_file() or path in seen:
+                continue
+            if not path_is_within_directory(path, directory_path):
                 continue
             seen.add(path)
             yield path

@@ -619,6 +619,22 @@ def test_workspace_add_directory_default_includes_yara_extension(tmp_path: Path)
     assert str(yarax) not in workspace.files
 
 
+def test_workspace_add_directory_skips_symlinked_files_outside_root(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    outside = tmp_path / "outside.yar"
+    outside.write_text("rule outside { condition: true }", encoding="utf-8")
+    link = root / "linked.yar"
+    link.symlink_to(outside)
+    _write(root / "inside.yar", "rule inside { condition: true }")
+
+    workspace = Workspace(str(root))
+    workspace.add_directory(str(root))
+
+    assert str(root / "inside.yar") in workspace.files
+    assert str(link) not in workspace.files
+
+
 @pytest.mark.parametrize("directory", ["", "   ", "\t"])
 def test_workspace_add_directory_rejects_empty_directory(
     tmp_path: Path,

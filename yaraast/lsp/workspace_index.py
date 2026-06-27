@@ -16,6 +16,7 @@ from yaraast.lsp.document_types import (
     uri_to_path,
 )
 from yaraast.lsp.utils import path_exists, path_is_dir, path_is_file
+from yaraast.shared.path_safety import path_is_within_directory
 
 logger = logging.getLogger(__name__)
 
@@ -234,7 +235,11 @@ class WorkspaceIndex:
                 continue
             for suffix in YARA_FILE_SUFFIXES:
                 try:
-                    files.update(folder.rglob(f"*{suffix}"))
+                    files.update(
+                        path
+                        for path in folder.rglob(f"*{suffix}")
+                        if path.is_file() and path_is_within_directory(path, folder)
+                    )
                 except OSError:
                     logger.debug("Operation failed in %s", __name__, exc_info=True)
         return sorted(files)

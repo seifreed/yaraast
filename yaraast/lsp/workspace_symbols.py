@@ -10,6 +10,7 @@ from lsprotocol.types import SymbolInformation
 
 from yaraast.lsp.document_types import YARA_FILE_SUFFIXES
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
+from yaraast.shared.path_safety import path_is_within_directory
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,9 @@ class WorkspaceSymbolsProvider:
         yara_files = [
             path
             for path in self.workspace_root.rglob("*")
-            if path.is_file() and path.suffix.lower() in YARA_FILE_SUFFIXES
+            if path.is_file()
+            and path.suffix.lower() in YARA_FILE_SUFFIXES
+            and path_is_within_directory(path, self.workspace_root)
         ]
 
         for yara_file in yara_files:

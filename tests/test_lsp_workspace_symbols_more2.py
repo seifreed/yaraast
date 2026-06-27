@@ -219,6 +219,23 @@ def test_workspace_symbols_cache_uses_nanosecond_mtime(
     assert "one" not in second
 
 
+def test_workspace_symbols_skips_symlinked_files_outside_root(tmp_path: Path) -> None:
+    root = tmp_path / "workspace"
+    root.mkdir()
+    outside = tmp_path / "outside.yar"
+    outside.write_text("rule outside { condition: true }\n", encoding="utf-8")
+    (root / "inside.yar").write_text("rule inside { condition: true }\n", encoding="utf-8")
+    (root / "linked.yar").symlink_to(outside)
+
+    provider = WorkspaceSymbolsProvider()
+    provider.set_workspace_root(root)
+
+    names = {symbol.name for symbol in provider.get_workspace_symbols("")}
+
+    assert "inside" in names
+    assert "outside" not in names
+
+
 def test_workspace_symbols_returns_empty_list_on_mid_file_symbol_failure(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
