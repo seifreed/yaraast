@@ -343,6 +343,29 @@ def test_ast_benchmarker_rejects_symlinked_file_paths(tmp_path: Path) -> None:
     assert roundtrip.error == "file_path must not traverse a symlink"
 
 
+def test_ast_benchmarker_rejects_symlink_ancestor_file_paths(tmp_path: Path) -> None:
+    benchmarker = ASTBenchmarker()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    nested = link_dir / "nested"
+    nested.mkdir()
+    target = nested / "target.yar"
+    target.write_text("rule bench { condition: true }", encoding="utf-8")
+
+    parsing = benchmarker.benchmark_parsing(target, iterations=1)
+    codegen = benchmarker.benchmark_codegen(target, iterations=1)
+    roundtrip = benchmarker.benchmark_roundtrip(target, iterations=1)[0]
+
+    assert parsing.success is False
+    assert parsing.error == "file_path must not traverse a symlink"
+    assert codegen.success is False
+    assert codegen.error == "file_path must not traverse a symlink"
+    assert roundtrip.success is False
+    assert roundtrip.error == "file_path must not traverse a symlink"
+
+
 def test_ast_benchmarker_reports_invalid_utf8_inputs(tmp_path: Path) -> None:
     bad = tmp_path / "bad.yar"
     bad.write_bytes(b"\xff")
