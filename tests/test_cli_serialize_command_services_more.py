@@ -57,3 +57,8 @@ def test_build_diff_output_path_rejects_inaccessible_output_path() -> None:
 def test_build_diff_output_path_rejects_invalid_output_path_types(output: Any) -> None:
     with pytest.raises(TypeError, match="output path must be a file path"):
         build_diff_output_path("old.yar", "new.yar", output, "json")
+
+
+def test_build_diff_output_path_rejects_null_byte_output_path() -> None:
+    with pytest.raises(ValueError, match="output path must not contain null bytes"):
+        build_diff_output_path("old.yar", "new.yar", "\x00broken", "json")

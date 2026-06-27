@@ -53,6 +53,9 @@ def build_diff_output_path(
     if not raw_path.strip():
         msg = "output path must not be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = "output path must not contain null bytes"
+        raise ValueError(msg)
     output_path = Path(raw_path)
     if _path_exists_and_is_dir(output_path):
         msg = "output path must not be a directory"
