@@ -33,6 +33,9 @@ def _require_include_path(include_path: object) -> str:
     if not include_path.strip():
         msg = "Include path must not be empty"
         raise ValueError(msg)
+    if "\x00" in include_path:
+        msg = "Include path must not contain null bytes"
+        raise ValueError(msg)
     return include_path
 
 

@@ -92,6 +92,14 @@ def test_require_include_path_raises_for_blank_string() -> None:
         assert "empty" in str(exc).lower()
 
 
+def test_require_include_path_raises_for_null_byte_string() -> None:
+    try:
+        lookup._require_include_path("\x00broken")
+        raise AssertionError("Expected ValueError")
+    except ValueError as exc:
+        assert "null bytes" in str(exc).lower()
+
+
 def test_require_module_member_name_raises_for_non_string() -> None:
     """_require_module_member_name raises TypeError for non-string input (lines 41-42)."""
     try:
