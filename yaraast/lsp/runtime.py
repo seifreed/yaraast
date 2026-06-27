@@ -205,6 +205,8 @@ class LspRuntime:
         )
 
     def resolve_include_target_uri(self, uri: str, include_path: str) -> str | None:
+        if "\x00" in include_path:
+            return None
         path = uri_to_path(uri)
         if path is not None:
             direct_candidate = path.parent / include_path
