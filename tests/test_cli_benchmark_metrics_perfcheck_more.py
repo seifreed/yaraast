@@ -855,3 +855,23 @@ def test_metrics_reporting_report_files_reject_symlinked_output_dir(
 
     with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
         write_report_summary(link_dir, {"generated_files": []})
+
+
+def test_metrics_reporting_report_files_reject_symlink_ancestor_output_dir(
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "link"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    nested = link_dir / "nested"
+    nested.mkdir()
+
+    ast = _sample_ast()
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
+        write_complexity_report_files(nested, "sample", metrics)
+
+    with pytest.raises(ValueError, match="output_path must not traverse a symlink"):
+        write_report_summary(nested, {"generated_files": []})
