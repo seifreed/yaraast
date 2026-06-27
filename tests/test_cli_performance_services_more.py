@@ -99,6 +99,18 @@ def test_collect_file_paths_rejects_symlink_file_input(tmp_path: Path) -> None:
         ps.collect_file_paths((str(link),))
 
 
+def test_collect_file_paths_rejects_symlink_ancestor_file_input(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    target = link_dir / "real.yar"
+    target.write_text("rule r { condition: true }", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="input path must not traverse a symlink"):
+        ps.collect_file_paths((str(target),))
+
+
 def test_performance_services_reject_inaccessible_paths(tmp_path: Path) -> None:
     inaccessible = Path("a" * 5000)
 
