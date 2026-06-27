@@ -263,7 +263,9 @@ def test_ast_differ_rejects_symlink_input_file(tmp_path: Path) -> None:
     result = ASTDiffer().diff_files(link, target)
 
     assert result.has_changes is True
-    assert result.logical_changes == ["Error comparing files: file1_path must not traverse a symlink"]
+    assert result.logical_changes == [
+        "Error comparing files: file1_path must not traverse a symlink"
+    ]
 
 
 def test_ast_formatter_format_file_propagates_internal_generator_errors(
