@@ -193,6 +193,15 @@ def test_serialize_reporting_escapes_markup_in_dynamic_values() -> None:
     assert bad in output
 
 
+def test_serialize_reporting_rejects_null_byte_output_paths() -> None:
+    with pytest.raises(ValueError, match="output path must not contain null bytes"):
+        sr._has_output_path("\x00broken")
+
+    console = Console(record=True, width=120)
+    with pytest.raises(ValueError, match="output path must not contain null bytes"):
+        sr.display_export_result(console, "{}", "json", output="\x00broken", pretty=True, stats=None)
+
+
 def test_write_diff_output_rejects_non_utf8_json(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="content must be UTF-8 encodable"):
         sr.write_diff_output(str(tmp_path / "diff.json"), "json", {"name": "\ud800"})
