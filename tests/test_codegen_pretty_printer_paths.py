@@ -25,10 +25,6 @@ from yaraast.codegen.pretty_printer import (
     PrettyPrintOptions,
     StylePresets,
     pretty_print,
-    pretty_print_compact,
-    pretty_print_dense,
-    pretty_print_readable,
-    pretty_print_verbose,
 )
 from yaraast.yarax.ast_nodes import (
     DictComprehension,
@@ -486,10 +482,10 @@ def test_pretty_printer_style_presets_and_convenience_functions() -> None:
     assert len(readable) >= len(dense)
 
     assert pretty_print(ast, PrettyPrintOptions())
-    assert pretty_print_compact(ast)
-    assert pretty_print_readable(ast)
-    assert pretty_print_dense(ast)
-    assert pretty_print_verbose(ast)
+    assert pretty_print(ast, StylePresets.compact())
+    assert pretty_print(ast, StylePresets.readable())
+    assert pretty_print(ast, StylePresets.dense())
+    assert pretty_print(ast, StylePresets.verbose())
 
 
 def test_pretty_printer_handles_partial_sections_sorting_and_wrapped_condition_lines() -> None:

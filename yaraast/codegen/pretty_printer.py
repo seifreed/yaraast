@@ -113,7 +113,6 @@ class StylePresets:
         )
 
 
-# Convenience functions
 def pretty_print(ast: YaraFile, options: PrettyPrintOptions | None = None) -> str:
     """Pretty print YARA AST with specified options."""
     ast = require_yara_file(ast, "ast")
@@ -121,23 +120,3 @@ def pretty_print(ast: YaraFile, options: PrettyPrintOptions | None = None) -> st
     return CodeGenerator(options=GeneratorOptions(pretty=options or PrettyPrintOptions())).generate(
         ast
     )
-
-
-def pretty_print_compact(ast: YaraFile) -> str:
-    """Pretty print with compact style."""
-    return pretty_print(ast, StylePresets.compact())
-
-
-def pretty_print_readable(ast: YaraFile) -> str:
-    """Pretty print with readable style."""
-    return pretty_print(ast, StylePresets.readable())
-
-
-def pretty_print_dense(ast: YaraFile) -> str:
-    """Pretty print with dense style."""
-    return pretty_print(ast, StylePresets.dense())
-
-
-def pretty_print_verbose(ast: YaraFile) -> str:
-    """Pretty print with verbose style."""
-    return pretty_print(ast, StylePresets.verbose())
