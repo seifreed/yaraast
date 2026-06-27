@@ -115,6 +115,23 @@ def test_runtime_rejects_workspace_symlink_file_documents(tmp_path: Path) -> Non
     assert runtime.get_document(path_to_uri(link)) is None
 
 
+def test_runtime_ignores_watched_workspace_symlink_file_changes(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    outside = tmp_path / "outside.yar"
+    outside.write_text("rule outside { condition: true }\n", encoding="utf-8")
+    link = root / "link.yar"
+    link.symlink_to(outside)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(root)])
+    runtime.handle_watched_files([FileEvent(uri=path_to_uri(link), type=FileChangeType.Changed)])
+
+    assert path_to_uri(link) not in runtime.documents
+
+
 def test_navigation_and_rename_keep_working_in_partially_broken_documents(
     tmp_path: Path,
 ) -> None:

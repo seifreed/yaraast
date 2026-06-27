@@ -467,6 +467,8 @@ class LspRuntime:
             path = uri_to_path(uri)
             if path is None:
                 continue
+            if self.index.workspace_folders and self.index._workspace_root_for_uri(uri) is None:
+                continue
             if path_exists(path) and path_is_file(path):
                 ctx = self.documents.get(uri)
                 if ctx is not None and ctx.is_open:
