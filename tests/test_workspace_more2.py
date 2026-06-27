@@ -92,6 +92,21 @@ def test_workspace_preserves_symlinked_ancestor_path_for_fallback_resolution(
     assert result.resolved.path == main
 
 
+def test_workspace_rejects_symlink_file_inside_root(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    target = root / "target.yar"
+    target.write_text("rule target { condition: true }", encoding="utf-8")
+    alias = root / "alias.yar"
+    alias.symlink_to(target)
+
+    workspace = Workspace(root_path=root)
+    result = workspace.add_file("alias.yar")
+
+    assert result.resolved is None
+    assert "file_path must not traverse a symlink" in result.errors[0]
+
+
 def test_workspace_dependency_queries_accept_resolved_and_alias_paths(tmp_path: Path) -> None:
     outside = tmp_path / "outside"
     outside.mkdir()

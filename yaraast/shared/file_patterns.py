@@ -6,7 +6,11 @@ from collections.abc import Iterable, Iterator
 from os import PathLike, fspath
 from pathlib import Path
 
-from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
+from yaraast.shared.path_safety import (
+    path_has_symlink_ancestor,
+    path_is_symlink,
+    path_is_within_directory,
+)
 
 DEFAULT_CLASSIC_YARA_FILE_PATTERNS = ("*.yar", "*.yara")
 FilePatterns = str | Iterable[str] | None
@@ -101,4 +105,4 @@ def iter_matching_files(
             if resolved_path in seen:
                 continue
             seen.add(resolved_path)
-            yield path
+            yield path if path_has_symlink_ancestor(path) else resolved_path

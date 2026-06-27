@@ -126,6 +126,9 @@ class Workspace:
         result = FileAnalysisResult(path=path)
 
         try:
+            if path_is_symlink(path):
+                msg = "file_path must not traverse a symlink"
+                raise ValueError(msg)
             # Resolve file and includes
             resolved = self.include_resolver.resolve_file(str(path))
             result.resolved = resolved
@@ -187,6 +190,8 @@ class Workspace:
         dir_path = _require_path_within_root(dir_path, self.root_path, name="directory")
 
         for file_path in iter_matching_files(dir_path, pattern, recursive):
+            if path_is_symlink(file_path):
+                continue
             self._add_file(str(file_path), rebuild_graph=False)
         self._rebuild_dependency_graph()
 
