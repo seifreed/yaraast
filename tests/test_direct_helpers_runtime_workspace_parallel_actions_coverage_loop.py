@@ -180,6 +180,21 @@ class TestCompileSourceWithFileContext:
         with pytest.raises(ValueError, match="source_path must not contain null bytes"):
             compile_source_with_file_context(source, {}, "\x00broken", False)
 
+    def test_rejects_symlink_source_path(self, tmp_path: Path) -> None:
+        """A direct symlink source path must be rejected before resolve().
+
+        This keeps the temporary compile context from being created through an
+        alias path.
+        """
+        source = _minimal_rule()
+        target = tmp_path / "real_input.yar"
+        target.write_text(source, encoding="utf-8")
+        alias = tmp_path / "alias_input.yar"
+        alias.symlink_to(target)
+
+        with pytest.raises(ValueError, match="source_path must not traverse a symlink"):
+            compile_source_with_file_context(source, {}, alias, False)
+
     def test_compile_failure_reported_not_raised(self, tmp_path: Path) -> None:
         """Invalid YARA source yields a failed DirectCompilationResult, not an exception."""
         source = "this is not valid yara syntax {"

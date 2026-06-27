@@ -13,6 +13,7 @@ from yaraast.codegen.generator import CodeGenerator
 from yaraast.libyara.compatibility import ensure_libyara_compatible_ast
 from yaraast.libyara.compiler import LibyaraCompiler
 from yaraast.libyara.direct_models import DirectCompilationResult
+from yaraast.shared.path_safety import path_is_symlink
 
 
 def generate_source(ast: YaraFile) -> str:
@@ -64,7 +65,11 @@ def compile_source_with_file_context(
     if "\x00" in raw_path:
         msg = "source_path must not contain null bytes"
         raise ValueError(msg)
-    source_dir = Path(raw_path).resolve().parent
+    source_path_obj = Path(raw_path)
+    if path_is_symlink(source_path_obj):
+        msg = "source_path must not traverse a symlink"
+        raise ValueError(msg)
+    source_dir = source_path_obj.resolve().parent
     temp_path = None
     with tempfile.NamedTemporaryFile(
         mode="w",
