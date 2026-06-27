@@ -10,7 +10,11 @@ from lsprotocol.types import SymbolInformation
 
 from yaraast.lsp.document_types import YARA_FILE_SUFFIXES, uri_to_path
 from yaraast.lsp.runtime import DocumentContext, LspRuntime
-from yaraast.shared.path_safety import path_is_symlink, path_is_within_directory
+from yaraast.shared.path_safety import (
+    path_has_symlink_ancestor,
+    path_is_symlink,
+    path_is_within_directory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +116,7 @@ class WorkspaceSymbolsProvider:
             for path in self.workspace_root.rglob("*")
             if path.is_file()
             and not path_is_symlink(path)
+            and not path_has_symlink_ancestor(path)
             and path.suffix.lower() in YARA_FILE_SUFFIXES
             and path_is_within_directory(path, self.workspace_root)
         ]
@@ -137,7 +142,7 @@ class WorkspaceSymbolsProvider:
 
     def _get_symbols_from_file(self, file_path: Path) -> list[SymbolInformation]:
         """Extract all symbols from a YARA file."""
-        if path_is_symlink(file_path):
+        if path_is_symlink(file_path) or path_has_symlink_ancestor(file_path):
             return []
         # Check cache first
         cache_key = _cache_key_for_path(file_path)

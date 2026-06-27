@@ -121,7 +121,7 @@ def test_workspace_symbols_rejects_relative_workspace_root() -> None:
         provider.set_workspace_root("relative/ws")
 
 
-def test_workspace_symbols_keep_workspace_path_for_symlinked_ancestor(tmp_path: Path) -> None:
+def test_workspace_symbols_reject_symlinked_ancestor_workspace_path(tmp_path: Path) -> None:
     outside = tmp_path / "outside"
     outside.mkdir()
     link = tmp_path / "linked"
@@ -136,8 +136,7 @@ def test_workspace_symbols_keep_workspace_path_for_symlinked_ancestor(tmp_path: 
 
     symbols = provider.get_workspace_symbols("leak")
 
-    assert symbols
-    assert symbols[0].location.uri == yara_file.absolute().as_uri()
+    assert symbols == []
 
 
 def test_workspace_symbols_rejects_symlinked_workspace_root(tmp_path: Path) -> None:
@@ -211,6 +210,19 @@ def test_workspace_symbols_private_reader_skips_symlink_file(tmp_path: Path) -> 
     provider = WorkspaceSymbolsProvider()
 
     assert provider._get_symbols_from_file(alias) == []
+
+
+def test_workspace_symbols_private_reader_skips_symlinked_ancestor(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(outside, target_is_directory=True)
+    yara_file = link / "ancestor.yar"
+    yara_file.write_text("rule ancestor { condition: true }\n", encoding="utf-8")
+
+    provider = WorkspaceSymbolsProvider()
+
+    assert provider._get_symbols_from_file(yara_file) == []
 
 
 def test_workspace_symbols_keeps_earlier_symbols_from_parse_error_file() -> None:
