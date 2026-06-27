@@ -23,6 +23,7 @@ from yaraast.performance.validation import (
     validate_positive_int_setting,
 )
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -133,6 +134,9 @@ class BatchProcessor:
         path = Path(raw_path)
         if path_exists_and_not_dir(path):
             msg = "temp_dir must be a directory"
+            raise ValueError(msg)
+        if path_is_symlink(path) or path_has_symlink_ancestor(path):
+            msg = "temp_dir must not traverse a symlink"
             raise ValueError(msg)
         return path
 

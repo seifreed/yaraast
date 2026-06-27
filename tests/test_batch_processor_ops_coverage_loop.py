@@ -326,6 +326,28 @@ def test_require_output_dir_path_rejects_symlink_ancestors(tmp_path: Path) -> No
         require_output_dir_path(str(link / "child"))
 
 
+def test_batch_processor_rejects_symlink_temp_dir(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="temp_dir must not traverse a symlink"):
+        BatchProcessor(temp_dir=link)
+
+
+def test_batch_processor_rejects_symlink_ancestor_temp_dir(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(outside, target_is_directory=True)
+    nested = link / "nested"
+    nested.mkdir()
+
+    with pytest.raises(ValueError, match="temp_dir must not traverse a symlink"):
+        BatchProcessor(temp_dir=nested)
+
+
 # ---------------------------------------------------------------------------
 # Line 240 - process_files_single COMPLEXITY with a successfully-parsed file
 # ---------------------------------------------------------------------------
