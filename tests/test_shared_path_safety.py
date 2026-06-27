@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from yaraast.shared.path_safety import path_has_symlink_ancestor
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 
 def test_path_has_symlink_ancestor_ignores_darwin_temp_alias(tmp_path: Path) -> None:
@@ -40,3 +40,16 @@ def test_path_has_symlink_ancestor_fails_closed_on_oserror(
     monkeypatch.setattr(Path, "is_symlink", fake_is_symlink)
 
     assert path_has_symlink_ancestor(nested) is True
+
+
+def test_path_is_symlink_fails_closed_on_oserror(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "file.yar"
+
+    def fake_is_symlink(self: Path) -> bool:
+        raise OSError("cannot inspect path")
+
+    monkeypatch.setattr(Path, "is_symlink", fake_is_symlink)
+
+    assert path_is_symlink(path) is True

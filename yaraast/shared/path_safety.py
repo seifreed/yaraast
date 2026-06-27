@@ -21,7 +21,7 @@ def path_is_symlink(path: Path) -> bool:
     try:
         return path.is_symlink()
     except OSError:
-        return False
+        return True
 
 
 def path_has_symlink_ancestor(path: Path) -> bool:
