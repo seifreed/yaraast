@@ -196,7 +196,7 @@ def test_workspace_iter_resolved_files_deduplication(tmp_path: Path) -> None:
     Validation: get_all_rules() calls _iter_resolved_files() and must return
     each rule exactly once, even when included by multiple entry points.
     """
-    shared = _write(
+    _write(
         tmp_path / "shared.yar",
         """
 rule SharedRule {
@@ -209,28 +209,28 @@ rule SharedRule {
     )
     entry_a = _write(
         tmp_path / "entry_a.yar",
-        f"""
-include "{shared}"
+        """
+include "shared.yar"
 
-rule EntryARule {{
+rule EntryARule {
     strings:
         $a = "alpha"
     condition:
         $a
-}}
+}
 """,
     )
     entry_b = _write(
         tmp_path / "entry_b.yar",
-        f"""
-include "{shared}"
+        """
+include "shared.yar"
 
-rule EntryBRule {{
+rule EntryBRule {
     strings:
         $b = "beta"
     condition:
         $b
-}}
+}
 """,
     )
 
@@ -255,7 +255,7 @@ def test_workspace_find_rule_finds_shared_rule_once(tmp_path: Path) -> None:
     during the find_rule traversal; the guard must short-circuit correctly
     and find_rule must still return the matching rule from the shared file.
     """
-    shared = _write(
+    _write(
         tmp_path / "shared.yar",
         """
 rule TargetRule {
@@ -268,14 +268,14 @@ rule TargetRule {
     )
     entry_a = _write(
         tmp_path / "a.yar",
-        f"""
-include "{shared}"
+        """
+include "shared.yar"
 """,
     )
     entry_b = _write(
         tmp_path / "b.yar",
-        f"""
-include "{shared}"
+        """
+include "shared.yar"
 """,
     )
 

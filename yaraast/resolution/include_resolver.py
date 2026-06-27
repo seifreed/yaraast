@@ -287,6 +287,9 @@ class IncludeResolver:
         if not raw_path.strip():
             msg = "file_path must not be empty"
             raise ValueError(msg)
+        if "\x00" in raw_path:
+            msg = "file_path must not contain null bytes"
+            raise ValueError(msg)
         return raw_path
 
     def _includes_unchanged(self, resolved: ResolvedFile) -> bool:

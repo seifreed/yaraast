@@ -318,9 +318,8 @@ class TestFormatSearchedDirectories:
             with pytest.raises(FileNotFoundError) as exc_info:
                 resolver.resolve_file(str(tmpdir / "main.yar"))
 
-            # The directory path should appear exactly once in the error message
             error_msg = str(exc_info.value)
-            assert error_msg.count(str(tmpdir)) == 1
+            assert error_msg.count(f"Searched in: {tmpdir}") == 1
 
 
 # ---------------------------------------------------------------------------
@@ -371,6 +370,11 @@ class TestRequireFilePathValidation:
         resolver = IncludeResolver()
         with pytest.raises(ValueError, match="file_path must not be empty"):
             resolver.resolve_file("   ")
+
+    def test_null_byte_string_raises_value_error(self) -> None:
+        resolver = IncludeResolver()
+        with pytest.raises(ValueError, match="file_path must not contain null bytes"):
+            resolver.resolve_file("\x00broken")
 
 
 # ---------------------------------------------------------------------------
@@ -541,7 +545,7 @@ class TestIncludesUnchanged:
             # Corrupt the lib ResolvedFile as stored inside main3's cache entry.
             # Setting .includes=[] while ast.includes still has one entry makes
             # _all_declared_includes_resolved(lib_in_main) return False.
-            main_key = str((tmpdir / "main3.yar").resolve())
+            main_key = str((tmpdir / "main3.yar").absolute())
             lib_in_main = resolver.cache[main_key].includes[0]
             lib_in_main.includes = []
 
@@ -657,7 +661,7 @@ class TestGetIncludeTree:
             tree = resolver.get_include_tree(str(yar))
 
             assert "path" in tree
-            assert str(yar.resolve()) in tree["path"]
+            assert Path(tree["path"]).resolve() == yar.resolve()
             assert tree["includes"] == []
 
     def test_nested_includes_produce_nested_tree(self) -> None:
