@@ -9,6 +9,7 @@ import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.cli import validate_services as vs
+from yaraast.errors import ValidationError
 from yaraast.parser import Parser
 from yaraast.yarax.ast_nodes import WithStatement
 from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
@@ -63,6 +64,26 @@ def test_read_test_data_rejects_empty_pathlike_path() -> None:
 def test_read_test_data_rejects_null_byte_path() -> None:
     with pytest.raises(ValueError, match="test data path cannot contain null bytes"):
         vs.read_test_data("\x00broken")
+
+
+def test_read_test_data_rejects_symlink_paths(tmp_path: Path) -> None:
+    target = tmp_path / "target.bin"
+    target.write_bytes(b"abc")
+    link = tmp_path / "link.bin"
+    link.symlink_to(target)
+
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    real = outside / "real.bin"
+    real.write_bytes(b"xyz")
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ValidationError, match="test data path must not traverse a symlink"):
+        vs.read_test_data(link)
+
+    with pytest.raises(ValidationError, match="test data path must not traverse a symlink"):
+        vs.read_test_data(link_dir / "real.bin")
 
 
 def test_yarax_check_varies_with_strict_flag() -> None:

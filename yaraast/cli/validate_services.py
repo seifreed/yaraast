@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from os import PathLike, fspath
-from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import YaraFile
-from yaraast.cli.utils import parse_yara_file
+from yaraast.cli.utils import _require_existing_file_path, parse_yara_file
 from yaraast.errors import ValidationError
 from yaraast.libyara.equivalence import EquivalenceTester
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 
 def validate_rule_file(rule_file: str) -> tuple[YaraFile, int, int, int]:
@@ -41,7 +41,11 @@ def read_test_data(test_data_path: str | PathLike[str] | None) -> bytes | None:
         raise ValueError(msg)
 
     try:
-        with Path(raw_path).open("rb") as f:
+        test_data_path = _require_existing_file_path(raw_path)
+        if path_is_symlink(test_data_path) or path_has_symlink_ancestor(test_data_path):
+            msg = "test data path must not traverse a symlink"
+            raise ValueError(msg)
+        with test_data_path.open("rb") as f:
             return f.read()
     except Exception as exc:
         msg = f"Error reading test data: {exc}"
