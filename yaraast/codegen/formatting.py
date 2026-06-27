@@ -234,11 +234,6 @@ class FormattingConfig:
 
         return config
 
-    @classmethod
-    def compact(cls) -> FormattingConfig:
-        """Create compact formatting config."""
-        return PredefinedStyles.compact()
-
 
 # Predefined styles
 class PredefinedStyles:

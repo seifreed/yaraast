@@ -33,7 +33,7 @@ rule test_rule {
     parser = Parser()
     ast = parser.parse(yara_code)
 
-    config = FormattingConfig.compact()
+    config = PredefinedStyles.compact()
     generator = CodeGenerator(options=GeneratorOptions(advanced=config))
     output = generator.generate(ast)
 

@@ -282,7 +282,7 @@ class TestPredefinedStylesCompact:
 
     def test_compact_via_class_method(self) -> None:
         """FormattingConfig.compact should call PredefinedStyles.compact."""
-        config = FormattingConfig.compact()
+        config = PredefinedStyles.compact()
 
         assert config.indent_size == 2
         assert config.brace_style == BraceStyle.SAME_LINE
