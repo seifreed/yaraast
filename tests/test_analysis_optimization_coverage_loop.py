@@ -53,11 +53,6 @@ from yaraast.yarax.ast_nodes import DictComprehension
 def _make_analyzer() -> OptimizationAnalyzer:
     """Return a freshly initialised analyzer with an empty rule context."""
     analyzer = OptimizationAnalyzer()
-    analyzer._string_refs = {}
-    analyzer._local_scopes = []
-    analyzer._current_rule = None
-    analyzer._condition_depth = 0
-    analyzer._max_condition_depth = 0
     return analyzer
 
 

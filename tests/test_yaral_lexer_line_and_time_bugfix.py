@@ -13,6 +13,9 @@ Two latent bugs are covered:
 
 from __future__ import annotations
 
+import pytest
+
+from yaraast.lexer.lexer_errors import LexerError
 from yaraast.yaral.lexer import YaraLLexer, YaraLToken
 from yaraast.yaral.tokens import YaraLTokenType
 
@@ -52,3 +55,8 @@ def test_time_literal_followed_by_keyword() -> None:
     assert tokens[0].value == "30s"
     assert tokens[0].yaral_type == YaraLTokenType.TIME_LITERAL
     assert tokens[1].value == "and"
+
+
+def test_semicolon_is_rejected_by_yaral_lexer() -> None:
+    with pytest.raises(LexerError, match="Unexpected character: ;"):
+        YaraLLexer("rule x { condition: true; }").tokenize()

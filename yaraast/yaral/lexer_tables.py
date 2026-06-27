@@ -81,7 +81,6 @@ SINGLE_CHAR_TOKENS = {
     "[": BaseTokenType.LBRACKET,
     "]": BaseTokenType.RBRACKET,
     ":": BaseTokenType.COLON,
-    ";": BaseTokenType.SEMICOLON,
     ",": BaseTokenType.COMMA,
     ".": BaseTokenType.DOT,
     "=": BaseTokenType.EQ,
