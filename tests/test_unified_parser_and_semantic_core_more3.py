@@ -37,6 +37,19 @@ def test_unified_parser_parse_file_rejects_empty_path(file_path: str) -> None:
         UnifiedParser.parse_file(file_path)
 
 
+@pytest.mark.parametrize("file_path", ["\x00broken", Path("\x00broken")])
+@pytest.mark.parametrize(
+    "parser_call",
+    [UnifiedParser.parse_file, UnifiedParser.detect_file_dialect],
+)
+def test_unified_parser_file_apis_reject_null_byte_path(
+    parser_call: Any,
+    file_path: str | Path,
+) -> None:
+    with pytest.raises(ValueError, match="YARA file path must not contain null bytes"):
+        parser_call(file_path)
+
+
 def test_unified_parser_parse_file_rejects_directory_path(tmp_path: Path) -> None:
     with pytest.raises(IsADirectoryError, match="YARA file path must not be a directory"):
         UnifiedParser.parse_file(tmp_path)
