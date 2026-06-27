@@ -19,6 +19,7 @@ from yaraast.shared.numeric_validation import (
     validate_positive_int_setting,
     validate_positive_number_setting,
 )
+from yaraast.shared.path_safety import path_is_symlink
 
 BATCH_OPERATION_MAP = {
     "parse": BatchOperation.PARSE,
@@ -166,6 +167,9 @@ def collect_file_paths(input_paths: tuple) -> list[Path]:
         path = Path(path_text)
         candidates: Iterable[Path]
         if _path_exists_and_is_file(path):
+            if path_is_symlink(path):
+                msg = "input path must not traverse a symlink"
+                raise ValueError(msg)
             candidates = [path]
         elif _path_exists_and_is_dir(path):
             candidates = iter_matching_files(path, recursive=True)

@@ -89,6 +89,16 @@ def test_collect_file_paths_rejects_null_byte_path() -> None:
         ps.collect_file_paths(("\x00broken",))
 
 
+def test_collect_file_paths_rejects_symlink_file_input(tmp_path: Path) -> None:
+    target = tmp_path / "real.yar"
+    target.write_text("rule r { condition: true }", encoding="utf-8")
+    link = tmp_path / "linked.yar"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="input path must not traverse a symlink"):
+        ps.collect_file_paths((str(link),))
+
+
 def test_performance_services_reject_inaccessible_paths(tmp_path: Path) -> None:
     inaccessible = Path("a" * 5000)
 
