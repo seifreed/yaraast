@@ -195,6 +195,17 @@ rule sample {
         assert provider.get_workspace_symbols("missing-symbol") == []
 
 
+def test_workspace_symbols_private_reader_skips_symlink_file(tmp_path: Path) -> None:
+    real = tmp_path / "real.yar"
+    real.write_text("rule real { condition: true }\n", encoding="utf-8")
+    alias = tmp_path / "alias.yar"
+    alias.symlink_to(real)
+
+    provider = WorkspaceSymbolsProvider()
+
+    assert provider._get_symbols_from_file(alias) == []
+
+
 def test_workspace_symbols_keeps_earlier_symbols_from_parse_error_file() -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)

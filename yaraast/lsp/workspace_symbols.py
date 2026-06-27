@@ -134,6 +134,8 @@ class WorkspaceSymbolsProvider:
 
     def _get_symbols_from_file(self, file_path: Path) -> list[SymbolInformation]:
         """Extract all symbols from a YARA file."""
+        if path_is_symlink(file_path):
+            return []
         # Check cache first
         cache_key = _cache_key_for_path(file_path)
         mtime = _path_mtime(file_path)
