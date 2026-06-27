@@ -26,6 +26,9 @@ def _require_path(value: object, context: str) -> Path:
         if not value.strip():
             msg = f"{context} must not be empty"
             raise ValidationError(msg)
+        if "\x00" in value:
+            msg = f"{context} must not contain null bytes"
+            raise ValidationError(msg)
         return Path(value)
     msg = f"{context} must be a path"
     raise ValidationError(msg)

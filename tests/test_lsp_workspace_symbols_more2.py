@@ -42,6 +42,13 @@ def test_workspace_symbols_rejects_empty_workspace_root(root_path: str) -> None:
         provider.set_workspace_root(root_path)
 
 
+def test_workspace_symbols_rejects_null_byte_workspace_root() -> None:
+    provider = WorkspaceSymbolsProvider()
+
+    with pytest.raises(ValueError, match="root_path must not contain null bytes"):
+        provider.set_workspace_root("\x00broken")
+
+
 @pytest.mark.parametrize("root_path", [None, False, 123, object(), b"."])
 def test_workspace_symbols_rejects_invalid_workspace_root_types(root_path: Any) -> None:
     provider = WorkspaceSymbolsProvider()

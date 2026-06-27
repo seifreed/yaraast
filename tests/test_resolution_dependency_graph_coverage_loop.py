@@ -77,6 +77,10 @@ class TestRequirePath:
         with pytest.raises(ValidationError, match="must be a path"):
             _require_path(42, "ctx")
 
+    def test_null_byte_string_raises(self) -> None:
+        with pytest.raises(ValidationError, match="must not contain null bytes"):
+            _require_path("\x00broken", "ctx")
+
     def test_valid_path_string(self, tmp_path: Path) -> None:
         result = _require_path(str(tmp_path), "ctx")
         assert result == tmp_path

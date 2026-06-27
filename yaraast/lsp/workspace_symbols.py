@@ -60,6 +60,9 @@ def _require_workspace_root(root_path: object) -> Path:
     if not raw_path.strip():
         msg = "root_path must not be empty"
         raise ValueError(msg)
+    if "\x00" in raw_path:
+        msg = "root_path must not contain null bytes"
+        raise ValueError(msg)
     if raw_path.lower().startswith("file:"):
         path = uri_to_path(raw_path)
         if path is None:
