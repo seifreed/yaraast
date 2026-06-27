@@ -294,6 +294,16 @@ def test_streaming_parser_parse_file_rejects_inaccessible_file_path() -> None:
         list(StreamingParser().parse_file("a" * 5000))
 
 
+def test_streaming_parser_parse_file_rejects_symlink_path(tmp_path: Path) -> None:
+    target = tmp_path / "target.yar"
+    target.write_text("rule sample { condition: true }", encoding="utf-8")
+    link = tmp_path / "link.yar"
+    link.symlink_to(target)
+
+    with pytest.raises(ValueError, match="file_path must not traverse a symlink"):
+        list(StreamingParser().parse_file(link))
+
+
 def test_streaming_parser_chunk_residual_callbacks_and_cancellation(tmp_path: Path) -> None:
     text = """
 rule a {
@@ -482,6 +492,16 @@ def test_streaming_parser_parse_directory_rejects_file_path(tmp_path: Path) -> N
 
     with pytest.raises(NotADirectoryError, match="dir_path must be a directory"):
         list(StreamingParser().parse_directory(rule_file))
+
+
+def test_streaming_parser_parse_directory_rejects_symlink_path(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="dir_path must not traverse a symlink"):
+        list(StreamingParser().parse_directory(link))
 
 
 def test_streaming_parser_parse_directory_rejects_inaccessible_directory_path() -> None:

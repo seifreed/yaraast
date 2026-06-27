@@ -30,6 +30,7 @@ from yaraast.performance.validation import (
     validate_positive_int_setting,
 )
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 
 if TYPE_CHECKING:
     import io
@@ -55,7 +56,11 @@ def _require_pathlike(value: object, name: str) -> Path:
     if "\x00" in raw_path:
         msg = f"{name} must not contain null bytes"
         raise ValueError(msg)
-    return Path(raw_path)
+    path = Path(raw_path)
+    if path_is_symlink(path) or path_has_symlink_ancestor(path):
+        msg = f"{name} must not traverse a symlink"
+        raise ValueError(msg)
+    return path
 
 
 def _path_access_error(path: Path) -> ValueError:
@@ -106,6 +111,9 @@ def _require_directory_path(value: object, name: str = "dir_path") -> Path:
     if _path_exists_and_not_dir(path):
         msg = f"{name} must be a directory"
         raise NotADirectoryError(msg)
+    if path_is_symlink(path) or path_has_symlink_ancestor(path):
+        msg = f"{name} must not traverse a symlink"
+        raise ValueError(msg)
     return path
 
 
