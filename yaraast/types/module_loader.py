@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from yaraast.shared.path_safety import path_has_symlink_ancestor
 from yaraast.types._registry_base import YaraType
 from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition
 from yaraast.types.module_definitions import load_builtin_modules
@@ -166,14 +167,14 @@ class ModuleLoader:
                 msg = f"Module specification path '{path_str}' must not contain null bytes"
                 raise ModuleSpecError(msg)
             path = Path(path_str)
-            if _path_is_symlink(path):
+            if _path_is_symlink(path) or path_has_symlink_ancestor(path):
                 msg = f"Module specification path '{path}' must not be a symlink"
                 raise ModuleSpecError(msg)
             if _path_is_file(path) and path.suffix == ".json":
                 self._load_module_file(path)
             elif _path_is_dir(path):
                 for json_file in path.glob("*.json"):
-                    if _path_is_symlink(json_file):
+                    if _path_is_symlink(json_file) or path_has_symlink_ancestor(json_file):
                         continue
                     self._load_module_file(json_file)
             else:

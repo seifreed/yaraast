@@ -131,6 +131,27 @@ def test_module_loader_rejects_symlinked_env_spec_paths(
         ModuleLoader()
 
 
+def test_module_loader_rejects_symlink_ancestor_env_spec_paths(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = tmp_path / "linked"
+    link.symlink_to(outside, target_is_directory=True)
+    spec_dir = link / "modules"
+    spec_dir.mkdir()
+    (spec_dir / "real.json").write_text(
+        json.dumps({"name": "real", "attributes": {}}),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setenv("YARAAST_MODULE_SPEC_PATH_EXCLUSIVE", str(spec_dir))
+
+    with pytest.raises(ModuleSpecError, match="must not be a symlink"):
+        ModuleLoader()
+
+
 def test_module_loader_skips_symlinked_json_files_in_spec_directories(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
