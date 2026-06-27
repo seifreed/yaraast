@@ -92,6 +92,9 @@ def _require_document_uri(uri: str) -> str:
     if not isinstance(uri, str):
         msg = "Document URI must be a string"
         raise TypeError(msg)
+    if "\x00" in uri:
+        msg = "Document URI must not contain null bytes"
+        raise ValueError(msg)
     return uri
 
 

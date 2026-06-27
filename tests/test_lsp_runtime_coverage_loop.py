@@ -161,6 +161,11 @@ def test_require_document_uri_raises_for_non_string() -> None:
         _require_document_uri(42)  # type: ignore[arg-type]
 
 
+def test_require_document_uri_rejects_null_byte_string() -> None:
+    with pytest.raises(ValueError, match="Document URI must not contain null bytes"):
+        _require_document_uri("file:///tmp/\x00broken")
+
+
 def test_require_document_uri_passes_string_through() -> None:
     uri = "file:///tmp/test.yar"
     assert _require_document_uri(uri) == uri
