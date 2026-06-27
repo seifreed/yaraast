@@ -2,7 +2,6 @@
 
 import json
 from pathlib import Path
-import tempfile
 
 import pytest
 import yaml
@@ -75,33 +74,24 @@ class TestJsonSerializer:
         assert "metadata" not in data
         assert "ast" in data
 
-    def test_serialize_to_file(self) -> None:
+    def test_serialize_to_file(self, tmp_path: Path) -> None:
         """Test serialization to file."""
         rule_text = "rule test { condition: true }"
 
         parser = Parser()
         ast = parser.parse(rule_text)
 
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            suffix=".json",
-            delete=False,
-            encoding="utf-8",
-        ) as f:
-            temp_path = f.name
+        temp_path = tmp_path / "output.json"
 
-        try:
-            serializer = JsonSerializer()
-            serializer.serialize(ast, temp_path)
+        serializer = JsonSerializer()
+        serializer.serialize(ast, temp_path)
 
-            # Verify file was created and contains valid JSON
-            with Path(temp_path).open(encoding="utf-8") as f:
-                data = json.load(f)
+        # Verify file was created and contains valid JSON
+        with Path(temp_path).open(encoding="utf-8") as f:
+            data = json.load(f)
 
-            assert data["ast"]["type"] == "YaraFile"
-            assert len(data["ast"]["rules"]) == 1
-        finally:
-            Path(temp_path).unlink()
+        assert data["ast"]["type"] == "YaraFile"
+        assert len(data["ast"]["rules"]) == 1
 
 
 class TestYamlSerializer:
