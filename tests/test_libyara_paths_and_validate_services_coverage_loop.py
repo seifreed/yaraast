@@ -73,6 +73,20 @@ def test_require_file_path_rejects_symlink_path(tmp_path: Path) -> None:
         require_file_path(link, "filepath")
 
 
+def test_require_file_path_rejects_symlink_ancestor_path(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link_dir = tmp_path / "linked"
+    link_dir.symlink_to(outside, target_is_directory=True)
+    nested = link_dir / "nested"
+    nested.mkdir()
+    target = nested / "target.yar"
+    target.write_text("rule simple { condition: true }", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="filepath must not traverse a symlink"):
+        require_file_path(target, "filepath")
+
+
 # ---------------------------------------------------------------------------
 # yaraast.libyara._paths — missing lines 41-42
 # ---------------------------------------------------------------------------
