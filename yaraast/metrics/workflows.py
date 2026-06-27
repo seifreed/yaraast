@@ -23,6 +23,19 @@ except ModuleNotFoundError as exc:
         raise
     DependencyGraphGenerator = None
 
+__all__ = [
+    "DependencyGraphGenerator",
+    "MetricsReportData",
+    "analyze_complexity",
+    "build_complexity_payload",
+    "build_report",
+    "determine_graph_output_path",
+    "determine_pattern_output_path",
+    "generate_dependency_graphs",
+    "generate_html_tree",
+    "generate_pattern_diagrams",
+]
+
 
 @dataclass
 class MetricsReportData:

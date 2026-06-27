@@ -7,6 +7,8 @@ bool, string, float values) and string definitions.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from yaraast.lsp.document_context import DocumentContext
@@ -60,7 +62,7 @@ def test_build_text_symbols_recovers_all_kinds() -> None:
         ("unquoted_word", None),
     ],
 )
-def test_parse_text_meta_value(raw: str, expected) -> None:
+def test_parse_text_meta_value(raw: str, expected: Any | None) -> None:
     assert _parse_text_meta_value(raw) == expected
 
 

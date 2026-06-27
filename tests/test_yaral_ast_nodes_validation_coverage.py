@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any, cast
+
 import pytest
 
 from yaraast.yaral import ast_nodes as nodes
@@ -22,14 +25,17 @@ from yaraast.yaral.parser import YaraLParser
         (lambda: nodes._validate_yaral_value(object(), "f"), "must be a YARA-L value"),
     ],
 )
-def test_yaral_validation_helpers_reject_bad_types(call, message: str) -> None:
+def test_yaral_validation_helpers_reject_bad_types(
+    call: Callable[[], object],
+    message: str,
+) -> None:
     with pytest.raises(TypeError, match=message):
         call()
 
 
 def test_meta_entry_rejects_non_scalar_value() -> None:
     with pytest.raises(TypeError, match="must be a string, integer, or boolean"):
-        nodes.MetaEntry(key="k", value=[1, 2]).validate_structure()
+        nodes.MetaEntry(key="k", value=cast(Any, [1, 2])).validate_structure()
 
 
 def test_rule_type_without_events_is_single_event() -> None:

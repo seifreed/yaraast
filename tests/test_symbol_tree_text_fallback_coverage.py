@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.lsp.symbols import SymbolsProvider
 
 UNPARSEABLE_RICH = (
@@ -24,9 +26,9 @@ def test_text_fallback_builds_sections_and_string_children() -> None:
     assert "broken" in names
 
     rule = next(s for s in symbols if s.name == "broken")
-    child_names = [c.name for c in (rule.children or [])]
+    child_names = [c.name for c in cast(list[Any], rule.children or [])]
     assert {"meta", "strings", "condition"} <= set(child_names)
 
-    strings_section = next(c for c in rule.children if c.name == "strings")
-    string_ids = {c.name for c in (strings_section.children or [])}
+    strings_section = next(c for c in cast(list[Any], rule.children or []) if c.name == "strings")
+    string_ids = {c.name for c in cast(list[Any], strings_section.children or [])}
     assert "$s1" in string_ids and "$s2" in string_ids

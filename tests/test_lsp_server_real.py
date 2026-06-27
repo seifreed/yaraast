@@ -31,7 +31,8 @@ def test_lsp_server_handlers_basic() -> None:
 
     ls = YaraLanguageServer("yaraast", "1.0")
     # pygls 2.0 uses ls.protocol, pygls 1.x uses ls.lsp
-    proto = getattr(ls, "protocol", None) or ls.lsp
+    proto = getattr(ls, "protocol", None) or getattr(ls, "lsp", None)
+    assert proto is not None
 
     params = lsp.InitializeParams(
         capabilities=lsp.ClientCapabilities(),

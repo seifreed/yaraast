@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from lsprotocol.types import Position
 
 from yaraast.lsp import selection_range_helpers as helpers
@@ -18,7 +20,7 @@ RULE_TEXT = (
 )
 
 
-def _chain_depth(selection) -> int:
+def _chain_depth(selection: Any) -> int:
     depth = 0
     node = selection
     while node is not None:

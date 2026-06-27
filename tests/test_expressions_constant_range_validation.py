@@ -8,6 +8,8 @@ identifier validation error path.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.expressions import (
@@ -25,7 +27,7 @@ def _lit(value: int) -> IntegerLiteral:
 
 
 def _binop(left: object, operator: str, right: object) -> BinaryExpression:
-    return BinaryExpression(left=left, operator=operator, right=right)
+    return BinaryExpression(left=cast(Any, left), operator=operator, right=cast(Any, right))
 
 
 @pytest.mark.parametrize("operator", ["+", "-", "*", "%", "&", "|", "^", "<<", ">>"])
@@ -51,7 +53,7 @@ def test_range_bound_folds_nested_paren_and_unary() -> None:
 )
 def test_range_low_bound_negative_is_rejected(low: object, message: str) -> None:
     with pytest.raises(ValueError, match=message):
-        RangeExpression(low=low, high=_lit(10)).validate_structure()
+        RangeExpression(low=cast(Any, low), high=_lit(10)).validate_structure()
 
 
 def test_range_low_exceeds_high_is_rejected() -> None:

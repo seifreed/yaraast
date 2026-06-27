@@ -7,6 +7,8 @@ arithmetic, null-check, n-of and field-reference branches in
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.yaral.parser import YaraLParser
@@ -51,7 +53,7 @@ def _parse_condition(condition: str) -> object:
     ],
 )
 def test_parse_yaral_condition_forms(condition: str) -> None:
-    parsed = _parse_condition(condition)
+    parsed = cast(Any, _parse_condition(condition))
     assert parsed.rules
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import json
 
 import pytest
@@ -59,7 +60,9 @@ def test_serialize_yarax_expression_conditions(condition: str) -> None:
         visitors._serialize_pragma_parameter_value,
     ],
 )
-def test_meta_value_serializers_reject_unsupported(serializer) -> None:
+def test_meta_value_serializers_reject_unsupported(
+    serializer: Callable[[object], object],
+) -> None:
     with pytest.raises(SerializationError):
         serializer(object())
 

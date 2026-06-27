@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -82,6 +82,7 @@ from yaraast.lexer.lexer_dispatch import (
     read_next_token,
 )
 from yaraast.lexer.lexer_errors import LexerError
+from yaraast.lexer.protocols import LexerLike
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.visitor.transformer_impl import ASTTransformer
 from yaraast.yaral.ast_nodes import (
@@ -948,7 +949,7 @@ class TestReadNextTokenLineContinuationPath:
         monkeypatch.delitem(tables.SINGLE_CHAR_TOKENS, "\\")
         lexer = _MinimalLexerLike("\\\n")
         assert lexer._is_line_continuation()
-        result = read_next_token(lexer)
+        result = read_next_token(cast(LexerLike, lexer))
         assert result is None
 
     def test_backslash_newline_advances_position_past_continuation(
@@ -959,7 +960,7 @@ class TestReadNextTokenLineContinuationPath:
 
         monkeypatch.delitem(tables.SINGLE_CHAR_TOKENS, "\\")
         lexer = _MinimalLexerLike("\\\n")
-        read_next_token(lexer)
+        read_next_token(cast(LexerLike, lexer))
         assert lexer.position == 2
 
     def test_backslash_with_trailing_spaces_then_newline_is_continuation(
@@ -971,7 +972,7 @@ class TestReadNextTokenLineContinuationPath:
         monkeypatch.delitem(tables.SINGLE_CHAR_TOKENS, "\\")
         lexer = _MinimalLexerLike("\\ \t\n")
         assert lexer._is_line_continuation()
-        result = read_next_token(lexer)
+        result = read_next_token(cast(LexerLike, lexer))
         assert result is None
 
     def test_read_next_token_returns_none_on_empty_input(self) -> None:

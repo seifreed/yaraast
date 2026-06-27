@@ -7,6 +7,8 @@ default methods plus the ``visit`` entry point's dispatch and validation.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.expressions import Identifier
@@ -23,17 +25,17 @@ class _Collector(ASTVisitor[str]):
 @pytest.mark.parametrize("method_name", _VISIT_METHODS)
 def test_default_visit_method_forwards_to_default(method_name: str) -> None:
     collector = _Collector()
-    assert getattr(collector, method_name)(object()) == "default"
+    assert getattr(collector, method_name)(cast(Any, object())) == "default"
 
 
 def test_base_default_visit_raises_not_implemented() -> None:
     with pytest.raises(NotImplementedError, match="does not implement visit"):
-        ASTVisitor().visit_rule(object())
+        ASTVisitor().visit_rule(cast(Any, object()))
 
 
 def test_visit_rejects_non_astnode() -> None:
     with pytest.raises(TypeError, match="must be an ASTNode"):
-        _Collector().visit(object())
+        _Collector().visit(cast(Any, object()))
 
 
 def test_visit_dispatches_through_accept() -> None:

@@ -47,7 +47,9 @@ def test_format_hex_token_unknown_falls_back_to_str() -> None:
         (3, 5, "[3-5]"),
     ],
 )
-def test_format_hex_jump_variants(min_jump, max_jump, expected) -> None:
+def test_format_hex_jump_variants(
+    min_jump: int | None, max_jump: int | None, expected: str
+) -> None:
     assert _format_hex_jump(HexJump(min_jump=min_jump, max_jump=max_jump)) == expected
 
 

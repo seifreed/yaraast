@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import Any, cast
+
 from lsprotocol.types import Position
 import pytest
 
@@ -31,7 +34,9 @@ def _ctx(text: str, line: int, character: int) -> str:
         ("rule r {", 5, 0, "general"),
     ],
 )
-def test_analyze_context_classifies_position(text, line, character, expected) -> None:
+def test_analyze_context_classifies_position(
+    text: str, line: int, character: int, expected: str
+) -> None:
     assert _ctx(text, line, character) == expected
 
 
@@ -45,13 +50,13 @@ def test_analyze_context_classifies_position(text, line, character, expected) ->
         ("pe.imports x", None),
     ],
 )
-def test_active_module_name(before_cursor: str, expected) -> None:
+def test_active_module_name(before_cursor: str, expected: str | None) -> None:
     assert _active_module_name(before_cursor) == expected
 
 
 def _completion_count(text: str, line: int, character: int) -> int:
     result = CompletionProvider().get_completions(text, Position(line=line, character=character))
-    items = getattr(result, "items", result)
+    items = cast(Sequence[Any], getattr(result, "items", result))
     return len(items)
 
 
