@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import YaraFile
-from yaraast.errors import YaraASTError
 from yaraast.performance.parallel_job_helpers import (
     complete_job,
     export_graph_files,
@@ -51,7 +50,7 @@ def analyze_complexity_parallel(
             analysis["quality_score"] = max(0, 100 - (error_rate * 100))
             complete_job(job, analysis)
             analyzer._stats["jobs_completed"] += 1
-        except (ValueError, YaraASTError) as exc:
+        except Exception as exc:
             fail_job(job, exc)
             analyzer._stats["jobs_failed"] += 1
     return jobs

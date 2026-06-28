@@ -22,7 +22,13 @@ if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
     from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
 
-_EXPECTED_BATCH_ERRORS = (OSError, UnicodeDecodeError, ValueError, YaraASTError)
+_EXPECTED_BATCH_ERRORS = (
+    OSError,
+    UnicodeDecodeError,
+    ValueError,
+    TypeError,
+    YaraASTError,
+)
 OUTPUT_DIR_TYPE_ERROR = "output_dir must be a directory path"
 
 
@@ -187,6 +193,13 @@ def _process_dependency_graph(
     result.summary[file_path.name] = analyze_dependencies(parsed)["stats"]
 
 
+def _ensure_output_directory(output_dir: Path | None, operation: BatchOperation) -> Path:
+    if output_dir is None:
+        msg = f"{operation.value} requires output_dir"
+        raise RuntimeError(msg)
+    return output_dir
+
+
 def _requires_output_dir(operation: BatchOperation) -> bool:
     from yaraast.performance.batch_processor import BatchOperation
 
@@ -195,6 +208,140 @@ def _requires_output_dir(operation: BatchOperation) -> bool:
         BatchOperation.HTML_TREE,
         BatchOperation.SERIALIZE,
     }
+
+
+def _ast_dependent_operations() -> set[BatchOperation]:
+    from yaraast.performance.batch_processor import BatchOperation
+
+    return {
+        BatchOperation.COMPLEXITY,
+        BatchOperation.DEPENDENCY_GRAPH,
+        BatchOperation.HTML_TREE,
+        BatchOperation.VALIDATE,
+        BatchOperation.SERIALIZE,
+    }
+
+
+def process_files_multi(
+    processor: BatchProcessor,
+    file_paths: list[Path],
+    operations: list[BatchOperation],
+    output_dir: str | PathLike[str] | None = None,
+) -> dict[BatchOperation, BatchResult]:
+    """Process multiple files and multiple operations in one pass.
+
+    This keeps parsing work shared across operations for the same file, which
+    avoids reparsing every file for each requested operation.
+    """
+    from yaraast.performance.batch_processor import BatchOperation, BatchResult
+
+    output_dir = require_output_dir_path(output_dir)
+    if output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    start_time = time.perf_counter()
+    results: dict[BatchOperation, BatchResult] = {
+        operation: BatchResult(operation=operation, input_count=len(file_paths))
+        for operation in operations
+    }
+
+    for file_index, file_path in enumerate(file_paths):
+        parsed: YaraFile | None = None
+        parse_error: Exception | None = None
+        parsed_once = False
+
+        def _ensure_parsed(path: Path, operation: BatchOperation) -> None:
+            nonlocal parsed, parse_error, parsed_once
+
+            if parsed_once:
+                return
+
+            start = time.perf_counter()
+            try:
+                parsed = _require_parsed_item(parse_item(path), path)
+            except _EXPECTED_BATCH_ERRORS as exc:
+                parse_error = exc
+            finally:
+                parsed_once = True
+                parse_elapsed = time.perf_counter() - start
+
+            # Parsing time is attributed once via the PARSE operation to keep the
+            # previous semantics where PARSE explicitly reports parsing cost.
+            parse_result = results.get(BatchOperation.PARSE)
+            if parse_result is not None:
+                parse_result.total_time += parse_elapsed
+
+            return
+
+        for operation in operations:
+            op_start = time.perf_counter()
+            result = results[operation]
+            output_directory = output_dir
+
+            if _requires_output_dir(operation) and output_dir is None:
+                result.failed_count += 1
+                result.errors.append(f"{operation.value} requires output_dir")
+            else:
+                if operation == BatchOperation.PARSE:
+                    _ensure_parsed(file_path, operation)
+                    if parsed is not None:
+                        result.successful_count += 1
+                    else:
+                        result.failed_count += 1
+                        result.errors.append(f"Error processing {file_path}: {parse_error}")
+                elif operation in _ast_dependent_operations():
+                    try:
+                        _ensure_parsed(file_path, operation)
+                        if parsed is None:
+                            result.failed_count += 1
+                            result.errors.append(f"Error processing {file_path}: {parse_error}")
+                        elif operation == BatchOperation.COMPLEXITY:
+                            _add_complexity_summaries(result.summary, parsed.rules)
+                            result.successful_count += 1
+                        elif operation == BatchOperation.SERIALIZE:
+                            output_directory = _ensure_output_directory(output_directory, operation)
+                            output_file = output_directory / f"{file_path.stem}.json"
+                            output_file.write_text(serialize_item(parsed), encoding="utf-8")
+                            result.output_files.append(str(output_file))
+                            result.successful_count += 1
+                        elif operation == BatchOperation.VALIDATE:
+                            result.summary[file_path.name] = {
+                                "valid": True,
+                                "rule_count": len(parsed.rules),
+                            }
+                            result.successful_count += 1
+                        elif operation == BatchOperation.DEPENDENCY_GRAPH:
+                            output_directory = _ensure_output_directory(output_directory, operation)
+                            _process_dependency_graph(file_path, parsed, output_directory, result)
+                            result.successful_count += 1
+                        elif operation == BatchOperation.HTML_TREE:
+                            output_directory = _ensure_output_directory(output_directory, operation)
+                            output_file = output_directory / f"{file_path.stem}.html"
+                            html_content = HtmlTreeGenerator().generate_html(parsed, None)
+                            output_file.write_text(html_content, encoding="utf-8")
+                            result.output_files.append(str(output_file))
+                            result.successful_count += 1
+                    except Exception as exc:
+                        result.failed_count += 1
+                        result.errors.append(f"Error processing {file_path}: {exc!s}")
+                else:
+                    result.errors.append(f"Unsupported batch operation: {operation.value}")
+                    result.failed_count += 1
+
+            if processor.progress_callback:
+                processor.progress_callback(
+                    f"Processing {operation.value}",
+                    file_index + 1,
+                    len(file_paths),
+                )
+
+            result.total_time += time.perf_counter() - op_start
+
+    elapsed_total = time.perf_counter() - start_time
+    for operation in operations:
+        if not results[operation].total_time:
+            results[operation].total_time = elapsed_total
+
+    return results
 
 
 def require_output_dir_path(output_dir: object) -> Path | None:
@@ -289,19 +436,31 @@ def process_large_file(
     output_path = require_output_dir_path(output_dir)
     if output_path is None:
         raise TypeError(OUTPUT_DIR_TYPE_ERROR)
+
     results: dict[BatchOperation, BatchResult] = {}
+    output_path.mkdir(parents=True, exist_ok=True)
+
     try:
-        output_path.mkdir(parents=True, exist_ok=True)
         content = _read_yara_text_file(file_path)
         parsed = _require_parsed_item(parse_item(content), file_path)
         input_count = len(parsed.rules) if split_rules else 1
-        for index, operation in enumerate(operations, 1):
-            result = BatchResult(operation=operation, input_count=input_count)
+    except _EXPECTED_BATCH_ERRORS as exc:
+        for operation in operations:
+            result = BatchResult(operation=operation, input_count=1)
+            result.failed_count = 1
+            result.errors.append(f"Error processing {file_path}: {exc!s}")
+            results[operation] = result
+        return results
+
+    for index, operation in enumerate(operations, 1):
+        op_start = time.perf_counter()
+        result = BatchResult(operation=operation, input_count=input_count)
+        try:
             if operation == BatchOperation.PARSE:
-                result.successful_count = len(parsed.rules) if split_rules else 1
+                result.successful_count = input_count
             elif operation == BatchOperation.COMPLEXITY:
                 _add_complexity_summaries(result.summary, parsed.rules)
-                result.successful_count = len(parsed.rules) if split_rules else 1
+                result.successful_count = input_count
             elif operation == BatchOperation.SERIALIZE:
                 _process_large_serialize(file_path, parsed, output_path, split_rules, result)
             elif operation == BatchOperation.HTML_TREE:
@@ -311,6 +470,11 @@ def process_large_file(
             elif operation == BatchOperation.DEPENDENCY_GRAPH:
                 _process_dependency_graph(file_path, parsed, output_path, result)
                 result.successful_count = 1
+        except _EXPECTED_BATCH_ERRORS as exc:
+            result.failed_count = input_count
+            result.errors.append(f"Error processing {file_path}: {exc!s}")
+        finally:
+            result.total_time = time.perf_counter() - op_start
             results[operation] = result
             if processor.progress_callback:
                 processor.progress_callback(
@@ -318,10 +482,5 @@ def process_large_file(
                     index,
                     len(operations),
                 )
-    except _EXPECTED_BATCH_ERRORS as exc:
-        for operation in operations:
-            result = BatchResult(operation=operation, input_count=1)
-            result.failed_count += 1
-            result.errors.append(f"Error processing {file_path}: {exc!s}")
-            results[operation] = result
+
     return results

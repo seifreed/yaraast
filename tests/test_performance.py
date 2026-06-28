@@ -16,6 +16,7 @@ from yaraast.performance import (
     MemoryOptimizer,
     ParallelAnalyzer,
     StreamingParser,
+    batch_processor_ops,
 )
 from yaraast.performance.parallel_models import JobStatus
 
@@ -310,6 +311,115 @@ class TestBatchProcessor:
 
             complexity_result = results[BatchOperation.COMPLEXITY]
             assert complexity_result.successful_count > 0
+
+    def test_process_files_reuses_parse_for_multiple_operations(
+        self,
+        sample_yara_files: list[Path],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Ensure multi-operation batch parsing is done once per file."""
+        parse_calls = 0
+        original_parse_item = batch_processor_ops.parse_item
+
+        def tracking_parse_item(item: object) -> object:
+            nonlocal parse_calls
+            parse_calls += 1
+            return original_parse_item(item)
+
+        monkeypatch.setattr(batch_processor_ops, "parse_item", tracking_parse_item, raising=True)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+
+            processor = BatchProcessor()
+            results = processor.process_files(
+                sample_yara_files,
+                [BatchOperation.PARSE, BatchOperation.COMPLEXITY, BatchOperation.VALIDATE],
+                output_dir,
+            )
+
+            assert parse_calls == len(sample_yara_files)
+            assert BatchOperation.PARSE in results
+            assert BatchOperation.COMPLEXITY in results
+            assert BatchOperation.VALIDATE in results
+
+    def test_process_files_continues_on_operation_error(
+        self,
+        sample_yara_files: list[Path],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Operations failing for one rule should not abort batch processing."""
+        original_add_complexity_summaries = batch_processor_ops._add_complexity_summaries
+
+        def failing_add_complexity_summaries(*args: object, **kwargs: object) -> None:
+            raise ValueError("forced complexity failure")
+
+        monkeypatch.setattr(
+            batch_processor_ops,
+            "_add_complexity_summaries",
+            failing_add_complexity_summaries,
+            raising=True,
+        )
+
+        processor = BatchProcessor()
+        results = processor.process_files(
+            sample_yara_files,
+            [BatchOperation.COMPLEXITY, BatchOperation.VALIDATE],
+            None,
+        )
+
+        complexity_result = results[BatchOperation.COMPLEXITY]
+        validate_result = results[BatchOperation.VALIDATE]
+
+        assert complexity_result.failed_count == len(sample_yara_files)
+        assert complexity_result.successful_count == 0
+        assert len(complexity_result.errors) == len(sample_yara_files)
+        assert validate_result.successful_count == len(sample_yara_files)
+        assert validate_result.failed_count == 0
+
+        monkeypatch.setattr(
+            batch_processor_ops,
+            "_add_complexity_summaries",
+            original_add_complexity_summaries,
+            raising=True,
+        )
+
+    def test_process_large_file_continues_on_operation_type_error(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        file_path = tmp_path / "rule.yar"
+        file_path.write_text("rule one { condition: true }\n", encoding="utf-8")
+        output_dir = tmp_path / "out"
+
+        def failing_serialize_item(_item: object) -> str:
+            raise TypeError("serialize failure")
+
+        monkeypatch.setattr(
+            batch_processor_ops,
+            "serialize_item",
+            failing_serialize_item,
+            raising=True,
+        )
+
+        processor = BatchProcessor()
+        results = processor.process_large_file(
+            file_path,
+            [BatchOperation.PARSE, BatchOperation.SERIALIZE, BatchOperation.DEPENDENCY_GRAPH],
+            output_dir,
+        )
+
+        parse_result = results[BatchOperation.PARSE]
+        serialize_result = results[BatchOperation.SERIALIZE]
+        dependency_result = results[BatchOperation.DEPENDENCY_GRAPH]
+
+        assert parse_result.successful_count == 1
+        assert parse_result.failed_count == 0
+        assert serialize_result.failed_count == 1
+        assert any("serialize failure" in error for error in serialize_result.errors)
+        assert dependency_result.successful_count == 1
+        assert dependency_result.failed_count == 0
 
     def test_process_directory(self, sample_yara_files: list[Path]) -> None:
         """Test batch processing of directory."""

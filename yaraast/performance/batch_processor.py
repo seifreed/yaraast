@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, overload
 from yaraast.performance.batch_processor_ops import (
     analyze_complexity,
     parse_item,
+    process_files_multi,
     process_files_single,
     process_large_file as process_large_file_ops,
     serialize_item,
@@ -230,16 +231,7 @@ class BatchProcessor:
             return self._process_files_single(normalized_file_paths, operations, output_dir)
 
         normalized_operations = _validate_operation_list(operations)
-
-        # Process multiple operations
-        results = {}
-        for operation in normalized_operations:
-            results[operation] = self._process_files_single(
-                normalized_file_paths,
-                operation,
-                output_dir,
-            )
-        return results
+        return process_files_multi(self, normalized_file_paths, normalized_operations, output_dir)
 
     def _process_files_single(
         self,

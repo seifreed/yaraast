@@ -12,6 +12,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.cli import performance_services as ps
 from yaraast.parser import Parser
 from yaraast.performance.batch_processor import BatchOperation
+from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 from yaraast.performance.streaming_parser import StreamingParser
 
 
@@ -271,6 +272,37 @@ def test_run_parallel_analysis_and_build_output_data_more_paths(tmp_path: Path) 
     out = ps.build_stream_output_data([result_obj], [result_obj], [], 0.5, {"peak_memory_mb": 1})
     assert out["summary"]["success_rate"] == 100.0
     assert out["results"][0]["status"] == "success"
+
+
+def test_run_parallel_analysis_continues_on_complexity_exception(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    file_path = tmp_path / "rule.yar"
+    file_path.write_text("rule one { condition: true }\n", encoding="utf-8")
+    output_dir = tmp_path / "out"
+
+    def failing_analyze_file(
+        _self: object,
+        _yara_file: object,
+        _max_workers: int | None = None,
+    ) -> object:
+        raise TypeError("complexity failure")
+
+    monkeypatch.setattr(ParallelAnalyzer, "analyze_file", failing_analyze_file)
+
+    run_results, _ = ps.run_parallel_analysis(
+        [file_path],
+        max_workers=1,
+        chunk_size=1,
+        analysis_type="all",
+        output_dir=output_dir,
+        timeout=None,
+    )
+
+    assert len(run_results["successful_asts"]) == 1
+    assert run_results["complexity_results"] == []
+    assert run_results["analyzer_stats"]["jobs_failed"] == 1
 
 
 def test_run_parallel_analysis_rejects_invalid_timeout(tmp_path: Path) -> None:
