@@ -440,7 +440,38 @@ def test_process_large_file_raises_type_error_when_output_dir_is_none(tmp_path: 
 
 
 # ---------------------------------------------------------------------------
-# Line 300 - process_large_file COMPLEXITY split_rules=True success-count
+# Line 300 - process_large_file PARSE + split_rules=True uses streaming parsing
+# ---------------------------------------------------------------------------
+
+
+def test_process_large_file_parse_split_counts_each_rule_with_streaming(tmp_path: Path) -> None:
+    """process_large_file with PARSE and split_rules=True should count rule count only.
+
+    The fast path avoids constructing a full-file AST by parsing each rule
+    incrementally. For a two-rule input, successful_count should match the number
+    of parsed rules and failed_count should remain 0.
+    """
+    file_path = _write_yara(tmp_path / "parse_split.yar", _TWO_RULE_SRC)
+    out_dir = tmp_path / "parse_split_out"
+    processor = BatchProcessor()
+
+    results = process_large_file(
+        processor,
+        file_path,
+        operations=[BatchOperation.PARSE],
+        output_dir=out_dir,
+        split_rules=True,
+    )
+
+    result = results[BatchOperation.PARSE]
+    assert result.input_count == 2
+    assert result.successful_count == 2
+    assert result.failed_count == 0
+    assert result.errors == []
+
+
+# ---------------------------------------------------------------------------
+# Line 304 - process_large_file COMPLEXITY split_rules=True success-count
 # ---------------------------------------------------------------------------
 
 

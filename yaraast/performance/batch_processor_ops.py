@@ -194,6 +194,17 @@ def _process_dependency_graph(
     result.summary[file_path.name] = analyze_dependencies(parsed)["stats"]
 
 
+def _count_streaming_parse_rules(file_path: Path) -> int:
+    """Count parseable rules in a YARA file using streaming parsing."""
+    from yaraast.performance.streaming_parser import StreamingParser
+
+    parser = StreamingParser()
+    rule_count = 0
+    for _ in parser.parse_file(file_path):
+        rule_count += 1
+    return rule_count
+
+
 def _ensure_output_directory(output_dir: Path | None, operation: BatchOperation) -> Path:
     if output_dir is None:
         msg = f"{operation.value} requires output_dir"
@@ -470,6 +481,24 @@ def process_large_file(
 
     results: dict[BatchOperation, BatchResult] = {}
     output_path.mkdir(parents=True, exist_ok=True)
+
+    if split_rules and len(operations) == 1 and operations[0] == BatchOperation.PARSE:
+        op_start = time.perf_counter()
+        result = BatchResult(operation=BatchOperation.PARSE, input_count=0)
+        try:
+            parsed_rule_count = _count_streaming_parse_rules(file_path)
+            result.input_count = parsed_rule_count
+            result.successful_count = parsed_rule_count
+        except _EXPECTED_BATCH_ERRORS as exc:
+            result.input_count = 1
+            result.failed_count = 1
+            result.errors.append(f"Error processing {file_path}: {exc!s}")
+        finally:
+            result.total_time = time.perf_counter() - op_start
+            if processor.progress_callback:
+                processor.progress_callback("Processing parse", 1, 1)
+        results[BatchOperation.PARSE] = result
+        return results
 
     try:
         content = _read_yara_text_file(file_path)
