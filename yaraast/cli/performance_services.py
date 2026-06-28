@@ -57,6 +57,7 @@ def run_batch_processing(
     processor: BatchProcessor,
     pattern: FilePatterns,
     recursive: bool,
+    split_rules: bool = False,
 ) -> tuple[dict, float]:
     start_time = time.time()
     if _path_exists_and_is_file(input_path):
@@ -64,6 +65,7 @@ def run_batch_processing(
             input_path,
             batch_operations,
             output_dir,
+            split_rules,
         )
     else:
         results = processor.process_directory(

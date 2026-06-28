@@ -76,6 +76,11 @@ def performance() -> None:
     default=None,
     help="File pattern to match; defaults to *.yar and *.yara",
 )
+@click.option(
+    "--split-rules",
+    is_flag=True,
+    help="Parse large files as individual rules",
+)
 @click.option("--progress", is_flag=True, help="Show progress information")
 def batch(
     input_path: str,
@@ -86,6 +91,7 @@ def batch(
     operations: tuple[str, ...],
     recursive: bool,
     pattern: str | None,
+    split_rules: bool,
     progress: bool,
 ) -> None:
     """Process large collections of YARA files in batches."""
@@ -129,6 +135,7 @@ def batch(
             processor,
             pattern,
             recursive,
+            split_rules,
         )
 
         if progress:

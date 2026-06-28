@@ -166,6 +166,44 @@ def test_performance_batch_file_validate_outputs_result(tmp_path: Path) -> None:
     assert validation_result["summary"] == {"rule_count": 1, "valid": True}
 
 
+def test_performance_batch_file_with_split_rules_counts_rules(tmp_path: Path) -> None:
+    file_path = _write(
+        tmp_path,
+        "rules.yar",
+        """
+        rule first {
+            condition:
+                true
+        }
+
+        rule second {
+            condition:
+                true
+        }
+        """,
+    )
+    out_dir = tmp_path / "batch_out"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        performance,
+        [
+            "batch",
+            file_path,
+            "--output-dir",
+            str(out_dir),
+            "--operations",
+            "parse",
+            "--split-rules",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads((out_dir / "batch_results.json").read_text(encoding="utf-8"))
+    assert payload["parse"]["input_count"] == 2
+    assert payload["parse"]["successful_count"] == 2
+
+
 def test_performance_batch_file_dependency_graph_outputs_result(tmp_path: Path) -> None:
     file_path = _write(
         tmp_path,

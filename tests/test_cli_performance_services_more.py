@@ -11,7 +11,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.cli import performance_services as ps
 from yaraast.parser import Parser
-from yaraast.performance.batch_processor import BatchOperation
+from yaraast.performance.batch_processor import BatchOperation, BatchProcessor
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 from yaraast.performance.streaming_parser import StreamingParser
 
@@ -130,6 +130,42 @@ def test_performance_services_reject_inaccessible_paths(tmp_path: Path) -> None:
             None,
             False,
         )
+
+
+def test_run_batch_processing_forwards_split_rules_flag(tmp_path: Path) -> None:
+    file_path = tmp_path / "single.yar"
+    file_path.write_text("rule r { condition: true }\n", encoding="utf-8")
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+
+    called: dict[str, bool] = {}
+
+    def fake_process_large_file(
+        self: BatchProcessor,
+        path: Path,
+        operations: list[BatchOperation],
+        output_dir: Path,
+        split_rules: bool = False,
+    ) -> dict[BatchOperation, object]:
+        called["split_rules"] = split_rules
+        return {}
+
+    processor = BatchProcessor()
+
+    from unittest.mock import patch
+
+    with patch.object(BatchProcessor, "process_large_file", fake_process_large_file):
+        results, _elapsed = ps.run_batch_processing(
+            file_path,
+            out_dir,
+            [BatchOperation.PARSE],
+            processor,
+            None,
+            False,
+            True,
+        )
+        assert results == {}
+        assert called.get("split_rules") is True
 
 
 def test_extract_successful_asts_and_file_name_mapping_paths(tmp_path: Path) -> None:
