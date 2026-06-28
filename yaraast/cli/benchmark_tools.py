@@ -9,12 +9,15 @@ import statistics
 import time
 from typing import Any
 
-from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.base import ASTNode
 from yaraast.cli.utils import _path_exists_and_is_dir
 from yaraast.parser.source import parse_yara_source
+from yaraast.performance import StreamingParser
 from yaraast.shared.numeric_validation import validate_positive_int_setting
 from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
 from yaraast.yarax.generator import YaraXGenerator
+
+_BENCHMARK_STREAMING_PARSE_THRESHOLD_BYTES = 10 * 1024 * 1024
 
 
 def _require_benchmark_file_path(file_path: object) -> Path:
@@ -67,12 +70,62 @@ class BenchmarkResult:
 class ASTBenchmarker:
     """Performance benchmarking for AST operations."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        streaming_parse_threshold_bytes: int = _BENCHMARK_STREAMING_PARSE_THRESHOLD_BYTES,
+    ) -> None:
         self.results: list[BenchmarkResult] = []
+        validate_positive_int_setting(
+            streaming_parse_threshold_bytes,
+            "streaming_parse_threshold_bytes",
+        )
+        self._streaming_parse_threshold_bytes = streaming_parse_threshold_bytes
+
+    @staticmethod
+    def _should_use_streaming_parser(file_size: int, threshold: int) -> bool:
+        return file_size > threshold
 
     @staticmethod
     def _validate_iterations(iterations: int) -> None:
         validate_positive_int_setting(iterations, "iterations")
+
+    @staticmethod
+    def _collect_streaming_parse_counts(file_path: Path) -> tuple[int, int, int]:
+        """Parse a YARA file via streaming parser and collect lightweight statistics."""
+        parser = StreamingParser()
+        rules_count = 0
+        strings_count = 0
+        ast_nodes = 1  # YaraFile itself
+
+        for rule in parser.parse_file(file_path):
+            rules_count += 1
+            strings_count += len(rule.strings)
+            ast_nodes += ASTBenchmarker._count_ast_nodes(rule)
+
+        if rules_count == 0:
+            # Fallback to full parse to validate files that stream as empty.
+            content = _read_benchmark_yara_text(file_path)
+            ast = parse_yara_source(content)
+            rules_count = len(ast.rules)
+            strings_count = sum(len(rule.strings) for rule in ast.rules)
+            ast_nodes = ASTBenchmarker._count_ast_nodes(ast)
+
+        return rules_count, strings_count, ast_nodes
+
+    @staticmethod
+    def _run_streaming_parse_once(file_path: Path) -> None:
+        """Run a single streaming parse over a file."""
+        parser = StreamingParser()
+        rules_count = 0
+        for _ in parser.parse_file(file_path):
+            rules_count += 1
+
+        if rules_count > 0:
+            return
+
+        # Validate files that stream as empty.
+        content = _read_benchmark_yara_text(file_path)
+        parse_yara_source(content)
 
     def benchmark_parsing(
         self,
@@ -82,21 +135,37 @@ class ASTBenchmarker:
         """Benchmark parsing performance."""
         self._validate_iterations(iterations)
         try:
-            # Read file once
-            content = _read_benchmark_yara_text(file_path)
+            file_path_obj = _require_benchmark_file_path(file_path)
+            file_size = file_path_obj.stat().st_size
+            use_streaming_parser = self._should_use_streaming_parser(
+                file_size,
+                self._streaming_parse_threshold_bytes,
+            )
 
-            file_size = len(content.encode())
-            # Warm up
-            ast = parse_yara_source(content)
-            rules_count = len(ast.rules)
-            strings_count = sum(len(rule.strings) for rule in ast.rules)
-            ast_nodes = self._count_ast_nodes(ast)
+            content = ""
+
+            if use_streaming_parser:
+                # Warm-up and count via streaming parser for large files.
+                rules_count, strings_count, ast_nodes = self._collect_streaming_parse_counts(
+                    file_path_obj
+                )
+            else:
+                # Read file once for small files
+                content = _read_benchmark_yara_text(file_path_obj)
+                # Warm up
+                ast = parse_yara_source(content)
+                rules_count = len(ast.rules)
+                strings_count = sum(len(rule.strings) for rule in ast.rules)
+                ast_nodes = self._count_ast_nodes(ast)
 
             # Benchmark
             times = []
             for _ in range(iterations):
                 start = time.perf_counter()
-                ast = parse_yara_source(content)
+                if use_streaming_parser:
+                    self._run_streaming_parse_once(file_path_obj)
+                else:
+                    parse_yara_source(content)
                 end = time.perf_counter()
                 times.append(end - start)
 
@@ -246,7 +315,8 @@ class ASTBenchmarker:
             times.append(end - start)
         return statistics.mean(times)
 
-    def _count_ast_nodes(self, ast: YaraFile) -> int:
+    @staticmethod
+    def _count_ast_nodes(ast: ASTNode) -> int:
         """Count total AST nodes."""
         count = 1  # YaraFile itself
 

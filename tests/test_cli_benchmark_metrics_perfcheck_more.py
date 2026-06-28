@@ -11,6 +11,7 @@ from click.testing import CliRunner
 import pytest
 
 from yaraast.ast.base import YaraFile
+import yaraast.cli.benchmark_tools as benchmark_tools
 from yaraast.cli.benchmark_tools import ASTBenchmarker
 import yaraast.cli.commands.performance_check as performance_check_module
 from yaraast.cli.commands.performance_check import performance_check
@@ -224,6 +225,58 @@ def test_ast_benchmarker_supports_yarax_roundtrip(tmp_path: Path) -> None:
     assert codegen.success is True
     assert roundtrip.success is True
     assert parsing.rules_count == 1
+
+
+def test_ast_benchmarker_streaming_parse_for_large_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    large_file = tmp_path / "large.yar"
+    large_file.write_text(
+        """
+        rule bench_a {
+            strings:
+                $a = "alpha"
+            condition:
+                $a
+        }
+
+        rule bench_b {
+            strings:
+                $b = "beta"
+            condition:
+                $b
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    def fail_parse(_content: str) -> None:
+        raise AssertionError("parse_yara_source should not be used for large file benchmark path")
+
+    monkeypatch.setattr(benchmark_tools, "parse_yara_source", fail_parse)
+
+    benchmarker = ASTBenchmarker(streaming_parse_threshold_bytes=1)
+    result = benchmarker.benchmark_parsing(large_file, iterations=1)
+
+    assert result.success is True
+    assert result.rules_count == 2
+    assert result.file_size == large_file.stat().st_size
+
+
+def test_ast_benchmarker_streaming_parse_reports_parse_errors(tmp_path: Path) -> None:
+    broken = tmp_path / "broken_large.yar"
+    broken.write_text(
+        'rule broken { strings: $a = "a" condition: true',
+        encoding="utf-8",
+    )
+
+    benchmarker = ASTBenchmarker(streaming_parse_threshold_bytes=1)
+    result = benchmarker.benchmark_parsing(broken, iterations=1)
+
+    assert result.success is False
+    assert result.error is not None
+    assert "Parser error at" in result.error or "streaming parser reported" in result.error
 
 
 def test_ast_benchmarker_rejects_invalid_iterations(tmp_path: Path) -> None:
