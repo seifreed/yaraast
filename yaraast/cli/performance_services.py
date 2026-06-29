@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from os import PathLike, fspath
 from pathlib import Path
 import time
@@ -13,6 +13,8 @@ from yaraast.performance.batch_processor import BatchOperation, BatchProcessor
 from yaraast.performance.memory_optimizer import MemoryOptimizer
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 from yaraast.performance.streaming_parser import StreamingParser
+from yaraast.performance.streaming_result_builders import build_error_parse_result
+from yaraast.performance.timeout_helpers import run_with_timeout
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 from yaraast.shared.numeric_validation import (
     validate_non_negative_int_setting,
@@ -58,8 +60,12 @@ def run_batch_processing(
     pattern: FilePatterns,
     recursive: bool,
     split_rules: bool = False,
+    file_timeout: float | None = None,
 ) -> tuple[dict, float]:
+    _validate_file_timeout(file_timeout)
     start_time = time.time()
+    if file_timeout is not None and hasattr(processor, "file_timeout"):
+        processor.file_timeout = file_timeout
     if _path_exists_and_is_file(input_path):
         results = processor.process_large_file(
             input_path,
@@ -101,12 +107,76 @@ def get_parse_iterator(
     split_rules: bool,
     pattern: FilePatterns,
     recursive: bool,
+    file_timeout: float | None = None,
 ):
+    _validate_file_timeout(file_timeout)
     if _path_exists_and_is_file(input_path):
-        if split_rules:
-            return parser.parse_rules_from_file(input_path)
-        return parser.parse_files([input_path])
-    return parser.parse_directory(input_path, pattern, recursive)
+        parse_file = (
+            parser.parse_rules_from_file(input_path)
+            if split_rules
+            else parser.parse_files([input_path])
+        )
+        if file_timeout is None:
+            return parse_file
+        return _iter_parse_results_with_timeout(
+            parser,
+            input_path,
+            parse_file,
+            file_timeout,
+        )
+    if file_timeout is None:
+        return parser.parse_directory(input_path, pattern, recursive)
+    return _iter_parse_directory_with_timeout(
+        parser,
+        input_path,
+        split_rules,
+        pattern,
+        recursive,
+        file_timeout,
+    )
+
+
+def _iter_parse_results_with_timeout(
+    parser: StreamingParser,
+    file_path: Path,
+    parse_iter: Iterator[object],
+    file_timeout: float | None,
+):
+    try:
+        return run_with_timeout(
+            f"stream parse for {file_path}",
+            file_timeout,
+            lambda: list(parse_iter),
+        )
+    except TimeoutError as exc:
+        parser._stats["parse_errors"] += 1
+        return [build_error_parse_result(file_path, exc)]
+
+
+def _iter_parse_directory_with_timeout(
+    parser: StreamingParser,
+    input_path: Path,
+    split_rules: bool,
+    pattern: FilePatterns,
+    recursive: bool,
+    file_timeout: float | None,
+):
+    files = iter_matching_files(input_path, pattern, recursive)
+    for file_path in files:
+        parse_iter = (
+            parser.parse_rules_from_file(file_path)
+            if split_rules
+            else parser.parse_files([file_path])
+        )
+        try:
+            yield from run_with_timeout(
+                f"stream parse for {file_path}",
+                file_timeout,
+                lambda parse_iter_=parse_iter: list(parse_iter_),
+            )
+        except TimeoutError as exc:
+            parser._stats["parse_errors"] += 1
+            yield build_error_parse_result(file_path, exc)
 
 
 def summarize_stream_results(results: list) -> dict[str, Any]:
@@ -245,11 +315,13 @@ def run_parallel_analysis(
     analysis_type: str,
     output_dir: Path,
     timeout: float | None = None,
+    file_timeout: float | None = None,
 ) -> tuple[dict[str, Any], float]:
     _validate_timeout(timeout)
+    _validate_file_timeout(file_timeout)
     start_time = time.time()
     analyzer = ParallelAnalyzer(max_workers=max_workers)
-    parse_jobs = analyzer.parse_files_parallel(file_paths, chunk_size)
+    parse_jobs = analyzer.parse_files_parallel(file_paths, chunk_size, file_timeout=file_timeout)
     _raise_if_analysis_timed_out(start_time, timeout, "parsing")
     successful_asts, file_names = extract_successful_asts(
         parse_jobs,
@@ -258,7 +330,12 @@ def run_parallel_analysis(
     )
 
     if analysis_type in ["complexity", "all"]:
-        complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts, max_workers)
+        complexity_jobs = analyzer.analyze_complexity_parallel(
+            successful_asts,
+            max_workers,
+            file_timeout=file_timeout,
+            suppress_internal_errors=True,
+        )
         complexity_results = [
             job.result for job in complexity_jobs if job.status.value == "completed"
         ]
@@ -271,6 +348,7 @@ def run_parallel_analysis(
             successful_asts,
             output_dir / "graphs",
             ["full", "rules"],
+            file_timeout=file_timeout,
         )
         dependency_graphs = [job for job in graph_jobs if job.status.value == "completed"]
         _raise_if_analysis_timed_out(start_time, timeout, "dependency graph generation")
@@ -292,6 +370,11 @@ def run_parallel_analysis(
 def _validate_timeout(timeout: float | None) -> None:
     if timeout is not None:
         validate_positive_number_setting(timeout, "timeout")
+
+
+def _validate_file_timeout(file_timeout: float | None) -> None:
+    if file_timeout is not None:
+        validate_positive_number_setting(file_timeout, "file_timeout")
 
 
 def _raise_if_analysis_timed_out(

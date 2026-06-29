@@ -1,0 +1,251 @@
+{
+  "run_label": "signature-sweep-20260629-advance-02",
+  "timestamp_utc": "2026-06-29T06:13:00Z",
+  "source_root": "/Users/seifreed/tools/malware/signatures/YARA",
+  "artifacts_root": "/tmp/yara_perf_bench/advance_20260629_02",
+  "files": [
+    "clamav/clamav.yar",
+    "hunting/HUNTING_BSS_logs.yar",
+    "hunting/HUNTING_office.yar",
+    "hunting/HUNTING_powershell.yar",
+    "hunting/HUNTING_ransomware.yar",
+    "hunting/HUNTING_special.yar",
+    "hunting/TURLA_kazuar.yar",
+    "iddqd.yar",
+    "kaspersky/apt_kl.yara",
+    "kaspersky/ics_kl.yara",
+    "yara-rules-full.yar"
+  ],
+  "operations": {
+    "bench_parse": {
+      "count": 11,
+      "successful": 9,
+      "failed": 2,
+      "avg_time_s": 4.092043347320416,
+      "avg_rules_per_second": 376.6387819990855,
+      "file_timeout_s": 120,
+      "failures": [
+        {
+          "file": "clamav/clamav.yar",
+          "error": "parse timed out after 120 seconds"
+        },
+        {
+          "file": "iddqd.yar",
+          "error": "Lexer error at 16:15: Invalid escape sequence: \\%"
+        }
+      ]
+    },
+    "bench_codegen": {
+      "count": 11,
+      "successful": 7,
+      "failed": 4,
+      "avg_time_s": 8.351138779560902,
+      "avg_rules_per_second": 42.953936604697006,
+      "file_timeout_s": 120,
+      "failures": [
+        {
+          "file": "clamav/clamav.yar",
+          "error": "codegen timed out after 120 seconds"
+        },
+        {
+          "file": "hunting/HUNTING_special.yar",
+          "error": "module imports are required for libyara output: pe"
+        },
+        {
+          "file": "iddqd.yar",
+          "error": "parse failure propagated from parse stage"
+        },
+        {
+          "file": "yara-rules-full.yar",
+          "error": "codegen timed out after 120 seconds"
+        }
+      ]
+    },
+    "bench_roundtrip": {
+      "count": 11,
+      "successful": 7,
+      "failed": 4,
+      "avg_time_s": 9.044769005849957,
+      "avg_rules_per_second": 39.65986146050576,
+      "file_timeout_s": 120,
+      "failures": [
+        {
+          "file": "clamav/clamav.yar",
+          "error": "roundtrip timed out after 120 seconds"
+        },
+        {
+          "file": "hunting/HUNTING_special.yar",
+          "error": "module imports are required for libyara output: pe"
+        },
+        {
+          "file": "iddqd.yar",
+          "error": "parse failure propagated from parse stage"
+        },
+        {
+          "file": "yara-rules-full.yar",
+          "error": "roundtrip timed out after 120 seconds"
+        }
+      ]
+    },
+    "stream_parse": {
+      "count": 11,
+      "successful": 9,
+      "failed": 2,
+      "success_rate": 81.81818181818181,
+      "failures": [
+        {
+          "file": "iddqd.yar",
+          "error": "Lexer error at 16:15: Invalid escape sequence: \\%"
+        },
+        {
+          "file": "clamav.yar",
+          "error": "stream parse for /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+        }
+      ]
+    },
+    "batch_parse": {
+      "count": 11,
+      "successful": 9,
+      "failed": 2,
+      "failures": [
+        {
+          "file": "clamav/clamav.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar: parsing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+        },
+        {
+          "file": "iddqd.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+        }
+      ]
+    },
+    "batch_complexity": {
+      "count": 11,
+      "successful": 7,
+      "failed": 4,
+      "failures": [
+        {
+          "file": "clamav/clamav.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar: parsing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+        },
+        {
+          "file": "iddqd.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+        },
+        {
+          "file": "kaspersky/apt_kl.yara",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/kaspersky/apt_kl.yara: base64 value must be a string"
+        },
+        {
+          "file": "yara-rules-full.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/yara-rules-full.yar: base64 value must be a string"
+        }
+      ]
+    },
+    "batch_dependency_graph": {
+      "count": 11,
+      "successful": 9,
+      "failed": 2,
+      "failures": [
+        {
+          "file": "clamav/clamav.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar: parsing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+        },
+        {
+          "file": "iddqd.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+        }
+      ]
+    },
+    "batch_html_tree": {
+      "count": 11,
+      "successful": 9,
+      "failed": 2,
+      "failures": [
+        {
+          "file": "clamav/clamav.yar",
+          "error": "No batch result for clamav/clamav.yar"
+        },
+        {
+          "file": "iddqd.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+        }
+      ]
+    },
+    "batch_serialize": {
+      "count": 11,
+      "successful": 7,
+      "failed": 4,
+      "failures": [
+        {
+          "file": "clamav/clamav.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar: parsing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+        },
+        {
+          "file": "iddqd.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+        },
+        {
+          "file": "kaspersky/apt_kl.yara",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/kaspersky/apt_kl.yara: Invalid string reference '$'"
+        },
+        {
+          "file": "yara-rules-full.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/yara-rules-full.yar: Invalid string reference '$'"
+        }
+      ]
+    },
+    "batch_validate": {
+      "count": 11,
+      "successful": 9,
+      "failed": 2,
+      "failures": [
+        {
+          "file": "clamav/clamav.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar: parsing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+        },
+        {
+          "file": "iddqd.yar",
+          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+        }
+      ]
+    },
+    "optimize_300": {
+      "batch_size": 10,
+      "memory_mb": 100,
+      "pooling": false,
+      "streaming": false,
+      "artifact": "/tmp/yara_perf_bench/advance_20260629_02/optimize_300_02.txt"
+    },
+    "optimize_180": {
+      "batch_size": 10,
+      "memory_mb": 100,
+      "pooling": false,
+      "streaming": false,
+      "artifact": "/tmp/yara_perf_bench/advance_20260629_02/optimize_180_02.txt"
+    }
+  },
+  "improvement_trials": {
+    "clamav_parse_180": {
+      "timeout_s": 180,
+      "ok": false,
+      "artifact": "/tmp/yara_perf_bench/advance_20260629_02/clamav_parse_180.txt",
+      "error": "parse timed out after 180 seconds"
+    },
+    "clamav_codegen_180": {
+      "timeout_s": 180,
+      "ok": false,
+      "artifact": "/tmp/yara_perf_bench/advance_20260629_02/clamav_codegen_180.txt",
+      "error": "codegen timed out after 180 seconds"
+    },
+    "clamav_split_rules_parse_120": {
+      "timeout_s": 120,
+      "ok": false,
+      "artifact": "/tmp/yara_perf_bench/advance_20260629_02/clamav_stream_split_120.txt",
+      "error": "stream parse for /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+    },
+    "perfcheck": {
+      "artifact": "/tmp/yara_perf_bench/advance_20260629_02/perfcheck2/timeout.log",
+      "error": "PERFCHECK_TIMEOUT clamav.yar\""
+    }
+  }
+}

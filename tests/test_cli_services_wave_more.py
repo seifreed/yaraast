@@ -127,6 +127,7 @@ def test_bench_services_operations_and_summary() -> None:
     assert bs._run_single_operation(bench, path, "parse", 2).success is True
     assert bs._run_single_operation(bench, path, "codegen", 2).success is False
     assert bs._run_single_operation(bench, path, "roundtrip", 2).success is True
+    assert bs._run_single_operation(bench, path, "parse", 2, file_timeout=0.1).success is True
 
     for invalid_operation in [None, 123]:
         with pytest.raises(TypeError, match="benchmark operation must be a string"):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
+import time
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -227,6 +228,36 @@ def test_ast_benchmarker_supports_yarax_roundtrip(tmp_path: Path) -> None:
     assert parsing.rules_count == 1
 
 
+def test_ast_benchmarker_respects_file_timeout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    timed_out = tmp_path / "timeout.yar"
+    timed_out.write_text(_yarax_rule(), encoding="utf-8")
+
+    parser = Parser()
+
+    def slow_parse(content: str) -> YaraFile:
+        time.sleep(0.05)
+        return parser.parse(content)
+
+    monkeypatch.setattr(benchmark_tools, "parse_yara_source", slow_parse)
+
+    benchmarker = ASTBenchmarker()
+    parsing = benchmarker.benchmark_parsing(timed_out, iterations=1, file_timeout=0.001)
+    codegen = benchmarker.benchmark_codegen(timed_out, iterations=1, file_timeout=0.001)
+    roundtrip = benchmarker.benchmark_roundtrip(timed_out, iterations=1, file_timeout=0.001)[0]
+
+    assert parsing.success is False
+    assert parsing.error is not None
+    assert "timed out after" in parsing.error
+    assert codegen.success is False
+    assert codegen.error is not None
+    assert "timed out after" in codegen.error
+    assert roundtrip.success is False
+    assert roundtrip.error is not None
+    assert "timed out after" in roundtrip.error
+
+
 def test_ast_benchmarker_streaming_parse_for_large_files(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -279,6 +310,37 @@ def test_ast_benchmarker_streaming_parse_reports_parse_errors(tmp_path: Path) ->
     assert "Parser error at" in result.error or "streaming parser reported" in result.error
 
 
+def test_ast_benchmarker_streaming_parse_rejects_partial_parse_errors(tmp_path: Path) -> None:
+    mixed = tmp_path / "mixed_large.yar"
+    mixed.write_text(
+        dedent(
+            """
+            rule valid {
+                strings:
+                    $a = "a"
+                condition:
+                    $a
+            }
+
+            rule broken {
+                strings:
+                    $b = "b"
+                condition:
+                    missing(
+            }
+            """,
+        ).strip(),
+        encoding="utf-8",
+    )
+
+    benchmarker = ASTBenchmarker(streaming_parse_threshold_bytes=1)
+    result = benchmarker.benchmark_parsing(mixed, iterations=1)
+
+    assert result.success is False
+    assert result.error is not None
+    assert "Parser error at" in result.error
+
+
 def test_ast_benchmarker_rejects_invalid_iterations(tmp_path: Path) -> None:
     benchmarker = ASTBenchmarker()
     missing = tmp_path / "missing.yar"
@@ -306,6 +368,12 @@ def test_ast_benchmarker_rejects_invalid_iterations(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="iterations must be at least 1"):
         ASTBenchmarker._time_roundtrip("rule r { condition: true }", iterations=0)
+
+    with pytest.raises(TypeError, match="file_timeout must be a number"):
+        benchmarker.benchmark_parsing(missing, iterations=1, file_timeout=cast(Any, True))
+
+    with pytest.raises(ValueError, match="file_timeout must be greater than 0"):
+        benchmarker.benchmark_codegen(missing, iterations=1, file_timeout=0.0)
 
 
 def test_ast_benchmarker_reports_invalid_file_paths(tmp_path: Path) -> None:

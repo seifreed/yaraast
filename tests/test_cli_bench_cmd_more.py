@@ -8,6 +8,7 @@ import click
 from click.testing import CliRunner, Result
 import pytest
 
+from yaraast.cli.benchmark_tools import ASTBenchmarker, BenchmarkResult
 import yaraast.cli.commands.bench_cmd as bench_command
 from yaraast.cli.commands.bench_cmd import bench
 
@@ -92,6 +93,57 @@ def test_bench_command_rejects_zero_iterations(tmp_path: Path) -> None:
 
     assert result.exit_code == 2
     assert "Invalid value for '--iterations'" in result.output
+
+
+def test_bench_command_rejects_non_positive_file_timeout(tmp_path: Path) -> None:
+    runner = CliRunner()
+    file_a = tmp_path / "a.yar"
+    _write_rule(file_a, "a")
+
+    result = runner.invoke(bench, [str(file_a), "--iterations", "1", "--file-timeout", "0"])
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--file-timeout'" in result.output
+
+
+def test_bench_command_passes_file_timeout_to_operations(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = CliRunner()
+    file_a = tmp_path / "a.yar"
+    _write_rule(file_a, "a")
+    seen: dict[str, float | None] = {}
+
+    def fake_run_single_operation(
+        _benchmarker: ASTBenchmarker,
+        _file_path: Path,
+        op: str,
+        _iterations: int,
+        file_timeout: float | None,
+    ) -> BenchmarkResult:
+        seen[op] = file_timeout
+        result = BenchmarkResult(
+            operation=op,
+            file_size=0,
+            execution_time=0.001,
+            rules_count=1,
+            strings_count=0,
+            ast_nodes=2,
+            success=True,
+        )
+        _benchmarker.results.append(result)
+        return result
+
+    monkeypatch.setattr(bench_command, "_run_single_operation", fake_run_single_operation)
+
+    result = runner.invoke(
+        bench,
+        [str(file_a), "--iterations", "1", "--file-timeout", "0.5", "--operations", "parse"],
+    )
+
+    assert result.exit_code == 0
+    assert seen["parse"] == 0.5
 
 
 def test_bench_command_abort_preserves_original_cause(

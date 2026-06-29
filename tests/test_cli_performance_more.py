@@ -11,6 +11,7 @@ import stat
 import sys
 from textwrap import dedent
 import threading
+import time
 from typing import NoReturn
 
 import click
@@ -19,6 +20,7 @@ import pytest
 
 import yaraast.cli.commands.performance as performance_command
 from yaraast.cli.commands.performance import performance
+from yaraast.parser import Parser
 
 
 def _write(tmp_path: Path, name: str, content: str) -> str:
@@ -368,6 +370,58 @@ def test_performance_parallel_and_optimize(tmp_path: Path) -> None:
 
     assert optimize.exit_code == 0
     assert "Optimization Recommendations" in optimize.output
+
+
+def test_performance_batch_uses_thread_timeout_for_workers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    parser = Parser()
+
+    for index in range(4):
+        _write(
+            tmp_path,
+            f"rule_{index}.yar",
+            f"rule rule_{index} {{\n    condition: true\n}}",
+        )
+
+    out_dir = tmp_path / "batch_out"
+
+    def slow_parse(content: str) -> object:
+        time.sleep(0.05)
+        return parser.parse(content)
+
+    def alarm_timeout_unsupported(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("signal timeout should not be used in worker threads")
+
+    monkeypatch.setattr(
+        "yaraast.performance.batch_processor_ops.parse_yara_source",
+        slow_parse,
+    )
+    monkeypatch.setattr(
+        "yaraast.performance.timeout_helpers._run_with_alarm_timeout",
+        alarm_timeout_unsupported,
+    )
+
+    result = CliRunner().invoke(
+        performance,
+        [
+            "batch",
+            str(tmp_path),
+            "--output-dir",
+            str(out_dir),
+            "--operations",
+            "parse",
+            "--max-workers",
+            "2",
+            "--file-timeout",
+            "0.001",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads((out_dir / "batch_results.json").read_text(encoding="utf-8"))
+    assert payload["parse"]["failed_count"] == 4
+    assert "signal only works in main thread" not in result.output
 
 
 def test_performance_optimize_rejects_invalid_numeric_options() -> None:

@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from functools import partial
 from os import PathLike, fspath
 from pathlib import Path
 import time
-from typing import Any
+from typing import Any, cast
 import uuid
 
 from yaraast.ast.base import YaraFile
 from yaraast.errors import YaraASTError
 from yaraast.performance.parallel_models import Job, JobStatus, ParseErrorMarker
+from yaraast.performance.timeout_helpers import run_with_timeout
 from yaraast.performance.validation import (
     path_exists_and_is_dir,
     path_exists_and_not_dir,
@@ -141,27 +143,63 @@ def _read_yara_text_file(path: object) -> str:
 
 def analyze_file_path(path: object, analyzer: Any) -> dict[str, Any]:
     """Parse and analyze a file path using a provided analyzer instance."""
-    from yaraast.parser.source import parse_yara_source
-
     path_obj = _require_file_path(path)
     content = _read_yara_text_file(path_obj)
+    from importlib import import_module
+
+    parser_source = import_module("yaraast.parser.source")
+    parse_yara_source = cast(Callable[[str], YaraFile], parser_source.parse_yara_source)
+
     yara_file = parse_yara_source(content)
     analysis: dict[str, Any] = dict(analyzer.analyze_file(yara_file))
     analysis["file"] = str(path_obj)
     return analysis
 
 
-def export_graph_files(
-    asts: Sequence[YaraFile],
-    output_dir: str | PathLike[str],
-    graph_types: Sequence[str] | None = None,
-) -> list[Job]:
-    """Generate dependency graph export jobs for ASTs."""
+def _parse_yara_source_with_timeout(
+    file_path: object,
+    timeout: float | None,
+) -> YaraFile:
+    content = _read_yara_text_file(file_path)
+    from importlib import import_module
+
+    parser_source = import_module("yaraast.parser.source")
+    parse_yara_source = cast(Callable[[str], YaraFile], parser_source.parse_yara_source)
+
+    def _parse_file() -> YaraFile:
+        return parse_yara_source(content)
+
+    return run_with_timeout(f"parsing {file_path}", timeout, _parse_file)
+
+
+def _generate_dependency_graph_exports(
+    ast_item: YaraFile,
+    index: int,
+    graph_types: Sequence[str],
+    output_dir: Path,
+) -> list[str]:
     from yaraast.metrics.dependency_graph_utils import (
         build_dependency_graph,
         export_dependency_graph,
     )
 
+    graph = build_dependency_graph(ast_item)
+    rule_name = ast_item.rules[0].name if getattr(ast_item, "rules", None) else f"ast_{index}"
+    output_files: list[str] = []
+    for graph_type in graph_types:
+        output_path = output_dir / f"{rule_name}_{graph_type}.json"
+        export_dependency_graph(graph, output_path, format="json")
+        output_files.append(str(output_path))
+    return output_files
+
+
+def export_graph_files(
+    asts: Sequence[YaraFile],
+    output_dir: str | PathLike[str],
+    graph_types: Sequence[str] | None = None,
+    file_timeout: float | None = None,
+) -> list[Job]:
+    """Generate dependency graph export jobs for ASTs."""
     graph_types = validate_graph_types(graph_types)
     ast_items = validate_yara_file_sequence(asts)
     output_dir = require_output_dir_path(output_dir)
@@ -175,25 +213,33 @@ def export_graph_files(
             fail_job(job, "dependency graph input must be a YaraFile")
             continue
         try:
-            graph = build_dependency_graph(ast)
-            rule_name = ast.rules[0].name if getattr(ast, "rules", None) else f"ast_{index}"
-            output_files: list[str] = []
-            for graph_type in graph_types:
-                output_path = output_dir / f"{rule_name}_{graph_type}.json"
-                export_dependency_graph(graph, output_path, format="json")
-                output_files.append(str(output_path))
+            output_files = run_with_timeout(
+                f"dependency graph generation for ast index {index}",
+                file_timeout,
+                partial(
+                    _generate_dependency_graph_exports,
+                    ast,
+                    index,
+                    graph_types,
+                    output_dir,
+                ),
+            )
             complete_job(job, output_files)
         except (OSError, ValueError, YaraASTError) as e:
+            fail_job(job, e)
+        except TimeoutError as e:
             fail_job(job, e)
     return jobs
 
 
-def parse_file_chunks(file_paths: Sequence[str | Path], chunk_size: int = 10) -> list[Job]:
+def parse_file_chunks(
+    file_paths: Sequence[str | Path],
+    chunk_size: int = 10,
+    file_timeout: float | None = None,
+) -> list[Job]:
     """Parse file paths in chunks and return job objects."""
     normalized_file_paths = validate_file_path_sequence(file_paths)
     validate_positive_int_setting(chunk_size, "chunk_size")
-
-    from yaraast.parser.source import parse_yara_source
 
     chunks = [
         normalized_file_paths[i : i + chunk_size]
@@ -208,10 +254,9 @@ def parse_file_chunks(file_paths: Sequence[str | Path], chunk_size: int = 10) ->
         errors: list[str] = []
         for file_path in chunk:
             try:
-                content = _read_yara_text_file(file_path)
-                ast = parse_yara_source(content)
+                ast = _parse_yara_source_with_timeout(file_path, file_timeout)
                 results.append(ast)
-            except _EXPECTED_PARSE_ERRORS as e:
+            except (*_EXPECTED_PARSE_ERRORS, TimeoutError) as e:
                 results.append(ParseErrorMarker(str(file_path), str(e)))
                 errors.append(f"{file_path}: {e}")
         if errors:

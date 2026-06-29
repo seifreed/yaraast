@@ -44,6 +44,12 @@ console = Console()
     help="Number of iterations per test",
 )
 @click.option(
+    "--file-timeout",
+    type=click.FloatRange(min=0.0, min_open=True),
+    default=None,
+    help="Per-file operation timeout in seconds",
+)
+@click.option(
     "--output",
     type=click.Path(),
     help="Output benchmark results to JSON file",
@@ -53,6 +59,7 @@ def bench(
     files: tuple[str],
     operations: str,
     iterations: int,
+    file_timeout: float | None,
     output: str | None,
     compare: bool,
 ) -> None:
@@ -71,7 +78,13 @@ def bench(
             display_benchmark_file(file_path)
             file_results = {}
             for op in ops_to_run:
-                result = _run_single_operation(benchmarker, file_path, op, iterations)
+                result = _run_single_operation(
+                    benchmarker,
+                    file_path,
+                    op,
+                    iterations,
+                    file_timeout,
+                )
                 if result:
                     display_operation_result(op, result)
                     if result.success:

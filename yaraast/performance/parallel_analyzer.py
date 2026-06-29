@@ -170,6 +170,8 @@ class ParallelAnalyzer:
         self,
         asts: Sequence[YaraFile],
         max_workers: int | None = None,
+        file_timeout: float | None = None,
+        suppress_internal_errors: bool = False,
     ) -> list[Job]:
         """Analyze complexity of YARA files in parallel.
 
@@ -181,16 +183,29 @@ class ParallelAnalyzer:
             List of Job objects
 
         """
-        return job_analyze_complexity_parallel(self, asts, max_workers)
+        return job_analyze_complexity_parallel(
+            self,
+            asts,
+            max_workers,
+            file_timeout,
+            suppress_internal_errors=suppress_internal_errors,
+        )
 
     def generate_graphs_parallel(
         self,
         asts: Sequence[YaraFile],
         output_dir: str | PathLike[str],
         graph_types: Sequence[str] | None = None,
+        file_timeout: float | None = None,
     ) -> list[Job]:
         """Generate dependency graph exports for ASTs."""
-        return job_generate_graphs_parallel(self, asts, output_dir, graph_types)
+        return job_generate_graphs_parallel(
+            self,
+            asts,
+            output_dir,
+            graph_types,
+            file_timeout,
+        )
 
     def profile_performance(
         self,
@@ -213,6 +228,7 @@ class ParallelAnalyzer:
         self,
         file_paths: Sequence[str | Path],
         chunk_size: int = 10,
+        file_timeout: float | None = None,
     ) -> list[Job]:
         """Parse multiple files in parallel and return jobs.
 
@@ -224,7 +240,7 @@ class ParallelAnalyzer:
             List of Job objects
 
         """
-        return job_parse_files_parallel(self, file_paths, chunk_size)
+        return job_parse_files_parallel(self, file_paths, chunk_size, file_timeout)
 
     def process_batch(
         self,

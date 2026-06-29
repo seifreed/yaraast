@@ -18,14 +18,27 @@ def _determine_operations_to_run(operations: object) -> list[str]:
     return [operations]
 
 
-def _run_single_operation(benchmarker, file_path: Path, op: object, iterations: int):
+def _run_single_operation(
+    benchmarker,
+    file_path: Path,
+    op: object,
+    iterations: int,
+    file_timeout: float | None = None,
+):
     """Run a single benchmark operation."""
     op = _require_single_benchmark_operation(op)
+    return _run_single_operation_with_timeout(benchmarker, file_path, op, iterations, file_timeout)
+
+
+def _run_single_operation_with_timeout(
+    benchmarker, file_path: Path, op: str, iterations: int, file_timeout: float | None
+):
+    """Run a benchmark operation with an optional per-file timeout."""
     if op == "parse":
-        return benchmarker.benchmark_parsing(file_path, iterations)
+        return benchmarker.benchmark_parsing(file_path, iterations, file_timeout)
     if op == "codegen":
-        return benchmarker.benchmark_codegen(file_path, iterations)
-    results = benchmarker.benchmark_roundtrip(file_path, iterations)
+        return benchmarker.benchmark_codegen(file_path, iterations, file_timeout)
+    results = benchmarker.benchmark_roundtrip(file_path, iterations, file_timeout)
     return results[0] if results else None
 
 

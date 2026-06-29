@@ -81,6 +81,12 @@ def performance() -> None:
     is_flag=True,
     help="Parse large files as individual rules",
 )
+@click.option(
+    "--file-timeout",
+    type=click.FloatRange(min=0.0, min_open=True),
+    default=None,
+    help="Per-file operation timeout in seconds",
+)
 @click.option("--progress", is_flag=True, help="Show progress information")
 def batch(
     input_path: str,
@@ -92,6 +98,7 @@ def batch(
     recursive: bool,
     pattern: str | None,
     split_rules: bool,
+    file_timeout: float | None,
     progress: bool,
 ) -> None:
     """Process large collections of YARA files in batches."""
@@ -124,6 +131,7 @@ def batch(
         max_workers=max_workers,
         max_memory_mb=memory_limit,
         batch_size=batch_size,
+        file_timeout=file_timeout,
         progress_callback=progress_callback,
     )
 
@@ -136,6 +144,7 @@ def batch(
             pattern,
             recursive,
             split_rules,
+            file_timeout,
         )
 
         if progress:
@@ -182,6 +191,12 @@ def batch(
     is_flag=True,
     help="Parse individual rules from large files",
 )
+@click.option(
+    "--file-timeout",
+    type=click.FloatRange(min=0.0, min_open=True),
+    default=None,
+    help="Per-file stream timeout in seconds",
+)
 @click.option("--progress", is_flag=True, help="Show progress information")
 def stream(
     input_path: str,
@@ -190,6 +205,7 @@ def stream(
     pattern: str | None,
     recursive: bool,
     split_rules: bool,
+    file_timeout: float | None,
     progress: bool,
 ) -> None:
     """Stream-parse large YARA collections with minimal memory usage."""
@@ -223,6 +239,7 @@ def stream(
             split_rules,
             pattern,
             recursive,
+            file_timeout,
         )
 
         # Process results
@@ -287,6 +304,12 @@ def _display_stream_results(
     help="Type of analysis to perform",
 )
 @click.option(
+    "--file-timeout",
+    type=click.FloatRange(min=0.0, min_open=True),
+    default=None,
+    help="Per-file analysis timeout in seconds",
+)
+@click.option(
     "--chunk-size",
     "-c",
     type=click.IntRange(min=1),
@@ -299,6 +322,7 @@ def parallel(
     max_workers: int | None,
     timeout: float,
     analysis_type: str,
+    file_timeout: float | None,
     chunk_size: int,
 ) -> None:
     """Analyze YARA files in parallel using thread pooling."""
@@ -335,6 +359,7 @@ def parallel(
             analysis_type,
             output_dir_path,
             timeout,
+            file_timeout,
         )
 
         successful_asts = run_results["successful_asts"]

@@ -94,6 +94,7 @@ class BatchProcessor:
         max_workers: int | None = None,
         max_memory_mb: int = 1000,
         batch_size: int = 50,
+        file_timeout: float | None = None,
         temp_dir: str | PathLike[str] | None = None,
         progress_callback: Callable[[str, int, int], None] | None = None,
     ) -> None:
@@ -108,6 +109,7 @@ class BatchProcessor:
         self.max_workers = max_workers if max_workers is not None else 4
         self.max_memory_mb = max_memory_mb
         self.batch_size = batch_size
+        self.file_timeout = file_timeout
         self.temp_dir = self._require_temp_dir(temp_dir)
         self.progress_callback = progress_callback
         self._stats = {
@@ -231,7 +233,13 @@ class BatchProcessor:
             return self._process_files_single(normalized_file_paths, operations, output_dir)
 
         normalized_operations = _validate_operation_list(operations)
-        return process_files_multi(self, normalized_file_paths, normalized_operations, output_dir)
+        return process_files_multi(
+            self,
+            normalized_file_paths,
+            normalized_operations,
+            output_dir,
+            file_timeout=self.file_timeout,
+        )
 
     def _process_files_single(
         self,
@@ -240,7 +248,13 @@ class BatchProcessor:
         output_dir: str | PathLike[str] | None = None,
     ) -> BatchResult:
         """Process multiple YARA files with a single operation."""
-        return process_files_single(self, file_paths, operation, output_dir)
+        return process_files_single(
+            self,
+            file_paths,
+            operation,
+            output_dir,
+            file_timeout=self.file_timeout,
+        )
 
     def analyze_rules(self, rules: list[Rule]) -> list[dict[str, Any]]:
         """Analyze a batch of rules."""
@@ -305,5 +319,10 @@ class BatchProcessor:
         """Process a large YARA file, optionally splitting rules."""
         normalized_operations = _validate_operation_list(operations)
         return process_large_file_ops(
-            self, file_path, normalized_operations, output_dir, split_rules
+            self,
+            file_path,
+            normalized_operations,
+            output_dir,
+            split_rules,
+            file_timeout=self.file_timeout,
         )
