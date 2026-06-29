@@ -21,6 +21,16 @@ def _matches_keyword(content: str, index: int, keyword: str) -> bool:
     return end >= len(content) or not _is_identifier_char(content[end])
 
 
+def _previous_identifier(content: str, index: int) -> str:
+    index -= 1
+    while index >= 0 and content[index].isspace():
+        index -= 1
+    end = index + 1
+    while index >= 0 and _is_identifier_char(content[index]):
+        index -= 1
+    return content[index + 1 : end]
+
+
 def _skip_whitespace(content: str, index: int) -> int:
     while index < len(content) and content[index].isspace():
         index += 1
@@ -89,6 +99,8 @@ def _skip_non_code(content: str, index: int) -> int | None:
 
 
 def _rule_start_at(content: str, index: int) -> int | None:
+    if _previous_identifier(content, index) == "extern":
+        return None
     if _matches_keyword(content, index, "rule"):
         return index
     modifier_length = 0

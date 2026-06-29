@@ -175,6 +175,21 @@ global rule second {
     assert rules[1].lstrip().startswith("global rule second")
 
 
+def test_streaming_rule_text_extractor_skips_extern_rule_declarations() -> None:
+    source = """
+extern rule private legacy.ExternalRule
+rule real {
+  condition:
+    true
+}
+"""
+
+    rules = list(iter_rule_texts_from_text(source))
+
+    assert len(rules) == 1
+    assert rules[0].lstrip().startswith("rule real")
+
+
 def test_streaming_parse_file_detects_dialect_once(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
