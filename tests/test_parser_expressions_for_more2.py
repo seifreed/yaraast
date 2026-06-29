@@ -116,7 +116,8 @@ rule r {
 
 
 def test_yarax_for_of_accepts_percentage_quantifier() -> None:
-    from yaraast.codegen.generator import CodeGenerator
+    from yaraast.yarax.generator import YaraXGenerator
+    from yaraast.yarax.parser import YaraXParser
 
     source = """
 rule r {
@@ -127,15 +128,15 @@ rule r {
 }
 """
 
-    ast = Parser().parse(source)
+    ast = YaraXParser(source).parse()
     condition = ast.rules[0].condition
     assert isinstance(condition, ForOfExpression)
     assert condition.quantifier == "10%"
 
-    generated = CodeGenerator().generate(ast)
+    generated = YaraXGenerator().generate(ast)
     assert "for 10% of ($a*) : ($)" in generated
 
-    reparsed = Parser().parse(generated)
+    reparsed = YaraXParser(generated).parse()
     reparsed_condition = reparsed.rules[0].condition
     assert isinstance(reparsed_condition, ForOfExpression)
     assert reparsed_condition.quantifier == "10%"

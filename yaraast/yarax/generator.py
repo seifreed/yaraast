@@ -166,6 +166,21 @@ class YaraXGenerator(BaseGenerator):
         items = ", ".join(self.visit(element) for element in node.string_set.elements)
         return f"{quantifier} of ({items})"
 
+    def visit_for_of_expression(self, node: Any) -> str:
+        from yaraast.codegen.generator_expressions import _render_string_set
+
+        quantifier = _render_quantifier(self, node.quantifier, allow_percentage=True)
+        string_set = _render_string_set(self, node.string_set)
+        if node.condition is None:
+            return f"{quantifier} of {string_set}"
+        previous = getattr(self, "_allow_string_placeholder", False)
+        self._allow_string_placeholder = True
+        try:
+            condition = self.visit(node.condition)
+        finally:
+            self._allow_string_placeholder = previous
+        return f"for {quantifier} of {string_set} : ({condition})"
+
     def _format_yarax_modifiers(self, modifiers: object) -> str:
         if not modifiers:
             return ""
