@@ -142,24 +142,37 @@ def test_lexer_rejects_integer_literals_above_int64_maximum() -> None:
 
 
 def test_lexer_reports_malformed_prefixed_integer_literals_as_lexer_errors() -> None:
-    malformed_hex_values = ["0x", "0x_", "0x1_", "0x1__2", "0x1_0", "0xg", "0x1g", "0X10"]
+    valid_hex_values = {"0x1_0": 16, "0xaa_bb": 0xAABB}
+    for value, expected in valid_hex_values.items():
+        tokens = _tokens(value)
+        assert tokens[0].type == TokenType.INTEGER
+        assert tokens[0].value == expected
+
+    malformed_hex_values = ["0x", "0x_", "0x1_", "0x1__2", "0xg", "0x1g", "0X10"]
     for value in malformed_hex_values:
         with pytest.raises(LexerError, match="Invalid hexadecimal integer literal"):
             _tokens(value)
 
-    malformed_octal_values = ["0o", "0o_", "0o7_", "0o7__1", "0o1_0", "0o8", "0o78", "0O10"]
+    valid_octal_values = {"0o1_0": 8, "0o7_7": 63}
+    for value, expected in valid_octal_values.items():
+        tokens = _tokens(value)
+        assert tokens[0].type == TokenType.INTEGER
+        assert tokens[0].value == expected
+
+    malformed_octal_values = ["0o", "0o_", "0o7_", "0o7__1", "0o8", "0o78", "0O10"]
     for value in malformed_octal_values:
         with pytest.raises(LexerError, match="Invalid octal integer literal"):
             _tokens(value)
 
 
 def test_lexer_reports_malformed_decimal_separators_as_lexer_errors() -> None:
-    valid_values = ["1000", "1000.5"]
-    for value in valid_values:
+    valid_values = {"1000": 1000, "1_000": 1000, "1000.5": 1000.5, "1_0.1_0": 10.10}
+    for value, expected in valid_values.items():
         tokens = _tokens(value)
         assert tokens[0].type in {TokenType.INTEGER, TokenType.DOUBLE}
+        assert tokens[0].value == expected
 
-    malformed_decimal_values = ["1_000", "1_000.5", "1_", "1__2", "1_.5", "1.5_", "1.5__2"]
+    malformed_decimal_values = ["1_", "1__2", "1_.5", "1.5_", "1.5__2"]
     for value in malformed_decimal_values:
         with pytest.raises(LexerError, match="Invalid decimal"):
             _tokens(value)

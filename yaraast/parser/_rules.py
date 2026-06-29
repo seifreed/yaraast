@@ -463,14 +463,18 @@ class RuleParsingMixin:
         self.current = saved_current
         return None
 
-    def _parse_meta_value(self) -> str | int | bool:
+    def _parse_meta_value(self) -> str | int | bool | float:
         # Handle negative integer metadata: -159
         if self._match(TokenType.MINUS):
             if self._match(TokenType.INTEGER):
                 return -self._previous().value
             msg = "Expected integer after '-' in meta value"
             raise ParserError(msg, self._peek())
-        if self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
+        if (
+            self._match(TokenType.STRING)
+            or self._match(TokenType.INTEGER)
+            or self._match(TokenType.DOUBLE)
+        ):
             return self._previous().value
         if self._match(TokenType.BOOLEAN_TRUE):
             return True

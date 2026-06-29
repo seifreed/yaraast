@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Any
 
 from yaraast.codegen.generator import CodeGenerator as BaseGenerator
@@ -15,9 +16,12 @@ from yaraast.codegen.generator_expression_visitors import (
 from yaraast.codegen.generator_formatting import (
     contextual_local_identifier_names,
     contextual_local_identifiers,
+    escape_string_literal,
+    format_meta_key,
     format_yarax_local_identifier,
     validate_yara_identifier,
 )
+from yaraast.codegen.generator_helpers import format_integer_literal
 
 if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
@@ -41,6 +45,53 @@ if TYPE_CHECKING:
 
 class YaraXGenerator(BaseGenerator):
     """Code generator for YARA-X with support for new syntax features."""
+
+    def visit_meta(self, node: Any) -> str:
+        key = format_meta_key(node.key, getattr(node, "scope", None))
+        return f"{key} = {self._format_yarax_meta_literal(node.value)}"
+
+    def _write_meta_section(self, meta: object) -> None:
+        if not meta:
+            return
+        if not isinstance(meta, dict | list | tuple):
+            msg = "Rule meta must be a dictionary, list, or tuple for YARA-X output"
+            raise TypeError(msg)
+        self._writeline("meta:")
+        self._indent()
+        if isinstance(meta, dict):
+            for key, value in meta.items():
+                self._writeline(self._format_meta_value(key, value))
+        else:
+            for item in meta:
+                if not (hasattr(item, "key") and hasattr(item, "value")):
+                    msg = "Rule meta must contain meta entries for YARA-X output"
+                    raise TypeError(msg)
+                self._emit_yarax_meta_comments(item)
+                self._writeline(
+                    self._format_meta_value(item.key, item.value, getattr(item, "scope", None))
+                )
+        self._dedent()
+        self._writeline()
+
+    def _emit_yarax_meta_comments(self, item: Any) -> None:
+        for comment in getattr(item, "leading_comments", []) or []:
+            self._writeline(self.visit(comment))
+
+    def _format_meta_value(self, key: str, value: Any, scope: object | None = None) -> str:
+        rendered_key = format_meta_key(key, scope)
+        return f"{rendered_key} = {self._format_yarax_meta_literal(value)}"
+
+    def _format_yarax_meta_literal(self, value: Any) -> str:
+        if isinstance(value, str):
+            return f'"{escape_string_literal(value)}"'
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        if isinstance(value, int):
+            return format_integer_literal(value)
+        if isinstance(value, float) and math.isfinite(value):
+            return str(value)
+        msg = f"Invalid YARA-X meta value type '{type(value).__name__}'"
+        raise TypeError(msg)
 
     def _render_local_identifier(self, identifier: str, field_name: str) -> str:
         return format_yarax_local_identifier(identifier, field_name)

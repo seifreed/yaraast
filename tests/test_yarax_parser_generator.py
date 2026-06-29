@@ -81,6 +81,30 @@ rule yarax_with_extended {
     assert isinstance(values[2], PatternMatch)
 
 
+def test_yarax_accepts_numeric_separators_and_float_meta() -> None:
+    yarax_code = """
+rule literal_underscores {
+    meta:
+        a = 1_000
+        b = 1_0.1_0
+    condition:
+        0xaa_bb == 0xaabb and 0.1_0 == 0.1
+}
+"""
+
+    ast = YaraXParser(yarax_code).parse()
+    rule = ast.rules[0]
+    assert rule.meta[0].value == 1000
+    assert rule.meta[1].value == 10.10
+
+    generated = YaraXGenerator().generate(ast)
+    assert "a = 1000" in generated
+    assert "b = 10.1" in generated
+    assert "43707 == 43707" in generated
+    assert " and " in generated
+    YaraXParser(generated).parse()
+
+
 def test_yarax_list_and_spread_expression() -> None:
     expr = _parse_expr("[1, ...arr, 4]")
     assert isinstance(expr, ListExpression)

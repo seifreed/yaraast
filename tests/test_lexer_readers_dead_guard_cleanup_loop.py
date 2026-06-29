@@ -9,8 +9,8 @@ One dead check was removed from ``lexer_readers``:
     reader: the preceding ``if "_" in raw_fraction`` already rejects every
     fractional part containing an underscore.
 
-These tests pin that string escapes still decode and that all underscore
-shapes in a float fraction are still rejected by the single surviving check.
+These tests pin that string escapes still decode and that malformed underscore
+shapes in a float fraction are rejected while valid separators are accepted.
 """
 
 from __future__ import annotations
@@ -33,13 +33,14 @@ def test_string_escapes_decode() -> None:
     assert string_tokens[0].value == 'a\tb\nc"d'
 
 
-def test_plain_float_tokenizes() -> None:
-    tokens = _tokenize("3.14")
+@pytest.mark.parametrize(("source", "expected"), [("3.14", 3.14), ("3.1_4", 3.14)])
+def test_plain_float_tokenizes(source: str, expected: float) -> None:
+    tokens = _tokenize(source)
     assert tokens[0].type == TokenType.DOUBLE
-    assert tokens[0].value == 3.14
+    assert tokens[0].value == expected
 
 
-@pytest.mark.parametrize("source", ["3.1_4", "3.14_", "3.1__4"])
+@pytest.mark.parametrize("source", ["3.14_", "3.1__4"])
 def test_underscore_in_float_fraction_rejected(source: str) -> None:
     with pytest.raises(LexerError, match="Invalid decimal floating-point literal"):
         _tokenize(source)
