@@ -419,6 +419,35 @@ def test_ast_benchmarker_roundtrip_reuses_last_ast_for_stats(
     assert result[1] == 1
 
 
+def test_ast_benchmarker_uses_streaming_ast_for_large_codegen_and_roundtrip(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rule_file = tmp_path / "large.yar"
+    rule_file.write_text("rule r { condition: true }", encoding="utf-8")
+    ast = _parse_yara("rule r { condition: true }")
+    calls = 0
+
+    def parse_large(_path: Path) -> YaraFile:
+        nonlocal calls
+        calls += 1
+        return ast
+
+    monkeypatch.setattr(
+        ASTBenchmarker,
+        "_parse_large_benchmark_file",
+        staticmethod(parse_large),
+    )
+    benchmarker = ASTBenchmarker(streaming_parse_threshold_bytes=1)
+
+    codegen = benchmarker.benchmark_codegen(rule_file, iterations=3)
+    roundtrip = benchmarker.benchmark_roundtrip(rule_file, iterations=2)[0]
+
+    assert codegen.success is True
+    assert roundtrip.success is True
+    assert calls == 3
+
+
 def test_ast_benchmarker_reports_invalid_file_paths(tmp_path: Path) -> None:
     benchmarker = ASTBenchmarker()
 

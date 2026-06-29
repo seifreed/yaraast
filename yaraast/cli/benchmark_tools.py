@@ -157,6 +157,34 @@ class ASTBenchmarker:
         content = _read_benchmark_yara_text(file_path)
         parse_yara_source(content)
 
+    @staticmethod
+    def _parse_large_benchmark_file(file_path: Path) -> YaraFile:
+        from yaraast.unified_parser import UnifiedParser
+
+        ast = UnifiedParser.parse_file(file_path, force_streaming=True)
+        if not isinstance(ast, YaraFile):
+            msg = "benchmark code generation requires a YARA AST"
+            raise ValueError(msg)
+        return ast
+
+    def _build_ast_parser(
+        self,
+        file_path: Path,
+        content: str,
+        use_streaming_parser: bool,
+    ) -> Callable[[], YaraFile]:
+        if use_streaming_parser:
+
+            def parse_streaming_ast() -> YaraFile:
+                return self._parse_large_benchmark_file(file_path)
+
+            return parse_streaming_ast
+
+        def parse_full_ast() -> YaraFile:
+            return parse_yara_source(content)
+
+        return parse_full_ast
+
     def benchmark_parsing(
         self,
         file_path: str | PathLike[str],
@@ -254,14 +282,18 @@ class ASTBenchmarker:
         self._validate_iterations(iterations)
         self._validate_file_timeout(file_timeout)
         try:
-            # Parse file once
-            content = _read_benchmark_yara_text(file_path)
-
-            file_size = len(content.encode())
+            file_path_obj = _require_benchmark_file_path(file_path)
+            file_size = file_path_obj.stat().st_size
+            use_streaming_parser = self._should_use_streaming_parser(
+                file_size,
+                self._streaming_parse_threshold_bytes,
+            )
+            content = "" if use_streaming_parser else _read_benchmark_yara_text(file_path_obj)
+            parse_ast = self._build_ast_parser(file_path_obj, content, use_streaming_parser)
             avg_time, rules_count, strings_count, ast_nodes = self._run_with_timeout(
                 "codegen",
                 file_timeout,
-                lambda: self._time_codegen(content, iterations),
+                lambda: self._time_codegen(content, iterations, parse_ast),
             )
 
             result = BenchmarkResult(
@@ -303,13 +335,18 @@ class ASTBenchmarker:
         results = []
 
         try:
-            content = _read_benchmark_yara_text(file_path)
-
-            file_size = len(content.encode())
+            file_path_obj = _require_benchmark_file_path(file_path)
+            file_size = file_path_obj.stat().st_size
+            use_streaming_parser = self._should_use_streaming_parser(
+                file_size,
+                self._streaming_parse_threshold_bytes,
+            )
+            content = "" if use_streaming_parser else _read_benchmark_yara_text(file_path_obj)
+            parse_ast = self._build_ast_parser(file_path_obj, content, use_streaming_parser)
             avg_time, rules_count, strings_count, ast_nodes = self._run_with_timeout(
                 "roundtrip",
                 file_timeout,
-                lambda: self._time_roundtrip(content, iterations),
+                lambda: self._time_roundtrip(content, iterations, parse_ast),
             )
 
             result = BenchmarkResult(
@@ -342,14 +379,26 @@ class ASTBenchmarker:
         return results
 
     @staticmethod
-    def _time_roundtrip(content: str, iterations: int) -> tuple[float, int, int, int]:
+    def _time_roundtrip(
+        content: str,
+        iterations: int,
+        parse_ast: Callable[[], YaraFile] | None = None,
+    ) -> tuple[float, int, int, int]:
         """Run parse->generate roundtrip iterations and return average time and stats."""
         ASTBenchmarker._validate_iterations(iterations)
+        if parse_ast is None:
+
+            def default_parse_ast() -> YaraFile:
+                return parse_yara_source(content)
+
+            active_parse_ast = default_parse_ast
+        else:
+            active_parse_ast = parse_ast
         times = []
         ast: YaraFile | None = None
         for _ in range(iterations):
             start = time.perf_counter()
-            ast = parse_yara_source(content)
+            ast = active_parse_ast()
             generator = YaraXGenerator()
             generator.generate(ast)
             end = time.perf_counter()
@@ -366,10 +415,22 @@ class ASTBenchmarker:
         )
 
     @staticmethod
-    def _time_codegen(content: str, iterations: int) -> tuple[float, int, int, int]:
+    def _time_codegen(
+        content: str,
+        iterations: int,
+        parse_ast: Callable[[], YaraFile] | None = None,
+    ) -> tuple[float, int, int, int]:
         """Run parse->generate codegen iterations and return average time and stats."""
         ASTBenchmarker._validate_iterations(iterations)
-        ast = parse_yara_source(content)
+        if parse_ast is None:
+
+            def default_parse_ast() -> YaraFile:
+                return parse_yara_source(content)
+
+            active_parse_ast = default_parse_ast
+        else:
+            active_parse_ast = parse_ast
+        ast = active_parse_ast()
         times = []
         generator = YaraXGenerator()
         for _ in range(iterations):
