@@ -94,11 +94,12 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     IntegerLiteral,
+    MemberAccess,
     ParenthesesExpression,
     RangeExpression,
     UnaryExpression,
 )
-from yaraast.ast.rules import Rule
+from yaraast.ast.rules import Import, Rule
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_expression_visitors import (
     _constant_comparison_operand_type,
@@ -347,6 +348,33 @@ class TestValidateKnownModuleFunctionCallUnknownModule:
 
         output = CodeGenerator().generate(yara_file)
         assert "mymod.check(0)" in output
+
+    def test_required_module_validation_loads_builtin_modules_once(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Regression: module validation must not rebuild builtin modules per AST node."""
+        from yaraast.types import module_definitions
+
+        calls = 0
+        real_load = module_definitions.load_builtin_modules
+
+        def counted_load() -> object:
+            nonlocal calls
+            calls += 1
+            return real_load()
+
+        monkeypatch.setattr(module_definitions, "load_builtin_modules", counted_load)
+
+        rules = [
+            Rule(name=f"r{i}", condition=MemberAccess(object=Identifier("pe"), member="is_pe"))
+            for i in range(50)
+        ]
+        yara_file = YaraFile(imports=[Import(module="pe")], includes=[], rules=rules)
+
+        CodeGenerator().generate(yara_file)
+
+        assert calls == 2
 
 
 # ---------------------------------------------------------------------------
@@ -610,9 +638,7 @@ class TestParenthesizedRangeBoundInInExpression:
 
         Assert: ParserError is raised.
         """
-        src = (
-            'rule t { strings: $a = "x" ' "condition: for any i in ($a in ((0..10)..20)) : (true) }"
-        )
+        src = 'rule t { strings: $a = "x" condition: for any i in ($a in ((0..10)..20)) : (true) }'
         with pytest.raises((YaraASTError, Exception)):
             _parse(src)
 
@@ -627,9 +653,7 @@ class TestParenthesizedRangeBoundInInExpression:
 
         Assert: ParserError is raised.
         """
-        src = (
-            'rule t { strings: $a = "x" ' "condition: for any i in ($a in (0..(5..20))) : (true) }"
-        )
+        src = 'rule t { strings: $a = "x" condition: for any i in ($a in (0..(5..20))) : (true) }'
         with pytest.raises((YaraASTError, Exception)):
             _parse(src)
 

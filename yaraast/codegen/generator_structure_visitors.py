@@ -112,10 +112,17 @@ def visit_yara_file(generator: Any, node: Any) -> str:
 
 
 def validate_required_module_imports(node: Any) -> None:
+    from yaraast.types.module_definitions import load_builtin_modules
+
+    builtin_modules = set(load_builtin_modules())
     imported_modules = {getattr(import_node, "module", None) for import_node in node.imports}
     required_modules: set[str] = set()
     for rule in node.rules:
-        _collect_required_module_imports(getattr(rule, "condition", None), required_modules)
+        _collect_required_module_imports(
+            getattr(rule, "condition", None),
+            required_modules,
+            builtin_modules,
+        )
     missing_modules = sorted(
         module for module in required_modules if module not in imported_modules
     )
@@ -126,12 +133,14 @@ def validate_required_module_imports(node: Any) -> None:
     raise ValueError(msg)
 
 
-def _collect_required_module_imports(value: Any, modules: set[str]) -> None:
+def _collect_required_module_imports(
+    value: Any,
+    modules: set[str],
+    builtin_modules: set[str],
+) -> None:
     from yaraast.ast.expressions import FunctionCall, Identifier, MemberAccess
     from yaraast.ast.modules import ModuleReference
-    from yaraast.types.module_definitions import load_builtin_modules
 
-    builtin_modules = load_builtin_modules()
     if value is None:
         return
     if isinstance(value, ModuleReference):
@@ -149,20 +158,24 @@ def _collect_required_module_imports(value: Any, modules: set[str]) -> None:
             module_name, _function_name = resolved
             if module_name in builtin_modules:
                 modules.add(module_name)
-        _collect_required_module_imports(getattr(value, "receiver", None), modules)
+        _collect_required_module_imports(
+            getattr(value, "receiver", None),
+            modules,
+            builtin_modules,
+        )
         for argument in value.arguments:
-            _collect_required_module_imports(argument, modules)
+            _collect_required_module_imports(argument, modules, builtin_modules)
         return
     if isinstance(value, list | tuple | set):
         for item in value:
-            _collect_required_module_imports(item, modules)
+            _collect_required_module_imports(item, modules, builtin_modules)
         return
     if not hasattr(value, "__dict__"):
         return
     for field_name, field_value in vars(value).items():
         if field_name in {"location", "leading_comments", "trailing_comment"}:
             continue
-        _collect_required_module_imports(field_value, modules)
+        _collect_required_module_imports(field_value, modules, builtin_modules)
 
 
 def visit_import(node: Any) -> str:
