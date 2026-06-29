@@ -111,9 +111,8 @@ class TestLibyaraScanFailureBranch:
         )
 
         # Assert
-        assert result.exit_code != 0, (
-            f"Expected non-zero exit when scan fails, got 0.\nOutput:\n{result.output}"
-        )
+        message = f"Expected non-zero exit when scan fails, got 0.\nOutput:\n{result.output}"
+        assert result.exit_code != 0, message
         # 'Scan completed' is only printed on the success branch (line 117)
         assert "Scan completed" not in result.output
         # Failure branch output comes from display_scan_failure at line 125
@@ -392,9 +391,8 @@ class TestDisplayModuleUsageEmptyBranch:
         gen.visit(ast)
 
         # Verify the precondition: module_references must be empty
-        assert not gen.module_references, (
-            "Expected empty module_references for a rule with no imports"
-        )
+        message = "Expected empty module_references for a rule with no imports"
+        assert not gen.module_references, message
 
         # Act
         display_module_usage(gen)
@@ -420,9 +418,8 @@ class TestDisplayModuleUsageEmptyBranch:
         gen.visit(ast)
 
         # Verify the precondition: module_references must be non-empty
-        assert gen.module_references, (
-            "Expected non-empty module_references after visiting a rule that uses 'pe'"
-        )
+        message = "Expected non-empty module_references after visiting a rule that uses 'pe'"
+        assert gen.module_references, message
 
         # Act
         display_module_usage(gen)

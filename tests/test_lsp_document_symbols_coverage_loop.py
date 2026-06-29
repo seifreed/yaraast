@@ -132,9 +132,8 @@ def test_text_section_symbols_deduplicates_same_rule_same_section() -> None:
     section_syms = [s for s in symbols if s.kind == "section" and s.container_name == "beta"]
     seen_sections: set[str] = set()
     for sym in section_syms:
-        assert sym.name not in seen_sections, (
-            f"section '{sym.name}' must not appear twice for rule 'beta'"
-        )
+        message = f"section '{sym.name}' must not appear twice for rule 'beta'"
+        assert sym.name not in seen_sections, message
         seen_sections.add(sym.name)
 
 

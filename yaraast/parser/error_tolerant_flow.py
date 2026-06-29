@@ -167,20 +167,19 @@ def collect_rule_body(parser, start_line: int, header_line: str) -> tuple[list[s
 def _set_yara_file_location(yara_file: YaraFile) -> None:
     if not (yara_file.imports or yara_file.includes or yara_file.rules):
         return
-    start_node = (
-        yara_file.imports[0]
-        if yara_file.imports
-        else yara_file.includes[0]
-        if yara_file.includes
-        else yara_file.rules[0]
-    )
-    end_node = (
-        yara_file.rules[-1]
-        if yara_file.rules
-        else yara_file.includes[-1]
-        if yara_file.includes
-        else yara_file.imports[-1]
-    )
+    if yara_file.imports:
+        start_node = yara_file.imports[0]
+    elif yara_file.includes:
+        start_node = yara_file.includes[0]
+    else:
+        start_node = yara_file.rules[0]
+
+    if yara_file.rules:
+        end_node = yara_file.rules[-1]
+    elif yara_file.includes:
+        end_node = yara_file.includes[-1]
+    else:
+        end_node = yara_file.imports[-1]
     start = start_node.location
     end = end_node.location
     if start is None or end is None:

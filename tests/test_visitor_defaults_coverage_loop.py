@@ -378,6 +378,5 @@ def test_yarax_visit_method_returns_default_for_every_node_type(
     result = getattr(visitor, method_name)(node)
 
     # Assert
-    assert result is sentinel, (
-        f"{method_name} returned {result!r} instead of the configured sentinel"
-    )
+    message = f"{method_name} returned {result!r} instead of the configured sentinel"
+    assert result is sentinel, message

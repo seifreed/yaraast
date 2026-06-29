@@ -121,14 +121,14 @@ def test_libyara_compiler_compile_file_success_and_save(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
 
     rule_file = tmp_path / "ok.yar"
-    rule_file.write_text(
-        """
+    source = """
 rule ok {
     condition:
         true
 }
 """.strip()
-        + "\n",
+    rule_file.write_text(
+        f"{source}\n",
         encoding="utf-8",
     )
 

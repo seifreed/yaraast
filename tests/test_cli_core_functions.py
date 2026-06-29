@@ -295,9 +295,7 @@ class TestCLIDifferFunctions:
         }
         """
 
-        modified = (
-            original
-            + """
+        added_rule = """
         rule test2 {
             strings:
                 $s = "new"
@@ -305,7 +303,7 @@ class TestCLIDifferFunctions:
                 $s
         }
         """
-        )
+        modified = original + added_rule
 
         parser = Parser()
         ast1 = parser.parse(original.strip())

@@ -272,6 +272,5 @@ def test_outside_rule_returns_exact_none_not_falsy_empty() -> None:
 
     for action in _OUTSIDE_RULE_FUNCTIONS:
         result = getattr(authoring, action)(_TEXT_WITH_IMPORT, _IMPORT_LINE_SEL)
-        assert result is None, (
-            f"{action} returned {result!r} instead of None for an outside-rule position"
-        )
+        message = f"{action} returned {result!r} instead of None for an outside-rule position"
+        assert result is None, message

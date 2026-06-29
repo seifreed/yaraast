@@ -56,8 +56,7 @@ def test_recovery_paths_for_invalid_import_include_rule_and_unknown_lines() -> N
 
 def test_error_tolerant_parser_returns_error_and_rule_snapshots() -> None:
     parser = ErrorTolerantParser()
-    result = parser.parse(
-        dedent("""
+    text = dedent("""
         import ???
 
         rule recovered {
@@ -65,7 +64,7 @@ def test_error_tolerant_parser_returns_error_and_rule_snapshots() -> None:
                 true
         }
         """)
-    )
+    result = parser.parse(text)
 
     assert result.errors
     assert parser.errors == result.errors
@@ -254,8 +253,7 @@ def test_parse_result_api_and_clean_parse_has_no_errors() -> None:
 
 def test_recovered_nodes_include_basic_locations() -> None:
     parser = ErrorTolerantParser()
-    result = parser.parse(
-        dedent("""
+    text = dedent("""
             import "pe"
             include "common.yar"
             invalid top level tokens
@@ -268,7 +266,7 @@ def test_recovered_nodes_include_basic_locations() -> None:
                     $a
             }
             """)
-    )
+    result = parser.parse(text)
 
     assert result.ast.imports[0].location is not None
     assert result.ast.includes[0].location is not None

@@ -193,9 +193,10 @@ def test_outside_rule_returns_exact_none_not_falsy_empty() -> None:
     ]
     for action in checked_actions:
         result = getattr(authoring, action)(_TEXT_WITH_IMPORT, _IMPORT_LINE_SEL)
-        assert result is None, (
+        message = (
             f"{action} returned {result!r} instead of None for an outside-rule cursor position"
         )
+        assert result is None, message
 
 
 # ---------------------------------------------------------------------------

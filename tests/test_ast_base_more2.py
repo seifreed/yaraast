@@ -1778,8 +1778,7 @@ def test_yarafile_helpers_reject_invalid_child_state(
 
 
 def test_parser_populates_location_spans_for_core_nodes() -> None:
-    ast = Parser().parse(
-        """
+    source = """
 rule sample {
     strings:
         $a = "abc"
@@ -1787,7 +1786,7 @@ rule sample {
         $a or true
 }
 """.lstrip()
-    )
+    ast = Parser().parse(source)
 
     rule = ast.rules[0]
     string_def = rule.strings[0]

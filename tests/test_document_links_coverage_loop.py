@@ -71,12 +71,10 @@ def test_unknown_import_module_skipped_no_link(tmp_path: Path) -> None:
     assert any("pe.html" in t for t in targets), "Expected a link for the known 'pe' module"
 
     # The unknown module must not produce any readthedocs link.
-    assert not any("custom_engine" in (t or "") for t in targets), (
-        "Must not produce a link for an unknown import module"
-    )
-    assert not any("custom_engine" in (t or "") for t in tooltips), (
-        "Must not produce a tooltip for an unknown import module"
-    )
+    message = "Must not produce a link for an unknown import module"
+    assert not any("custom_engine" in (t or "") for t in targets), message
+    message = "Must not produce a tooltip for an unknown import module"
+    assert not any("custom_engine" in (t or "") for t in tooltips), message
 
 
 def test_unknown_import_via_runtime_skipped(tmp_path: Path) -> None:
@@ -104,9 +102,8 @@ def test_unknown_import_via_runtime_skipped(tmp_path: Path) -> None:
     targets = [link.target or "" for link in links]
 
     assert any("math.html" in t for t in targets), "Expected link for 'math' module"
-    assert not any("unknown_module" in t for t in targets), (
-        "Must not produce a link for 'unknown_module'"
-    )
+    message = "Must not produce a link for 'unknown_module'"
+    assert not any("unknown_module" in t for t in targets), message
 
 
 # ---------------------------------------------------------------------------
@@ -141,9 +138,8 @@ def test_include_missing_file_yields_no_link(tmp_path: Path) -> None:
     links = provider.get_document_links(text, path_to_uri(doc_path))
     targets = [link.target or "" for link in links]
 
-    assert not any("nonexistent" in t for t in targets), (
-        "Must not produce a link for an unresolvable include path"
-    )
+    message = "Must not produce a link for an unresolvable include path"
+    assert not any("nonexistent" in t for t in targets), message
 
 
 def test_include_missing_file_no_runtime_yields_no_link(tmp_path: Path) -> None:
@@ -207,9 +203,8 @@ def test_get_document_links_outer_except_fallback(
 
     # The fallback should recover and still produce the pe import link.
     targets = [link.target or "" for link in links]
-    assert any("pe.html" in t for t in targets), (
-        "Fallback links must include the pe module documentation link"
-    )
+    message = "Fallback links must include the pe module documentation link"
+    assert any("pe.html" in t for t in targets), message
 
 
 # ---------------------------------------------------------------------------
@@ -234,9 +229,8 @@ def test_create_rule_reference_links_returns_empty_when_no_runtime() -> None:
 
     result = provider._create_rule_reference_links("file:///any/path.yar")
 
-    assert result == [], (
-        "_create_rule_reference_links must return [] when self.runtime is None (line 138)"
-    )
+    message = "_create_rule_reference_links must return [] when self.runtime is None (line 138)"
+    assert result == [], message
 
 
 def test_create_rule_reference_links_appends_cross_doc_link(tmp_path: Path) -> None:
@@ -267,14 +261,12 @@ def test_create_rule_reference_links_appends_cross_doc_link(tmp_path: Path) -> N
 
     rule_links = provider._create_rule_reference_links(path_to_uri(user))
 
-    assert len(rule_links) >= 1, (
-        "_create_rule_reference_links must return at least one link for shared_rule"
-    )
+    message = "_create_rule_reference_links must return at least one link for shared_rule"
+    assert len(rule_links) >= 1, message
     shared_rule_links = [lnk for lnk in rule_links if lnk.tooltip == "Go to rule shared_rule"]
     assert shared_rule_links, "Expected a link tooltipped 'Go to rule shared_rule'"
-    assert shared_rule_links[0].target == common.as_uri(), (
-        "The rule link target must point at common.yar"
-    )
+    message = "The rule link target must point at common.yar"
+    assert shared_rule_links[0].target == common.as_uri(), message
 
 
 def test_get_document_links_runtime_includes_cross_doc_rule_link(tmp_path: Path) -> None:
@@ -296,9 +288,8 @@ def test_get_document_links_runtime_includes_cross_doc_rule_link(tmp_path: Path)
     links = provider.get_document_links(user_text, path_to_uri(user))
 
     targets = {link.target for link in links if link.target is not None}
-    assert common.as_uri() in targets, (
-        "Full get_document_links must include a cross-document link to common.yar"
-    )
+    message = "Full get_document_links must include a cross-document link to common.yar"
+    assert common.as_uri() in targets, message
 
 
 # ---------------------------------------------------------------------------
@@ -352,15 +343,13 @@ def test_append_text_rule_links_skips_name_in_block_comment(tmp_path: Path) -> N
 
     # The in-code occurrence is on line 8 (0-based): "        alpha_rule"
     code_line = next((lnk for lnk in alpha_links if lnk.range.start.line == 8), None)
-    assert code_line is not None, (
-        "Expected a link for 'alpha_rule' on line 8 (the real code occurrence)"
-    )
+    message = "Expected a link for 'alpha_rule' on line 8 (the real code occurrence)"
+    assert code_line is not None, message
 
     # The comment occurrence is on line 7: "        /* alpha_rule is excluded here */"
     comment_line_links = [lnk for lnk in alpha_links if lnk.range.start.line == 7]
-    assert not comment_line_links, (
-        "Must NOT produce a link for 'alpha_rule' inside a block comment (line 206 continue)"
-    )
+    message = "Must NOT produce a link for 'alpha_rule' inside a block comment (line 206 continue)"
+    assert not comment_line_links, message
 
 
 def test_append_text_rule_links_only_code_position_linked(tmp_path: Path) -> None:
@@ -390,6 +379,5 @@ def test_append_text_rule_links_only_code_position_linked(tmp_path: Path) -> Non
     links = provider.get_document_links(text, path_to_uri(doc_path))
 
     comment_only_links = [lnk for lnk in links if lnk.tooltip == "Go to rule only_in_comment"]
-    assert not comment_only_links, (
-        "Rule name inside a block comment must not produce a document link"
-    )
+    message = "Rule name inside a block comment must not produce a document link"
+    assert not comment_only_links, message

@@ -246,7 +246,6 @@ def test_complexity_quality_gate_failure_parametric(tmp_path: Path, gate: int) -
         ["complexity", str(yara_path), "--quality-gate", str(gate)],
     )
 
-    assert result.exit_code != 0, (
-        f"Expected quality gate failure for gate={gate} but command exited with 0"
-    )
+    message = f"Expected quality gate failure for gate={gate} but command exited with 0"
+    assert result.exit_code != 0, message
     assert "Quality gate warning" in result.output

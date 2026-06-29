@@ -437,9 +437,7 @@ class TestCLIDiffCommandDirect:
         }
         """
 
-        modified = (
-            original
-            + """
+        added_rule = """
         rule added {
             strings:
                 $s = "new"
@@ -447,7 +445,7 @@ class TestCLIDiffCommandDirect:
                 $s
         }
         """
-        )
+        modified = original + added_rule
 
         with self.runner.isolated_filesystem():
             file1 = Path("file1.yar")

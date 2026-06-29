@@ -162,9 +162,8 @@ class TestNormalPathExports:
             TEXT_DOCUMENT_SIGNATURE_HELP,
         ]
         for constant in constants:
-            assert isinstance(constant, str) and constant, (
-                f"Expected non-empty string, got {constant!r}"
-            )
+            message = f"Expected non-empty string, got {constant!r}"
+            assert isinstance(constant, str) and constant, message
 
     def test_workspace_constants_are_strings(self) -> None:
         """WORKSPACE_* constants must be non-empty strings."""

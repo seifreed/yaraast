@@ -192,9 +192,11 @@ def test_folding_ranges_one_liner_full_pipeline_no_section_folds() -> None:
     # is filtered out too).  The important assertion is that no extra section ranges
     # are present beyond what is structurally possible.
     # With a one-liner there are no valid multi-line section ranges.
-    assert all(r.start_line == r.end_line or r.start_line < r.end_line for r in region_ranges), (
-        "all produced region ranges must have start_line <= end_line"
+    message = "all produced region ranges must have start_line <= end_line"
+    valid_ranges = all(
+        r.start_line == r.end_line or r.start_line < r.end_line for r in region_ranges
     )
+    assert valid_ranges, message
 
 
 # ---------------------------------------------------------------------------
@@ -249,9 +251,8 @@ def test_folding_ranges_rule_with_no_condition_skips_condition_range() -> None:
     # Without condition, no condition FoldingRange should appear.
     # (meta and strings sections may produce ranges if multi-line, but
     # there must be ZERO ranges mentioning the condition section.)
-    assert all(r.end_line > r.start_line for r in result), (
-        "any produced range must span at least two lines"
-    )
+    message = "any produced range must span at least two lines"
+    assert all(r.end_line > r.start_line for r in result), message
     # Specifically: no condition-section range (the last section in the block).
     # We confirm by checking that result has at most 2 ranges (meta + strings),
     # not 3 (which would include condition).
@@ -386,9 +387,8 @@ def test_build_string_rename_edits_skips_token_inside_multiline_block_comment() 
     edits = build_string_rename_edits(doc, "$a", "$new")
 
     # Declaration at strings line (line 2) and real usage at line 5 after comment.
-    assert len(edits) == 2, (
-        f"expected 2 edits (declaration + real usage), got {len(edits)}: {edits}"
-    )
+    message = f"expected 2 edits (declaration + real usage), got {len(edits)}: {edits}"
+    assert len(edits) == 2, message
     edit_ranges = [(e.range.start.line, e.range.start.character) for e in edits]
     assert (2, 8) in edit_ranges, "declaration at line 2 col 8 must be renamed"
     # The real '$a' after the comment close */ is at line 5 col 42.

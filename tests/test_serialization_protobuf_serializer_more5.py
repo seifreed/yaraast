@@ -2896,7 +2896,8 @@ def test_protobuf_deserializer_rejects_invalid_quantifiers(
     if expression_kind == "for_expression":
         pb_rule.condition.for_expression.quantifier = quantifier
         pb_rule.condition.for_expression.variable = "i"
-        pb_rule.condition.for_expression.iterable.set_expression.elements.add().integer_literal.value = 1
+        element = pb_rule.condition.for_expression.iterable.set_expression.elements.add()
+        element.integer_literal.value = 1
         pb_rule.condition.for_expression.body.boolean_literal.value = True
     else:
         pb_rule.condition.of_expression.quantifier_text = quantifier
