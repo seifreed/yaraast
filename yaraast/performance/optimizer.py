@@ -86,9 +86,9 @@ class PerformanceOptimizer:
         strategy = _require_strategy(strategy)
         # Apply rule optimizations
         rule = self.rule_optimizer.optimize_rule(rule)
-        self._stats["conditions_simplified"] += (
-            self.rule_optimizer.expression_optimizer.optimization_count
-        )
+        self._stats[
+            "conditions_simplified"
+        ] += self.rule_optimizer.expression_optimizer.optimization_count
 
         # Apply memory optimizations if needed
         if strategy in ("memory", "balanced"):
