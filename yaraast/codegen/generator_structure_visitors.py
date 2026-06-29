@@ -178,7 +178,7 @@ def visit_import(node: Any) -> str:
 
 
 def visit_include(node: Any) -> str:
-    return f"include \"{format_nonempty_quoted_value(node.path, 'Include path')}\""
+    return f'include "{format_nonempty_quoted_value(node.path, "Include path")}"'
 
 
 def visit_rule(generator: Any, node: Any) -> str:

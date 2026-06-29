@@ -300,7 +300,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
             key_text = self.visit(key_expression)
             value_text = self.visit(value_expression)
             condition = self.visit(node.condition) if node.condition is not None else None
-        result = f"{{{key_text}: {value_text} " f"for {variables} in {iterable_text}"
+        result = f"{{{key_text}: {value_text} for {variables} in {iterable_text}"
         if condition is not None:
             result += f" if {condition}"
         return f"{result}}}"

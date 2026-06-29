@@ -63,7 +63,7 @@ def _display_detailed_changes(diff_result: Any) -> None:
             }.get(diff_node.diff_type, "•")
 
             console.print(
-                f"  {icon} {escape(str(diff_node.path))} " f"({escape(str(diff_node.node_type))})"
+                f"  {icon} {escape(str(diff_node.path))} ({escape(str(diff_node.node_type))})"
             )
             if diff_node.diff_type == DiffType.MODIFIED:
                 console.print(f"    [dim]Old:[/dim] {escape(str(diff_node.old_value))}")

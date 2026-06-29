@@ -46,6 +46,10 @@ def _runtime_with_files(tmp_path: Path, files: dict[str, str]) -> LspRuntime:
     return runtime
 
 
+def _is_root_process() -> bool:
+    return hasattr(os, "getuid") and os.getuid() == 0
+
+
 # ---------------------------------------------------------------------------
 # find_rule_definition — lines 67-68
 # Rule name not present in any workspace document: cache stores None, returns None.
@@ -632,7 +636,7 @@ def test_find_rule_reference_records_in_document_cross_file(tmp_path: Path) -> N
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(os.getuid() == 0, reason="root bypasses file permission checks")
+@pytest.mark.skipif(_is_root_process(), reason="root bypasses file permission checks")
 def test_find_rule_reference_records_in_document_unreadable_file_returns_empty(
     tmp_path: Path,
 ) -> None:
@@ -659,7 +663,7 @@ def test_find_rule_reference_records_in_document_unreadable_file_returns_empty(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(os.getuid() == 0, reason="root bypasses file permission checks")
+@pytest.mark.skipif(_is_root_process(), reason="root bypasses file permission checks")
 def test_get_rule_link_records_for_document_unreadable_file_returns_empty(
     tmp_path: Path,
 ) -> None:

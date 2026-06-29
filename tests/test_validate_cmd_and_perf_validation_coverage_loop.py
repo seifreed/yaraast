@@ -50,6 +50,10 @@ def _write_valid_yara(path: Path) -> None:
     )
 
 
+def _is_root_process() -> bool:
+    return hasattr(os, "getuid") and os.getuid() == 0
+
+
 # ---------------------------------------------------------------------------
 # validate.py — lines 88-90: roundtrip when YARA_AVAILABLE is False
 #
@@ -140,7 +144,7 @@ class TestRoundtripReadTestDataError:
         Root users bypass file permission checks, so the test is skipped when
         running as root.
         """
-        if os.getuid() == 0:
+        if _is_root_process():
             pytest.skip("Running as root: permission bits have no effect")
 
         rule_file = tmp_path / "rule.yar"
@@ -176,7 +180,7 @@ class TestRoundtripReadTestDataError:
         This test covers the ValidationError raise in validate_services.py and
         validates the contract relied on by the CLI layer.
         """
-        if os.getuid() == 0:
+        if _is_root_process():
             pytest.skip("Running as root: permission bits have no effect")
 
         data_file = tmp_path / "unreadable.bin"
@@ -215,7 +219,7 @@ class TestPathIsDirOSError:
         Assert: ValueError is raised with the expected message, proving the
         OSError from stat() is caught and re-raised as ValueError.
         """
-        if os.getuid() == 0:
+        if _is_root_process():
             pytest.skip("Running as root: permission bits have no effect")
 
         locked_dir = tmp_path / "locked"

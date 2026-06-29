@@ -332,8 +332,7 @@ class UnifiedParser:
             # same malformed input, so surface the failure here instead of
             # silently returning a partial AST.
             msg = (
-                f"Failed to parse {parse_errors} malformed rule(s) while streaming "
-                f"{file_path_obj}"
+                f"Failed to parse {parse_errors} malformed rule(s) while streaming {file_path_obj}"
             )
             raise YaraASTError(msg)
         preamble_ast.rules = rules

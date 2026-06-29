@@ -33,6 +33,7 @@ structurally dead line with concrete evidence.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from lsprotocol.types import Position, Range
@@ -66,6 +67,10 @@ def _zero_range() -> Range:
         start=Position(line=0, character=0),
         end=Position(line=0, character=0),
     )
+
+
+def _is_root_process() -> bool:
+    return hasattr(os, "getuid") and os.getuid() == 0
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +216,7 @@ def test_find_rule_reference_records_include_declaration_false_yields_only_uses(
 
 
 @pytest.mark.skipif(
-    __import__("os").getuid() == 0,
+    _is_root_process(),
     reason="root bypasses file permission checks",
 )
 def test_find_rule_reference_records_in_document_get_document_returns_none_for_unreadable(
@@ -241,7 +246,7 @@ def test_find_rule_reference_records_in_document_get_document_returns_none_for_u
 
 
 @pytest.mark.skipif(
-    __import__("os").getuid() == 0,
+    _is_root_process(),
     reason="root bypasses file permission checks",
 )
 def test_get_rule_link_records_for_document_get_document_returns_none_for_unreadable(

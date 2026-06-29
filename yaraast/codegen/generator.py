@@ -591,7 +591,7 @@ class CodeGenerator(ASTVisitor[str]):
             key_expression = self.visit(node.key_expression)
             value_expression = self.visit(node.value_expression)
             condition = self.visit(node.condition) if node.condition is not None else None
-        result = f"{{{key_expression}: {value_expression} " f"for {variables} in {iterable}"
+        result = f"{{{key_expression}: {value_expression} for {variables} in {iterable}"
         if condition is not None:
             result += f" if {condition}"
         return result + "}"

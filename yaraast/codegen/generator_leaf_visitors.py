@@ -323,7 +323,7 @@ def _format_line_comment_text(text: str) -> str:
 
 
 def visit_extern_import(node: Any) -> str:
-    value = f"import \"{format_nonempty_quoted_value(node.module_path, 'Import module')}\""
+    value = f'import "{format_nonempty_quoted_value(node.module_path, "Import module")}"'
     _validate_collection(node.rules, "ExternImport rules")
     if node.rules:
         rules = [validate_yara_identifier_path(rule, "extern rule") for rule in node.rules]

@@ -236,8 +236,7 @@ class PlainString(StringDefinition):
         for base64_name in sorted(names & _BASE64_MODIFIER_NAMES):
             for incompatible_name in sorted(names & _BASE64_INCOMPATIBLE_MODIFIERS):
                 msg = (
-                    f"String modifier '{incompatible_name}' cannot be combined "
-                    f"with '{base64_name}'"
+                    f"String modifier '{incompatible_name}' cannot be combined with '{base64_name}'"
                 )
                 raise ValueError(msg)
         if "xor" not in names:

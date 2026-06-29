@@ -51,7 +51,7 @@ def _source_line_differences(original_source: str, reconstructed_source: str) ->
     ):
         if original.strip() != reconstructed.strip():
             differences.append(
-                f"Line {index + 1} differs: '{original.strip()}' vs " f"'{reconstructed.strip()}'",
+                f"Line {index + 1} differs: '{original.strip()}' vs '{reconstructed.strip()}'",
             )
     return differences
 

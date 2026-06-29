@@ -344,9 +344,7 @@ def _reject_invalid_string_binary_operands(node: Any) -> None:
         or _is_definitely_boolean_expression(left)
         or left_type in {"integer", "double"}
     ):
-        msg = (
-            f"Left operand of '{node.operator}' must be string-like or array " "for libyara output"
-        )
+        msg = f"Left operand of '{node.operator}' must be string-like or array for libyara output"
         raise ValueError(msg)
     if node.operator == "matches":
         if isinstance(node.right, ParenthesesExpression) and isinstance(right, RegexLiteral):
@@ -671,7 +669,7 @@ def validate_function_call_arguments(node: Any, *, allow_unknown_unqualified: bo
         msg = f"Function '{function_name}' is not supported by libyara output"
         raise ValueError(msg)
     if len(node.arguments) != 1:
-        msg = f"Builtin function '{function_name}' expects exactly 1 argument " "for libyara output"
+        msg = f"Builtin function '{function_name}' expects exactly 1 argument for libyara output"
         raise ValueError(msg)
     if _is_definitely_non_integer_expression(node.arguments[0]):
         msg = f"Builtin function '{function_name}' argument must be integer for libyara output"
@@ -977,8 +975,7 @@ def _validate_generic_module_function_argument_types(
         if compatible:
             continue
         msg = (
-            f"Module function '{module_name}.{function_name}' does not accept "
-            "these argument types"
+            f"Module function '{module_name}.{function_name}' does not accept these argument types"
         )
         raise ValueError(msg)
 
@@ -1258,7 +1255,7 @@ def validate_tuple_indexing_target(target: Any) -> None:
     normalized = _normalize_postfix_index_target(target)
     if isinstance(normalized, FunctionCall | TupleExpression):
         return
-    msg = "Tuple indexing target must be a function call or tuple expression " "for YARA-X output"
+    msg = "Tuple indexing target must be a function call or tuple expression for YARA-X output"
     raise ValueError(msg)
 
 

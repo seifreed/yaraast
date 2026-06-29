@@ -395,9 +395,7 @@ def _collect_contextual_expression_errors(
     if isinstance(value, RangeExpression):
         if in_iterable or in_range:
             return _collect_contextual_expression_errors([value.low, value.high])
-        return {
-            "Range expressions are only valid in iterable or range contexts " "for libyara output"
-        }
+        return {"Range expressions are only valid in iterable or range contexts for libyara output"}
 
     if isinstance(value, ASTNode):
         node_errors: set[str] = set()

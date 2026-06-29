@@ -641,7 +641,7 @@ class AstHasher(ASTVisitor[str]):
             )
             extra_parts.append(f"parameters={parameters}")
         extra = "|".join(extra_parts)
-        return f"Pragma({node.pragma_type.value},{node.name},{args}," f"{node.scope.value},{extra})"
+        return f"Pragma({node.pragma_type.value},{node.name},{args},{node.scope.value},{extra})"
 
     def visit_pragma_block(self, node) -> str:
         _validate_real_ast_node(node)
