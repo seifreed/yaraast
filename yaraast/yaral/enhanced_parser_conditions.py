@@ -87,6 +87,18 @@ class EnhancedYaraLParserConditionsMixin:
                 self._advance()
                 return self._parse_n_of_condition(count_val)
             self.current = saved
+            if self._is_event_value_comparison_start():
+                return self._parse_value_comparison_condition()
+
+        if (
+            self._check(BaseTokenType.DOUBLE) or self._check(BaseTokenType.STRING)
+        ) and self._is_event_value_comparison_start():
+            return self._parse_value_comparison_condition()
+
+        if (
+            self._check(BaseTokenType.BOOLEAN_TRUE) or self._check(BaseTokenType.BOOLEAN_FALSE)
+        ) and self._is_event_value_comparison_start():
+            return self._parse_value_comparison_condition()
 
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
             if self._peek_ahead(1) and self._peek_ahead(1).type == BaseTokenType.DOT:
@@ -113,6 +125,14 @@ class EnhancedYaraLParserConditionsMixin:
             return self._parse_field_comparison()
 
         raise self._error("Expected condition expression")
+
+    def _is_event_value_comparison_start(self) -> bool:
+        saved = self.current
+        try:
+            self._parse_event_value()
+            return self._check_condition_operator()
+        finally:
+            self.current = saved
 
     def _parse_value_comparison_condition(self) -> VariableComparisonCondition:
         left = self._parse_event_value()

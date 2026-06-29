@@ -59,7 +59,7 @@ KEYWORDS = {
 
 TIME_PATTERN = re.compile(r"(\d+)([smhd])(?![A-Za-z0-9_])")
 EVENT_VAR_PATTERN = re.compile(r"\$[a-zA-Z_][a-zA-Z0-9_]*")
-REFERENCE_LIST_PATTERN = re.compile(r"%[a-zA-Z_][a-zA-Z0-9_]*%")
+REFERENCE_LIST_PATTERN = re.compile(r"%[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*%?")
 UDM_FIELD_PATTERN = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)+")
 
 TWO_CHAR_TOKENS = {
