@@ -400,6 +400,25 @@ def test_ast_benchmarker_rejects_invalid_iterations(tmp_path: Path) -> None:
         benchmarker.benchmark_codegen(missing, iterations=1, file_timeout=0.0)
 
 
+def test_ast_benchmarker_roundtrip_reuses_last_ast_for_stats(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+    ast = _parse_yara("rule r { condition: true }")
+
+    def parse_once_per_iteration(_content: str) -> YaraFile:
+        nonlocal calls
+        calls += 1
+        return ast
+
+    monkeypatch.setattr(benchmark_tools, "parse_yara_source", parse_once_per_iteration)
+
+    result = ASTBenchmarker._time_roundtrip("rule r { condition: true }", iterations=3)
+
+    assert calls == 3
+    assert result[1] == 1
+
+
 def test_ast_benchmarker_reports_invalid_file_paths(tmp_path: Path) -> None:
     benchmarker = ASTBenchmarker()
 

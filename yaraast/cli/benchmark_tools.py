@@ -10,7 +10,7 @@ import statistics
 import time
 from typing import Any, TypeVar
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.cli.utils import _path_exists_and_is_dir
 from yaraast.parser.source import parse_yara_source
 from yaraast.performance import StreamingParser
@@ -346,6 +346,7 @@ class ASTBenchmarker:
         """Run parse->generate roundtrip iterations and return average time and stats."""
         ASTBenchmarker._validate_iterations(iterations)
         times = []
+        ast: YaraFile | None = None
         for _ in range(iterations):
             start = time.perf_counter()
             ast = parse_yara_source(content)
@@ -354,7 +355,9 @@ class ASTBenchmarker:
             end = time.perf_counter()
             times.append(end - start)
 
-        ast = parse_yara_source(content)
+        if ast is None:
+            msg = "iterations must be at least 1"
+            raise ValueError(msg)
         return (
             statistics.mean(times),
             len(ast.rules),
