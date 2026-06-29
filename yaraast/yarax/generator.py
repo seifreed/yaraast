@@ -26,6 +26,7 @@ from yaraast.codegen.generator_formatting import (
 from yaraast.codegen.generator_helpers import (
     format_hex_jump_bounds,
     format_integer_literal,
+    format_string_reference_identifier,
     output_string_identifier,
     plain_string_render_source,
 )
@@ -180,6 +181,31 @@ class YaraXGenerator(BaseGenerator):
         finally:
             self._allow_string_placeholder = previous
         return f"for {quantifier} of {string_set} : ({condition})"
+
+    def visit_at_expression(self, node: Any) -> str:
+        string_id = self._format_yarax_reference_subject(node.string_id)
+        return f"{string_id} at {self.visit(node.offset)}"
+
+    def visit_in_expression(self, node: Any) -> str:
+        from yaraast.ast.expressions import ParenthesesExpression, RangeExpression
+
+        subject = self._format_yarax_reference_subject(node.subject)
+        range_node = node.range
+        if isinstance(range_node, ParenthesesExpression) and isinstance(
+            range_node.expression, RangeExpression
+        ):
+            range_text = self.visit(range_node.expression)
+        else:
+            range_text = self.visit(range_node)
+        return f"{subject} in ({range_text})"
+
+    def _format_yarax_reference_subject(self, subject: Any) -> str:
+        if hasattr(subject, "accept"):
+            return self.visit(subject)
+        return format_string_reference_identifier(
+            subject,
+            allow_placeholder=getattr(self, "_allow_string_placeholder", False),
+        )
 
     def _format_yarax_modifiers(self, modifiers: object) -> str:
         if not modifiers:

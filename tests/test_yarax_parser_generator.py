@@ -208,6 +208,59 @@ rule duplicate {
     assert [rule.name for rule in ast.rules] == ["duplicate", "duplicate"]
 
 
+def test_yarax_accepts_nested_with_expression_in_for_body() -> None:
+    yarax_code = """
+rule nested_with_for {
+    strings:
+        $a = { 50 4B 05 06 }
+    condition:
+        for any i in (1..10): (
+            with
+                offset = uint32(@a[i] + 16),
+                value = uint32be(offset): (
+                    value != 0x504b0102
+                )
+        )
+}
+"""
+
+    ast = YaraXParser(yarax_code).parse()
+    assert "with offset =" in YaraXGenerator().generate(ast)
+
+
+def test_yarax_accepts_percentage_of_with_at_restriction() -> None:
+    yarax_code = """
+rule percentage_of_at {
+    strings:
+        $a = "foo"
+        $b = "bar"
+    condition:
+        70% of ($*) at 0
+}
+"""
+
+    ast = YaraXParser(yarax_code).parse()
+    generated = YaraXGenerator().generate(ast)
+    assert "70% of ($*) at 0" in generated
+    YaraXParser(generated).parse()
+
+
+def test_yarax_accepts_nested_with_expression_in_boolean_expression() -> None:
+    yarax_code = """
+rule nested_with_boolean {
+    condition:
+        with a = 1, b = 2, c = 3 : (
+            a == 1 and b == 2 and with c = 4 : ( c == 4 )
+        )
+}
+"""
+
+    ast = YaraXParser(yarax_code).parse()
+    generated = YaraXGenerator().generate(ast)
+    assert "and with c = 4: (c == 4)" in generated
+    YaraXParser(generated).parse()
+
+
 def test_yarax_list_and_spread_expression() -> None:
     expr = _parse_expr("[1, ...arr, 4]")
     assert isinstance(expr, ListExpression)

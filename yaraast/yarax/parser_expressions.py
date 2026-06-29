@@ -78,6 +78,9 @@ class YaraXParserExpressionsMixin:
         if self._check_keyword("match"):
             return cast(Expression, self._parse_pattern_match())
 
+        if self._check_keyword("with"):
+            return cast(Expression, self._parse_with_statement())
+
         if (
             getattr(self, "_allow_contextual_keyword_expression", False)
             and self._check_any(TokenType.AS, TokenType.INCLUDE)
@@ -91,6 +94,9 @@ class YaraXParserExpressionsMixin:
             )
 
         return cast(Expression, cast(Any, super())._parse_primary_expression())
+
+    def _reject_percentage_of_postfix(self: Any, expr: Expression, token: Any) -> None:
+        del expr, token
 
     def _parse_of_string_set(self: Any) -> Expression:
         """Parse YARA string sets without treating parenthesized sets as tuples."""
