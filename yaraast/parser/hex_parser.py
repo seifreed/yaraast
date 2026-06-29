@@ -66,19 +66,32 @@ class HexStringParser:
         self.error_token = error_token
         self.content = ""
         self.pos = 0
+        self._allow_zero_jump = False
+        self._allow_empty_lower_bound = False
 
-    def parse(self, hex_content: str, *, validate_placement: bool = True) -> list[HexToken]:
+    def parse(
+        self,
+        hex_content: str,
+        *,
+        validate_placement: bool = True,
+        allow_zero_jump: bool = False,
+        allow_empty_lower_bound: bool = False,
+    ) -> list[HexToken]:
         """Parse hex string content into tokens.
 
         Args:
             hex_content: The raw hex string content (without curly braces).
             validate_placement: Enforce libyara jump placement constraints.
+            allow_zero_jump: Accept exact zero-length jumps such as [0].
+            allow_empty_lower_bound: Accept max-only ranges such as [-10].
 
         Returns:
             List of HexToken objects representing the parsed hex string.
         """
         self.content = self._remove_comments(hex_content)
         self.pos = 0
+        self._allow_zero_jump = allow_zero_jump
+        self._allow_empty_lower_bound = allow_empty_lower_bound
         tokens: list[HexToken] = []
 
         while self.pos < len(self.content):
@@ -240,7 +253,7 @@ class HexStringParser:
                 if len(parts) != 2:
                     msg = "Invalid jump range"
                     raise HexParseError(msg, self.pos)
-                if not parts[0].strip() and parts[1].strip():
+                if not self._allow_empty_lower_bound and not parts[0].strip() and parts[1].strip():
                     msg = "Invalid jump range"
                     raise HexParseError(msg, self.pos)
                 min_jump = int(parts[0]) if parts[0].strip() else None
@@ -249,7 +262,7 @@ class HexStringParser:
                 return HexJump(min_jump=min_jump, max_jump=max_jump)
 
             val = int(jump_str)
-            if val == 0:
+            if val == 0 and not self._allow_zero_jump:
                 msg = "Invalid jump length"
                 raise HexParseError(msg, self.pos)
             self._validate_jump_bounds(val, val)

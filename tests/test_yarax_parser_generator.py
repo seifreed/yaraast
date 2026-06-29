@@ -16,6 +16,7 @@ from yaraast.ast.expressions import (
     SetExpression,
 )
 from yaraast.ast.rules import Rule
+from yaraast.ast.strings import HexJump, HexString
 from yaraast.parser._shared import ParserError
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -103,6 +104,51 @@ rule literal_underscores {
     assert "43707 == 43707" in generated
     assert " and " in generated
     YaraXParser(generated).parse()
+
+
+def test_yarax_accepts_multiline_string_and_negative_float_meta() -> None:
+    yarax_code = '''
+rule meta_literals {
+    meta:
+        score = -3.14
+        text = """foo
+bar"""
+    condition:
+        true
+}
+'''
+
+    ast = YaraXParser(yarax_code).parse()
+    rule = ast.rules[0]
+    assert rule.meta[0].value == -3.14
+    assert rule.meta[1].value == "foo\nbar"
+
+    generated = YaraXGenerator().generate(ast)
+    assert "score = -3.14" in generated
+    assert 'text = "foo\\nbar"' in generated
+    YaraXParser(generated).parse()
+
+
+def test_yarax_accepts_parser_level_hex_jump_forms() -> None:
+    yarax_code = """
+rule hex_jumps {
+    strings:
+        $a = { 11 [0] 22 [-100] 33 [-] 44 [100-] }
+    condition:
+        true
+}
+"""
+
+    ast = YaraXParser(yarax_code).parse()
+    string_def = ast.rules[0].strings[0]
+    assert isinstance(string_def, HexString)
+    jumps = [token for token in string_def.tokens if isinstance(token, HexJump)]
+    assert [(jump.min_jump, jump.max_jump) for jump in jumps] == [
+        (0, 0),
+        (None, 100),
+        (None, None),
+        (100, None),
+    ]
 
 
 def test_yarax_list_and_spread_expression() -> None:

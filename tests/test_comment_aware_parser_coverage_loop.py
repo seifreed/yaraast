@@ -592,8 +592,8 @@ def test_parse_meta_section_missing_key_after_scope_raises() -> None:
 # ---------------------------------------------------------------------------
 def test_parse_meta_section_minus_without_integer_raises() -> None:
     """
-    A minus sign in a meta value not followed by an integer raises
-    'Expected integer after '-' in meta value' (lines 577-578).
+    A minus sign in a meta value not followed by a number raises
+    'Expected numeric literal after '-' in meta value' (lines 577-578).
     """
     p = CommentAwareParser()
     p.comment_tokens = []
@@ -606,7 +606,7 @@ def test_parse_meta_section_minus_without_integer_raises() -> None:
         _tok(TokenType.EOF, "", 1),
     ]
     p.current = 0
-    with pytest.raises(ParserError, match="Expected integer after '-' in meta value"):
+    with pytest.raises(ParserError, match="Expected numeric literal after '-' in meta value"):
         p._parse_meta_section()
 
 
