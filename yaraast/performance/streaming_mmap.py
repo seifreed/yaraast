@@ -5,74 +5,155 @@ from __future__ import annotations
 from collections.abc import Iterator
 import mmap
 
-from yaraast.lexer.lexer import Lexer
-from yaraast.lexer.tokens import Token, TokenType
+_IDENTIFIER_CHARS = frozenset("_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+
+def _is_identifier_char(char: str) -> bool:
+    return char in _IDENTIFIER_CHARS
+
+
+def _matches_keyword(content: str, index: int, keyword: str) -> bool:
+    end = index + len(keyword)
+    if not content.startswith(keyword, index):
+        return False
+    if index > 0 and _is_identifier_char(content[index - 1]):
+        return False
+    return end >= len(content) or not _is_identifier_char(content[end])
+
+
+def _skip_whitespace(content: str, index: int) -> int:
+    while index < len(content) and content[index].isspace():
+        index += 1
+    return index
+
+
+def _skip_line_comment(content: str, index: int) -> int:
+    newline = content.find("\n", index + 2)
+    if newline == -1:
+        return len(content)
+    return newline + 1
+
+
+def _skip_block_comment(content: str, index: int) -> int:
+    end = content.find("*/", index + 2)
+    if end == -1:
+        return len(content)
+    return end + 2
+
+
+def _skip_quoted_string(content: str, index: int) -> int:
+    index += 1
+    escaped = False
+    while index < len(content):
+        char = content[index]
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == '"':
+            return index + 1
+        index += 1
+    return index
+
+
+def _skip_regex_literal(content: str, index: int) -> int:
+    index += 1
+    escaped = False
+    in_class = False
+    while index < len(content):
+        char = content[index]
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == "[":
+            in_class = True
+        elif char == "]":
+            in_class = False
+        elif char == "/" and not in_class:
+            return index + 1
+        index += 1
+    return index
+
+
+def _skip_non_code(content: str, index: int) -> int | None:
+    if content.startswith("//", index):
+        return _skip_line_comment(content, index)
+    if content.startswith("/*", index):
+        return _skip_block_comment(content, index)
+    if content[index] == '"':
+        return _skip_quoted_string(content, index)
+    if content[index] == "/":
+        return _skip_regex_literal(content, index)
+    return None
+
+
+def _rule_start_at(content: str, index: int) -> int | None:
+    if _matches_keyword(content, index, "rule"):
+        return index
+    modifier_length = 0
+    if _matches_keyword(content, index, "private"):
+        modifier_length = len("private")
+    elif _matches_keyword(content, index, "global"):
+        modifier_length = len("global")
+    else:
+        return None
+    rule_index = _skip_whitespace(content, index + modifier_length)
+    if _matches_keyword(content, rule_index, "rule"):
+        return index
+    return None
+
+
+def _find_rule_body_start(content: str, index: int) -> int | None:
+    while index < len(content):
+        skipped = _skip_non_code(content, index)
+        if skipped is not None:
+            index = skipped
+            continue
+        if content[index] == "{":
+            return index
+        index += 1
+    return None
+
+
+def _find_rule_end(content: str, index: int) -> int | None:
+    brace_count = 1
+    index += 1
+    while index < len(content):
+        skipped = _skip_non_code(content, index)
+        if skipped is not None:
+            index = skipped
+            continue
+        if content[index] == "{":
+            brace_count += 1
+        elif content[index] == "}":
+            brace_count -= 1
+            if brace_count == 0:
+                return index + 1
+        index += 1
+    return None
 
 
 def iter_rule_text_spans_from_text(content: str) -> Iterator[tuple[str, int, int]]:
     """Yield complete rule texts and their character spans from YARA source text."""
-    line_starts = [0]
-    for index, char in enumerate(content):
-        if char == "\n":
-            line_starts.append(index + 1)
-
-    def get_char_pos(line: int, column: int) -> int:
-        return line_starts[line - 1] + (column - 1)
-
-    tokens: list[Token] = Lexer[list[Token]](content).tokenize()
     index = 0
-    while index < len(tokens):
-        token = tokens[index]
-
-        if token.type in (TokenType.IMPORT, TokenType.INCLUDE):
-            index += 1
-            while index < len(tokens) and tokens[index].type != TokenType.STRING:
-                index += 1
+    while index < len(content):
+        skipped = _skip_non_code(content, index)
+        if skipped is not None:
+            index = skipped
+            continue
+        rule_start = _rule_start_at(content, index)
+        if rule_start is None:
             index += 1
             continue
-
-        if token.type not in (TokenType.RULE, TokenType.PRIVATE, TokenType.GLOBAL):
-            index += 1
-            continue
-
-        rule_start_token = token
-        while index < len(tokens) and tokens[index].type != TokenType.RULE:
-            index += 1
-        if index >= len(tokens):
+        body_start = _find_rule_body_start(content, rule_start)
+        if body_start is None:
             break
-
-        index += 1
-        if index >= len(tokens) or tokens[index].type != TokenType.IDENTIFIER:
-            index += 1
-            continue
-
-        index += 1
-        if index < len(tokens) and tokens[index].type == TokenType.COLON:
-            index += 1
-            while index < len(tokens) and tokens[index].type == TokenType.IDENTIFIER:
-                index += 1
-
-        while index < len(tokens) and tokens[index].type != TokenType.LBRACE:
-            index += 1
-        if index >= len(tokens):
+        end_pos = _find_rule_end(content, body_start)
+        if end_pos is None:
             break
-
-        brace_count = 1
-        index += 1
-        while index < len(tokens) and brace_count > 0:
-            if tokens[index].type == TokenType.LBRACE:
-                brace_count += 1
-            elif tokens[index].type == TokenType.RBRACE:
-                brace_count -= 1
-            index += 1
-
-        if brace_count != 0:
-            continue
-
-        brace_end_token = tokens[index - 1]
-        start_pos = get_char_pos(rule_start_token.line, rule_start_token.column)
-        end_pos = get_char_pos(brace_end_token.line, brace_end_token.column) + 1
-        yield content[start_pos:end_pos], start_pos, end_pos
+        yield content[rule_start:end_pos], rule_start, end_pos
+        index = end_pos
 
 
 def iter_rule_texts_from_text(content: str) -> Iterator[str]:

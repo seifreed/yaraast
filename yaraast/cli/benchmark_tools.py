@@ -23,6 +23,7 @@ from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlin
 from yaraast.yarax.generator import YaraXGenerator
 
 _BENCHMARK_STREAMING_PARSE_THRESHOLD_BYTES = 10 * 1024 * 1024
+_BENCHMARK_STREAMING_AST_NODE_COUNT_LIMIT_BYTES = 50 * 1024 * 1024
 _T = TypeVar("_T")
 
 
@@ -109,17 +110,28 @@ class ASTBenchmarker:
     def _collect_streaming_parse_counts(file_path: Path) -> tuple[int, int, int]:
         """Parse a YARA file via streaming parser and collect lightweight statistics."""
         parser = StreamingParser()
+        count_ast_nodes = (
+            file_path.stat().st_size <= _BENCHMARK_STREAMING_AST_NODE_COUNT_LIMIT_BYTES
+        )
         rules_count = 0
         strings_count = 0
-        ast_nodes = 1  # YaraFile itself
+        ast_nodes = 1 if count_ast_nodes else 0
 
         for rule in parser.parse_file(file_path):
+            parse_errors = parser.get_statistics().get("parse_errors", 0)
+            if parse_errors > 0:
+                msg = f"streaming parser reported {parse_errors} parse errors"
+                raise ValueError(msg)
             rules_count += 1
             strings_count += len(rule.strings)
-            ast_nodes += ASTBenchmarker._count_ast_nodes(rule)
+            if count_ast_nodes:
+                ast_nodes += ASTBenchmarker._count_ast_nodes(rule)
 
         parse_errors = parser.get_statistics().get("parse_errors", 0)
-        if rules_count == 0 or parse_errors > 0:
+        if parse_errors > 0 and rules_count > 0:
+            msg = f"streaming parser reported {parse_errors} parse errors"
+            raise ValueError(msg)
+        if rules_count == 0:
             # Fallback to full parse to validate files that stream as empty.
             content = _read_benchmark_yara_text(file_path)
             ast = parse_yara_source(content)

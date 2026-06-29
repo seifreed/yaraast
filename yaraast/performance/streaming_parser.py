@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from yaraast.ast.rules import Rule
-from yaraast.dialects import YaraDialect
+from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.errors import YaraASTError
 from yaraast.parser.parser import Parser
 from yaraast.parser.source import parse_yara_source
@@ -430,13 +430,14 @@ class StreamingParser:
             self._stats["bytes_processed"] = file_size
             return
 
+        effective_dialect = self.dialect or detect_dialect(current[0])
         for next_rule in rule_iter:
             rule_text, _, byte_end = current
-            yield from self._parse_mmap_rule(rule_text, byte_end, callback)
+            yield from self._parse_mmap_rule(rule_text, byte_end, callback, effective_dialect)
             current = next_rule
 
         rule_text, _, _ = current
-        yield from self._parse_mmap_rule(rule_text, file_size, callback)
+        yield from self._parse_mmap_rule(rule_text, file_size, callback, effective_dialect)
         self._stats["bytes_processed"] = file_size
 
     def _parse_mmap_rule(
@@ -444,20 +445,21 @@ class StreamingParser:
         rule_text: str,
         bytes_processed: int,
         callback: Callable[[Rule], None] | None,
+        dialect: YaraDialect | None = None,
     ) -> Iterator[Rule]:
         """Parse one mmap-extracted rule and update progress statistics."""
         self._stats["bytes_processed"] = bytes_processed
-        rule = self._parse_rule_text(rule_text)
+        rule = self._parse_rule_text(rule_text, dialect)
         if rule is not None:
             self._stats["rules_parsed"] += 1
             if callback:
                 callback(rule)
             yield rule
 
-    def _parse_rule_text(self, rule_text: str) -> Rule | None:
+    def _parse_rule_text(self, rule_text: str, dialect: YaraDialect | None = None) -> Rule | None:
         """Parse a single rule text using the appropriate dialect parser."""
         try:
-            yara_file = self._parse_content(rule_text)
+            yara_file = self._parse_content(rule_text, dialect)
             if yara_file.rules:
                 return cast(Rule, yara_file.rules[0])
         except (ValueError, YaraASTError):
@@ -465,12 +467,13 @@ class StreamingParser:
 
         return None
 
-    def _parse_content(self, content: str) -> Any:
+    def _parse_content(self, content: str, dialect: YaraDialect | None = None) -> Any:
         """Parse full content using the configured dialect or auto-detection."""
-        if self.dialect is not None:
-            if self.dialect != YaraDialect.YARA and self._dialect_parser_factory is not None:
-                return self._dialect_parser_factory(content, self.dialect)
-            if self.dialect == YaraDialect.YARA:
+        active_dialect = dialect or self.dialect
+        if active_dialect is not None:
+            if active_dialect != YaraDialect.YARA and self._dialect_parser_factory is not None:
+                return self._dialect_parser_factory(content, active_dialect)
+            if active_dialect == YaraDialect.YARA:
                 return self.parser.parse(content)
         return parse_yara_source(content)
 

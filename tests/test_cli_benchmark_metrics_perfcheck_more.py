@@ -295,6 +295,22 @@ def test_ast_benchmarker_streaming_parse_for_large_files(
     assert result.file_size == large_file.stat().st_size
 
 
+def test_ast_benchmarker_streaming_parse_skips_node_count_for_huge_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    large_file = tmp_path / "large_no_nodes.yar"
+    large_file.write_text("rule bench { condition: true }", encoding="utf-8")
+    monkeypatch.setattr(benchmark_tools, "_BENCHMARK_STREAMING_AST_NODE_COUNT_LIMIT_BYTES", 1)
+
+    benchmarker = ASTBenchmarker(streaming_parse_threshold_bytes=1)
+    result = benchmarker.benchmark_parsing(large_file, iterations=1)
+
+    assert result.success is True
+    assert result.rules_count == 1
+    assert result.ast_nodes == 0
+
+
 def test_ast_benchmarker_streaming_parse_reports_parse_errors(tmp_path: Path) -> None:
     broken = tmp_path / "broken_large.yar"
     broken.write_text(
@@ -310,7 +326,10 @@ def test_ast_benchmarker_streaming_parse_reports_parse_errors(tmp_path: Path) ->
     assert "Parser error at" in result.error or "streaming parser reported" in result.error
 
 
-def test_ast_benchmarker_streaming_parse_rejects_partial_parse_errors(tmp_path: Path) -> None:
+def test_ast_benchmarker_streaming_parse_rejects_partial_parse_errors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     mixed = tmp_path / "mixed_large.yar"
     mixed.write_text(
         dedent(
@@ -334,11 +353,16 @@ def test_ast_benchmarker_streaming_parse_rejects_partial_parse_errors(tmp_path: 
     )
 
     benchmarker = ASTBenchmarker(streaming_parse_threshold_bytes=1)
+    monkeypatch.setattr(
+        benchmark_tools,
+        "parse_yara_source",
+        lambda _content: pytest.fail("partial streaming errors must not full-parse fallback"),
+    )
     result = benchmarker.benchmark_parsing(mixed, iterations=1)
 
     assert result.success is False
     assert result.error is not None
-    assert "Parser error at" in result.error
+    assert "streaming parser reported" in result.error
 
 
 def test_ast_benchmarker_rejects_invalid_iterations(tmp_path: Path) -> None:

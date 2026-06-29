@@ -11,6 +11,9 @@ import pytest
 
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
+from yaraast.dialects import YaraDialect
+from yaraast.performance.streaming_mmap import iter_rule_texts_from_text
+import yaraast.performance.streaming_parser as streaming_parser_module
 from yaraast.performance.streaming_parser import StreamingParser, _read_yara_text_file
 from yaraast.performance.validation import validate_file_path_sequence
 
@@ -146,6 +149,57 @@ rule second {
 
     assert [rule.name for rule in rules] == ["brace_string", "second"]
     assert parser.get_statistics()["parse_errors"] == 0
+
+
+def test_streaming_rule_text_extractor_handles_non_code_braces() -> None:
+    source = r"""
+private rule first {
+  strings:
+    $a = "}"
+    $h = { 01 02 { 03 04 } 05 }
+  condition:
+    $a and $h and /a{2,3}\}/
+}
+
+/* rule ignored { condition: true } */
+global rule second {
+  condition:
+    true // } ignored
+}
+"""
+
+    rules = list(iter_rule_texts_from_text(source))
+
+    assert len(rules) == 2
+    assert rules[0].lstrip().startswith("private rule first")
+    assert rules[1].lstrip().startswith("global rule second")
+
+
+def test_streaming_parse_file_detects_dialect_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "many.yar"
+    path.write_text(
+        """
+rule one { condition: true }
+rule two { condition: true }
+""",
+        encoding="utf-8",
+    )
+    calls = 0
+
+    def counted_detect(_content: str) -> YaraDialect:
+        nonlocal calls
+        calls += 1
+        return YaraDialect.YARA
+
+    monkeypatch.setattr(streaming_parser_module, "detect_dialect", counted_detect)
+
+    rules = list(StreamingParser().parse_file(path))
+
+    assert [rule.name for rule in rules] == ["one", "two"]
+    assert calls == 1
 
 
 def test_streaming_parser_progress_cancel_and_memory_paths(tmp_path: Path) -> None:
