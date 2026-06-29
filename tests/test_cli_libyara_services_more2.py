@@ -102,6 +102,9 @@ def test_scan_yara_rejects_null_byte_target(tmp_path: Path) -> None:
 
 
 def test_libyara_services_reject_yarax_only_syntax(tmp_path: Path) -> None:
+    if not lib.YARA_AVAILABLE:
+        pytest.skip("yara-python is not installed")
+
     rule_file = tmp_path / "native_yarax.yar"
     rule_file.write_text(
         "rule x { condition: with xs = [1]: match xs { _ => true } }",

@@ -18,6 +18,7 @@ from typing import Any
 
 import pytest
 
+from yaraast.libyara.compiler import YARA_AVAILABLE
 from yaraast.libyara.direct_helpers import (
     compile_source_with_file_context,
 )
@@ -61,6 +62,7 @@ def _uncached_runtime() -> LspRuntime:
 class TestCompileSourceWithFileContext:
     """Direct calls to compile_source_with_file_context exercising all branches."""
 
+    @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
     def test_happy_path_compiles_rule_and_cleans_up(self, tmp_path: Path) -> None:
         """Arrange: valid source and real writable directory.
 
@@ -79,6 +81,7 @@ class TestCompileSourceWithFileContext:
         remaining = [f for f in os.listdir(tmp_path) if f.endswith(".yar")]
         assert remaining == []
 
+    @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
     def test_happy_path_returns_directcompilationresult(self, tmp_path: Path) -> None:
         """The return value must be a DirectCompilationResult with warnings."""
         from yaraast.libyara.direct_models import DirectCompilationResult
@@ -91,6 +94,7 @@ class TestCompileSourceWithFileContext:
         assert isinstance(result, DirectCompilationResult)
         assert isinstance(result.warnings, list)
 
+    @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
     def test_accepts_pathlike_source_path(self, tmp_path: Path) -> None:
         """Accepts a pathlib.Path object (PathLike) as source_path."""
         source = _minimal_rule("pathlike_rule")
@@ -210,6 +214,7 @@ class TestCompileSourceWithFileContext:
         with pytest.raises(ValueError, match="source_path must not traverse a symlink"):
             compile_source_with_file_context(source, {}, source_path, False)
 
+    @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
     def test_compile_failure_reported_not_raised(self, tmp_path: Path) -> None:
         """Invalid YARA source yields a failed DirectCompilationResult, not an exception."""
         source = "this is not valid yara syntax {"
@@ -220,6 +225,7 @@ class TestCompileSourceWithFileContext:
         assert result.success is False
         assert len(result.errors) > 0
 
+    @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
     def test_cleanup_occurs_even_when_compile_fails(self, tmp_path: Path) -> None:
         """The finally block removes the temp file even when compilation fails."""
         source = "bad syntax"
@@ -230,6 +236,7 @@ class TestCompileSourceWithFileContext:
         remaining = [f for f in os.listdir(tmp_path) if f.endswith(".yar")]
         assert remaining == []
 
+    @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
     def test_externals_passed_through(self, tmp_path: Path) -> None:
         """External variables provided to compile_source_with_file_context are forwarded."""
         source = 'rule ext_rule { condition: my_var == "hello" }'
@@ -444,8 +451,9 @@ class TestAnalyzeComplexityParallelExceptionBranch:
         distinct from the exception-based failure at lines 54-56.
         """
         analyzer = ParallelAnalyzer(max_workers=1)
+        invalid_asts: list[Any] = ["not_a_yara_file"]
 
-        jobs = analyze_complexity_parallel(analyzer, ["not_a_yara_file"])  # type: ignore[list-item]
+        jobs = analyze_complexity_parallel(analyzer, invalid_asts)
 
         assert jobs[0].status == JobStatus.FAILED
         assert "complexity analysis input must be a YaraFile" in str(jobs[0].error)
@@ -460,9 +468,12 @@ class TestGenerateGraphsParallelFailedJobStats:
         Branch: job.status == JobStatus.FAILED → elif taken (line 72->68 = True path).
         """
         analyzer = ParallelAnalyzer(max_workers=1)
+        invalid_asts: list[Any] = ["not_a_yara_file"]
 
         jobs = generate_graphs_parallel(
-            analyzer, ["not_a_yara_file"], str(tmp_path)  # type: ignore[list-item]
+            analyzer,
+            invalid_asts,
+            str(tmp_path),
         )
 
         assert len(jobs) == 1
@@ -477,10 +488,11 @@ class TestGenerateGraphsParallelFailedJobStats:
 
         analyzer = ParallelAnalyzer(max_workers=1)
         valid_ast = Parser().parse(_minimal_rule("graph_rule"))
+        mixed_asts: list[Any] = [valid_ast, "not_a_yara_file"]
 
         jobs = generate_graphs_parallel(
             analyzer,
-            [valid_ast, "not_a_yara_file"],  # type: ignore[list-item]
+            mixed_asts,
             str(tmp_path),
         )
 

@@ -3,7 +3,7 @@
 from pathlib import Path
 import tempfile
 
-from yaraast.libyara import YARA_AVAILABLE, EquivalenceTester, LibyaraCompiler, LibyaraScanner
+from yaraast.libyara import YARA_AVAILABLE
 from yaraast.parser import Parser
 
 
@@ -15,6 +15,8 @@ def example_compilation() -> None:
         print("Error: yara-python is not installed")
         print("Install with: pip install yara-python")
         return
+
+    from yaraast.libyara import LibyaraCompiler
 
     # Parse YARA rules
     rule_text = """
@@ -66,6 +68,8 @@ def example_scanning() -> None:
 
     if not YARA_AVAILABLE:
         return
+
+    from yaraast.libyara import LibyaraCompiler, LibyaraScanner
 
     # Simple rule
     rule_text = """
@@ -121,6 +125,8 @@ def example_round_trip() -> None:
 
     if not YARA_AVAILABLE:
         return
+
+    from yaraast.libyara import EquivalenceTester
 
     # Original rules
     original_rules = """

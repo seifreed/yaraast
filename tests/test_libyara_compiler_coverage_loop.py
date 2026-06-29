@@ -62,6 +62,7 @@ def test_module_level_yara_none_and_constructor_importerror_when_yara_missing(
 
     import yaraast.libyara.compiler as compiler_module
 
+    original_available = compiler_module.YARA_AVAILABLE
     real_import = builtins.__import__
 
     def _block_yara_import(name: str, *args: Any, **kwargs: Any) -> Any:
@@ -86,8 +87,8 @@ def test_module_level_yara_none_and_constructor_importerror_when_yara_missing(
     # Reload once more so that subsequent tests in the same worker see a clean module.
     monkeypatch.undo()
     importlib.reload(compiler_module)
-    assert compiler_module.YARA_AVAILABLE is True
-    assert vars(compiler_module)["yara"] is not None
+    assert compiler_module.YARA_AVAILABLE is original_available
+    assert (vars(compiler_module)["yara"] is not None) is original_available
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +115,7 @@ def test_module_level_reraises_importerror_for_non_yara_modules(
 
     import yaraast.libyara.compiler as compiler_module
 
+    original_available = compiler_module.YARA_AVAILABLE
     real_import = builtins.__import__
     original_error = ImportError("broken sub-dep", name="yara._native")
 
@@ -129,7 +131,7 @@ def test_module_level_reraises_importerror_for_non_yara_modules(
     # monkeypatch restores builtins.__import__ automatically; reload to clean up.
     monkeypatch.undo()
     importlib.reload(compiler_module)
-    assert compiler_module.YARA_AVAILABLE is True
+    assert compiler_module.YARA_AVAILABLE is original_available
 
 
 # ---------------------------------------------------------------------------

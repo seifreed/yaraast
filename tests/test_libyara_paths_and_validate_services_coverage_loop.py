@@ -20,6 +20,7 @@ import pytest
 
 from yaraast.cli import validate_services as vs
 from yaraast.errors import ValidationError
+from yaraast.libyara import YARA_AVAILABLE
 from yaraast.libyara._paths import path_stat, require_file_path
 
 # ---------------------------------------------------------------------------
@@ -114,6 +115,9 @@ def test_roundtrip_test_returns_equivalence_result_for_valid_rule(tmp_path: Path
     to test_file_round_trip.  A well-formed YARA rule must round-trip cleanly,
     producing an EquivalenceResult with equivalent=True.
     """
+    if not YARA_AVAILABLE:
+        pytest.skip("yara-python is not installed")
+
     rule_path = tmp_path / "simple.yar"
     rule_path.write_text("rule simple { condition: true }", encoding="utf-8")
 
@@ -130,6 +134,9 @@ def test_roundtrip_test_with_test_data_returns_result(tmp_path: Path) -> None:
     through to the scanner.  Supplying test data exercises the scan_equivalent
     path in EquivalenceTester.
     """
+    if not YARA_AVAILABLE:
+        pytest.skip("yara-python is not installed")
+
     rule_path = tmp_path / "strings.yar"
     rule_path.write_text(
         'rule has_strings { strings: $a = "hello" condition: $a }',
@@ -149,6 +156,9 @@ def test_roundtrip_test_returns_failed_result_for_unparseable_file(tmp_path: Pat
     returns a non-equivalent result instead of raising.  This validates that
     roundtrip_test is a total function over invalid inputs.
     """
+    if not YARA_AVAILABLE:
+        pytest.skip("yara-python is not installed")
+
     bad_path = tmp_path / "broken.yar"
     bad_path.write_text("this is not valid yara @#$%", encoding="utf-8")
 
