@@ -111,7 +111,7 @@ def test_streaming_parser_emits_falsy_present_rule(monkeypatch: pytest.MonkeyPat
     rule = FalsyRule(name="falsy", condition=BooleanLiteral(True))
     parser = StreamingParser(buffer_size=8)
     callbacks: list[Rule] = []
-    monkeypatch.setattr(parser, "_parse_rule_text", lambda _rule_text: rule)
+    monkeypatch.setattr(parser, "_parse_rule_text", lambda _rule_text, _dialect=None: rule)
 
     rules = list(
         parser.parse_stream(io.StringIO("rule falsy { condition: true }"), callbacks.append)
@@ -425,7 +425,7 @@ def test_streaming_parser_parse_rule_text_propagates_internal_parser_errors(
 ) -> None:
     parser = StreamingParser()
 
-    def broken_parse_content(_content: str) -> object:
+    def broken_parse_content(_content: str, _dialect: object = None) -> object:
         raise AttributeError("parser state missing")
 
     monkeypatch.setattr(parser, "_parse_content", broken_parse_content)
@@ -459,7 +459,7 @@ def test_streaming_parser_parse_rules_from_file_propagates_internal_parser_error
     path.write_text("rule ok { condition: true }", encoding="utf-8")
     parser = StreamingParser()
 
-    def broken_parse_rule_text(_rule_text: str) -> object:
+    def broken_parse_rule_text(_rule_text: str, _dialect: object = None) -> object:
         raise AttributeError("parser state missing")
 
     monkeypatch.setattr(parser, "_parse_rule_text", broken_parse_rule_text)
