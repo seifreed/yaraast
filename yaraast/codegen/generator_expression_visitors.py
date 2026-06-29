@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import cache
 from typing import Any, cast
 
 from yaraast.codegen.generator_formatting import (
@@ -676,10 +677,15 @@ def validate_function_call_arguments(node: Any, *, allow_unknown_unqualified: bo
         raise ValueError(msg)
 
 
-def _known_builtin_module(module_name: str) -> Any | None:
+@cache
+def _load_builtin_modules_cached() -> Any:
     from yaraast.types.module_definitions import load_builtin_modules
 
-    return load_builtin_modules().get(module_name)
+    return load_builtin_modules()
+
+
+def _known_builtin_module(module_name: str) -> Any | None:
+    return _load_builtin_modules_cached().get(module_name)
 
 
 def _validate_known_module_function_call(node: Any) -> None:

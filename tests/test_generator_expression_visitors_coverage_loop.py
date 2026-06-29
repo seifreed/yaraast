@@ -43,6 +43,7 @@ from yaraast.codegen.generator_expression_visitors import (
     _is_definitely_non_numeric_expression,
     _is_invalid_for_iterable_set_item,
     _known_builtin_module_scalar_type_name,
+    _load_builtin_modules_cached,
     _normalize_postfix_target,
     _obvious_argument_type,
     _reject_boolean_expression,
@@ -1108,6 +1109,30 @@ def test_known_builtin_module_expression_type_unknown_module() -> None:
     fc = FunctionCall(function="mymod.myfunc", arguments=[])
     result = known_builtin_module_expression_type(fc)
     assert result is None
+
+
+def test_known_builtin_module_expression_type_reuses_loaded_modules(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from yaraast.types import module_definitions
+
+    calls = 0
+    real_load = module_definitions.load_builtin_modules
+
+    def counted_load() -> object:
+        nonlocal calls
+        calls += 1
+        return real_load()
+
+    _load_builtin_modules_cached.cache_clear()
+    monkeypatch.setattr(module_definitions, "load_builtin_modules", counted_load)
+
+    expression = MemberAccess(object=ModuleReference("pe"), member="sections")
+    for _ in range(3):
+        assert known_builtin_module_expression_type(expression) is not None
+
+    assert calls == 1
+    _load_builtin_modules_cached.cache_clear()
 
 
 # ---------------------------------------------------------------------------
