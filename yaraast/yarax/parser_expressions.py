@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from yaraast.ast.expressions import Expression, FunctionCall, Identifier
+from yaraast.ast.expressions import Expression, FunctionCall, Identifier, SetExpression
 from yaraast.lexer.tokens import TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.yarax.ast_nodes import (
@@ -31,6 +31,12 @@ class YaraXParserExpressionsMixin:
     def _parse_expression(self: Any) -> Expression:
         """Parse a full expression with YARA-X primary expressions."""
         return cast(Expression, cast(Any, super())._parse_expression())
+
+    def _validate_of_string_set(self: Any, expr: Expression) -> None:
+        """Allow YARA-X boolean-expression tuples in of-expressions."""
+        if isinstance(expr, SetExpression):
+            return
+        cast(Any, super())._validate_of_string_set(expr)
 
     def _parse_expression_allowing_contextual_keywords(self: Any) -> tuple[Expression, set[str]]:
         previous_allow: bool = getattr(self, "_allow_contextual_keyword_expression", False)

@@ -13,18 +13,30 @@ from yaraast.codegen.generator_expression_visitors import (
     validate_slice_target,
     validate_tuple_indexing_target,
 )
+from yaraast.codegen.generator_expressions import _render_quantifier, render_of_expression
 from yaraast.codegen.generator_formatting import (
     contextual_local_identifier_names,
     contextual_local_identifiers,
     escape_string_literal,
     format_meta_key,
+    format_nonempty_quoted_value,
     format_yarax_local_identifier,
     validate_yara_identifier,
 )
-from yaraast.codegen.generator_helpers import format_integer_literal
+from yaraast.codegen.generator_helpers import (
+    format_hex_jump_bounds,
+    format_integer_literal,
+    output_string_identifier,
+    plain_string_render_source,
+)
 
 if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.conditions import OfExpression
     from yaraast.ast.expressions import Expression
+    from yaraast.ast.modifiers import StringModifier
+    from yaraast.ast.rules import Import, Rule
+    from yaraast.ast.strings import HexString, PlainString
     from yaraast.yarax.ast_nodes import (
         ArrayComprehension,
         DictComprehension,
@@ -45,6 +57,35 @@ if TYPE_CHECKING:
 
 class YaraXGenerator(BaseGenerator):
     """Code generator for YARA-X with support for new syntax features."""
+
+    def visit_yara_file(self, node: YaraFile) -> str:
+        first = True
+        for items in (
+            node.pragmas,
+            node.imports,
+            node.extern_imports,
+            node.includes,
+            node.namespaces,
+            node.extern_rules,
+            node.rules,
+        ):
+            for item in items:
+                if not first:
+                    self._writeline()
+                first = False
+                rendered = self.visit(item)
+                if rendered:
+                    self._write(rendered)
+                    self._writeline()
+        return str(self.buffer.getvalue())
+
+    def visit_import(self, node: Import) -> str:
+        module_name = format_nonempty_quoted_value(node.module, "Import module")
+        self._write(f'import "{module_name}"')
+        return ""
+
+    def visit_rule(self, node: Rule) -> str:
+        return self._layout.visit_rule(self, node)
 
     def visit_meta(self, node: Any) -> str:
         key = format_meta_key(node.key, getattr(node, "scope", None))
@@ -92,6 +133,46 @@ class YaraXGenerator(BaseGenerator):
             return str(value)
         msg = f"Invalid YARA-X meta value type '{type(value).__name__}'"
         raise TypeError(msg)
+
+    def visit_string_modifier(self, node: StringModifier) -> str:
+        return str(node)
+
+    def visit_plain_string(self, node: PlainString) -> str:
+        indent = " " * (self.indent_level * self.indent_size)
+        source_value = plain_string_render_source(node)
+        escaped_value = self._escape_plain_string_value(source_value)
+        modifiers = self._format_yarax_modifiers(node.modifiers)
+        self._write(f'{indent}{output_string_identifier(node)} = "{escaped_value}"{modifiers}')
+        return ""
+
+    def visit_hex_string(self, node: HexString) -> str:
+        indent = " " * (self.indent_level * self.indent_size)
+        rendered_tokens = " ".join(self.visit(token) for token in node.tokens)
+        modifiers = self._format_yarax_modifiers(node.modifiers)
+        self._write(
+            f"{indent}{output_string_identifier(node)} = {{ {rendered_tokens} }}{modifiers}"
+        )
+        return ""
+
+    def visit_hex_jump(self, node: Any) -> str:
+        return format_hex_jump_bounds(node.min_jump, node.max_jump)
+
+    def visit_of_expression(self, node: OfExpression) -> str:
+        from yaraast.ast.expressions import SetExpression
+
+        if not isinstance(node.string_set, SetExpression):
+            return render_of_expression(self, node)
+        quantifier = _render_quantifier(self, node.quantifier, allow_percentage=True)
+        items = ", ".join(self.visit(element) for element in node.string_set.elements)
+        return f"{quantifier} of ({items})"
+
+    def _format_yarax_modifiers(self, modifiers: object) -> str:
+        if not modifiers:
+            return ""
+        if not isinstance(modifiers, list | tuple):
+            msg = "String modifiers must be a list or tuple for YARA-X output"
+            raise TypeError(msg)
+        return "".join(f" {self.visit(modifier)}" for modifier in modifiers)
 
     def _render_local_identifier(self, identifier: str, field_name: str) -> str:
         return format_yarax_local_identifier(identifier, field_name)

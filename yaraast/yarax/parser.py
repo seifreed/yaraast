@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import cast
 
+from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.strings import HexToken
 from yaraast.lexer.tokens import Token
 from yaraast.parser._shared import ParserError
@@ -46,3 +47,10 @@ class YaraXParser(
             )
         except HexParseError as e:
             raise ParserError(str(e), self._peek()) from e
+
+    def _register_rule_name(self, rule_name: str, rule_token: object) -> None:
+        """Track rule names without rejecting parser-level duplicates."""
+        self._rule_names.add(rule_name)
+
+    def _validate_parsed_string_modifiers(self, modifiers: list[StringModifier]) -> None:
+        """YARA-X parser keeps modifier semantics for later validation/generation."""

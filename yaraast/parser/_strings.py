@@ -203,11 +203,14 @@ class StringParsingMixin:
             else:
                 modifiers.append(StringModifier.from_name_value(mod_name))
 
+        self._validate_parsed_string_modifiers(modifiers)
+        return modifiers
+
+    def _validate_parsed_string_modifiers(self, modifiers: list[StringModifier]) -> None:
         try:
             validate_string_modifiers(modifiers)
         except (TypeError, ValueError) as e:
             raise ParserError(str(e), self._previous()) from e
-        return modifiers
 
     def _parse_hex_string(self, hex_content: str) -> list[HexToken]:
         """Parse hex string content into tokens.

@@ -150,6 +150,63 @@ rule hex_jumps {
         (100, None),
     ]
 
+    generated = YaraXGenerator().generate(ast)
+    assert "{ 11 [0-0] 22 [0-100] 33 [-] 44 [100-] }" in generated
+    YaraXParser(generated).parse()
+
+
+def test_yarax_accepts_parser_level_of_expression_tuple() -> None:
+    yarax_code = """
+rule of_tuple {
+    condition:
+        2 of (true, false, ident, 2 == 2)
+}
+"""
+
+    ast = YaraXParser(yarax_code).parse()
+    condition = ast.rules[0].condition
+    assert isinstance(condition, OfExpression)
+    assert isinstance(condition.string_set, SetExpression)
+
+    generated = YaraXGenerator().generate(ast)
+    assert "2 of (true, false, ident, 2 == 2)" in generated
+    YaraXParser(generated).parse()
+
+
+def test_yarax_accepts_parser_level_base64_modifier_parameter() -> None:
+    yarax_code = """
+rule short_base64_alphabet {
+    strings:
+        $a = "a" base64("foo")
+        $b = "b" base64wide("foo")
+    condition:
+        true
+}
+"""
+
+    ast = YaraXParser(yarax_code).parse()
+    generated = YaraXGenerator().generate(ast)
+    assert 'base64("foo")' in generated
+    assert 'base64wide("foo")' in generated
+    YaraXParser(generated).parse()
+
+
+def test_yarax_parser_allows_duplicate_rule_names() -> None:
+    yarax_code = """
+rule duplicate {
+    condition:
+        true
+}
+
+rule duplicate {
+    condition:
+        false
+}
+"""
+
+    ast = YaraXParser(yarax_code).parse()
+    assert [rule.name for rule in ast.rules] == ["duplicate", "duplicate"]
+
 
 def test_yarax_list_and_spread_expression() -> None:
     expr = _parse_expr("[1, ...arr, 4]")
