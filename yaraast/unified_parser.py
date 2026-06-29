@@ -324,7 +324,16 @@ class UnifiedParser:
             return cls(text, dialect).parse()
 
         streaming_parser = StreamingParser(dialect_parser_factory=_dialect_factory)
-        rules = list(streaming_parser.parse_file(file_path_obj))
+        rules = []
+        for rule in streaming_parser.parse_file(file_path_obj):
+            parse_errors = streaming_parser.get_statistics()["parse_errors"]
+            if parse_errors:
+                msg = (
+                    f"Failed to parse {parse_errors} malformed rule(s) while "
+                    f"streaming {file_path_obj}"
+                )
+                raise YaraASTError(msg)
+            rules.append(rule)
         parse_errors = streaming_parser.get_statistics()["parse_errors"]
         if parse_errors:
             # The streaming parser drops rules it cannot parse and only records
