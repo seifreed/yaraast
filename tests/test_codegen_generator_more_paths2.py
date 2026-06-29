@@ -116,14 +116,7 @@ def test_alternate_generators_indent_nested_yarax_match_case_results() -> None:
         cases=[MatchCase(pattern=IntegerLiteral(1), result=nested)],
         default=BooleanLiteral(False),
     )
-    expected = (
-        "match x {\n"
-        "    1 => match y {\n"
-        "        _ => true,\n"
-        "    },\n"
-        "    _ => false,\n"
-        "}"
-    )
+    expected = "match x {\n    1 => match y {\n        _ => true,\n    },\n    _ => false,\n}"
 
     assert (
         CodeGenerator(options=GeneratorOptions(advanced=FormattingConfig())).generate(condition)
@@ -3434,7 +3427,7 @@ def test_codegen_generators_reject_unreferenced_anonymous_string_definition() ->
         ]
     )
 
-    message = "Unreferenced string definitions in rule " "'unreferenced_anonymous_string': \\$"
+    message = "Unreferenced string definitions in rule 'unreferenced_anonymous_string': \\$"
     with pytest.raises(ValueError, match=message):
         CodeGenerator().generate(ast)
     with pytest.raises(ValueError, match=message):
@@ -3464,7 +3457,7 @@ def test_codegen_generators_reject_bare_string_wildcard_conditions(condition: An
     )
 
     message = (
-        "String wildcard expressions are only valid in string sets for " "libyara output: \\$a\\*"
+        "String wildcard expressions are only valid in string sets for libyara output: \\$a\\*"
     )
     with pytest.raises(ValueError, match=message):
         CodeGenerator().generate(ast)

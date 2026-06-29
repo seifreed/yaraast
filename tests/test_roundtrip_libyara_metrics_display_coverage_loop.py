@@ -112,7 +112,7 @@ class TestLibyaraScanFailureBranch:
 
         # Assert
         assert result.exit_code != 0, (
-            "Expected non-zero exit when scan fails, got 0.\n" f"Output:\n{result.output}"
+            f"Expected non-zero exit when scan fails, got 0.\nOutput:\n{result.output}"
         )
         # 'Scan completed' is only printed on the success branch (line 117)
         assert "Scan completed" not in result.output
@@ -386,18 +386,15 @@ class TestDisplayModuleUsageEmptyBranch:
         """
         # Arrange: rule with no imports means module_references stays empty
         ast = Parser(
-            "rule no_modules {\n"
-            '    strings:\n        $a = "hello"\n'
-            "    condition:\n        $a\n"
-            "}"
+            'rule no_modules {\n    strings:\n        $a = "hello"\n    condition:\n        $a\n}'
         ).parse()
         gen = DependencyGraphGenerator()
         gen.visit(ast)
 
         # Verify the precondition: module_references must be empty
-        assert (
-            not gen.module_references
-        ), "Expected empty module_references for a rule with no imports"
+        assert not gen.module_references, (
+            "Expected empty module_references for a rule with no imports"
+        )
 
         # Act
         display_module_usage(gen)
@@ -417,19 +414,15 @@ class TestDisplayModuleUsageEmptyBranch:
         """
         # Arrange: rule that uses the 'pe' module populates module_references
         ast = Parser(
-            'import "pe"\n'
-            "rule uses_pe {\n"
-            "    condition:\n"
-            "        pe.number_of_sections > 0\n"
-            "}"
+            'import "pe"\nrule uses_pe {\n    condition:\n        pe.number_of_sections > 0\n}'
         ).parse()
         gen = DependencyGraphGenerator()
         gen.visit(ast)
 
         # Verify the precondition: module_references must be non-empty
-        assert (
-            gen.module_references
-        ), "Expected non-empty module_references after visiting a rule that uses 'pe'"
+        assert gen.module_references, (
+            "Expected non-empty module_references after visiting a rule that uses 'pe'"
+        )
 
         # Act
         display_module_usage(gen)

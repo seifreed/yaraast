@@ -243,9 +243,9 @@ def test_rewrite_of_them_len_guard_strict_none_for_both_modes() -> None:
 
     for action in ("expand_of_them", "compress_of_them"):
         result = getattr(authoring, action)(_TWO_RULES_ONE_LINE, _SEL_LINE_0)
-        assert (
-            result is None
-        ), f"{action} returned {result!r} instead of None for two-rule single-line text"
+        assert result is None, (
+            f"{action} returned {result!r} instead of None for two-rule single-line text"
+        )
 
 
 def test_expand_of_them_produces_edit_for_single_of_them_rule() -> None:
@@ -283,9 +283,9 @@ def test_all_rewrite_actions_return_none_for_multi_rule_text() -> None:
     ]
     for action in actions:
         result = getattr(authoring, action)(_TWO_RULES_ONE_LINE, _SEL_LINE_0)
-        assert (
-            result is None
-        ), f"{action} returned {result!r} instead of None for two-rule single-line text"
+        assert result is None, (
+            f"{action} returned {result!r} instead of None for two-rule single-line text"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -299,7 +299,7 @@ def test_three_rules_on_one_line_also_triggers_guards() -> None:
     satisfies ``!= 1`` equally."""
     authoring = AuthoringActions()
     three_rules = (
-        "rule a { condition: true } " "rule b { condition: false } " "rule c { condition: true }"
+        "rule a { condition: true } rule b { condition: false } rule c { condition: true }"
     )
     sel = Range(start=Position(line=0, character=0), end=Position(line=0, character=0))
 

@@ -776,7 +776,7 @@ def test_ast_hasher_yarax_expression_nodes() -> None:
         ]
     )
     assert hasher.visit(dict_expr) == (
-        "DictExpr(DictItem(Id(key),Str(value))|" "DictItem(Id(base),Spread(Id(defaults),True)))"
+        "DictExpr(DictItem(Id(key),Str(value))|DictItem(Id(base),Spread(Id(defaults),True)))"
     )
 
     assert hasher.visit(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)])) == (

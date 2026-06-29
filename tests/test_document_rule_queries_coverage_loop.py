@@ -109,12 +109,10 @@ _UNPARSEABLE_WITH_TAGS = (
 )
 
 # Unparseable YARA: private modifier present (exercises modifier-split branch).
-_UNPARSEABLE_PRIVATE = (
-    "private rule priv_broken {\n" "  strings:\n" '    $a = "x"\n' "  condition:\n"
-)
+_UNPARSEABLE_PRIVATE = 'private rule priv_broken {\n  strings:\n    $a = "x"\n  condition:\n'
 
 # Unparseable YARA: rule exists but has no meta section.
-_UNPARSEABLE_NO_META = "rule no_meta_broken {\n" "  strings:\n" '    $a = "x"\n' "  condition:\n"
+_UNPARSEABLE_NO_META = 'rule no_meta_broken {\n  strings:\n    $a = "x"\n  condition:\n'
 
 # Unparseable YARA: meta lines include blank, comment, and a bad entry (= value,
 # no key), so the skipping/filtering branches inside _fallback_rule_meta_items run.

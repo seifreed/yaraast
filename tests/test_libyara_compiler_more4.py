@@ -127,7 +127,8 @@ rule ok {
     condition:
         true
 }
-""".strip() + "\n",
+""".strip()
+        + "\n",
         encoding="utf-8",
     )
 

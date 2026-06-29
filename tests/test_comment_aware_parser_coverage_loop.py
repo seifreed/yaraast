@@ -227,21 +227,21 @@ def test_parse_rule_tags_loop_collects_multiple() -> None:
 # ---------------------------------------------------------------------------
 def test_parse_rule_sections_duplicate_meta_raises() -> None:
     """Two meta: sections in the same rule raise 'Duplicate meta section'."""
-    source = "rule r {\n" '  meta: a = "x"\n' '  meta: b = "y"\n' "  condition: true\n" "}\n"
+    source = 'rule r {\n  meta: a = "x"\n  meta: b = "y"\n  condition: true\n}\n'
     with pytest.raises(ParserError, match="Duplicate meta section"):
         CommentAwareParser().parse(source)
 
 
 def test_parse_rule_sections_meta_after_strings_raises() -> None:
     """meta: section appearing after strings: raises 'Unexpected meta section'."""
-    source = "rule r {\n" '  strings: $a = "x"\n' '  meta: b = "y"\n' "  condition: $a\n" "}\n"
+    source = 'rule r {\n  strings: $a = "x"\n  meta: b = "y"\n  condition: $a\n}\n'
     with pytest.raises(ParserError, match="Unexpected meta section"):
         CommentAwareParser().parse(source)
 
 
 def test_parse_rule_sections_meta_after_condition_raises() -> None:
     """meta: after condition: raises 'Unexpected meta section'."""
-    source = "rule r {\n" "  condition: true\n" '  meta: b = "y"\n' "}\n"
+    source = 'rule r {\n  condition: true\n  meta: b = "y"\n}\n'
     with pytest.raises(ParserError, match="Unexpected meta section"):
         CommentAwareParser().parse(source)
 
@@ -261,16 +261,14 @@ def test_parse_rule_sections_empty_meta_raises() -> None:
 # ---------------------------------------------------------------------------
 def test_parse_rule_sections_duplicate_strings_raises() -> None:
     """Two strings: sections in the same rule raise 'Duplicate strings section'."""
-    source = (
-        "rule r {\n" '  strings: $a = "x"\n' '  strings: $b = "y"\n' "  condition: $a or $b\n" "}\n"
-    )
+    source = 'rule r {\n  strings: $a = "x"\n  strings: $b = "y"\n  condition: $a or $b\n}\n'
     with pytest.raises(ParserError, match="Duplicate strings section"):
         CommentAwareParser().parse(source)
 
 
 def test_parse_rule_sections_strings_after_condition_raises() -> None:
     """strings: section appearing after condition: raises 'Unexpected strings section'."""
-    source = "rule r {\n" "  condition: true\n" '  strings: $a = "x"\n' "}\n"
+    source = 'rule r {\n  condition: true\n  strings: $a = "x"\n}\n'
     with pytest.raises(ParserError, match="Unexpected strings section"):
         CommentAwareParser().parse(source)
 
@@ -294,7 +292,7 @@ def test_parse_in_rule_pragma_branch() -> None:
     An in-rule pragma (#define) appearing between rule sections
     is parsed via the in-rule pragma branch (line 280).
     """
-    source = "rule r {\n" "  #define THRESHOLD 5\n" "  condition: true\n" "}\n"
+    source = "rule r {\n  #define THRESHOLD 5\n  condition: true\n}\n"
     ast = CommentAwareParser().parse(source)
 
     rule = ast.rules[0]
@@ -307,7 +305,7 @@ def test_parse_in_rule_pragma_branch() -> None:
 # ---------------------------------------------------------------------------
 def test_parse_rule_sections_duplicate_condition_raises() -> None:
     """Two condition: sections in the same rule raise 'Duplicate condition section'."""
-    source = "rule r {\n" "  condition: true\n" "  condition: false\n" "}\n"
+    source = "rule r {\n  condition: true\n  condition: false\n}\n"
     with pytest.raises(ParserError, match="Duplicate condition section"):
         CommentAwareParser().parse(source)
 
@@ -405,14 +403,7 @@ def test_parse_strings_section_duplicate_named_identifier_raises() -> None:
     Two string definitions sharing the same non-anonymous identifier raise
     'duplicated string identifier' (lines 393-394).
     """
-    source = (
-        "rule r {\n"
-        "  strings:\n"
-        '    $dup = "first"\n'
-        '    $dup = "second"\n'
-        "  condition: $dup\n"
-        "}\n"
-    )
+    source = 'rule r {\n  strings:\n    $dup = "first"\n    $dup = "second"\n  condition: $dup\n}\n'
     with pytest.raises(ParserError, match='duplicated string identifier "\\$dup"'):
         CommentAwareParser().parse(source)
 

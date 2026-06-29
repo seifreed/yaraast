@@ -518,7 +518,7 @@ def test_include_once_pragma_via_full_parse() -> None:
 
 def test_extern_import_with_rule_list_and_alias_via_full_parse() -> None:
     """Integration: ExternImport with alias parsed from real source."""
-    source = 'import "common" (Foo, Bar) as clib\n' "rule R { condition: true }"
+    source = 'import "common" (Foo, Bar) as clib\nrule R { condition: true }'
     yara_file = Parser(source).parse()
 
     assert len(yara_file.extern_imports) == 1
@@ -532,12 +532,7 @@ def test_extern_import_with_rule_list_and_alias_via_full_parse() -> None:
 def test_meta_with_protected_scope_via_full_parse() -> None:
     """Integration: meta entries with protected: scope prefix."""
     source = (
-        "rule R {\n"
-        "    meta:\n"
-        '        protected: severity = "high"\n'
-        "    condition:\n"
-        "        true\n"
-        "}"
+        'rule R {\n    meta:\n        protected: severity = "high"\n    condition:\n        true\n}'
     )
     yara_file = Parser(source).parse()
 

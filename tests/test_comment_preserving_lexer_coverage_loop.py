@@ -612,7 +612,7 @@ def test_mixed_comments_in_realistic_yara_rule() -> None:
 def test_comment_tokens_are_merged_in_source_order() -> None:
     """All COMMENT tokens must appear in ascending line/column order in the
     merged token stream (_merge_comment_tokens sorts by (line, column))."""
-    source = "// alpha\n" "rule r {\n" "  /* beta */\n" "  condition: true  // gamma\n" "}"
+    source = "// alpha\nrule r {\n  /* beta */\n  condition: true  // gamma\n}"
     lexer = CommentPreservingLexer(source)
 
     tokens = lexer.tokenize()

@@ -35,11 +35,7 @@ def _make_workspace(root: Path, file_count: int) -> list[Path]:
     for idx in range(file_count):
         path = root / f"rule_{idx}.yar"
         path.write_text(
-            'include "shared.yar"\n'
-            f"rule sample_{idx} {{\n"
-            "  condition:\n"
-            "    shared_rule\n"
-            "}\n",
+            f'include "shared.yar"\nrule sample_{idx} {{\n  condition:\n    shared_rule\n}}\n',
             encoding="utf-8",
         )
         files.append(path)

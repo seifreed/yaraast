@@ -165,7 +165,5 @@ def test_comment_aware_generator_uses_configured_indent_for_match_cases() -> Non
 
     out = CodeGenerator(options=GeneratorOptions.comment_aware(indent_size=2)).generate(file_ast)
 
-    assert (
-        "  condition:\n" "    match 1 {\n" "      1 => true,\n" "      _ => false,\n" "    }\n"
-    ) in out
+    assert ("  condition:\n    match 1 {\n      1 => true,\n      _ => false,\n    }\n") in out
     assert "\n        1 => true,\n" not in out

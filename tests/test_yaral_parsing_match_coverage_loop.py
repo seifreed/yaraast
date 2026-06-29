@@ -33,16 +33,12 @@ from yaraast.yaral.tokens import YaraLTokenType
 # ---------------------------------------------------------------------------
 
 _EVENTS_SINGLE = '  events:\n    $e.metadata.event_type = "A"\n'
-_EVENTS_TWO = (
-    "  events:\n" '    $e1.metadata.event_type = "A"\n' '    $e2.metadata.event_type = "B"\n'
-)
+_EVENTS_TWO = '  events:\n    $e1.metadata.event_type = "A"\n    $e2.metadata.event_type = "B"\n'
 
 
 def _rule(match_line: str, events: str = _EVENTS_SINGLE) -> str:
     """Build a minimal YARA-L rule around a single match line."""
-    return (
-        "rule r {\n" f"{events}" "  match:\n" f"    {match_line}\n" "  condition:\n" "    $e\n" "}"
-    )
+    return f"rule r {{\n{events}  match:\n    {match_line}\n  condition:\n    $e\n}}"
 
 
 def _tok(

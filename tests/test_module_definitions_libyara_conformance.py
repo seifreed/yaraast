@@ -188,8 +188,7 @@ def test_declared_attribute_is_accepted_by_libyara(module: str, expr: str, code:
         yara.compile(source=source)
     except yara.SyntaxError as exc:
         pytest.fail(
-            f"module_definitions declares {expr} but "
-            f"libyara {yara.YARA_VERSION} rejects it: {exc}"
+            f"module_definitions declares {expr} but libyara {yara.YARA_VERSION} rejects it: {exc}"
         )
 
 
@@ -214,9 +213,9 @@ def test_declared_functions_match_libyara_surface(module: str) -> None:
         if expected == "f":
             assert actual == "f", f"{module}.{name} return: libyara=float ours={actual}"
         else:
-            assert (
-                actual == expected
-            ), f"{module}.{name} return: libyara={expected!r} ours={actual!r}"
+            assert actual == expected, (
+                f"{module}.{name} return: libyara={expected!r} ours={actual!r}"
+            )
 
 
 @pytest.mark.parametrize("module", sorted(set(_CANONICAL_FUNCS) - _NO_ORACLE))
@@ -240,9 +239,9 @@ def test_canonical_function_names_exist_in_libyara(module: str) -> None:
         source = f'import "{module}"\nrule t {{ condition: {module}.{name} }}'
         with pytest.raises(yara.SyntaxError) as excinfo:
             yara.compile(source=source)
-        assert "invalid field name" not in str(
-            excinfo.value
-        ), f"{module}.{name} is not a recognized libyara function: {excinfo.value}"
+        assert "invalid field name" not in str(excinfo.value), (
+            f"{module}.{name} is not a recognized libyara function: {excinfo.value}"
+        )
 
 
 @pytest.mark.parametrize(
@@ -251,9 +250,9 @@ def test_canonical_function_names_exist_in_libyara(module: str) -> None:
 )
 def test_required_attribute_is_declared(module: str, attr: str) -> None:
     """Sub-declaration anchors: recovered libyara members must stay declared."""
-    assert (
-        attr in load_builtin_modules()[module].attributes
-    ), f"{module}.{attr} is declared by libyara but missing from module_definitions"
+    assert attr in load_builtin_modules()[module].attributes, (
+        f"{module}.{attr} is declared by libyara but missing from module_definitions"
+    )
 
 
 def test_no_module_overdeclares_a_function() -> None:

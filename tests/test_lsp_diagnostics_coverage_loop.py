@@ -333,7 +333,7 @@ def test_rule_name_mixed_matching_and_violating() -> None:
     """
     provider, _ = _make_provider_with_runtime({"ruleNameValidation": "^GOOD_"})
     uri = "file:///mixed_names.yar"
-    text = "rule GOOD_rule { condition: true }\n" "rule BAD_rule { condition: true }\n"
+    text = "rule GOOD_rule { condition: true }\nrule BAD_rule { condition: true }\n"
 
     diags = provider.get_diagnostics(text, uri)
 

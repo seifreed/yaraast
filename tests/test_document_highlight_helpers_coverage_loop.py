@@ -153,14 +153,7 @@ def test_highlight_string_identifier_assigns_write_kind_for_definition() -> None
     """Line 92: a '$'-prefixed occurrence in the strings section with '=' following
     receives DocumentHighlightKind.Write; uses in the condition receive Read.
     """
-    text = (
-        "rule r {\n"
-        "  strings:\n"
-        '    $msg = "hello"\n'
-        "  condition:\n"
-        "    $msg and $msg\n"
-        "}"
-    )
+    text = 'rule r {\n  strings:\n    $msg = "hello"\n  condition:\n    $msg and $msg\n}'
     results = highlight_string_identifier(text, "$msg")
     kinds_by_line = {h.range.start.line: h.kind for h in results}
     # Line 2 is the definition; must be Write.
@@ -174,7 +167,7 @@ def test_highlight_string_identifier_write_kind_not_assigned_outside_strings_sec
     """Line 92: '$x' in the condition section does NOT get Write kind even when
     the rule has a strings section, because it is not a definition occurrence.
     """
-    text = "rule r {\n" "  strings:\n" '    $x = "val"\n' "  condition:\n" "    $x\n" "}"
+    text = 'rule r {\n  strings:\n    $x = "val"\n  condition:\n    $x\n}'
     results = highlight_string_identifier(text, "$x")
     condition_results = [h for h in results if h.range.start.line == 4]
     assert condition_results

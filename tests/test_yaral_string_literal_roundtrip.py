@@ -23,8 +23,7 @@ DOLLAR_EVENT = 'rule r {\n  events:\n    $e.x = "$100 cost"\n  condition:\n    $
 PERCENT_EVENT = 'rule r {\n  events:\n    $e.x = "%SystemRoot%"\n  condition:\n    $e\n}'
 DOLLAR_CONDITION = 'rule r {\n  events:\n    $e.x = "a"\n  condition:\n    $v = "$ref"\n}'
 DOLLAR_OUTCOME = (
-    'rule r {\n  events:\n    $e.x = "a"\n'
-    '  outcome:\n    $label = "$tag"\n  condition:\n    $e\n}'
+    'rule r {\n  events:\n    $e.x = "a"\n  outcome:\n    $label = "$tag"\n  condition:\n    $e\n}'
 )
 
 

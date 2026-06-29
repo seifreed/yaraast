@@ -35,7 +35,7 @@ used anywhere in this file.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -154,7 +154,9 @@ class TestParallelJobActionsDeadBranchConfirmation:
 
         # Non-YaraFile triggers the fail_job path inside export_graph_files.
         jobs = generate_graphs_parallel(
-            analyzer, ["not_a_yarafile"], str(tmp_path)  # type: ignore[list-item]
+            analyzer,
+            cast(Any, ["not_a_yarafile"]),
+            str(tmp_path),
         )
 
         for job in jobs:

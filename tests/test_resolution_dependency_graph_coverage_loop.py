@@ -1220,7 +1220,7 @@ class TestExportDot:
         assert "rule_foo" in dot
 
     def test_dot_contains_edges(self, tmp_path: Path) -> None:
-        yf = _parse("rule alpha { condition: true }\n" "rule beta { condition: alpha }")
+        yf = _parse("rule alpha { condition: true }\nrule beta { condition: alpha }")
         g = DependencyGraph()
         g.add_file(tmp_path / "test.yar", yf)
         dot = g.export_dot()

@@ -62,12 +62,12 @@ _UNPARSEABLE_STRING = 'rule r {\n  strings:\n    $a = "hello"\n  condition:\n   
 
 # Two-rule document: alpha is referenced in beta's condition.
 _PARSEABLE_RULES = (
-    "rule alpha {\n  condition:\n    true\n}\n" "rule beta {\n  condition:\n    alpha\n}"
+    "rule alpha {\n  condition:\n    true\n}\nrule beta {\n  condition:\n    alpha\n}"
 )
 
 # Same two-rule structure but last brace missing → unparseable.
 _UNPARSEABLE_RULES = (
-    "rule alpha {\n  condition:\n    true\n}\n" "rule beta {\n  condition:\n    alpha\n"
+    "rule alpha {\n  condition:\n    true\n}\nrule beta {\n  condition:\n    alpha\n"
 )
 
 
@@ -685,7 +685,7 @@ def test_find_string_references_skips_strings_section_non_definition() -> None:
     # $b is properly defined; $a appears on its own line (no '= ...'), which
     # means it is not a definition occurrence.  The condition use on line 5 is
     # the only occurrence that should be returned.
-    text = "rule r {\n" "  strings:\n" "    $b = /pattern/\n" "    $a\n" "  condition:\n" "    $a\n"
+    text = "rule r {\n  strings:\n    $b = /pattern/\n    $a\n  condition:\n    $a\n"
     ctx = _doc(text)
     assert ctx.ast() is None  # unparseable: text fallback path
 

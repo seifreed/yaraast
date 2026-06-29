@@ -10,27 +10,20 @@ class TestCommentPreservation:
     """Test that comments survive parse -> codegen roundtrip."""
 
     def test_leading_block_comment_preserved(self) -> None:
-        rule = "/* Rule description */\n" "rule test {\n" "    condition:\n" "        true\n" "}\n"
+        rule = "/* Rule description */\nrule test {\n    condition:\n        true\n}\n"
         ast = CommentAwareParser().parse(rule)
         output = CodeGenerator().generate(ast)
         assert "/* Rule description */" in output
 
     def test_leading_multiline_comment_preserved(self) -> None:
-        rule = (
-            "/* Multi-line\n"
-            "   comment */\n"
-            "rule test {\n"
-            "    condition:\n"
-            "        true\n"
-            "}\n"
-        )
+        rule = "/* Multi-line\n   comment */\nrule test {\n    condition:\n        true\n}\n"
         ast = CommentAwareParser().parse(rule)
         output = CodeGenerator().generate(ast)
         assert "/* Multi-line" in output
         assert "comment */" in output
 
     def test_leading_line_comment_preserved(self) -> None:
-        rule = "// Line comment\n" "rule test {\n" "    condition:\n" "        true\n" "}\n"
+        rule = "// Line comment\nrule test {\n    condition:\n        true\n}\n"
         ast = CommentAwareParser().parse(rule)
         output = CodeGenerator().generate(ast)
         assert "// Line comment" in output
@@ -55,15 +48,7 @@ class TestCommentPreservation:
         assert "/* Second rule */" in output
 
     def test_import_comment_preserved(self) -> None:
-        rule = (
-            "/* Module import */\n"
-            'import "pe"\n'
-            "\n"
-            "rule test {\n"
-            "    condition:\n"
-            "        true\n"
-            "}\n"
-        )
+        rule = '/* Module import */\nimport "pe"\n\nrule test {\n    condition:\n        true\n}\n'
         ast = CommentAwareParser().parse(rule)
         output = CodeGenerator().generate(ast)
         assert "/* Module import */" in output

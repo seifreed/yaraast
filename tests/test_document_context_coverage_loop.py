@@ -60,14 +60,7 @@ from yaraast.lsp.document_types import LanguageMode
 # Reusable YARA source text
 # ---------------------------------------------------------------------------
 
-_SINGLE_RULE = (
-    "rule alpha {\n"
-    "    strings:\n"
-    '        $a = "hello"\n'
-    "    condition:\n"
-    "        $a\n"
-    "}\n"
-)
+_SINGLE_RULE = 'rule alpha {\n    strings:\n        $a = "hello"\n    condition:\n        $a\n}\n'
 
 _TWO_RULES_SAME_STRING = (
     "rule alpha {\n"
@@ -84,9 +77,7 @@ _TWO_RULES_SAME_STRING = (
     "}\n"
 )
 
-_DOUBLE_IMPORT = (
-    'import "pe"\n' 'import "pe"\n' "rule x {\n" "    condition:\n" "        true\n" "}\n"
-)
+_DOUBLE_IMPORT = 'import "pe"\nimport "pe"\nrule x {\n    condition:\n        true\n}\n'
 
 _MODULE_USE = "rule x { condition: pe.is_dll }\n"
 
@@ -188,7 +179,9 @@ def test_init_backed_by_file_as_int_raises_type_error() -> None:
     """backed_by_file=1 raises TypeError (lines 150-151)."""
     with pytest.raises(TypeError, match="Document backed_by_file flag must be a boolean"):
         DocumentContext(
-            uri="file://x.yar", text="rule x { condition: true }", backed_by_file=1  # type: ignore[arg-type]
+            uri="file://x.yar",
+            text="rule x { condition: true }",
+            backed_by_file=1,  # type: ignore[arg-type]
         )
 
 
@@ -196,7 +189,9 @@ def test_init_language_mode_as_string_raises_type_error() -> None:
     """language_mode='yara' raises TypeError (lines 153-154)."""
     with pytest.raises(TypeError, match="Document language_mode must be a LanguageMode"):
         DocumentContext(
-            uri="file://x.yar", text="rule x { condition: true }", language_mode="yara"  # type: ignore[arg-type]
+            uri="file://x.yar",
+            text="rule x { condition: true }",
+            language_mode="yara",  # type: ignore[arg-type]
         )
 
 

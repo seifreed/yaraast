@@ -281,7 +281,9 @@ def test_lexer_reports_unterminated_regex_and_handles_hex_numbers_and_line_conti
 
 
 def test_lexer_covers_valid_escape_sequences() -> None:
-    string_tokens = [t for t in _tokens(r"""
+    string_tokens = [
+        t
+        for t in _tokens(r"""
 rule r {
  strings:
    $a = "line\n\t\r\""
@@ -290,7 +292,9 @@ rule r {
  condition:
    all of them
 }
-""") if t.type == TokenType.STRING]
+""")
+        if t.type == TokenType.STRING
+    ]
 
     assert string_tokens[0].value == 'line\n\t\r"'
     assert string_tokens[1].value == "A"

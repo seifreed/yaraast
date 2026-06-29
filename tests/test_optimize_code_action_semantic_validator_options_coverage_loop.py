@@ -388,14 +388,7 @@ class TestCreateAddStringActions:
         provider = _provider()
         # The message must contain a $name token for the regex to match.
         diag = _diag("undefined variable $foo not found")
-        text = (
-            "rule r {\n"
-            "    strings:\n"
-            '        $a = "existing"\n'
-            "    condition:\n"
-            "        $a\n"
-            "}"
-        )
+        text = 'rule r {\n    strings:\n        $a = "existing"\n    condition:\n        $a\n}'
         result = provider._create_add_string_actions(text, diag, URI)
         # The cast() return path (line 70) is exercised; result is a list.
         assert isinstance(result, list)

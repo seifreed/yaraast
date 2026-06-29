@@ -223,7 +223,7 @@ def test_collect_rule_refs_returns_none_when_no_identifier_nodes() -> None:
 
 def test_collect_rule_refs_returns_definition_only_when_no_use_site() -> None:
     """When rule exists but is never referenced in conditions, returns just definition (line 101-102)."""
-    text = "rule standalone { condition: true }\n" "rule other { condition: true }\n"
+    text = "rule standalone { condition: true }\nrule other { condition: true }\n"
     ctx = _doc(text)
     result = collect_rule_reference_locations_from_ast(ctx, "standalone")
     assert result is not None
@@ -477,15 +477,7 @@ def test_iter_ast_value_handles_list_children() -> None:
     Rules with multiple strings and multiple condition nodes exercise
     list-valued children() returns.
     """
-    text = (
-        "rule r {\n"
-        "  strings:\n"
-        '    $a = "x"\n'
-        '    $b = "y"\n'
-        "  condition:\n"
-        "    $a and $b\n"
-        "}"
-    )
+    text = 'rule r {\n  strings:\n    $a = "x"\n    $b = "y"\n  condition:\n    $a and $b\n}'
     ctx = _doc(text)
     ast_root = ctx.ast()
     assert ast_root is not None

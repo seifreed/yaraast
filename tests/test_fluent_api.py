@@ -307,10 +307,12 @@ class TestCodeGeneration:
             .text_string("$str", "backdoor")
             .nocase()
             .with_condition_builder(
-                lambda c: c.string_matches("$mz")
-                .at(0)
-                .and_(c.string_matches("$str"))
-                .and_(c.filesize_gt(1024)),
+                lambda c: (
+                    c.string_matches("$mz")
+                    .at(0)
+                    .and_(c.string_matches("$str"))
+                    .and_(c.filesize_gt(1024))
+                ),
             )
             .build()
         )

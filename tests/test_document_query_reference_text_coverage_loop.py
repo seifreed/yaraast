@@ -75,16 +75,7 @@ def _doc(text: str) -> DocumentContext:
 
 def test_iter_rule_text_ranges_parseable_document_yields_ranges() -> None:
     """A valid YARA document with two rules yields one range per rule."""
-    text = (
-        "rule alpha {\n"
-        "  condition:\n"
-        "    true\n"
-        "}\n"
-        "rule beta {\n"
-        "  condition:\n"
-        "    false\n"
-        "}"
-    )
+    text = "rule alpha {\n  condition:\n    true\n}\nrule beta {\n  condition:\n    false\n}"
     ctx = _doc(text)
     ranges = list(iter_rule_text_ranges(ctx))
     # Both rule blocks are present in the symbol index.
@@ -179,7 +170,7 @@ def test_iter_reference_occurrences_skips_occurrences_outside_allowed_sections()
     ('condition',).  The occurrence of $a in the strings section header line
     itself is not in the condition section and must be excluded.
     """
-    text = "rule r {\n" "  strings:\n" '    $a = "hello"\n' "  condition:\n" "    $a\n" "}"
+    text = 'rule r {\n  strings:\n    $a = "hello"\n  condition:\n    $a\n}'
     ctx = _doc(text)
     # Allow only the condition section.
     results = list(
@@ -548,16 +539,7 @@ def test_matches_resolved_symbol_returns_false_for_position_outside_any_symbol()
 def test_iter_reference_occurrences_two_rules_finds_condition_occurrence() -> None:
     """End-to-end: two-rule document, find all occurrences of 'alpha' in
     the condition section."""
-    text = (
-        "rule alpha {\n"
-        "  condition:\n"
-        "    true\n"
-        "}\n"
-        "rule beta {\n"
-        "  condition:\n"
-        "    alpha\n"
-        "}"
-    )
+    text = "rule alpha {\n  condition:\n    true\n}\nrule beta {\n  condition:\n    alpha\n}"
     ctx = _doc(text)
     results = list(
         iter_reference_occurrences(
@@ -573,7 +555,7 @@ def test_iter_reference_occurrences_two_rules_finds_condition_occurrence() -> No
 
 def test_iter_reference_occurrences_string_identifier_in_condition() -> None:
     """$a must be found in the condition section of a simple rule."""
-    text = "rule check {\n" "  strings:\n" '    $a = "needle"\n' "  condition:\n" "    $a\n" "}"
+    text = 'rule check {\n  strings:\n    $a = "needle"\n  condition:\n    $a\n}'
     ctx = _doc(text)
     results = list(
         iter_reference_occurrences(

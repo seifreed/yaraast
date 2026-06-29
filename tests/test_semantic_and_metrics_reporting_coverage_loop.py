@@ -469,10 +469,7 @@ class TestDisplayTextPatternAnalysisBranches:
         all three isinstance branches and produces correct summary counts.
         """
         yara_file = _parse(
-            "rule mixed {"
-            '  strings: $p = "hello" $h = {4D 5A} $r = /world/ '
-            "  condition: $p"
-            "}"
+            'rule mixed {  strings: $p = "hello" $h = {4D 5A} $r = /world/   condition: $p}'
         )
         output = self._gen_and_run(yara_file, capsys)
         assert "Plain strings: 1" in output
@@ -569,9 +566,7 @@ class TestDisplayPatternStatisticsBranches:
         'pattern_lengths', the inner block at lines 123-126 executes.
         """
         gen = StringDiagramGenerator()
-        yara_file = _parse(
-            "rule check {" '  strings: $a = "hello" $b = {4D 5A} ' "  condition: $a" "}"
-        )
+        yara_file = _parse('rule check {  strings: $a = "hello" $b = {4D 5A}   condition: $a}')
         gen._analyze_patterns(yara_file)
         mr._display_pattern_statistics(gen)
         captured = capsys.readouterr()

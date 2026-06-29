@@ -368,7 +368,7 @@ def test_parse_stream_with_yara_dialect_parses_multiple_rules() -> None:
     code path rather than through parse_file, ensuring the _parse_content
     dispatch is exercised from a different call site.
     """
-    content = "rule stream_a { condition: true }\n" "rule stream_b { condition: true }\n"
+    content = "rule stream_a { condition: true }\nrule stream_b { condition: true }\n"
     parser = StreamingParser(dialect=YaraDialect.YARA)
     stream = io.StringIO(content)
 

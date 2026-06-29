@@ -705,14 +705,7 @@ def test_line_range_returns_full_line_extent() -> None:
 
 def test_build_selection_parent_line_section_rule_chain() -> None:
     """Lines 34-37: section_range not None and != line -> 3-level chain."""
-    rule_text = (
-        "rule alpha {\n"
-        "    meta:\n"
-        '        author = "x"\n'
-        "    condition:\n"
-        "        true\n"
-        "}\n"
-    )
+    rule_text = 'rule alpha {\n    meta:\n        author = "x"\n    condition:\n        true\n}\n'
     lines = rule_text.split("\n")
     position = _pos(2, 8)  # inside meta section
     lr = sel_helpers.line_range(lines, 2)

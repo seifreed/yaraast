@@ -17,7 +17,8 @@ def _write_rule(path: Path) -> None:
                 condition:
                     true
             }
-            """).strip() + "\n",
+            """).strip()
+        + "\n",
         encoding="utf-8",
     )
 

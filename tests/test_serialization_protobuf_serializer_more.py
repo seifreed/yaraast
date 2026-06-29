@@ -1303,14 +1303,18 @@ def test_protobuf_expression_conversion_paths() -> None:
                 operator="==",
                 right=IntegerLiteral(value=2),
             ),
-            lambda pb: pb.binary_expression.operator == "=="
-            and pb.binary_expression.left.integer_literal.value == 1
-            and pb.binary_expression.right.integer_literal.value == 2,
+            lambda pb: (
+                pb.binary_expression.operator == "=="
+                and pb.binary_expression.left.integer_literal.value == 1
+                and pb.binary_expression.right.integer_literal.value == 2
+            ),
         ),
         (
             UnaryExpression(operator="not", operand=BooleanLiteral(value=False)),
-            lambda pb: pb.unary_expression.operator == "not"
-            and pb.unary_expression.operand.boolean_literal.value is False,
+            lambda pb: (
+                pb.unary_expression.operator == "not"
+                and pb.unary_expression.operand.boolean_literal.value is False
+            ),
         ),
     ]
 

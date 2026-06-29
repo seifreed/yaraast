@@ -217,9 +217,7 @@ def test_build_text_symbols_includes_import_and_include_symbols() -> None:
     normal call chain (build_text_symbols -> _build_text_import_symbols /
     _build_text_include_symbols -> _quoted_text_range).
     """
-    src = (
-        'import "pe"\n' 'include "lib.yar"\n' "rule combined {\n" "    condition: pe.is_pe\n" "}\n"
-    )
+    src = 'import "pe"\ninclude "lib.yar"\nrule combined {\n    condition: pe.is_pe\n}\n'
     doc = DocumentContext(uri="file://combined_text.yar", text=src)
     symbols = build_text_symbols(doc, doc.lines)
 
@@ -239,9 +237,7 @@ def test_text_meta_symbols_parses_yara_boolean_true() -> None:
     """A meta entry whose raw value is 'true' (YARA boolean, not a Python literal)
     causes ast.literal_eval to raise ValueError; the except-branch lowered-check
     returns True (line 322).  The meta symbol is recorded correctly."""
-    src = (
-        "rule bool_true {\n" "    meta:\n" "        enabled = true\n" "    condition: true\n" "}\n"
-    )
+    src = "rule bool_true {\n    meta:\n        enabled = true\n    condition: true\n}\n"
     doc = DocumentContext(uri="file://meta_true.yar", text=src)
     symbols = build_text_symbols(doc, doc.lines)
 
@@ -258,13 +254,7 @@ def test_text_meta_symbols_parses_yara_boolean_true() -> None:
 def test_text_meta_symbols_parses_yara_boolean_false() -> None:
     """A meta entry whose raw value is 'false' (YARA boolean) exercises the
     lowered == "false" branch (line 324) in _parse_text_meta_value."""
-    src = (
-        "rule bool_false {\n"
-        "    meta:\n"
-        "        disabled = false\n"
-        "    condition: true\n"
-        "}\n"
-    )
+    src = "rule bool_false {\n    meta:\n        disabled = false\n    condition: true\n}\n"
     doc = DocumentContext(uri="file://meta_false.yar", text=src)
     symbols = build_text_symbols(doc, doc.lines)
 
@@ -281,9 +271,7 @@ def test_text_meta_symbols_parses_yara_boolean_false() -> None:
 def test_text_meta_symbols_parses_yara_null_literal() -> None:
     """A meta entry whose raw value is 'null' exercises the 'null' membership test
     inside the except-branch (line 326) of _parse_text_meta_value."""
-    src = (
-        "rule meta_null {\n" "    meta:\n" "        nothing = null\n" "    condition: true\n" "}\n"
-    )
+    src = "rule meta_null {\n    meta:\n        nothing = null\n    condition: true\n}\n"
     doc = DocumentContext(uri="file://meta_null.yar", text=src)
     symbols = build_text_symbols(doc, doc.lines)
 
@@ -300,7 +288,7 @@ def test_text_meta_symbols_parses_yara_null_literal() -> None:
 def test_text_meta_symbols_parses_yara_none_literal() -> None:
     """A meta entry whose raw value is 'none' exercises the 'none' membership test
     inside the except-branch (line 326) of _parse_text_meta_value."""
-    src = "rule meta_none {\n" "    meta:\n" "        empty = none\n" "    condition: true\n" "}\n"
+    src = "rule meta_none {\n    meta:\n        empty = none\n    condition: true\n}\n"
     doc = DocumentContext(uri="file://meta_none.yar", text=src)
     symbols = build_text_symbols(doc, doc.lines)
 

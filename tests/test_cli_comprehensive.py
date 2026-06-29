@@ -716,7 +716,9 @@ class TestCLIDiffCommand:
         }
         """
 
-        modified = original + """
+        modified = (
+            original
+            + """
         rule added {
             strings:
                 $s = "new"
@@ -724,6 +726,7 @@ class TestCLIDiffCommand:
                 $s
         }
         """
+        )
 
         with tempfile.NamedTemporaryFile(
             mode="w", delete=False, suffix=".yar", encoding="utf-8"

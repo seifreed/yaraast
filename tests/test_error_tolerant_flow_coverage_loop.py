@@ -413,14 +413,7 @@ def test_parse_with_recovery_handles_include_statements() -> None:
     This is the include branch in the main recovery loop.
     """
     parser = ErrorTolerantParser()
-    source = (
-        "@@@ force recovery\n"
-        'include "common.yar"\n'
-        "rule R {\n"
-        "    condition:\n"
-        "        true\n"
-        "}\n"
-    )
+    source = '@@@ force recovery\ninclude "common.yar"\nrule R {\n    condition:\n        true\n}\n'
     result = parser.parse(source)
 
     include_paths = [inc.path for inc in result.ast.includes]
@@ -432,7 +425,7 @@ def test_parse_with_recovery_appends_rule_to_recovered_rules() -> None:
     and parser.recovered_rules inside parse_with_recovery.
     """
     parser = ErrorTolerantParser()
-    source = "@@@ force recovery\n" "rule Recovered {\n" "    condition:\n" "        true\n" "}\n"
+    source = "@@@ force recovery\nrule Recovered {\n    condition:\n        true\n}\n"
     result = parser.parse(source)
 
     assert any(r.name == "Recovered" for r in result.ast.rules)

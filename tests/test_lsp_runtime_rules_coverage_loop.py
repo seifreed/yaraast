@@ -506,9 +506,9 @@ def test_get_rule_link_records_for_document_skips_declaration_records(
     # as a link (role == "declaration" triggers the continue).
     links = get_rule_link_records_for_document(runtime, def_uri)
     declaration_links = [lnk for lnk in links if lnk.rule_name == "solo"]
-    assert (
-        declaration_links == []
-    ), "declaration record for 'solo' must not appear as a document link"
+    assert declaration_links == [], (
+        "declaration record for 'solo' must not appear as a document link"
+    )
 
 
 # ---------------------------------------------------------------------------

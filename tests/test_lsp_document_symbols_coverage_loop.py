@@ -98,14 +98,7 @@ class _FakeAST:
 
 def test_text_rule_symbols_deduplicates_repeated_rule_name() -> None:
     """Duplicate rule declarations produce only one set of rule symbols (line 118)."""
-    src = (
-        "rule alpha {\n"
-        "    condition: true\n"
-        "}\n"
-        "rule alpha {\n"
-        "    condition: false\n"
-        "}\n"
-    )
+    src = "rule alpha {\n    condition: true\n}\nrule alpha {\n    condition: false\n}\n"
     doc = DocumentContext(uri="file://dup.yar", text=src)
     symbols = build_text_symbols(doc, doc.lines)
 
@@ -139,9 +132,9 @@ def test_text_section_symbols_deduplicates_same_rule_same_section() -> None:
     section_syms = [s for s in symbols if s.kind == "section" and s.container_name == "beta"]
     seen_sections: set[str] = set()
     for sym in section_syms:
-        assert (
-            sym.name not in seen_sections
-        ), f"section '{sym.name}' must not appear twice for rule 'beta'"
+        assert sym.name not in seen_sections, (
+            f"section '{sym.name}' must not appear twice for rule 'beta'"
+        )
         seen_sections.add(sym.name)
 
 
@@ -499,13 +492,7 @@ def test_build_symbols_integrates_import_include_rule_fallbacks() -> None:
     """build_symbols drives _build_import_symbols, _build_include_symbols, and
     _build_rule_symbol together with no-location nodes, verifying all fallback
     paths cooperate to produce a complete symbol list."""
-    text = (
-        'import "pe"\n'
-        'include "helpers.yar"\n'
-        "rule combined_rule {\n"
-        "    condition: pe.is_pe\n"
-        "}\n"
-    )
+    text = 'import "pe"\ninclude "helpers.yar"\nrule combined_rule {\n    condition: pe.is_pe\n}\n'
     doc = DocumentContext(uri="file://combined.yar", text=text)
     lines = doc.lines
 
@@ -562,13 +549,7 @@ def test_build_symbols_with_real_ast_takes_location_path() -> None:
     and the quoted_value_range_from_node_line / node_value_range branches succeed,
     bypassing the text-scan fallback (branches 337->339, 339->346, 365->367,
     367->374, 395->406)."""
-    text = (
-        'import "pe"\n'
-        'include "helpers.yar"\n'
-        "rule located_rule {\n"
-        "    condition: pe.is_pe\n"
-        "}\n"
-    )
+    text = 'import "pe"\ninclude "helpers.yar"\nrule located_rule {\n    condition: pe.is_pe\n}\n'
     doc = DocumentContext(uri="file://real_ast.yar", text=text)
     real_ast = doc.ast()
     lines = doc.lines

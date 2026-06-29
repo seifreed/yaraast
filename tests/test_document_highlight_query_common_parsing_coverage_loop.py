@@ -237,12 +237,7 @@ def test_document_highlight_at_prefix_remapped_to_dollar_prefix() -> None:
 def test_document_highlight_bang_prefix_remapped_to_dollar_prefix() -> None:
     """Lines 52-54: word starts with '!' (string length operator) — remapped to '$'."""
     yara_src = (
-        "rule r {\n"
-        "    strings:\n"
-        '        $c = "foo"\n'
-        "    condition:\n"
-        "        $c and !c[0] > 2\n"
-        "}\n"
+        'rule r {\n    strings:\n        $c = "foo"\n    condition:\n        $c and !c[0] > 2\n}\n'
     )
     provider = DocumentHighlightProvider()
     line4 = yara_src.splitlines()[4]
@@ -262,9 +257,7 @@ def test_document_highlight_is_local_shadow_plain_identifier_not_a_rule() -> Non
     execution falls through to the general highlight path.
     """
     # Arrange: a for-loop variable 'i' that is not a rule name
-    yara_src = (
-        "rule loop_var {\n" "    condition:\n" "        for all i in (1, 2) : (i > 0)\n" "}\n"
-    )
+    yara_src = "rule loop_var {\n    condition:\n        for all i in (1, 2) : (i > 0)\n}\n"
     provider = DocumentHighlightProvider()
     line2 = yara_src.splitlines()[2]
     usage_col = line2.rindex("i")
@@ -332,14 +325,7 @@ def test_document_highlight_empty_text_returns_empty_list() -> None:
 
 def test_document_highlight_highlights_from_records_assigns_write_to_declaration() -> None:
     """_highlights_from_records: role='declaration' maps to DocumentHighlightKind.Write."""
-    yara_src = (
-        "rule target {\n"
-        "    strings:\n"
-        '        $x = "test"\n'
-        "    condition:\n"
-        "        $x\n"
-        "}\n"
-    )
+    yara_src = 'rule target {\n    strings:\n        $x = "test"\n    condition:\n        $x\n}\n'
     provider = DocumentHighlightProvider()
     # Position on '$x' in strings section (the declaration)
     highlights = provider.get_highlights(yara_src, _pos(2, 8))
@@ -363,7 +349,7 @@ def test_document_highlight_rule_kind_uses_highlight_identifier() -> None:
     must appear in the result.
     """
     # Arrange: two rules where the second refers to the first
-    yara_src = "rule base_rule { condition: true }\n" "rule caller { condition: base_rule }\n"
+    yara_src = "rule base_rule { condition: true }\nrule caller { condition: base_rule }\n"
     provider = DocumentHighlightProvider()
     # Position on 'base_rule' in the condition of the second rule
     line1 = yara_src.splitlines()[1]
@@ -393,9 +379,7 @@ def test_document_highlight_string_identifier_fallback_on_broken_doc() -> None:
     text-scan implementation (line 66).
     """
     # Arrange: broken YARA — missing closing brace, strings still visible
-    yara_src = (
-        "rule broken {\n" "    strings:\n" '        $a = "abc"\n' "    condition:\n" "        $a\n"
-    )
+    yara_src = 'rule broken {\n    strings:\n        $a = "abc"\n    condition:\n        $a\n'
     provider = DocumentHighlightProvider()
 
     # Act: position on '$a' in the condition
@@ -528,7 +512,7 @@ def test_document_highlight_is_local_shadow_string_definition_not_found() -> Non
     returns False.  Execution falls through to the string-identifier highlight path.
     """
     # Arrange: '$undeclared' used in condition but NOT in a strings section
-    yara_src = "rule no_strings {\n" "    condition:\n" "        $undeclared\n" "}\n"
+    yara_src = "rule no_strings {\n    condition:\n        $undeclared\n}\n"
     provider = DocumentHighlightProvider()
     line2 = yara_src.splitlines()[2]
     col = line2.index("$undeclared")

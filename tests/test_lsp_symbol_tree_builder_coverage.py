@@ -51,12 +51,7 @@ def test_find_closing_brace_unterminated_returns_last_line() -> None:
 def test_text_fallback_includes_imports_and_rule() -> None:
     # Unparseable (truncated) source still yields text-based symbols.
     truncated = (
-        'import "pe"\n'
-        'import "math"\n'
-        "rule broken {\n"
-        "  strings:\n"
-        '    $a = "x"\n'
-        "  condition:\n"
+        'import "pe"\nimport "math"\nrule broken {\n  strings:\n    $a = "x"\n  condition:\n'
     )
     symbols = SymbolsProvider().get_symbols(truncated)
     names = [symbol.name for symbol in symbols]

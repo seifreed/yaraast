@@ -13,8 +13,7 @@ from yaraast.cli.utils import parse_yara_file
 
 def test_yarax_services_detection_helpers() -> None:
     content = (
-        "with x = 1: [i for i in (1,2)] {k:v for k,v in d} "
-        "lambda x: x match y { _ => true } ... **"
+        "with x = 1: [i for i in (1,2)] {k:v for k,v in d} lambda x: x match y { _ => true } ... **"
     )
     feats = ys.detect_yarax_features(content)
     assert "with statements" in feats

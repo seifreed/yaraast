@@ -119,9 +119,7 @@ def test_pretty_printer_indents_meta_entries_under_section() -> None:
         options=GeneratorOptions(pretty=PrettyPrintOptions(align_meta_values=False))
     ).generate(YaraFile(rules=[rule]))
 
-    assert (
-        "\n    meta:\n" '        author = "me"\n' "        ok = true\n" "\n    condition:\n"
-    ) in out
+    assert ('\n    meta:\n        author = "me"\n        ok = true\n\n    condition:\n') in out
 
 
 def test_pretty_printer_honors_tab_indentation_option() -> None:

@@ -293,7 +293,8 @@ def test_attach_trailing_comments_group_and_single() -> None:
 
 def test_comment_aware_parser_populates_core_node_locations() -> None:
     parser = CommentAwareParser()
-    ast = parser.parse("""
+    ast = parser.parse(
+        """
 rule sample {
   meta:
     author = "me"
@@ -302,7 +303,8 @@ rule sample {
   condition:
     $a
 }
-""".lstrip())
+""".lstrip()
+    )
 
     rule = ast.rules[0]
     assert rule.location is not None
@@ -346,8 +348,7 @@ def test_condition_trailing_comment_survives_generation_roundtrip() -> None:
 
 def test_comment_aware_generator_does_not_leak_indentation_between_rules() -> None:
     source = (
-        "rule A {\n    condition:\n        true\n}\n\n"
-        "rule B {\n    condition:\n        false\n}\n"
+        "rule A {\n    condition:\n        true\n}\n\nrule B {\n    condition:\n        false\n}\n"
     )
     ast = CommentAwareParser().parse(source)
     output = CodeGenerator(options=GeneratorOptions.comment_aware()).generate(ast)

@@ -266,7 +266,7 @@ def test_parse_file_force_streaming_standard_yara_dialect_factory_not_invoked(
     (the file is parsed successfully) without asserting on line 309 coverage,
     which is structurally unreachable.
     """
-    yara_source = 'import "pe"\n' "rule standard_streaming {\n" "  condition:\n" "    true\n" "}\n"
+    yara_source = 'import "pe"\nrule standard_streaming {\n  condition:\n    true\n}\n'
     rule_file = tmp_path / "standard.yar"
     rule_file.write_text(yara_source, encoding="utf-8")
 

@@ -217,14 +217,7 @@ def test_create_missing_string_inserts_after_last_existing_string() -> None:
     # followed by the condition section.  The loop must advance insert_line
     # past the existing $a entry (line 89 / 92 path) and then break when it
     # sees "condition:" (line 94 path).
-    text = (
-        "rule demo {\n"
-        "    strings:\n"
-        '        $a = "x"\n'
-        "    condition:\n"
-        "        $missing\n"
-        "}\n"
-    )
+    text = 'rule demo {\n    strings:\n        $a = "x"\n    condition:\n        $missing\n}\n'
     # diagnostic range points into the condition body (line 4)
     result = create_missing_string(text, "$missing", _range(4, 8, 16))
     assert result is not None
@@ -256,14 +249,7 @@ def test_create_missing_string_inserts_after_multiple_existing_strings() -> None
 
 def test_create_missing_string_preview_mentions_strings_section() -> None:
     # When a strings section already exists the preview must say "strings".
-    text = (
-        "rule preview {\n"
-        "    strings:\n"
-        '        $a = "x"\n'
-        "    condition:\n"
-        "        $missing\n"
-        "}\n"
-    )
+    text = 'rule preview {\n    strings:\n        $a = "x"\n    condition:\n        $missing\n}\n'
     result = create_missing_string(text, "$missing", _range(4, 8, 16))
     assert result is not None
     assert result.preview is not None
@@ -282,9 +268,7 @@ def test_create_missing_string_loop_exhausts_without_break() -> None:
     # independently.  After finding strings_line=3, the loop covers line 4
     # ($a, continue) and line 5 ("}", 94 is False giving 94->89), then the
     # range is exhausted (89->96) and execution falls through to line 96.
-    text = (
-        "rule r {\n" "    condition:\n" "        $x\n" "    strings:\n" '        $a = "x"\n' "}\n"
-    )
+    text = 'rule r {\n    condition:\n        $x\n    strings:\n        $a = "x"\n}\n'
     result = create_missing_string(text, "$x", _range(2, 8, 10))
     assert result is not None
     # insert_line must be 5 (one past the $a on line 4)
@@ -297,15 +281,7 @@ def test_create_missing_string_loop_continues_past_non_section_line() -> None:
     # start with "$" and does not end with ":" causes neither continue nor
     # break to fire; execution returns to the top of the for loop (89).
     # A blank line between the last $-string and "condition:" is such a line.
-    text = (
-        "rule r {\n"
-        "    strings:\n"
-        '        $a = "x"\n'
-        "\n"
-        "    condition:\n"
-        "        $x\n"
-        "}\n"
-    )
+    text = 'rule r {\n    strings:\n        $a = "x"\n\n    condition:\n        $x\n}\n'
     result = create_missing_string(text, "$x", _range(5, 8, 10))
     assert result is not None
     # insert_line must be 3 (one past $a at line 2); the blank at line 3
@@ -339,28 +315,14 @@ def test_normalize_string_modifiers_returns_none_for_empty_document() -> None:
 def test_normalize_string_modifiers_returns_none_when_already_normalized() -> None:
     # "ascii wide" is the correct canonical order per PREFERRED_MODIFIER_ORDER;
     # normalize_modifiers will return the same list so the function returns None.
-    text = (
-        "rule r {\n"
-        "    strings:\n"
-        '        $a = "x" ascii wide\n'
-        "    condition:\n"
-        "        $a\n"
-        "}\n"
-    )
+    text = 'rule r {\n    strings:\n        $a = "x" ascii wide\n    condition:\n        $a\n}\n'
     result = normalize_string_modifiers(text, _range(2, 8, 28))
     assert result is None
 
 
 def test_normalize_string_modifiers_returns_none_for_single_modifier() -> None:
     # A single modifier cannot be reordered or deduplicated.
-    text = (
-        "rule r {\n"
-        "    strings:\n"
-        '        $a = "x" ascii\n'
-        "    condition:\n"
-        "        $a\n"
-        "}\n"
-    )
+    text = 'rule r {\n    strings:\n        $a = "x" ascii\n    condition:\n        $a\n}\n'
     result = normalize_string_modifiers(text, _range(2, 8, 22))
     assert result is None
 

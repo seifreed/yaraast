@@ -516,9 +516,7 @@ def test_resolve_returns_none_for_boolean_literal_position() -> None:
 
 def test_resolve_string_count_in_for_body_without_local_binding() -> None:
     """#a in a for-loop body where $a is not a loop variable resolves as 'string'."""
-    text = (
-        'rule r {\n  strings:\n    $a = "x"\n  condition:\n' "    for any i in (0, 1): (#a > 0)\n}"
-    )
+    text = 'rule r {\n  strings:\n    $a = "x"\n  condition:\n    for any i in (0, 1): (#a > 0)\n}'
     ctx = _doc(text)
     # '#a' at col 26 inside the for body
     sym = resolve_symbol_from_ast(ctx, _pos(4, 26))
@@ -585,11 +583,7 @@ def test_resolve_with_multiple_declarations_skips_non_matching_identifier() -> N
 
 def test_resolve_lambda_parameter_with_colon_on_continuation_line() -> None:
     """Lambda parameter resolves when colon separator is on a separate continuation line."""
-    text = (
-        "rule r {\n  condition:\n    filter([1],\n"
-        "           lambda x\n"
-        "            : x > 0)\n}"
-    )
+    text = "rule r {\n  condition:\n    filter([1],\n           lambda x\n            : x > 0)\n}"
     ctx = _doc(text)
     # 'x' declaration on line 3 col 18
     sym = resolve_symbol_from_ast(ctx, _pos(3, 18))
