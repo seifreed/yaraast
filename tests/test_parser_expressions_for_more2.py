@@ -57,7 +57,7 @@ def test_parse_for_expression_success_and_error_paths() -> None:
         _expr_parser("any of them")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected ':' after string set"):
         _expr_parser("2 of ($a*)")._parse_for_expression()
-    with pytest.raises(ParserError, match="Expected second variable after ','"):
+    with pytest.raises(ParserError, match="Expected variable after ','"):
         _expr_parser("any i, in 1 : ( true )")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected 'in' after variable"):
         _expr_parser("any i 1 : ( true )")._parse_for_expression()
@@ -89,6 +89,56 @@ def test_multi_variable_for_loop_round_trips() -> None:
     reparsed = Parser().parse(generated)
     assert isinstance(reparsed.rules[0].condition, ForExpression)
     assert reparsed.rules[0].condition.variable == "k,v"
+
+
+def test_yarax_for_loop_accepts_more_than_two_variables() -> None:
+    from yaraast.codegen.generator import CodeGenerator
+
+    source = """
+rule r {
+    condition:
+        for any k, v, offset in rows : (offset > 0 and k == v)
+}
+"""
+
+    ast = Parser().parse(source)
+    condition = ast.rules[0].condition
+    assert isinstance(condition, ForExpression)
+    assert condition.variable == "k,v,offset"
+
+    generated = CodeGenerator().generate(ast)
+    assert "for any k, v, offset in rows" in generated
+
+    reparsed = Parser().parse(generated)
+    reparsed_condition = reparsed.rules[0].condition
+    assert isinstance(reparsed_condition, ForExpression)
+    assert reparsed_condition.variable == "k,v,offset"
+
+
+def test_yarax_for_of_accepts_percentage_quantifier() -> None:
+    from yaraast.codegen.generator import CodeGenerator
+
+    source = """
+rule r {
+    strings:
+        $a = "a"
+    condition:
+        for 10% of ($a*) : ($)
+}
+"""
+
+    ast = Parser().parse(source)
+    condition = ast.rules[0].condition
+    assert isinstance(condition, ForOfExpression)
+    assert condition.quantifier == "10%"
+
+    generated = CodeGenerator().generate(ast)
+    assert "for 10% of ($a*) : ($)" in generated
+
+    reparsed = Parser().parse(generated)
+    reparsed_condition = reparsed.rules[0].condition
+    assert isinstance(reparsed_condition, ForOfExpression)
+    assert reparsed_condition.quantifier == "10%"
 
 
 @pytest.mark.parametrize("keyword", ["as", "include"])

@@ -570,7 +570,7 @@ def render_for_of_expression(gen: Any, node: Any) -> str:
     quantifier = _render_quantifier(
         gen,
         node.quantifier,
-        allow_percentage=node.condition is None,
+        allow_percentage=True,
         context="for quantifier" if node.condition is not None else "quantifier",
     )
     if node.condition is not None:

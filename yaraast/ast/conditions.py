@@ -367,7 +367,7 @@ class ForOfExpression(Condition):
         _validate_quantifier(
             self.quantifier,
             "ForOfExpression quantifier",
-            allow_percentage=self.condition is None,
+            allow_percentage=True,
         )
         _validate_string_set(self.string_set, "ForOfExpression string_set")
         _validate_consistent_string_set_kind(self.string_set)

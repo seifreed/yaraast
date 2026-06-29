@@ -46,7 +46,7 @@ class ExpressionForMixin:
         elif self._match(TokenType.NONE):
             quantifier = "none"
         else:
-            quantifier = self._parse_for_quantifier_expression()
+            quantifier = self._parse_for_quantifier()
 
         if self._match(TokenType.OF):
             return self._parse_for_of_expression(quantifier, start_token)
@@ -55,14 +55,20 @@ class ExpressionForMixin:
             msg = "Expected variable name"
             raise ParserError(msg, self._peek())
 
-        variable = self._previous().value
+        variables = [self._previous().value]
 
-        # Support multi-variable for loops: for any k, v in dict : (...)
+        # YARA-X accepts any number of loop variables:
+        # for any k, v, extra in dict : (...)
         if self._match(TokenType.COMMA):
-            if not self._match_for_loop_identifier():
-                msg = "Expected second variable after ','"
-                raise ParserError(msg, self._peek())
-            variable = f"{variable},{self._previous().value}"
+            while True:
+                if not self._match_for_loop_identifier():
+                    msg = "Expected variable after ','"
+                    raise ParserError(msg, self._peek())
+                variables.append(self._previous().value)
+                if not self._match(TokenType.COMMA):
+                    break
+
+        variable = ",".join(str(name) for name in variables)
 
         if not self._match(TokenType.IN):
             msg = "Expected 'in' after variable"
@@ -116,6 +122,15 @@ class ExpressionForMixin:
 
     def _match_for_loop_identifier(self) -> bool:
         return self._match(*_CONTEXTUAL_LOCAL_IDENTIFIER_TOKENS)
+
+    def _parse_for_quantifier(self) -> QuantifierValue:
+        if self._check(TokenType.INTEGER) and self.current + 1 < len(self.tokens):
+            next_token = self.tokens[self.current + 1]
+            if next_token.type == TokenType.MODULO:
+                start_token = self._advance()
+                self._advance()
+                return f"{start_token.value}%"
+        return self._parse_for_quantifier_expression()
 
     def _parse_for_quantifier_expression(self) -> QuantifierValue:
         """Parse a non-keyword 'for' quantifier as a primary expression.
