@@ -401,6 +401,8 @@ class MatchVariable(ASTNode):
     variable: str  # Variable name (without $)
     time_window: TimeWindow
     grouping_field: UDMFieldAccess | None = None  # Field used for grouping
+    temporal_anchor: str | None = None  # "after" or "before"
+    anchor_variable: str | None = None  # Variable name for temporal anchor, without $
 
     def validate_structure(self) -> None:
         """Validate match variable fields."""
@@ -413,6 +415,15 @@ class MatchVariable(ASTNode):
             UDMFieldAccess,
             "UDMFieldAccess",
         )
+        if self.temporal_anchor is None:
+            if self.anchor_variable is not None:
+                msg = "MatchVariable anchor_variable requires temporal_anchor"
+                raise ValueError(msg)
+            return
+        if self.temporal_anchor not in {"after", "before"}:
+            msg = "MatchVariable temporal_anchor must be 'after' or 'before'"
+            raise ValueError(msg)
+        _require_nonempty_string(self.anchor_variable, "MatchVariable anchor_variable")
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_match_variable(self)

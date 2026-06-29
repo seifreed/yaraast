@@ -38,14 +38,30 @@ class EnhancedYaraLParserMatchMixin:
 
         grouping_field = self._parse_match_grouping_field(len(names))
         time_window = self._parse_optional_match_time_window()
+        temporal_anchor, anchor_variable = self._parse_temporal_anchor()
         return [
             MatchVariable(
                 variable=name.lstrip("$"),
                 time_window=time_window,
                 grouping_field=grouping_field,
+                temporal_anchor=temporal_anchor,
+                anchor_variable=anchor_variable,
             )
             for name in names
         ]
+
+    def _parse_temporal_anchor(self) -> tuple[str | None, str | None]:
+        if not (self._check_keyword("after") or self._check_keyword("before")):
+            return None, None
+
+        temporal_anchor = str(self._advance().value)
+        event_var_type = self._get_event_var_type()
+        if not (
+            self._check_yaral_type(event_var_type) or self._check(BaseTokenType.STRING_IDENTIFIER)
+        ):
+            raise self._error("Expected temporal anchor variable")
+        anchor_variable = str(self._advance().value).lstrip("$")
+        return temporal_anchor, anchor_variable
 
     def _parse_match_variable_name(self) -> str:
         if self._check_yaral_type(self._get_event_var_type()) or self._check(

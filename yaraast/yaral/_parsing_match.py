@@ -54,18 +54,35 @@ class YaraLMatchParsingMixin:
 
                 time_window = self._parse_time_window(modifier)
 
+                temporal_anchor, anchor_variable = self._parse_temporal_anchor()
+
                 for var_name in var_names:
                     variables.append(
                         MatchVariable(
                             variable=var_name,
                             time_window=time_window,
                             grouping_field=grouping_field,
+                            temporal_anchor=temporal_anchor,
+                            anchor_variable=anchor_variable,
                         )
                     )
             else:
                 self._advance()
 
         return MatchSection(variables=variables)
+
+    def _parse_temporal_anchor(self) -> tuple[str | None, str | None]:
+        if not (self._check_keyword("after") or self._check_keyword("before")):
+            return None, None
+
+        temporal_anchor = str(self._advance().value)
+        if not (
+            self._check_yaral_type(YaraLTokenType.EVENT_VAR)
+            or self._check(BaseTokenType.STRING_IDENTIFIER)
+        ):
+            raise YaraLParserError("Expected temporal anchor variable", self._peek())
+        anchor_variable = str(self._advance().value).lstrip("$")
+        return temporal_anchor, anchor_variable
 
     def _parse_match_variable_list(self) -> list[str]:
         """Parse one or more comma-separated match variables ($a, $b, $c)."""
