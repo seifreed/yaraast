@@ -1,7 +1,8 @@
 """Tests for 'of ... in (range)' and 'of ... at offset' syntax support."""
 
 import pytest
-import yara
+
+yara = pytest.importorskip("yara")
 
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
