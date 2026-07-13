@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, cast
+from urllib.parse import urlparse
 
 import pytest
 
@@ -54,7 +55,10 @@ def test_document_links_import_and_include(tmp_path: Path) -> None:
 
     assert len(links) >= 2
     targets = {link.target for link in links if link.target is not None}
-    assert any("yara.readthedocs.io" in t for t in targets)
+    assert any(
+        parsed.scheme == "https" and parsed.netloc == "yara.readthedocs.io"
+        for parsed in (urlparse(target) for target in targets)
+    )
     assert any(t.startswith("file://") for t in targets)
 
 
