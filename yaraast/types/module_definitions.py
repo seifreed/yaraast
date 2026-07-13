@@ -12,6 +12,8 @@ from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition
 # Compound: ("array", elem), ("dict", k, v), ("struct", {fields})
 # Functions: (return_type, [(param_name, param_type), ...], min_parameters?, variadic?)
 
+_YARA_STRING_TYPE = "s"
+
 _MODULE_SPECS: dict[str, dict[str, Any]] = {
     "pe": {
         "consts": {
@@ -799,7 +801,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
                                 "revision_number": "i",
                             },
                         ),
-                        "public_key_or_token": "s",
+                        "public_key_or_token": _YARA_STRING_TYPE,
                     },
                 ),
             ),
