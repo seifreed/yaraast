@@ -4,7 +4,6 @@ yaraast/lsp/document_highlight_helpers.py (lines 51-52, 83-84, 86-87,
 92, 106, 117-118).
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
 Each test drives real production code through the specific branch being

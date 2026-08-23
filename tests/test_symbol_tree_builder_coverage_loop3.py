@@ -1,7 +1,6 @@
 """Coverage tests for symbol_tree_builder.py — third pass.
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
 Strategy: the "fallback" branches (lines 52-66, 93-107, 405-419) and the

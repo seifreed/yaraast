@@ -2,7 +2,6 @@
 Additional coverage tests for yaraast/lsp/runtime_rules.py (loop 2).
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
 Prior file tests/test_lsp_runtime_rules_coverage_loop.py reached 94.41%, leaving

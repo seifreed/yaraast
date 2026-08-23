@@ -5,7 +5,6 @@ and invoking resolve_symbol_from_ast at precisely targeted positions.  No
 mocks, no stubs, no artificial scaffolding.
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 """
 

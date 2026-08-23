@@ -1,6 +1,5 @@
 """
 Copyright (c) 2025 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
 Comprehensive benchmarking suite for YARA AST Parser.

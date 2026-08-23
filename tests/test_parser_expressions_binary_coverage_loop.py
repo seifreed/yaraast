@@ -1,5 +1,4 @@
 # Copyright (c) 2026 Marc Rivero Lopez
-# Licensed under GPLv3. See LICENSE file for details.
 # This test suite validates real code behavior without mocks or stubs.
 """Targeted coverage for yaraast/parser/_expressions_binary.py missing lines.
 

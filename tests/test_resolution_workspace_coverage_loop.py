@@ -1,7 +1,6 @@
 """Targeted regression tests for yaraast.resolution.workspace missing coverage.
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
 Missing lines addressed (as of baseline 93.14%):

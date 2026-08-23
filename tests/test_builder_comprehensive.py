@@ -1,7 +1,6 @@
 """Comprehensive tests for builder module to achieve 80%+ coverage.
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 """
 

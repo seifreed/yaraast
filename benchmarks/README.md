@@ -1,7 +1,6 @@
 # YARA AST Parser Benchmarking Suite
 
 Copyright (c) 2025 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 
 This benchmarking suite provides comprehensive performance testing and profiling tools for the YARA AST Parser project.
 
@@ -574,7 +573,7 @@ When contributing performance improvements:
 
 ## License
 
-All benchmark code is licensed under GPLv3. See the LICENSE file in the project root for details.
+All benchmark code is licensed under the MIT License. See the LICENSE file in the project root for details.
 
 ## Support
 

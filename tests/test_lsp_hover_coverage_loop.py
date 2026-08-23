@@ -1,7 +1,6 @@
 """Regression tests targeting uncovered lines in yaraast/lsp/hover.py.
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
 Lines targeted (74.10% -> closer to 100%):

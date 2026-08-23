@@ -1,8 +1,6 @@
 """Lexer interface for dependency injection.
 
 Copyright (c) Marc Rivero Lopez
-Licensed under GPLv3
-https://www.gnu.org/licenses/gpl-3.0.html
 """
 
 from collections.abc import Sequence

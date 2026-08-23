@@ -23,7 +23,6 @@ Targets lines and branches missed by existing test suites:
   337-342 - _visit_expression_sequence non-sequence error path
 
 Copyright (c) 2026 Marc Rivero Lopez
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 """
 

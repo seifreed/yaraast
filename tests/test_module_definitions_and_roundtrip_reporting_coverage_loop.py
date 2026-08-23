@@ -8,7 +8,6 @@ Targets:
       62->65, 70->exit, 84-91, 103-109, 122-129, 142, 146->154, 148, 152)
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 """
 

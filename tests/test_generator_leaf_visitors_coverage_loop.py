@@ -1,5 +1,4 @@
 # Copyright (c) 2026 Marc Rivero Lopez
-# Licensed under GPLv3. See LICENSE file for details.
 # This test suite validates real code behavior without mocks or stubs.
 """Regression tests for uncovered lines in yaraast/codegen/generator_leaf_visitors.py.
 

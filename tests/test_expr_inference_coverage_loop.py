@@ -1,7 +1,6 @@
 """Real coverage tests for yaraast/types/_expr_inference.py.
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
 Strategy: drive every uncovered line in _expr_inference.py via real AST

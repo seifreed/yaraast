@@ -1,8 +1,6 @@
 """Unified parser for YARA, YARA-X, and YARA-L dialects.
 
 Copyright (c) Marc Rivero López
-Licensed under GPLv3
-https://www.gnu.org/licenses/gpl-3.0.html
 """
 
 from os import stat_result

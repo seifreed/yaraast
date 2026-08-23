@@ -4,8 +4,6 @@ This module provides a dedicated parser for YARA hex string content,
 extracting logic from the main Parser class for better maintainability.
 
 Copyright (c) Marc Rivero Lopez
-Licensed under GPLv3
-https://www.gnu.org/licenses/gpl-3.0.html
 """
 
 from __future__ import annotations

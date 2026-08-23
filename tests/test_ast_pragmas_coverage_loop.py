@@ -1,7 +1,6 @@
 """Coverage loop: yaraast.ast.pragmas — exercises every uncovered line without mocks.
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 """
 

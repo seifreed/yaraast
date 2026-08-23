@@ -1,7 +1,6 @@
 """Tests for hex string comment handling.
 
 Copyright (c) 2025 Marc Rivero López
-Licensed under GPLv3
 
 These tests verify that the lexer correctly handles comments containing
 braces inside hex strings, which previously caused parsing errors.

@@ -6,7 +6,6 @@ Targets three modules with real YARA document parsing - no mocks, no stubs:
   yaraast/lsp/parsing.py               (missing: line 20, line 25; line 26 structurally unreachable)
 
 Copyright (c) 2026 Marc Rivero Lopez
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 """
 

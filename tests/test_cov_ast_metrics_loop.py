@@ -1,5 +1,4 @@
 # Copyright (c) 2026 Marc Rivero López
-# Licensed under GPLv3. See LICENSE file for details.
 # This test suite validates real code behavior without mocks or stubs.
 """Coverage tests for ast/base.py, ast/expressions.py, metrics/dependency_graph_utils.py,
 metrics/complexity_analysis_helpers.py, libyara/compiler.py, and yarax/ast_nodes.py.

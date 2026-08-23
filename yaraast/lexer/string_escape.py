@@ -1,8 +1,6 @@
 """String escape handling for YARA lexer.
 
 Copyright (c) Marc Rivero Lopez
-Licensed under GPLv3
-https://www.gnu.org/licenses/gpl-3.0.html
 """
 
 from __future__ import annotations

@@ -1,7 +1,6 @@
 """Regression tests raising symbol_tree_builder.py coverage toward 100%.
 
 Copyright (c) 2026 Marc Rivero López
-Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
 Coverage targets (module yaraast.lsp.symbol_tree_builder):
