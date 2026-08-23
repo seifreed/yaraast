@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any, Protocol
 
+from lsprotocol.types import LogMessageParams, PublishDiagnosticsParams
+
 
 class FeatureRegistrationServer(Protocol):
     """Minimum server surface needed while registering LSP features."""
@@ -18,6 +20,10 @@ class FeatureRegistrationServer(Protocol):
         """Return a decorator that registers an LSP handler."""
         ...
 
-    def show_message_log(self, message: str) -> None:
+    def window_log_message(self, params: LogMessageParams) -> None:
         """Log a message through the language server."""
+        ...
+
+    def text_document_publish_diagnostics(self, params: PublishDiagnosticsParams) -> None:
+        """Publish diagnostics through the language server."""
         ...

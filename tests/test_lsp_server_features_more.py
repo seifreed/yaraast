@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
 
+from lsprotocol.types import LogMessageParams, PublishDiagnosticsParams
 import pytest
 
 from yaraast.lsp import server_features as sf
@@ -145,11 +146,11 @@ class FakeServer:
 
         return _decorator
 
-    def show_message_log(self, msg: str) -> None:
-        self.logs.append(msg)
+    def window_log_message(self, params: LogMessageParams) -> None:
+        self.logs.append(params.message)
 
-    def publish_diagnostics(self, uri: str, diagnostics: Any) -> None:
-        self.published.append((uri, diagnostics))
+    def text_document_publish_diagnostics(self, params: PublishDiagnosticsParams) -> None:
+        self.published.append((params.uri, params.diagnostics))
 
 
 class _RecordingRuntime:

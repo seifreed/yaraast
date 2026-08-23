@@ -17,6 +17,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
+from lsprotocol.types import LogMessageParams, PublishDiagnosticsParams
+
 import yaraast.lsp.server_features as sf
 
 # ---------------------------------------------------------------------------
@@ -55,8 +57,11 @@ class _MinimalServer:
 
         return _decorator
 
-    def show_message_log(self, msg: str) -> None:
-        self.logs.append(msg)
+    def window_log_message(self, params: LogMessageParams) -> None:
+        self.logs.append(params.message)
+
+    def text_document_publish_diagnostics(self, params: PublishDiagnosticsParams) -> None:
+        pass
 
 
 class _ServerWithRuntime(_MinimalServer):

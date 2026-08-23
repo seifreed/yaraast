@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from lsprotocol.types import LogMessageParams, MessageType
+
 from yaraast.lsp.lsp_types import (
     TEXT_DOCUMENT_CODE_ACTION,
     TEXT_DOCUMENT_COMPLETION,
@@ -81,7 +83,12 @@ def register_initialize(server: FeatureRegistrationServer) -> None:
     @server.feature("initialize")
     def initialize(params: InitializeParams) -> None:
         """Initialize the server with completion triggers and capabilities."""
-        server.show_message_log("YARAAST Language Server initialized")
+        server.window_log_message(
+            LogMessageParams(
+                type=MessageType.Log,
+                message="YARAAST Language Server initialized",
+            )
+        )
         runtime = getattr(server, "runtime", None)
         folders = get_workspace_folders(params)
         if runtime is not None:

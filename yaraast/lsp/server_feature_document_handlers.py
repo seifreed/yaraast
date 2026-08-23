@@ -6,6 +6,8 @@ from collections.abc import Mapping
 import logging
 from typing import Any
 
+from lsprotocol.types import LogMessageParams, MessageType, PublishDiagnosticsParams
+
 from yaraast.lsp.lsp_types import (
     TEXT_DOCUMENT_DID_CHANGE,
     TEXT_DOCUMENT_DID_CLOSE,
@@ -52,7 +54,7 @@ def register_document_handlers(server: FeatureRegistrationServer) -> None:
     # Length is due to 7 short handler registrations; splitting would reduce locality.
     @server.feature(TEXT_DOCUMENT_DID_OPEN)
     async def did_open(ls: Any, params: DidOpenTextDocumentParams) -> None:
-        ls.show_message_log("Document opened")
+        ls.window_log_message(LogMessageParams(type=MessageType.Log, message="Document opened"))
         runtime = getattr(ls, "runtime", None)
         if runtime is not None:
             runtime.open_document(
@@ -61,7 +63,12 @@ def register_document_handlers(server: FeatureRegistrationServer) -> None:
                 getattr(params.text_document, "version", None),
             )
         diagnostics = get_diagnostics(ls, params.text_document.text, params.text_document.uri)
-        ls.publish_diagnostics(params.text_document.uri, diagnostics)
+        ls.text_document_publish_diagnostics(
+            PublishDiagnosticsParams(
+                uri=params.text_document.uri,
+                diagnostics=diagnostics,
+            )
+        )
 
     @server.feature(TEXT_DOCUMENT_DID_CHANGE)
     async def did_change(ls: Any, params: DidChangeTextDocumentParams) -> None:
@@ -76,7 +83,9 @@ def register_document_handlers(server: FeatureRegistrationServer) -> None:
             ):
                 return
         diagnostics = get_diagnostics(ls, text, uri)
-        ls.publish_diagnostics(uri, diagnostics)
+        ls.text_document_publish_diagnostics(
+            PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics)
+        )
 
     @server.feature(TEXT_DOCUMENT_DID_SAVE)
     async def did_save(ls: Any, params: DidSaveTextDocumentParams) -> None:
@@ -88,11 +97,13 @@ def register_document_handlers(server: FeatureRegistrationServer) -> None:
         if runtime is not None:
             runtime.save_document(uri, text)
         diagnostics = get_diagnostics(ls, text, uri)
-        ls.publish_diagnostics(uri, diagnostics)
+        ls.text_document_publish_diagnostics(
+            PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics)
+        )
 
     @server.feature(TEXT_DOCUMENT_DID_CLOSE)
     async def did_close(ls: Any, params: DidCloseTextDocumentParams) -> None:
-        ls.show_message_log("Document closed")
+        ls.window_log_message(LogMessageParams(type=MessageType.Log, message="Document closed"))
         runtime = getattr(ls, "runtime", None)
         if runtime is not None:
             runtime.close_document(params.text_document.uri)

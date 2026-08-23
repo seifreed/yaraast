@@ -14,6 +14,8 @@ from collections.abc import Callable
 from types import SimpleNamespace
 from typing import Any
 
+from lsprotocol.types import LogMessageParams, PublishDiagnosticsParams
+
 from yaraast.lsp.lsp_types import (
     TEXT_DOCUMENT_DID_CHANGE,
     TEXT_DOCUMENT_DID_CLOSE,
@@ -73,11 +75,11 @@ class _FakeServer:
 
         return _register
 
-    def show_message_log(self, msg: str) -> None:
-        self.logs.append(msg)
+    def window_log_message(self, params: LogMessageParams) -> None:
+        self.logs.append(params.message)
 
-    def publish_diagnostics(self, uri: str, diagnostics: Any) -> None:
-        self.published.append((uri, diagnostics))
+    def text_document_publish_diagnostics(self, params: PublishDiagnosticsParams) -> None:
+        self.published.append((params.uri, params.diagnostics))
 
 
 class _FullRuntime:
