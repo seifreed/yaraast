@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator
+from functools import partial
 from os import PathLike, fspath
 from pathlib import Path
 import time
 from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import _path_exists_and_is_dir, _path_exists_and_is_file
-from yaraast.performance.batch_processor import BatchOperation, BatchProcessor
+from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
 from yaraast.performance.memory_optimizer import MemoryOptimizer
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
+from yaraast.performance.parallel_models import Job
 from yaraast.performance.streaming_parser import StreamingParser
 from yaraast.performance.streaming_result_builders import build_error_parse_result
 from yaraast.performance.timeout_helpers import run_with_timeout
@@ -61,7 +64,7 @@ def run_batch_processing(
     recursive: bool,
     split_rules: bool = False,
     file_timeout: float | None = None,
-) -> tuple[dict, float]:
+) -> tuple[dict[BatchOperation, BatchResult], float]:
     _validate_file_timeout(file_timeout)
     start_time = time.time()
     if file_timeout is not None and hasattr(processor, "file_timeout"):
@@ -85,7 +88,7 @@ def run_batch_processing(
     return results, total_time
 
 
-def build_batch_results_data(results: dict) -> dict[str, Any]:
+def build_batch_results_data(results: dict[BatchOperation, BatchResult]) -> dict[str, Any]:
     return {
         operation.value: {
             "input_count": result.input_count,
@@ -108,7 +111,7 @@ def get_parse_iterator(
     pattern: FilePatterns,
     recursive: bool,
     file_timeout: float | None = None,
-):
+) -> Iterator[Any] | list[Any]:
     _validate_file_timeout(file_timeout)
     if _path_exists_and_is_file(input_path):
         parse_file = (
@@ -141,7 +144,7 @@ def _iter_parse_results_with_timeout(
     file_path: Path,
     parse_iter: Iterator[object],
     file_timeout: float | None,
-):
+) -> list[Any]:
     try:
         return run_with_timeout(
             f"stream parse for {file_path}",
@@ -160,7 +163,7 @@ def _iter_parse_directory_with_timeout(
     pattern: FilePatterns,
     recursive: bool,
     file_timeout: float | None,
-):
+) -> Iterator[Any]:
     files = iter_matching_files(input_path, pattern, recursive)
     for file_path in files:
         parse_iter = (
@@ -172,14 +175,14 @@ def _iter_parse_directory_with_timeout(
             yield from run_with_timeout(
                 f"stream parse for {file_path}",
                 file_timeout,
-                lambda parse_iter_=parse_iter: list(parse_iter_),
+                partial(list, parse_iter),
             )
         except TimeoutError as exc:
             parser._stats["parse_errors"] += 1
             yield build_error_parse_result(file_path, exc)
 
 
-def summarize_stream_results(results: list) -> dict[str, Any]:
+def summarize_stream_results(results: list[Any]) -> dict[str, list[Any]]:
     successful = [r for r in results if r.status.value == "success"]
     failed = [r for r in results if r.status.value == "error"]
     return {
@@ -189,9 +192,9 @@ def summarize_stream_results(results: list) -> dict[str, Any]:
 
 
 def build_stream_output_data(
-    results: list,
-    successful: list,
-    failed: list,
+    results: list[Any],
+    successful: list[Any],
+    failed: list[Any],
     total_time: float,
     parser_stats: dict[str, Any],
 ) -> dict[str, Any]:
@@ -219,7 +222,7 @@ def build_stream_output_data(
     }
 
 
-def collect_file_paths(input_paths: tuple) -> list[Path]:
+def collect_file_paths(input_paths: tuple[object, ...]) -> list[Path]:
     file_paths = []
     seen: set[Path] = set()
     for raw_path in input_paths:
@@ -259,9 +262,13 @@ def collect_file_paths(input_paths: tuple) -> list[Path]:
     return file_paths
 
 
-def extract_successful_asts(parse_jobs, file_paths: list[Path], chunk_size: int):
-    successful_asts = []
-    file_names = []
+def extract_successful_asts(
+    parse_jobs: list[Job],
+    file_paths: list[Path],
+    chunk_size: int,
+) -> tuple[list[YaraFile], list[str]]:
+    successful_asts: list[YaraFile] = []
+    file_names: list[str] = []
 
     for job_index, job in enumerate(parse_jobs):
         if _has_successful_parse_results(job):
@@ -272,7 +279,7 @@ def extract_successful_asts(parse_jobs, file_paths: list[Path], chunk_size: int)
     return successful_asts, file_names
 
 
-def _has_successful_parse_results(job) -> bool:
+def _has_successful_parse_results(job: Job) -> bool:
     """Return whether a parse job can contribute successful ASTs."""
     if not job.result:
         return False
@@ -283,9 +290,14 @@ def _has_successful_parse_results(job) -> bool:
     )
 
 
-def _process_job_results(job, job_index: int, file_paths: list[Path], chunk_size: int):
-    asts = []
-    names = []
+def _process_job_results(
+    job: Job,
+    job_index: int,
+    file_paths: list[Path],
+    chunk_size: int,
+) -> tuple[list[YaraFile], list[str]]:
+    asts: list[YaraFile] = []
+    names: list[str] = []
 
     for i, ast in enumerate(job.result):
         if not hasattr(ast, "_parse_error"):
@@ -393,7 +405,7 @@ def _raise_if_analysis_timed_out(
 
 def build_parallel_summary(
     file_paths: list[Path],
-    successful_asts: list,
+    successful_asts: list[YaraFile],
     analyzer_stats: dict[str, Any],
     total_time: float,
 ) -> dict[str, Any]:

@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import click
 
 from yaraast.cli.utils import write_json
+from yaraast.performance.batch_processor import BatchOperation, BatchResult
 
 
-def display_operation_result(operation, result) -> None:
+def display_operation_result(operation: BatchOperation, result: BatchResult) -> None:
     """Display results for a single operation."""
     click.echo(f"\n{operation.value.upper()}:")
     click.echo(f"  Input items: {result.input_count}")
@@ -22,7 +24,10 @@ def display_operation_result(operation, result) -> None:
     _display_list_summary("Errors", result.errors, max_preview=3)
 
 
-def display_stream_summary(results, total_time: float):
+def display_stream_summary(
+    results: list[Any],
+    total_time: float,
+) -> tuple[list[Any], list[Any]]:
     """Display streaming parse summary."""
     from yaraast.cli.performance_services import summarize_stream_results
 
@@ -44,7 +49,11 @@ def display_stream_summary(results, total_time: float):
     return successful, failed
 
 
-def display_stream_details(successful, failed, parser_stats) -> None:
+def display_stream_details(
+    successful: list[Any],
+    failed: list[Any],
+    parser_stats: dict[str, Any],
+) -> None:
     """Display detailed streaming statistics."""
     if successful:
         total_rules = sum(r.rule_count for r in successful)
@@ -68,7 +77,7 @@ def display_stream_details(successful, failed, parser_stats) -> None:
             click.echo(f"  ... and {len(failed) - 5} more")
 
 
-def display_parallel_summary(summary: dict, total_time: float) -> None:
+def display_parallel_summary(summary: dict[str, Any], total_time: float) -> None:
     """Display parallel processing summary."""
     click.echo(f"\n📊 Parallel Processing Summary ({total_time:.2f}s)")
     click.echo("=" * 45)
@@ -83,7 +92,7 @@ def display_parallel_summary(summary: dict, total_time: float) -> None:
 
 
 def report_complexity_analysis(
-    complexity_results: list[dict],
+    complexity_results: list[dict[str, Any]],
     output_dir: Path,
 ) -> None:
     if not complexity_results:
@@ -104,7 +113,7 @@ def report_complexity_analysis(
         )
 
 
-def display_optimize_report(plan: dict) -> None:
+def display_optimize_report(plan: dict[str, Any]) -> None:
     recommendations = plan["recommendations"]
     collection_size = plan["collection_size"]
 
@@ -167,7 +176,7 @@ def display_optimize_report(plan: dict) -> None:
     click.echo("    --progress")
 
 
-def _display_list_summary(label: str, items: list, max_preview: int) -> None:
+def _display_list_summary(label: str, items: list[Any], max_preview: int) -> None:
     """Display a list summary with a compact preview."""
     if not items:
         return
