@@ -230,7 +230,6 @@ module = [
     "yaraast.serialization.*",
     "yaraast.yaral.*",
     "yaraast.metrics.*",
-    "yaraast.cli.visitors.dumper",
 ]
 ignore_errors = true
 

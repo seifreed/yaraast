@@ -50,11 +50,11 @@ from yaraast.codegen.generator_helpers import escape_plain_string_value, output_
 from yaraast.visitor import ASTVisitor
 
 
-class ASTDumper(ASTVisitor[dict]):
+class ASTDumper(ASTVisitor[dict[str, Any]]):
     """Dump AST to dictionary format."""
 
-    def visit_yara_file(self, node: YaraFile) -> dict:
-        result = {
+    def visit_yara_file(self, node: YaraFile) -> dict[str, Any]:
+        result: dict[str, Any] = {
             "type": "YaraFile",
             "imports": [self.visit(imp) for imp in node.imports],
             "includes": [self.visit(inc) for inc in node.includes],
@@ -70,18 +70,18 @@ class ASTDumper(ASTVisitor[dict]):
             result["namespaces"] = [self.visit(namespace) for namespace in node.namespaces]
         return result
 
-    def visit_import(self, node: Import) -> dict:
+    def visit_import(self, node: Import) -> dict[str, Any]:
         return {"type": "Import", "module": node.module}
 
-    def visit_include(self, node: Include) -> dict:
+    def visit_include(self, node: Include) -> dict[str, Any]:
         return {"type": "Include", "path": node.path}
 
-    def visit_rule(self, node: Rule) -> dict:
+    def visit_rule(self, node: Rule) -> dict[str, Any]:
         tags = self._process_tags(node.tags)
         meta = self._process_meta(node.meta)
         modifiers = self._process_modifiers(node)
 
-        result = {
+        result: dict[str, Any] = {
             "type": "Rule",
             "name": node.name,
             "modifiers": modifiers,
@@ -94,9 +94,9 @@ class ASTDumper(ASTVisitor[dict]):
             result["pragmas"] = [self.visit(pragma) for pragma in node.pragmas]
         return result
 
-    def _process_tags(self, tags) -> list:
+    def _process_tags(self, tags: Any) -> list[Any]:
         """Process tags from rule node."""
-        result = []
+        result: list[Any] = []
         for tag in tags:
             if isinstance(tag, str):
                 result.append(tag)
@@ -104,22 +104,22 @@ class ASTDumper(ASTVisitor[dict]):
                 result.append(self.visit(tag))
         return result
 
-    def _process_meta(self, meta) -> list[dict[str, Any]]:
+    def _process_meta(self, meta: Any) -> list[dict[str, Any]]:
         """Process meta from rule node."""
-        result = []
+        result: list[dict[str, Any]] = []
         if isinstance(meta, list):
             for m in meta:
                 if hasattr(m, "key") and hasattr(m, "value"):
-                    entry = {"key": m.key, "value": m.value}
+                    entry: dict[str, Any] = {"key": m.key, "value": m.value}
                     scope = getattr(m, "scope", None)
                     if scope is not None:
                         entry["scope"] = getattr(scope, "value", str(scope))
                     result.append(entry)
         return result
 
-    def _process_modifiers(self, node: Rule) -> list:
+    def _process_modifiers(self, node: Rule) -> list[Any]:
         """Process modifiers from rule node."""
-        modifiers = []
+        modifiers: list[Any] = []
         if hasattr(node, "modifiers") and node.modifiers:
             for mod in node.modifiers:
                 if hasattr(mod, "accept"):
@@ -128,13 +128,13 @@ class ASTDumper(ASTVisitor[dict]):
                     modifiers.append(str(mod))
         return modifiers
 
-    def visit_tag(self, node: Tag) -> dict:
+    def visit_tag(self, node: Tag) -> dict[str, Any]:
         return {"type": "Tag", "name": node.name}
 
-    def visit_string_definition(self, node: StringDefinition) -> dict:
+    def visit_string_definition(self, node: StringDefinition) -> dict[str, Any]:
         return {"type": "StringDefinition", "identifier": output_string_identifier(node)}
 
-    def visit_plain_string(self, node: PlainString) -> dict:
+    def visit_plain_string(self, node: PlainString) -> dict[str, Any]:
         modifiers = self._extract_modifiers(node)
         return {
             "type": "PlainString",
@@ -143,7 +143,7 @@ class ASTDumper(ASTVisitor[dict]):
             "modifiers": modifiers,
         }
 
-    def visit_hex_string(self, node: HexString) -> dict:
+    def visit_hex_string(self, node: HexString) -> dict[str, Any]:
         modifiers = self._extract_modifiers(node)
         return {
             "type": "HexString",
@@ -152,7 +152,7 @@ class ASTDumper(ASTVisitor[dict]):
             "modifiers": modifiers,
         }
 
-    def visit_regex_string(self, node: RegexString) -> dict:
+    def visit_regex_string(self, node: RegexString) -> dict[str, Any]:
         modifiers = self._extract_modifiers(node)
         return {
             "type": "RegexString",
@@ -161,9 +161,9 @@ class ASTDumper(ASTVisitor[dict]):
             "modifiers": modifiers,
         }
 
-    def _extract_modifiers(self, node) -> list:
+    def _extract_modifiers(self, node: Any) -> list[Any]:
         """Extract modifiers from a string node."""
-        modifiers = []
+        modifiers: list[Any] = []
         if hasattr(node, "modifiers") and node.modifiers:
             for mod in node.modifiers:
                 if hasattr(mod, "accept"):
@@ -172,25 +172,25 @@ class ASTDumper(ASTVisitor[dict]):
                     modifiers.append(str(mod))
         return modifiers
 
-    def visit_string_modifier(self, node: StringModifier) -> dict:
+    def visit_string_modifier(self, node: StringModifier) -> dict[str, Any]:
         return {"type": "StringModifier", "name": node.name, "value": node.value}
 
-    def visit_hex_token(self, node: HexToken) -> dict:
+    def visit_hex_token(self, node: HexToken) -> dict[str, Any]:
         return {"type": "HexToken"}
 
-    def visit_hex_byte(self, node: HexByte) -> dict:
+    def visit_hex_byte(self, node: HexByte) -> dict[str, Any]:
         return {"type": "HexByte", "value": node.value}
 
-    def visit_hex_negated_byte(self, node) -> dict:
+    def visit_hex_negated_byte(self, node: Any) -> dict[str, Any]:
         return {"type": "HexNegatedByte", "value": node.value}
 
-    def visit_hex_wildcard(self, node: HexWildcard) -> dict:
+    def visit_hex_wildcard(self, node: HexWildcard) -> dict[str, Any]:
         return {"type": "HexWildcard"}
 
-    def visit_hex_jump(self, node: HexJump) -> dict:
+    def visit_hex_jump(self, node: HexJump) -> dict[str, Any]:
         return {"type": "HexJump", "min_jump": node.min_jump, "max_jump": node.max_jump}
 
-    def visit_hex_alternative(self, node: HexAlternative) -> dict:
+    def visit_hex_alternative(self, node: HexAlternative) -> dict[str, Any]:
         return {
             "type": "HexAlternative",
             "alternatives": [
@@ -198,7 +198,7 @@ class ASTDumper(ASTVisitor[dict]):
             ],
         }
 
-    def _dump_hex_alternative_branch(self, alternative: Any) -> list[dict]:
+    def _dump_hex_alternative_branch(self, alternative: Any) -> list[dict[str, Any]]:
         if isinstance(alternative, list):
             return [self.visit(self._coerce_hex_alternative_token(token)) for token in alternative]
         return [self.visit(self._coerce_hex_alternative_token(alternative))]
@@ -209,48 +209,48 @@ class ASTDumper(ASTVisitor[dict]):
             return token
         return HexByte(token)
 
-    def visit_expression(self, node: Expression) -> dict:
+    def visit_expression(self, node: Expression) -> dict[str, Any]:
         return {"type": "Expression"}
 
-    def visit_identifier(self, node: Identifier) -> dict:
+    def visit_identifier(self, node: Identifier) -> dict[str, Any]:
         return {"type": "Identifier", "name": node.name}
 
-    def visit_string_identifier(self, node: StringIdentifier) -> dict:
+    def visit_string_identifier(self, node: StringIdentifier) -> dict[str, Any]:
         return {"type": "StringIdentifier", "name": node.name}
 
-    def visit_string_wildcard(self, node: StringWildcard) -> dict:
+    def visit_string_wildcard(self, node: StringWildcard) -> dict[str, Any]:
         return {"type": "StringWildcard", "pattern": node.pattern}
 
-    def visit_string_count(self, node: StringCount) -> dict:
+    def visit_string_count(self, node: StringCount) -> dict[str, Any]:
         return {"type": "StringCount", "string_id": node.string_id}
 
-    def visit_string_offset(self, node: StringOffset) -> dict:
+    def visit_string_offset(self, node: StringOffset) -> dict[str, Any]:
         return {
             "type": "StringOffset",
             "string_id": node.string_id,
             "index": self.visit(node.index) if node.index is not None else None,
         }
 
-    def visit_string_length(self, node: StringLength) -> dict:
+    def visit_string_length(self, node: StringLength) -> dict[str, Any]:
         return {
             "type": "StringLength",
             "string_id": node.string_id,
             "index": self.visit(node.index) if node.index is not None else None,
         }
 
-    def visit_integer_literal(self, node: IntegerLiteral) -> dict:
+    def visit_integer_literal(self, node: IntegerLiteral) -> dict[str, Any]:
         return {"type": "IntegerLiteral", "value": node.value}
 
-    def visit_double_literal(self, node: DoubleLiteral) -> dict:
+    def visit_double_literal(self, node: DoubleLiteral) -> dict[str, Any]:
         return {"type": "DoubleLiteral", "value": node.value}
 
-    def visit_string_literal(self, node: StringLiteral) -> dict:
+    def visit_string_literal(self, node: StringLiteral) -> dict[str, Any]:
         return {"type": "StringLiteral", "value": node.value}
 
-    def visit_boolean_literal(self, node: BooleanLiteral) -> dict:
+    def visit_boolean_literal(self, node: BooleanLiteral) -> dict[str, Any]:
         return {"type": "BooleanLiteral", "value": node.value}
 
-    def visit_binary_expression(self, node: BinaryExpression) -> dict:
+    def visit_binary_expression(self, node: BinaryExpression) -> dict[str, Any]:
         return {
             "type": "BinaryExpression",
             "left": self.visit(node.left),
@@ -258,34 +258,34 @@ class ASTDumper(ASTVisitor[dict]):
             "right": self.visit(node.right),
         }
 
-    def visit_unary_expression(self, node: UnaryExpression) -> dict:
+    def visit_unary_expression(self, node: UnaryExpression) -> dict[str, Any]:
         return {
             "type": "UnaryExpression",
             "operator": node.operator,
             "operand": self.visit(node.operand),
         }
 
-    def visit_parentheses_expression(self, node: ParenthesesExpression) -> dict:
+    def visit_parentheses_expression(self, node: ParenthesesExpression) -> dict[str, Any]:
         return {
             "type": "ParenthesesExpression",
             "expression": self.visit(node.expression),
         }
 
-    def visit_set_expression(self, node: SetExpression) -> dict:
+    def visit_set_expression(self, node: SetExpression) -> dict[str, Any]:
         return {
             "type": "SetExpression",
             "elements": [self.visit(elem) for elem in node.elements],
         }
 
-    def visit_range_expression(self, node: RangeExpression) -> dict:
+    def visit_range_expression(self, node: RangeExpression) -> dict[str, Any]:
         return {
             "type": "RangeExpression",
             "low": self.visit(node.low),
             "high": self.visit(node.high),
         }
 
-    def visit_function_call(self, node: FunctionCall) -> dict:
-        result = {
+    def visit_function_call(self, node: FunctionCall) -> dict[str, Any]:
+        result: dict[str, Any] = {
             "type": "FunctionCall",
             "function": node.function,
             "arguments": [self.visit(arg) for arg in node.arguments],
@@ -294,24 +294,24 @@ class ASTDumper(ASTVisitor[dict]):
             result["receiver"] = self.visit(node.receiver)
         return result
 
-    def visit_array_access(self, node: ArrayAccess) -> dict:
+    def visit_array_access(self, node: ArrayAccess) -> dict[str, Any]:
         return {
             "type": "ArrayAccess",
             "array": self.visit(node.array),
             "index": self.visit(node.index),
         }
 
-    def visit_member_access(self, node: MemberAccess) -> dict:
+    def visit_member_access(self, node: MemberAccess) -> dict[str, Any]:
         return {
             "type": "MemberAccess",
             "object": self.visit(node.object),
             "member": node.member,
         }
 
-    def visit_condition(self, node: Condition) -> dict:
+    def visit_condition(self, node: Condition) -> dict[str, Any]:
         return {"type": "Condition"}
 
-    def visit_for_expression(self, node: ForExpression) -> dict:
+    def visit_for_expression(self, node: ForExpression) -> dict[str, Any]:
         return {
             "type": "ForExpression",
             "quantifier": self._dump_value(node.quantifier),
@@ -320,7 +320,7 @@ class ASTDumper(ASTVisitor[dict]):
             "body": self.visit(node.body),
         }
 
-    def visit_for_of_expression(self, node: ForOfExpression) -> dict:
+    def visit_for_of_expression(self, node: ForOfExpression) -> dict[str, Any]:
         return {
             "type": "ForOfExpression",
             "quantifier": (
@@ -332,14 +332,14 @@ class ASTDumper(ASTVisitor[dict]):
             "condition": self.visit(node.condition) if node.condition is not None else None,
         }
 
-    def visit_at_expression(self, node: AtExpression) -> dict:
+    def visit_at_expression(self, node: AtExpression) -> dict[str, Any]:
         return {
             "type": "AtExpression",
             "string_id": self._dump_value(node.string_id),
             "offset": self.visit(node.offset),
         }
 
-    def visit_in_expression(self, node: InExpression) -> dict:
+    def visit_in_expression(self, node: InExpression) -> dict[str, Any]:
         raw_subject = getattr(node, "subject", getattr(node, "string_id", None))
         subject = self._dump_value(raw_subject)
         string_id = getattr(
@@ -352,7 +352,7 @@ class ASTDumper(ASTVisitor[dict]):
             "range": self.visit(node.range),
         }
 
-    def visit_of_expression(self, node: OfExpression) -> dict:
+    def visit_of_expression(self, node: OfExpression) -> dict[str, Any]:
         return {
             "type": "OfExpression",
             "quantifier": (
@@ -363,7 +363,7 @@ class ASTDumper(ASTVisitor[dict]):
             "string_set": self._dump_value(node.string_set),
         }
 
-    def _dump_value(self, value):
+    def _dump_value(self, value: Any) -> Any:
         """Dump AST values while leaving scalar/list values JSON-friendly."""
         if hasattr(value, "accept"):
             return self.visit(value)
@@ -373,26 +373,26 @@ class ASTDumper(ASTVisitor[dict]):
             return [self._dump_value(item) for item in sorted(value, key=str)]
         return value
 
-    def visit_meta(self, node: Meta) -> dict:
+    def visit_meta(self, node: Meta) -> dict[str, Any]:
         return {"type": "Meta", "key": node.key, "value": node.value}
 
-    def visit_comment(self, node) -> dict:
+    def visit_comment(self, node: Any) -> dict[str, Any]:
         return {"type": "Comment", "text": node.text}
 
-    def visit_comment_group(self, node) -> dict:
+    def visit_comment_group(self, node: Any) -> dict[str, Any]:
         return {"type": "CommentGroup", "lines": node.lines}
 
-    def visit_defined_expression(self, node) -> dict:
+    def visit_defined_expression(self, node: Any) -> dict[str, Any]:
         return {"type": "DefinedExpression", "expression": self.visit(node.expression)}
 
-    def visit_dictionary_access(self, node) -> dict:
+    def visit_dictionary_access(self, node: Any) -> dict[str, Any]:
         return {
             "type": "DictionaryAccess",
             "object": self.visit(node.object),
             "key": self._dump_value(node.key),
         }
 
-    def visit_extern_import(self, node) -> dict:
+    def visit_extern_import(self, node: Any) -> dict[str, Any]:
         module_path = getattr(node, "module", None)
         if module_path is None:
             module_path = getattr(node, "module_path", None)
@@ -404,14 +404,14 @@ class ASTDumper(ASTVisitor[dict]):
             "rules": list(getattr(node, "rules", [])),
         }
 
-    def visit_extern_namespace(self, node) -> dict:
+    def visit_extern_namespace(self, node: Any) -> dict[str, Any]:
         return {
             "type": "ExternNamespace",
             "name": node.name,
             "extern_rules": [self.visit(rule) for rule in getattr(node, "extern_rules", [])],
         }
 
-    def visit_extern_rule(self, node) -> dict:
+    def visit_extern_rule(self, node: Any) -> dict[str, Any]:
         return {
             "type": "ExternRule",
             "name": node.name,
@@ -419,7 +419,7 @@ class ASTDumper(ASTVisitor[dict]):
             "namespace": getattr(node, "namespace", None),
         }
 
-    def visit_extern_rule_reference(self, node) -> dict:
+    def visit_extern_rule_reference(self, node: Any) -> dict[str, Any]:
         rule_name = getattr(node, "name", None)
         if rule_name is None:
             rule_name = getattr(node, "rule_name", None)
@@ -430,10 +430,10 @@ class ASTDumper(ASTVisitor[dict]):
             "namespace": getattr(node, "namespace", None),
         }
 
-    def visit_hex_nibble(self, node) -> dict:
+    def visit_hex_nibble(self, node: Any) -> dict[str, Any]:
         return {"type": "HexNibble", "high": node.high, "value": node.value}
 
-    def visit_in_rule_pragma(self, node) -> dict:
+    def visit_in_rule_pragma(self, node: Any) -> dict[str, Any]:
         pragma = getattr(node, "pragma", None)
         directive = getattr(node, "directive", None)
         if pragma is not None:
@@ -445,12 +445,12 @@ class ASTDumper(ASTVisitor[dict]):
             "position": getattr(node, "position", None),
         }
 
-    def visit_module_reference(self, node) -> dict:
+    def visit_module_reference(self, node: Any) -> dict[str, Any]:
         return {"type": "ModuleReference", "module": node.module}
 
-    def visit_pragma(self, node) -> dict:
+    def visit_pragma(self, node: Any) -> dict[str, Any]:
         directive = getattr(node, "directive", getattr(node, "name", None))
-        result = {"type": "Pragma", "directive": directive}
+        result: dict[str, Any] = {"type": "Pragma", "directive": directive}
         if hasattr(node, "pragma_type"):
             result.update(
                 {
@@ -470,21 +470,21 @@ class ASTDumper(ASTVisitor[dict]):
             result["parameters"] = dict(node.parameters)
         return result
 
-    def visit_pragma_block(self, node) -> dict:
+    def visit_pragma_block(self, node: Any) -> dict[str, Any]:
         return {
             "type": "PragmaBlock",
             "pragmas": [self.visit(p) for p in node.pragmas],
             "scope": getattr(getattr(node, "scope", None), "value", None),
         }
 
-    def visit_regex_literal(self, node) -> dict:
+    def visit_regex_literal(self, node: Any) -> dict[str, Any]:
         return {
             "type": "RegexLiteral",
             "pattern": node.pattern,
             "modifiers": node.modifiers,
         }
 
-    def visit_string_operator_expression(self, node) -> dict:
+    def visit_string_operator_expression(self, node: Any) -> dict[str, Any]:
         return {
             "type": "StringOperatorExpression",
             "left": self.visit(node.left),
@@ -492,21 +492,21 @@ class ASTDumper(ASTVisitor[dict]):
             "right": self.visit(node.right),
         }
 
-    def visit_with_statement(self, node) -> dict:
+    def visit_with_statement(self, node: Any) -> dict[str, Any]:
         return {
             "type": "WithStatement",
             "declarations": [self.visit(declaration) for declaration in node.declarations],
             "body": self.visit(node.body),
         }
 
-    def visit_with_declaration(self, node) -> dict:
+    def visit_with_declaration(self, node: Any) -> dict[str, Any]:
         return {
             "type": "WithDeclaration",
             "identifier": node.identifier,
             "value": self.visit(node.value),
         }
 
-    def visit_array_comprehension(self, node) -> dict:
+    def visit_array_comprehension(self, node: Any) -> dict[str, Any]:
         return {
             "type": "ArrayComprehension",
             "expression": self._dump_value(node.expression),
@@ -515,7 +515,7 @@ class ASTDumper(ASTVisitor[dict]):
             "condition": self._dump_value(node.condition),
         }
 
-    def visit_dict_comprehension(self, node) -> dict:
+    def visit_dict_comprehension(self, node: Any) -> dict[str, Any]:
         return {
             "type": "DictComprehension",
             "key_expression": self._dump_value(node.key_expression),
@@ -526,36 +526,36 @@ class ASTDumper(ASTVisitor[dict]):
             "condition": self._dump_value(node.condition),
         }
 
-    def visit_tuple_expression(self, node) -> dict:
+    def visit_tuple_expression(self, node: Any) -> dict[str, Any]:
         return {
             "type": "TupleExpression",
             "elements": [self.visit(element) for element in node.elements],
         }
 
-    def visit_tuple_indexing(self, node) -> dict:
+    def visit_tuple_indexing(self, node: Any) -> dict[str, Any]:
         return {
             "type": "TupleIndexing",
             "tuple_expr": self.visit(node.tuple_expr),
             "index": self.visit(node.index),
         }
 
-    def visit_list_expression(self, node) -> dict:
+    def visit_list_expression(self, node: Any) -> dict[str, Any]:
         return {
             "type": "ListExpression",
             "elements": [self.visit(element) for element in node.elements],
         }
 
-    def visit_dict_expression(self, node) -> dict:
+    def visit_dict_expression(self, node: Any) -> dict[str, Any]:
         return {"type": "DictExpression", "items": [self.visit(item) for item in node.items]}
 
-    def visit_dict_item(self, node) -> dict:
+    def visit_dict_item(self, node: Any) -> dict[str, Any]:
         return {
             "type": "DictItem",
             "key": self.visit(node.key),
             "value": self.visit(node.value),
         }
 
-    def visit_slice_expression(self, node) -> dict:
+    def visit_slice_expression(self, node: Any) -> dict[str, Any]:
         return {
             "type": "SliceExpression",
             "target": self.visit(node.target),
@@ -564,14 +564,14 @@ class ASTDumper(ASTVisitor[dict]):
             "step": self._dump_value(node.step),
         }
 
-    def visit_lambda_expression(self, node) -> dict:
+    def visit_lambda_expression(self, node: Any) -> dict[str, Any]:
         return {
             "type": "LambdaExpression",
             "parameters": list(node.parameters),
             "body": self.visit(node.body),
         }
 
-    def visit_pattern_match(self, node) -> dict:
+    def visit_pattern_match(self, node: Any) -> dict[str, Any]:
         return {
             "type": "PatternMatch",
             "value": self.visit(node.value),
@@ -579,14 +579,14 @@ class ASTDumper(ASTVisitor[dict]):
             "default": self._dump_value(node.default),
         }
 
-    def visit_match_case(self, node) -> dict:
+    def visit_match_case(self, node: Any) -> dict[str, Any]:
         return {
             "type": "MatchCase",
             "pattern": self.visit(node.pattern),
             "result": self.visit(node.result),
         }
 
-    def visit_spread_operator(self, node) -> dict:
+    def visit_spread_operator(self, node: Any) -> dict[str, Any]:
         return {
             "type": "SpreadOperator",
             "expression": self.visit(node.expression),
