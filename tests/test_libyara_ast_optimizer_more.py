@@ -9,7 +9,10 @@ from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE
 from yaraast.parser import Parser
 
 
-@pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not COMPILER_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_ast_optimizer_removes_unused_strings_and_simplifies() -> None:
     code = """
     rule opt_rule {

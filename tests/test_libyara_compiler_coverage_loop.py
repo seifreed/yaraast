@@ -138,7 +138,10 @@ def test_module_level_reraises_importerror_for_non_yara_modules(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_compile_source_catches_yara_warning_error_as_compilation_error() -> None:
     """Line 196: yara.WarningError (a yara.Error subclass) is caught as a compilation error.
 
@@ -167,7 +170,10 @@ def test_compile_source_catches_yara_warning_error_as_compilation_error() -> Non
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_compile_file_returns_failure_for_nonexistent_path(tmp_path: Path) -> None:
     """Line 284: compile_file reports failure when the file does not exist.
 
@@ -191,7 +197,10 @@ def test_compile_file_returns_failure_for_nonexistent_path(tmp_path: Path) -> No
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_compile_file_catches_syntax_error_from_invalid_rule(tmp_path: Path) -> None:
     """Lines 322-325: compile_file catches yara.SyntaxError from a malformed rule file.
 
@@ -216,7 +225,10 @@ def test_compile_file_catches_syntax_error_from_invalid_rule(tmp_path: Path) -> 
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_compile_file_catches_yara_warning_error_as_compilation_error(tmp_path: Path) -> None:
     """Lines 326-329: compile_file catches yara.WarningError (a yara.Error subclass).
 

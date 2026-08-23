@@ -77,7 +77,7 @@ def test_reference_list_value_is_preserved(parser_cls: ParserType) -> None:
 
 
 def test_marker_values_are_yaml_serializable() -> None:
-    yaml = pytest.importorskip("yaml")
+    yaml = pytest.importorskip("yaml", reason="https://github.com/seifreed/yaraast/issues/24")
     source = 'rule r {\n  events:\n    $e.x = "$100"\n    $e.y = (1 + 2)\n  condition:\n    $e\n}'
     ast = EnhancedYaraLParser(source).parse()
     dumped = yaml.safe_dump(asdict(ast))

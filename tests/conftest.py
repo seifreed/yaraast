@@ -76,7 +76,9 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     if sys.platform != "win32":
         return
 
-    marker = pytest.mark.skip(reason="POSIX-only path permission semantics")
+    marker = pytest.mark.skip(
+        reason="POSIX-only path permission semantics; https://github.com/seifreed/yaraast/issues/24"
+    )
     for item in items:
         name = item.originalname or item.name
         if name in WINDOWS_POSIX_ONLY_TESTS:

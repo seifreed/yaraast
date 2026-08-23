@@ -150,7 +150,9 @@ class TestProtobufSerializer:
             assert serializer is not None
         except ImportError:
             # Skip protobuf tests if not available
-            pytest.skip("Protobuf schema not compiled")
+            pytest.skip(
+                "Protobuf schema not compiled; https://github.com/seifreed/yaraast/issues/24"
+            )
 
     def test_serialize_simple_rule(self) -> None:
         """Test Protobuf serialization of simple rule."""
@@ -167,7 +169,9 @@ class TestProtobufSerializer:
             assert isinstance(binary_data, bytes)
             assert len(binary_data) > 0
         except ImportError:
-            pytest.skip("Protobuf schema not compiled")
+            pytest.skip(
+                "Protobuf schema not compiled; https://github.com/seifreed/yaraast/issues/24"
+            )
 
     def test_serialize_text_format(self) -> None:
         """Test Protobuf text serialization."""
@@ -184,7 +188,9 @@ class TestProtobufSerializer:
             assert isinstance(text_data, str)
             assert "test" in text_data  # Rule name should appear
         except ImportError:
-            pytest.skip("Protobuf schema not compiled")
+            pytest.skip(
+                "Protobuf schema not compiled; https://github.com/seifreed/yaraast/issues/24"
+            )
 
     def test_serialization_stats(self) -> None:
         """Test serialization statistics."""
@@ -207,7 +213,9 @@ class TestProtobufSerializer:
             assert stats["imports_count"] == 0
             assert stats["binary_size_bytes"] > 0
         except ImportError:
-            pytest.skip("Protobuf schema not compiled")
+            pytest.skip(
+                "Protobuf schema not compiled; https://github.com/seifreed/yaraast/issues/24"
+            )
 
 
 class TestAstDiff:

@@ -8,7 +8,10 @@ import pytest
 from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_handles_read_failures(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
 
@@ -20,7 +23,10 @@ def test_libyara_compiler_handles_read_failures(tmp_path: Path) -> None:
     assert "Error reading file" in read_result.errors[0]
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_handles_type_error_and_null_byte_source_paths() -> None:
     compiler = LibyaraCompiler()
 
@@ -35,7 +41,10 @@ def test_libyara_compiler_handles_type_error_and_null_byte_source_paths() -> Non
     assert null_byte_result.source_code is not None
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 @pytest.mark.parametrize("filepath", ["", "   ", "\t"])
 def test_libyara_compiler_compile_file_rejects_empty_filepath(filepath: str) -> None:
     result = LibyaraCompiler().compile_file(filepath)
@@ -44,7 +53,10 @@ def test_libyara_compiler_compile_file_rejects_empty_filepath(filepath: str) -> 
     assert result.errors == ["filepath must not be empty"]
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 @pytest.mark.parametrize("filepath", [None, False, 123, object(), b"rule.yar"])
 def test_libyara_compiler_compile_file_rejects_invalid_filepath_types(filepath: Any) -> None:
     result = LibyaraCompiler().compile_file(cast(Any, filepath))
@@ -53,7 +65,10 @@ def test_libyara_compiler_compile_file_rejects_invalid_filepath_types(filepath: 
     assert result.errors == ["filepath must be a string or path-like object"]
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_compile_file_rejects_inaccessible_filepath() -> None:
     result = LibyaraCompiler().compile_file("a" * 5000)
 
@@ -62,7 +77,10 @@ def test_libyara_compiler_compile_file_rejects_inaccessible_filepath() -> None:
     assert result.errors[0].startswith("path could not be accessed")
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_compile_file_rejects_invalid_utf8(tmp_path: Path) -> None:
     rule_path = tmp_path / "invalid.yar"
     rule_path.write_bytes(b"\xff")

@@ -89,7 +89,7 @@ def test_scan_yara_rejects_null_byte_target(tmp_path: Path) -> None:
     rule_file.write_text("rule a { condition: true }", encoding="utf-8")
 
     if not lib.YARA_AVAILABLE:
-        pytest.skip("yara-python is not installed")
+        pytest.skip("yara-python is not installed; https://github.com/seifreed/yaraast/issues/24")
 
     with pytest.raises(ValueError, match="target must not contain null bytes"):
         ls.scan_yara(
@@ -103,7 +103,7 @@ def test_scan_yara_rejects_null_byte_target(tmp_path: Path) -> None:
 
 def test_libyara_services_reject_yarax_only_syntax(tmp_path: Path) -> None:
     if not lib.YARA_AVAILABLE:
-        pytest.skip("yara-python is not installed")
+        pytest.skip("yara-python is not installed; https://github.com/seifreed/yaraast/issues/24")
 
     rule_file = tmp_path / "native_yarax.yar"
     rule_file.write_text(
@@ -129,7 +129,7 @@ def test_scan_yara_compile_failure_branch_real(tmp_path: Path) -> None:
     target_file.write_bytes(b"abc")
 
     if not lib.YARA_AVAILABLE:
-        pytest.skip("yara-python is not installed")
+        pytest.skip("yara-python is not installed; https://github.com/seifreed/yaraast/issues/24")
 
     scan_result, matcher, compile_result = ls.scan_yara(
         str(rule_file),
@@ -146,7 +146,7 @@ def test_scan_yara_compile_failure_branch_real(tmp_path: Path) -> None:
 
 def test_libyara_services_resolve_relative_includes_from_rules_file(tmp_path: Path) -> None:
     if not lib.YARA_AVAILABLE:
-        pytest.skip("yara-python is not installed")
+        pytest.skip("yara-python is not installed; https://github.com/seifreed/yaraast/issues/24")
 
     include_file = tmp_path / "shared.yar"
     include_file.write_text("rule shared_rule { condition: true }\n", encoding="utf-8")

@@ -126,7 +126,7 @@ class TestRoundtripReadTestDataError:
 
     @pytest.mark.skipif(
         not YARA_AVAILABLE,
-        reason="yara-python is required for the roundtrip command",
+        reason="yara-python is required for the roundtrip command; https://github.com/seifreed/yaraast/issues/24",
     )
     def test_roundtrip_callback_catches_validation_error_from_read_test_data(
         self,
@@ -144,7 +144,9 @@ class TestRoundtripReadTestDataError:
         running as root.
         """
         if _is_root_process():
-            pytest.skip("Running as root: permission bits have no effect")
+            pytest.skip(
+                "Running as root: permission bits have no effect; https://github.com/seifreed/yaraast/issues/24"
+            )
 
         rule_file = tmp_path / "rule.yar"
         _write_valid_yara(rule_file)
@@ -180,7 +182,9 @@ class TestRoundtripReadTestDataError:
         validates the contract relied on by the CLI layer.
         """
         if _is_root_process():
-            pytest.skip("Running as root: permission bits have no effect")
+            pytest.skip(
+                "Running as root: permission bits have no effect; https://github.com/seifreed/yaraast/issues/24"
+            )
 
         data_file = tmp_path / "unreadable.bin"
         data_file.write_bytes(b"\xde\xad\xbe\xef")
@@ -219,7 +223,9 @@ class TestPathIsDirOSError:
         OSError from stat() is caught and re-raised as ValueError.
         """
         if _is_root_process():
-            pytest.skip("Running as root: permission bits have no effect")
+            pytest.skip(
+                "Running as root: permission bits have no effect; https://github.com/seifreed/yaraast/issues/24"
+            )
 
         locked_dir = tmp_path / "locked"
         locked_dir.mkdir()

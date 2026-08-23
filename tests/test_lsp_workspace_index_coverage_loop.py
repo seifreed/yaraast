@@ -356,7 +356,10 @@ def test_load_symbol_records_skips_non_dict_symbol_entries(tmp_path: Path) -> No
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(os.name == "nt", reason="chmod is not reliable on Windows")
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="chmod is not reliable on Windows; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_save_logs_and_continues_on_oserror(tmp_path: Path) -> None:
     """When the cache directory cannot be written to (no write permission),
     save() must not raise; it logs the error and returns normally."""
@@ -564,7 +567,8 @@ def test_iter_candidate_files_excludes_non_yara_file_root(tmp_path: Path) -> Non
 
 
 @pytest.mark.skipif(
-    os.name == "nt", reason="symlinks to missing targets behave differently on Windows"
+    os.name == "nt",
+    reason="symlinks to missing targets behave differently on Windows; https://github.com/seifreed/yaraast/issues/24",
 )
 def test_iter_candidate_files_skips_path_that_exists_but_is_not_file_or_dir(
     tmp_path: Path,
@@ -595,7 +599,10 @@ def test_iter_candidate_files_skips_path_that_exists_but_is_not_file_or_dir(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(os.name == "nt", reason="chmod is not reliable on Windows")
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="chmod is not reliable on Windows; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_iter_candidate_files_skips_rglob_oserror(tmp_path: Path) -> None:
     """When rglob raises OSError (e.g. an unreadable subdirectory), the
     method must log and continue rather than propagating the exception."""

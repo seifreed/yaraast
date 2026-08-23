@@ -299,7 +299,9 @@ def test_semantic_tokens_provider() -> None:
 PYGLS_AVAILABLE = util.find_spec("pygls") is not None
 
 
-@pytest.mark.skipif(not PYGLS_AVAILABLE, reason="pygls not installed")
+@pytest.mark.skipif(
+    not PYGLS_AVAILABLE, reason="pygls not installed; https://github.com/seifreed/yaraast/issues/24"
+)
 def test_language_server_creation() -> None:
     """Test that language server can be created."""
     from yaraast.lsp.server import create_server

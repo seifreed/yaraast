@@ -77,7 +77,10 @@ class TestLibyaraScanFailureBranch:
     """Cover libyara_cmd.py lines 125-126: scan command failure after a
     successful compilation, triggered by a real scan timeout."""
 
-    @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not installed")
+    @pytest.mark.skipif(
+        not YARA_AVAILABLE,
+        reason="yara-python not installed; https://github.com/seifreed/yaraast/issues/24",
+    )
     def test_scan_failure_calls_display_scan_failure_and_aborts(self, tmp_path: Path) -> None:
         """
         Arrange: write a rule that compiles cleanly but whose evaluation loop

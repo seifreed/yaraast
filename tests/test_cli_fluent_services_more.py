@@ -36,7 +36,7 @@ def test_create_string_patterns_rule_generates_parseable_regexes() -> None:
     assert "(?:" not in code
     Parser(code).parse()
 
-    yara = pytest.importorskip("yara")
+    yara = pytest.importorskip("yara", reason="https://github.com/seifreed/yaraast/issues/24")
     yara.compile(source=code)
 
 
@@ -46,12 +46,12 @@ def test_create_example_rules_generate_libyara_compatible_file() -> None:
     assert "$mz at 0 and $suspicious" in code
     Parser(code).parse()
 
-    yara = pytest.importorskip("yara")
+    yara = pytest.importorskip("yara", reason="https://github.com/seifreed/yaraast/issues/24")
     yara.compile(source=code)
 
 
 def test_demo_rule_groups_generate_libyara_compatible_files() -> None:
-    yara = pytest.importorskip("yara")
+    yara = pytest.importorskip("yara", reason="https://github.com/seifreed/yaraast/issues/24")
 
     for rules in (
         fs.create_condition_demo_rules(),

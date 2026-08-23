@@ -288,7 +288,7 @@ class TestCalculateDerivedMetricsEmptyStringIds:
 
 @pytest.mark.skipif(
     not __import__("yaraast.libyara.compiler", fromlist=["YARA_AVAILABLE"]).YARA_AVAILABLE,
-    reason="yara-python not installed",
+    reason="yara-python not installed; https://github.com/seifreed/yaraast/issues/24",
 )
 class TestLibyaraCompilerCompileKwargs:
     """Covers the reachable paths in _compile_kwargs and compile_file (lines 241-248).

@@ -764,7 +764,9 @@ def test_metrics_reporting_graph_and_pattern_helpers(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     if DependencyGraphGeneratorClass is None:
-        pytest.skip("graphviz package is not installed")
+        pytest.skip(
+            "graphviz package is not installed; https://github.com/seifreed/yaraast/issues/24"
+        )
     ast = _sample_ast()
 
     dep_generator = DependencyGraphGeneratorClass()
@@ -947,7 +949,9 @@ def test_metrics_reporting_analyze_pattern_counts_and_string_branches(
 
 def test_metrics_reporting_empty_and_mixed_branches(capsys: pytest.CaptureFixture[str]) -> None:
     if DependencyGraphGeneratorClass is None:
-        pytest.skip("graphviz package is not installed")
+        pytest.skip(
+            "graphviz package is not installed; https://github.com/seifreed/yaraast/issues/24"
+        )
     empty_ast = _parse_yara("rule empty { condition: true }")
     empty_metrics = ComplexityAnalyzer().analyze(empty_ast)
     text = _format_complexity_output(empty_metrics, "text")

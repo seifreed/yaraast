@@ -1056,7 +1056,7 @@ class TestMarkerStrSubclasses:
 
     def test_yaml_serialization_of_markers(self) -> None:
         """_register_yaml_str_representers allows safe_dump of marker subclasses."""
-        yaml = pytest.importorskip("yaml")
+        yaml = pytest.importorskip("yaml", reason="https://github.com/seifreed/yaraast/issues/24")
         for cls in (StringLiteral, RawOutcomeExpression, RawConditionValue):
             instance = cls("test_value")
             dumped = yaml.safe_dump(instance)

@@ -678,7 +678,10 @@ def test_performance_commands_abort_preserves_original_cause(
     _assert_abort_preserves_cause(result, sentinel)
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="chmod read-only not effective on Windows")
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="chmod read-only not effective on Windows; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_performance_batch_and_stream_abort_on_real_write_errors(tmp_path: Path) -> None:
     runner = CliRunner()
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
@@ -717,7 +720,10 @@ def test_performance_batch_and_stream_abort_on_real_write_errors(tmp_path: Path)
     assert "Error during streaming parse" in stream.output
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="chmod read-only not effective on Windows")
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="chmod read-only not effective on Windows; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_performance_parallel_abort_on_real_complexity_write_error(tmp_path: Path) -> None:
     runner = CliRunner()
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
@@ -745,7 +751,10 @@ def test_performance_parallel_abort_on_real_complexity_write_error(tmp_path: Pat
     assert "Error during parallel analysis" in result.output
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="SIGINT via os.kill not reliable on Windows")
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="SIGINT via os.kill not reliable on Windows; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_performance_stream_and_parallel_handle_real_sigint(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

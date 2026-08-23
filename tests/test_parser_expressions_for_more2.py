@@ -146,7 +146,7 @@ rule r {
 def test_contextual_keyword_for_loop_variable_round_trips(keyword: str) -> None:
     from yaraast.codegen.generator import CodeGenerator
 
-    yara = pytest.importorskip("yara")
+    yara = pytest.importorskip("yara", reason="https://github.com/seifreed/yaraast/issues/24")
     source = f"rule r {{ condition: for any {keyword} in (1, 2) : ({keyword} > 0) }}"
     yara.compile(source=source)
 

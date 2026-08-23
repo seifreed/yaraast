@@ -9,7 +9,10 @@ from yaraast.libyara.equivalence import EquivalenceTester
 from yaraast.parser import Parser
 
 
-@pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not COMPILER_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_equivalence_round_trip() -> None:
     code = """
     rule eq_rule {

@@ -17,7 +17,7 @@ from yaraast.codegen import CodeGenerator
 from yaraast.lexer.lexer_tables import KEYWORDS
 from yaraast.parser.parser import Parser
 
-yara = pytest.importorskip("yara")
+yara = pytest.importorskip("yara", reason="https://github.com/seifreed/yaraast/issues/24")
 
 _KEYWORDS = frozenset(KEYWORDS)
 

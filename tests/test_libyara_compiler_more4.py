@@ -18,7 +18,10 @@ from yaraast.libyara.direct_compiler import DirectASTCompiler
 from yaraast.parser.source import parse_yara_source
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compilers_reject_non_mapping_externals() -> None:
     with pytest.raises(TypeError, match="libyara externals must be a dictionary"):
         LibyaraCompiler(externals=cast(Any, []))
@@ -82,7 +85,10 @@ def test_libyara_includes_reject_non_string_content(includes: dict[str, object])
         normalize_libyara_includes(cast(Any, includes))
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compile_source_reports_invalid_include_mapping() -> None:
     result = LibyaraCompiler().compile_source(
         'include "shared.yar"\nrule main { condition: true }\n',
@@ -93,7 +99,10 @@ def test_libyara_compile_source_reports_invalid_include_mapping() -> None:
     assert result.errors == ["libyara include names must not be empty"]
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 @pytest.mark.parametrize("error_on_warning", [None, 1, "yes", object()])
 def test_libyara_compilers_reject_invalid_error_on_warning_values(
     error_on_warning: Any,
@@ -116,7 +125,10 @@ def test_libyara_compilers_reject_invalid_error_on_warning_values(
     assert direct_result.errors == ["error_on_warning must be a boolean"]
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_compile_file_success_and_save(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
 
@@ -142,7 +154,10 @@ rule ok {
     assert out_file.stat().st_size > 0
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_compile_file_resolves_relative_includes(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
 
@@ -173,7 +188,10 @@ rule main_rule {
     assert [match.rule for match in matches] == ["shared_rule", "main_rule"]
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_compile_source_uses_include_mapping() -> None:
     compiler = LibyaraCompiler()
 
@@ -197,7 +215,10 @@ rule main_rule {
     ]
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_compile_file_uses_include_mapping(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
     rule_file = tmp_path / "main.yar"
@@ -226,7 +247,10 @@ rule main_rule {
     ]
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_compile_ast_codegen_failure_and_syntax_error() -> None:
     compiler = LibyaraCompiler()
 
@@ -241,7 +265,10 @@ def test_libyara_compiler_compile_ast_codegen_failure_and_syntax_error() -> None
     assert syntax_result.errors[0].startswith("Syntax error:")
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_compile_ast_success() -> None:
     compiler = LibyaraCompiler()
     ast = YaraFile(rules=[Rule(name="ok", condition=BooleanLiteral(value=True))])
@@ -252,7 +279,10 @@ def test_libyara_compiler_compile_ast_success() -> None:
     assert result.compiled_rules is not None
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compiler_rejects_yarax_ast_before_codegen() -> None:
     compiler = LibyaraCompiler()
     ast = parse_yara_source("rule x { condition: with xs = [1]: match xs { _ => true } }")

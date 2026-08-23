@@ -43,7 +43,10 @@ def _write_target(tmp_path: Path) -> Path:
     return target
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_scan_success_without_stats(tmp_path: Path) -> None:
     rule_path = _write_rule(tmp_path)
     target = _write_target(tmp_path)
@@ -56,7 +59,10 @@ def test_libyara_scan_success_without_stats(tmp_path: Path) -> None:
     assert "Scan Statistics" not in result.output
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_scan_aborts_on_compile_failure(tmp_path: Path) -> None:
     rule_path = _write_invalid_rule(tmp_path)
     target = _write_target(tmp_path)
@@ -68,7 +74,10 @@ def test_libyara_scan_aborts_on_compile_failure(tmp_path: Path) -> None:
     assert "Compilation failed" in result.output
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_scan_rejects_directory_target(tmp_path: Path) -> None:
     rule_path = _write_rule(tmp_path)
     runner = CliRunner()

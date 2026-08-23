@@ -98,7 +98,10 @@ def test_invalid_module_function_call_is_rejected(module: str, condition: str) -
     assert _function_errors(module, condition) != []
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 @pytest.mark.parametrize(("module", "condition"), ACCEPTED_CALLS)
 def test_accepted_call_matches_libyara(module: str, condition: str) -> None:
     import yara
@@ -108,7 +111,10 @@ def test_accepted_call_matches_libyara(module: str, condition: str) -> None:
     assert _function_errors(module, condition) == []
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 @pytest.mark.parametrize(("module", "condition"), REJECTED_CALLS)
 def test_rejected_call_matches_libyara(module: str, condition: str) -> None:
     import yara

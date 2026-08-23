@@ -23,7 +23,10 @@ rule bad_rule {
     return rule_path
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compile_aborts_on_compilation_failure(tmp_path: Path) -> None:
     rule_path = _write_invalid_rule(tmp_path)
     runner = CliRunner()

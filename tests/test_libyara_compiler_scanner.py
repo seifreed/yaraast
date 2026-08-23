@@ -10,7 +10,10 @@ from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE, Libya
 from yaraast.libyara.scanner import LibyaraScanner
 
 
-@pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not COMPILER_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compile_source_and_scan(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
     scanner = LibyaraScanner()
@@ -43,7 +46,10 @@ def test_libyara_compile_source_and_scan(tmp_path: Path) -> None:
     assert file_result.matched is True
 
 
-@pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not COMPILER_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_compile_file_missing(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
     missing = tmp_path / "missing.yar"

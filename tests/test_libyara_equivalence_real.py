@@ -242,7 +242,10 @@ def test_file_round_trip_parses_yarax_before_libyara_compatibility_check(tmp_pat
     assert "Failed to parse file" not in result.ast_differences[0]
 
 
-@pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not COMPILER_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_file_round_trip_success_path_with_real_equivalence_tester() -> None:
     tester = EquivalenceTester()
     tmp = Path("tests/.tmp_equivalence_success.yar")
@@ -280,7 +283,10 @@ def test_round_trip_handles_invalid_rule_name_codegen_failure() -> None:
     assert any("Code generation failed" in d for d in result.ast_differences)
 
 
-@pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not COMPILER_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_round_trip_records_real_compilation_errors() -> None:
     tester = EquivalenceTester()
     # Parser/codegen accept this, but libyara compilation fails (undefined identifier).
@@ -296,7 +302,7 @@ def test_round_trip_records_real_compilation_errors() -> None:
 
 @pytest.mark.skipif(
     not (COMPILER_AVAILABLE and SCANNER_AVAILABLE),
-    reason="yara-python not available",
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
 )
 def test_round_trip_with_real_libyara_compilation_and_scanning() -> None:
     ast = Parser().parse(
@@ -313,7 +319,7 @@ def test_round_trip_with_real_libyara_compilation_and_scanning() -> None:
 
 @pytest.mark.skipif(
     not (COMPILER_AVAILABLE and SCANNER_AVAILABLE),
-    reason="yara-python not available",
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
 )
 def test_round_trip_equivalent_for_for_of_them() -> None:
     ast = Parser().parse(
@@ -337,7 +343,7 @@ def test_round_trip_equivalent_for_for_of_them() -> None:
 
 @pytest.mark.skipif(
     not (COMPILER_AVAILABLE and SCANNER_AVAILABLE),
-    reason="yara-python not available",
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
 )
 def test_file_round_trip_equivalent_from_example_file() -> None:
     tester = EquivalenceTester()

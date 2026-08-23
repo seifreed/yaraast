@@ -33,7 +33,10 @@ def _data_for(rule_file: Path) -> bytes | None:
     return data_path.read_bytes() if data_path.exists() else None
 
 
-@pytest.mark.skipif(not available_engines(), reason="no reference YARA engine installed")
+@pytest.mark.skipif(
+    not available_engines(),
+    reason="no reference YARA engine installed; https://github.com/seifreed/yaraast/issues/24",
+)
 @pytest.mark.parametrize("rule_file", CORPUS_FILES, ids=lambda p: p.stem)
 def test_corpus_round_trip_is_conformant(rule_file: Path) -> None:
     checker = DifferentialChecker()
@@ -54,7 +57,9 @@ def test_corpus_is_non_empty_and_accepted_by_every_engine() -> None:
 
     engines = available_engines()
     if not engines:
-        pytest.skip("no reference YARA engine installed")
+        pytest.skip(
+            "no reference YARA engine installed; https://github.com/seifreed/yaraast/issues/24"
+        )
 
     checker = DifferentialChecker(engines)
     for rule_file in CORPUS_FILES:
@@ -170,7 +175,10 @@ def test_available_engines_returns_reference_engine_instances() -> None:
         assert engine.available
 
 
-@pytest.mark.skipif(not LibyaraEngine().available, reason="yara-python not installed")
+@pytest.mark.skipif(
+    not LibyaraEngine().available,
+    reason="yara-python not installed; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_engine_accept_reject_and_match() -> None:
     engine = LibyaraEngine()
     assert engine.evaluate(_OK_RULE).accepted
@@ -178,7 +186,10 @@ def test_libyara_engine_accept_reject_and_match() -> None:
     assert engine.evaluate(_OK_RULE, data=b"xx hi xx").matches == frozenset({"ok"})
 
 
-@pytest.mark.skipif(not YaraXEngine().available, reason="yara-x not installed")
+@pytest.mark.skipif(
+    not YaraXEngine().available,
+    reason="yara-x not installed; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_yarax_engine_accept_reject_and_match() -> None:
     engine = YaraXEngine()
     assert engine.evaluate(_OK_RULE).accepted

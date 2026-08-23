@@ -34,7 +34,10 @@ def test_invalid_conformance_corpora_are_non_empty() -> None:
     assert YARAX_FILES
 
 
-@pytest.mark.skipif(not LibyaraEngine().available, reason="yara-python not installed")
+@pytest.mark.skipif(
+    not LibyaraEngine().available,
+    reason="yara-python not installed; https://github.com/seifreed/yaraast/issues/24",
+)
 @pytest.mark.parametrize("rule_file", CLASSIC_FILES, ids=lambda path: path.stem)
 def test_classic_invalid_corpus_is_rejected_with_diagnostics(rule_file: Path) -> None:
     source = rule_file.read_text(encoding="utf-8")
@@ -46,7 +49,10 @@ def test_classic_invalid_corpus_is_rejected_with_diagnostics(rule_file: Path) ->
         Parser(source).parse()
 
 
-@pytest.mark.skipif(not YaraXEngine().available, reason="yara-x not installed")
+@pytest.mark.skipif(
+    not YaraXEngine().available,
+    reason="yara-x not installed; https://github.com/seifreed/yaraast/issues/24",
+)
 @pytest.mark.parametrize("rule_file", YARAX_FILES, ids=lambda path: path.stem)
 def test_yarax_invalid_corpus_is_rejected_with_diagnostics(rule_file: Path) -> None:
     source = rule_file.read_text(encoding="utf-8")

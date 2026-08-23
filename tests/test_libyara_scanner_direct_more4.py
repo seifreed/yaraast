@@ -15,7 +15,10 @@ from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_YARA, LibyaraScann
 from yaraast.parser import Parser
 
 
-@pytest.mark.skipif(not DIRECT_YARA, reason="yara-python not available")
+@pytest.mark.skipif(
+    not DIRECT_YARA,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_direct_ast_compiler_invalid_ast_hits_error_result() -> None:
     compiler = DirectASTCompiler()
 
@@ -26,7 +29,10 @@ def test_direct_ast_compiler_invalid_ast_hits_error_result() -> None:
     assert "Direct compilation error" in result.errors[0]
 
 
-@pytest.mark.skipif(not DIRECT_YARA, reason="yara-python not available")
+@pytest.mark.skipif(
+    not DIRECT_YARA,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_optimized_matcher_stats_zero_branch() -> None:
     compiler = LibyaraCompiler()
     ast = Parser().parse('rule a { strings: $x = "abc" condition: $x }')
@@ -39,7 +45,10 @@ def test_optimized_matcher_stats_zero_branch() -> None:
     assert stats["success_rate"] == 0.0
 
 
-@pytest.mark.skipif(not SCANNER_YARA, reason="yara-python not available")
+@pytest.mark.skipif(
+    not SCANNER_YARA,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_scanner_real_error_paths(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
     scanner = LibyaraScanner()
@@ -58,7 +67,10 @@ def test_libyara_scanner_real_error_paths(tmp_path: Path) -> None:
     assert process_result.errors
 
 
-@pytest.mark.skipif(not SCANNER_YARA, reason="yara-python not available")
+@pytest.mark.skipif(
+    not SCANNER_YARA,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_libyara_scanner_process_yara_error_path() -> None:
     compiler = LibyaraCompiler()
     scanner = LibyaraScanner()

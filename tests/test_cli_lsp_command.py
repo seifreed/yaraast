@@ -29,7 +29,9 @@ def test_lsp_reports_missing_dependency() -> None:
         assert "Missing dependency" in result.output
         return
 
-    pytest.skip("LSP dependencies available; skipping to avoid starting server.")
+    pytest.skip(
+        "LSP dependencies available; skipping to avoid starting server.; https://github.com/seifreed/yaraast/issues/24"
+    )
 
 
 def test_lsp_missing_dependency_abort_preserves_original_cause(

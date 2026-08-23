@@ -91,7 +91,10 @@ def test_fluent_condition_builder_rejects_invalid_string_references(identifier: 
         ConditionBuilder().string(identifier).at(0)
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python is not installed")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python is not installed; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_pe_predicate_helpers_generate_libyara_compatible_calls() -> None:
     condition_expr = (
         FluentConditionBuilder()

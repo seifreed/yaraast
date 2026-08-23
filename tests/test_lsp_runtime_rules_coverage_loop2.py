@@ -216,7 +216,7 @@ def test_find_rule_reference_records_include_declaration_false_yields_only_uses(
 
 @pytest.mark.skipif(
     _is_root_process(),
-    reason="root bypasses file permission checks",
+    reason="root bypasses file permission checks; https://github.com/seifreed/yaraast/issues/24",
 )
 def test_find_rule_reference_records_in_document_get_document_returns_none_for_unreadable(
     tmp_path: Path,
@@ -246,7 +246,7 @@ def test_find_rule_reference_records_in_document_get_document_returns_none_for_u
 
 @pytest.mark.skipif(
     _is_root_process(),
-    reason="root bypasses file permission checks",
+    reason="root bypasses file permission checks; https://github.com/seifreed/yaraast/issues/24",
 )
 def test_get_rule_link_records_for_document_get_document_returns_none_for_unreadable(
     tmp_path: Path,

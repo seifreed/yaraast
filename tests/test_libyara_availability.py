@@ -10,13 +10,17 @@ from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_AVAILABLE, Libyara
 
 def test_libyara_compiler_import_error_when_missing() -> None:
     if COMPILER_AVAILABLE:
-        pytest.skip("yara-python available; skipping ImportError check")
+        pytest.skip(
+            "yara-python available; skipping ImportError check; https://github.com/seifreed/yaraast/issues/24"
+        )
     with pytest.raises(ImportError):
         LibyaraCompiler()
 
 
 def test_libyara_scanner_import_error_when_missing() -> None:
     if SCANNER_AVAILABLE:
-        pytest.skip("yara-python available; skipping ImportError check")
+        pytest.skip(
+            "yara-python available; skipping ImportError check; https://github.com/seifreed/yaraast/issues/24"
+        )
     with pytest.raises(ImportError):
         LibyaraScanner()

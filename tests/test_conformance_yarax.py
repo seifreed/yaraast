@@ -22,7 +22,10 @@ def test_yarax_conformance_corpus_is_non_empty() -> None:
     assert CORPUS_FILES
 
 
-@pytest.mark.skipif(not YaraXEngine().available, reason="yara-x not installed")
+@pytest.mark.skipif(
+    not YaraXEngine().available,
+    reason="yara-x not installed; https://github.com/seifreed/yaraast/issues/24",
+)
 @pytest.mark.parametrize("rule_file", CORPUS_FILES, ids=lambda path: path.stem)
 def test_yarax_corpus_round_trip_matches_reference(rule_file: Path) -> None:
     engine = YaraXEngine()

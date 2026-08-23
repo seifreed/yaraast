@@ -20,7 +20,10 @@ if YARA_AVAILABLE:
     )
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 class TestDirectASTCompiler:
     """Tests for direct AST compilation."""
 
@@ -72,7 +75,10 @@ class TestDirectASTCompiler:
         assert result.optimization_stats.strings_optimized > 0
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 class TestOptimizedMatcher:
     """Tests for optimized matcher."""
 
@@ -118,7 +124,10 @@ class TestOptimizedMatcher:
             test_file.unlink()
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 class TestLibyaraCompiler:
     """Test libyara compiler (legacy compatibility)."""
 
@@ -187,7 +196,10 @@ class TestLibyaraCompiler:
         assert result.success is True
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 class TestLibyaraScanner:
     """Test libyara scanner."""
 
@@ -254,7 +266,10 @@ class TestLibyaraScanner:
         assert result.success is True
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 class TestEquivalenceTester:
     """Test AST equivalence testing."""
 

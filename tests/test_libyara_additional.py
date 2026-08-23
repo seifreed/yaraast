@@ -20,7 +20,10 @@ if YARA_AVAILABLE:
     from yaraast.libyara import DirectASTCompiler, LibyaraCompiler, LibyaraScanner
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_compile_source_with_null_byte() -> None:
     compiler = LibyaraCompiler()
     source = "rule test { condition: true }\x00"
@@ -30,7 +33,10 @@ def test_compile_source_with_null_byte() -> None:
     assert result.errors
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_compile_file_and_save_rules() -> None:
     rule_text = "rule test { condition: true }"
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar", encoding="utf-8") as f:
@@ -52,7 +58,10 @@ def test_compile_file_and_save_rules() -> None:
         out_path.unlink(missing_ok=True)
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_direct_compiler_debug_mode_source() -> None:
     parser = Parser()
     ast = parser.parse("rule debug_rule { condition: true }")
@@ -64,7 +73,10 @@ def test_direct_compiler_debug_mode_source() -> None:
     assert result.generated_source is not None
 
 
-@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+@pytest.mark.skipif(
+    not YARA_AVAILABLE,
+    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+)
 def test_scanner_missing_file() -> None:
     rule_text = "rule test { condition: true }"
     compiler = LibyaraCompiler()
@@ -102,7 +114,9 @@ def test_ast_optimizer_fold_constants() -> None:
     assert isinstance(not_folded, BinaryExpression)
 
 
-@pytest.mark.skipif(YARA_AVAILABLE, reason="yara-python available")
+@pytest.mark.skipif(
+    YARA_AVAILABLE, reason="yara-python available; https://github.com/seifreed/yaraast/issues/24"
+)
 def test_libyara_unavailable_raises() -> None:
     from yaraast.libyara.compiler import LibyaraCompiler
     from yaraast.libyara.direct_compiler import DirectASTCompiler
