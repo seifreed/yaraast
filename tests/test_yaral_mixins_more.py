@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 import pytest
 
-from yaraast.ast.expressions import BooleanLiteral
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
     ArithmeticExpression,
@@ -27,6 +26,7 @@ from yaraast.yaral.ast_nodes import (
     TimeWindow,
     UDMFieldPath,
     UnaryCondition,
+    VariableComparisonCondition,
     YaraLFile,
     YaraLRule,
 )
@@ -98,24 +98,24 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
 
     left = EventExistsCondition(event="left")
     right = EventExistsCondition(event="right")
-    assert opt._optimize_and_condition(left, BooleanLiteral(value=True)) == left
-    assert opt._optimize_and_condition(BooleanLiteral(value=True), right) == right
-    false_cond = opt._optimize_and_condition(left, BooleanLiteral(value=False))
-    assert isinstance(false_cond, UnaryCondition)
     assert opt._optimize_and_condition(left, left) == left
-    assert opt._optimize_and_condition(left, right).operator == "and"
+    optimized_and = opt._optimize_and_condition(left, right)
+    assert isinstance(optimized_and, BinaryCondition)
+    assert optimized_and.operator == "and"
 
-    assert opt._optimize_or_condition(left, BooleanLiteral(value=False)) == left
-    assert opt._optimize_or_condition(BooleanLiteral(value=False), right) == right
-    true_cond = opt._optimize_or_condition(left, BooleanLiteral(value=True))
-    assert isinstance(true_cond, EventExistsCondition)
     assert opt._optimize_or_condition(left, left) == left
-    assert opt._optimize_or_condition(left, right).operator == "or"
+    optimized_or = opt._optimize_or_condition(left, right)
+    assert isinstance(optimized_or, BinaryCondition)
+    assert optimized_or.operator == "or"
 
-    true_condition = opt._create_true_condition()
-    assert isinstance(true_condition, EventExistsCondition)
-    assert true_condition.event == "true"
-    assert isinstance(opt._create_false_condition(), UnaryCondition)
+    true_comparison = VariableComparisonCondition(variable="$flag", operator="=", value=True)
+    false_comparison = VariableComparisonCondition(variable="$flag", operator="=", value=False)
+    preserved_and = opt._optimize_and_condition(left, true_comparison)
+    preserved_or = opt._optimize_or_condition(left, false_comparison)
+    assert isinstance(preserved_and, BinaryCondition)
+    assert preserved_and.right is true_comparison
+    assert isinstance(preserved_or, BinaryCondition)
+    assert preserved_or.right is false_comparison
 
     assert (
         opt._field_path_to_string(UDMFieldPath(parts=["metadata", "event_timestamp"]))
@@ -134,28 +134,8 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
     assert opt._should_index_field(_assignment(["principal", "ip", "[0]"], "contains", "1.2.3.4"))
     assert not opt._should_index_field(_assignment(["metadata", "description"], "contains", "x"))
 
-    assert opt._are_contradictory(_assignment(["a"], "=", 1), _assignment(["a"], "!=", 1))
-    assert opt._are_contradictory(_assignment(["a"], "!=", 1), _assignment(["a"], "=", 1))
-    assert opt._are_contradictory(_assignment(["a"], ">", 10), _assignment(["a"], "<", 10))
-    assert not opt._are_contradictory(_assignment(["a"], ">", 5), _assignment(["a"], "<", 10))
-    assert not opt._are_contradictory(_assignment(["a"], "=", 1), _assignment(["a"], "=", 2))
-
-    assert opt._are_redundant(_assignment(["a"], "=", 1), _assignment(["a"], "=", 1))
-    assert opt._are_redundant(_assignment(["a"], ">=", 10), _assignment(["a"], ">", 5))
-    assert not opt._are_redundant(_assignment(["a"], ">=", 1), _assignment(["a"], ">", 5))
-    assert not opt._are_redundant(_assignment(["a"], "=", 1), _assignment(["a"], "!=", 1))
-
-    assert opt._is_more_restrictive(_assignment(["a"], "=", 1), _assignment(["a"], ">", 1))
-    assert opt._is_more_restrictive(_assignment(["a"], ">", 10), _assignment(["a"], ">=", 5))
-    assert not opt._is_more_restrictive(_assignment(["a"], ">", 1), _assignment(["a"], ">=", 5))
-    assert not opt._is_more_restrictive(_assignment(["a"], "<", 1), _assignment(["a"], "<", 5))
-
     assert opt._is_outcome_var_used("risk_score")
     assert not opt._is_outcome_var_used("$custom")
-    assert opt._is_always_true(BooleanLiteral(value=True))
-    assert not opt._is_always_true(EventExistsCondition(event="e"))
-    assert opt._is_always_false(BooleanLiteral(value=False))
-    assert not opt._is_always_false(EventExistsCondition(event="e"))
     assert opt._are_equal_conditions(left, EventExistsCondition(event="left"))
 
     assert opt._optimize_match_section(None) is None

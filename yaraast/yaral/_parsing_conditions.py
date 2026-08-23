@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
+from ._parser_mixin import YaraLParserMixinBase
 from ._shared import YaraLParserError, parse_numeric_token_value, split_regex_token_value
 from .ast_nodes import (
     BinaryCondition,
@@ -25,7 +28,7 @@ from .generator_helpers import quote_string_literal
 from .tokens import YaraLTokenType
 
 
-class YaraLConditionParsingMixin:
+class YaraLConditionParsingMixin(YaraLParserMixinBase):
     """Mixin providing YARA-L parse routines."""
 
     def _parse_condition_section(self) -> ConditionSection:
@@ -136,23 +139,29 @@ class YaraLConditionParsingMixin:
     def _parse_event_count_condition(self) -> EventCountCondition:
         """Parse an event count condition: #e > 5."""
         self._advance()
-        event_name = self._consume(
-            BaseTokenType.IDENTIFIER,
-            "Expected event name after '#'",
-        ).value
+        event_name = cast(
+            str,
+            self._consume(
+                BaseTokenType.IDENTIFIER,
+                "Expected event name after '#'",
+            ).value,
+        )
 
         operator = self._consume_comparison_operator()
         count = int(
-            self._consume(
-                BaseTokenType.INTEGER,
-                "Expected number after operator",
-            ).value,
+            cast(
+                int,
+                self._consume(
+                    BaseTokenType.INTEGER,
+                    "Expected number after operator",
+                ).value,
+            )
         )
 
         return EventCountCondition(event=event_name, operator=operator, count=count)
 
     def _parse_n_of_condition(self) -> NOfCondition:
-        count = int(self._advance().value)
+        count = int(cast(int, self._advance().value))
         self._consume_keyword("of")
         self._consume(BaseTokenType.LPAREN, "Expected '(' after 'of'")
 
@@ -192,7 +201,7 @@ class YaraLConditionParsingMixin:
         msg = "Expected comparison operator"
         raise YaraLParserError(msg, self._peek())
 
-    def _parse_comparison_value(self):
+    def _parse_comparison_value(self) -> Any:
         """Parse the value on the right side of a comparison."""
         if self._check(BaseTokenType.LPAREN):
             value = self._parse_parenthesized_comparison_value()
@@ -204,10 +213,10 @@ class YaraLConditionParsingMixin:
             self._advance()
             return False
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
-            value = parse_numeric_token_value(self._advance().value)
-            return self._parse_condition_arithmetic_value(value)
+            numeric_value = parse_numeric_token_value(self._advance().value)
+            return self._parse_condition_arithmetic_value(numeric_value)
         if self._check_yaral_type(YaraLTokenType.REFERENCE_LIST):
-            return ReferenceList(name=self._advance().value.strip("%"))
+            return ReferenceList(name=cast(str, self._advance().value).strip("%"))
         if self._check(BaseTokenType.REGEX) or self._check(BaseTokenType.DIVIDE):
             return self._parse_condition_regex_pattern()
         if self._check(BaseTokenType.STRING):
@@ -256,7 +265,7 @@ class YaraLConditionParsingMixin:
                 pattern.flags.append("nocase")
         return pattern
 
-    def _parse_condition_identifier_value(self):
+    def _parse_condition_identifier_value(self) -> Any:
         value = self._parse_condition_reference_text(str(self._advance().value))
         if self._check(BaseTokenType.LPAREN):
             return self._parse_function_call_args(value)
@@ -375,7 +384,7 @@ class YaraLConditionParsingMixin:
                 reference += f".{part}"
         return reference
 
-    def _parse_condition_arithmetic_value(self, value):
+    def _parse_condition_arithmetic_value(self, value: Any) -> Any:
         if not self._check_condition_arithmetic_operator():
             return value
         left = self._format_condition_raw_value(value)
@@ -409,7 +418,7 @@ class YaraLConditionParsingMixin:
             or self._check(BaseTokenType.DIVIDE)
         )
 
-    def _format_condition_raw_value(self, value) -> str:
+    def _format_condition_raw_value(self, value: Any) -> str:
         if isinstance(value, FunctionCall):
             args = ", ".join(self._format_condition_raw_value(arg) for arg in value.arguments)
             return f"{value.function}({args})"

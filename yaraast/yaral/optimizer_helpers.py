@@ -4,14 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.yaral._optimizer_mixin import OptimizerMixinBase
 from yaraast.yaral.ast_nodes import EventAssignment, UDMFieldPath
 
 
-def _is_number(value: object) -> bool:
-    return isinstance(value, int | float) and not isinstance(value, bool)
-
-
-class YaraLOptimizerHelpersMixin:
+class YaraLOptimizerHelpersMixin(OptimizerMixinBase):
     """Shared helper methods for optimizer."""
 
     def _field_path_to_string(self, field_path: UDMFieldPath | str) -> str:
@@ -52,58 +49,8 @@ class YaraLOptimizerHelpersMixin:
         ]
         return any(field in field_parts for field in high_cardinality_fields)
 
-    def _are_contradictory(self, assign1: EventAssignment, assign2: EventAssignment) -> bool:
-        if assign1.operator == "=" and assign2.operator == "!=" and assign1.value == assign2.value:
-            return True
-        if assign1.operator == "!=" and assign2.operator == "=" and assign1.value == assign2.value:
-            return True
-
-        if (
-            assign1.operator == ">"
-            and assign2.operator == "<"
-            and _is_number(assign1.value)
-            and _is_number(assign2.value)
-        ):
-            return assign1.value >= assign2.value
-
-        return False
-
-    def _are_redundant(self, assign1: EventAssignment, assign2: EventAssignment) -> bool:
-        if assign1.operator == assign2.operator and assign1.value == assign2.value:
-            return True
-
-        if (
-            assign1.operator == ">="
-            and assign2.operator == ">"
-            and _is_number(assign1.value)
-            and _is_number(assign2.value)
-        ):
-            return assign1.value >= assign2.value
-
-        return False
-
-    def _is_more_restrictive(self, assign1: EventAssignment, assign2: EventAssignment) -> bool:
-        if assign1.operator == "=" and assign2.operator != "=":
-            return True
-
-        if (
-            assign1.operator in [">", ">="]
-            and assign2.operator in [">", ">="]
-            and _is_number(assign1.value)
-            and _is_number(assign2.value)
-        ):
-            return assign1.value > assign2.value
-
-        return False
-
     def _is_outcome_var_used(self, var_name: str) -> bool:
         return var_name in ["risk_score", "severity", "confidence"]
-
-    def _is_always_true(self, expr: Any) -> bool:
-        return bool(hasattr(expr, "value") and expr.value is True)
-
-    def _is_always_false(self, expr: Any) -> bool:
-        return bool(hasattr(expr, "value") and expr.value is False)
 
     def _are_equal_conditions(self, expr1: Any, expr2: Any) -> bool:
         return str(expr1) == str(expr2)

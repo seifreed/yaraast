@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from yaraast.lexer.tokens import TokenType as BaseTokenType
+from yaraast.yaral._enhanced_parser_mixin import EnhancedParserMixinBase
 from yaraast.yaral.ast_nodes import (
     BinaryCondition,
     ConditionExpression,
@@ -15,7 +18,7 @@ from yaraast.yaral.ast_nodes import (
 from yaraast.yaral.tokens import YaraLTokenType
 
 
-class EnhancedYaraLParserConditionsMixin:
+class EnhancedYaraLParserConditionsMixin(EnhancedParserMixinBase):
     """Mixin for condition parsing."""
 
     def _parse_condition_section(self) -> ConditionSection:
@@ -82,7 +85,7 @@ class EnhancedYaraLParserConditionsMixin:
         # N of ($e1, $e2, ...) syntax
         if self._check(BaseTokenType.INTEGER):
             saved = self.current
-            count_val = int(self._advance().value)
+            count_val = int(cast(int, self._advance().value))
             if self._check_keyword("of"):
                 self._advance()
                 return self._parse_n_of_condition(count_val)
@@ -101,7 +104,8 @@ class EnhancedYaraLParserConditionsMixin:
             return self._parse_value_comparison_condition()
 
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
-            if self._peek_ahead(1) and self._peek_ahead(1).type == BaseTokenType.DOT:
+            next_token = self._peek_ahead(1)
+            if next_token is not None and next_token.type == BaseTokenType.DOT:
                 return self._parse_field_comparison()
             event_name = str(self._advance().value)
             if self._check_event_arithmetic_operator():
@@ -176,7 +180,9 @@ class EnhancedYaraLParserConditionsMixin:
         if isinstance(expr, EventCountCondition):
             return f"#{expr.event} {expr.operator} {expr.count}"
         if isinstance(expr, UnaryCondition):
-            operand = self._format_condition_expression_text(expr.operand)
+            operand = self._format_condition_expression_text(
+                cast(ConditionExpression, expr.operand)
+            )
             return f"{expr.operator} {operand}"
         if isinstance(expr, BinaryCondition):
             left = self._format_condition_expression_text(expr.left)
@@ -188,13 +194,13 @@ class EnhancedYaraLParserConditionsMixin:
         """Parse N of ($e1, $e2, $e3) quantified event matching."""
         from yaraast.yaral.ast_nodes import NOfCondition
 
-        events = []
+        events: list[str] = []
         self._consume(BaseTokenType.LPAREN, "Expected '(' after 'of'")
         while not self._check(BaseTokenType.RPAREN) and not self._is_at_end():
             if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
                 BaseTokenType.STRING_IDENTIFIER
             ):
-                events.append(self._advance().value)
+                events.append(cast(str, self._advance().value))
             else:
                 raise self._error("Expected event variable in N-of condition")
             if self._check(BaseTokenType.COMMA):
@@ -223,9 +229,9 @@ class EnhancedYaraLParserConditionsMixin:
         """Parse event count condition like #e > 5."""
         self._consume(BaseTokenType.STRING_COUNT, "Expected '#'")
 
-        event_name = self._consume(BaseTokenType.IDENTIFIER, "Expected event name").value
+        event_name = cast(str, self._consume(BaseTokenType.IDENTIFIER, "Expected event name").value)
         operator = self._parse_numeric_comparison_operator()
-        count = int(self._consume(BaseTokenType.INTEGER, "Expected count").value)
+        count = int(cast(int, self._consume(BaseTokenType.INTEGER, "Expected count").value))
 
         return EventCountCondition(event=event_name, operator=operator, count=count)
 
@@ -257,6 +263,7 @@ class EnhancedYaraLParserConditionsMixin:
         raise self._error("Expected numeric comparison operator (>, <, >=, <=, =, !=)")
 
     def _check_condition_operator(self) -> bool:
+        next_token = self._peek_ahead(1)
         return (
             self._check(BaseTokenType.EQ)
             or self._check(BaseTokenType.IEQUALS)
@@ -272,14 +279,10 @@ class EnhancedYaraLParserConditionsMixin:
             or self._check_keyword("regex")
             or (
                 self._check_keyword("not")
-                and self._peek_ahead(1) is not None
-                and self._peek_ahead(1).value == "matches"
+                and next_token is not None
+                and next_token.value == "matches"
             )
-            or (
-                self._check_keyword("not")
-                and self._peek_ahead(1) is not None
-                and self._peek_ahead(1).value == "in"
-            )
+            or (self._check_keyword("not") and next_token is not None and next_token.value == "in")
         )
 
     def _parse_field_comparison(self) -> ConditionExpression:

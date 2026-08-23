@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
+from ._parser_mixin import YaraLParserMixinBase
 from ._shared import YaraLParserError
 from .ast_nodes import (
     EventVariable,
@@ -16,7 +19,7 @@ from .ast_nodes import (
 from .tokens import YaraLTokenType
 
 
-class YaraLMatchParsingMixin:
+class YaraLMatchParsingMixin(YaraLParserMixinBase):
     """Mixin providing YARA-L parse routines."""
 
     def _parse_match_section(self) -> MatchSection:
@@ -87,7 +90,7 @@ class YaraLMatchParsingMixin:
     def _parse_match_variable_list(self) -> list[str]:
         """Parse one or more comma-separated match variables ($a, $b, $c)."""
         var_token = self._advance()
-        var_names = [var_token.value.lstrip("$")]
+        var_names = [cast(str, var_token.value).lstrip("$")]
 
         while self._check(BaseTokenType.COMMA):
             self._advance()  # consume comma
@@ -95,7 +98,7 @@ class YaraLMatchParsingMixin:
                 BaseTokenType.STRING_IDENTIFIER,
             ):
                 next_token = self._advance()
-                var_names.append(next_token.value.lstrip("$"))
+                var_names.append(cast(str, next_token.value).lstrip("$"))
             else:
                 break
 
@@ -153,18 +156,19 @@ class YaraLMatchParsingMixin:
             # Parse the time literal (e.g., "5m")
             import re
 
-            match = re.match(r"(\d+)([smhd])", time_token.value)
+            match = re.match(r"(\d+)([smhd])", cast(str, time_token.value))
             if match:
                 duration = int(match.group(1))
                 unit = match.group(2)
                 return TimeWindow(duration=duration, unit=unit, modifier=modifier)
         elif self._check(BaseTokenType.INTEGER):
-            duration = int(self._advance().value)
+            duration = int(cast(int, self._advance().value))
             # Check for unit
             unit = "m"  # Default to minutes
             if self._check(BaseTokenType.IDENTIFIER):
                 unit_token = self._peek()
-                if unit_token.value in [
+                unit_value = cast(str, unit_token.value)
+                if unit_value in [
                     "s",
                     "m",
                     "h",
@@ -174,7 +178,7 @@ class YaraLMatchParsingMixin:
                     "hours",
                     "days",
                 ]:
-                    unit = unit_token.value[0]  # Take first letter
+                    unit = unit_value[0]  # Take first letter
                     self._advance()
             return TimeWindow(duration=duration, unit=unit, modifier=modifier)
 

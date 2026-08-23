@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from yaraast.codegen.generator_helpers import escape_plain_string_value
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
+from ._parser_mixin import YaraLParserMixinBase
 from ._shared import (
     EXPECTED_FIELD_NAME_ERROR,
     YaraLParserError,
@@ -19,6 +20,7 @@ from .ast_nodes import (
     EventStatement,
     EventVariable,
     FunctionCall,
+    JoinCondition,
     ReferenceList,
     RegexPattern,
     StringLiteral,
@@ -30,7 +32,7 @@ from .tokens import YaraLTokenType
 _RAW_EVENT_MODULES = frozenset({"arrays", "math", "net", "re", "strings"})
 
 
-class YaraLEventsParsingMixin:
+class YaraLEventsParsingMixin(YaraLParserMixinBase):
     """Mixin providing YARA-L parse routines."""
 
     def _parse_events_section(self) -> EventsSection:
@@ -38,7 +40,7 @@ class YaraLEventsParsingMixin:
         self._consume_keyword("events")
         self._consume(BaseTokenType.COLON, "Expected ':' after 'events'")
 
-        statements = []
+        statements: list[EventStatement | JoinCondition] = []
 
         while (
             not self._is_at_end()
@@ -80,7 +82,7 @@ class YaraLEventsParsingMixin:
             return None
 
         event_token = self._advance()
-        event_var = EventVariable(name=event_token.value)
+        event_var = EventVariable(name=cast(str, event_token.value))
 
         # Check if this is a variable assignment (e.g., $var = re.capture(...))
         if self._check(BaseTokenType.EQ):
@@ -122,7 +124,7 @@ class YaraLEventsParsingMixin:
 
     def _try_parse_function_call_start(self) -> EventStatement | None:
         """Try to parse a function call statement if the identifier matches a known pattern."""
-        identifier = self._peek().value
+        identifier = cast(str, self._peek().value)
         if identifier in _RAW_EVENT_MODULES or (
             "." in identifier and identifier.split(".", 1)[0] in _RAW_EVENT_MODULES
         ):
@@ -206,7 +208,7 @@ class YaraLEventsParsingMixin:
 
         # Check if it's a function call
         if self._check(BaseTokenType.IDENTIFIER):
-            identifier = self._peek().value
+            identifier = cast(str, self._peek().value)
             if identifier in _RAW_EVENT_MODULES or (
                 "." in identifier and identifier.split(".", 1)[0] in _RAW_EVENT_MODULES
             ):
@@ -234,7 +236,7 @@ class YaraLEventsParsingMixin:
     def _collect_rhs_expression_tokens(self) -> list[Any]:
         """Collect right-hand side tokens until the next event statement boundary."""
         start_line = self._peek().line if not self._is_at_end() else -1
-        tokens = []
+        tokens: list[Any] = []
 
         while not self._is_at_end():
             current_token = self._peek()
@@ -272,7 +274,7 @@ class YaraLEventsParsingMixin:
 
     def _parse_complex_event_pattern_statement(self) -> EventStatement:
         start_line = self._peek().line
-        tokens = []
+        tokens: list[Any] = []
 
         while not self._is_at_end():
             current_token = self._peek()
@@ -297,7 +299,7 @@ class YaraLEventsParsingMixin:
 
         if not self._check(BaseTokenType.IDENTIFIER):
             return False
-        identifier = self._peek().value
+        identifier = cast(str, self._peek().value)
         return identifier in _RAW_EVENT_MODULES or (
             "." in identifier and identifier.split(".", 1)[0] in _RAW_EVENT_MODULES
         )
@@ -305,9 +307,9 @@ class YaraLEventsParsingMixin:
     def _parse_field_path(self) -> UDMFieldPath:
         """Parse UDM field path."""
         expected_field = EXPECTED_FIELD_NAME_ERROR
-        field_parts = []
+        field_parts: list[str] = []
         field_parts.append(
-            self._consume(BaseTokenType.IDENTIFIER, expected_field).value,
+            cast(str, self._consume(BaseTokenType.IDENTIFIER, expected_field).value),
         )
 
         # Continue parsing path components (dots and brackets)
@@ -315,7 +317,7 @@ class YaraLEventsParsingMixin:
             if self._check(BaseTokenType.DOT):
                 self._advance()  # Consume dot
                 if self._check(BaseTokenType.IDENTIFIER):
-                    field_parts.append(self._advance().value)
+                    field_parts.append(cast(str, self._advance().value))
                 elif self._check(BaseTokenType.LBRACKET):
                     # Handle array/map access after dot: .fields["key"] or .fields[0]
                     self._advance()  # [
@@ -397,14 +399,14 @@ class YaraLEventsParsingMixin:
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return parse_numeric_token_value(self._advance().value)
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
-            event = EventVariable(name=self._advance().value)
+            event = EventVariable(name=cast(str, self._advance().value))
             if self._check(BaseTokenType.DOT):
                 self._advance()
                 return UDMFieldAccess(event=event, field=self._parse_field_path())
             return event
         if self._check_yaral_type(YaraLTokenType.REFERENCE_LIST):
             # Reference list like %suspicious_ips%
-            return ReferenceList(name=self._advance().value.strip("%"))
+            return ReferenceList(name=cast(str, self._advance().value).strip("%"))
         if self._check(BaseTokenType.REGEX):
             # Regex pattern
             pattern_token = self._advance()
@@ -465,7 +467,7 @@ class YaraLEventsParsingMixin:
         """Parse function call statement like re.regex($e.field, `pattern`) nocase."""
         # Parse module.function identifier (could be "re.regex" as single token or separate tokens)
         raw_tokens = [self._advance()]
-        function_name = raw_tokens[0].value
+        function_name = cast(str, raw_tokens[0].value)
 
         # If it's not a compound name like "re.regex", check for dot and function name
         if "." not in function_name and self._check(BaseTokenType.DOT):

@@ -357,11 +357,9 @@ class TestYaraLRuleRuleType:
 
 class TestMetaEntryValidation:
     def test_invalid_value_type_raises_typeerror(self) -> None:
-        """Lines 213-214: a non-(str|int|bool) value raises TypeError."""
+        """A non-scalar value raises TypeError."""
         entry = MetaEntry(key="author", value=cast(Any, ["invalid"]))
-        with pytest.raises(
-            TypeError, match="MetaEntry value must be a string, integer, or boolean"
-        ):
+        with pytest.raises(TypeError, match="MetaEntry value must be a string, number, or boolean"):
             entry.validate_structure()
 
     def test_string_value_accepted(self) -> None:
@@ -377,6 +375,10 @@ class TestMetaEntryValidation:
     def test_bool_value_accepted(self) -> None:
         """Validate_structure succeeds for boolean value."""
         entry = MetaEntry(key="is_active", value=True)
+        entry.validate_structure()
+
+    def test_float_value_accepted(self) -> None:
+        entry = MetaEntry(key="score", value=3.14)
         entry.validate_structure()
 
 

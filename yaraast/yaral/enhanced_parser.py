@@ -33,7 +33,7 @@ class EnhancedYaraLParser(
         self.lexer = YaraLLexer(text)
         self.tokens = self.lexer.tokenize()
         self.current = 0
-        self.errors = []
+        self.errors: list[str] = []
 
     def parse(self) -> YaraLFile:
         """Parse YARA-L file with error recovery.

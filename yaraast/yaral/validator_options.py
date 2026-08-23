@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from yaraast.yaral._validator_mixin import ValidatorMixinBase
+
 if TYPE_CHECKING:
     from yaraast.yaral.ast_nodes import OptionsSection
 
 
-class OptionsValidationMixin:
+class OptionsValidationMixin(ValidatorMixinBase):
     """Validate options section."""
 
     def _validate_options_section(self, node: OptionsSection) -> None:

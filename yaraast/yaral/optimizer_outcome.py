@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.yaral._optimizer_mixin import OptimizerMixinBase
 from yaraast.yaral.ast_nodes import MatchSection, OutcomeAssignment, OutcomeSection
 
 
-class YaraLOptimizerOutcomeMixin:
+class YaraLOptimizerOutcomeMixin(OptimizerMixinBase):
     """Outcome, match, and options optimization methods."""
 
     def _optimize_match_section(self, match: MatchSection | None) -> MatchSection | None:

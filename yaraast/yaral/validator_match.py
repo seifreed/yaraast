@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from yaraast.yaral._validator_mixin import ValidatorMixinBase
+
 if TYPE_CHECKING:
     from yaraast.yaral.ast_nodes import MatchSection, MatchVariable, TimeWindow
 
 
-class MatchValidationMixin:
+class MatchValidationMixin(ValidatorMixinBase):
     """Validate match variables and time windows."""
 
     def _validate_match_section(self, node: MatchSection) -> None:

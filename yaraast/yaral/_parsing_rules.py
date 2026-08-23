@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
+from ._parser_mixin import YaraLParserMixinBase
 from ._shared import parse_numeric_token_value
 from .ast_nodes import MetaEntry, MetaSection, OptionsSection, YaraLRule
 
 
-class YaraLRuleParsingMixin:
+class YaraLRuleParsingMixin(YaraLParserMixinBase):
     """Mixin providing YARA-L parse routines."""
 
     def _parse_rule(self) -> YaraLRule:
@@ -17,7 +20,7 @@ class YaraLRuleParsingMixin:
 
         # Get rule name
         name_token = self._consume(BaseTokenType.IDENTIFIER, "Expected rule name")
-        rule_name = name_token.value
+        rule_name = cast(str, name_token.value)
 
         self._consume(BaseTokenType.LBRACE, "Expected '{' after rule name")
 
@@ -70,14 +73,14 @@ class YaraLRuleParsingMixin:
         ):
             # Parse meta entry
             key_token = self._consume(BaseTokenType.IDENTIFIER, "Expected meta key")
-            key = key_token.value
+            key = cast(str, key_token.value)
 
             self._consume(BaseTokenType.EQ, "Expected '=' after meta key")
 
             # Parse value
-            value = None
+            value: str | int | float | bool
             if self._check(BaseTokenType.STRING):
-                value = self._advance().value
+                value = cast(str, self._advance().value)
             elif self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
                 value = parse_numeric_token_value(self._advance().value)
             elif self._check(BaseTokenType.BOOLEAN_TRUE):
@@ -87,7 +90,7 @@ class YaraLRuleParsingMixin:
                 self._advance()
                 value = False
             else:
-                value = self._advance().value
+                value = cast(str, self._advance().value)
 
             entries.append(MetaEntry(key=key, value=value))
 
@@ -98,18 +101,18 @@ class YaraLRuleParsingMixin:
         self._consume_keyword("options")
         self._consume(BaseTokenType.COLON, "Expected ':' after 'options'")
 
-        options = {}
+        options: dict[str, Any] = {}
 
         while not self._check_section_keyword() and not self._check(
             BaseTokenType.RBRACE,
         ):
             # Parse option: key = value
             if self._check(BaseTokenType.IDENTIFIER):
-                key = self._advance().value
+                key = cast(str, self._advance().value)
                 self._consume(BaseTokenType.EQ, "Expected '=' after option key")
 
                 # Parse value
-                value = None
+                value: Any
                 if self._check(BaseTokenType.STRING):
                     value = self._advance().value
                 elif self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):

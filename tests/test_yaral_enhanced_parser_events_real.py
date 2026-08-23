@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from yaraast.lexer.tokens import TokenType as T
 from yaraast.yaral.ast_nodes import EventAssignment, EventStatement, FunctionCall, JoinCondition
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
@@ -436,7 +438,7 @@ def test_parse_complex_event_patterns_preserves_generated_text() -> None:
 
     events = ast.rules[0].events
     assert events is not None
-    assert [statement.text for statement in events.statements] == [
+    assert [cast(EventStatement, statement).text for statement in events.statements] == [
         "all",
         "any",
         "e1 followed by e2",

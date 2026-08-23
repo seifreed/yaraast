@@ -6,9 +6,6 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
-from collections.abc import Callable
-import typing
-
 import pytest
 
 from yaraast.errors import ParseError, SerializationError
@@ -430,17 +427,9 @@ class TestGetEventVarType:
     """Tests for _get_event_var_type."""
 
     def test_returns_yaral_event_var_type(self) -> None:
-        """_get_event_var_type returns the YaraLTokenType.EVENT_VAR sentinel (lines 89-91).
-
-        The production method lacks a return annotation.  We cast it to a typed
-        Callable so the call site is well-typed without suppression comments.
-        """
+        """_get_event_var_type returns the YaraLTokenType.EVENT_VAR sentinel."""
         p = EnhancedYaraLParser("")
-        typed_fn = typing.cast(
-            Callable[[], YaraLTokenType],
-            p._get_event_var_type,
-        )
-        result = typed_fn()
+        result = p._get_event_var_type()
 
         assert result is YaraLTokenType.EVENT_VAR
 

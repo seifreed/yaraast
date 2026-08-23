@@ -34,8 +34,15 @@ def test_yaral_validation_helpers_reject_bad_types(
 
 
 def test_meta_entry_rejects_non_scalar_value() -> None:
-    with pytest.raises(TypeError, match="must be a string, integer, or boolean"):
+    with pytest.raises(TypeError, match="must be a string, number, or boolean"):
         nodes.MetaEntry(key="k", value=cast(Any, [1, 2])).validate_structure()
+
+
+def test_decimal_meta_and_event_join_validate() -> None:
+    nodes.MetaEntry(key="score", value=3.14).validate_structure()
+    nodes.EventsSection(
+        statements=[nodes.JoinCondition(left_event="$source", right_event="$target")]
+    ).validate_structure()
 
 
 def test_rule_type_without_events_is_single_event() -> None:

@@ -7,12 +7,11 @@ from yaraast.limits import DEFAULT_RESOURCE_LIMITS, CancellationToken, ParseBudg
 
 from ._parsing import YaraLParsingMixin
 from ._shared import EXPECTED_FIELD_NAME_ERROR, YaraLParserError
-from ._token_stream import TokenStreamMixin
 from .ast_nodes import YaraLFile
 from .lexer import YaraLLexer, YaraLToken
 
 
-class YaraLParser(TokenStreamMixin, YaraLParsingMixin):
+class YaraLParser(YaraLParsingMixin):
     """Parser for YARA-L 2.0 rules."""
 
     def __init__(

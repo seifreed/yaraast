@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.yaral.ast_nodes import (
     BinaryCondition,
+    ConditionExpression,
     ConditionSection,
     EventExistsCondition,
     EventsSection,
@@ -28,7 +29,6 @@ if TYPE_CHECKING:
         BinaryCondition,
         CIDRExpression,
         ConditionalExpression,
-        ConditionExpression,
         ConditionSection,
         EventAssignment,
         EventCountCondition,
@@ -90,7 +90,7 @@ class YaraLOptimizer(
     def __init__(self) -> None:
         self.stats = OptimizationStats()
         self.indexed_fields = set()
-        self.current_rule = None
+        self.current_rule: str | None = None
 
     def optimize(self, ast: YaraLFile) -> tuple[YaraLFile, OptimizationStats]:
         """Optimize YARA-L file and return optimized AST with stats."""
@@ -173,7 +173,7 @@ class YaraLOptimizer(
     def visit_yaral_match_variable(self, node: MatchVariable) -> MatchVariable:
         return node
 
-    def visit_yaral_time_window(self, node) -> Any:
+    def visit_yaral_time_window(self, node: Any) -> Any:
         return node
 
     def visit_yaral_condition_section(self, node: ConditionSection) -> ConditionSection:
@@ -186,7 +186,7 @@ class YaraLOptimizer(
     def visit_yaral_binary_condition(self, node: BinaryCondition) -> ConditionExpression:
         return self._optimize_binary_condition(node)
 
-    def visit_yaral_unary_condition(self, node) -> ConditionExpression:
+    def visit_yaral_unary_condition(self, node: ConditionExpression) -> ConditionExpression:
         return node
 
     def visit_yaral_event_count_condition(self, node: EventCountCondition) -> ConditionExpression:

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.yaral._validator_mixin import ValidatorMixinBase
 
-class MetaValidationMixin:
+
+class MetaValidationMixin(ValidatorMixinBase):
     """Validate meta sections and entries."""
 
     def _validate_meta_section(self, node: Any) -> None:
@@ -46,11 +48,11 @@ class MetaValidationMixin:
     def visit_yaral_meta_entry(self, node: Any) -> None:
         return
 
-    def visit_yaral_regex_pattern(self, node) -> None:
+    def visit_yaral_regex_pattern(self, node: Any) -> None:
         return
 
-    def visit_yaral_cidr_expression(self, node) -> None:
+    def visit_yaral_cidr_expression(self, node: Any) -> None:
         return
 
-    def visit_yaral_function_call(self, node) -> None:
+    def visit_yaral_function_call(self, node: Any) -> None:
         return

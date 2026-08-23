@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
+from yaraast.yaral._enhanced_parser_mixin import EnhancedParserMixinBase
 from yaraast.yaral._shared import parse_numeric_token_value
 from yaraast.yaral.ast_nodes import MetaEntry, MetaSection, OptionsSection, YaraLRule
 
 
-class EnhancedYaraLParserRulesMixin:
+class EnhancedYaraLParserRulesMixin(EnhancedParserMixinBase):
     """Mixin for rule/meta/options parsing."""
 
     def _parse_rule(
@@ -19,7 +20,7 @@ class EnhancedYaraLParserRulesMixin:
         self._consume_keyword("rule")
 
         name_token = self._consume(BaseTokenType.IDENTIFIER, "Expected rule name")
-        rule_name = name_token.value
+        rule_name = cast(str, name_token.value)
 
         self._consume(BaseTokenType.LBRACE, "Expected '{' after rule name")
 
@@ -107,7 +108,7 @@ class EnhancedYaraLParserRulesMixin:
 
         while not self._check_section_keyword() and not self._check(BaseTokenType.RBRACE):
             key_token = self._consume(BaseTokenType.IDENTIFIER, "Expected meta key")
-            key = key_token.value
+            key = cast(str, key_token.value)
 
             self._consume(BaseTokenType.EQ, "Expected '=' after meta key")
 
@@ -134,11 +135,11 @@ class EnhancedYaraLParserRulesMixin:
         self._consume_keyword("options")
         self._consume(BaseTokenType.COLON, "Expected ':' after 'options'")
 
-        options = {}
+        options: dict[str, Any] = {}
 
         while not self._check_section_keyword() and not self._check(BaseTokenType.RBRACE):
             if self._check(BaseTokenType.IDENTIFIER):
-                key = self._advance().value
+                key = cast(str, self._advance().value)
                 self._consume(BaseTokenType.EQ, "Expected '=' after option key")
                 value = self._parse_option_value()
                 options[key] = value
@@ -156,12 +157,12 @@ class EnhancedYaraLParserRulesMixin:
             self._advance()
             return False
         if self._check(BaseTokenType.STRING):
-            return self._advance().value
+            return cast(str, self._advance().value)
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return parse_numeric_token_value(self._advance().value)
         if self._check(BaseTokenType.IDENTIFIER):
             token = self._advance()
             if token.value in ["true", "false"]:
                 return token.value == "true"
-            return token.value
+            return cast(str, token.value)
         raise self._error("Expected option value")

@@ -10,10 +10,12 @@ via the parser object -- no mocking of any kind.
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from yaraast.lexer.tokens import TokenType as T
-from yaraast.yaral.ast_nodes import EventAssignment, EventsSection
+from yaraast.yaral.ast_nodes import EventAssignment, EventsSection, EventStatement
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
 from yaraast.yaral.enhanced_parser_events import _is_raw_event_function_identifier
 from yaraast.yaral.lexer import YaraLToken
@@ -128,8 +130,10 @@ rule boundary_raw {
     events = ast.rules[0].events
     assert events is not None
     assert len(events.statements) == 2
-    assert 're.regex($e.target.hostname, "evil")' in events.statements[0].text
-    assert 're.regex($e.principal.hostname, "bad")' in events.statements[1].text
+    assert 're.regex($e.target.hostname, "evil")' in cast(EventStatement, events.statements[0]).text
+    assert (
+        're.regex($e.principal.hostname, "bad")' in cast(EventStatement, events.statements[1]).text
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -156,8 +160,8 @@ rule boundary_complex {
     events = ast.rules[0].events
     assert events is not None
     assert len(events.statements) == 2
-    assert "604800" in events.statements[0].text
-    assert events.statements[1].text == "all"
+    assert "604800" in cast(EventStatement, events.statements[0]).text
+    assert cast(EventStatement, events.statements[1]).text == "all"
 
 
 # ---------------------------------------------------------------------------
@@ -193,7 +197,7 @@ rule matches_keyword {
     events = ast.rules[0].events
     assert events is not None
     assert len(events.statements) == 1
-    assert "matches" in events.statements[0].text
+    assert "matches" in cast(EventStatement, events.statements[0]).text
 
 
 # ---------------------------------------------------------------------------
@@ -398,8 +402,8 @@ rule full_coverage {
     assert len(events.statements) == 3
     # First two are raw EventStatement nodes; third is an EventAssignment
     first, second, third = events.statements
-    assert "evil" in first.text
-    assert "admin" in second.text
+    assert "evil" in cast(EventStatement, first).text
+    assert "admin" in cast(EventStatement, second).text
     # EventAssignment has operator and value attributes instead of text
     assert isinstance(third, EventAssignment)
     assert third.operator == "="
@@ -457,8 +461,8 @@ rule integer_boundary {
     events = ast.rules[0].events
     assert events is not None
     assert len(events.statements) == 2
-    assert "re.regex" in events.statements[0].text
-    assert "604800" in events.statements[1].text
+    assert "re.regex" in cast(EventStatement, events.statements[0]).text
+    assert "604800" in cast(EventStatement, events.statements[1]).text
 
 
 # ---------------------------------------------------------------------------
@@ -487,8 +491,8 @@ rule lparen_boundary {
     events = ast.rules[0].events
     assert events is not None
     assert len(events.statements) == 2
-    assert "re.regex" in events.statements[0].text
-    assert "LOGIN" in events.statements[1].text
+    assert "re.regex" in cast(EventStatement, events.statements[0]).text
+    assert "LOGIN" in cast(EventStatement, events.statements[1]).text
 
 
 # ---------------------------------------------------------------------------

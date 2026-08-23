@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from yaraast.yaral._validator_mixin import ValidatorMixinBase
+
 if TYPE_CHECKING:
     from yaraast.yaral.ast_nodes import (
         AggregationFunction,
@@ -13,7 +15,7 @@ if TYPE_CHECKING:
     )
 
 
-class OutcomeValidationMixin:
+class OutcomeValidationMixin(ValidatorMixinBase):
     """Validate outcome assignments and aggregations."""
 
     def _validate_outcome_section(self, node: OutcomeSection) -> None:

@@ -468,6 +468,9 @@ class YaraLLexer:
                     column=start_column,
                     yaral_type=token_type,
                 )
+            if not isinstance(token_type, BaseTokenType):
+                msg = f"Invalid token type for keyword: {value}"
+                raise TypeError(msg)
             return YaraLToken(
                 type=token_type,
                 value=value,

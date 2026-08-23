@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from yaraast.yaral._validator_mixin import ValidatorMixinBase
+
 if TYPE_CHECKING:
     from yaraast.yaral.ast_nodes import (
         EventAssignment,
@@ -16,7 +18,7 @@ if TYPE_CHECKING:
     )
 
 
-class EventValidationMixin:
+class EventValidationMixin(ValidatorMixinBase):
     """Validate events and UDM field paths."""
 
     def visit_events_section(self, node: EventsSection) -> None:

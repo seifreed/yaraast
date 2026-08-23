@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.yaral.ast_nodes import (
-    EventAssignment,
-    EventVariable,
-    TimeWindow,
-    UDMFieldPath,
-)
+from yaraast.yaral.ast_nodes import TimeWindow
 from yaraast.yaral.optimizer import YaraLOptimizer
 from yaraast.yaral.parser import YaraLParser
 
@@ -32,21 +27,6 @@ rule opt_rule {
 
     assert optimized is not None
     assert stats.rules_optimized >= 0
-
-
-def test_yaral_optimizer_redundant_assignments() -> None:
-    optimizer = YaraLOptimizer()
-    event = EventVariable(name="$e")
-    field = UDMFieldPath(parts=["metadata", "event_type"])
-    assignments = [
-        EventAssignment(event_var=event, field_path=field, operator="=", value="LOGIN"),
-        EventAssignment(event_var=event, field_path=field, operator="=", value="LOGIN"),
-    ]
-
-    optimized = optimizer._remove_redundant_assignments(assignments)
-
-    assert len(optimized) == 1
-    assert optimizer.stats.redundant_checks_removed >= 1
 
 
 def test_yaral_optimizer_time_window() -> None:

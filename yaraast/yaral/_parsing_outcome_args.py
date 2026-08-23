@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
+from ._parser_mixin import YaraLParserMixinBase
 from ._shared import (
     EXPECTED_FIELD_NAME_ERROR,
     YaraLParserError,
@@ -38,7 +39,7 @@ _BARE_UDM_YARAL_TYPES = {
 }
 
 
-class OutcomeArgumentParsingMixin:
+class OutcomeArgumentParsingMixin(YaraLParserMixinBase):
     """Mixin for parsing outcome arguments and field paths."""
 
     def _parse_outcome_argument_basic(self) -> Any:
@@ -78,7 +79,7 @@ class OutcomeArgumentParsingMixin:
             return parse_numeric_token_value(self._advance().value)
 
         if self._check(BaseTokenType.IDENTIFIER):
-            ident = self._advance().value
+            ident = cast(str, self._advance().value)
             if self._check(BaseTokenType.LPAREN):
                 return self._parse_function_call_args(ident)
             if ident in ("true", "false"):
@@ -135,7 +136,7 @@ class OutcomeArgumentParsingMixin:
     def _parse_outcome_event_var(self) -> Any:
         """Parse an event variable with optional field access and operator."""
         event_token = self._advance()
-        var_name = event_token.value
+        var_name = cast(str, event_token.value)
 
         if self._check(BaseTokenType.DOT):
             event = EventVariable(name=var_name)
@@ -359,9 +360,9 @@ class OutcomeArgumentParsingMixin:
         return isinstance(value, str) and value.lower() == expected
 
     def _parse_outcome_field_path(self) -> list[str]:
-        field_parts = []
+        field_parts: list[str] = []
         field_parts.append(
-            self._consume(BaseTokenType.IDENTIFIER, EXPECTED_FIELD_NAME_ERROR).value,
+            cast(str, self._consume(BaseTokenType.IDENTIFIER, EXPECTED_FIELD_NAME_ERROR).value),
         )
 
         return self._parse_outcome_field_path_continuation(field_parts)
@@ -371,7 +372,7 @@ class OutcomeArgumentParsingMixin:
             if self._check(BaseTokenType.DOT):
                 self._advance()
                 if self._check(BaseTokenType.IDENTIFIER):
-                    field_parts.append(self._advance().value)
+                    field_parts.append(cast(str, self._advance().value))
                 elif self._check(BaseTokenType.LBRACKET):
                     self._advance()
                     if self._check(BaseTokenType.STRING):

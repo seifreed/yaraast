@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from yaraast.yaral.ast_nodes import (
     BinaryCondition,
-    ConditionExpression,
     ConditionSection,
     EventExistsCondition,
     MatchSection,
@@ -18,17 +15,12 @@ from yaraast.yaral.ast_nodes import (
 from yaraast.yaral.optimizer import YaraLOptimizer
 
 
-@dataclass
-class BooleanCondition(ConditionExpression):
-    value: bool
-
-
-def test_optimizer_simplifies_boolean_and_time_window() -> None:
+def test_optimizer_deduplicates_condition_and_optimizes_time_window() -> None:
     condition = ConditionSection(
         expression=BinaryCondition(
             operator="and",
             left=EventExistsCondition(event="e"),
-            right=BooleanCondition(value=True),
+            right=EventExistsCondition(event="e"),
         ),
     )
     match = MatchSection(variables=[MatchVariable(variable="e", time_window=TimeWindow(3600, "s"))])

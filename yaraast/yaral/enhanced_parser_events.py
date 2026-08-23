@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
+from yaraast.yaral._enhanced_parser_mixin import EnhancedParserMixinBase
 from yaraast.yaral._parsing_events import (
     _RAW_EVENT_MODULES,
     _join_event_statement_tokens,
@@ -23,7 +24,7 @@ from yaraast.yaral.ast_nodes import (
 from yaraast.yaral.tokens import YaraLTokenType
 
 
-class EnhancedYaraLParserEventsMixin:
+class EnhancedYaraLParserEventsMixin(EnhancedParserMixinBase):
     """Mixin for events parsing."""
 
     def _parse_events_section(self) -> EventsSection:
@@ -31,7 +32,7 @@ class EnhancedYaraLParserEventsMixin:
         self._consume_keyword("events")
         self._consume(BaseTokenType.COLON, "Expected ':' after 'events'")
 
-        statements = []
+        statements: list[EventStatement | JoinCondition] = []
 
         while not self._check_section_keyword() and not self._check(BaseTokenType.RBRACE):
             if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
@@ -68,7 +69,7 @@ class EnhancedYaraLParserEventsMixin:
         )
 
     def _parse_raw_event_statement(self) -> EventStatement | None:
-        tokens = []
+        tokens: list[Any] = []
         start_line = self._peek().line if not self._is_at_end() else -1
         paren_depth = 0
         while not self._is_at_end():
@@ -130,7 +131,7 @@ class EnhancedYaraLParserEventsMixin:
             BaseTokenType.STRING_IDENTIFIER
         ):
             next_token = self._peek_ahead(1)
-            return bool(next_token) and (
+            return next_token is not None and (
                 next_token.type in {BaseTokenType.DOT, BaseTokenType.EQ}
                 or self._is_event_var_comparison_operator_at(1)
             )
@@ -218,7 +219,7 @@ class EnhancedYaraLParserEventsMixin:
 
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
             event_token = self._advance()
-            event = EventVariable(name=event_token.value)
+            event = EventVariable(name=cast(str, event_token.value))
             if self._check(BaseTokenType.EQ):
                 self._advance()
                 if self._is_raw_event_statement_start():
@@ -314,7 +315,7 @@ class EnhancedYaraLParserEventsMixin:
         """Parse join statement for correlating events."""
         self._consume_keyword("join")
 
-        left_event = self._consume(BaseTokenType.IDENTIFIER, "Expected left event").value
+        left_event = cast(str, self._consume(BaseTokenType.IDENTIFIER, "Expected left event").value)
 
         self._consume_keyword("on")
 
@@ -322,7 +323,9 @@ class EnhancedYaraLParserEventsMixin:
 
         self._consume_keyword("with")
 
-        right_event = self._consume(BaseTokenType.IDENTIFIER, "Expected right event").value
+        right_event = cast(
+            str, self._consume(BaseTokenType.IDENTIFIER, "Expected right event").value
+        )
 
         return JoinCondition(left_event=left_event, right_event=right_event)
 
@@ -358,7 +361,7 @@ class EnhancedYaraLParserEventsMixin:
 
     def _parse_join_condition(self) -> ConditionExpression:
         """Parse join condition for event correlation."""
-        return self._parse_condition_expression()
+        return cast(ConditionExpression, self._parse_condition_expression())
 
 
 def _is_raw_event_function_identifier(token: Any) -> bool:

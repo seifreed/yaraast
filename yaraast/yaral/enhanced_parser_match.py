@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
-from yaraast.yaral.ast_nodes import MatchSection, MatchVariable, TimeWindow
+from yaraast.yaral._enhanced_parser_mixin import EnhancedParserMixinBase
+from yaraast.yaral.ast_nodes import MatchSection, MatchVariable, TimeWindow, UDMFieldAccess
+from yaraast.yaral.tokens import YaraLTokenType
 
 
-class EnhancedYaraLParserMatchMixin:
+class EnhancedYaraLParserMatchMixin(EnhancedParserMixinBase):
     """Mixin for match parsing."""
 
     def _parse_match_section(self) -> MatchSection:
@@ -14,7 +16,7 @@ class EnhancedYaraLParserMatchMixin:
         self._consume_keyword("match")
         self._consume(BaseTokenType.COLON, "Expected ':' after 'match'")
 
-        variables = []
+        variables: list[MatchVariable] = []
 
         while not self._check_section_keyword() and not self._check(BaseTokenType.RBRACE):
             if self._check_keyword("over"):
@@ -70,7 +72,7 @@ class EnhancedYaraLParserMatchMixin:
             return str(self._advance().value)
         return str(self._consume(BaseTokenType.IDENTIFIER, "Expected variable name").value)
 
-    def _parse_match_grouping_field(self, variable_count: int):
+    def _parse_match_grouping_field(self, variable_count: int) -> UDMFieldAccess | None:
         grouping_field = None
         if self._check(BaseTokenType.EQ):
             if variable_count != 1:
@@ -100,8 +102,6 @@ class EnhancedYaraLParserMatchMixin:
             return TimeWindow(duration=duration, unit=unit, modifier=modifier)
         return TimeWindow(duration=1, unit="m", modifier=modifier)
 
-    def _get_event_var_type(self):
+    def _get_event_var_type(self) -> YaraLTokenType:
         """Get the YARA-L event variable token type."""
-        from yaraast.yaral.tokens import YaraLTokenType
-
         return YaraLTokenType.EVENT_VAR

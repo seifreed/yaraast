@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
@@ -38,7 +38,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
                 BaseTokenType.STRING_IDENTIFIER,
             ):
                 var_token = self._advance()
-                var_name = var_token.value
+                var_name = cast(str, var_token.value)
 
                 self._consume(BaseTokenType.EQ, "Expected '=' after outcome variable")
 
@@ -69,7 +69,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
                 "earliest",
                 "latest",
             ]:
-                func_name = self._advance().value
+                func_name = cast(str, self._advance().value)
                 self._consume(BaseTokenType.LPAREN, f"Expected '(' after {func_name}")
 
                 # Parse arguments
@@ -113,7 +113,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
             )
 
         # Default: parse as simple value
-        return self._parse_outcome_argument()
+        return cast(OutcomeExpression, self._parse_outcome_argument())
 
     def _parse_outcome_arithmetic_expression(self) -> Any:
         """Parse arithmetic expression in outcome (handles +, -, *, /)."""
@@ -126,7 +126,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
             or self._check(BaseTokenType.MULTIPLY)
             or self._check(BaseTokenType.DIVIDE)
         ):
-            operator = self._advance().value
+            operator = cast(str, self._advance().value)
             right = self._parse_outcome_expression()
             left = ArithmeticExpression(operator=operator, left=left, right=right)
 
@@ -202,7 +202,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
             or self._check(BaseTokenType.MULTIPLY)
             or self._check(BaseTokenType.DIVIDE)
         ):
-            operator = self._advance().value
+            operator = cast(str, self._advance().value)
             right = self._parse_outcome_primary()
             left = ArithmeticExpression(operator=operator, left=left, right=right)
 

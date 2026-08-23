@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+from yaraast.yaral._validator_mixin import ValidatorMixinBase
 
 if TYPE_CHECKING:
     from yaraast.yaral.ast_nodes import (
@@ -20,7 +22,7 @@ if TYPE_CHECKING:
     )
 
 
-class ConditionValidationMixin:
+class ConditionValidationMixin(ValidatorMixinBase):
     """Validate condition expressions and references."""
 
     def _validate_condition_section(self, node: ConditionSection) -> None:
@@ -79,7 +81,7 @@ class ConditionValidationMixin:
         if hasattr(node.condition, "accept"):
             self.visit(node.condition)
 
-    def visit_yaral_arithmetic_expression(self, node) -> None:
+    def visit_yaral_arithmetic_expression(self, node: Any) -> None:
         if hasattr(node.left, "accept"):
             self.visit(node.left)
         if hasattr(node.right, "accept"):

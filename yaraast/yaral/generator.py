@@ -373,22 +373,22 @@ class YaraLGenerator(YaraLVisitor[str]):
         self._decrease_indent()
         return "\n".join(lines)
 
-    def visit_variable_comparison_condition(self, node) -> str:
+    def visit_variable_comparison_condition(self, node: Any) -> str:
         variable = node.variable
         return f"{variable} {node.operator} {self._format_value(node.value)}"
 
-    def visit_null_check_condition(self, node) -> str:
+    def visit_null_check_condition(self, node: Any) -> str:
         operator = "is not null" if node.negated else "is null"
         field = self.visit(node.field) if hasattr(node.field, "accept") else str(node.field)
         return f"{field} {operator}"
 
-    def visit_n_of_condition(self, node) -> str:
+    def visit_n_of_condition(self, node: Any) -> str:
         return f"{node.count} of ({', '.join(node.events)})"
 
-    def visit_join_condition(self, node) -> str:
+    def visit_join_condition(self, node: Any) -> str:
         return f"join {node.left_event} {node.join_type} {node.right_event}"
 
-    def visit_arithmetic_expression(self, node) -> str:
+    def visit_arithmetic_expression(self, node: Any) -> str:
         left = self._format_arithmetic_operand(node.left, node.operator, is_right=False)
         right = self._format_arithmetic_operand(node.right, node.operator, is_right=True)
         return f"{left} {node.operator} {right}"
@@ -416,11 +416,11 @@ class YaraLGenerator(YaraLVisitor[str]):
             return True
         return is_right and parent_operator in {"-", "/"} and child_precedence == parent_precedence
 
-    def visit_cidr_expression(self, node) -> str:
+    def visit_cidr_expression(self, node: Any) -> str:
         field = self.visit(node.field)
         return f"{field} in {node.cidr}"
 
-    def visit_function_call(self, node) -> str:
+    def visit_function_call(self, node: Any) -> str:
         args = [self._format_value(arg) for arg in node.arguments]
         return f"{node.function}({', '.join(args)})"
 
@@ -485,16 +485,16 @@ class YaraLGenerator(YaraLVisitor[str]):
     def visit_yaral_event_exists_condition(self, node: EventExistsCondition) -> str:
         return self.visit_event_exists_condition(node)
 
-    def visit_yaral_variable_comparison_condition(self, node) -> str:
+    def visit_yaral_variable_comparison_condition(self, node: Any) -> str:
         return self.visit_variable_comparison_condition(node)
 
-    def visit_yaral_null_check_condition(self, node) -> str:
+    def visit_yaral_null_check_condition(self, node: Any) -> str:
         return self.visit_null_check_condition(node)
 
-    def visit_yaral_n_of_condition(self, node) -> str:
+    def visit_yaral_n_of_condition(self, node: Any) -> str:
         return self.visit_n_of_condition(node)
 
-    def visit_yaral_join_condition(self, node) -> str:
+    def visit_yaral_join_condition(self, node: Any) -> str:
         return self.visit_join_condition(node)
 
     def visit_yaral_outcome_section(self, node: OutcomeSection) -> str:
@@ -512,7 +512,7 @@ class YaraLGenerator(YaraLVisitor[str]):
     def visit_yaral_conditional_expression(self, node: ConditionalExpression) -> str:
         return self.visit_conditional_expression(node)
 
-    def visit_yaral_arithmetic_expression(self, node) -> str:
+    def visit_yaral_arithmetic_expression(self, node: Any) -> str:
         return self.visit_arithmetic_expression(node)
 
     def visit_yaral_options_section(self, node: OptionsSection) -> str:
@@ -521,8 +521,8 @@ class YaraLGenerator(YaraLVisitor[str]):
     def visit_yaral_regex_pattern(self, node: RegexPattern) -> str:
         return self.visit_regex_pattern(node)
 
-    def visit_yaral_cidr_expression(self, node) -> str:
+    def visit_yaral_cidr_expression(self, node: Any) -> str:
         return self.visit_cidr_expression(node)
 
-    def visit_yaral_function_call(self, node) -> str:
+    def visit_yaral_function_call(self, node: Any) -> str:
         return self.visit_function_call(node)

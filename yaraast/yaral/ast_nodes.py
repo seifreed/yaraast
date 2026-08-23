@@ -83,7 +83,7 @@ def _require_optional_yaral_node(
 def _require_yaral_node_sequence(
     values: Any,
     field_name: str,
-    node_type: type[Any],
+    node_type: type[Any] | tuple[type[Any], ...],
     node_name: str,
 ) -> list[Any]:
     if not isinstance(values, list):
@@ -203,14 +203,14 @@ class MetaEntry(ASTNode):
     """Meta entry (key-value pair)."""
 
     key: str
-    value: str | int | bool
+    value: str | int | float | bool
 
     def validate_structure(self) -> None:
         """Validate YARA-L meta entry scalar fields."""
         self.validate_metadata()
         _require_nonempty_string(self.key, "MetaEntry key")
-        if not isinstance(self.value, str | int | bool):
-            msg = "MetaEntry value must be a string, integer, or boolean"
+        if not isinstance(self.value, str | int | float | bool):
+            msg = "MetaEntry value must be a string, number, or boolean"
             raise TypeError(msg)
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -221,7 +221,7 @@ class MetaEntry(ASTNode):
 class EventsSection(ASTNode):
     """YARA-L events section."""
 
-    statements: list[EventStatement] = field(default_factory=list)
+    statements: list[EventStatement | JoinCondition] = field(default_factory=list)
 
     def validate_structure(self) -> None:
         """Validate YARA-L event statements."""
@@ -229,8 +229,8 @@ class EventsSection(ASTNode):
         _require_yaral_node_sequence(
             self.statements,
             "EventsSection statements",
-            EventStatement,
-            "EventStatement",
+            (EventStatement, JoinCondition),
+            "EventStatement or JoinCondition",
         )
 
     def accept(self, visitor: _VisitorType) -> Any:

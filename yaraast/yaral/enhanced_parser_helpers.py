@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
+from yaraast.yaral._enhanced_parser_mixin import EnhancedParserMixinBase
 from yaraast.yaral._shared import parse_numeric_token_value
 from yaraast.yaral.ast_nodes import (
     EventVariable,
@@ -21,19 +22,21 @@ from yaraast.yaral.generator_helpers import format_literal
 from yaraast.yaral.tokens import YaraLTokenType
 
 
-class EnhancedYaraLParserHelpersMixin:
+class EnhancedYaraLParserHelpersMixin(EnhancedParserMixinBase):
     """Mixin with shared parsing helpers."""
 
     def _parse_udm_field_path(self) -> UDMFieldPath:
         """Parse UDM field path like metadata.event_type."""
-        parts = []
-        parts.append(self._consume(BaseTokenType.IDENTIFIER, "Expected field name").value)
+        parts: list[str] = []
+        parts.append(
+            cast(str, self._consume(BaseTokenType.IDENTIFIER, "Expected field name").value)
+        )
 
         while self._check(BaseTokenType.DOT) or self._check(BaseTokenType.LBRACKET):
             if self._check(BaseTokenType.DOT):
                 self._advance()
                 if self._check(BaseTokenType.IDENTIFIER):
-                    parts.append(self._advance().value)
+                    parts.append(cast(str, self._advance().value))
                 elif self._check(BaseTokenType.LBRACKET):
                     self._advance()
                     parts.append(self._parse_udm_bracket_part())
@@ -61,7 +64,7 @@ class EnhancedYaraLParserHelpersMixin:
         event = None
 
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
-            event = EventVariable(name=self._advance().value)
+            event = EventVariable(name=cast(str, self._advance().value))
             if self._check(BaseTokenType.DOT):
                 self._advance()
 
@@ -106,15 +109,12 @@ class EnhancedYaraLParserHelpersMixin:
         if self._check_keyword("in"):
             self._advance()
             return "in"
-        if (
-            self._check_keyword("not")
-            and self._peek_ahead(1)
-            and self._peek_ahead(1).value == "matches"
-        ):
+        next_token = self._peek_ahead(1)
+        if self._check_keyword("not") and next_token is not None and next_token.value == "matches":
             self._advance()
             self._advance()
             return "!~"
-        if self._check_keyword("not") and self._peek_ahead(1) and self._peek_ahead(1).value == "in":
+        if self._check_keyword("not") and next_token is not None and next_token.value == "in":
             self._advance()
             self._advance()
             return "not in"
@@ -143,14 +143,15 @@ class EnhancedYaraLParserHelpersMixin:
             self._advance()
             return False
         if self._check(BaseTokenType.STRING):
-            return StringLiteral(self._advance().value)
+            return StringLiteral(cast(str, self._advance().value))
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return parse_numeric_token_value(self._advance().value)
         if self._check_yaral_type(YaraLTokenType.REFERENCE_LIST):
-            name = self._advance().value.strip("%")
+            name = cast(str, self._advance().value).strip("%")
             return ReferenceList(name=name)
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
-            if self._peek_ahead(1) is None or self._peek_ahead(1).type != BaseTokenType.DOT:
+            next_token = self._peek_ahead(1)
+            if next_token is None or next_token.type != BaseTokenType.DOT:
                 return str(self._advance().value)
             return self._parse_udm_field_access()
         if self._check(BaseTokenType.IDENTIFIER):
@@ -252,7 +253,7 @@ class EnhancedYaraLParserHelpersMixin:
         """Parse regex pattern like /pattern/modifiers."""
         if self._check(BaseTokenType.REGEX):
             token = self._consume(BaseTokenType.REGEX, "Expected regex pattern")
-            value = token.value
+            value = cast(str, token.value)
             if value.startswith("/") and "/" in value[1:]:
                 last = value.rfind("/")
                 pattern = value[1:last]
@@ -274,9 +275,9 @@ class EnhancedYaraLParserHelpersMixin:
 
         modifiers = ""
         if self._check(BaseTokenType.IDENTIFIER):
-            token = self._peek()
-            if len(token.value) <= 3 and all(c in "igms" for c in token.value):
-                modifiers = self._advance().value
+            token_value = cast(str, self._peek().value)
+            if len(token_value) <= 3 and all(c in "igms" for c in token_value):
+                modifiers = cast(str, self._advance().value)
 
         return self._parse_regex_word_modifiers(
             RegexPattern(pattern=pattern, flags=list(modifiers))
@@ -292,11 +293,11 @@ class EnhancedYaraLParserHelpersMixin:
     def _parse_duration_parts(self) -> tuple[int, str]:
         """Parse a time duration into numeric value and unit."""
         if self._check_yaral_type(YaraLTokenType.TIME_LITERAL):
-            token = self._advance().value
+            token = cast(str, self._advance().value)
             number = "".join(ch for ch in token if ch.isdigit())
             unit = "".join(ch for ch in token if ch.isalpha())
             return int(number), unit
 
-        duration = int(self._consume(BaseTokenType.INTEGER, "Expected duration").value)
-        unit = self._consume(BaseTokenType.IDENTIFIER, "Expected time unit").value
+        duration = int(cast(int, self._consume(BaseTokenType.INTEGER, "Expected duration").value))
+        unit = cast(str, self._consume(BaseTokenType.IDENTIFIER, "Expected time unit").value)
         return duration, unit

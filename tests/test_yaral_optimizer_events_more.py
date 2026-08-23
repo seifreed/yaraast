@@ -1,4 +1,4 @@
-"""More coverage for YARA-L event optimizer mixin behavior."""
+"""Coverage for current YARA-L event optimizer behavior."""
 
 from __future__ import annotations
 
@@ -7,160 +7,40 @@ from yaraast.yaral.ast_nodes import (
     EventsSection,
     EventStatement,
     EventVariable,
+    JoinCondition,
     UDMFieldPath,
 )
 from yaraast.yaral.optimizer import YaraLOptimizer
-from yaraast.yaral.optimizer_events import LegacyEventStatement
 
 
-def _assign(field_parts: list[str], op: str, value: str | int) -> EventAssignment:
+def _assign(field_parts: list[str], operator: str, value: str | int) -> EventAssignment:
     return EventAssignment(
         event_var=EventVariable(name="$e"),
         field_path=UDMFieldPath(parts=field_parts),
-        operator=op,
+        operator=operator,
         value=value,
     )
 
 
-def _stmt(event_name: str, assignments: list[EventAssignment]) -> LegacyEventStatement:
-    return LegacyEventStatement(event=EventVariable(name=event_name), assignments=assignments)
+def test_visit_events_section_tracks_indexable_assignments_without_reordering() -> None:
+    optimizer = YaraLOptimizer()
+    indexed = _assign(["metadata", "event_type"], "=", "LOGIN")
+    untouched = _assign(["metadata", "description"], "contains", "login")
+    raw = EventStatement(text="re.regex($e.target.url, `login`)")
+    join = JoinCondition(left_event="$e", right_event="$other")
+    section = EventsSection(statements=[indexed, raw, join, untouched])
+
+    assert optimizer.visit_events_section(section) is section
+    assert section.statements == [indexed, raw, join, untouched]
+    assert optimizer.indexed_fields == {"metadata.event_type"}
+    assert optimizer.stats.indexes_suggested == 1
 
 
-def test_visit_events_section_short_circuit_for_event_assignment_nodes() -> None:
-    opt = YaraLOptimizer()
-    stmt = _assign(["metadata", "event_type"], "=", "LOGIN")
-    section = EventsSection(statements=[stmt])
+def test_event_visitors_return_current_ast_nodes() -> None:
+    optimizer = YaraLOptimizer()
+    raw = EventStatement(text="$e")
+    assignment = _assign(["principal", "ip"], "!=", "127.0.0.1")
 
-    assert opt.visit_events_section(section) is section
-
-
-def test_optimize_event_statement_and_selectivity_scoring_paths() -> None:
-    opt = YaraLOptimizer()
-    assignments = [
-        _assign(["metadata", "event_type"], "=", "LOGIN"),
-        _assign(["principal", "hostname"], "!=", "badhost"),
-        _assign(["principal", "user"], ">", 7),
-        _assign(["metadata", "timestamp"], "=~", "/abc/"),
-    ]
-    stmt = _stmt("evt", assignments)
-
-    optimized_stmt = opt._optimize_event_statement(stmt)
-    assert optimized_stmt is stmt
-    assert "metadata.event_type" in opt.indexed_fields
-    assert "principal.hostname" in opt.indexed_fields
-    assert opt.stats.indexes_suggested >= 2
-
-    # Direct score checks for branches in _calculate_selectivity_score
-    assert opt._calculate_selectivity_score(assignments[0]) > opt._calculate_selectivity_score(
-        assignments[2]
-    )
-    assert opt._calculate_selectivity_score(_assign(["principal", "ip"], "!~", "/abc/")) > 0
-    assert opt._calculate_selectivity_score(_assign(["principal", "ip", "[0]"], "!~", "/abc/")) > 0
-    assert opt._calculate_selectivity_score(_assign(["metadata", "other"], "contains", 1)) == 0.0
-    assert opt._calculate_selectivity_score(_assign(["principal", "user"], "contains", 1)) > 0
-
-    plain_stmt = EventStatement()
-    assert opt.visit_event_statement(plain_stmt) is plain_stmt
-    assert opt.visit_event_assignment(assignments[0]) is assignments[0]
-    empty_stmt = _stmt("evt", [])
-    assert opt._optimize_event_statement(empty_stmt) is empty_stmt
-
-
-def test_remove_redundant_assignments_and_similarity_grouping() -> None:
-    opt = YaraLOptimizer()
-
-    a1 = _assign(["principal", "ip"], "=", "1.2.3.4")
-    a2 = _assign(["principal", "ip"], "!=", "1.2.3.4")  # contradictory
-    a3 = _assign(["principal", "ip"], "!=", "1.2.3.4")  # redundant with a2
-    a4 = _assign(["principal", "hostname"], "=", "h1")
-
-    filtered = opt._remove_redundant_assignments([a1, a2, a3, a4])
-    assert a4 in filtered
-    assert opt.stats.redundant_checks_removed >= 2
-
-    opt2 = YaraLOptimizer()
-    replaced = opt2._remove_redundant_assignments(
-        [
-            _assign(["principal", "ip"], "!=", "1.1.1.1"),
-            _assign(["principal", "ip"], "=", "1.1.1.1"),
-        ]
-    )
-    assert len(replaced) == 1
-    assert replaced[0].operator == "="
-
-    keep_both = opt._remove_redundant_assignments(
-        [
-            _assign(["principal", "ip"], "=", "1.1.1.1"),
-            _assign(["principal", "ip"], "=", "2.2.2.2"),
-        ]
-    )
-    assert len(keep_both) == 2
-
-    opt3 = YaraLOptimizer()
-    exact_redundant = opt3._remove_redundant_assignments(
-        [
-            _assign(["principal", "hostname"], "=", "h1"),
-            _assign(["principal", "hostname"], "=", "h1"),
-        ]
-    )
-    assert len(exact_redundant) == 1
-    assert opt3.stats.redundant_checks_removed == 1
-
-    opt4 = YaraLOptimizer()
-    boolean_numeric_operators = opt4._remove_redundant_assignments(
-        [
-            _assign(["principal", "ip"], ">=", True),
-            _assign(["principal", "ip"], ">", False),
-        ]
-    )
-    assert [assignment.value for assignment in boolean_numeric_operators] == [True, False]
-    assert opt4.stats.redundant_checks_removed == 0
-
-    s1 = _stmt("login", [a1, a4])
-    s2 = _stmt("login", [_assign(["principal", "ip"], "=", "2.2.2.2")])
-    s3 = _stmt("dns", [_assign(["principal", "ip"], "=", "3.3.3.3")])
-    s4 = _stmt("login", [])
-
-    assert opt._are_similar_events(s1, s2) is True
-    assert opt._are_similar_events(s1, s3) is False
-    assert opt._are_similar_events(s4, s2) is False
-
-    grouped = opt._group_event_statements([s1, s2, s3])
-    assert len(grouped) == 2
-    assert len(grouped[0]) == 2
-
-
-def test_combine_event_statements_edge_cases_and_compat_wrapper() -> None:
-    opt = YaraLOptimizer()
-    s1 = _stmt("x", [_assign(["principal", "ip"], "=", "1.1.1.1")])
-    s2 = _stmt("x", [_assign(["principal", "hostname"], "=", "h")])
-    s3 = _stmt("x", [_assign(["principal", "ip"], "=", "2.2.2.2")])
-
-    assert opt._combine_event_statements([]) is None
-    assert opt._combine_event_statements([s1]) is s1
-
-    combined = opt._combine_event_statements([s1, s2, s3])
-    assert isinstance(combined, LegacyEventStatement)
-    assert combined.event.name == "x"
-    assert combined.assignments is not None
-    assert len(combined.assignments) == 2
-
-    s4 = _stmt("x", [])
-    combined2 = opt._combine_event_statements([s1, s4])
-    assert isinstance(combined2, LegacyEventStatement)
-    assert combined2.assignments is not None
-    assert len(combined2.assignments) == 1
-
-
-def test_visit_events_section_grouping_branch_tracks_stats() -> None:
-    opt = YaraLOptimizer()
-    s1 = _stmt("x", [_assign(["principal", "ip"], "=", "1.1.1.1")])
-    s2 = _stmt("x", [_assign(["principal", "ip"], "=", "2.2.2.2")])
-
-    section = opt.visit_events_section(EventsSection(statements=[s1, s2]))
-    assert len(section.statements) == 1
-
-    assert opt.stats.events_optimized == 1
-
-    single = opt.visit_events_section(EventsSection(statements=[_stmt("y", [])]))
-    assert len(single.statements) == 1
+    assert optimizer.visit_event_statement(raw) is raw
+    assert optimizer.visit_event_assignment(assignment) is assignment
+    assert optimizer.indexed_fields == {"principal.ip"}

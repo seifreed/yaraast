@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from yaraast.yaral._validator_mixin import ValidatorMixinBase
+
 if TYPE_CHECKING:
     from yaraast.yaral.ast_nodes import YaraLFile, YaraLRule
 
 
-class RuleValidationMixin:
+class RuleValidationMixin(ValidatorMixinBase):
     """Validate file/rule-level structure and cross-section references."""
 
     def visit_yaral_file(self, node: YaraLFile) -> None:

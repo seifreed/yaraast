@@ -110,7 +110,7 @@ def test_generator_rejects_invalid_yaral_file_structure() -> None:
                 ]
             ),
             TypeError,
-            "EventsSection statements must contain EventStatement nodes",
+            "EventsSection statements must contain EventStatement or JoinCondition nodes",
         ),
     ]
 

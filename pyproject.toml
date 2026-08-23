@@ -212,12 +212,6 @@ ignore_errors = false
 
 [[tool.mypy.overrides]]
 module = [
-    "yaraast.yaral.*",
-]
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = [
     "yaraast.serialization._serialization_primitives",
     "yaraast.serialization.ast_diff_meta",
     "yaraast.serialization.roundtrip_serializer",

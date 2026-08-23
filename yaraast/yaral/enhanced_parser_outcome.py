@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
+from yaraast.yaral._enhanced_parser_mixin import EnhancedParserMixinBase
 from yaraast.yaral._shared import parse_numeric_token_value
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
@@ -46,7 +47,7 @@ _AGGREGATION_FUNCTIONS = {
 }
 
 
-class EnhancedYaraLParserOutcomeMixin:
+class EnhancedYaraLParserOutcomeMixin(EnhancedParserMixinBase):
     """Mixin for outcome parsing."""
 
     def _parse_outcome_section(self) -> OutcomeSection:
@@ -68,7 +69,7 @@ class EnhancedYaraLParserOutcomeMixin:
             elif self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
                 BaseTokenType.STRING_IDENTIFIER,
             ):
-                var_name = self._advance().value
+                var_name = cast(str, self._advance().value)
                 self._consume(BaseTokenType.EQ, "Expected '=' after outcome variable")
                 expression = self._parse_outcome_expression()
                 assignments.append(
@@ -177,7 +178,7 @@ class EnhancedYaraLParserOutcomeMixin:
         left = self._parse_outcome_multiplicative_expression()
 
         while self._check(BaseTokenType.PLUS) or self._check(BaseTokenType.MINUS):
-            operator = self._advance().value
+            operator = cast(str, self._advance().value)
             right = self._parse_outcome_multiplicative_expression()
             left = ArithmeticExpression(operator=operator, left=left, right=right)
 
@@ -187,7 +188,7 @@ class EnhancedYaraLParserOutcomeMixin:
         left = self._parse_outcome_primary_expression()
 
         while self._check(BaseTokenType.MULTIPLY) or self._check(BaseTokenType.DIVIDE):
-            operator = self._advance().value
+            operator = cast(str, self._advance().value)
             right = self._parse_outcome_primary_expression()
             left = ArithmeticExpression(operator=operator, left=left, right=right)
 
@@ -263,7 +264,7 @@ class EnhancedYaraLParserOutcomeMixin:
 
         self._consume(BaseTokenType.RPAREN, f"Expected ')' after {func_name} arguments")
 
-        return AggregationFunction(function=func_name, arguments=arguments)
+        return AggregationFunction(function=cast(str, func_name), arguments=arguments)
 
     def _parse_outcome_function_call(self) -> FunctionCall:
         """Parse a generic outcome function call."""
