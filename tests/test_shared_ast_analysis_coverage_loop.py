@@ -35,15 +35,15 @@ class _DirRaisingPath(Path):
     filesystem node where the stat call fails with EACCES or EIO).  The
     constructor argument is only used as the string representation."""
 
-    _flavour = Path(".")._flavour if hasattr(Path("."), "_flavour") else None  # type: ignore[attr-defined]
+    _flavour = getattr(Path("."), "_flavour", None)
 
     def __new__(cls, *args: Any, **kwargs: Any) -> _DirRaisingPath:
         return super().__new__(cls, *args, **kwargs)
 
-    def is_dir(self) -> bool:  # type: ignore[override]
+    def is_dir(self) -> bool:
         raise OSError("simulated is_dir failure")
 
-    def exists(self) -> bool:  # type: ignore[override]
+    def exists(self) -> bool:
         return True
 
 

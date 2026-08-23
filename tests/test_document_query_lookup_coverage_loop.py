@@ -51,7 +51,7 @@ from lsprotocol.types import Position, Range
 
 from yaraast.lsp import document_query_lookup as lookup
 from yaraast.lsp.document_context import DocumentContext
-from yaraast.lsp.document_types import path_to_uri
+from yaraast.shared.uri import path_to_uri
 
 # ---------------------------------------------------------------------------
 # Helpers

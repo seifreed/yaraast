@@ -10,9 +10,10 @@ from urllib.parse import urlparse
 import pytest
 
 from yaraast.lsp.document_links import DocumentLinksProvider
-from yaraast.lsp.document_types import SymbolRecord, path_to_uri
+from yaraast.lsp.document_types import SymbolRecord
 from yaraast.lsp.runtime import DocumentContext, LspRuntime
 from yaraast.lsp.utf16 import utf8_col_to_utf16
+from yaraast.shared.uri import path_to_uri
 
 
 @pytest.mark.parametrize("text", [None, 1, b'import "pe"', object()])

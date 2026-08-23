@@ -13,8 +13,8 @@ from pathlib import Path
 import random
 from typing import cast
 
-type ComplexityMix = dict[str, float]
-type GenerationStats = dict[str, int | float | str | ComplexityMix]
+ComplexityMix = dict[str, float]
+GenerationStats = dict[str, int | float | str | ComplexityMix]
 
 
 class YaraTestFileGenerator:
