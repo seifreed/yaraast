@@ -9,6 +9,8 @@ exact outcomes. No mocks, no stubs, no inline suppressions.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.yaral.ast_nodes import (
@@ -191,7 +193,7 @@ class TestRequireYaralNodeErrors:
             cidr="10.0.0.0/8",
         )
         # Replace field with invalid type to trigger _require_yaral_node error
-        node.field = "not-a-node"  # type: ignore[assignment]
+        cast(Any, node).field = "not-a-node"
         with pytest.raises(TypeError, match="CIDRExpression field must be a UDMFieldAccess"):
             node.validate_structure()
 
@@ -205,7 +207,7 @@ class TestRequireOptionalYaralNodeErrors:
     def test_wrong_type_raises_typeerror(self) -> None:
         """Lines 77-78: non-None, wrong-type value raises TypeError."""
         rule = YaraLRule(name="test_rule")
-        rule.meta = "not-a-meta-section"  # type: ignore[assignment]
+        cast(Any, rule).meta = "not-a-meta-section"
         with pytest.raises(TypeError, match="YaraLRule meta must be an MetaSection"):
             rule.validate_structure()
 
@@ -219,14 +221,14 @@ class TestRequireYaralNodeSequenceErrors:
     def test_non_list_raises_typeerror(self) -> None:
         """Lines 90-91: a non-list value raises TypeError."""
         section = MetaSection()
-        section.entries = "not-a-list"  # type: ignore[assignment]
+        cast(Any, section).entries = "not-a-list"
         with pytest.raises(TypeError, match="MetaSection entries must be a list"):
             section.validate_structure()
 
     def test_wrong_element_type_raises_typeerror(self) -> None:
         """Lines 94-95: a list containing a wrong-type element raises TypeError."""
         section = EventsSection()
-        section.statements = ["plain-string"]  # type: ignore[list-item]
+        section.statements = cast(Any, ["plain-string"])
         with pytest.raises(TypeError, match="EventsSection statements must contain EventStatement"):
             section.validate_structure()
 
@@ -240,7 +242,7 @@ class TestRequireYaralStringSequenceErrors:
     def test_non_list_raises_typeerror(self) -> None:
         """Lines 102-103: non-list raises TypeError."""
         path = _udm_path("principal")
-        path.parts = "not-a-list"  # type: ignore[assignment]
+        cast(Any, path).parts = "not-a-list"
         with pytest.raises(TypeError, match="UDMFieldPath parts must be a list"):
             path.validate_structure()
 
@@ -261,7 +263,7 @@ class TestRequireYaralInt:
     def test_float_raises_typeerror(self) -> None:
         """Lines 110-112: float is rejected."""
         cond = EventCountCondition(event="e", operator=">", count=3)
-        cond.count = 3.5  # type: ignore[assignment]
+        cast(Any, cond).count = 3.5
         with pytest.raises(TypeError, match="EventCountCondition count must be an integer"):
             cond.validate_structure()
 
@@ -286,7 +288,10 @@ class TestValidateYaralValue:
 
     def test_invalid_value_type_raises_typeerror(self) -> None:
         """Lines 122-123: an object that is neither ASTNode nor scalar raises TypeError."""
-        assignment = OutcomeAssignment(variable="$result", expression=object())  # type: ignore[arg-type]
+        assignment = OutcomeAssignment(
+            variable="$result",
+            expression=cast(Any, object()),
+        )
         with pytest.raises(TypeError, match="OutcomeAssignment expression must be a YARA-L value"):
             assignment.validate_structure()
 
@@ -353,7 +358,7 @@ class TestYaraLRuleRuleType:
 class TestMetaEntryValidation:
     def test_invalid_value_type_raises_typeerror(self) -> None:
         """Lines 213-214: a non-(str|int|bool) value raises TypeError."""
-        entry = MetaEntry(key="author", value=["invalid"])  # type: ignore[arg-type]
+        entry = MetaEntry(key="author", value=cast(Any, ["invalid"]))
         with pytest.raises(
             TypeError, match="MetaEntry value must be a string, integer, or boolean"
         ):
@@ -670,7 +675,7 @@ class TestNullCheckCondition:
 
     def test_validate_structure_wrong_negated_type_raises_typeerror(self) -> None:
         """Lines 623-625: non-bool negated raises TypeError."""
-        node = NullCheckCondition(field="$e.field", negated=1)  # type: ignore[arg-type]
+        node = NullCheckCondition(field="$e.field", negated=cast(Any, 1))
         with pytest.raises(TypeError, match="NullCheckCondition negated must be a boolean"):
             node.validate_structure()
 
@@ -765,7 +770,7 @@ class TestAggregationFunction:
 
     def test_validate_structure_non_list_arguments_raises_typeerror(self) -> None:
         """Lines 689-691: non-list arguments raises TypeError."""
-        node = AggregationFunction(function="count", arguments="bad")  # type: ignore[arg-type]
+        node = AggregationFunction(function="count", arguments=cast(Any, "bad"))
         with pytest.raises(TypeError, match="AggregationFunction arguments must be a list"):
             node.validate_structure()
 
@@ -835,7 +840,7 @@ class TestOptionsSection:
 
     def test_validate_structure_non_dict_raises_typeerror(self) -> None:
         """Lines 751-753: non-dict options raises TypeError."""
-        node = OptionsSection(options="bad")  # type: ignore[arg-type]
+        node = OptionsSection(options=cast(Any, "bad"))
         with pytest.raises(TypeError, match="OptionsSection options must be a dictionary"):
             node.validate_structure()
 
@@ -926,7 +931,7 @@ class TestFunctionCall:
 
     def test_validate_structure_non_list_arguments_raises_typeerror(self) -> None:
         """Lines 817-819: non-list arguments raises TypeError."""
-        node = FunctionCall(function="re.regex", arguments="bad")  # type: ignore[arg-type]
+        node = FunctionCall(function="re.regex", arguments=cast(Any, "bad"))
         with pytest.raises(TypeError, match="FunctionCall arguments must be a list"):
             node.validate_structure()
 
@@ -1020,7 +1025,7 @@ class TestYaraLFile:
         """Lines 865-867: add_rule raises TypeError for non-YaraLRule input."""
         yfile = YaraLFile()
         with pytest.raises(TypeError, match="YaraL rule input must be a YaraLRule"):
-            yfile.add_rule("not-a-rule")  # type: ignore[arg-type]
+            yfile.add_rule(cast(Any, "not-a-rule"))
 
 
 # ===========================================================================

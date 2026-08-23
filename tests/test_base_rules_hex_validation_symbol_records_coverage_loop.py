@@ -15,7 +15,7 @@ No mocks, stubs, or artificial scaffolding are used.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from lsprotocol.types import Position, Range
 import pytest
@@ -717,7 +717,7 @@ class TestResolveSymbolFromSymbolRecords:
         pos = Position(line=0, character=10)
 
         # Act
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         # Assert
         assert result is None
@@ -728,7 +728,7 @@ class TestResolveSymbolFromSymbolRecords:
         ctx = _StubDocumentContext("file:///test.yar", [sym])
         pos = Position(line=0, character=5)
 
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         assert result is None
 
@@ -737,7 +737,7 @@ class TestResolveSymbolFromSymbolRecords:
         ctx = _StubDocumentContext("file:///test.yar", [sym])
         pos = Position(line=0, character=5)
 
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         assert result is not None
         assert result.kind == "string"
@@ -748,7 +748,7 @@ class TestResolveSymbolFromSymbolRecords:
         ctx = _StubDocumentContext("file:///test.yar", [sym])
         pos = Position(line=2, character=0)
 
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         assert result is not None
         assert result.kind == "rule"
@@ -761,7 +761,7 @@ class TestResolveSymbolFromSymbolRecords:
         # Position falls inside both symbols
         pos = Position(line=2, character=5)
 
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         # The narrower symbol should win
         assert result is not None
@@ -772,7 +772,7 @@ class TestResolveSymbolFromSymbolRecords:
         ctx = _StubDocumentContext("file:///test.yar", [sym])
         pos = Position(line=1, character=5)
 
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         assert result is not None
         assert result.kind == "section"
@@ -782,7 +782,7 @@ class TestResolveSymbolFromSymbolRecords:
         ctx = _StubDocumentContext("file:///test.yar", [sym])
         pos = Position(line=0, character=5)
 
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         assert result is not None
         assert result.kind == "module"
@@ -792,7 +792,7 @@ class TestResolveSymbolFromSymbolRecords:
         ctx = _StubDocumentContext("file:///test.yar", [sym])
         pos = Position(line=3, character=10)
 
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         assert result is not None
         assert result.kind == "meta"
@@ -801,7 +801,7 @@ class TestResolveSymbolFromSymbolRecords:
         ctx = _StubDocumentContext("file:///empty.yar", [])
         pos = Position(line=0, character=0)
 
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         assert result is None
 
@@ -814,7 +814,7 @@ class TestResolveSymbolFromSymbolRecords:
         ctx = _StubDocumentContext("file:///test.yar", [wide, narrow])
         pos = Position(line=5, character=5)
 
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         assert result is not None
         assert result.name == "$inner"
@@ -828,7 +828,7 @@ class TestResolveSymbolFromSymbolRecords:
         ctx = _StubDocumentContext("file:///test.yar", [narrow, wide])
         pos = Position(line=5, character=5)
 
-        result = resolve_symbol_from_symbol_records(ctx, pos)  # type: ignore[arg-type]
+        result = resolve_symbol_from_symbol_records(cast(Any, ctx), pos)
 
         assert result is not None
         assert result.name == "$first"

@@ -18,6 +18,7 @@ directly.
 from __future__ import annotations
 
 import re
+from typing import Any, cast
 
 import pytest
 
@@ -273,7 +274,7 @@ class TestDialectSpecValidation:
         # Lines 218-219
         with pytest.raises(TypeError, match="DialectSpec dialect must be a YaraDialect"):
             DialectSpec(
-                dialect="YARA",  # type: ignore[arg-type]
+                dialect=cast(Any, "YARA"),
                 parser_factory=lambda t: None,
                 detection_patterns=[(r"\bx\b", re.IGNORECASE)],
             )
@@ -283,7 +284,7 @@ class TestDialectSpecValidation:
         with pytest.raises(TypeError, match="parser_factory must be callable"):
             DialectSpec(
                 dialect=YaraDialect.YARA,
-                parser_factory="not_callable",  # type: ignore[arg-type]
+                parser_factory=cast(Any, "not_callable"),
                 detection_patterns=[(r"\bx\b", re.IGNORECASE)],
             )
 
@@ -293,7 +294,7 @@ class TestDialectSpecValidation:
             DialectSpec(
                 dialect=YaraDialect.YARA,
                 parser_factory=lambda t: None,
-                detection_patterns=(r"\bx\b", re.IGNORECASE),  # type: ignore[arg-type]
+                detection_patterns=cast(Any, (r"\bx\b", re.IGNORECASE)),
             )
 
     def test_non_tuple_pattern_entry_raises_type_error(self) -> None:
@@ -302,7 +303,7 @@ class TestDialectSpecValidation:
             DialectSpec(
                 dialect=YaraDialect.YARA,
                 parser_factory=lambda t: None,
-                detection_patterns=[r"\bx\b"],  # type: ignore[list-item]
+                detection_patterns=cast(Any, [r"\bx\b"]),
             )
 
     def test_three_element_tuple_pattern_entry_raises_type_error(self) -> None:
@@ -311,7 +312,7 @@ class TestDialectSpecValidation:
             DialectSpec(
                 dialect=YaraDialect.YARA,
                 parser_factory=lambda t: None,
-                detection_patterns=[(r"\bx\b", re.IGNORECASE, "extra")],  # type: ignore[list-item]
+                detection_patterns=cast(Any, [(r"\bx\b", re.IGNORECASE, "extra")]),
             )
 
     def test_non_string_pattern_raises_type_error(self) -> None:
@@ -320,7 +321,7 @@ class TestDialectSpecValidation:
             DialectSpec(
                 dialect=YaraDialect.YARA,
                 parser_factory=lambda t: None,
-                detection_patterns=[(123, re.IGNORECASE)],  # type: ignore[list-item]
+                detection_patterns=cast(Any, [(123, re.IGNORECASE)]),
             )
 
     def test_empty_pattern_raises_value_error(self) -> None:
@@ -338,7 +339,7 @@ class TestDialectSpecValidation:
             DialectSpec(
                 dialect=YaraDialect.YARA,
                 parser_factory=lambda t: None,
-                detection_patterns=[(r"\bx\b", 0)],  # type: ignore[list-item]
+                detection_patterns=cast(Any, [(r"\bx\b", 0)]),
             )
 
     def test_invalid_regex_pattern_raises_value_error(self) -> None:
@@ -366,7 +367,7 @@ class TestDialectSpecValidation:
                 dialect=YaraDialect.YARA,
                 parser_factory=lambda t: None,
                 detection_patterns=[(r"\bx\b", re.IGNORECASE)],
-                priority=1.5,  # type: ignore[arg-type]
+                priority=cast(Any, 1.5),
             )
 
 
@@ -381,11 +382,11 @@ class TestDialectRegistryRegister:
     def test_register_non_spec_raises_type_error(self) -> None:
         # Lines 259-260
         with pytest.raises(TypeError, match="Dialect spec must be a DialectSpec"):
-            DialectRegistry.register("not_a_spec")  # type: ignore[arg-type]
+            DialectRegistry.register(cast(Any, "not_a_spec"))
 
     def test_register_none_raises_type_error(self) -> None:
         with pytest.raises(TypeError, match="Dialect spec must be a DialectSpec"):
-            DialectRegistry.register(None)  # type: ignore[arg-type]
+            DialectRegistry.register(cast(Any, None))
 
 
 # ---------------------------------------------------------------------------
@@ -399,7 +400,7 @@ class TestDialectRegistryGetParserFactory:
     def test_non_dialect_argument_raises_type_error(self) -> None:
         # Lines 280-281
         with pytest.raises(TypeError, match="Parser factory dialect must be a YaraDialect"):
-            DialectRegistry.get_parser_factory("YARA")  # type: ignore[arg-type]
+            DialectRegistry.get_parser_factory(cast(Any, "YARA"))
 
     def test_unregistered_dialect_returns_none(self) -> None:
         """After clearing the registry the YARA dialect has no factory — returns None.
@@ -487,11 +488,11 @@ class TestDetectDialect:
     def test_non_string_input_raises_type_error(self) -> None:
         # Lines 334-335
         with pytest.raises(TypeError, match="dialect content must be a string"):
-            detect_dialect(123)  # type: ignore[arg-type]
+            detect_dialect(cast(Any, 123))
 
     def test_none_input_raises_type_error(self) -> None:
         with pytest.raises(TypeError, match="dialect content must be a string"):
-            detect_dialect(None)  # type: ignore[arg-type]
+            detect_dialect(cast(Any, None))
 
     def test_classic_yara_returns_yara_dialect(self) -> None:
         result = detect_dialect('rule x { strings: $a = "hello" condition: $a }')

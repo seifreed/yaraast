@@ -11,7 +11,7 @@ calls.  No mocks, no stubs, no type: ignore suppressions.
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -292,7 +292,7 @@ def test_sequence_or_empty_returns_empty_list_and_logs_error_for_non_sequence() 
     result = inf.infer(
         PatternMatch(
             value=IntegerLiteral(value=1),
-            cases=42,  # type: ignore[arg-type]
+            cases=cast(Any, 42),
         )
     )
     assert isinstance(result, UnknownType)
@@ -353,7 +353,7 @@ def test_visit_integer_literal_bool_value_returns_unknown_with_error() -> None:
 def test_visit_integer_literal_string_value_returns_unknown_with_error() -> None:
     """visit_integer_literal rejects a non-int value."""
     inf = _inf()
-    result = inf.infer(IntegerLiteral(value="nope"))  # type: ignore[arg-type]
+    result = inf.infer(IntegerLiteral(value=cast(Any, "nope")))
     assert isinstance(result, UnknownType)
     assert "Integer literal value must be an integer" in inf.errors
 
@@ -381,7 +381,7 @@ def test_visit_double_literal_bool_value_returns_unknown() -> None:
 def test_visit_double_literal_non_numeric_returns_unknown() -> None:
     """visit_double_literal rejects a non-numeric value."""
     inf = _inf()
-    result = inf.infer(DoubleLiteral(value="bad"))  # type: ignore[arg-type]
+    result = inf.infer(DoubleLiteral(value=cast(Any, "bad")))
     assert isinstance(result, UnknownType)
     assert "Double literal value must be numeric" in inf.errors
 
@@ -417,7 +417,7 @@ def test_visit_string_literal_valid_returns_string_type() -> None:
 def test_visit_string_literal_non_string_value_returns_unknown() -> None:
     """visit_string_literal rejects a non-string value."""
     inf = _inf()
-    result = inf.infer(StringLiteral(value=42))  # type: ignore[arg-type]
+    result = inf.infer(StringLiteral(value=cast(Any, 42)))
     assert isinstance(result, UnknownType)
     assert "String literal value must be a string" in inf.errors
 
@@ -437,7 +437,7 @@ def test_visit_regex_literal_valid_returns_regex_type() -> None:
 def test_visit_regex_literal_non_string_pattern_returns_unknown() -> None:
     """visit_regex_literal rejects a non-string pattern."""
     inf = _inf()
-    result = inf.infer(RegexLiteral(pattern=99))  # type: ignore[arg-type]
+    result = inf.infer(RegexLiteral(pattern=cast(Any, 99)))
     assert isinstance(result, UnknownType)
     assert "Regex literal pattern must be a string" in inf.errors
 
@@ -445,7 +445,7 @@ def test_visit_regex_literal_non_string_pattern_returns_unknown() -> None:
 def test_visit_regex_literal_non_string_modifiers_returns_unknown() -> None:
     """visit_regex_literal rejects non-string modifiers."""
     inf = _inf()
-    result = inf.infer(RegexLiteral(pattern="ok", modifiers=42))  # type: ignore[arg-type]
+    result = inf.infer(RegexLiteral(pattern="ok", modifiers=cast(Any, 42)))
     assert isinstance(result, UnknownType)
     assert "Regex literal modifiers must be a string" in inf.errors
 
@@ -472,7 +472,7 @@ def test_visit_boolean_literal_false_returns_boolean_type() -> None:
 def test_visit_boolean_literal_non_bool_value_returns_unknown() -> None:
     """visit_boolean_literal rejects a non-boolean value."""
     inf = _inf()
-    result = inf.infer(BooleanLiteral(value=1))  # type: ignore[arg-type]
+    result = inf.infer(BooleanLiteral(value=cast(Any, 1)))
     assert isinstance(result, UnknownType)
     assert "Boolean literal value must be a boolean" in inf.errors
 
@@ -485,7 +485,7 @@ def test_visit_boolean_literal_non_bool_value_returns_unknown() -> None:
 def test_visit_identifier_non_string_name_returns_unknown() -> None:
     """visit_identifier rejects a non-string name before calling ops."""
     inf = _inf()
-    result = inf.infer(Identifier(name=42))  # type: ignore[arg-type]
+    result = inf.infer(Identifier(name=cast(Any, 42)))
     assert isinstance(result, UnknownType)
     assert "Identifier name must be a string" in inf.errors
 
@@ -517,7 +517,7 @@ def test_visit_string_identifier_dollar_without_scope_returns_unknown() -> None:
 def test_visit_string_identifier_invalid_name_type_returns_unknown() -> None:
     """visit_string_identifier rejects non-string name through normalize."""
     inf = _inf()
-    result = inf.infer(StringIdentifier(name=123))  # type: ignore[arg-type]
+    result = inf.infer(StringIdentifier(name=cast(Any, 123)))
     assert isinstance(result, UnknownType)
     assert inf.errors
 
@@ -565,7 +565,7 @@ def test_visit_string_wildcard_valid_returns_string_set_type() -> None:
 def test_visit_string_wildcard_invalid_pattern_returns_unknown() -> None:
     """visit_string_wildcard rejects an invalid pattern and logs an error."""
     inf = _inf()
-    result = inf.infer(StringWildcard(pattern=99))  # type: ignore[arg-type]
+    result = inf.infer(StringWildcard(pattern=cast(Any, 99)))
     assert isinstance(result, UnknownType)
     assert inf.errors
 
