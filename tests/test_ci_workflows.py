@@ -34,6 +34,10 @@ def test_ci_runs_coverage_and_real_graphviz_without_hidden_test_ignores() -> Non
     assert "python scripts/benchmark_parser_runtime.py benchmark-results/parser.json" in workflow
     assert "python scripts/benchmark_lsp_runtime.py benchmark-results/lsp.json" in workflow
     assert "name: benchmark-results" in workflow
+    assert "fuzz:" in workflow
+    assert 'pip install -e ".[fuzz]"' in workflow
+    assert "python -m fuzz.run_parser_fuzz fuzz/corpus/parser" in workflow
+    assert "-atheris_runs=10000 -max_len=65536 -timeout=5" in workflow
 
 
 def test_ci_audits_and_packages_the_vscode_extension() -> None:

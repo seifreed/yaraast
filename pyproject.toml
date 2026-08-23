@@ -56,6 +56,9 @@ conformance = [
     "yara-python==4.5.4",
     "yara-x==1.19.0",
 ]
+fuzz = [
+    "atheris==3.1.0; sys_platform == 'linux'",
+]
 performance = [
     "psutil>=5.9.0",
 ]
@@ -136,6 +139,7 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "hypothesis: marks property-based tests using hypothesis",
+    "fuzz: marks fuzz-target regression tests",
     "libyara: marks tests that require yara-python",
     "quality: marks tests for code quality metrics",
 ]

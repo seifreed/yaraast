@@ -208,6 +208,26 @@ jobs:
           name: benchmark-results
           path: benchmark-results/
 
+  fuzz:
+    name: Atheris parser fuzzing
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install fuzzer
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[fuzz]"
+
+      - name: Fuzz parser, generator, and reparse path
+        run: |
+          python -m fuzz.run_parser_fuzz fuzz/corpus/parser -atheris_runs=10000 -max_len=65536 -timeout=5
+
   extension:
     name: VS Code extension
     runs-on: ubuntu-24.04
