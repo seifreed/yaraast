@@ -12,10 +12,13 @@ from yaraast.yaral.validator import YaraLValidator
 
 CORPUS_DIR = Path(__file__).parent / "corpus" / "conformance" / "yaral-2026-08"
 CORPUS_FILES = sorted(CORPUS_DIR.glob("*.yaral"))
+INVALID_CORPUS_DIR = Path(__file__).parent / "corpus" / "conformance" / "yaral-2026-08-invalid"
+INVALID_CORPUS_FILES = sorted(INVALID_CORPUS_DIR.glob("*.yaral"))
 
 
 def test_yaral_snapshot_corpus_is_non_empty() -> None:
     assert CORPUS_FILES
+    assert INVALID_CORPUS_FILES
 
 
 @pytest.mark.parametrize("rule_file", CORPUS_FILES, ids=lambda path: path.stem)
@@ -34,3 +37,15 @@ def test_yaral_snapshot_parses_validates_and_round_trips(rule_file: Path) -> Non
     assert regenerated_parser.errors == []
     assert [rule.name for rule in regenerated_ast.rules] == [rule.name for rule in ast.rules]
     assert YaraLGenerator().generate(regenerated_ast) == generated
+
+
+@pytest.mark.parametrize("rule_file", INVALID_CORPUS_FILES, ids=lambda path: path.stem)
+def test_yaral_invalid_snapshot_produces_diagnostics(rule_file: Path) -> None:
+    parser = EnhancedYaraLParser(rule_file.read_text(encoding="utf-8"))
+    ast = parser.parse()
+    validation_errors, _warnings = YaraLValidator().validate(ast)
+    diagnostics = [str(error) for error in parser.errors] + [
+        str(error) for error in validation_errors
+    ]
+
+    assert diagnostics

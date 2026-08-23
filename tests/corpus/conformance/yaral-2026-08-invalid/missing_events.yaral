@@ -1,0 +1,4 @@
+rule MissingEvents {
+  condition:
+    true
+}

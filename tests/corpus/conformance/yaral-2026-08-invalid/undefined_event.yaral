@@ -1,0 +1,7 @@
+rule UndefinedEvent {
+  events:
+    $e.metadata.event_type = "USER_LOGIN"
+
+  condition:
+    $missing
+}

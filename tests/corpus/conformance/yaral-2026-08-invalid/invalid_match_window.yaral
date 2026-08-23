@@ -1,0 +1,11 @@
+rule InvalidMatchWindow {
+  events:
+    $e.metadata.event_type = "USER_LOGIN"
+    $e.principal.user.userid = $user
+
+  match:
+    $user over 5fortnights
+
+  condition:
+    $e
+}
