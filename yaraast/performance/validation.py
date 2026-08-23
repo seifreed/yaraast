@@ -11,7 +11,11 @@ from yaraast.shared.numeric_validation import (
     validate_positive_int_setting,
     validate_positive_number_setting,
 )
-from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
+from yaraast.shared.path_safety import (
+    path_has_symlink_ancestor,
+    path_is_dir as strict_path_is_dir,
+    path_is_symlink,
+)
 
 FILE_PATHS_TYPE_ERROR = "file_paths must be a sequence of paths"
 FILE_PATH_ENTRY_TYPE_ERROR = "file_paths must contain path strings or path-like objects"
@@ -36,7 +40,7 @@ def path_exists(path: Path) -> bool:
 def path_is_dir(path: Path) -> bool:
     """Return whether a path is a directory, converting access failures to ValueError."""
     try:
-        return path.is_dir()
+        return strict_path_is_dir(path)
     except OSError as exc:
         raise _path_access_error(path) from exc
 

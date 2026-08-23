@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
+import inspect
+
 from yaraast.lsp.server import YaraLanguageServer
+
+
+def test_lsp_uses_supported_coroutine_inspection() -> None:
+    assert asyncio.iscoroutinefunction is inspect.iscoroutinefunction
 
 
 def test_lsp_server_initializes_providers() -> None:

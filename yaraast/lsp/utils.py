@@ -8,26 +8,32 @@ from lsprotocol.types import Position, Range
 
 from yaraast.ast.base import ASTNode, Location
 from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
-from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
+from yaraast.shared.path_safety import (
+    path_exists as strict_path_exists,
+    path_has_symlink_ancestor,
+    path_is_dir as strict_path_is_dir,
+    path_is_file as strict_path_is_file,
+    path_is_symlink,
+)
 
 
 def path_exists(path: Path) -> bool:
     try:
-        return path.exists()
+        return strict_path_exists(path)
     except OSError:
         return False
 
 
 def path_is_file(path: Path) -> bool:
     try:
-        return path.is_file()
+        return strict_path_is_file(path)
     except OSError:
         return False
 
 
 def path_is_dir(path: Path) -> bool:
     try:
-        return path.is_dir()
+        return strict_path_is_dir(path)
     except OSError:
         return False
 

@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+import asyncio
+import inspect
+from typing import TYPE_CHECKING, Any, cast
+
+# pygls 2.1.1 still calls the asyncio alias deprecated by Python 3.14.
+asyncio.iscoroutinefunction = cast(Any, inspect.iscoroutinefunction)
 
 from pygls.lsp.server import LanguageServer
 

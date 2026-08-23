@@ -89,10 +89,10 @@ def test_workspace_symbols_handles_is_dir_oserror(
 ) -> None:
     provider = WorkspaceSymbolsProvider()
 
-    def fake_is_dir(self: Path) -> bool:
+    def fake_stat(self: Path, *, follow_symlinks: bool = True) -> Any:
         raise OSError("boom")
 
-    monkeypatch.setattr(Path, "is_dir", fake_is_dir)
+    monkeypatch.setattr(Path, "stat", fake_stat)
 
     with pytest.raises(ValueError, match="path could not be accessed"):
         provider.set_workspace_root(tmp_path)

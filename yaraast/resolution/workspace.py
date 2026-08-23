@@ -17,6 +17,7 @@ from yaraast.resolution.workspace_models import FileAnalysisResult, WorkspaceRep
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 from yaraast.shared.path_safety import (
     path_has_symlink_ancestor,
+    path_is_dir,
     path_is_symlink,
     path_is_within_directory,
 )
@@ -50,7 +51,7 @@ def _path_exists(path: Path) -> bool:
 
 def _path_is_dir(path: Path) -> bool:
     try:
-        return path.is_dir()
+        return path_is_dir(path)
     except OSError as exc:
         raise _path_access_error(path) from exc
 

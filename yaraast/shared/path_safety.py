@@ -3,9 +3,35 @@
 from __future__ import annotations
 
 from pathlib import Path
+from stat import S_ISDIR, S_ISREG
 import sys
 
 _DARWIN_SYSTEM_SYMLINK_ANCESTORS = {Path("/") / "tmp", Path("/") / "var"}
+
+
+def path_exists(path: Path) -> bool:
+    """Return whether a path exists without hiding filesystem access errors."""
+    try:
+        path.stat()
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def path_is_dir(path: Path) -> bool:
+    """Return whether a path is a directory without hiding access errors."""
+    try:
+        return S_ISDIR(path.stat().st_mode)
+    except FileNotFoundError:
+        return False
+
+
+def path_is_file(path: Path) -> bool:
+    """Return whether a path is a regular file without hiding access errors."""
+    try:
+        return S_ISREG(path.stat().st_mode)
+    except FileNotFoundError:
+        return False
 
 
 def path_is_within_directory(path: Path, directory: Path) -> bool:
@@ -19,6 +45,12 @@ def path_is_within_directory(path: Path, directory: Path) -> bool:
 def path_is_symlink(path: Path) -> bool:
     """Return True when `path` is a symlink, otherwise False on access errors."""
     try:
+        path.lstat()
+    except FileNotFoundError:
+        pass
+    except OSError:
+        return True
+    try:
         return path.is_symlink()
     except OSError:
         return True
@@ -30,8 +62,11 @@ def path_has_symlink_ancestor(path: Path) -> bool:
         if sys.platform == "darwin" and ancestor in _DARWIN_SYSTEM_SYMLINK_ANCESTORS:
             continue
         try:
+            ancestor.lstat()
             if ancestor.is_symlink():
                 return True
+        except FileNotFoundError:
+            continue
         except OSError:
             return True
     return False

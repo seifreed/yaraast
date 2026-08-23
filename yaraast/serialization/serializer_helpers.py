@@ -6,7 +6,7 @@ from os import PathLike, fspath
 from pathlib import Path
 from typing import Any
 
-from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_dir, path_is_symlink
 
 
 def _path_access_error(path: Path) -> ValueError:
@@ -26,7 +26,7 @@ def _path_exists(path: Path) -> bool:
 
 def _path_is_dir(path: Path) -> bool:
     try:
-        return path.is_dir()
+        return path_is_dir(path)
     except OSError as exc:
         raise _path_access_error(path) from exc
 

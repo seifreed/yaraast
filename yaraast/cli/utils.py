@@ -13,7 +13,13 @@ from rich.console import Console
 from rich.markup import escape
 
 from yaraast.ast.base import YaraFile
-from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
+from yaraast.shared.path_safety import (
+    path_exists,
+    path_has_symlink_ancestor,
+    path_is_dir,
+    path_is_file,
+    path_is_symlink,
+)
 
 
 def _validate_output_path(output: str | None) -> str | None:
@@ -92,7 +98,7 @@ def _require_file_path(path: object) -> Path:
 
 def _path_exists(path: Path) -> bool:
     try:
-        return path.exists()
+        return path_exists(path)
     except OSError as exc:
         msg = f"path could not be accessed: {path}"
         raise ValueError(msg) from exc
@@ -100,7 +106,7 @@ def _path_exists(path: Path) -> bool:
 
 def _path_is_dir(path: Path) -> bool:
     try:
-        return path.is_dir()
+        return path_is_dir(path)
     except OSError as exc:
         msg = f"path could not be accessed: {path}"
         raise ValueError(msg) from exc
@@ -108,7 +114,7 @@ def _path_is_dir(path: Path) -> bool:
 
 def _path_is_file(path: Path) -> bool:
     try:
-        return path.is_file()
+        return path_is_file(path)
     except OSError as exc:
         msg = f"path could not be accessed: {path}"
         raise ValueError(msg) from exc

@@ -7,7 +7,13 @@ import os
 from pathlib import Path
 from typing import Any
 
-from yaraast.shared.path_safety import path_has_symlink_ancestor
+from yaraast.shared.path_safety import (
+    path_exists,
+    path_has_symlink_ancestor,
+    path_is_dir,
+    path_is_file,
+    path_is_symlink,
+)
 from yaraast.types._registry_base import YaraType
 from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition
 from yaraast.types.module_definitions import load_builtin_modules
@@ -25,30 +31,27 @@ def _path_access_error(path: Path) -> ModuleSpecError:
 
 def _path_exists(path: Path) -> bool:
     try:
-        return path.exists()
+        return path_exists(path)
     except OSError as exc:
         raise _path_access_error(path) from exc
 
 
 def _path_is_file(path: Path) -> bool:
     try:
-        return path.is_file()
+        return path_is_file(path)
     except OSError as exc:
         raise _path_access_error(path) from exc
 
 
 def _path_is_dir(path: Path) -> bool:
     try:
-        return path.is_dir()
+        return path_is_dir(path)
     except OSError as exc:
         raise _path_access_error(path) from exc
 
 
 def _path_is_symlink(path: Path) -> bool:
-    try:
-        return path.is_symlink()
-    except OSError:
-        return True
+    return path_is_symlink(path)
 
 
 def _normalize_module_name(name: object) -> str:

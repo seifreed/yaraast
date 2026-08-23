@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.rules import Rule
 from yaraast.metrics.graphviz_errors import is_graphviz_error
-from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
+from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_dir, path_is_symlink
 
 if TYPE_CHECKING:
     import graphviz
@@ -31,7 +31,7 @@ def _path_exists(path: Path) -> bool:
 
 def _path_is_dir(path: Path) -> bool:
     try:
-        return path.is_dir()
+        return path_is_dir(path)
     except OSError as exc:
         raise _path_access_error(path) from exc
 
