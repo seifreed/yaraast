@@ -233,8 +233,6 @@ module = [
     "yaraast.cli.performance_reporting",
     "yaraast.cli.performance_services",
     "yaraast.cli.visitors.dumper",
-    "yaraast.cli.visitors.formatters",
-    "yaraast.cli.visitors.tree_builder",
 ]
 ignore_errors = true
 

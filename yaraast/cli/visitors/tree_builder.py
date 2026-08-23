@@ -1,6 +1,7 @@
 """Rich tree builder for CLI AST output."""
 
-from typing import Any
+from collections.abc import Callable, Iterable
+from typing import Any, cast
 
 from rich.tree import Tree
 
@@ -30,7 +31,7 @@ def _pragma_label(pragma: Any, fallback: str) -> str:
 class ASTTreeBuilder:
     """Build Rich tree visualization of AST."""
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Callable[[Any], Tree]:
         if name.startswith("visit_"):
             return self._visit_unhandled
         raise AttributeError(name)
@@ -42,16 +43,16 @@ class ASTTreeBuilder:
         """Visit StringWildcard node."""
         return Tree(f"StringWildcard: {node.pattern}")
 
-    def visit(self, node) -> Tree:
+    def visit(self, node: Any) -> Tree:
         """Generic visit method with fallback."""
         if node is None:
             return Tree("None")
 
         if isinstance(node, ASTNode):
-            return node.accept(self)
+            return cast(Tree, node.accept(self))
 
         method_name = f"visit_{type(node).__name__.lower()}"
-        return getattr(self, method_name)(node)
+        return cast(Tree, getattr(self, method_name)(node))
 
     def visit_yara_file(self, node: YaraFile) -> Tree:
         tree = Tree("YARA File")
@@ -146,7 +147,7 @@ class ASTTreeBuilder:
 
         return Tree(f"Rule: {name_with_modifiers}")
 
-    def _add_tags_to_tree(self, rule_tree: Tree, tags) -> None:
+    def _add_tags_to_tree(self, rule_tree: Tree, tags: Iterable[Any]) -> None:
         """Add tags section to rule tree."""
         tags_tree = rule_tree.add("Tags")
         for tag in tags:
@@ -155,7 +156,7 @@ class ASTTreeBuilder:
             else:
                 tags_tree.add(tag.name)
 
-    def _add_strings_to_tree(self, rule_tree: Tree, strings) -> None:
+    def _add_strings_to_tree(self, rule_tree: Tree, strings: Iterable[Any]) -> None:
         """Add strings section to rule tree."""
         from rich.markup import escape
 
@@ -167,13 +168,17 @@ class ASTTreeBuilder:
             identifier = output_string_identifier(string)
             strings_tree.add(f"{identifier}{value_preview} [{string_type}]{modifiers}")
 
-    def _get_string_modifiers_preview(self, string, escape) -> str:
+    def _get_string_modifiers_preview(
+        self,
+        string: Any,
+        escape: Callable[[str], str],
+    ) -> str:
         if not (hasattr(string, "modifiers") and string.modifiers):
             return ""
         modifiers = ", ".join(_modifier_label(mod) for mod in string.modifiers)
         return escape(f" [{modifiers}]")
 
-    def _get_string_preview(self, string, escape) -> str:
+    def _get_string_preview(self, string: Any, escape: Callable[[str], str]) -> str:
         """Get string value preview for display."""
         if isinstance(string, PlainString):
             value = escape_plain_string_value(string.value[:30]) if string.value else ""
@@ -188,7 +193,7 @@ class ASTTreeBuilder:
 
         return ""
 
-    def _add_condition_to_tree(self, rule_tree: Tree, condition) -> None:
+    def _add_condition_to_tree(self, rule_tree: Tree, condition: Any) -> None:
         """Add condition section to rule tree."""
         condition_tree = rule_tree.add("Condition")
         condition_str = self._get_condition_string(condition)
@@ -199,7 +204,7 @@ class ASTTreeBuilder:
         else:
             condition_tree.add("<complex condition>")
 
-    def _get_condition_string(self, condition) -> str:
+    def _get_condition_string(self, condition: Any) -> str:
         """Get condition string using generator or fallback."""
         try:
             from yaraast.yarax.generator import YaraXGenerator
@@ -242,7 +247,7 @@ class ASTTreeBuilder:
                 return condition_str[: cut_point + len(boundary)] + "..."
         return condition_str[:max_length] + "..."
 
-    def _condition_to_string(self, condition, depth=0) -> str:
+    def _condition_to_string(self, condition: Any, depth: int = 0) -> str:
         """Convert condition to string representation."""
         formatter = ConditionStringFormatter()
         return formatter.format_condition(condition, depth)

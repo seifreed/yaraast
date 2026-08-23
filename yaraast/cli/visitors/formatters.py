@@ -1,6 +1,7 @@
 """String formatter helpers for CLI AST output."""
 
-from typing import Any
+from collections.abc import Callable
+from typing import Any, cast
 
 from yaraast.string_references import normalize_string_reference_id
 
@@ -67,7 +68,7 @@ def _string_set_item_text(item: Any, formatter: Any, depth: int) -> str:
             return _string_set_reference_text(raw_value)
         return str(raw_value)
     if hasattr(item, "accept"):
-        return formatter.format_expression(item, depth)
+        return cast(str, formatter.format_expression(item, depth))
     if isinstance(item, str):
         return _string_set_reference_text(item)
     return _node_text(item, str(item))
@@ -77,7 +78,7 @@ def _formatter_class_name(value: Any, formatters: dict[str, Any]) -> str:
     for cls in type(value).__mro__:
         if cls.__name__ in formatters:
             return cls.__name__
-    return value.__class__.__name__
+    return str(value.__class__.__name__)
 
 
 class ConditionStringFormatter:
@@ -93,7 +94,7 @@ class ConditionStringFormatter:
         if not hasattr(condition, "__class__"):
             return "true"
 
-        formatters = {
+        formatters: dict[str, Callable[[Any, int], str]] = {
             "BooleanLiteral": self._format_boolean_literal,
             "OfExpression": self._format_of_expression,
             "BinaryExpression": lambda c, d: self._format_binary_expression(c, d),
@@ -113,8 +114,9 @@ class ConditionStringFormatter:
         }
 
         class_name = _formatter_class_name(condition, formatters)
-        formatter = formatters.get(class_name, lambda c, d: f"<{class_name}>")
-        return formatter(condition, depth)
+        if class_name in formatters:
+            return formatters[class_name](condition, depth)
+        return f"<{class_name}>"
 
     def _format_boolean_literal(self, condition: Any, _depth: int) -> str:
         return str(condition.value).lower() if hasattr(condition, "value") else "true"
@@ -422,7 +424,7 @@ class ExpressionStringFormatter:
                 + ")"
             )
         if hasattr(string_set, "name"):
-            return string_set.name
+            return str(string_set.name)
         if hasattr(string_set, "value"):
             return str(string_set.value)
 
@@ -525,7 +527,7 @@ class DetailedNodeStringFormatter:
         if node is None or depth > 2:
             return "..."
 
-        formatters = {
+        formatters: dict[str, Callable[[Any, int], str]] = {
             "StringIdentifier": self._format_string_identifier,
             "IntegerLiteral": self._format_integer_literal,
             "BooleanLiteral": self._format_boolean_literal,
@@ -538,8 +540,9 @@ class DetailedNodeStringFormatter:
         }
 
         class_name = _formatter_class_name(node, formatters)
-        formatter = formatters.get(class_name, lambda n, d: "...")
-        return formatter(node, depth)
+        if class_name in formatters:
+            return formatters[class_name](node, depth)
+        return "..."
 
     def _format_string_identifier(self, node: Any, _depth: int) -> str:
         return getattr(node, "name", "$...")
