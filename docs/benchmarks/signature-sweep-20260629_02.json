@@ -1,7 +1,7 @@
 {
   "run_label": "signature-sweep-20260629-advance-02",
   "timestamp_utc": "2026-06-29T06:13:00Z",
-  "source_root": "/Users/seifreed/tools/malware/signatures/YARA",
+  "source_root": "<YARA_CORPUS>",
   "artifacts_root": "/tmp/yara_perf_bench/advance_20260629_02",
   "files": [
     "clamav/clamav.yar",
@@ -99,7 +99,7 @@
         },
         {
           "file": "clamav.yar",
-          "error": "stream parse for /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+          "error": "stream parse for <YARA_CORPUS>/clamav/clamav.yar timed out after 120 seconds"
         }
       ]
     },
@@ -110,11 +110,11 @@
       "failures": [
         {
           "file": "clamav/clamav.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar: parsing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+          "error": "Error processing <YARA_CORPUS>/clamav/clamav.yar: parsing <YARA_CORPUS>/clamav/clamav.yar timed out after 120 seconds"
         },
         {
           "file": "iddqd.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+          "error": "Error processing <YARA_CORPUS>/iddqd.yar: Failed to parse <YARA_CORPUS>/iddqd.yar"
         }
       ]
     },
@@ -125,19 +125,19 @@
       "failures": [
         {
           "file": "clamav/clamav.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar: parsing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+          "error": "Error processing <YARA_CORPUS>/clamav/clamav.yar: parsing <YARA_CORPUS>/clamav/clamav.yar timed out after 120 seconds"
         },
         {
           "file": "iddqd.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+          "error": "Error processing <YARA_CORPUS>/iddqd.yar: Failed to parse <YARA_CORPUS>/iddqd.yar"
         },
         {
           "file": "kaspersky/apt_kl.yara",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/kaspersky/apt_kl.yara: base64 value must be a string"
+          "error": "Error processing <YARA_CORPUS>/kaspersky/apt_kl.yara: base64 value must be a string"
         },
         {
           "file": "yara-rules-full.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/yara-rules-full.yar: base64 value must be a string"
+          "error": "Error processing <YARA_CORPUS>/yara-rules-full.yar: base64 value must be a string"
         }
       ]
     },
@@ -148,11 +148,11 @@
       "failures": [
         {
           "file": "clamav/clamav.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar: parsing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+          "error": "Error processing <YARA_CORPUS>/clamav/clamav.yar: parsing <YARA_CORPUS>/clamav/clamav.yar timed out after 120 seconds"
         },
         {
           "file": "iddqd.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+          "error": "Error processing <YARA_CORPUS>/iddqd.yar: Failed to parse <YARA_CORPUS>/iddqd.yar"
         }
       ]
     },
@@ -167,7 +167,7 @@
         },
         {
           "file": "iddqd.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+          "error": "Error processing <YARA_CORPUS>/iddqd.yar: Failed to parse <YARA_CORPUS>/iddqd.yar"
         }
       ]
     },
@@ -178,19 +178,19 @@
       "failures": [
         {
           "file": "clamav/clamav.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar: parsing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+          "error": "Error processing <YARA_CORPUS>/clamav/clamav.yar: parsing <YARA_CORPUS>/clamav/clamav.yar timed out after 120 seconds"
         },
         {
           "file": "iddqd.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+          "error": "Error processing <YARA_CORPUS>/iddqd.yar: Failed to parse <YARA_CORPUS>/iddqd.yar"
         },
         {
           "file": "kaspersky/apt_kl.yara",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/kaspersky/apt_kl.yara: Invalid string reference '$'"
+          "error": "Error processing <YARA_CORPUS>/kaspersky/apt_kl.yara: Invalid string reference '$'"
         },
         {
           "file": "yara-rules-full.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/yara-rules-full.yar: Invalid string reference '$'"
+          "error": "Error processing <YARA_CORPUS>/yara-rules-full.yar: Invalid string reference '$'"
         }
       ]
     },
@@ -201,11 +201,11 @@
       "failures": [
         {
           "file": "clamav/clamav.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar: parsing /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+          "error": "Error processing <YARA_CORPUS>/clamav/clamav.yar: parsing <YARA_CORPUS>/clamav/clamav.yar timed out after 120 seconds"
         },
         {
           "file": "iddqd.yar",
-          "error": "Error processing /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar: Failed to parse /Users/seifreed/tools/malware/signatures/YARA/iddqd.yar"
+          "error": "Error processing <YARA_CORPUS>/iddqd.yar: Failed to parse <YARA_CORPUS>/iddqd.yar"
         }
       ]
     },
@@ -241,7 +241,7 @@
       "timeout_s": 120,
       "ok": false,
       "artifact": "/tmp/yara_perf_bench/advance_20260629_02/clamav_stream_split_120.txt",
-      "error": "stream parse for /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar timed out after 120 seconds"
+      "error": "stream parse for <YARA_CORPUS>/clamav/clamav.yar timed out after 120 seconds"
     },
     "perfcheck": {
       "artifact": "/tmp/yara_perf_bench/advance_20260629_02/perfcheck2/timeout.log",

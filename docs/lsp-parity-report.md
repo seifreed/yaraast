@@ -11,10 +11,10 @@ This report is grounded on:
 
 Relevant suites:
 
-- [tests/test_lsp_parity_multidialect_more.py](/Users/seifreed/tools/malware/yaraast/tests/test_lsp_parity_multidialect_more.py)
-- [tests/test_lsp_parity_e2e.py](/Users/seifreed/tools/malware/yaraast/tests/test_lsp_parity_e2e.py)
-- [scripts/benchmark_lsp_runtime.py](/Users/seifreed/tools/malware/yaraast/scripts/benchmark_lsp_runtime.py)
-- [docs/benchmarks/lsp-runtime-latest.json](/Users/seifreed/tools/malware/yaraast/docs/benchmarks/lsp-runtime-latest.json)
+- [tests/test_lsp_parity_multidialect_more.py](../tests/test_lsp_parity_multidialect_more.py)
+- [tests/test_lsp_parity_e2e.py](../tests/test_lsp_parity_e2e.py)
+- [scripts/benchmark_lsp_runtime.py](../scripts/benchmark_lsp_runtime.py)
+- [docs/benchmarks/lsp-runtime-latest.json](benchmarks/lsp-runtime-latest.json)
 
 ## Equaled
 
@@ -81,7 +81,7 @@ Current synthetic runtime benchmarks pass:
 
 See:
 
-- [scripts/benchmark_lsp_runtime.py](/Users/seifreed/tools/malware/yaraast/scripts/benchmark_lsp_runtime.py)
+- [scripts/benchmark_lsp_runtime.py](../scripts/benchmark_lsp_runtime.py)
 
 ## Practical Conclusion
 

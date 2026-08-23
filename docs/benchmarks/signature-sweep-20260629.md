@@ -1,6 +1,6 @@
 # Signature Sweep (2026-06-29, advance-02)
 
-Scope: 11 YARA files under `/Users/seifreed/tools/malware/signatures/YARA`.
+Scope: 11 YARA files under a local corpus referenced below as `$YARA_ROOT`.
 
 - `clamav/clamav.yar`
 - `hunting/HUNTING_BSS_logs.yar`
@@ -16,15 +16,15 @@ Scope: 11 YARA files under `/Users/seifreed/tools/malware/signatures/YARA`.
 
 ## Commands run
 
-- `python -m yaraast bench --operations all --iterations 1 --file-timeout 120 --output /tmp/yara_perf_bench/advance_20260629_02/bench_parse.json $(find /Users/seifreed/tools/malware/signatures/YARA -type f \( -name '*.yar' -o -name '*.yara' \))`
-- `python -m yaraast performance stream --recursive --pattern '*.y*' --file-timeout 120 /Users/seifreed/tools/malware/signatures/YARA > /tmp/yara_perf_bench/advance_20260629_02/stream_default.json`
+- `python -m yaraast bench --operations all --iterations 1 --file-timeout 120 --output /tmp/yara_perf_bench/advance_20260629_02/bench_parse.json $(find "$YARA_ROOT" -type f \( -name '*.yar' -o -name '*.yara' \))`
+- `python -m yaraast performance stream --recursive --pattern '*.y*' --file-timeout 120 "$YARA_ROOT" > /tmp/yara_perf_bench/advance_20260629_02/stream_default.json`
 - `python -m yaraast performance optimize 11 --memory-mb 1024 --target-time 300 > /tmp/yara_perf_bench/advance_20260629_02/optimize_300_02.txt`
 - `python -m yaraast performance optimize 11 --memory-mb 1024 --target-time 180 > /tmp/yara_perf_bench/advance_20260629_02/optimize_180_02.txt`
-- `python -m yaraast performance parse /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar --file-timeout 180 > /tmp/yara_perf_bench/advance_20260629_02/clamav_parse_180.txt`
-- `python -m yaraast performance codegen /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar --file-timeout 180 > /tmp/yara_perf_bench/advance_20260629_02/clamav_codegen_180.txt`
-- `python -m yaraast performance batch /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar --operation parse --split-rules --file-timeout 30` (artifacts in `/tmp/yara_perf_bench/advance_20260629_02/clamav_parse_split`)
-- `python -m yaraast performance stream --file-timeout 120 /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar > /tmp/yara_perf_bench/advance_20260629_02/clamav_stream_split_120.txt`
-- `python -m yaraast perfcheck /Users/seifreed/tools/malware/signatures/YARA/clamav/clamav.yar --timeout 120 > /tmp/yara_perf_bench/advance_20260629_02/perfcheck2/timeout.log`
+- `python -m yaraast performance parse "$YARA_ROOT/clamav/clamav.yar" --file-timeout 180 > /tmp/yara_perf_bench/advance_20260629_02/clamav_parse_180.txt`
+- `python -m yaraast performance codegen "$YARA_ROOT/clamav/clamav.yar" --file-timeout 180 > /tmp/yara_perf_bench/advance_20260629_02/clamav_codegen_180.txt`
+- `python -m yaraast performance batch "$YARA_ROOT/clamav/clamav.yar" --operation parse --split-rules --file-timeout 30` (artifacts in `/tmp/yara_perf_bench/advance_20260629_02/clamav_parse_split`)
+- `python -m yaraast performance stream --file-timeout 120 "$YARA_ROOT/clamav/clamav.yar" > /tmp/yara_perf_bench/advance_20260629_02/clamav_stream_split_120.txt`
+- `python -m yaraast perfcheck "$YARA_ROOT/clamav/clamav.yar" --timeout 120 > /tmp/yara_perf_bench/advance_20260629_02/perfcheck2/timeout.log`
 
 Batch operations (`complexity`, `dependency_graph`, `html_tree`, `serialize`, `validate`, and `parse`) were also run per-file. Artifacts are in `/tmp/yara_perf_bench/advance_20260629_02/`.
 
@@ -96,7 +96,7 @@ Legend: `ok` means operation completed; `fail: <reason>` is from benchmark outpu
 ## Reproducibility template
 
 ```bash
-YARA_ROOT="/Users/seifreed/tools/malware/signatures/YARA"
+YARA_ROOT="/path/to/yara-corpus"
 OUT="/tmp/yara_perf_bench/signature-sweep-$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$OUT"
 

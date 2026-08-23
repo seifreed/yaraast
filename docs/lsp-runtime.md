@@ -166,7 +166,7 @@ This is the base for:
 
 Synthetic runtime benchmarks live in:
 
-- [scripts/benchmark_lsp_runtime.py](/Users/seifreed/tools/malware/yaraast/scripts/benchmark_lsp_runtime.py)
+- [scripts/benchmark_lsp_runtime.py](../scripts/benchmark_lsp_runtime.py)
 
 Current scenarios:
 
@@ -189,7 +189,7 @@ Use it when changing:
 
 Latest generated benchmark artifact:
 
-- [docs/benchmarks/lsp-runtime-latest.json](/Users/seifreed/tools/malware/yaraast/docs/benchmarks/lsp-runtime-latest.json)
+- [docs/benchmarks/lsp-runtime-latest.json](benchmarks/lsp-runtime-latest.json)
 
 Regenerate it with:
 

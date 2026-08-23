@@ -180,6 +180,7 @@ config.secret.json
 # Development directories
 qlty/
 .qlty/
+.yaraast/
 detection-rules/
 
 # Local agent instructions

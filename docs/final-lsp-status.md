@@ -54,15 +54,15 @@
 ## Benchmarks
 
 - latest:
-  - [docs/benchmarks/lsp-runtime-latest.json](/Users/seifreed/tools/malware/yaraast/docs/benchmarks/lsp-runtime-latest.json)
-  - [docs/benchmarks/lsp-runtime-latest.md](/Users/seifreed/tools/malware/yaraast/docs/benchmarks/lsp-runtime-latest.md)
+  - [docs/benchmarks/lsp-runtime-latest.json](benchmarks/lsp-runtime-latest.json)
+  - [docs/benchmarks/lsp-runtime-latest.md](benchmarks/lsp-runtime-latest.md)
 - history:
   - `docs/benchmarks/history/`
 
 ## VSIX
 
 - artefacto:
-  - [yaraast-0.1.0.vsix](/Users/seifreed/tools/malware/yaraast/vscode-yaraast/yaraast-0.1.0.vsix)
+  - [yaraast-0.1.0.vsix](../vscode-yaraast/yaraast-0.1.0.vsix)
 - verificación de instalación limpia:
   - realizada con el binario interno de VS Code:
     - `/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code`
