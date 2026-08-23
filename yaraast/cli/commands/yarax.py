@@ -24,7 +24,7 @@ from yaraast.cli.yarax_services import (
 
 
 @click.group()
-def yarax():
+def yarax() -> None:
     """YARA-X specific operations for next-gen YARA syntax."""
 
 
@@ -32,7 +32,7 @@ def yarax():
 @click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--output", "-o", type=click.Path(), help="Output AST to file")
 @click.option("--show-features", is_flag=True, help="Show YARA-X features used")
-def parse(file: str, output: str | None, show_features: bool):
+def parse(file: str, output: str | None, show_features: bool) -> None:
     """Parse YARA-X file with support for new syntax features."""
     output = _validate_output_path(output)
     try:
@@ -58,7 +58,7 @@ def parse(file: str, output: str | None, show_features: bool):
 @click.argument("file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--strict", is_flag=True, help="Use strict YARA-X compatibility")
 @click.option("--fix", is_flag=True, help="Suggest fixes for compatibility issues")
-def check(file: str, strict: bool, fix: bool):
+def check(file: str, strict: bool, fix: bool) -> None:
     """Check YARA file for YARA-X compatibility."""
     try:
         # Parse file
@@ -86,7 +86,7 @@ def check(file: str, strict: bool, fix: bool):
     default="yarax",
     help="Target format",
 )
-def convert(file: str, output: str | None, target: str):
+def convert(file: str, output: str | None, target: str) -> None:
     """Convert between YARA and YARA-X formats."""
     output = _validate_output_path(output)
     try:
@@ -115,7 +115,7 @@ def convert(file: str, output: str | None, target: str):
 
 
 @yarax.command()
-def features():
+def features() -> None:
     """Show YARA-X feature support and examples."""
     display_feature_showcase()
 
@@ -128,7 +128,7 @@ def features():
     type=click.Path(exists=True, dir_okay=False),
     help="Read code from file",
 )
-def playground(code: str | None, file: str | None):
+def playground(code: str | None, file: str | None) -> None:
     """Interactive playground for testing YARA-X features."""
     used_default = False
     if file:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from yaraast.cli.utils import format_json
 from yaraast.resolution.workspace import Workspace
@@ -117,7 +117,7 @@ def _require_workspace_output_format(fmt: object) -> str:
 def format_workspace_graph(report: Any, fmt: object) -> str:
     fmt = _require_workspace_graph_format(fmt)
     if fmt == "dot":
-        return report.dependency_graph.export_dot()
+        return cast(str, report.dependency_graph.export_dot())
 
     nodes = {}
     for key, node in sorted(report.dependency_graph.nodes.items()):

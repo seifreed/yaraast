@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
+
+from yaraast.cli.benchmark_tools import BenchmarkResult
 
 _BENCHMARK_OPERATIONS = frozenset({"all", "codegen", "parse", "roundtrip"})
 _SINGLE_BENCHMARK_OPERATIONS = frozenset({"codegen", "parse", "roundtrip"})
@@ -19,27 +22,37 @@ def _determine_operations_to_run(operations: object) -> list[str]:
 
 
 def _run_single_operation(
-    benchmarker,
+    benchmarker: Any,
     file_path: Path,
     op: object,
     iterations: int,
     file_timeout: float | None = None,
-):
+) -> BenchmarkResult | None:
     """Run a single benchmark operation."""
     op = _require_single_benchmark_operation(op)
     return _run_single_operation_with_timeout(benchmarker, file_path, op, iterations, file_timeout)
 
 
 def _run_single_operation_with_timeout(
-    benchmarker, file_path: Path, op: str, iterations: int, file_timeout: float | None
-):
+    benchmarker: Any,
+    file_path: Path,
+    op: str,
+    iterations: int,
+    file_timeout: float | None,
+) -> BenchmarkResult | None:
     """Run a benchmark operation with an optional per-file timeout."""
     if op == "parse":
-        return benchmarker.benchmark_parsing(file_path, iterations, file_timeout)
+        return cast(
+            BenchmarkResult,
+            benchmarker.benchmark_parsing(file_path, iterations, file_timeout),
+        )
     if op == "codegen":
-        return benchmarker.benchmark_codegen(file_path, iterations, file_timeout)
+        return cast(
+            BenchmarkResult,
+            benchmarker.benchmark_codegen(file_path, iterations, file_timeout),
+        )
     results = benchmarker.benchmark_roundtrip(file_path, iterations, file_timeout)
-    return results[0] if results else None
+    return cast(BenchmarkResult, results[0]) if results else None
 
 
 def _require_benchmark_operation(operations: object) -> str:

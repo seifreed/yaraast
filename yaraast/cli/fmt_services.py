@@ -8,17 +8,26 @@ from yaraast.cli.utils import read_text
 from yaraast.shared.ast_analysis import ASTFormatter
 
 
-def check_format(formatter: ASTFormatter, input_path: Path):
+def check_format(formatter: ASTFormatter, input_path: Path) -> tuple[bool, list[str]]:
     """Check whether a file needs formatting."""
     return formatter.check_format(input_path)
 
 
-def format_file(formatter: ASTFormatter, input_path: Path, output_path: Path, style: str):
+def format_file(
+    formatter: ASTFormatter,
+    input_path: Path,
+    output_path: Path,
+    style: str,
+) -> tuple[bool, str]:
     """Format a file and return (success, result)."""
     return formatter.format_file(input_path, output_path, style)
 
 
-def format_for_diff(formatter: ASTFormatter, input_path: Path, style: str):
+def format_for_diff(
+    formatter: ASTFormatter,
+    input_path: Path,
+    style: str,
+) -> tuple[str, bool, str]:
     """Return original content and formatted output."""
     original = read_text(input_path)
     success, formatted = formatter.format_file(input_path, None, style)

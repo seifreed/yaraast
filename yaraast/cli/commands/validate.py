@@ -24,7 +24,11 @@ from yaraast.libyara import YARA_AVAILABLE
 class ValidateGroup(click.Group):
     """Group that falls back to file validation when no subcommand matches."""
 
-    def resolve_command(self, ctx: click.Context, args: list[str]):
+    def resolve_command(
+        self,
+        ctx: click.Context,
+        args: list[str],
+    ) -> tuple[str | None, click.Command | None, list[str]]:
         if args:
             cmd_name = args[0]
             cmd = self.get_command(ctx, cmd_name)

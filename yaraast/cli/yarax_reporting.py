@@ -33,7 +33,7 @@ def display_compatibility_issues(issues: list[Any], show_fixes: bool) -> None:
 
 def _display_issue_group(
     icon: str, issues: list[Any], limit: int, show_fixes: bool, err: bool = False
-):
+) -> None:
     """Display a group of issues with optional fixes."""
     click.echo(f"{icon} {len(issues)} {issues[0].severity.title()}s:", err=err)
     for issue in issues[:limit]:
