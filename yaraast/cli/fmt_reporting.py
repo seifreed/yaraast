@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from difflib import unified_diff
 from pathlib import Path
 
+from rich.console import Console
 from rich.markup import escape
 
 
-def display_format_check(console, input_path: Path, needs_format: bool, issues: list) -> None:
+def display_format_check(
+    console: Console,
+    input_path: Path,
+    needs_format: bool,
+    issues: list[str],
+) -> None:
     """Display format check status and issues."""
     input_name = escape(input_path.name)
     if needs_format:
@@ -19,7 +26,7 @@ def display_format_check(console, input_path: Path, needs_format: bool, issues: 
     console.print(f"[green]{input_name} is already formatted[/green]")
 
 
-def display_format_issues(console, issues: list) -> None:
+def display_format_issues(console: Console, issues: list[str]) -> None:
     """Display formatting issues."""
     for issue in issues[:5]:
         console.print(f"[dim]  - {escape(str(issue))}[/dim]")
@@ -28,7 +35,7 @@ def display_format_issues(console, issues: list) -> None:
 
 
 def display_format_diff(
-    console,
+    console: Console,
     input_path: Path,
     original: str,
     formatted: str,
@@ -52,7 +59,7 @@ def display_format_diff(
 
 
 def display_format_result(
-    console,
+    console: Console,
     input_path: Path,
     output_path: Path,
     style: str,
@@ -64,12 +71,12 @@ def display_format_result(
         console.print(f"[green]Formatted file written to {escape(str(output_path))}[/green]")
 
 
-def display_format_error(console, message: str) -> None:
+def display_format_error(console: Console, message: str) -> None:
     """Display formatting failure."""
     console.print(f"[red]{escape(message)}[/red]")
 
 
-def _print_diff_lines(console, diff_lines) -> None:
+def _print_diff_lines(console: Console, diff_lines: Iterable[str]) -> None:
     """Print diff lines with colors."""
     for line in diff_lines:
         if line.startswith(("+++", "---")):

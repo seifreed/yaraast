@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 import time
+from typing import Any
 
 from rich.console import Console
 from rich.markup import escape
 
+from yaraast.cli.benchmark_tools import BenchmarkResult
 from yaraast.cli.utils import format_json, write_text
 
 console = Console()
@@ -25,7 +27,7 @@ def display_benchmark_file(file_path: Path) -> None:
     console.print(f"\n[yellow]Benchmarking {escape(file_path.name)}...[/yellow]")
 
 
-def display_operation_result(op: str, result) -> None:
+def display_operation_result(op: str, result: BenchmarkResult | None) -> None:
     """Display result of a single operation."""
     if result and result.success:
         escaped_op = escape(op)
@@ -38,7 +40,7 @@ def display_operation_result(op: str, result) -> None:
         console.print(f"  [red]FAIL[/red] {escaped_op:10s}: {escape(str(result.error))}")
 
 
-def display_benchmark_summary(summary: dict) -> None:
+def display_benchmark_summary(summary: dict[str, Any]) -> None:
     """Display benchmark summary."""
     console.print("\n[green]Benchmark Summary:[/green]")
     console.print("=" * 60)
@@ -53,7 +55,7 @@ def display_benchmark_summary(summary: dict) -> None:
         console.print(f"  - Rules/second: {stats['avg_rules_per_second']:.1f}")
 
 
-def display_performance_comparison(all_results: list[dict]) -> None:
+def display_performance_comparison(all_results: list[dict[str, Any]]) -> None:
     """Display performance comparison between files."""
     console.print("\n[blue]Performance Comparison:[/blue]")
     console.print("=" * 60)
@@ -85,8 +87,8 @@ def save_benchmark_results(
     output: str,
     iterations: int,
     operations: str,
-    all_results: list[dict],
-    summary: dict,
+    all_results: list[dict[str, Any]],
+    summary: dict[str, Any],
 ) -> None:
     """Save benchmark results to JSON file."""
     benchmark_data = {

@@ -7,6 +7,8 @@ from pathlib import Path
 from rich.console import Console
 from rich.markup import escape
 
+from yaraast.cli.simple_differ import ASTDiffResult
+
 console = Console()
 
 
@@ -22,7 +24,7 @@ def display_diff_header(file1_path: Path, file2_path: Path) -> None:
     console.print("=" * 60)
 
 
-def show_diff_summary(result) -> None:
+def show_diff_summary(result: ASTDiffResult) -> None:
     console.print("[yellow]Change Summary:[/yellow]")
     for change_type, count in result.change_summary.items():
         if count > 0:
@@ -30,7 +32,7 @@ def show_diff_summary(result) -> None:
             console.print(f"  - {title}: {count}")
 
 
-def show_rule_changes(result) -> None:
+def show_rule_changes(result: ASTDiffResult) -> None:
     if result.added_rules:
         console.print(f"\n[green]+ Added Rules ({len(result.added_rules)}):[/green]")
         for rule in result.added_rules:
@@ -49,7 +51,7 @@ def show_rule_changes(result) -> None:
             console.print(f"  ~ {escape(str(rule))}")
 
 
-def show_change_details(result, logical_only: bool, no_style: bool) -> None:
+def show_change_details(result: ASTDiffResult, logical_only: bool, no_style: bool) -> None:
     if result.logical_changes:
         console.print(
             f"\n[red]Logical Changes ({len(result.logical_changes)}):[/red]",
@@ -68,7 +70,7 @@ def show_change_details(result, logical_only: bool, no_style: bool) -> None:
         show_style_changes(result.style_only_changes)
 
 
-def show_style_changes(style_changes: list) -> None:
+def show_style_changes(style_changes: list[str]) -> None:
     console.print(
         f"\n[dim]Style-Only Changes ({len(style_changes)}):[/dim]",
     )
@@ -80,7 +82,7 @@ def show_style_changes(style_changes: list) -> None:
         )
 
 
-def show_change_significance(result) -> None:
+def show_change_significance(result: ASTDiffResult) -> None:
     total_logical = len(result.added_rules) + len(result.removed_rules) + len(result.modified_rules)
     total_style = len(result.style_only_changes)
 

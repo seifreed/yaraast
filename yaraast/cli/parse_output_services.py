@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import click
 from rich.console import Console
 from rich.markup import escape
@@ -32,9 +34,9 @@ def _require_output_format(output_format: object) -> str:
 
 
 def _report_parsing_errors(
-    lexer_errors: list,
-    parser_errors: list,
-    ast,
+    lexer_errors: list[Any],
+    parser_errors: list[Any],
+    ast: Any,
     output_console: Console | None = None,
 ) -> None:
     """Report lexer and parser errors."""
@@ -57,7 +59,10 @@ def _report_parsing_errors(
         target_console.print("\n[green]Partial parse successful despite errors[/green]\n")
 
 
-def _display_lexer_errors(lexer_errors: list, output_console: Console = console) -> None:
+def _display_lexer_errors(
+    lexer_errors: list[Any],
+    output_console: Console = console,
+) -> None:
     """Display lexer errors."""
     output_console.print(f"\n[yellow]Lexer Issues ({len(lexer_errors)}):[/yellow]")
     for error in lexer_errors[:5]:
@@ -67,7 +72,10 @@ def _display_lexer_errors(lexer_errors: list, output_console: Console = console)
         output_console.print(f"\n[dim]... and {len(lexer_errors) - 5} more lexer issues[/dim]")
 
 
-def _display_parser_errors(parser_errors: list, output_console: Console = console) -> None:
+def _display_parser_errors(
+    parser_errors: list[Any],
+    output_console: Console = console,
+) -> None:
     """Display parser errors."""
     output_console.print(f"\n[yellow]Parser Issues ({len(parser_errors)}):[/yellow]")
     for error in parser_errors[:5]:
@@ -77,7 +85,7 @@ def _display_parser_errors(parser_errors: list, output_console: Console = consol
         output_console.print(f"\n[dim]... and {len(parser_errors) - 5} more parser issues[/dim]")
 
 
-def _generate_output_by_format(ast, output_format: object, output: str | None) -> None:
+def _generate_output_by_format(ast: Any, output_format: object, output: str | None) -> None:
     """Generate output based on specified format."""
     output_format = _require_output_format(output_format)
     if output_format == "yara":
@@ -90,7 +98,7 @@ def _generate_output_by_format(ast, output_format: object, output: str | None) -
         _generate_tree_output(ast, output)
 
 
-def _generate_yara_output(ast, output: str | None) -> None:
+def _generate_yara_output(ast: Any, output: str | None) -> None:
     """Generate YARA code output."""
     if isinstance(ast, YaraLFile):
         result = YaraLGenerator().generate(ast)
@@ -105,7 +113,7 @@ def _generate_yara_output(ast, output: str | None) -> None:
         console.print(syntax)
 
 
-def _generate_json_output(ast, output: str | None) -> None:
+def _generate_json_output(ast: Any, output: str | None) -> None:
     """Generate JSON AST output."""
     dumper = ASTDumper()
     result = dumper.visit(ast)
@@ -118,7 +126,7 @@ def _generate_json_output(ast, output: str | None) -> None:
         click.echo(json_str)
 
 
-def _generate_yaml_output(ast, output: str | None) -> None:
+def _generate_yaml_output(ast: Any, output: str | None) -> None:
     """Generate YAML AST output."""
     try:
         import yaml
@@ -146,7 +154,7 @@ def _generate_yaml_output(ast, output: str | None) -> None:
         click.echo(yaml_str)
 
 
-def _generate_tree_output(ast, output: str | None) -> None:
+def _generate_tree_output(ast: Any, output: str | None) -> None:
     """Generate tree visualization output."""
     builder = ASTTreeBuilder()
     tree = builder.visit(ast)
