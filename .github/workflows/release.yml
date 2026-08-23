@@ -30,10 +30,16 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes graphviz
 
       - name: Ruff check
-        run: ruff check yaraast/
+        run: ruff check .
+
+      - name: Black check
+        run: black --check .
 
       - name: MyPy
-        run: mypy yaraast/ --ignore-missing-imports
+        run: mypy .
+
+      - name: Bandit
+        run: bandit -r yaraast
 
       - name: Audit runtime dependencies
         run: pip-audit . --progress-spinner off

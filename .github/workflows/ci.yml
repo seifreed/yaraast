@@ -144,13 +144,13 @@ jobs:
           pip install -e ".[dev,lsp,visualization,serialization,performance]"
 
       - name: Ruff check
-        run: ruff check yaraast/
+        run: ruff check .
 
-      - name: Ruff format check
-        run: ruff format --check yaraast/
+      - name: Black check
+        run: black --check .
 
       - name: MyPy
-        run: mypy yaraast/ --ignore-missing-imports
+        run: mypy .
 
       - name: Bandit
         run: bandit -r yaraast
