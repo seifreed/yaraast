@@ -13,6 +13,7 @@ from yaraast.cli import performance_services as ps
 from yaraast.parser import Parser
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
+from yaraast.performance.parallel_models import Job, JobStatus, ParseErrorMarker
 from yaraast.performance.streaming_parser import StreamingParser
 
 
@@ -171,11 +172,14 @@ def test_run_batch_processing_forwards_split_rules_flag(tmp_path: Path) -> None:
 def test_extract_successful_asts_and_file_name_mapping_paths(tmp_path: Path) -> None:
     file_paths = [tmp_path / "a.yar"]
     ok_ast = _ast("ok")
-    bad_ast = SimpleNamespace(_parse_error=True)
-    job = SimpleNamespace(
-        status=SimpleNamespace(value="completed"), result=[ok_ast, bad_ast, ok_ast]
+    bad_ast = ParseErrorMarker("bad.yar", "bad")
+    job = Job(
+        "completed",
+        "parse",
+        status=JobStatus.COMPLETED,
+        result=[ok_ast, bad_ast, ok_ast],
     )
-    skipped_job = SimpleNamespace(status=SimpleNamespace(value="failed"), result=[ok_ast])
+    skipped_job = Job("failed", "parse", status=JobStatus.FAILED, result=[ok_ast])
 
     asts, names = ps.extract_successful_asts([job, skipped_job], file_paths, chunk_size=2)
     assert asts == [ok_ast, ok_ast]

@@ -8,22 +8,22 @@ from types import SimpleNamespace
 import pytest
 
 from yaraast.cli import performance_reporting as pr
+from yaraast.performance.batch_processor import BatchOperation, BatchResult
 
 
 def test_performance_reporting_operation_and_stream(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    result = SimpleNamespace(
+    result = BatchResult(
+        operation=BatchOperation.PARSE,
         input_count=10,
         successful_count=8,
         failed_count=2,
-        success_rate=80.0,
         total_time=1.23,
         output_files=["a", "b", "c", "d", "e", "f"],
         errors=["err1", "err2", "err3", "err4"],
     )
-    operation = SimpleNamespace(value="parse")
-    pr.display_operation_result(operation, result)
+    pr.display_operation_result(BatchOperation.PARSE, result)
     out = capsys.readouterr().out
     assert "PARSE" in out
     assert "Output files: 6" in out

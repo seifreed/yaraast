@@ -124,10 +124,14 @@ def test_bench_services_operations_and_summary() -> None:
     assert bs._determine_operations_to_run("roundtrip") == ["roundtrip"]
     assert bs._determine_operations_to_run("parse") == ["parse"]
 
-    assert bs._run_single_operation(bench, path, "parse", 2).success is True
-    assert bs._run_single_operation(bench, path, "codegen", 2).success is False
-    assert bs._run_single_operation(bench, path, "roundtrip", 2).success is True
-    assert bs._run_single_operation(bench, path, "parse", 2, file_timeout=0.1).success is True
+    parse_result = bs._run_single_operation(bench, path, "parse", 2)
+    codegen_result = bs._run_single_operation(bench, path, "codegen", 2)
+    roundtrip_result = bs._run_single_operation(bench, path, "roundtrip", 2)
+    timed_result = bs._run_single_operation(bench, path, "parse", 2, file_timeout=0.1)
+    assert parse_result is not None and parse_result.success is True
+    assert codegen_result is not None and codegen_result.success is False
+    assert roundtrip_result is not None and roundtrip_result.success is True
+    assert timed_result is not None and timed_result.success is True
 
     for invalid_operation in [None, 123]:
         with pytest.raises(TypeError, match="benchmark operation must be a string"):

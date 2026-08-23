@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
+from yaraast.ast.base import YaraFile
 from yaraast.dialects import YaraDialect
 from yaraast.errors import YaraASTError
 from yaraast.unified_parser import UnifiedParser
+from yaraast.yaral.ast_nodes import YaraLFile
 
 _DIALECTS = frozenset({"auto", "yara", "yara-l", "yara-x"})
 
@@ -17,7 +19,7 @@ def parse_content_by_dialect(
     dialect: object,
     show_status: bool,
     status_cb: Callable[[str], None] | None = None,
-) -> tuple[object, list[Any], list[Any]]:
+) -> tuple[YaraFile | YaraLFile, list[Any], list[Any]]:
     lexer_errors: list[Any] = []
     parser_errors: list[Any] = []
 
@@ -51,7 +53,7 @@ def _parse_auto_detect_dialect(
     content: str,
     show_status: bool,
     status_cb: Callable[[str], None] | None,
-) -> tuple[object, list[Any], list[Any]]:
+) -> tuple[YaraFile | YaraLFile, list[Any], list[Any]]:
     unified_parser = UnifiedParser(content)
     detected_dialect = unified_parser.get_dialect()
     if show_status and status_cb:
@@ -63,13 +65,13 @@ def _parse_auto_detect_dialect(
     return _parse_with_error_tolerant_parser(content)
 
 
-def _parse_yara_x_dialect(content: str, status_cb: Callable[[str], None] | None) -> object:
+def _parse_yara_x_dialect(content: str, status_cb: Callable[[str], None] | None) -> YaraFile:
     if status_cb:
         status_cb("[green]Using YARA-X parser[/green]")
-    return UnifiedParser(content, dialect=YaraDialect.YARA_X).parse()
+    return cast(YaraFile, UnifiedParser(content, dialect=YaraDialect.YARA_X).parse())
 
 
-def _parse_yara_l_dialect(content: str, status_cb: Callable[[str], None] | None) -> object:
+def _parse_yara_l_dialect(content: str, status_cb: Callable[[str], None] | None) -> YaraLFile:
     if status_cb:
         status_cb("[green]Using YARA-L parser[/green]")
     from yaraast.yaral.parser import YaraLParser
@@ -78,7 +80,7 @@ def _parse_yara_l_dialect(content: str, status_cb: Callable[[str], None] | None)
     return parser.parse()
 
 
-def _parse_with_error_tolerant_parser(content: str) -> tuple[object, list[Any], list[Any]]:
+def _parse_with_error_tolerant_parser(content: str) -> tuple[YaraFile, list[Any], list[Any]]:
     from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
     from yaraast.parser.parser import Parser
 

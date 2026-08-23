@@ -1,25 +1,33 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
 from yaraast.cli import diff_reporting as dr
+from yaraast.cli.simple_differ import ASTDiffResult
 
 
-def _result(**overrides: object) -> SimpleNamespace:
-    base: dict[str, object] = {
-        "change_summary": {},
-        "added_rules": [],
-        "removed_rules": [],
-        "modified_rules": [],
-        "logical_changes": [],
-        "structural_changes": [],
-        "style_only_changes": [],
-    }
-    base.update(overrides)
-    return SimpleNamespace(**base)
+def _result(
+    *,
+    change_summary: dict[str, int] | None = None,
+    added_rules: list[str] | None = None,
+    removed_rules: list[str] | None = None,
+    modified_rules: list[str] | None = None,
+    logical_changes: list[str] | None = None,
+    structural_changes: list[str] | None = None,
+    style_only_changes: list[str] | None = None,
+) -> ASTDiffResult:
+    return ASTDiffResult(
+        has_changes=True,
+        change_summary=change_summary or {},
+        added_rules=added_rules or [],
+        removed_rules=removed_rules or [],
+        modified_rules=modified_rules or [],
+        logical_changes=logical_changes or [],
+        structural_changes=structural_changes or [],
+        style_only_changes=style_only_changes or [],
+    )
 
 
 def test_diff_reporting_headers_summary_and_rule_lists(

@@ -9,16 +9,37 @@ from types import SimpleNamespace
 import pytest
 
 from yaraast.cli import bench_reporting as br
+from yaraast.cli.benchmark_tools import BenchmarkResult
+
+
+def _benchmark_result(
+    *,
+    success: bool,
+    error: str | None = None,
+    execution_time: float = 0.01,
+    rules_count: int = 3,
+    ast_nodes: int = 10,
+) -> BenchmarkResult:
+    return BenchmarkResult(
+        operation="parse",
+        file_size=100,
+        execution_time=execution_time,
+        rules_count=rules_count,
+        strings_count=0,
+        ast_nodes=ast_nodes,
+        success=success,
+        error=error,
+    )
 
 
 def test_display_operation_result_and_none_case(capsys: pytest.CaptureFixture[str]) -> None:
-    ok = SimpleNamespace(success=True, execution_time=0.01, rules_count=3, ast_nodes=10)
+    ok = _benchmark_result(success=True)
     br.display_operation_result("parse", ok)
     out = capsys.readouterr().out
     assert "OK" in out
     assert "parse" in out
 
-    fail = SimpleNamespace(success=False, error="boom")
+    fail = _benchmark_result(success=False, error="boom")
     br.display_operation_result("parse", fail)
     out2 = capsys.readouterr().out
     assert "FAIL" in out2
@@ -38,7 +59,7 @@ def test_benchmark_reporting_escapes_markup_in_dynamic_values(
     bad_filename = "bad[red][broken"
 
     br.display_benchmark_file(tmp_path / f"{bad_filename}.yar")
-    br.display_operation_result(bad, SimpleNamespace(success=False, error=bad))
+    br.display_operation_result(bad, _benchmark_result(success=False, error=bad))
     br.display_benchmark_summary(
         {
             bad: {
