@@ -22,9 +22,10 @@ def collect_leading_comments(comment_tokens: list[Token], end_line: int) -> list
     comments = []
     for token in comment_tokens:
         if token.line < end_line:
+            text = str(token.value)
             comment = Comment(
-                text=token.value,
-                is_multiline=token.value.startswith("/*"),
+                text=text,
+                is_multiline=text.startswith("/*"),
             )
             comment.location = _comment_location(token)
             comments.append(comment)
@@ -36,9 +37,10 @@ def collect_trailing_comment(
 ) -> tuple[Comment | None, list[Token]]:
     for i, token in enumerate(comment_tokens):
         if token.line == start_line:
+            text = str(token.value)
             comment = Comment(
-                text=token.value,
-                is_multiline=token.value.startswith("/*"),
+                text=text,
+                is_multiline=text.startswith("/*"),
             )
             comment.location = _comment_location(token)
             remaining = comment_tokens[:i] + comment_tokens[i + 1 :]
@@ -63,7 +65,7 @@ def _comment_location(token: Token) -> Location:
     )
 
 
-def parse_regex_value(regex_val: str):
+def parse_regex_value(regex_val: str) -> tuple[str, list[str]]:
     from yaraast.parser._shared import parse_regex_value as parse_shared_regex_value
 
     return parse_shared_regex_value(regex_val)

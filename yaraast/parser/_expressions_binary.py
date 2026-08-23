@@ -26,8 +26,10 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.operators import DefinedExpression
+from yaraast.interfaces import IToken
 from yaraast.lexer import TokenType
 
+from ._expression_mixin import ExpressionMixinBase
 from ._shared import ParserError
 
 RELATIONAL_TOKEN_TYPES = (
@@ -48,7 +50,7 @@ RELATIONAL_TOKEN_TYPES = (
 )
 
 
-class ExpressionBinaryMixin:
+class ExpressionBinaryMixin(ExpressionMixinBase):
     """Mixin with logical/arithmetic expression parsing."""
 
     def _parse_or_expression(self) -> Expression:
@@ -182,7 +184,7 @@ class ExpressionBinaryMixin:
         self._validate_static_of_quantifier(quantifier, start_token)
         string_set = self._parse_of_string_set()
         node = OfExpression(quantifier=quantifier, string_set=string_set)
-        if getattr(quantifier, "location", None) is not None:
+        if quantifier.location is not None:
             node.location = self._location_from_tokens(
                 self._synthetic_token_from_location(quantifier.location),
                 self._previous(),
@@ -211,18 +213,21 @@ class ExpressionBinaryMixin:
     def _parse_percentage_expression_of_postfix(self, quantifier: Expression) -> Expression:
         self._match(TokenType.MODULO)
         start_token = self._previous()
-        percentage = self._set_node_location_from_nodes(
-            UnaryExpression(operator="%", operand=quantifier),
-            quantifier,
-            start_token,
-        )
+        percentage = UnaryExpression(operator="%", operand=quantifier)
+        if quantifier.location is not None:
+            percentage.location = self._location_from_tokens(
+                self._synthetic_token_from_location(quantifier.location),
+                start_token,
+            )
+        else:
+            self._set_node_location_from_token(percentage, start_token)
         self._validate_static_percentage_quantifier(percentage, start_token)
         if not self._match(TokenType.OF):
             msg = "Expected 'of' after percentage quantifier"
             raise ParserError(msg, self._peek())
         string_set = self._parse_of_string_set()
         node = OfExpression(quantifier=percentage, string_set=string_set)
-        if getattr(quantifier, "location", None) is not None:
+        if quantifier.location is not None:
             node.location = self._location_from_tokens(
                 self._synthetic_token_from_location(quantifier.location),
                 self._previous(),
@@ -356,7 +361,7 @@ class ExpressionBinaryMixin:
         self,
         left: Expression,
         right: Expression,
-        token,
+        token: IToken,
     ) -> None:
         if getattr(self, "_allow_string_identifier_non_logical_binary", False):
             return
@@ -398,7 +403,7 @@ class ExpressionBinaryMixin:
         self,
         operator: str,
         operand: Expression,
-        token,
+        token: IToken,
     ) -> None:
         if operator not in {"-", "~"}:
             return
@@ -415,7 +420,7 @@ class ExpressionBinaryMixin:
 
         return isinstance(operand.subject, StringCount)
 
-    def _validate_static_range_bounds(self, range_expr: RangeExpression, token) -> None:
+    def _validate_static_range_bounds(self, range_expr: RangeExpression, token: IToken) -> None:
         low = self._static_integer_value(range_expr.low)
         high = self._static_integer_value(range_expr.high)
         if low is not None and high is not None and low < 0:
@@ -425,13 +430,13 @@ class ExpressionBinaryMixin:
             msg = "Range lower bound must be less than upper bound"
             raise ParserError(msg, token)
 
-    def _validate_static_of_quantifier(self, quantifier: Expression, token) -> None:
+    def _validate_static_of_quantifier(self, quantifier: Expression, token: IToken) -> None:
         value = self._static_integer_value(quantifier)
         if value is not None and value < 0:
             msg = "Of-expression quantifier can not be negative"
             raise ParserError(msg, token)
 
-    def _validate_static_percentage_quantifier(self, quantifier: Expression, token) -> None:
+    def _validate_static_percentage_quantifier(self, quantifier: Expression, token: IToken) -> None:
         if not isinstance(quantifier, UnaryExpression) or quantifier.operator != "%":
             return
         value = self._static_integer_value(quantifier.operand)

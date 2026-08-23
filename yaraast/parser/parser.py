@@ -7,22 +7,22 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.extern import ExternImport
+from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.pragmas import Pragma
+from yaraast.ast.rules import Import, Include, Rule
 from yaraast.errors import ParseError
 from yaraast.interfaces import ILexer, IToken
-from yaraast.lexer import Lexer, TokenType
+from yaraast.lexer import Lexer, Token, TokenType
 from yaraast.limits import DEFAULT_RESOURCE_LIMITS, CancellationToken, ParseBudget, ResourceLimits
 
 from ._expressions import ExpressionParsingMixin
 from ._rules import RuleParsingMixin
 from ._shared import ParserError
 from ._strings import StringParsingMixin
-from ._token_stream import TokenStreamMixin
 
 
 class Parser(
-    TokenStreamMixin,
     RuleParsingMixin,
     StringParsingMixin,
     ExpressionParsingMixin,
@@ -60,7 +60,7 @@ class Parser(
         """
         # Store the injected lexer or create a default one
         self._injected_lexer: ILexer | None = lexer
-        self.lexer: Lexer | ILexer | None = None
+        self.lexer: Lexer[list[Token]] | ILexer | None = None
         self.tokens: Sequence[IToken] = []
         self.current = 0
         self._extern_rule_names: set[tuple[str | None, str]] = set()
@@ -81,7 +81,7 @@ class Parser(
             self.lexer = self._injected_lexer
             self.tokens = self.lexer.tokenize(text)
         else:
-            self.lexer = Lexer(text, budget=self._budget)
+            self.lexer = Lexer[list[Token]](text, budget=self._budget)
             self.tokens = self.lexer.tokenize()
 
     def parse(self, text: str | None = None) -> YaraFile:
@@ -106,14 +106,14 @@ class Parser(
             msg = "No text provided to parse"
             raise ParseError(msg)
 
-        imports = []
-        includes = []
-        rules = []
-        extern_imports = []
-        extern_rules = []
-        namespaces = []
-        pragmas = []
-        top_level_nodes = []
+        imports: list[Import] = []
+        includes: list[Include] = []
+        rules: list[Rule] = []
+        extern_imports: list[ExternImport] = []
+        extern_rules: list[ExternRule] = []
+        namespaces: list[ExternNamespace] = []
+        pragmas: list[Pragma] = []
+        top_level_nodes: list[ASTNode] = []
         self._extern_rule_names = set()
         self._extern_rule_declarations = set()
         self._rule_names = set()

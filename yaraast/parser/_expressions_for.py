@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression, QuantifierValue
+from yaraast.ast.conditions import (
+    ForExpression,
+    ForOfExpression,
+    OfExpression,
+    QuantifierValue,
+    StringSetValue,
+)
 from yaraast.ast.expressions import (
     ArrayAccess,
     BooleanLiteral,
@@ -19,8 +25,10 @@ from yaraast.ast.expressions import (
     StringWildcard,
 )
 from yaraast.ast.modules import DictionaryAccess
+from yaraast.interfaces import IToken
 from yaraast.lexer import TokenType
 
+from ._expression_mixin import ExpressionMixinBase
 from ._shared import ParserError, max_expression_depth
 
 _CONTEXTUAL_LOCAL_IDENTIFIER_TOKENS = (TokenType.IDENTIFIER, TokenType.AS, TokenType.INCLUDE)
@@ -30,12 +38,14 @@ def _for_loop_variable_names(variable: str) -> set[str]:
     return {part.strip() for part in variable.split(",") if part.strip()}
 
 
-class ExpressionForMixin:
+class ExpressionForMixin(ExpressionMixinBase):
     """Mixin with quantifier/for/of expression parsing."""
 
     _expression_depth: int
 
-    def _parse_for_expression(self, start_token=None) -> ForExpression | ForOfExpression:
+    def _parse_for_expression(
+        self, start_token: IToken | None = None
+    ) -> ForExpression | ForOfExpression:
         """Parse for expression."""
         start_token = start_token or self._peek()
         quantifier: QuantifierValue
@@ -157,7 +167,7 @@ class ExpressionForMixin:
         self._reject_invalid_for_quantifier(quantifier, token)
         return quantifier
 
-    def _reject_invalid_for_quantifier(self, quantifier: Expression, token) -> None:
+    def _reject_invalid_for_quantifier(self, quantifier: Expression, token: IToken) -> None:
         """Reject quantifier nodes libyara treats as syntax errors."""
         if isinstance(quantifier, BooleanLiteral | RegexLiteral | StringIdentifier):
             msg = "Expected quantifier after 'for'"
@@ -195,7 +205,7 @@ class ExpressionForMixin:
     def _parse_for_of_expression(
         self,
         quantifier: QuantifierValue,
-        start_token=None,
+        start_token: IToken | None = None,
     ) -> ForOfExpression:
         """Parse for...of expression."""
         start_token = start_token or self._peek()
@@ -317,7 +327,7 @@ class ExpressionForMixin:
         msg = "Expected string identifiers in for...of string set"
         raise ParserError(msg, self._previous())
 
-    def _of_string_set_kind(self, expr: Expression, *, top_level: bool = False) -> str | None:
+    def _of_string_set_kind(self, expr: StringSetValue, *, top_level: bool = False) -> str | None:
         if isinstance(expr, StringIdentifier):
             return "string"
         if isinstance(expr, StringWildcard):
@@ -408,7 +418,7 @@ class ExpressionForMixin:
         self,
         expr: Expression,
         args: list[Expression],
-        start_token=None,
+        start_token: IToken | None = None,
     ) -> FunctionCall:
         """Build FunctionCall from expression and arguments."""
         start_token = start_token or self._previous()

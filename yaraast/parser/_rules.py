@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
-from yaraast.ast.conditions import Condition
+from yaraast.ast.expressions import Expression
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
 from yaraast.ast.pragmas import (
     ConditionalDirective,
@@ -21,12 +22,23 @@ from yaraast.ast.strings import StringDefinition
 from yaraast.lexer import TokenType
 
 from ._shared import ParserError
+from ._token_stream import TokenStreamMixin
 
 _CONTEXTUAL_IDENTIFIER_TOKENS = (TokenType.IDENTIFIER, TokenType.AS, TokenType.INCLUDE)
 
 
-class RuleParsingMixin:
+class RuleParsingMixin(TokenStreamMixin):
     """Mixin with rule, import, include, and meta parsing."""
+
+    _extern_rule_names: set[tuple[str | None, str]]
+    _extern_rule_declarations: set[tuple[str | None, str]]
+    _rule_names: set[str]
+
+    if TYPE_CHECKING:
+
+        def _parse_strings_section(self) -> list[StringDefinition]: ...
+
+        def _parse_condition(self) -> Expression: ...
 
     def _parse_import(self) -> Import | ExternImport:
         """Parse import statement."""
@@ -339,11 +351,15 @@ class RuleParsingMixin:
 
     def _parse_rule_sections(
         self,
-    ) -> tuple[dict[str, Any] | list[MetaEntry], list[StringDefinition], Condition | None]:
+    ) -> tuple[
+        dict[str, Any] | list[Meta | MetaEntry],
+        list[StringDefinition],
+        Expression | None,
+    ]:
         """Parse rule sections (meta, strings, condition)."""
-        meta: dict[str, Any] | list[MetaEntry] = {}
+        meta: dict[str, Any] | list[Meta | MetaEntry] = {}
         strings: list[StringDefinition] = []
-        condition: Condition | None = None
+        condition: Expression | None = None
         seen_meta = False
         seen_strings = False
         seen_condition = False
@@ -417,9 +433,9 @@ class RuleParsingMixin:
             msg = f"Expected ':' after '{section_name}'"
             raise ParserError(msg, self._peek())
 
-    def _parse_meta_section(self) -> list[MetaEntry]:
+    def _parse_meta_section(self) -> list[Meta | MetaEntry]:
         """Parse meta section."""
-        entries: list[MetaEntry] = []
+        entries: list[Meta | MetaEntry] = []
 
         while not self._check_any(
             TokenType.STRINGS,
@@ -467,7 +483,7 @@ class RuleParsingMixin:
         # Handle negative numeric metadata: -159, -3.14.
         if self._match(TokenType.MINUS):
             if self._match(TokenType.INTEGER) or self._match(TokenType.DOUBLE):
-                return -self._previous().value
+                return -cast(int | float, self._previous().value)
             msg = "Expected numeric literal after '-' in meta value"
             raise ParserError(msg, self._peek())
         if (
@@ -475,7 +491,7 @@ class RuleParsingMixin:
             or self._match(TokenType.INTEGER)
             or self._match(TokenType.DOUBLE)
         ):
-            return self._previous().value
+            return cast(str | int | float, self._previous().value)
         if self._match(TokenType.BOOLEAN_TRUE):
             return True
         if self._match(TokenType.BOOLEAN_FALSE):

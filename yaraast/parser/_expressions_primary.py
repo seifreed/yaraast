@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import fields, is_dataclass
 
 from yaraast.ast.conditions import OfExpression
@@ -24,18 +25,19 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.extern import ExternRuleReference
 from yaraast.ast.modules import ModuleReference
-from yaraast.lexer import Token, TokenType
+from yaraast.interfaces import IToken
+from yaraast.lexer import TokenType
+from yaraast.regex_literals import validate_regex_modifiers, validate_regex_pattern
 
+from ._expression_mixin import ExpressionMixinBase
 from ._shared import (
     KNOWN_MODULES,
     ParserError,
     split_regex_value,
-    validate_regex_modifiers,
-    validate_regex_pattern,
 )
 
 
-class ExpressionPrimaryMixin:
+class ExpressionPrimaryMixin(ExpressionMixinBase):
     """Mixin with primary expression parsing helpers."""
 
     def _parse_literal(self) -> Expression | None:
@@ -135,8 +137,8 @@ class ExpressionPrimaryMixin:
 
         return None
 
-    def _parse_string_reference_suffix(self, token: Token) -> str | None:
-        string_id = token.value[1:]
+    def _parse_string_reference_suffix(self, token: IToken) -> str | None:
+        string_id = str(token.value)[1:]
         if string_id:
             return string_id
         if self._can_use_anonymous_string_reference():
@@ -194,11 +196,11 @@ class ExpressionPrimaryMixin:
 
             if self._match(TokenType.OF):
                 string_set = self._parse_of_string_set()
-                quantifier = self._set_node_location_from_token(
+                integer_quantifier = self._set_node_location_from_token(
                     IntegerLiteral(value=quantifier_value), start_token
                 )
                 return self._set_node_location_from_tokens(
-                    OfExpression(quantifier=quantifier, string_set=string_set),
+                    OfExpression(quantifier=integer_quantifier, string_set=string_set),
                     start_token,
                     self._previous(),
                 )
@@ -274,7 +276,9 @@ class ExpressionPrimaryMixin:
         msg = f"Unexpected token: {self._peek().value}"
         raise ParserError(msg, self._peek())
 
-    def _get_primary_expression_parsers(self) -> list:
+    def _get_primary_expression_parsers(
+        self,
+    ) -> list[Callable[[], Expression | None]]:
         """Return list of primary expression parsers to try in order."""
         return [
             self._parse_quantifier_expression,

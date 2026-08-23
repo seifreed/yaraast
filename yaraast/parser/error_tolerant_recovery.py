@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import re
-from typing import Any, cast
+from typing import TYPE_CHECKING, TypeVar, cast
 
-from yaraast.ast.base import Location
-from yaraast.ast.expressions import BooleanLiteral, Identifier
+from yaraast.ast.base import ASTNode, Location
+from yaraast.ast.expressions import BooleanLiteral, Expression, Identifier
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
@@ -14,8 +14,13 @@ from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.errors import YaraASTError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
+if TYPE_CHECKING:
+    from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 
-def parse_import_line(parser, line: str, line_num: int) -> Import | None:
+_NodeT = TypeVar("_NodeT", bound=ASTNode)
+
+
+def parse_import_line(parser: ErrorTolerantParser, line: str, line_num: int) -> Import | None:
     match = re.match(r'import\s+"([^"]+)"', line)
     if match:
         node = Import(match.group(1))
@@ -40,7 +45,7 @@ def parse_import_line(parser, line: str, line_num: int) -> Import | None:
     return None
 
 
-def parse_include_line(parser, line: str, line_num: int) -> Include | None:
+def parse_include_line(parser: ErrorTolerantParser, line: str, line_num: int) -> Include | None:
     match = re.match(r'include\s+"([^"]+)"', line)
     if match:
         node = Include(match.group(1))
@@ -56,7 +61,11 @@ def parse_include_line(parser, line: str, line_num: int) -> Include | None:
 
 
 def create_rule_from_body(
-    parser, name: str, tags: list[str], body_lines: list[str], start_line: int = 0
+    parser: ErrorTolerantParser,
+    name: str,
+    tags: list[str],
+    body_lines: list[str],
+    start_line: int = 0,
 ) -> Rule:
     rule = Rule(name=name, condition=BooleanLiteral(True))
     rule.tags = [Tag(name=tag) for tag in tags]
@@ -86,7 +95,11 @@ def create_rule_from_body(
 
 
 def parse_body_line(
-    parser, rule: Rule, body_line: str, current_section: str | None, line_num: int
+    parser: ErrorTolerantParser,
+    rule: Rule,
+    body_line: str,
+    current_section: str | None,
+    line_num: int,
 ) -> str | None:
     stripped = body_line.strip()
     if stripped.startswith("meta:"):
@@ -106,7 +119,12 @@ def parse_body_line(
 
 
 def parse_section_content(
-    parser, rule: Rule, line: str, section: str | None, line_num: int, raw_line: str
+    parser: ErrorTolerantParser,
+    rule: Rule,
+    line: str,
+    section: str | None,
+    line_num: int,
+    raw_line: str,
 ) -> None:
     if section == "meta":
         meta_item = parse_meta_line(parser, line, line_num, raw_line)
@@ -124,7 +142,10 @@ def parse_section_content(
 
 
 def parse_meta_line(
-    parser, line: str, line_num: int | None = None, raw_line: str | None = None
+    parser: ErrorTolerantParser,
+    line: str,
+    line_num: int | None = None,
+    raw_line: str | None = None,
 ) -> Meta | None:
     for pattern, converter in (
         (r'(\w+)\s*=\s*"([^"]*)"', lambda m: m.group(2)),
@@ -141,7 +162,10 @@ def parse_meta_line(
 
 
 def parse_string_line(
-    parser, line: str, line_num: int | None = None, raw_line: str | None = None
+    parser: ErrorTolerantParser,
+    line: str,
+    line_num: int | None = None,
+    raw_line: str | None = None,
 ) -> PlainString | HexString | RegexString | None:
     standard_node = parse_string_line_with_standard_parser(line)
     if standard_node is not None:
@@ -150,11 +174,16 @@ def parse_string_line(
 
     plain_match = re.match(r'(\$\w+)\s*=\s*"([^"]*)"', line)
     if plain_match:
-        node = PlainString(identifier=plain_match.group(1), value=plain_match.group(2))
+        plain_node = PlainString(identifier=plain_match.group(1), value=plain_match.group(2))
         set_recovered_location(
-            parser, node, line_num, raw_line, plain_match.start(1), plain_match.end(2) + 1
+            parser,
+            plain_node,
+            line_num,
+            raw_line,
+            plain_match.start(1),
+            plain_match.end(2) + 1,
         )
-        return node
+        return plain_node
 
     hex_match = re.match(r"(\$\w+)\s*=\s*{([^}]*)}", line)
     if hex_match:
@@ -163,11 +192,16 @@ def parse_string_line(
         except HexParseError as exc:
             parser._add_error(str(exc), line_num or 0, hex_match.start(2))
             return None
-        node = HexString(identifier=hex_match.group(1), tokens=tokens)
+        hex_node = HexString(identifier=hex_match.group(1), tokens=tokens)
         set_recovered_location(
-            parser, node, line_num, raw_line, hex_match.start(1), hex_match.end(2) + 1
+            parser,
+            hex_node,
+            line_num,
+            raw_line,
+            hex_match.start(1),
+            hex_match.end(2) + 1,
         )
-        return node
+        return hex_node
 
     regex_match = re.match(r"(\$\w+)\s*=\s*/((?:\\/|[^/])*)/([ism]*)", line)
     if regex_match:
@@ -181,15 +215,20 @@ def parse_string_line(
             for flag in regex_match.group(3)
             if flag in flag_modifiers
         ]
-        node = RegexString(
+        regex_node = RegexString(
             identifier=regex_match.group(1),
             regex=regex_match.group(2),
             modifiers=modifiers,
         )
         set_recovered_location(
-            parser, node, line_num, raw_line, regex_match.start(1), regex_match.end(2) + 1
+            parser,
+            regex_node,
+            line_num,
+            raw_line,
+            regex_match.start(1),
+            regex_match.end(2) + 1,
         )
-        return node
+        return regex_node
     parser._add_error(f"Invalid string definition: {line}", line_num or 0, 0)
     return None
 
@@ -209,8 +248,11 @@ def parse_string_line_with_standard_parser(
 
 
 def parse_condition(
-    parser, condition_text: str, line_num: int | None = None, raw_line: str | None = None
-) -> Any:
+    parser: ErrorTolerantParser,
+    condition_text: str,
+    line_num: int | None = None,
+    raw_line: str | None = None,
+) -> Expression:
     condition_text = condition_text.strip()
     node = _parse_recovered_condition_expression(condition_text)
     start = raw_line.find(condition_text) if raw_line else 0
@@ -220,7 +262,7 @@ def parse_condition(
     return node
 
 
-def _parse_recovered_condition_expression(condition_text: str) -> Any:
+def _parse_recovered_condition_expression(condition_text: str) -> Expression:
     if condition_text == "true":
         return BooleanLiteral(True)
     if condition_text == "false":
@@ -232,12 +274,17 @@ def _parse_recovered_condition_expression(condition_text: str) -> Any:
         ast = Parser().parse(f"rule __recovered_condition {{ condition: {condition_text} }}")
     except (YaraASTError, ValueError):
         return Identifier(condition_text)
-    return ast.rules[0].condition
+    return ast.rules[0].condition or Identifier(condition_text)
 
 
 def set_recovered_location(
-    parser, node: Any, line_num: int | None, raw_line: str | None, start_col: int, end_col: int
-) -> Any:
+    parser: ErrorTolerantParser,
+    node: _NodeT,
+    line_num: int | None,
+    raw_line: str | None,
+    start_col: int,
+    end_col: int,
+) -> _NodeT:
     if line_num is None:
         return node
     if 0 <= line_num < len(parser.lines):

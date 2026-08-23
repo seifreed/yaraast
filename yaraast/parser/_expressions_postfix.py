@@ -25,8 +25,10 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.extern import ExternRuleReference
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.interfaces import IToken
 from yaraast.lexer import TokenType
 
+from ._expression_mixin import ExpressionMixinBase
 from ._shared import ParserError
 
 _BUILTIN_INTEGER_READ_FUNCTIONS: frozenset[str] = frozenset(
@@ -47,7 +49,7 @@ _BUILTIN_INTEGER_READ_FUNCTIONS: frozenset[str] = frozenset(
 )
 
 
-class ExpressionPostfixMixin:
+class ExpressionPostfixMixin(ExpressionMixinBase):
     """Mixin with postfix expression parsing helpers."""
 
     def _parse_postfix_expression(self) -> Expression:
@@ -81,7 +83,7 @@ class ExpressionPostfixMixin:
         namespace = self._dotted_expression_name(expr)
         if namespace is not None and self._is_extern_rule_reference(member, namespace):
             extern_reference = ExternRuleReference(rule_name=member, namespace=namespace)
-            if getattr(expr, "location", None) is not None:
+            if expr.location is not None:
                 extern_reference.location = self._location_from_tokens(
                     self._synthetic_token_from_location(expr.location),
                     self._previous(),
@@ -94,7 +96,7 @@ class ExpressionPostfixMixin:
             )
 
         member_access = MemberAccess(object=expr, member=member)
-        if getattr(expr, "location", None) is not None:
+        if expr.location is not None:
             member_access.location = self._location_from_tokens(
                 self._synthetic_token_from_location(expr.location),
                 self._previous(),
@@ -126,7 +128,7 @@ class ExpressionPostfixMixin:
             if isinstance(index, StringLiteral)
             else ArrayAccess(array=expr, index=index)
         )
-        if getattr(expr, "location", None) is not None:
+        if expr.location is not None:
             node.location = self._location_from_tokens(
                 self._synthetic_token_from_location(expr.location),
                 self._previous(),
@@ -134,7 +136,7 @@ class ExpressionPostfixMixin:
             return node
         return self._set_node_location_from_tokens(node, start_token, self._previous())
 
-    def _reject_string_reference_postfix(self, expr: Expression, token) -> None:
+    def _reject_string_reference_postfix(self, expr: Expression, token: IToken) -> None:
         if isinstance(
             expr,
             (StringIdentifier, StringWildcard, StringCount, StringOffset, StringLength),
@@ -154,7 +156,7 @@ class ExpressionPostfixMixin:
         else:
             msg = "Invalid function call"
             raise ParserError(msg, self._peek())
-        if getattr(expr, "location", None) is not None:
+        if expr.location is not None:
             self._validate_builtin_integer_read_arity(node, start_token)
             node.location = self._location_from_tokens(
                 self._synthetic_token_from_location(expr.location),
@@ -167,7 +169,7 @@ class ExpressionPostfixMixin:
         self._validate_builtin_integer_read_arity(node, start_token)
         return self._set_node_location_from_tokens(node, start_token, self._previous())
 
-    def _validate_builtin_integer_read_arity(self, node: FunctionCall, token) -> None:
+    def _validate_builtin_integer_read_arity(self, node: FunctionCall, token: IToken) -> None:
         if node.function in _BUILTIN_INTEGER_READ_FUNCTIONS and len(node.arguments) != 1:
             msg = f"{node.function}() expects exactly 1 argument"
             raise ParserError(msg, token)
@@ -213,7 +215,7 @@ class ExpressionPostfixMixin:
             )
             subject: str | Expression = expr.name if isinstance(expr, StringIdentifier) else expr
             node = AtExpression(string_id=subject, offset=offset)
-            if getattr(expr, "location", None) is not None:
+            if expr.location is not None:
                 node.location = self._location_from_tokens(
                     self._synthetic_token_from_location(expr.location),
                     self._previous(),
@@ -230,7 +232,7 @@ class ExpressionPostfixMixin:
             range_expr = self._parse_parenthesized_range_after_in()
             subject: str | Expression = expr.name if isinstance(expr, StringIdentifier) else expr
             node = InExpression(subject=subject, range=range_expr)
-            if getattr(expr, "location", None) is not None:
+            if expr.location is not None:
                 node.location = self._location_from_tokens(
                     self._synthetic_token_from_location(expr.location),
                     self._previous(),
@@ -243,7 +245,7 @@ class ExpressionPostfixMixin:
             self._reject_rule_set_restriction(expr, start_token)
             range_expr = self._parse_parenthesized_range_after_in()
             node = InExpression(subject=expr, range=range_expr)
-            if getattr(expr, "location", None) is not None:
+            if expr.location is not None:
                 node.location = self._location_from_tokens(
                     self._synthetic_token_from_location(expr.location),
                     self._previous(),
@@ -253,12 +255,12 @@ class ExpressionPostfixMixin:
         msg = "IN keyword can only be used with string identifiers, string counts, or 'of' expressions"
         raise ParserError(msg, self._peek())
 
-    def _reject_percentage_of_postfix(self, expr: OfExpression, token) -> None:
+    def _reject_percentage_of_postfix(self, expr: OfExpression, token: IToken) -> None:
         if isinstance(expr.quantifier, DoubleLiteral | float):
             msg = "Percentage of-expressions do not support 'in' or 'at' restrictions"
             raise ParserError(msg, token)
 
-    def _reject_rule_set_restriction(self, expr: OfExpression, token) -> None:
+    def _reject_rule_set_restriction(self, expr: OfExpression, token: IToken) -> None:
         if self._of_string_set_kind(expr.string_set, top_level=True) == "string":
             return
         msg = "Rule sets cannot use at/in restrictions"

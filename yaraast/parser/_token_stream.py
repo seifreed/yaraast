@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Any, TypeVar
 
 from yaraast.ast.base import ASTNode, Location
 from yaraast.interfaces import IToken
 from yaraast.lexer import TokenType
+
+_NodeT = TypeVar("_NodeT", bound=ASTNode)
 
 
 class TokenStreamMixin:
@@ -103,25 +106,25 @@ class TokenStreamMixin:
             end_column=end.end_column or (end.column + 1),
         )
 
-    def _set_node_location_from_token(self, node: ASTNode, token: IToken) -> ASTNode:
+    def _set_node_location_from_token(self, node: _NodeT, token: IToken) -> _NodeT:
         node.location = self._location_from_token(token)
         return node
 
     def _set_node_location_from_tokens(
-        self, node: ASTNode, start_token: IToken, end_token: IToken
-    ) -> ASTNode:
+        self, node: _NodeT, start_token: IToken, end_token: IToken
+    ) -> _NodeT:
         node.location = self._location_from_tokens(start_token, end_token)
         return node
 
     def _set_node_location_from_nodes(
-        self, node: ASTNode, start_node: ASTNode, end_node: ASTNode
-    ) -> ASTNode:
+        self, node: _NodeT, start_node: ASTNode, end_node: ASTNode
+    ) -> _NodeT:
         location = self._location_from_nodes(start_node, end_node)
         if location is not None:
             node.location = location
         return node
 
-    def _synthetic_token_from_location(self, location: Location):
+    def _synthetic_token_from_location(self, location: Location) -> Any:
         class _SyntheticToken:
             def __init__(self, loc: Location) -> None:
                 self.line = loc.line

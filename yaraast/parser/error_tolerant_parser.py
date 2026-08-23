@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.errors import ParseError, YaraASTError
 from yaraast.parser.error_tolerant_flow import parse_with_recovery
@@ -18,14 +17,14 @@ from yaraast.parser.error_tolerant_types import ParserError, ParseResult
 from yaraast.parser.parser import Parser
 
 
-class ErrorTolerantParser(Parser):
+class ErrorTolerantParser:
     """Parser that can recover from syntax errors and continue parsing."""
 
     def __init__(self, text: str | None = None) -> None:
-        super().__init__()
         self.errors: list[ParserError] = []
         self.recovered_rules: list[Rule] = []
         self.lines: list[str] = []
+        self._condition_parsed = False
         self._source_text = text
 
     def parse(self, text: str | None = None) -> ParseResult:
@@ -43,7 +42,7 @@ class ErrorTolerantParser(Parser):
         self.lines = text.splitlines()
         # Try normal parsing first
         try:
-            ast = super().parse(text)
+            ast = Parser().parse(text)
         except (YaraASTError, ValueError):
             # If normal parsing fails, try error-tolerant parsing
             ast = self._parse_with_recovery(text)
@@ -70,13 +69,11 @@ class ErrorTolerantParser(Parser):
 
     def _parse_condition(
         self,
-        condition_text: str | None = None,
+        condition_text: str,
         line_num: int | None = None,
         raw_line: str | None = None,
-    ) -> Any:
+    ) -> Expression:
         """Parse a condition expression (simplified)."""
-        if condition_text is None:
-            return super()._parse_condition()
         return parse_condition(self, condition_text, line_num, raw_line)
 
     def _add_error(self, message: str, line: int, column: int, severity: str = "error") -> None:

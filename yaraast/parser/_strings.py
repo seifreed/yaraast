@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.strings import HexString, HexToken, PlainString, RegexString, StringDefinition
-from yaraast.lexer import TokenType
+from yaraast.interfaces import IToken
+from yaraast.lexer import Token, TokenType
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 from ._shared import ParserError, parse_regex_value, validate_string_modifiers
+from ._token_stream import TokenStreamMixin
 
 HEX_STRING_MODIFIER_TYPES = frozenset({StringModifierType.PRIVATE})
 REGEX_STRING_MODIFIER_TYPES = frozenset(
@@ -21,7 +25,7 @@ REGEX_STRING_MODIFIER_TYPES = frozenset(
 )
 
 
-class StringParsingMixin:
+class StringParsingMixin(TokenStreamMixin):
     """Mixin with string parsing helpers."""
 
     def _reserved_string_identifiers(self) -> set[str]:
@@ -54,8 +58,8 @@ class StringParsingMixin:
                 break
 
             start_token = self._advance()
-            identifier = start_token.value
-            self._validate_string_definition_identifier(str(identifier), start_token)
+            identifier = str(start_token.value)
+            self._validate_string_definition_identifier(identifier, start_token)
 
             # Handle anonymous strings (just "$")
             is_anonymous = identifier == "$"
@@ -75,9 +79,10 @@ class StringParsingMixin:
                 raise ParserError(msg, self._peek())
 
             # Parse string value
+            string_def: StringDefinition
             if self._match(TokenType.STRING):
                 string_token = self._previous()
-                value = string_token.value
+                value = str(string_token.value)
                 if value == "":
                     msg = f'empty string "{identifier}"'
                     raise ParserError(msg, self._previous())
@@ -86,7 +91,7 @@ class StringParsingMixin:
                     PlainString(
                         identifier=identifier,
                         value=value,
-                        raw_bytes=string_token.raw_bytes,
+                        raw_bytes=getattr(string_token, "raw_bytes", None),
                         modifiers=modifiers,
                     ),
                     start_token,
@@ -96,7 +101,7 @@ class StringParsingMixin:
                     string_def.is_anonymous = True
                 strings.append(string_def)
             elif self._match(TokenType.HEX_STRING):
-                hex_value = self._previous().value
+                hex_value = str(self._previous().value)
                 tokens = self._parse_hex_string(hex_value)
                 modifiers = self._parse_string_modifiers(
                     allowed_modifier_types=HEX_STRING_MODIFIER_TYPES,
@@ -112,16 +117,20 @@ class StringParsingMixin:
                 strings.append(string_def)
             elif self._match(TokenType.REGEX):
                 try:
-                    regex, regex_modifiers = parse_regex_value(self._previous().value)
+                    regex, regex_modifiers = parse_regex_value(str(self._previous().value))
                 except ValueError as e:
                     raise ParserError(str(e), self._previous()) from e
                 parsed_modifiers = self._parse_string_modifiers(
                     allowed_modifier_types=REGEX_STRING_MODIFIER_TYPES,
                     modifier_context="regex strings",
                 )
-                modifiers = [*regex_modifiers, *parsed_modifiers]
+                regex_string_modifiers: list[Any] = [*regex_modifiers, *parsed_modifiers]
                 string_def = self._set_node_location_from_tokens(
-                    RegexString(identifier=identifier, regex=regex, modifiers=modifiers),
+                    RegexString(
+                        identifier=identifier,
+                        regex=regex,
+                        modifiers=regex_string_modifiers,
+                    ),
                     start_token,
                     self._previous(),
                 )
@@ -135,7 +144,7 @@ class StringParsingMixin:
         return strings
 
     @staticmethod
-    def _validate_string_definition_identifier(identifier: str, token) -> None:
+    def _validate_string_definition_identifier(identifier: str, token: IToken) -> None:
         if identifier == "$" or not identifier.endswith("*"):
             return
         msg = f'Invalid string definition identifier "{identifier}"'
@@ -161,7 +170,7 @@ class StringParsingMixin:
             TokenType.PRIVATE,
         ):
             mod_token = self._advance()
-            mod_name = mod_token.value.lower()
+            mod_name = str(mod_token.value).lower()
             modifier_type = StringModifierType.from_string(mod_name)
             if allowed_modifier_types is not None and modifier_type not in allowed_modifier_types:
                 msg = f"String modifier '{mod_name}' is not valid on {modifier_context}"
@@ -219,7 +228,7 @@ class StringParsingMixin:
         Converts HexParseError to ParserError for consistent error handling.
         """
         try:
-            hex_parser = HexStringParser(error_token=self._peek())
+            hex_parser = HexStringParser(error_token=cast(Token, self._peek()))
             return hex_parser.parse(hex_content)
         except HexParseError as e:
             raise ParserError(str(e), self._peek()) from e

@@ -8,8 +8,9 @@ from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.extern import ExternImport
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import MetaScope, StringModifier, StringModifierType
+from yaraast.ast.modifiers import MetaEntry, MetaScope, StringModifier, StringModifierType
 from yaraast.errors import ParseError
+from yaraast.interfaces import IToken
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
@@ -29,8 +30,8 @@ if TYPE_CHECKING:
     from yaraast.ast.expressions import Expression
     from yaraast.ast.extern import ExternNamespace, ExternRule
     from yaraast.ast.pragmas import InRulePragma, Pragma
-    from yaraast.ast.rules import Import, Include, Rule
-    from yaraast.ast.strings import StringDefinition
+    from yaraast.ast.rules import Import, Include, Rule, Tag
+    from yaraast.ast.strings import HexToken, StringDefinition
 
 
 class CommentAwareParser(Parser):
@@ -107,8 +108,6 @@ class CommentAwareParser(Parser):
                 rules.append(rule)
                 top_level_nodes.append(rule)
             else:
-                from yaraast.parser.parser import ParserError
-
                 msg = f"Unexpected token: {self._peek().value}"
                 raise ParserError(msg, self._peek())
 
@@ -132,7 +131,7 @@ class CommentAwareParser(Parser):
 
     def _extract_comment_tokens(self) -> None:
         """Extract comment tokens from the token stream."""
-        non_comment_tokens, comment_tokens = extract_comment_tokens(self.tokens)
+        non_comment_tokens, comment_tokens = extract_comment_tokens(cast(list[Token], self.tokens))
         self.tokens = non_comment_tokens
         self.comment_tokens = comment_tokens
 
@@ -211,7 +210,7 @@ class CommentAwareParser(Parser):
         self._advance()
         return name
 
-    def _parse_rule_tags_with_comments(self) -> list:
+    def _parse_rule_tags_with_comments(self) -> list[Tag]:
         """Parse rule tags with comment preservation."""
         from yaraast.ast.rules import Tag
 
@@ -238,11 +237,13 @@ class CommentAwareParser(Parser):
             msg = "Expected '{'"
             raise ParserError(msg, self._peek())
 
-    def _parse_rule_sections_with_comments(self) -> tuple:
+    def _parse_rule_sections_with_comments(
+        self,
+    ) -> tuple[list[Meta | MetaEntry], list[StringDefinition], Expression | None]:
         """Parse rule sections (meta, strings, condition) with comments."""
-        meta = []
-        strings = []
-        condition = None
+        meta: list[Meta | MetaEntry] = []
+        strings: list[StringDefinition] = []
+        condition: Expression | None = None
         seen_meta = False
         seen_strings = False
         seen_condition = False
@@ -298,7 +299,7 @@ class CommentAwareParser(Parser):
             msg = f"Expected ':' after '{section_name}'"
             raise ParserError(msg, self._peek())
 
-    def _parse_condition_with_comments(self):
+    def _parse_condition_with_comments(self) -> Expression:
         """Parse condition section with comment preservation."""
         cond_start_token = self._peek()
         cond_start_line = cond_start_token.line if cond_start_token else 1
@@ -319,7 +320,7 @@ class CommentAwareParser(Parser):
     @staticmethod
     def _condition_end_line(condition: Expression, fallback: int) -> int:
         """Return the line where the condition expression ends."""
-        location = getattr(condition, "location", None)
+        location = condition.location
         if location is not None and location.end_line is not None:
             return location.end_line
         return fallback
@@ -350,7 +351,9 @@ class CommentAwareParser(Parser):
             return literal
         return condition
 
-    def _attach_rule_comments(self, rule, leading_comments, start_token) -> None:
+    def _attach_rule_comments(
+        self, rule: Rule, leading_comments: list[Comment], start_token: IToken
+    ) -> None:
         """Attach leading and trailing comments to rule."""
         if leading_comments:
             rule.leading_comments = leading_comments
@@ -365,7 +368,7 @@ class CommentAwareParser(Parser):
         from yaraast.ast.strings import HexString, PlainString, RegexString
         from yaraast.lexer.tokens import TokenType
 
-        strings = []
+        strings: list[StringDefinition] = []
         anonymous_counter = 0
         used_identifiers = self._reserved_string_identifiers()
         seen_named_identifiers: set[str] = set()
@@ -377,7 +380,7 @@ class CommentAwareParser(Parser):
             # Collect leading comments
             leading_comments = self._collect_leading_comments(start_line)
 
-            identifier = self._peek().value
+            identifier = str(self._peek().value)
             self._advance()
             self._validate_string_definition_identifier(str(identifier), start_token)
 
@@ -402,38 +405,45 @@ class CommentAwareParser(Parser):
             string_def: StringDefinition
             if self._match(TokenType.STRING):
                 string_token = self._previous()
-                value = string_token.value
+                value = str(string_token.value)
                 if value == "":
                     msg = f'empty string "{identifier}"'
                     raise ParserError(msg, self._previous())
-                modifiers = self._parse_string_modifiers()
+                plain_modifiers = self._parse_string_modifiers()
                 string_def = PlainString(
                     identifier=identifier,
                     value=value,
-                    raw_bytes=string_token.raw_bytes,
-                    modifiers=modifiers,
+                    raw_bytes=getattr(string_token, "raw_bytes", None),
+                    modifiers=plain_modifiers,
                 )
             elif self._match(TokenType.HEX_STRING):
-                hex_content = self._previous().value.strip()
+                hex_content = str(self._previous().value).strip()
                 hex_tokens = self._parse_hex_tokens(hex_content)
-                modifiers = self._parse_string_modifiers(
+                hex_modifiers = self._parse_string_modifiers(
                     allowed_modifier_types=HEX_STRING_MODIFIER_TYPES,
                     modifier_context="hex strings",
                 )
                 string_def = HexString(
-                    identifier=identifier, tokens=hex_tokens, modifiers=modifiers
+                    identifier=identifier,
+                    tokens=hex_tokens,
+                    modifiers=hex_modifiers,
                 )
             elif self._match(TokenType.REGEX):
-                regex_val = self._previous().value
-                pattern, modifiers = self._parse_regex_value(regex_val)
+                regex_val = str(self._previous().value)
+                pattern, regex_modifiers = self._parse_regex_value(regex_val)
+                combined_modifiers: list[Any] = list(regex_modifiers)
                 # Parse additional YARA modifiers
-                modifiers.extend(
+                combined_modifiers.extend(
                     self._parse_string_modifiers(
                         allowed_modifier_types=REGEX_STRING_MODIFIER_TYPES,
                         modifier_context="regex strings",
                     )
                 )
-                string_def = RegexString(identifier=identifier, regex=pattern, modifiers=modifiers)
+                string_def = RegexString(
+                    identifier=identifier,
+                    regex=pattern,
+                    modifiers=combined_modifiers,
+                )
             else:
                 msg = "Expected string value"
                 raise ParserError(msg, self._peek())
@@ -526,25 +536,25 @@ class CommentAwareParser(Parser):
         max_val = self._previous().value
         return (min_val, max_val)
 
-    def _parse_hex_tokens(self, hex_content: str):
+    def _parse_hex_tokens(self, hex_content: str) -> list[HexToken]:
         """Parse hex string tokens."""
         try:
-            return HexStringParser(error_token=self._peek()).parse(hex_content)
+            return HexStringParser(error_token=cast(Token, self._peek())).parse(hex_content)
         except HexParseError as e:
             raise ParserError(str(e), self._peek()) from e
 
-    def _parse_regex_value(self, regex_val: str):
+    def _parse_regex_value(self, regex_val: str) -> tuple[str, list[str]]:
         """Parse regex value and extract modifiers."""
         try:
             return parse_regex_value(regex_val)
         except ValueError as e:
             raise ParserError(str(e), self._peek()) from e
 
-    def _parse_meta_section(self) -> list[Meta]:
+    def _parse_meta_section(self) -> list[Meta | MetaEntry]:
         """Parse meta section with comment preservation."""
         from yaraast.lexer.tokens import TokenType
 
-        meta_list = []
+        meta_list: list[Meta | MetaEntry] = []
 
         while self._peek() and self._check_meta_entry_start():
             start_token = self._peek()
@@ -617,15 +627,16 @@ class CommentAwareParser(Parser):
 
             comments = []
             for token in self.comment_tokens:
+                text = str(token.value)
                 comment = Comment(
-                    text=token.value,
-                    is_multiline=token.value.startswith("/*"),
+                    text=text,
+                    is_multiline=text.startswith("/*"),
                 )
                 comment.location = Location(
                     line=token.line,
                     column=token.column,
                     end_line=token.line,
-                    end_column=token.column + len(token.value),
+                    end_column=token.column + len(text),
                 )
                 comments.append(comment)
 

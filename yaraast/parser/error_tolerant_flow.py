@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
-from yaraast.ast.base import Location, YaraFile
+from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.rules import Rule
 
+if TYPE_CHECKING:
+    from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 
-def parse_with_recovery(parser) -> YaraFile:
+
+def parse_with_recovery(parser: ErrorTolerantParser) -> YaraFile:
     """Recover a YARA file by scanning line by line."""
     yara_file = YaraFile()
     yara_file.imports = []
@@ -52,7 +56,9 @@ def parse_with_recovery(parser) -> YaraFile:
     return yara_file
 
 
-def parse_rule_with_recovery(parser, start_line: int) -> tuple[Rule | None, int]:
+def parse_rule_with_recovery(
+    parser: ErrorTolerantParser, start_line: int
+) -> tuple[Rule | None, int]:
     """Recover a single rule block."""
     line = parser.lines[start_line].strip()
     rule_name, tags, modifiers = extract_rule_header(parser, line, start_line)
@@ -67,7 +73,9 @@ def parse_rule_with_recovery(parser, start_line: int) -> tuple[Rule | None, int]
     return rule, current_line - start_line + 1
 
 
-def extract_rule_header(parser, line: str, line_num: int) -> tuple[str | None, list, list[str]]:
+def extract_rule_header(
+    parser: ErrorTolerantParser, line: str, line_num: int
+) -> tuple[str | None, list[str], list[str]]:
     """Extract rule name and tags from a rule declaration."""
     match = re.match(
         r"(?P<modifiers>(?:(?:private|global)\s+)*)rule\s+(?P<name>\w+)"
@@ -144,7 +152,9 @@ def _count_braces_outside_literals(line: str) -> int:
     return count
 
 
-def collect_rule_body(parser, start_line: int, header_line: str) -> tuple[list[str], int]:
+def collect_rule_body(
+    parser: ErrorTolerantParser, start_line: int, header_line: str
+) -> tuple[list[str], int]:
     """Collect all lines belonging to a rule body."""
     rule_body_lines: list[str] = []
     brace_count = _count_braces_outside_literals(header_line)
@@ -168,14 +178,14 @@ def _set_yara_file_location(yara_file: YaraFile) -> None:
     if not (yara_file.imports or yara_file.includes or yara_file.rules):
         return
     if yara_file.imports:
-        start_node = yara_file.imports[0]
+        start_node: ASTNode = yara_file.imports[0]
     elif yara_file.includes:
         start_node = yara_file.includes[0]
     else:
         start_node = yara_file.rules[0]
 
     if yara_file.rules:
-        end_node = yara_file.rules[-1]
+        end_node: ASTNode = yara_file.rules[-1]
     elif yara_file.includes:
         end_node = yara_file.includes[-1]
     else:
