@@ -34,3 +34,12 @@ def test_conformance_engines_are_reproducibly_pinned() -> None:
         "yara-python==4.5.4",
         "yara-x==1.19.0",
     ]
+
+
+def test_release_version_has_a_dated_changelog_entry() -> None:
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    project_version = pyproject["project"]["version"]
+    changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
+
+    assert project_version == "2.0.1"
+    assert f"## {project_version} - 2026-08-23" in changelog

@@ -5,6 +5,8 @@ versioning.
 
 ## Unreleased
 
+## 2.0.1 - 2026-08-23
+
 ### Added
 
 - Stable root `parse` and `parse_file` APIs.
@@ -14,6 +16,10 @@ versioning.
 - Pinned libyara/YARA-X differential conformance and a published dialect matrix.
 - Effective coverage and Graphviz integration gates.
 - Configurable parser resource limits, deadlines, and cooperative cancellation.
+- Valid and invalid conformance corpora for YARA, YARA-X 1.19, and the dated
+  YARA-L documentation snapshot.
+- Required Atheris fuzzing, mutation-score, and parser/LSP performance gates.
+- Auditable issue links for every conditional test skip.
 
 ### Changed
 
@@ -26,6 +32,7 @@ versioning.
   language client and uses an audited npm lockfile.
 - CLI and library parsers now apply bounded defaults; LSP parsing uses a tighter
   policy and discards partial state after cancellation or limit failures.
+- CI and release run Ruff, Black, mypy, and Bandit over the full repository.
 
 ### Removed
 
