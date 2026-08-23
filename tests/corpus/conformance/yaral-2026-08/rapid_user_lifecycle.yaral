@@ -1,0 +1,14 @@
+rule UserCreationThenDeletion {
+  events:
+    $create.target.user.userid = $user
+    $create.metadata.event_type = "USER_CREATION"
+    $delete.target.user.userid = $user
+    $delete.metadata.event_type = "USER_DELETION"
+    $create.metadata.event_timestamp.seconds <= $delete.metadata.event_timestamp.seconds
+
+  match:
+    $user over 4h
+
+  condition:
+    $create and $delete
+}

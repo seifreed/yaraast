@@ -1,0 +1,13 @@
+rule OutcomeConditionalRule {
+  events:
+    $u.metadata.event_type = "FILE_COPY"
+    $u.principal.file.size = $file_size
+    $u.principal.hostname = $hostname
+    $dayofweek = timestamp.get_day_of_week($u.metadata.collected_timestamp.seconds)
+
+  outcome:
+    $risk_score = if($file_size > 500*1024*1024, 2) + if($dayofweek = 1, 4)
+
+  condition:
+    $u and $risk_score >= 6
+}

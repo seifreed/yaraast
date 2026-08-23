@@ -1,0 +1,13 @@
+rule RegexAndNetworkRule {
+  events:
+    net.ip_in_range_cidr($e.principal.ip, "203.0.113.0/24")
+    $e.principal.hostname = $host
+    $host = /.*HoSt.*/ nocase
+    re.regex($e.network.email.from, `.*altostrat\.com`) nocase
+
+  match:
+    $host over 10m
+
+  condition:
+    #e > 10
+}

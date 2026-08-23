@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from itertools import pairwise
+from typing import TYPE_CHECKING, cast
 
+from yaraast.lexer.tokens import TokenType as BaseTokenType
 from yaraast.yaral._validator_mixin import ValidatorMixinBase
+from yaraast.yaral.lexer import YaraLLexer
+from yaraast.yaral.tokens import YaraLTokenType
 
 if TYPE_CHECKING:
     from yaraast.yaral.ast_nodes import (
@@ -35,6 +39,9 @@ class EventValidationMixin(ValidatorMixinBase):
 
     def visit_event_statement(self, node: EventStatement) -> None:
         """Validate event statement."""
+        for event_name in _raw_statement_event_names(node.text):
+            self.defined_events.add(event_name)
+
         event = getattr(node, "event", None)
         if event:
             self.visit(event)
@@ -158,6 +165,15 @@ def _normalize_udm_validation_parts(parts: list[str]) -> list[str]:
     for part in raw_parts:
         normalized.extend(_extract_udm_validation_segments(part))
     return normalized
+
+
+def _raw_statement_event_names(text: str) -> set[str]:
+    tokens = YaraLLexer(text).tokenize()
+    names = set()
+    for token, next_token in pairwise(tokens):
+        if token.yaral_type == YaraLTokenType.EVENT_VAR and next_token.type == BaseTokenType.DOT:
+            names.add(cast(str, token.value).lstrip("$"))
+    return names
 
 
 def _extract_udm_validation_segments(part: str) -> list[str]:

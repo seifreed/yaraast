@@ -1,0 +1,14 @@
+rule MultiEventRule {
+  meta:
+    author = "noone@altostrat.com"
+
+  events:
+    $e.metadata.event_type = "USER_LOGIN"
+    $e.principal.user.userid = $user
+
+  match:
+    $user over 10m
+
+  condition:
+    #e >= 10
+}

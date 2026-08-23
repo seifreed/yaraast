@@ -1,0 +1,10 @@
+rule SingleEventRule {
+  meta:
+    author = "noone@altostrat.com"
+
+  events:
+    $e.metadata.event_type = "USER_LOGIN"
+
+  condition:
+    $e
+}

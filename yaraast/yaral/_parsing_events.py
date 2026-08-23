@@ -572,6 +572,9 @@ def _event_statement_token_text(token: Any) -> str:
         return ""
     if token.type == BaseTokenType.STRING:
         return f'"{escape_plain_string_value(str(value))}"'
+    if token.type == BaseTokenType.REGEX:
+        regex = str(value)
+        return regex if regex.startswith("/") and regex.endswith("/") else f"`{regex}`"
     return str(value)
 
 

@@ -1,0 +1,21 @@
+rule composite_admin_detection {
+  meta:
+    rule_name = "Detection with Admin User"
+    author = "Google Cloud Security"
+    severity = "Medium"
+
+  events:
+    $rule_name = $d.detection.detection.rule_name
+    $principal_user = $d.detection.detection.variables["principal_users"]
+    $principal_user = /admin|root/ nocase
+
+  match:
+    $principal_user over 1h
+
+  outcome:
+    $risk_score = 75
+    $upstream_rules = array_distinct($rule_name)
+
+  condition:
+    $d
+}

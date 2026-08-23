@@ -132,6 +132,24 @@ def test_parse_function_event_statement_preserves_generated_text() -> None:
     assert 're.regex($e.target.hostname, "evil.*") nocase' in generated
 
 
+def test_parse_function_event_statement_preserves_backtick_regex() -> None:
+    source = (
+        "rule regex_event { events: "
+        "re.regex($e.network.email.from, `.*altostrat\\.com`) nocase "
+        "condition: $e }"
+    )
+    parser = EnhancedYaraLParser(source)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    generated = YaraLGenerator().generate(ast)
+    assert "re.regex($e.network.email.from, `.*altostrat\\.com`) nocase" in generated
+
+    regenerated_parser = EnhancedYaraLParser(generated)
+    regenerated_parser.parse()
+    assert regenerated_parser.errors == []
+
+
 def test_parse_bracketed_event_assignment_preserves_generated_text() -> None:
     parser = EnhancedYaraLParser(
         'rule bracket_event { events: $e.metadata["event_type"] = "LOGIN" condition: $e }'

@@ -1,0 +1,15 @@
+rule SuspiciousIPLogins {
+  meta:
+    author = "alice@example.com"
+
+  events:
+    $e.metadata.event_type = "USER_LOGIN"
+    all $e.principal.ip != "100.97.16.0"
+    $e.principal.ip = $ip
+
+  match:
+    $ip over 5m
+
+  condition:
+    $e
+}

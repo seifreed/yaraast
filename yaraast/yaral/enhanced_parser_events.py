@@ -193,6 +193,9 @@ class EnhancedYaraLParserEventsMixin(EnhancedParserMixinBase):
             if self._check_section_keyword() or self._check(BaseTokenType.RBRACE):
                 break
 
+            if current_token.line > start_line and self._is_raw_event_statement_start():
+                break
+
             if current_token.line > start_line and (
                 self._check_yaral_type(YaraLTokenType.EVENT_VAR)
                 or self._check(BaseTokenType.STRING_IDENTIFIER)
