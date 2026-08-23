@@ -7,7 +7,9 @@ versioning.
 
 ### Added
 
-- Stable root `parse`, `parse_file`, and `format` APIs.
+- Stable root `parse` and `parse_file` APIs.
+- Explicit `generate`, `format_canonical`, and byte-preserving
+  `rewrite_lossless` source contracts.
 - Python 3.11 through 3.14 support and the `py.typed` marker.
 - Pinned libyara/YARA-X differential conformance and a published dialect matrix.
 - Effective coverage and Graphviz integration gates.
@@ -25,6 +27,7 @@ versioning.
 ### Removed
 
 - Legacy LSP dependency fallbacks, import repair, and obsolete package-root exports.
+- The ambiguous root `format` name; use `format_canonical`.
 - Generated LSP caches and developer-local paths from tracked artifacts.
 - The divergent `requirements.txt` manifest.
 

@@ -8,12 +8,14 @@ import yaraast
 
 document = yaraast.parse("rule example { condition: true }")
 document = yaraast.parse_file("rules.yar", dialect="auto")
-formatted = yaraast.format("rule example { condition: true }")
+formatted = yaraast.format_canonical("rule example { condition: true }")
 ```
 
 ## Required Changes
 
 - Use Python 3.11 or newer.
+- Replace the former root `format()` call with `format_canonical()`; use
+  `rewrite_lossless()` for byte-preserving edits and `generate()` for new ASTs.
 - Import parser implementations from their namespaces, such as
   `yaraast.parser`, `yaraast.yarax`, or `yaraast.yaral`; do not import internal
   classes from the package root.

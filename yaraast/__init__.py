@@ -2,8 +2,16 @@
 
 from importlib.metadata import version
 
-from yaraast.api import format, parse, parse_file
+from yaraast.api import SourceEdit, format_canonical, generate, parse, parse_file, rewrite_lossless
 
 __version__ = version("yaraast")
 
-__all__ = ["__version__", "format", "parse", "parse_file"]
+__all__ = [
+    "SourceEdit",
+    "__version__",
+    "format_canonical",
+    "generate",
+    "parse",
+    "parse_file",
+    "rewrite_lossless",
+]

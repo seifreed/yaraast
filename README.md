@@ -147,10 +147,18 @@ ast = yaraast.parse(source)
 # Force specific dialect
 ast = yaraast.parse(source, dialect="yara")
 
-# Parse files and format source through the same public API
+# Parse files, generate new source, and format canonically
 Path("rules.yar").write_text(source, encoding="utf-8")
 file_ast = yaraast.parse_file("rules.yar")
-formatted = yaraast.format(source, dialect="yara")
+generated = yaraast.generate(file_ast, dialect="yara")
+formatted = yaraast.format_canonical(source, dialect="yara")
+
+# Preserve every byte outside an explicit UTF-8 byte edit
+offset = source.encode("utf-8").index(b"true")
+rewritten = yaraast.rewrite_lossless(
+    source,
+    [yaraast.SourceEdit(offset, offset + 4, "false")],
+)
 ```
 
 ### Direct Parser + Visitor

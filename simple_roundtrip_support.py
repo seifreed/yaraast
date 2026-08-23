@@ -11,6 +11,7 @@ from typing import Any
 from yaraast.ast.base import ASTNode
 from yaraast.errors import YaraASTError
 from yaraast.parser.source import parse_yara_source
+from yaraast.serialization.ast_diff import AstDiff
 from yaraast.serialization.simple_roundtrip_helpers import deserialize_node, serialize_node
 from yaraast.shared.file_patterns import iter_matching_files
 from yaraast.yarax.generator import YaraXGenerator
@@ -66,7 +67,10 @@ class SimpleRoundTrip:
             regenerated = self.generator.generate(original_ast)
             regenerated_ast = parse_yara_source(regenerated)
 
-            success = original_ast is not None and regenerated_ast is not None
+            comparison = AstDiff().compare(original_ast, regenerated_ast)
+            success = (
+                not comparison.differences and comparison.old_ast_hash == comparison.new_ast_hash
+            )
             if success:
                 self.success_count += 1
 
@@ -131,14 +135,23 @@ def simple_roundtrip_test(yara_source: str) -> dict[str, Any]:
         generator = YaraXGenerator()
         reconstructed_source = generator.generate(original_ast)
         reconstructed_ast = parse_yara_source(reconstructed_source)
-        success = original_ast is not None and reconstructed_ast is not None
+        comparison = AstDiff().compare(original_ast, reconstructed_ast)
+        differences = [
+            f"{difference.diff_type.value} at {difference.path}"
+            for difference in comparison.differences
+        ]
+        if not differences and comparison.old_ast_hash != comparison.new_ast_hash:
+            differences.append(
+                f"AST hash differs: {comparison.old_ast_hash} vs {comparison.new_ast_hash}"
+            )
+        success = not differences
         return {
             "original_source": yara_source,
             "reconstructed_source": reconstructed_source,
             "serialized_data": reconstructed_source,
             "format": "simple",
             "round_trip_successful": success,
-            "differences": [] if success else ["Error during roundtrip"],
+            "differences": differences,
             "metadata": {
                 "original_rule_count": len(original_ast.rules),
                 "reconstructed_rule_count": len(reconstructed_ast.rules),

@@ -406,6 +406,23 @@ def test_simple_roundtrip_test_handles_real_type_error() -> None:
     assert regenerated_ast is None
 
 
+def test_simple_roundtrip_rejects_parseable_structural_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = SimpleRoundTrip()
+    monkeypatch.setattr(
+        runner.generator,
+        "generate",
+        lambda ast: "rule different { condition: false }",
+    )
+
+    success, original_ast, regenerated_ast = runner.test("rule original { condition: true }")
+
+    assert not success
+    assert original_ast.rules[0].name == "original"
+    assert regenerated_ast.rules[0].name == "different"
+
+
 def test_simple_roundtrip_test_propagates_internal_parser_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
