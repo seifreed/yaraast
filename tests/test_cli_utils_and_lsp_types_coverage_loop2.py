@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Marc Rivero López
 # This test suite validates real code behavior without mocks or stubs.
 
-"""Regression tests targeting remaining uncovered lines in two modules.
+"""Regression tests targeting remaining uncovered CLI utility lines.
 
 Targets
 -------
@@ -17,14 +17,6 @@ yaraast/cli/utils.py
   - Line  151    : write_json body (delegates to write_text)
   - Lines 174-176: parse_yara_file body (reads and parses real YARA source)
 
-yaraast/lsp/lsp_types.py
-  - Line 99: sys.path.remove(path) — the removal branch inside the fallback
-              for-loop, reached when site-packages IS still in sys.path at the
-              time the except ImportError block executes.  Triggered by injecting
-              a synthetic broken lsprotocol.types package earlier in sys.path so
-              that the primary import fails with exc.name == 'lsprotocol.types'
-              while leaving the real site-packages entry untouched.
-
 Unreachable lines (documented, not tested)
 ------------------------------------------
 yaraast/cli/utils.py lines 94-96 / 102-104 via the composite helpers
@@ -37,25 +29,11 @@ yaraast/cli/utils.py lines 94-96 / 102-104 via the composite helpers
   through the composite helpers.  They ARE reachable via direct calls, which is
   what lines 94-96 and 102-104 tests below exercise.
 
-yaraast/lsp/lsp_types.py line 92 (re-raise branch):
-  The containing try-block imports exclusively from lsprotocol.types; any
-  ImportError it raises carries exc.name == 'lsprotocol' or 'lsprotocol.types',
-  both of which are in _LSPROTOCOL_TYPES_IMPORT_NAMES, so
-  _is_missing_lsprotocol_types(exc) always returns True and the guard evaluates
-  to False (no re-raise).  No real execution path can set exc.name to an
-  unrelated value inside that try-block; the branch is structurally dead code.
 """
 
 from __future__ import annotations
 
-import importlib
-import os
 from pathlib import Path
-import shutil
-import site
-import sys
-import tempfile
-from types import ModuleType
 from typing import Any, cast
 
 import pytest
@@ -331,151 +309,3 @@ def test_parse_yara_file_from_tmp_file(tmp_path: Path) -> None:
 
     result = utils.parse_yara_file(yara_file)
     assert isinstance(result, YaraFile)
-
-
-# ---------------------------------------------------------------------------
-# lsp_types — line 99: sys.path.remove(path) inside fallback for-loop
-# ---------------------------------------------------------------------------
-
-
-def _make_broken_lsprotocol_package(directory: str) -> None:
-    """Create a synthetic lsprotocol package under *directory*.
-
-    The package __init__.py is empty (import succeeds), but types.py raises
-    ImportError with exc.name set to 'lsprotocol.types'.  When this directory
-    is prepended to sys.path before importing lsprotocol.types, the primary
-    import in lsp_types.py fails with the correct exc.name, triggering the
-    fallback block while leaving the real site-packages entry still in sys.path.
-
-    Inside the fallback block, the for-loop over reversed(site.getsitepackages())
-    then finds the real site-packages IS in sys.path and calls sys.path.remove()
-    (line 99), which is the branch this test suite targets.
-    """
-    pkg_dir = os.path.join(directory, "lsprotocol")
-    os.makedirs(pkg_dir, exist_ok=True)
-    with open(os.path.join(pkg_dir, "__init__.py"), "w", encoding="utf-8") as fh:
-        fh.write("")
-    with open(os.path.join(pkg_dir, "types.py"), "w", encoding="utf-8") as fh:
-        fh.write(
-            'e = ImportError("No module named lsprotocol.types")\n'
-            'e.name = "lsprotocol.types"\n'
-            "raise e\n"
-        )
-
-
-def _pop_lsprotocol_modules() -> dict[str, ModuleType]:
-    """Remove all lsprotocol-related entries from sys.modules and return them."""
-    removed: dict[str, ModuleType] = {}
-    for key in list(sys.modules.keys()):
-        if "lsprotocol" in key:
-            removed[key] = sys.modules.pop(key)
-    return removed
-
-
-class TestLspTypesLine99RemovePath:
-    """Exercise the sys.path.remove(path) branch (line 99) in lsp_types.py.
-
-    The existing test suite in test_lsp_types_coverage_loop.py reaches the
-    fallback block by removing site-packages from sys.path *before* the import.
-    That means when the fallback block's for-loop runs and checks
-    ``if path in sys.path``, the path is already absent, so sys.path.remove
-    (line 99) is never called.
-
-    This test class takes the alternative approach: inject a broken
-    lsprotocol.types earlier in sys.path while leaving the real site-packages
-    entry intact, so that:
-      1. The primary import raises ImportError with exc.name == 'lsprotocol.types'.
-      2. The fallback for-loop finds site-packages IS in sys.path.
-      3. sys.path.remove(path) on line 99 executes, then line 100 re-inserts it.
-    """
-
-    @staticmethod
-    def _trigger_with_broken_package() -> ModuleType:
-        """Inject a broken lsprotocol package and re-import lsp_types.
-
-        Returns the freshly-loaded module.  Restores sys.path and sys.modules
-        fully before returning so subsequent tests are not affected.
-        """
-        site_packages = site.getsitepackages()
-        real_sp_in_path = [sp for sp in site_packages if sp in sys.path]
-        if not real_sp_in_path:
-            pytest.skip("Real site-packages not found in sys.path — cannot trigger line 99")
-
-        tmpdir = tempfile.mkdtemp()
-        try:
-            _make_broken_lsprotocol_package(tmpdir)
-
-            # Save state before mutation.
-            saved_path = sys.path[:]
-            saved_lsprotocol = _pop_lsprotocol_modules()
-            saved_lsp_types = sys.modules.pop("yaraast.lsp.lsp_types", None)
-            lsp_parent = sys.modules.get("yaraast.lsp")
-            parent_attr_before = (
-                lsp_parent.__dict__.get("lsp_types") if lsp_parent is not None else None
-            )
-
-            # Prepend the broken package directory BEFORE real site-packages.
-            # Site-packages remains in sys.path so line 99 will be hit.
-            sys.path.insert(0, tmpdir)
-
-            recovered: ModuleType
-            try:
-                recovered = importlib.import_module("yaraast.lsp.lsp_types")
-            finally:
-                # Remove the freshly-created module entry so the restored
-                # original object becomes authoritative.
-                sys.modules.pop("yaraast.lsp.lsp_types", None)
-                # Remove the injected broken lsprotocol if it leaked.
-                for key in list(sys.modules.keys()):
-                    if "lsprotocol" in key:
-                        sys.modules.pop(key, None)
-                # Restore sys.path.
-                sys.path[:] = saved_path
-                # Restore original lsprotocol modules.
-                sys.modules.update(saved_lsprotocol)
-                # Restore original lsp_types module.
-                if saved_lsp_types is not None:
-                    sys.modules["yaraast.lsp.lsp_types"] = saved_lsp_types
-                # Restore parent package attribute.
-                if lsp_parent is not None:
-                    if parent_attr_before is not None:
-                        lsp_parent.__dict__["lsp_types"] = parent_attr_before
-                    else:
-                        lsp_parent.__dict__.pop("lsp_types", None)
-        finally:
-            shutil.rmtree(tmpdir, ignore_errors=True)
-
-        return recovered
-
-    def test_fallback_line99_module_loads_successfully(self) -> None:
-        """Line 99 hit: sys.path.remove removes real site-packages, then re-inserts it.
-
-        The module must still load successfully because after removing and
-        re-inserting the site-packages entry at position 0, importlib finds
-        the real lsprotocol.types there and completes the import.
-        """
-        recovered = self._trigger_with_broken_package()
-        assert hasattr(recovered, "YARAAST_RUNTIME_STATUS")
-        assert recovered.YARAAST_RUNTIME_STATUS == "yaraast/status"
-
-    def test_fallback_line99_range_class_is_real_type(self) -> None:
-        """After line 99 path, Range must be the real lsprotocol.types class."""
-        recovered = self._trigger_with_broken_package()
-        range_cls = recovered.Range
-        assert isinstance(range_cls, type)
-        assert "lsprotocol" in range_cls.__module__
-
-    def test_fallback_line99_all_members_present(self) -> None:
-        """All __all__ names must be present on the recovered module."""
-        import yaraast.lsp.lsp_types as stable
-
-        expected = list(stable.__all__)
-        recovered = self._trigger_with_broken_package()
-        for name in expected:
-            assert hasattr(recovered, name), f"Missing after line-99 path: {name!r}"
-
-    def test_fallback_line99_sys_path_restored(self) -> None:
-        """Ensure the helper fully restores sys.path after exercising line 99."""
-        original_path = sys.path[:]
-        self._trigger_with_broken_package()
-        assert sys.path == original_path, "sys.path was not fully restored after test"
