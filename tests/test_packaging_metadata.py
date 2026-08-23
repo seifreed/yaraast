@@ -33,3 +33,14 @@ def test_security_dependency_floors_cover_known_vulnerable_versions() -> None:
     assert _dependency_by_name(dependencies, "Pygments") == "Pygments>=2.20.0"
     assert _dependency_by_name(dependencies, "urllib3") == "urllib3>=2.7.0"
     assert _dependency_by_name(dev_dependencies, "pytest") == "pytest>=9.0.3"
+
+
+def test_conformance_engines_are_reproducibly_pinned() -> None:
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    optional_dependencies = pyproject["project"]["optional-dependencies"]
+
+    assert optional_dependencies["libyara"] == ["yara-python==4.5.4"]
+    assert optional_dependencies["conformance"] == [
+        "yara-python==4.5.4",
+        "yara-x==1.19.0",
+    ]

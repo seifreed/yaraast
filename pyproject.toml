@@ -57,11 +57,11 @@ dev = [
     "types-requests>=2.31.0",
 ]
 libyara = [
-    "yara-python>=4.5.0",
+    "yara-python==4.5.4",
 ]
 conformance = [
-    "yara-python>=4.5.0",
-    "yara-x>=1.0.0",
+    "yara-python==4.5.4",
+    "yara-x==1.19.0",
 ]
 performance = [
     "psutil>=5.9.0",

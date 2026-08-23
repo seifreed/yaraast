@@ -46,6 +46,11 @@ Outputs    YARA, JSON, YAML, AST tree views
 Tooling    CLI, visitors, builders, serialization, semantic checks
 ```
 
+Support levels differ by dialect. Classic YARA is stable, YARA-X is beta,
+YARA-L is experimental, and automatic dialect detection is best effort. See
+the [compatibility matrix](docs/compatibility.md) for the exact engines and
+capabilities exercised by CI.
+
 ---
 
 ## Installation
@@ -191,6 +196,7 @@ pip install yaraast[all]
 
 ## Runtime Docs
 
+- Dialect compatibility: [docs/compatibility.md](docs/compatibility.md)
 - LSP runtime internals: [docs/lsp-runtime.md](docs/lsp-runtime.md)
 - LSP parity report: [docs/lsp-parity-report.md](docs/lsp-parity-report.md)
 - Latest runtime benchmark artifact: [docs/benchmarks/lsp-runtime-latest.json](docs/benchmarks/lsp-runtime-latest.json)
