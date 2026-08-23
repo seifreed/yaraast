@@ -16,7 +16,7 @@ def _validate_timeout(name: str, timeout: float | None) -> None:
         validate_positive_number_setting(timeout, name)
 
 
-def _run_with_alarm_timeout[T](
+def _run_with_alarm_timeout(
     signal_module: Any,
     operation: str,
     timeout: float,
@@ -38,7 +38,7 @@ def _run_with_alarm_timeout[T](
         signal_module.signal(signal_module.SIGALRM, previous_handler)
 
 
-def run_with_timeout[T](operation: str, timeout: float | None, fn: Callable[[], T]) -> T:
+def run_with_timeout(operation: str, timeout: float | None, fn: Callable[[], T]) -> T:
     """Run a callback with an optional timeout."""
     _validate_timeout("file_timeout", timeout)
     if timeout is None:
@@ -64,7 +64,7 @@ def _signal_module() -> Any:
         return None
 
 
-def _run_with_thread_timeout[T](operation: str, timeout: float, fn: Callable[[], T]) -> T:
+def _run_with_thread_timeout(operation: str, timeout: float, fn: Callable[[], T]) -> T:
     """Fallback timeout implementation when SIGALRM is unavailable."""
     result_cell: list[T] = []
     error_cell: list[BaseException] = []

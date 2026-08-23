@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar, cast
+from typing import TYPE_CHECKING, Generic, TypeVar, cast
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
@@ -78,7 +78,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class ASTVisitor[T]:
+class ASTVisitor(Generic[T]):
     """Base visitor class for traversing AST nodes.
 
     Subclasses only need to override the visit methods they care about.

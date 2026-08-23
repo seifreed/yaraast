@@ -5,12 +5,15 @@ description = "A Python library for parsing and manipulating YARA rules using Ab
 authors = [{name = "Marc Rivero", email = "mriverolopez@gmail.com"}]
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Security",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -92,7 +95,7 @@ include = ["yaraast*"]
 # Black configuration
 [tool.black]
 line-length = 100
-target-version = ['py313']
+target-version = ['py311']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -199,7 +202,7 @@ exclude_dirs = ["tests", "venv", "build", "dist"]
 
 # Mypy configuration - Gradual typing for parser library
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.11"
 strict = false
 warn_return_any = false
 warn_unused_configs = false
@@ -260,7 +263,7 @@ match-dir = "(?!tests|venv|build|dist).*"
 # Ruff configuration (enhanced)
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py311"
 
 # Strategic configuration for parser codebase
 [tool.ruff.lint]

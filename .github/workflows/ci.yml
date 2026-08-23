@@ -20,7 +20,16 @@ jobs:
         include:
           # Linux x64
           - os: ubuntu-24.04
+            python-version: "3.11"
+            arch: x64
+          - os: ubuntu-24.04
+            python-version: "3.12"
+            arch: x64
+          - os: ubuntu-24.04
             python-version: "3.13"
+            arch: x64
+          - os: ubuntu-24.04
+            python-version: "3.14"
             arch: x64
           # Linux ARM64
           - os: ubuntu-24.04-arm

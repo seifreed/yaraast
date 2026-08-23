@@ -4,14 +4,17 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import contextlib
-from typing import Any
+from typing import Any, ParamSpec, TypeVar
 
 import click
 
 from yaraast.cli.libyara_reporting import LibYaraCommandError, handle_libyara_error
 
+P = ParamSpec("P")
+R = TypeVar("R")
 
-def run_or_abort[**P, R](
+
+def run_or_abort(
     fn: Callable[P, R],
     console: Any,
     *args: P.args,

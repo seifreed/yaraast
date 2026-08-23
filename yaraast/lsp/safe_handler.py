@@ -5,22 +5,21 @@ from __future__ import annotations
 from collections.abc import Callable
 import functools
 import logging
-from typing import Any, cast, overload
+from typing import Any, TypeVar, cast, overload
 
 logger = logging.getLogger(__name__)
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 @overload
-def lsp_safe_handler[F: Callable[..., Any]](func: F) -> F: ...
+def lsp_safe_handler(func: F) -> F: ...
 
 
 @overload
-def lsp_safe_handler[F: Callable[..., Any]](*, default: Any) -> Callable[[F], F]: ...
+def lsp_safe_handler(*, default: Any) -> Callable[[F], F]: ...
 
 
-def lsp_safe_handler[F: Callable[..., Any]](
-    func: F | None = None, *, default: Any = None
-) -> F | Callable[[F], F]:
+def lsp_safe_handler(func: F | None = None, *, default: Any = None) -> F | Callable[[F], F]:
     """Wrap LSP handler to catch exceptions and return a default value.
 
     LSP handlers use broad ``except Exception`` intentionally: the language

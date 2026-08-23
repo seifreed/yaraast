@@ -8,8 +8,8 @@ from typing import Any
 from yaraast.ast.base import ASTNode, _require_nonempty_string, _VisitorType, require_string
 from yaraast.regex_literals import escape_regex_delimiter
 
-type YaraLValue = ASTNode | str | int | float | bool | None
-type OutcomeValue = YaraLValue
+YaraLValue = ASTNode | str | int | float | bool | None
+OutcomeValue = YaraLValue
 
 
 class RawOutcomeExpression(str):

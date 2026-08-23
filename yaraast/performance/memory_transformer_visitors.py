@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from yaraast.ast.base import ASTNode
 from yaraast.performance.memory_helpers import pooled_value
@@ -47,8 +47,10 @@ if TYPE_CHECKING:
     from yaraast.ast.rules import Import, Include, Rule, Tag
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
+Node = TypeVar("Node", bound=ASTNode)
 
-def _shallow[Node: ASTNode](node: Node) -> Node:
+
+def _shallow(node: Node) -> Node:
     """Create a shallow copy of a dataclass node to avoid mutating the original."""
     copied = copy.copy(node)
     if hasattr(node, "leading_comments"):

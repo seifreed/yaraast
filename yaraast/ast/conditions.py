@@ -11,9 +11,9 @@ from yaraast.ast.base import _VisitorType
 from yaraast.ast.expressions import Expression, _validate_expression, _validate_integer_expression
 from yaraast.string_references import normalize_string_reference_id
 
-type QuantifierValue = Expression | str | int | float
-type StringSetItem = str | Expression
-type StringSetValue = (
+QuantifierValue = Expression | str | int | float
+StringSetItem = str | Expression
+StringSetValue = (
     Expression
     | str
     | list[StringSetItem]

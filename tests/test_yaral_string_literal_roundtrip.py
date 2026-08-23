@@ -27,7 +27,7 @@ DOLLAR_OUTCOME = (
 )
 
 
-type ParserType = type[EnhancedYaraLParser] | type[YaraLParser]
+ParserType = type[EnhancedYaraLParser] | type[YaraLParser]
 
 
 def _parse(parser_cls: ParserType, source: str) -> YaraLFile:

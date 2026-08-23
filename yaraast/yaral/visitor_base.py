@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
 from yaraast.visitor import ASTVisitor
 
 T = TypeVar("T")
 
 
-class YaraLVisitor[T](ASTVisitor[T]):
+class YaraLVisitor(ASTVisitor[T], Generic[T]):
     """YARA-L visitor base with explicit handlers for every YARA-L AST node."""
 
     def _visit_yaral_node(self, node: Any) -> T:

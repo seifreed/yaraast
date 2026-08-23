@@ -5,9 +5,12 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import TypeVar
+
+EnumT = TypeVar("EnumT", bound=Enum)
 
 
-def _coerce_enum[EnumT: Enum](enum_type: type[EnumT], value: object, default: EnumT) -> EnumT:
+def _coerce_enum(enum_type: type[EnumT], value: object, default: EnumT) -> EnumT:
     try:
         return enum_type(value)
     except (TypeError, ValueError):

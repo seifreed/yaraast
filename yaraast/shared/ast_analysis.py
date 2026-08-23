@@ -22,7 +22,7 @@ from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlin
 from yaraast.visitor.base import BaseVisitor
 from yaraast.yarax.generator import YaraXGenerator
 
-type StringDef = PlainString | HexString | RegexString
+StringDef = PlainString | HexString | RegexString
 
 
 def _path_access_error(path: Path) -> ValueError:

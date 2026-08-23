@@ -24,7 +24,7 @@ rule b { condition: a }
     return ast
 
 
-type CallRecord = tuple[str, str, str] | tuple[str, str, str, str | int]
+CallRecord = tuple[str, str, str] | tuple[str, str, str, str | int]
 
 
 class _DepGen:

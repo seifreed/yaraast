@@ -5,7 +5,7 @@ Copyright (c) Marc Rivero López
 
 from __future__ import annotations
 
-from typing import TypeVar, cast
+from typing import Generic, TypeVar, cast
 
 from yaraast.lexer.lexer_dispatch import read_next_token
 from yaraast.lexer.lexer_helpers import skip_whitespace_and_comments
@@ -29,7 +29,7 @@ from yaraast.lexer.tokens import Token, TokenType
 TokenizeResult = TypeVar("TokenizeResult")
 
 
-class Lexer[TokenizeResult]:
+class Lexer(Generic[TokenizeResult]):
     """YARA lexer for tokenizing YARA rules.
 
     Implements the ILexer protocol for dependency injection support.
