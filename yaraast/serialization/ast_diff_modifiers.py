@@ -19,9 +19,7 @@ def modifier_payloads(old_rule: Rule, new_rule: Rule) -> tuple[Counter[str], Cou
 
 
 def _sorted_modifier_values(modifiers: Counter[str]) -> list[str]:
-    if hasattr(modifiers, "elements"):
-        return sorted(modifiers.elements())
-    return sorted(modifiers)
+    return sorted(modifiers.elements())
 
 
 def emit_modifiers_diff(

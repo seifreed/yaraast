@@ -352,7 +352,7 @@ class CommentAwareParser(Parser):
         return condition
 
     def _attach_rule_comments(
-        self, rule: Rule, leading_comments: list[Comment], start_token: IToken
+        self, rule: Rule, leading_comments: list[Comment], start_token: IToken | None
     ) -> None:
         """Attach leading and trailing comments to rule."""
         if leading_comments:

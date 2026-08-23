@@ -6,6 +6,7 @@ import pytest
 
 from yaraast.ast.comments import CommentGroup
 from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.meta import Meta
 from yaraast.ast.strings import RegexString
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
@@ -252,6 +253,7 @@ def test_parse_meta_section_boolean_and_error_paths_and_trailing_comments() -> N
     p.current = 0
     meta = p._parse_meta_section()
     assert len(meta) == 2
+    assert isinstance(meta[0], Meta)
     assert meta[0].leading_comments
 
     p.tokens = [_t(TokenType.IDENTIFIER, "k", 1), _t(TokenType.EOF, "", 1)]

@@ -21,7 +21,14 @@ from yaraast.yarax.feature_flags import YaraXFeatures
 def test_emit_modifiers_and_removed_string_diff() -> None:
     result = DiffResult(old_ast_hash="old", new_ast_hash="new")
 
-    emit_modifiers_diff("rules/r1", result, DiffNode, DiffType, {"private"}, {"global"})
+    emit_modifiers_diff(
+        "rules/r1",
+        result,
+        DiffNode,
+        DiffType,
+        Counter({"private": 1}),
+        Counter({"global": 1}),
+    )
     emit_string_removed("rules/r1/strings", result, DiffNode, DiffType, "$a")
 
     assert len(result.differences) == 2

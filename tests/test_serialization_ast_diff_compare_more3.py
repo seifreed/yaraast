@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections import Counter
 
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Import, Include, Rule, Tag
@@ -13,13 +13,6 @@ from yaraast.serialization.ast_diff_condition import condition_hashes
 from yaraast.serialization.ast_diff_hasher import AstHasher
 from yaraast.serialization.ast_diff_modifiers import emit_modifiers_diff
 from yaraast.serialization.ast_diff_tags import emit_tags_diff
-
-
-class ReverseIterSet(set[str]):
-    """Set test double that exposes nondeterministic set-to-list assumptions."""
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(sorted(super().__iter__(), reverse=True))
 
 
 class _FalsyBooleanLiteral(BooleanLiteral):
@@ -213,7 +206,7 @@ def test_compare_rules_meta_tags_and_added_string_diffs() -> None:
     assert by_path["/rules/shared/strings/$c"].diff_type == DiffType.ADDED
 
 
-def test_emit_set_backed_rule_diffs_sort_payload_values() -> None:
+def test_emit_counter_backed_rule_diffs_sort_payload_values() -> None:
     result = DiffResult(old_ast_hash="old", new_ast_hash="new")
 
     emit_tags_diff(
@@ -221,16 +214,16 @@ def test_emit_set_backed_rule_diffs_sort_payload_values() -> None:
         result,
         DiffNode,
         DiffType,
-        ReverseIterSet({"old_z", "old_a"}),
-        ReverseIterSet({"new_z", "new_a"}),
+        Counter({"old_z": 1, "old_a": 1}),
+        Counter({"new_z": 1, "new_a": 1}),
     )
     emit_modifiers_diff(
         "/rules/shared",
         result,
         DiffNode,
         DiffType,
-        ReverseIterSet({"private", "global"}),
-        ReverseIterSet({"extern", "private"}),
+        Counter({"private": 1, "global": 1}),
+        Counter({"extern": 1, "private": 1}),
     )
 
     assert result.differences[0].old_value == ["old_a", "old_z"]

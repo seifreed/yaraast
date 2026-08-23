@@ -19,9 +19,7 @@ def tag_payloads(old_rule: Rule, new_rule: Rule) -> tuple[Counter[str], Counter[
 
 
 def _sorted_tag_values(tags: Counter[str]) -> list[str]:
-    if hasattr(tags, "elements"):
-        return sorted(tags.elements())
-    return sorted(tags)
+    return sorted(tags.elements())
 
 
 def emit_tags_diff(

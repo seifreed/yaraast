@@ -6,7 +6,7 @@ from collections.abc import Sequence
 import json
 from os import PathLike, fspath
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from yaraast.ast.base import ASTNode
 from yaraast.errors import YaraASTError
@@ -30,14 +30,14 @@ class SimpleRoundtripSerializer:
         return serialize_node(node)
 
     def deserialize(self, data: dict[str, Any]) -> ASTNode:
-        return deserialize_node(data)
+        return cast(ASTNode, deserialize_node(data))
 
     def serialize_to_file(self, node: ASTNode, file_path: str | Path) -> None:
         Path(file_path).write_text(json.dumps(serialize_node(node), indent=2), encoding="utf-8")
 
     def deserialize_from_file(self, file_path: str | Path) -> ASTNode:
         data = json.loads(Path(file_path).read_text(encoding="utf-8"))
-        return deserialize_node(data)
+        return cast(ASTNode, deserialize_node(data))
 
     def validate_roundtrip(self, node: ASTNode) -> tuple[bool, dict[str, Any]]:
         generator = YaraXGenerator()

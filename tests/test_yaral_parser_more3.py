@@ -132,8 +132,11 @@ def test_parser_complex_event_patterns_preserve_generated_text() -> None:
     events = ast.rules[0].events
     assert events is not None
     assert len(events.statements) == 3
-    assert all(isinstance(statement, EventStatement) for statement in events.statements)
-    assert [statement.text for statement in events.statements] == [
+    event_statements = [
+        statement for statement in events.statements if isinstance(statement, EventStatement)
+    ]
+    assert len(event_statements) == len(events.statements)
+    assert [statement.text for statement in event_statements] == [
         "all",
         "any",
         "e1 followed by e2",
