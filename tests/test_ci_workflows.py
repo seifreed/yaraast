@@ -17,6 +17,30 @@ def _assert_required_quality_gates(workflow: str) -> None:
     assert "--ignore-missing-imports" not in workflow
 
 
+def test_workflows_use_node24_action_runtimes() -> None:
+    workflows = "\n".join(_workflow(name) for name in ("ci.yml", "release.yml", "codeql.yml"))
+
+    for action in (
+        "actions/checkout@v6",
+        "actions/setup-python@v6",
+        "actions/setup-node@v6",
+        "actions/cache@v5",
+        "actions/upload-artifact@v6",
+        "actions/download-artifact@v7",
+    ):
+        assert action in workflows
+
+    for obsolete_action in (
+        "actions/checkout@v4",
+        "actions/setup-python@v5",
+        "actions/setup-node@v4",
+        "actions/cache@v4",
+        "actions/upload-artifact@v4",
+        "actions/download-artifact@v4",
+    ):
+        assert obsolete_action not in workflows
+
+
 def test_ci_runs_coverage_and_real_graphviz_without_hidden_test_ignores() -> None:
     workflow = _workflow("ci.yml")
 
