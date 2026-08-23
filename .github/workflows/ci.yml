@@ -181,6 +181,33 @@ jobs:
         run: |
           python -m pytest tests/test_conformance_differential.py tests/test_conformance_yarax.py tests/test_conformance_yaral.py -o "addopts=" --tb=short
 
+  performance:
+    name: Performance regression gates
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,lsp,performance]"
+
+      - name: Gate parser, generator, and LSP runtime
+        run: |
+          python scripts/benchmark_parser_runtime.py benchmark-results/parser.json
+          python scripts/benchmark_lsp_runtime.py benchmark-results/lsp.json
+
+      - name: Upload benchmark reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark-results/
+
   extension:
     name: VS Code extension
     runs-on: ubuntu-24.04

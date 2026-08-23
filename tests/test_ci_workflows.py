@@ -30,6 +30,10 @@ def test_ci_runs_coverage_and_real_graphviz_without_hidden_test_ignores() -> Non
     assert "pip-audit . --progress-spinner off" in workflow
     assert "tests/test_conformance_yarax.py" in workflow
     assert "tests/test_conformance_yaral.py" in workflow
+    assert "performance:" in workflow
+    assert "python scripts/benchmark_parser_runtime.py benchmark-results/parser.json" in workflow
+    assert "python scripts/benchmark_lsp_runtime.py benchmark-results/lsp.json" in workflow
+    assert "name: benchmark-results" in workflow
 
 
 def test_ci_audits_and_packages_the_vscode_extension() -> None:
