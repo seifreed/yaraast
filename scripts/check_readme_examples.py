@@ -1,6 +1,6 @@
 """Execute every Python block documented in README.md."""
 
-import os
+from contextlib import chdir
 from pathlib import Path
 import re
 import tempfile
@@ -13,8 +13,7 @@ def main() -> None:
     if not blocks:
         msg = "README.md must contain at least one Python block"
         raise RuntimeError(msg)
-    with tempfile.TemporaryDirectory() as temp_dir:
-        os.chdir(temp_dir)
+    with tempfile.TemporaryDirectory() as temp_dir, chdir(temp_dir):
         for block in blocks:
             exec(compile(block, "README.md", "exec"), {})
 

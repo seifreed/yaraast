@@ -176,6 +176,8 @@ limits and never caches a partial result after cancellation or a limit failure.
 ### Direct Parser + Visitor
 
 ```python
+from pathlib import Path
+
 from yaraast.parser import Parser
 from yaraast.visitor import BaseVisitor
 
@@ -187,7 +189,7 @@ class RuleCollector(BaseVisitor):
         self.rules.append(node.name)
         super().visit_rule(node)
 
-ast = Parser(open("rules.yar", encoding="utf-8").read()).parse()
+ast = Parser(Path("rules.yar").read_text(encoding="utf-8")).parse()
 collector = RuleCollector()
 collector.visit(ast)
 print(collector.rules)

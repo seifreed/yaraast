@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import subprocess
 import sys
+
+from scripts.check_readme_examples import main
 
 
 def test_readme_python_blocks_execute() -> None:
@@ -14,3 +17,12 @@ def test_readme_python_blocks_execute() -> None:
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_readme_python_blocks_restore_working_directory() -> None:
+    original_directory = Path.cwd()
+    try:
+        main()
+        assert Path.cwd() == original_directory
+    finally:
+        os.chdir(original_directory)
