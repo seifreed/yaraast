@@ -133,7 +133,7 @@ def test_yarax_accepts_parser_level_hex_jump_forms() -> None:
     yarax_code = """
 rule hex_jumps {
     strings:
-        $a = { 11 [0] 22 [-100] 33 [-] 44 [100-] }
+        $a = { 11 [0] 22 [-100] 33 [-] 44 [100-] 55 [0x00-0x100] 66 }
     condition:
         true
 }
@@ -148,10 +148,11 @@ rule hex_jumps {
         (None, 100),
         (None, None),
         (100, None),
+        (0, 256),
     ]
 
     generated = YaraXGenerator().generate(ast)
-    assert "{ 11 [0-0] 22 [0-100] 33 [-] 44 [100-] }" in generated
+    assert "{ 11 [0-0] 22 [0-100] 33 [-] 44 [100-] 55 [0-256] 66 }" in generated
     YaraXParser(generated).parse()
 
 

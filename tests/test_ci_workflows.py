@@ -19,6 +19,7 @@ def test_ci_runs_coverage_and_real_graphviz_without_hidden_test_ignores() -> Non
     assert "-m integration" in workflow
     assert "--ignore=" not in workflow
     assert "pip-audit . --progress-spinner off" in workflow
+    assert "tests/test_conformance_yarax.py" in workflow
 
 
 def test_ci_audits_and_packages_the_vscode_extension() -> None:

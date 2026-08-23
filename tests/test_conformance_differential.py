@@ -22,6 +22,7 @@ from yaraast.conformance import (
     YaraXEngine,
     available_engines,
 )
+from yaraast.dialects import YaraDialect
 
 CORPUS_DIR = Path(__file__).parent / "corpus" / "conformance"
 CORPUS_FILES = sorted(CORPUS_DIR.glob("*.yar"))
@@ -145,6 +146,22 @@ def test_parse_parity_gap_not_reported_for_non_libyara_engines() -> None:
     # Non-libyara strictness must not gate yaraast's classic parser.
     assert not report.parse_ok
     assert not report.divergences
+
+
+def test_yarax_frontend_reports_yarax_parse_parity_gap() -> None:
+    engine = _FakeEngine("yara-x", lambda source, data: EngineResult(accepted=True))
+    report = DifferentialChecker([engine], dialect=YaraDialect.YARA_X).check(
+        "not valid yara-x @#$", name="yarax-parse-gap"
+    )
+
+    assert not report.parse_ok
+    assert report.divergences[0].kind == "parse_parity"
+    assert report.divergences[0].engine == "yara-x"
+
+
+def test_differential_checker_rejects_dialect_without_reference_engine() -> None:
+    with pytest.raises(ValueError, match="supports YARA and YARA-X"):
+        DifferentialChecker([], dialect=YaraDialect.YARA_L)
 
 
 def test_available_engines_returns_reference_engine_instances() -> None:

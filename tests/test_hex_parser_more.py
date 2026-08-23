@@ -100,3 +100,17 @@ def test_hex_parser_alternative_edge_paths() -> None:
     parser.pos = 0
     with pytest.raises(HexParseError, match="Empty alternative branch"):
         parser._parse_alternative()
+
+
+def test_base_prefixed_jump_bounds_are_yarax_opt_in() -> None:
+    parser = HexStringParser()
+
+    with pytest.raises(HexParseError, match="Invalid jump range"):
+        parser.parse("AA [0x10-0x20] BB")
+
+    tokens = parser.parse(
+        "AA [0x10-0x20] BB [0o10-0o20] CC",
+        allow_base_prefixed_jump_bounds=True,
+    )
+    jumps = [token for token in tokens if isinstance(token, HexJump)]
+    assert [(jump.min_jump, jump.max_jump) for jump in jumps] == [(16, 32), (8, 16)]

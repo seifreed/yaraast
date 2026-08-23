@@ -7,8 +7,8 @@ legitimate differences between libyara and YARA-X:
   must also accept the source yaraast regenerates from its AST.
 * G2 match preservation -- when both the original and the regenerated source
   compile and scan data is supplied, both must match the same rule set.
-* G3 parse parity -- if libyara (the classic reference) accepts the original,
-  yaraast must be able to parse and regenerate it.
+* G3 parse parity -- if the dialect reference accepts the original, its
+  yaraast frontend must be able to parse and regenerate it.
 """
 
 from __future__ import annotations
@@ -17,7 +17,10 @@ from dataclasses import dataclass, field
 
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.conformance.engines import EngineResult, ReferenceEngine, available_engines
+from yaraast.dialects import YaraDialect
 from yaraast.parser.parser import Parser
+from yaraast.yarax.generator import YaraXGenerator
+from yaraast.yarax.parser import YaraXParser
 
 
 @dataclass(frozen=True)
@@ -44,12 +47,25 @@ class ConformanceReport:
 class DifferentialChecker:
     """Run the round-trip conformance invariants over reference engines."""
 
-    def __init__(self, engines: list[ReferenceEngine] | None = None) -> None:
+    def __init__(
+        self,
+        engines: list[ReferenceEngine] | None = None,
+        *,
+        dialect: YaraDialect = YaraDialect.YARA,
+    ) -> None:
         """Use the supplied engines, or every engine installed in this env."""
+        if dialect not in {YaraDialect.YARA, YaraDialect.YARA_X}:
+            msg = "Differential conformance supports YARA and YARA-X"
+            raise ValueError(msg)
         self.engines = engines if engines is not None else available_engines()
+        self.dialect = dialect
+        self.reference_engine = "yara-x" if dialect == YaraDialect.YARA_X else "libyara"
 
     def _round_trip(self, source: str) -> tuple[str | None, str | None]:
         try:
+            if self.dialect == YaraDialect.YARA_X:
+                ast = YaraXParser(source).parse()
+                return YaraXGenerator().generate(ast), None
             ast = Parser(source).parse()
             return CodeGenerator().generate(ast), None
         except Exception as exc:
@@ -71,12 +87,19 @@ class DifferentialChecker:
             original = engine.evaluate(source, data)
             report.engine_results[engine.name] = original
 
-            if engine.name == "libyara" and original.accepted and parse_error is not None:
+            if (
+                engine.name == self.reference_engine
+                and original.accepted
+                and parse_error is not None
+            ):
                 report.divergences.append(
                     Divergence(
                         engine=engine.name,
                         kind="parse_parity",
-                        detail=f"libyara accepts source but yaraast failed to parse: {parse_error}",
+                        detail=(
+                            f"{engine.name} accepts source but yaraast failed to parse: "
+                            f"{parse_error}"
+                        ),
                     )
                 )
 

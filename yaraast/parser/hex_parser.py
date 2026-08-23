@@ -66,6 +66,7 @@ class HexStringParser:
         self.pos = 0
         self._allow_zero_jump = False
         self._allow_empty_lower_bound = False
+        self._allow_base_prefixed_jump_bounds = False
 
     def parse(
         self,
@@ -74,6 +75,7 @@ class HexStringParser:
         validate_placement: bool = True,
         allow_zero_jump: bool = False,
         allow_empty_lower_bound: bool = False,
+        allow_base_prefixed_jump_bounds: bool = False,
     ) -> list[HexToken]:
         """Parse hex string content into tokens.
 
@@ -82,6 +84,7 @@ class HexStringParser:
             validate_placement: Enforce libyara jump placement constraints.
             allow_zero_jump: Accept exact zero-length jumps such as [0].
             allow_empty_lower_bound: Accept max-only ranges such as [-10].
+            allow_base_prefixed_jump_bounds: Accept bounds such as 0x10.
 
         Returns:
             List of HexToken objects representing the parsed hex string.
@@ -90,6 +93,7 @@ class HexStringParser:
         self.pos = 0
         self._allow_zero_jump = allow_zero_jump
         self._allow_empty_lower_bound = allow_empty_lower_bound
+        self._allow_base_prefixed_jump_bounds = allow_base_prefixed_jump_bounds
         tokens: list[HexToken] = []
 
         while self.pos < len(self.content):
@@ -254,12 +258,14 @@ class HexStringParser:
                 if not self._allow_empty_lower_bound and not parts[0].strip() and parts[1].strip():
                     msg = "Invalid jump range"
                     raise HexParseError(msg, self.pos)
-                min_jump = int(parts[0]) if parts[0].strip() else None
-                max_jump = int(parts[1]) if parts[1].strip() else None
+                min_jump = self._parse_jump_bound(parts[0])
+                max_jump = self._parse_jump_bound(parts[1])
                 self._validate_jump_bounds(min_jump, max_jump)
                 return HexJump(min_jump=min_jump, max_jump=max_jump)
 
-            val = int(jump_str)
+            val = self._parse_jump_bound(jump_str)
+            if val is None:
+                raise ValueError
             if val == 0 and not self._allow_zero_jump:
                 msg = "Invalid jump length"
                 raise HexParseError(msg, self.pos)
@@ -268,6 +274,12 @@ class HexStringParser:
         except ValueError:
             msg = "Invalid jump range"
             raise HexParseError(msg, self.pos) from None
+
+    def _parse_jump_bound(self, value: str) -> int | None:
+        stripped = value.strip()
+        if not stripped:
+            return None
+        return int(stripped, 0) if self._allow_base_prefixed_jump_bounds else int(stripped)
 
     def _validate_jump_bounds(self, min_jump: int | None, max_jump: int | None) -> None:
         """Validate jump bounds."""

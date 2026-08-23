@@ -55,6 +55,7 @@ class YaraXParser(
                 validate_placement=False,
                 allow_zero_jump=True,
                 allow_empty_lower_bound=True,
+                allow_base_prefixed_jump_bounds=True,
             )
         except HexParseError as e:
             raise ParserError(str(e), self._peek()) from e

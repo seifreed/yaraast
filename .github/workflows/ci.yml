@@ -174,12 +174,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev,conformance]"
 
-      - name: Run differential conformance gate (libyara + YARA-X)
+      - name: Run differential conformance gates (YARA + YARA-X)
         env:
           PYTHONIOENCODING: utf-8
           PYTHONUTF8: "1"
         run: |
-          python -m pytest tests/test_conformance_differential.py -o "addopts=" --tb=short
+          python -m pytest tests/test_conformance_differential.py tests/test_conformance_yarax.py -o "addopts=" --tb=short
 
   extension:
     name: VS Code extension
