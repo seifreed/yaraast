@@ -144,13 +144,14 @@ def test_libyara_scanner_timeout_paths(tmp_path: Path) -> None:
     scanner = LibyaraScanner(timeout=1)
     compilation = compiler.compile_source("rule slow { strings: $a = /a.*b/ condition: $a }")
     assert compilation.success is True
+    slow_input = b"a" * 250000 + b"b"
 
-    data_result = scanner.scan_data(compilation.compiled_rules, b"a" * 100000 + b"b")
+    data_result = scanner.scan_data(compilation.compiled_rules, slow_input)
     assert data_result.success is False
     assert data_result.errors == ["Scan timeout after 1 seconds"]
 
     file_path = tmp_path / "slow.bin"
-    file_path.write_bytes(b"a" * 100000 + b"b")
+    file_path.write_bytes(slow_input)
     file_result = scanner.scan_file(compilation.compiled_rules, file_path)
     assert file_result.success is False
     assert file_result.errors == ["Scan timeout after 1 seconds"]

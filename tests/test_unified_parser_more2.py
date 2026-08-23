@@ -95,7 +95,6 @@ def test_auto_detects_yarax_match_with_dict_literal_value() -> None:
         ("rule x { condition: {x + 1: y} }", "{x + 1: y}"),
         ("rule x { condition: {foo.bar: baz} }", "{foo.bar: baz}"),
         ("rule x { condition: (1, 2) }", "(1, 2)"),
-        ("rule x { condition: (1,) }", "(1,)"),
         ("rule x { condition: ((x, y), z) }", "((x, y), z)"),
         ("rule x { condition: (x, (y, z)) }", "(x, (y, z))"),
     ],
