@@ -179,7 +179,7 @@ jobs:
           PYTHONIOENCODING: utf-8
           PYTHONUTF8: "1"
         run: |
-          python -m pytest tests/test_conformance_differential.py tests/test_conformance_yarax.py tests/test_conformance_yaral.py -o "addopts=" --tb=short
+          python -m pytest tests/test_conformance_differential.py tests/test_conformance_yarax.py tests/test_conformance_yaral.py tests/test_conformance_invalid.py -o "addopts=" --tb=short
 
   performance:
     name: Performance regression gates

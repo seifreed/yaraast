@@ -309,7 +309,7 @@ class YaraXParserCollectionsMixin:
             while self._check(TokenType.COMMA):
                 self._advance()
                 if self._check(TokenType.RPAREN):
-                    break
+                    raise ParserError("Expected tuple element after ','", self._peek())
                 elements.append(self._parse_expression())
 
             self._consume(TokenType.RPAREN, "Expected ')'")
