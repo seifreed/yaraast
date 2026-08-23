@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 import hashlib
 from typing import TYPE_CHECKING, Any
 
@@ -76,20 +77,20 @@ class AstHasher(ASTVisitor[str]):
             f"{extern_rules_hash}|{extern_imports_hash}|{pragmas_hash}|{namespaces_hash})"
         )
 
-    def visit_import(self, node) -> str:
+    def visit_import(self, node: Any) -> str:
         """Hash Import node."""
         _validate_real_ast_node(node)
         module = _required_string_attr(node, "module", "Import module")
         alias = _optional_string_attr(node, "alias", "Import alias")
         return f"Import({module},{alias})"
 
-    def visit_include(self, node) -> str:
+    def visit_include(self, node: Any) -> str:
         """Hash Include node."""
         _validate_real_ast_node(node)
         path = _required_string_attr(node, "path", "Include path")
         return f"Include({path})"
 
-    def visit_rule(self, node) -> str:
+    def visit_rule(self, node: Any) -> str:
         """Hash Rule node."""
         from yaraast.ast.rules import Rule
 
@@ -111,13 +112,13 @@ class AstHasher(ASTVisitor[str]):
         pragmas = self._hash_in_rule_pragmas(node.pragmas)
         return f"Rule({name},{modifiers},{tags},{meta},{strings},{condition},{pragmas})"
 
-    def visit_tag(self, node) -> str:
+    def visit_tag(self, node: Any) -> str:
         """Hash Tag node."""
         _validate_real_ast_node(node)
         name = _required_string_attr(node, "name", "Tag name")
         return f"Tag({name})"
 
-    def visit_plain_string(self, node) -> str:
+    def visit_plain_string(self, node: Any) -> str:
         """Hash PlainString node."""
         from yaraast.ast.strings import PlainString
 
@@ -129,7 +130,7 @@ class AstHasher(ASTVisitor[str]):
             f"{getattr(node, 'is_anonymous', False)},{modifiers})"
         )
 
-    def visit_hex_string(self, node) -> str:
+    def visit_hex_string(self, node: Any) -> str:
         """Hash HexString node."""
         from yaraast.ast.strings import HexString
 
@@ -142,7 +143,7 @@ class AstHasher(ASTVisitor[str]):
             f"{getattr(node, 'is_anonymous', False)},{modifiers})"
         )
 
-    def visit_regex_string(self, node) -> str:
+    def visit_regex_string(self, node: Any) -> str:
         """Hash RegexString node."""
         from yaraast.ast.strings import RegexString
 
@@ -154,7 +155,7 @@ class AstHasher(ASTVisitor[str]):
             f"{getattr(node, 'is_anonymous', False)},{modifiers})"
         )
 
-    def visit_string_modifier(self, node) -> str:
+    def visit_string_modifier(self, node: Any) -> str:
         """Hash StringModifier node."""
         from yaraast.ast.modifiers import StringModifier
 
@@ -162,67 +163,67 @@ class AstHasher(ASTVisitor[str]):
             node.validate_structure()
         return f"Mod({node.name},{node.value})"
 
-    def visit_hex_byte(self, node) -> str:
+    def visit_hex_byte(self, node: Any) -> str:
         """Hash HexByte node."""
         _validate_real_hex_token(node)
         return f"Byte({node.value})"
 
-    def visit_hex_negated_byte(self, node) -> str:
+    def visit_hex_negated_byte(self, node: Any) -> str:
         """Hash HexNegatedByte node."""
         _validate_real_hex_token(node)
         return f"NegatedByte({node.value})"
 
-    def visit_hex_wildcard(self, node) -> str:
+    def visit_hex_wildcard(self, node: Any) -> str:
         """Hash HexWildcard node."""
         _validate_real_hex_token(node)
         return "Wildcard()"
 
-    def visit_hex_jump(self, node) -> str:
+    def visit_hex_jump(self, node: Any) -> str:
         """Hash HexJump node."""
         _validate_real_hex_token(node)
         return f"Jump({node.min_jump},{node.max_jump})"
 
-    def visit_binary_expression(self, node) -> str:
+    def visit_binary_expression(self, node: Any) -> str:
         """Hash BinaryExpression node."""
         _validate_real_expression(node)
         left = self.visit(node.left)
         right = self.visit(node.right)
         return f"Binary({left},{node.operator},{right})"
 
-    def visit_identifier(self, node) -> str:
+    def visit_identifier(self, node: Any) -> str:
         """Hash Identifier node."""
         _validate_real_expression(node)
         return f"Id({node.name})"
 
-    def visit_string_identifier(self, node) -> str:
+    def visit_string_identifier(self, node: Any) -> str:
         """Hash StringIdentifier node."""
         _validate_real_expression(node)
         return f"StrId({node.name})"
 
-    def visit_string_wildcard(self, node) -> str:
+    def visit_string_wildcard(self, node: Any) -> str:
         """Visit StringWildcard node."""
         _validate_real_expression(node)
-        return node.pattern
+        return str(node.pattern)
 
-    def visit_integer_literal(self, node) -> str:
+    def visit_integer_literal(self, node: Any) -> str:
         """Hash IntegerLiteral node."""
         _validate_real_expression(node)
         return f"Int({node.value})"
 
-    def visit_boolean_literal(self, node) -> str:
+    def visit_boolean_literal(self, node: Any) -> str:
         """Hash BooleanLiteral node."""
         _validate_real_expression(node)
         return f"Bool({node.value})"
 
-    def visit_string_definition(self, node) -> str:
+    def visit_string_definition(self, node: Any) -> str:
         _validate_real_ast_node(node)
         return f"StringDef({node.identifier},{getattr(node, 'is_anonymous', False)})"
 
-    def visit_hex_token(self, node) -> str:
+    def visit_hex_token(self, node: Any) -> str:
         _validate_real_hex_token(node)
         return "Token()"
 
-    def visit_hex_alternative(self, node) -> str:
+    def visit_hex_alternative(self, node: Any) -> str:
         if isinstance(node, HexAlternative):
             node.validate_structure()
         alternatives = []
@@ -232,99 +233,99 @@ class AstHasher(ASTVisitor[str]):
             return "Alt()"
         return f"Alt({'|'.join(sorted(alternatives))})"
 
-    def _hash_hex_alternative_branch(self, alternative) -> str:
+    def _hash_hex_alternative_branch(self, alternative: Any) -> str:
         if isinstance(alternative, list):
             return " ".join(self._hash_hex_alternative_token(token) for token in alternative)
         return self._hash_hex_alternative_token(alternative)
 
-    def _hash_hex_alternative_token(self, token) -> str:
+    def _hash_hex_alternative_token(self, token: Any) -> str:
         if isinstance(token, HexToken):
             _validate_real_hex_token(token)
             return self._hash_value(token)
         return self._hash_value(HexByte(token))
 
-    def visit_hex_nibble(self, node) -> str:
+    def visit_hex_nibble(self, node: Any) -> str:
         _validate_real_hex_token(node)
         return f"Nibble({node.high},{node.value})"
 
-    def visit_expression(self, node) -> str:
+    def visit_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         return "Expr()"
 
-    def visit_string_count(self, node) -> str:
+    def visit_string_count(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Count({node.string_id})"
 
-    def visit_string_offset(self, node) -> str:
+    def visit_string_offset(self, node: Any) -> str:
         _validate_real_expression(node)
         index = self._hash_value(getattr(node, "index", None))
         if index:
             return f"Offset({node.string_id},{index})"
         return f"Offset({node.string_id})"
 
-    def visit_string_length(self, node) -> str:
+    def visit_string_length(self, node: Any) -> str:
         _validate_real_expression(node)
         index = self._hash_value(getattr(node, "index", None))
         if index:
             return f"Length({node.string_id},{index})"
         return f"Length({node.string_id})"
 
-    def visit_double_literal(self, node) -> str:
+    def visit_double_literal(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Double({node.value})"
 
-    def visit_string_literal(self, node) -> str:
+    def visit_string_literal(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Str({node.value})"
 
-    def visit_regex_literal(self, node) -> str:
+    def visit_regex_literal(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Regex({node.pattern},{node.modifiers})"
 
-    def visit_unary_expression(self, node) -> str:
+    def visit_unary_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Unary({node.operator},{self.visit(node.operand)})"
 
-    def visit_parentheses_expression(self, node) -> str:
+    def visit_parentheses_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Parens({self.visit(node.expression)})"
 
-    def visit_set_expression(self, node) -> str:
+    def visit_set_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         elements = "|".join(sorted(self.visit(elem) for elem in node.elements))
         return f"Set({elements})"
 
-    def visit_range_expression(self, node) -> str:
+    def visit_range_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Range({self.visit(node.low)},{self.visit(node.high)})"
 
-    def visit_function_call(self, node) -> str:
+    def visit_function_call(self, node: Any) -> str:
         _validate_real_expression(node)
         args = "|".join(self.visit(arg) for arg in node.arguments)
         receiver_node = getattr(node, "receiver", None)
         receiver = self.visit(receiver_node) if receiver_node is not None else ""
         return f"Call({receiver}:{node.function},{args})"
 
-    def visit_array_access(self, node) -> str:
+    def visit_array_access(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Array({self.visit(node.array)},{self.visit(node.index)})"
 
-    def visit_member_access(self, node) -> str:
+    def visit_member_access(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Member({self.visit(node.object)},{node.member})"
 
-    def visit_condition(self, node) -> str:
+    def visit_condition(self, node: Any) -> str:
         _validate_real_expression(node)
         return "Condition()"
 
-    def visit_for_expression(self, node) -> str:
+    def visit_for_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         quantifier = self._hash_value(node.quantifier)
         return (
             f"For({quantifier},{node.variable},{self.visit(node.iterable)},{self.visit(node.body)})"
         )
 
-    def visit_for_of_expression(self, node) -> str:
+    def visit_for_of_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         cond = self.visit(node.condition) if node.condition is not None else ""
         return (
@@ -332,36 +333,36 @@ class AstHasher(ASTVisitor[str]):
             f"{self._hash_string_set(node.string_set)},{cond})"
         )
 
-    def visit_at_expression(self, node) -> str:
+    def visit_at_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"At({self._hash_value(node.string_id)},{self.visit(node.offset)})"
 
-    def visit_in_expression(self, node) -> str:
+    def visit_in_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         subject = getattr(node, "subject", getattr(node, "string_id", None))
         return f"In({self._hash_value(subject)},{self.visit(node.range)})"
 
-    def visit_of_expression(self, node) -> str:
+    def visit_of_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Of({self._hash_value(node.quantifier)},{self._hash_string_set(node.string_set)})"
 
-    def visit_with_statement(self, node) -> str:
+    def visit_with_statement(self, node: Any) -> str:
         _validate_real_expression(node)
         declarations = "|".join(self.visit(declaration) for declaration in node.declarations)
         return f"With({declarations},{self.visit(node.body)})"
 
-    def visit_with_declaration(self, node) -> str:
+    def visit_with_declaration(self, node: Any) -> str:
         _validate_real_ast_node(node)
         return f"WithDecl({node.identifier},{self.visit(node.value)})"
 
-    def visit_array_comprehension(self, node) -> str:
+    def visit_array_comprehension(self, node: Any) -> str:
         _validate_real_expression(node)
         return (
             f"ArrayComp({self._hash_value(node.expression)},{node.variable},"
             f"{self._hash_value(node.iterable)},{self._hash_value(node.condition)})"
         )
 
-    def visit_dict_comprehension(self, node) -> str:
+    def visit_dict_comprehension(self, node: Any) -> str:
         _validate_real_expression(node)
         return (
             f"DictComp({self._hash_value(node.key_expression)},"
@@ -370,55 +371,55 @@ class AstHasher(ASTVisitor[str]):
             f"{self._hash_value(node.condition)})"
         )
 
-    def visit_tuple_expression(self, node) -> str:
+    def visit_tuple_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         elements = "|".join(self.visit(element) for element in node.elements)
         return f"Tuple({elements})"
 
-    def visit_tuple_indexing(self, node) -> str:
+    def visit_tuple_indexing(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"TupleIndex({self.visit(node.tuple_expr)},{self.visit(node.index)})"
 
-    def visit_list_expression(self, node) -> str:
+    def visit_list_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         elements = "|".join(self.visit(element) for element in node.elements)
         return f"List({elements})"
 
-    def visit_dict_expression(self, node) -> str:
+    def visit_dict_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         items = "|".join(self.visit(item) for item in node.items)
         return f"DictExpr({items})"
 
-    def visit_dict_item(self, node) -> str:
+    def visit_dict_item(self, node: Any) -> str:
         _validate_real_ast_node(node)
         return f"DictItem({self.visit(node.key)},{self.visit(node.value)})"
 
-    def visit_slice_expression(self, node) -> str:
+    def visit_slice_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         return (
             f"Slice({self.visit(node.target)},{self._hash_value(node.start)},"
             f"{self._hash_value(node.stop)},{self._hash_value(node.step)})"
         )
 
-    def visit_lambda_expression(self, node) -> str:
+    def visit_lambda_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         parameters = "|".join(node.parameters)
         return f"Lambda({parameters},{self.visit(node.body)})"
 
-    def visit_pattern_match(self, node) -> str:
+    def visit_pattern_match(self, node: Any) -> str:
         _validate_real_expression(node)
         cases = "|".join(self.visit(case) for case in node.cases)
         return f"Match({self.visit(node.value)},{cases},{self._hash_value(node.default)})"
 
-    def visit_match_case(self, node) -> str:
+    def visit_match_case(self, node: Any) -> str:
         _validate_real_ast_node(node)
         return f"Case({self.visit(node.pattern)},{self.visit(node.result)})"
 
-    def visit_spread_operator(self, node) -> str:
+    def visit_spread_operator(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Spread({self.visit(node.expression)},{node.is_dict})"
 
-    def _hash_value(self, value) -> str:
+    def _hash_value(self, value: Any) -> str:
         """Hash AST values while preserving scalar/list values."""
         if hasattr(value, "accept"):
             return self.visit(value)
@@ -428,11 +429,11 @@ class AstHasher(ASTVisitor[str]):
             return "[" + "|".join(self._hash_value(item) for item in sorted(value, key=str)) + "]"
         return "" if value is None else str(value)
 
-    def _hash_modifiers(self, node) -> str:
+    def _hash_modifiers(self, node: Any) -> str:
         """Hash string modifiers as an order-insensitive set."""
         return "|".join(sorted(self._hash_value(mod) for mod in getattr(node, "modifiers", [])))
 
-    def _hash_string_set(self, value) -> str:
+    def _hash_string_set(self, value: Any) -> str:
         """Hash raw string-set lists as order-insensitive collections."""
         string_set_items = self._string_set_items(value)
         if string_set_items is not None:
@@ -441,7 +442,7 @@ class AstHasher(ASTVisitor[str]):
             return "[" + "|".join(sorted(self._hash_value(item) for item in value)) + "]"
         return self._hash_value(value)
 
-    def _string_set_items(self, value) -> list[str] | None:
+    def _string_set_items(self, value: Any) -> list[str] | None:
         from yaraast.ast.expressions import ParenthesesExpression, SetExpression
 
         if isinstance(value, ParenthesesExpression):
@@ -455,7 +456,7 @@ class AstHasher(ASTVisitor[str]):
             return [item]
         return None
 
-    def _string_set_container_items(self, values) -> list[str] | None:
+    def _string_set_container_items(self, values: Iterable[Any]) -> list[str] | None:
         items = []
         for value in values:
             item = self._string_set_item(value)
@@ -465,7 +466,7 @@ class AstHasher(ASTVisitor[str]):
         return items
 
     @staticmethod
-    def _string_set_item(value) -> str | None:
+    def _string_set_item(value: Any) -> str | None:
         from yaraast.ast.expressions import (
             Identifier,
             StringIdentifier,
@@ -507,9 +508,9 @@ class AstHasher(ASTVisitor[str]):
             return value
         return f"${value}"
 
-    def _hash_in_rule_pragmas(self, pragmas) -> str:
+    def _hash_in_rule_pragmas(self, pragmas: Iterable[Any]) -> str:
         """Hash rule pragmas by position while preserving sequential directives."""
-        grouped: dict[str, list] = {}
+        grouped: dict[str, list[Any]] = {}
         for pragma in pragmas:
             position = _string_attr_or_empty(pragma, "position", "InRulePragma position")
             grouped.setdefault(position, []).append(pragma)
@@ -518,7 +519,7 @@ class AstHasher(ASTVisitor[str]):
             for position in sorted(grouped)
         )
 
-    def _hash_pragma_sequence(self, pragmas) -> str:
+    def _hash_pragma_sequence(self, pragmas: Iterable[Any]) -> str:
         """Hash pragma sequences, sorting only contiguous order-insensitive runs."""
         parts: list[str] = []
         unordered_run: list[str] = []
@@ -540,41 +541,41 @@ class AstHasher(ASTVisitor[str]):
         return "|".join(parts)
 
     @staticmethod
-    def _is_order_insensitive_pragma(node) -> bool:
+    def _is_order_insensitive_pragma(node: Any) -> bool:
         pragma = getattr(node, "pragma", node)
         pragma_type = getattr(getattr(pragma, "pragma_type", None), "value", None)
         return pragma_type in {"custom", "include_once"}
 
-    def visit_meta(self, node) -> str:
+    def visit_meta(self, node: Any) -> str:
         _validate_real_ast_node(node)
         return f"Meta({node.key},{_meta_value_repr(node.value)})"
 
-    def visit_module_reference(self, node) -> str:
+    def visit_module_reference(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"ModRef({node.module})"
 
-    def visit_dictionary_access(self, node) -> str:
+    def visit_dictionary_access(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Dict({self.visit(node.object)},{self._hash_value(node.key)})"
 
-    def visit_comment(self, node) -> str:
+    def visit_comment(self, node: Any) -> str:
         _validate_real_ast_node(node)
         return f"Comment({node.text},{node.is_multiline})"
 
-    def visit_comment_group(self, node) -> str:
+    def visit_comment_group(self, node: Any) -> str:
         _validate_real_ast_node(node)
         comments = "|".join(self.visit(c) for c in node.comments)
         return f"CommentGroup({comments})"
 
-    def visit_defined_expression(self, node) -> str:
+    def visit_defined_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"Defined({self.visit(node.expression)})"
 
-    def visit_string_operator_expression(self, node) -> str:
+    def visit_string_operator_expression(self, node: Any) -> str:
         _validate_real_expression(node)
         return f"StrOp({self.visit(node.left)},{node.operator},{self.visit(node.right)})"
 
-    def visit_extern_import(self, node) -> str:
+    def visit_extern_import(self, node: Any) -> str:
         _validate_real_ast_node(node)
         if hasattr(node, "module"):
             module_path = _string_attr_or_empty(node, "module", "ExternImport module")
@@ -588,20 +589,20 @@ class AstHasher(ASTVisitor[str]):
         rules = "|".join(sorted(getattr(node, "rules", [])))
         return f"ExternImport({module_path},{alias},{rules})"
 
-    def visit_extern_namespace(self, node) -> str:
+    def visit_extern_namespace(self, node: Any) -> str:
         _validate_real_ast_node(node)
         rules = "|".join(sorted(self.visit(rule) for rule in getattr(node, "extern_rules", [])))
         name = _string_attr_or_empty(node, "name", "ExternNamespace name")
         return f"ExternNamespace({name},{rules})"
 
-    def visit_extern_rule(self, node) -> str:
+    def visit_extern_rule(self, node: Any) -> str:
         _validate_real_ast_node(node)
         modifiers = "|".join(sorted(str(mod) for mod in getattr(node, "modifiers", [])))
         name = _string_attr_or_empty(node, "name", "ExternRule name")
         namespace = _optional_string_attr(node, "namespace", "ExternRule namespace")
         return f"ExternRule({name},{modifiers},{namespace})"
 
-    def visit_extern_rule_reference(self, node) -> str:
+    def visit_extern_rule_reference(self, node: Any) -> str:
         _validate_real_expression(node)
         if hasattr(node, "name"):
             rule_name = _string_attr_or_empty(node, "name", "ExternRuleReference name")
@@ -614,7 +615,7 @@ class AstHasher(ASTVisitor[str]):
         namespace = _optional_string_attr(node, "namespace", "ExternRuleReference namespace")
         return f"ExternRuleRef({rule_name},{namespace})"
 
-    def visit_in_rule_pragma(self, node) -> str:
+    def visit_in_rule_pragma(self, node: Any) -> str:
         _validate_real_ast_node(node)
         pragma = getattr(node, "pragma", "")
         pragma_hash = self._hash_value(pragma)
@@ -623,7 +624,7 @@ class AstHasher(ASTVisitor[str]):
             return f"InRulePragma({pragma_hash})"
         return f"InRulePragma({pragma_hash},{position})"
 
-    def visit_pragma(self, node) -> str:
+    def visit_pragma(self, node: Any) -> str:
         from yaraast.ast.pragmas import Pragma
 
         if not hasattr(node, "pragma_type"):
@@ -643,7 +644,7 @@ class AstHasher(ASTVisitor[str]):
         extra = "|".join(extra_parts)
         return f"Pragma({node.pragma_type.value},{node.name},{args},{node.scope.value},{extra})"
 
-    def visit_pragma_block(self, node) -> str:
+    def visit_pragma_block(self, node: Any) -> str:
         _validate_real_ast_node(node)
         pragmas = (
             ",".join([self.visit(p) for p in node.pragmas]) if hasattr(node, "pragmas") else ""

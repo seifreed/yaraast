@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import math
-from typing import Any
+from typing import Any, TypeVar, cast
 
 from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
@@ -149,6 +149,8 @@ from yaraast.yarax.ast_nodes import (
     WithStatement,
 )
 
+_NodeT = TypeVar("_NodeT")
+
 
 def _is_empty_nonempty_field(text: str, context: str, field: str) -> bool:
     return _is_empty_nonempty_text(text, f"{context} {field}")
@@ -211,6 +213,7 @@ def _validate_hex_jump_bounds(min_value: Any, max_value: Any) -> tuple[int | Non
 
 def _serialize_hex_token(token: Any) -> dict[str, Any]:
     """Serialize a single hex token to a dictionary."""
+    data: dict[str, Any]
     if isinstance(token, HexByte):
         data = {"type": "HexByte", "value": _validate_hex_byte_value(token.value, "HexByte")}
     elif isinstance(token, HexWildcard):
@@ -264,7 +267,7 @@ def _validate_hex_token_sequence(
             raise SerializationError(msg)
 
 
-def _deserialize_hex_token(data: dict[str, Any]):
+def _deserialize_hex_token(data: dict[str, Any]) -> HexToken:
     """Deserialize a hex token from a dictionary."""
     data = _deserialize_object(data, "Hex token")
     hex_kind = data.get("type")
@@ -318,7 +321,7 @@ def _deserialize_hex_token(data: dict[str, Any]):
     raise SerializationError(msg)
 
 
-def _coerce_hex_alternative_branch(alternative) -> list:
+def _coerce_hex_alternative_branch(alternative: Any) -> list[Any]:
     if isinstance(alternative, list):
         return alternative
     if isinstance(alternative, HexToken):
@@ -344,7 +347,7 @@ def _serialize_hex_alternative_branches(alternatives: Any) -> list[list[dict[str
     return branches
 
 
-def _coerce_serialized_hex_alternative_branch(alternative) -> list:
+def _coerce_serialized_hex_alternative_branch(alternative: Any) -> list[Any]:
     if isinstance(alternative, list):
         return alternative
     return [alternative]
@@ -445,7 +448,7 @@ def _deserialize_required_nullable_nonempty_string_field(
     return text
 
 
-def _deserialize_optional_node_value(value: Any, context: str) -> ASTNode | None:
+def _deserialize_optional_node_value(value: Any, context: str) -> Any:
     if value is None:
         return None
     if value == {}:
@@ -454,21 +457,19 @@ def _deserialize_optional_node_value(value: Any, context: str) -> ASTNode | None
     return deserialize_node(value)
 
 
-def _deserialize_nullable_node_field(
-    data: dict[str, Any], field: str, context: str
-) -> ASTNode | None:
+def _deserialize_nullable_node_field(data: dict[str, Any], field: str, context: str) -> Any:
     value = _deserialize_required_field(data, field, context)
     return _deserialize_optional_node_value(value, f"{context} {field}")
 
 
-def _deserialize_required_node_value(value: Any, context: str) -> ASTNode:
+def _deserialize_required_node_value(value: Any, context: str) -> Any:
     if value is None or value == {}:
         msg = f"{context} is required"
         raise SerializationError(msg)
     return deserialize_node(value)
 
 
-def _deserialize_required_node(data: dict[str, Any], field: str, context: str) -> ASTNode:
+def _deserialize_required_node(data: dict[str, Any], field: str, context: str) -> Any:
     return _deserialize_required_node_value(
         _deserialize_required_field(data, field, context), f"{context} {field}"
     )
@@ -502,7 +503,7 @@ def _deserialize_pragma_item(data: Any, context: str) -> Pragma:
     return deserialize_pragma(data)
 
 
-def _deserialize_dictionary_key(data: dict[str, Any]) -> str | ASTNode:
+def _deserialize_dictionary_key(data: dict[str, Any]) -> str | Expression:
     if "key" not in data:
         msg = "DictionaryAccess key must be a string or expression"
         raise SerializationError(msg)
@@ -513,7 +514,7 @@ def _deserialize_dictionary_key(data: dict[str, Any]) -> str | ASTNode:
             raise SerializationError(msg)
         return value
     if isinstance(value, dict):
-        return _deserialize_required_node_value(value, "DictionaryAccess key")
+        return cast(Expression, _deserialize_required_node_value(value, "DictionaryAccess key"))
     msg = "DictionaryAccess key must be a string or expression"
     raise SerializationError(msg)
 
@@ -620,7 +621,7 @@ def _serialize_required_int(value: Any, context: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         msg = f"{context} must be an integer"
         raise SerializationError(msg)
-    return value
+    return cast(int, value)
 
 
 def _serialize_nullable_int(value: Any, context: str) -> int | None:
@@ -636,7 +637,7 @@ def _serialize_required_number(value: Any, context: str) -> int | float:
     if isinstance(value, float) and not math.isfinite(value):
         msg = f"{context} must be finite"
         raise SerializationError(msg)
-    return value
+    return cast(int | float, value)
 
 
 def _serialize_required_bool(value: Any, context: str) -> bool:
@@ -755,7 +756,7 @@ def _serialize_modifiers(modifiers: Any, context: str) -> list[dict[str, Any]]:
     if not isinstance(modifiers, list | tuple):
         msg = f"{context} modifiers must be a list"
         raise SerializationError(msg)
-    serialized = []
+    serialized: list[dict[str, Any]] = []
     for modifier in modifiers:
         modifier_value = getattr(modifier, "value", None)
         _serialize_modifier_value(modifier_value)
@@ -1089,10 +1090,11 @@ def _node_has_roundtrip_metadata(node: ASTNode) -> bool:
     )
 
 
-def _apply_node_metadata(node: ASTNode, data: dict[str, Any]) -> ASTNode:
+def _apply_node_metadata(node: _NodeT, data: dict[str, Any]) -> _NodeT:
+    metadata_node = cast(ASTNode, node)
     location = data.get("location")
     if isinstance(location, dict):
-        node.location = _deserialize_location(location)
+        metadata_node.location = _deserialize_location(location)
     elif location is not None:
         msg = "location must be an object"
         raise SerializationError(msg)
@@ -1101,12 +1103,14 @@ def _apply_node_metadata(node: ASTNode, data: dict[str, Any]) -> ASTNode:
         if not isinstance(leading_comments, list):
             msg = "leading_comments must be a list"
             raise SerializationError(msg)
-        node.leading_comments = [
+        metadata_node.leading_comments = [
             cast_leading_comment(_deserialize_comment_node(comment)) for comment in leading_comments
         ]
     trailing_comment = data.get("trailing_comment")
     if isinstance(trailing_comment, dict):
-        node.trailing_comment = cast_trailing_comment(_deserialize_comment_node(trailing_comment))
+        metadata_node.trailing_comment = cast_trailing_comment(
+            _deserialize_comment_node(trailing_comment)
+        )
     elif trailing_comment is not None:
         msg = "trailing_comment must be an object"
         raise SerializationError(msg)
@@ -1746,7 +1750,7 @@ def _serialize_rule_modifiers(modifiers: Any, context: str) -> list[str]:
         msg = f"{context} modifiers must be a list"
         raise SerializationError(msg)
 
-    serialized = []
+    serialized: list[str] = []
     for modifier in modifiers:
         if isinstance(modifier, RuleModifier):
             try:
@@ -1772,7 +1776,7 @@ def _serialize_rule_tags(tags: Any) -> list[Any]:
         msg = "Rule tags must be a list"
         raise SerializationError(msg)
 
-    serialized = []
+    serialized: list[Any] = []
     for tag in tags:
         if isinstance(tag, Tag):
             data = {
@@ -1950,12 +1954,12 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
     return data
 
 
-def deserialize_node(data: dict[str, Any]) -> ASTNode:
+def deserialize_node(data: dict[str, Any]) -> Any:
     data = _deserialize_object(data, "Serialized node")
     return _apply_node_metadata(_deserialize_node_payload(data), data)
 
 
-def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
+def _deserialize_node_payload(data: dict[str, Any]) -> Any:
     """Deserialize a dictionary to an AST node."""
     node_type = data.get("type")
     if node_type is None:
@@ -2599,7 +2603,7 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
 
 
 def _deserialize_rule_modifiers(modifiers: list[Any], context: str) -> list[Any]:
-    normalized = []
+    normalized: list[Any] = []
     for modifier in modifiers:
         if isinstance(modifier, str):
             modifier = _normalize_rule_modifier_text(modifier, context)
@@ -2654,6 +2658,7 @@ def deserialize_pragma(data: dict[str, Any]) -> Pragma:
         "pragma",
     )
     arguments = _deserialize_required_string_list_field(data, "arguments", "Pragma")
+    pragma: Pragma
 
     if pragma_type == PragmaType.INCLUDE_ONCE:
         pragma = IncludeOncePragma()

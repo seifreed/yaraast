@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import math
-from typing import Any
+from typing import Any, cast
 
 from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
@@ -38,14 +38,14 @@ from yaraast.serialization.pragma_scopes import serialize_pragma_scope
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
 
-def _serialize_required_string(value, context: str) -> str:
+def _serialize_required_string(value: Any, context: str) -> str:
     if not isinstance(value, str):
         msg = f"{context} must be a string"
         raise SerializationError(msg)
     return value
 
 
-def _serialize_required_nonempty_string(value, context: str) -> str:
+def _serialize_required_nonempty_string(value: Any, context: str) -> str:
     text = _serialize_required_string(value, context)
     if _is_empty_nonempty_text(text, context):
         msg = f"{context} must not be empty"
@@ -53,13 +53,13 @@ def _serialize_required_nonempty_string(value, context: str) -> str:
     return text
 
 
-def _serialize_nullable_string(value, context: str) -> str | None:
+def _serialize_nullable_string(value: Any, context: str) -> str | None:
     if value is None:
         return None
     return _serialize_required_string(value, context)
 
 
-def _serialize_nullable_nonempty_string(value, context: str) -> str | None:
+def _serialize_nullable_nonempty_string(value: Any, context: str) -> str | None:
     text = _serialize_nullable_string(value, context)
     if text is not None and _is_empty_nonempty_text(text, context):
         msg = f"{context} must not be empty"
@@ -67,14 +67,14 @@ def _serialize_nullable_nonempty_string(value, context: str) -> str | None:
     return text
 
 
-def _serialize_string_list(values, context: str) -> list[str]:
+def _serialize_string_list(values: Any, context: str) -> list[str]:
     if isinstance(values, list | tuple) and all(isinstance(item, str) for item in values):
         return list(values)
     msg = f"{context} must be a list of strings"
     raise SerializationError(msg)
 
 
-def _serialize_nonempty_string_list(values, context: str) -> list[str]:
+def _serialize_nonempty_string_list(values: Any, context: str) -> list[str]:
     items = _serialize_string_list(values, context)
     if any(_is_empty_nonempty_text(item, context) for item in items):
         msg = f"{context} must contain non-empty strings"
@@ -82,7 +82,7 @@ def _serialize_nonempty_string_list(values, context: str) -> list[str]:
     return items
 
 
-def _serialize_string_key_dict(value, context: str) -> dict[str, Any]:
+def _serialize_string_key_dict(value: Any, context: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         msg = f"{context} must be a dictionary"
         raise SerializationError(msg)
@@ -92,7 +92,7 @@ def _serialize_string_key_dict(value, context: str) -> dict[str, Any]:
     return {key: _serialize_pragma_parameter_value(item) for key, item in value.items()}
 
 
-def _serialize_pragma_parameter_value(value) -> str | int | bool | float:
+def _serialize_pragma_parameter_value(value: Any) -> str | int | bool | float:
     if isinstance(value, str | bool):
         return value
     if isinstance(value, int):
@@ -103,7 +103,7 @@ def _serialize_pragma_parameter_value(value) -> str | int | bool | float:
     raise SerializationError(msg)
 
 
-def _serialize_meta_value(value) -> str | int | bool:
+def _serialize_meta_value(value: Any) -> str | int | bool:
     if isinstance(value, str | bool):
         return value
     if isinstance(value, int):
@@ -112,7 +112,7 @@ def _serialize_meta_value(value) -> str | int | bool:
     raise SerializationError(msg)
 
 
-def _serialize_meta_entry_value(value) -> str | int | bool | float:
+def _serialize_meta_entry_value(value: Any) -> str | int | bool | float:
     if isinstance(value, str | bool):
         return value
     if isinstance(value, int):
@@ -123,31 +123,31 @@ def _serialize_meta_entry_value(value) -> str | int | bool | float:
     raise SerializationError(msg)
 
 
-def _serialize_required_int(value, context: str) -> int:
+def _serialize_required_int(value: Any, context: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         msg = f"{context} must be an integer"
         raise SerializationError(msg)
-    return value
+    return cast(int, value)
 
 
-def _serialize_required_number(value, context: str) -> int | float:
+def _serialize_required_number(value: Any, context: str) -> int | float:
     if isinstance(value, bool) or not isinstance(value, int | float):
         msg = f"{context} must be numeric"
         raise SerializationError(msg)
     if isinstance(value, float) and not math.isfinite(value):
         msg = f"{context} must be finite"
         raise SerializationError(msg)
-    return value
+    return cast(int | float, value)
 
 
-def _serialize_required_bool(value, context: str) -> bool:
+def _serialize_required_bool(value: Any, context: str) -> bool:
     if not isinstance(value, bool):
         msg = f"{context} must be a boolean"
         raise SerializationError(msg)
     return value
 
 
-def _serialize_hex_byte_value(value, context: str) -> int | str:
+def _serialize_hex_byte_value(value: Any, context: str) -> int | str:
     if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
         return value
     if isinstance(value, str) and len(value) == 2 and all(char in _HEX_CHARS for char in value):
@@ -156,7 +156,7 @@ def _serialize_hex_byte_value(value, context: str) -> int | str:
     raise SerializationError(msg)
 
 
-def _serialize_hex_negated_value(value) -> int | str:
+def _serialize_hex_negated_value(value: Any) -> int | str:
     if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
         return value
     if isinstance(value, str):
@@ -168,7 +168,7 @@ def _serialize_hex_negated_value(value) -> int | str:
     raise SerializationError(msg)
 
 
-def _serialize_hex_jump_bound(value, field: str) -> int | None:
+def _serialize_hex_jump_bound(value: Any, field: str) -> int | None:
     if value is None:
         return None
     if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
@@ -178,8 +178,8 @@ def _serialize_hex_jump_bound(value, field: str) -> int | None:
 
 
 def _serialize_hex_jump_bounds(
-    min_jump,
-    max_jump,
+    min_jump: Any,
+    max_jump: Any,
 ) -> tuple[int | None, int | None]:
     serialized_min = _serialize_hex_jump_bound(min_jump, "min_jump")
     serialized_max = _serialize_hex_jump_bound(max_jump, "max_jump")
@@ -193,11 +193,11 @@ def _serialize_hex_jump_bounds(
     return serialized_min, serialized_max
 
 
-def _serialize_hex_nibble_high(value) -> bool:
+def _serialize_hex_nibble_high(value: Any) -> bool:
     return _serialize_required_bool(value, "HexNibble high")
 
 
-def _serialize_hex_nibble_value(value) -> int | str:
+def _serialize_hex_nibble_value(value: Any) -> int | str:
     if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xF:
         return value
     if isinstance(value, str) and len(value) == 1 and value in _HEX_CHARS:
@@ -206,7 +206,7 @@ def _serialize_hex_nibble_value(value) -> int | str:
     raise SerializationError(msg)
 
 
-def _serialize_optional_expression(serializer, value, context: str):
+def _serialize_optional_expression(serializer: Any, value: Any, context: str) -> Any:
     if value is None:
         return None
     if not _is_serializable_expression(value):
@@ -215,21 +215,21 @@ def _serialize_optional_expression(serializer, value, context: str):
     return serializer.visit(value)
 
 
-def _serialize_required_expression(serializer, value, context: str):
+def _serialize_required_expression(serializer: Any, value: Any, context: str) -> Any:
     if not _is_serializable_expression(value):
         msg = f"{context} must be an AST expression"
         raise SerializationError(msg)
     return serializer.visit(value)
 
 
-def _is_serializable_expression(value) -> bool:
+def _is_serializable_expression(value: Any) -> bool:
     from yaraast.ast.expressions import Expression
     from yaraast.ast.extern import ExternRuleReference
 
     return isinstance(value, Expression | ExternRuleReference)
 
 
-def _serialize_expression_list(serializer, values, context: str):
+def _serialize_expression_list(serializer: Any, values: Any, context: str) -> Any:
     if not isinstance(values, list | tuple):
         msg = f"{context} must be a list of AST expressions"
         raise SerializationError(msg)
@@ -238,7 +238,9 @@ def _serialize_expression_list(serializer, values, context: str):
     ]
 
 
-def _serialize_quantifier(serializer, value, context: str, *, allow_percentage: bool):
+def _serialize_quantifier(
+    serializer: Any, value: Any, context: str, *, allow_percentage: bool
+) -> Any:
     from yaraast.ast.expressions import Expression
 
     value = _validate_quantifier_value(value, context, allow_percentage=allow_percentage)
@@ -247,7 +249,7 @@ def _serialize_quantifier(serializer, value, context: str, *, allow_percentage: 
     return value
 
 
-def _serialize_string_set_item(serializer, value, context: str):
+def _serialize_string_set_item(serializer: Any, value: Any, context: str) -> Any:
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, str):
@@ -261,7 +263,7 @@ def _serialize_string_set_item(serializer, value, context: str):
     raise SerializationError(msg)
 
 
-def _serialize_string_set(serializer, value, context: str):
+def _serialize_string_set(serializer: Any, value: Any, context: str) -> Any:
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, str):
@@ -292,12 +294,12 @@ def _serialize_string_set(serializer, value, context: str):
 
 
 def _serialize_string_or_expression(
-    serializer,
-    value,
+    serializer: Any,
+    value: Any,
     context: str,
     *,
     validate_string_reference: bool = False,
-):
+) -> str | dict[str, Any]:
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, str):
@@ -306,16 +308,16 @@ def _serialize_string_or_expression(
             return _validate_string_reference_text(text)
         return text
     if isinstance(value, Expression):
-        return serializer.visit(value)
+        return cast(dict[str, Any], serializer.visit(value))
     msg = f"{context} must be a string or expression"
     raise SerializationError(msg)
 
 
-def _serialize_string_modifier(serializer, modifier, context: str) -> dict[str, Any]:
+def _serialize_string_modifier(serializer: Any, modifier: Any, context: str) -> dict[str, Any]:
     from yaraast.ast.modifiers import StringModifier
 
     if isinstance(modifier, StringModifier):
-        return serializer.visit(modifier)
+        return cast(dict[str, Any], serializer.visit(modifier))
     if isinstance(modifier, str):
         return {
             "type": "StringModifier",
@@ -326,14 +328,14 @@ def _serialize_string_modifier(serializer, modifier, context: str) -> dict[str, 
     raise SerializationError(msg)
 
 
-def _serialize_string_modifiers(serializer, values, context: str) -> list[dict[str, Any]]:
+def _serialize_string_modifiers(serializer: Any, values: Any, context: str) -> list[dict[str, Any]]:
     if not isinstance(values, list | tuple):
         msg = f"{context} modifiers must be a list"
         raise SerializationError(msg)
     return [_serialize_string_modifier(serializer, mod, context) for mod in values]
 
 
-def _serialize_hex_tokens(serializer, values, context: str) -> list[dict[str, Any]]:
+def _serialize_hex_tokens(serializer: Any, values: Any, context: str) -> list[dict[str, Any]]:
     from yaraast.ast.strings import HexToken
 
     tokens = _serialize_node_list(serializer, values, f"{context} tokens", HexToken)
@@ -368,7 +370,7 @@ def _serialize_plain_string_raw_bytes(data: dict[str, Any], raw_bytes: Any) -> N
     data["raw_value_encoding"] = "base64"
 
 
-def _serialize_anonymous_flag(data: dict[str, Any], value, context: str) -> None:
+def _serialize_anonymous_flag(data: dict[str, Any], value: Any, context: str) -> None:
     if not isinstance(value, bool):
         msg = f"{context} is_anonymous must be a boolean"
         raise SerializationError(msg)
@@ -376,7 +378,9 @@ def _serialize_anonymous_flag(data: dict[str, Any], value, context: str) -> None
         data["is_anonymous"] = True
 
 
-def _serialize_dynamic_node_metadata(serializer, node, data: dict[str, Any]) -> dict[str, Any]:
+def _serialize_dynamic_node_metadata(
+    serializer: Any, node: Any, data: dict[str, Any]
+) -> dict[str, Any]:
     from yaraast.ast.comments import Comment, CommentGroup
 
     location = getattr(node, "location", None)
@@ -404,7 +408,7 @@ def _serialize_dynamic_node_metadata(serializer, node, data: dict[str, Any]) -> 
     return data
 
 
-def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
+def _serialize_meta_entry(serializer: Any, meta: Any) -> dict[str, Any]:
     from yaraast.ast.modifiers import MetaEntry
 
     scope = getattr(meta, "scope", None)
@@ -424,21 +428,21 @@ def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     if scope is not None:
         data["scope"] = serialize_meta_scope(scope)
     if hasattr(meta, "accept"):
-        return serializer._with_node_metadata(meta, data)
+        return cast(dict[str, Any], serializer._with_node_metadata(meta, data))
     if any(hasattr(meta, name) for name in ("location", "leading_comments", "trailing_comment")):
         return _serialize_dynamic_node_metadata(serializer, meta, data)
     return data
 
 
-def _serialize_enum_value(value, context: str) -> str:
+def _serialize_enum_value(value: Any, context: str) -> str:
     if isinstance(value, str):
         return _serialize_required_nonempty_string(value, context)
     return _serialize_required_nonempty_string(getattr(value, "value", None), context)
 
 
 def _serialize_node_list(
-    serializer,
-    values,
+    serializer: Any,
+    values: Any,
     context: str,
     expected_type: type[Any] | tuple[type[Any], ...],
 ) -> list[dict[str, Any]]:
@@ -455,7 +459,7 @@ def _serialize_node_list(
     return serialized
 
 
-def _serialize_rule_modifiers(values, context: str = "Rule") -> list[str]:
+def _serialize_rule_modifiers(values: Any, context: str = "Rule") -> list[str]:
     from yaraast.ast.modifiers import RuleModifier
 
     if not isinstance(values, list | tuple):
@@ -483,7 +487,7 @@ def _serialize_rule_modifiers(values, context: str = "Rule") -> list[str]:
     return serialized
 
 
-def _serialize_meta_list(serializer, values) -> list[dict[str, Any]]:
+def _serialize_meta_list(serializer: Any, values: Any) -> list[dict[str, Any]]:
     from yaraast.ast.meta import Meta
     from yaraast.ast.modifiers import MetaEntry
 
@@ -500,7 +504,7 @@ def _serialize_meta_list(serializer, values) -> list[dict[str, Any]]:
     return serialized
 
 
-def visit_yara_file(serializer, node) -> dict[str, Any]:
+def visit_yara_file(serializer: Any, node: Any) -> dict[str, Any]:
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
     from yaraast.ast.pragmas import Pragma
     from yaraast.ast.rules import Import, Include, Rule
@@ -543,7 +547,7 @@ def visit_yara_file(serializer, node) -> dict[str, Any]:
     return result
 
 
-def visit_rule(serializer, node) -> dict[str, Any]:
+def visit_rule(serializer: Any, node: Any) -> dict[str, Any]:
     from yaraast.ast.pragmas import InRulePragma
     from yaraast.ast.rules import Tag
     from yaraast.ast.strings import StringDefinition
@@ -575,7 +579,7 @@ def visit_rule(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_plain_string(serializer, node) -> dict[str, Any]:
+def visit_plain_string(serializer: Any, node: Any) -> dict[str, Any]:
     data = {
         "type": "PlainString",
         "identifier": _serialize_required_nonempty_string(
@@ -590,7 +594,7 @@ def visit_plain_string(serializer, node) -> dict[str, Any]:
     return data
 
 
-def visit_hex_string(serializer, node) -> dict[str, Any]:
+def visit_hex_string(serializer: Any, node: Any) -> dict[str, Any]:
     data = {
         "type": "HexString",
         "identifier": _serialize_required_nonempty_string(
@@ -604,7 +608,7 @@ def visit_hex_string(serializer, node) -> dict[str, Any]:
     return data
 
 
-def visit_regex_string(serializer, node) -> dict[str, Any]:
+def visit_regex_string(serializer: Any, node: Any) -> dict[str, Any]:
     data = {
         "type": "RegexString",
         "identifier": _serialize_required_nonempty_string(
@@ -618,14 +622,16 @@ def visit_regex_string(serializer, node) -> dict[str, Any]:
     return data
 
 
-def visit_hex_alternative(serializer, node) -> dict[str, Any]:
+def visit_hex_alternative(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "HexAlternative",
         "alternatives": _serialize_hex_alternative_branches(serializer, node.alternatives),
     }
 
 
-def _serialize_hex_alternative_branches(serializer, alternatives) -> list[list[dict[str, Any]]]:
+def _serialize_hex_alternative_branches(
+    serializer: Any, alternatives: Any
+) -> list[list[dict[str, Any]]]:
     if not isinstance(alternatives, list | tuple):
         msg = "HexAlternative alternatives must be a list"
         raise SerializationError(msg)
@@ -643,7 +649,7 @@ def _serialize_hex_alternative_branches(serializer, alternatives) -> list[list[d
     return branches
 
 
-def _validate_hex_token_sequence(tokens, context: str, *, inside_alternative: bool) -> None:
+def _validate_hex_token_sequence(tokens: Any, context: str, *, inside_alternative: bool) -> None:
     from yaraast.ast.strings import HexAlternative, HexJump
 
     if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
@@ -667,13 +673,13 @@ def _validate_hex_token_sequence(tokens, context: str, *, inside_alternative: bo
             raise SerializationError(msg)
 
 
-def _coerce_hex_alternative_branch(alternative) -> list:
+def _coerce_hex_alternative_branch(alternative: Any) -> list[Any]:
     if isinstance(alternative, list | tuple):
         return [_coerce_hex_alternative_token(token) for token in alternative]
     return [_coerce_hex_alternative_token(alternative)]
 
 
-def _coerce_hex_alternative_token(token):
+def _coerce_hex_alternative_token(token: Any) -> Any:
     from yaraast.ast.strings import HexByte, HexToken
 
     if isinstance(token, HexToken):
@@ -681,7 +687,7 @@ def _coerce_hex_alternative_token(token):
     return HexByte(token)
 
 
-def visit_string_offset(serializer, node) -> dict[str, Any]:
+def visit_string_offset(serializer: Any, node: Any) -> dict[str, Any]:
     index = _serialize_optional_expression(serializer, node.index, "StringOffset index")
     if node.index is not None:
         _validate_string_occurrence_index_expression(node.index, "String offset index")
@@ -698,7 +704,7 @@ def visit_string_offset(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_string_length(serializer, node) -> dict[str, Any]:
+def visit_string_length(serializer: Any, node: Any) -> dict[str, Any]:
     index = _serialize_optional_expression(serializer, node.index, "StringLength index")
     if node.index is not None:
         _validate_string_occurrence_index_expression(node.index, "String length index")
@@ -715,7 +721,7 @@ def visit_string_length(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_binary_expression(serializer, node) -> dict[str, Any]:
+def visit_binary_expression(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "BinaryExpression",
         "left": _serialize_required_expression(
@@ -737,7 +743,7 @@ def visit_binary_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_unary_expression(serializer, node) -> dict[str, Any]:
+def visit_unary_expression(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "UnaryExpression",
         "operator": _validate_unary_operator_text(
@@ -754,7 +760,7 @@ def visit_unary_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_parentheses_expression(serializer, node) -> dict[str, Any]:
+def visit_parentheses_expression(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "ParenthesesExpression",
         "expression": _serialize_required_expression(
@@ -765,7 +771,7 @@ def visit_parentheses_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_set_expression(serializer, node) -> dict[str, Any]:
+def visit_set_expression(serializer: Any, node: Any) -> dict[str, Any]:
     elements = _serialize_expression_list(serializer, node.elements, "SetExpression elements")
     _validate_set_expression_elements(node)
     return {
@@ -774,7 +780,7 @@ def visit_set_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_range_expression(serializer, node) -> dict[str, Any]:
+def visit_range_expression(serializer: Any, node: Any) -> dict[str, Any]:
     low = _serialize_required_expression(serializer, node.low, "RangeExpression low")
     high = _serialize_required_expression(serializer, node.high, "RangeExpression high")
     _validate_range_expression_bounds(node)
@@ -785,7 +791,7 @@ def visit_range_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_function_call(serializer, node) -> dict[str, Any]:
+def visit_function_call(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "FunctionCall",
         "function": _validate_function_identifier_text(
@@ -808,7 +814,7 @@ def visit_function_call(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_array_access(serializer, node) -> dict[str, Any]:
+def visit_array_access(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "ArrayAccess",
         "array": _serialize_required_expression(serializer, node.array, "ArrayAccess array"),
@@ -816,7 +822,7 @@ def visit_array_access(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_member_access(serializer, node) -> dict[str, Any]:
+def visit_member_access(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "MemberAccess",
         "object": _serialize_required_expression(
@@ -831,7 +837,7 @@ def visit_member_access(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_for_expression(serializer, node) -> dict[str, Any]:
+def visit_for_expression(serializer: Any, node: Any) -> dict[str, Any]:
     quantifier = _serialize_quantifier(
         serializer,
         node.quantifier,
@@ -856,7 +862,7 @@ def visit_for_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_for_of_expression(serializer, node) -> dict[str, Any]:
+def visit_for_of_expression(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "ForOfExpression",
         "quantifier": _serialize_quantifier(
@@ -874,7 +880,7 @@ def visit_for_of_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_at_expression(serializer, node) -> dict[str, Any]:
+def visit_at_expression(serializer: Any, node: Any) -> dict[str, Any]:
     offset = _serialize_required_expression(serializer, node.offset, "AtExpression offset")
     _validate_integer_expression(node.offset, "At expression offset")
     return {
@@ -889,7 +895,7 @@ def visit_at_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_in_expression(serializer, node) -> dict[str, Any]:
+def visit_in_expression(serializer: Any, node: Any) -> dict[str, Any]:
     subject = _serialize_string_or_expression(
         serializer,
         node.subject,
@@ -905,7 +911,7 @@ def visit_in_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_of_expression(serializer, node) -> dict[str, Any]:
+def visit_of_expression(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "OfExpression",
         "quantifier": _serialize_quantifier(
@@ -918,7 +924,7 @@ def visit_of_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_dictionary_access(serializer, node) -> dict[str, Any]:
+def visit_dictionary_access(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "DictionaryAccess",
         "object": _serialize_required_expression(
@@ -930,7 +936,7 @@ def visit_dictionary_access(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_comment_group(serializer, node) -> dict[str, Any]:
+def visit_comment_group(serializer: Any, node: Any) -> dict[str, Any]:
     from yaraast.ast.comments import Comment
 
     return {
@@ -944,7 +950,7 @@ def visit_comment_group(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_string_operator_expression(serializer, node) -> dict[str, Any]:
+def visit_string_operator_expression(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "StringOperatorExpression",
         "left": _serialize_required_expression(
@@ -966,7 +972,7 @@ def visit_string_operator_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_pragma_block(serializer, node) -> dict[str, Any]:
+def visit_pragma_block(serializer: Any, node: Any) -> dict[str, Any]:
     from yaraast.ast.pragmas import Pragma
 
     return {
@@ -981,7 +987,7 @@ def visit_pragma_block(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_with_statement(serializer, node) -> dict[str, Any]:
+def visit_with_statement(serializer: Any, node: Any) -> dict[str, Any]:
     from yaraast.yarax.ast_nodes import WithDeclaration
 
     return {
@@ -996,7 +1002,7 @@ def visit_with_statement(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_with_declaration(serializer, node) -> dict[str, Any]:
+def visit_with_declaration(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "WithDeclaration",
         "identifier": _validate_local_identifier_text(
@@ -1010,7 +1016,7 @@ def visit_with_declaration(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_array_comprehension(serializer, node) -> dict[str, Any]:
+def visit_array_comprehension(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "ArrayComprehension",
         "expression": _serialize_optional_expression(
@@ -1037,7 +1043,7 @@ def visit_array_comprehension(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_dict_comprehension(serializer, node) -> dict[str, Any]:
+def visit_dict_comprehension(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "DictComprehension",
         "key_expression": _serialize_optional_expression(
@@ -1082,7 +1088,7 @@ def visit_dict_comprehension(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_tuple_expression(serializer, node) -> dict[str, Any]:
+def visit_tuple_expression(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "TupleExpression",
         "elements": _serialize_expression_list(
@@ -1093,7 +1099,7 @@ def visit_tuple_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_tuple_indexing(serializer, node) -> dict[str, Any]:
+def visit_tuple_indexing(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "TupleIndexing",
         "tuple_expr": _serialize_required_expression(
@@ -1105,7 +1111,7 @@ def visit_tuple_indexing(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_list_expression(serializer, node) -> dict[str, Any]:
+def visit_list_expression(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "ListExpression",
         "elements": _serialize_expression_list(
@@ -1116,7 +1122,7 @@ def visit_list_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_dict_expression(serializer, node) -> dict[str, Any]:
+def visit_dict_expression(serializer: Any, node: Any) -> dict[str, Any]:
     from yaraast.yarax.ast_nodes import DictItem
 
     return {
@@ -1125,7 +1131,7 @@ def visit_dict_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_dict_item(serializer, node) -> dict[str, Any]:
+def visit_dict_item(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "DictItem",
         "key": _serialize_required_expression(serializer, node.key, "DictItem key"),
@@ -1133,7 +1139,7 @@ def visit_dict_item(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_slice_expression(serializer, node) -> dict[str, Any]:
+def visit_slice_expression(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "SliceExpression",
         "target": _serialize_required_expression(serializer, node.target, "SliceExpression target"),
@@ -1143,7 +1149,7 @@ def visit_slice_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_lambda_expression(serializer, node) -> dict[str, Any]:
+def visit_lambda_expression(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "LambdaExpression",
         "parameters": _validate_local_identifier_list(
@@ -1156,7 +1162,7 @@ def visit_lambda_expression(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_pattern_match(serializer, node) -> dict[str, Any]:
+def visit_pattern_match(serializer: Any, node: Any) -> dict[str, Any]:
     from yaraast.yarax.ast_nodes import MatchCase
 
     return {
@@ -1167,7 +1173,7 @@ def visit_pattern_match(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_match_case(serializer, node) -> dict[str, Any]:
+def visit_match_case(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "MatchCase",
         "pattern": _serialize_required_expression(serializer, node.pattern, "MatchCase pattern"),
@@ -1175,7 +1181,7 @@ def visit_match_case(serializer, node) -> dict[str, Any]:
     }
 
 
-def visit_spread_operator(serializer, node) -> dict[str, Any]:
+def visit_spread_operator(serializer: Any, node: Any) -> dict[str, Any]:
     return {
         "type": "SpreadOperator",
         "expression": _serialize_required_expression(

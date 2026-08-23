@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from datetime import datetime
 import json
+from typing import Any
 
 import yaml
 
+from yaraast.ast.base import YaraFile
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
 from yaraast.serialization.roundtrip_models import FormattingInfo, RoundTripMetadata
@@ -65,8 +67,8 @@ def build_roundtrip_metadata(
 
 
 def serialize_with_roundtrip_metadata(
-    serializer,
-    ast,
+    serializer: Any,
+    ast: YaraFile,
     metadata: RoundTripMetadata,
     format: str,
 ) -> str:

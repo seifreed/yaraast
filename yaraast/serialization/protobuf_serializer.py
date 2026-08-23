@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
-import warnings
+from typing import Any, cast
 
 from google.protobuf.message import DecodeError
 
@@ -22,14 +21,6 @@ from yaraast.serialization.serializer_helpers import (
 from yaraast.visitor.defaults import DefaultASTVisitor
 
 from . import yara_ast_pb2
-
-# Suppress protobuf version warning before import
-warnings.filterwarnings(
-    "ignore",
-    category=UserWarning,
-    message=".*Protobuf gencode version.*",
-    module="google.protobuf.runtime_version",
-)
 
 
 class ProtobufSerializer(DefaultASTVisitor[Any]):
@@ -99,7 +90,7 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
 
     def _protobuf_to_ast(self, pb_file: yara_ast_pb2.YaraFile) -> YaraFile:
         """Convert Protobuf message to AST."""
-        return protobuf_to_ast(pb_file)
+        return cast(YaraFile, protobuf_to_ast(pb_file))
 
     def get_serialization_stats(self, ast: YaraFile) -> dict[str, Any]:
         """Get statistics about the serialization."""

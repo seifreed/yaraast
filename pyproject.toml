@@ -127,7 +127,6 @@ addopts = [
     "--cov-report=html",
     "--cov-report=xml",
     "--cov-branch",
-    "-n", "auto",  # Use pytest-xdist for parallel testing
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
@@ -140,13 +139,7 @@ markers = [
     "libyara: marks tests that require yara-python",
     "quality: marks tests for code quality metrics",
 ]
-filterwarnings = [
-    "error",
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning:.*yara.*",
-    "ignore::DeprecationWarning:.*protobuf.*",
-    "ignore::PendingDeprecationWarning",
-]
+filterwarnings = ["error"]
 
 # Coverage configuration
 [tool.coverage.run]
@@ -219,7 +212,6 @@ ignore_errors = false
 
 [[tool.mypy.overrides]]
 module = [
-    "yaraast.serialization.*",
     "yaraast.yaral.*",
 ]
 ignore_errors = true

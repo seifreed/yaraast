@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import math
-from typing import Any
+from typing import Any, cast
 
 from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
@@ -50,25 +50,25 @@ _PROTOBUF_INT64_MIN = -(2**63)
 _PROTOBUF_INT64_MAX = 2**63 - 1
 
 
-def _finite_double_value(value, context: str) -> float:
+def _finite_double_value(value: Any, context: str) -> float:
     if isinstance(value, bool) or not isinstance(value, int | float):
         msg = f"{context} value must be numeric"
         raise SerializationError(msg)
-    value = float(value)
-    if not math.isfinite(value):
+    normalized = float(value)
+    if not math.isfinite(normalized):
         msg = f"{context} value must be finite"
         raise SerializationError(msg)
-    return value
+    return normalized
 
 
-def _protobuf_has_field(message, field_name: str) -> bool:
+def _protobuf_has_field(message: Any, field_name: str) -> bool:
     try:
-        return message.HasField(field_name)
+        return bool(message.HasField(field_name))
     except ValueError:
         return False
 
 
-def _node_has_metadata(node) -> bool:
+def _node_has_metadata(node: Any) -> bool:
     leading_comments = getattr(node, "leading_comments", None)
     return bool(
         getattr(node, "location", None) is not None
@@ -77,7 +77,7 @@ def _node_has_metadata(node) -> bool:
     )
 
 
-def _copy_location_to_protobuf(location, pb_location) -> None:
+def _copy_location_to_protobuf(location: Any, pb_location: Any) -> None:
     location = _validate_location_metadata(location, validate_structure=False)
     line = _protobuf_int32_value(location.line, "Location line")
     column = _protobuf_int32_value(location.column, "Location column")
@@ -107,7 +107,7 @@ def _copy_location_to_protobuf(location, pb_location) -> None:
         pb_location.end_column = end_column
 
 
-def _protobuf_location_to_ast(pb_location):
+def _protobuf_location_to_ast(pb_location: Any) -> Any:
     from yaraast.ast.base import Location
 
     location = Location(
@@ -126,7 +126,7 @@ def _protobuf_location_to_ast(pb_location):
     return location
 
 
-def _copy_comment_to_protobuf(comment, pb_comment) -> None:
+def _copy_comment_to_protobuf(comment: Any, pb_comment: Any) -> None:
     pb_comment.text = _protobuf_required_string(comment.text, "Comment text")
     pb_comment.is_multiline = _protobuf_required_bool(
         comment.is_multiline,
@@ -135,7 +135,7 @@ def _copy_comment_to_protobuf(comment, pb_comment) -> None:
     _copy_node_metadata_to_protobuf(comment, pb_comment)
 
 
-def _protobuf_comment_list(values, context: str) -> list:
+def _protobuf_comment_list(values: Any, context: str) -> list[Any]:
     from yaraast.ast.comments import Comment
 
     comments = _protobuf_list(values, context)
@@ -146,7 +146,7 @@ def _protobuf_comment_list(values, context: str) -> list:
     return comments
 
 
-def _protobuf_comment_metadata_list(values, context: str) -> list:
+def _protobuf_comment_metadata_list(values: Any, context: str) -> list[Any]:
     from yaraast.ast.comments import Comment, CommentGroup
 
     comments = _protobuf_list(values, context)
@@ -158,8 +158,8 @@ def _protobuf_comment_metadata_list(values, context: str) -> list:
 
 
 def _copy_comment_metadata_to_protobuf(
-    comment,
-    pb_comment_metadata,
+    comment: Any,
+    pb_comment_metadata: Any,
     context: str = "Comment metadata",
 ) -> None:
     from yaraast.ast.comments import Comment, CommentGroup
@@ -180,7 +180,7 @@ def _copy_comment_metadata_to_protobuf(
         raise SerializationError(msg)
 
 
-def _protobuf_comment_to_ast(pb_comment):
+def _protobuf_comment_to_ast(pb_comment: Any) -> Any:
     from yaraast.ast.comments import Comment
 
     comment = Comment(
@@ -190,7 +190,7 @@ def _protobuf_comment_to_ast(pb_comment):
     return _apply_node_metadata_from_protobuf(pb_comment, comment)
 
 
-def _protobuf_comment_metadata_to_ast(pb_comment_metadata):
+def _protobuf_comment_metadata_to_ast(pb_comment_metadata: Any) -> Any:
     from yaraast.ast.comments import CommentGroup
 
     if pb_comment_metadata.HasField("group"):
@@ -207,7 +207,7 @@ def _protobuf_comment_metadata_to_ast(pb_comment_metadata):
     raise SerializationError(msg)
 
 
-def _copy_node_metadata_to_protobuf(node, pb_owner) -> None:
+def _copy_node_metadata_to_protobuf(node: Any, pb_owner: Any) -> None:
     if not _node_has_metadata(node) or not hasattr(pb_owner, "node_metadata"):
         return
 
@@ -235,7 +235,7 @@ def _copy_node_metadata_to_protobuf(node, pb_owner) -> None:
         )
 
 
-def _apply_node_metadata_from_protobuf(pb_owner, node):
+def _apply_node_metadata_from_protobuf(pb_owner: Any, node: Any) -> Any:
     if not hasattr(pb_owner, "node_metadata") or not _protobuf_has_field(
         pb_owner,
         "node_metadata",
@@ -257,7 +257,7 @@ def _apply_node_metadata_from_protobuf(pb_owner, node):
     return node
 
 
-def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
+def ast_to_protobuf(ast: Any, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
     """Convert an AST to its protobuf representation."""
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
     from yaraast.ast.pragmas import Pragma
@@ -322,7 +322,7 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
     return pb_file
 
 
-def convert_rule_to_protobuf(rule, pb_rule) -> None:
+def convert_rule_to_protobuf(rule: Any, pb_rule: Any) -> None:
     """Convert a single rule AST node to protobuf."""
     from yaraast.ast.meta import Meta
     from yaraast.ast.modifiers import MetaEntry
@@ -395,7 +395,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         convert_in_rule_pragma_to_protobuf(pragma, pb_rule.pragmas.add())
 
 
-def _copy_python_value_to_meta_value(value, pb_meta_value, context: str) -> None:
+def _copy_python_value_to_meta_value(value: Any, pb_meta_value: Any, context: str) -> None:
     if isinstance(value, str):
         pb_meta_value.string_value = _protobuf_required_string(value, f"{context} value")
     elif isinstance(value, bool):
@@ -409,7 +409,7 @@ def _copy_python_value_to_meta_value(value, pb_meta_value, context: str) -> None
         raise SerializationError(msg)
 
 
-def _copy_python_value_to_legacy_meta_value(value, pb_meta_value) -> None:
+def _copy_python_value_to_legacy_meta_value(value: Any, pb_meta_value: Any) -> None:
     if isinstance(value, str):
         pb_meta_value.string_value = _protobuf_required_string(value, "Meta value")
     elif isinstance(value, bool):
@@ -421,7 +421,7 @@ def _copy_python_value_to_legacy_meta_value(value, pb_meta_value) -> None:
         raise SerializationError(msg)
 
 
-def _protobuf_required_string(value, context: str) -> str:
+def _protobuf_required_string(value: Any, context: str) -> str:
     if isinstance(value, str):
         try:
             value.encode("utf-8")
@@ -433,7 +433,7 @@ def _protobuf_required_string(value, context: str) -> str:
     raise SerializationError(msg)
 
 
-def _protobuf_required_nonempty_string(value, context: str) -> str:
+def _protobuf_required_nonempty_string(value: Any, context: str) -> str:
     text = _protobuf_required_string(value, context)
     if _is_empty_nonempty_text(text, context):
         msg = f"{context} must not be empty"
@@ -441,7 +441,7 @@ def _protobuf_required_nonempty_string(value, context: str) -> str:
     return text
 
 
-def _protobuf_optional_string(value, context: str) -> str | None:
+def _protobuf_optional_string(value: Any, context: str) -> str | None:
     if value is None:
         return None
     return _protobuf_required_string(value, context)
@@ -453,21 +453,21 @@ def _protobuf_optional_nonempty_scalar(value: str, context: str) -> str | None:
     return _protobuf_required_nonempty_string(value, context)
 
 
-def _protobuf_required_bool(value, context: str) -> bool:
+def _protobuf_required_bool(value: Any, context: str) -> bool:
     if isinstance(value, bool):
         return value
     msg = f"{context} must be a boolean"
     raise SerializationError(msg)
 
 
-def _protobuf_required_int(value, context: str) -> int:
+def _protobuf_required_int(value: Any, context: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         msg = f"{context} must be an integer"
         raise SerializationError(msg)
-    return value
+    return cast(int, value)
 
 
-def _protobuf_int32_value(value, context: str) -> int:
+def _protobuf_int32_value(value: Any, context: str) -> int:
     int_value = _protobuf_required_int(value, context)
     if _PROTOBUF_INT32_MIN <= int_value <= _PROTOBUF_INT32_MAX:
         return int_value
@@ -475,7 +475,7 @@ def _protobuf_int32_value(value, context: str) -> int:
     raise SerializationError(msg)
 
 
-def _protobuf_int64_value(value, context: str) -> int:
+def _protobuf_int64_value(value: Any, context: str) -> int:
     int_value = _protobuf_required_int(value, context)
     if _PROTOBUF_INT64_MIN <= int_value <= _PROTOBUF_INT64_MAX:
         return int_value
@@ -483,7 +483,7 @@ def _protobuf_int64_value(value, context: str) -> int:
     raise SerializationError(msg)
 
 
-def _protobuf_pragma_type(pragma) -> str:
+def _protobuf_pragma_type(pragma: Any) -> str:
     from yaraast.ast.pragmas import PragmaType
 
     pragma_type = getattr(pragma, "pragma_type", None)
@@ -502,20 +502,20 @@ def _protobuf_pragma_type(pragma) -> str:
     return value
 
 
-def _protobuf_required_string_key(value, message: str) -> str:
+def _protobuf_required_string_key(value: Any, message: str) -> str:
     if isinstance(value, str):
         return _protobuf_required_string(value, "Pragma parameters key")
     raise SerializationError(message)
 
 
-def _protobuf_string_list(values, context: str) -> list[str]:
+def _protobuf_string_list(values: Any, context: str) -> list[str]:
     if isinstance(values, list | tuple) and all(isinstance(item, str) for item in values):
         return [_protobuf_required_string(item, f"{context} item") for item in values]
     msg = f"{context} must be a list of strings"
     raise SerializationError(msg)
 
 
-def _protobuf_nonempty_string_list(values, context: str) -> list[str]:
+def _protobuf_nonempty_string_list(values: Any, context: str) -> list[str]:
     items = _protobuf_string_list(values, context)
     for item in items:
         if _is_empty_nonempty_text(item, context):
@@ -524,7 +524,7 @@ def _protobuf_nonempty_string_list(values, context: str) -> list[str]:
     return items
 
 
-def _protobuf_node_list(values, context: str, item_type) -> list:
+def _protobuf_node_list(values: Any, context: str, item_type: Any) -> list[Any]:
     if not isinstance(values, list | tuple):
         msg = f"{context} must be a list"
         raise SerializationError(msg)
@@ -540,21 +540,21 @@ def _protobuf_node_list(values, context: str, item_type) -> list:
     return items
 
 
-def _protobuf_list(values, context: str) -> list:
+def _protobuf_list(values: Any, context: str) -> list[Any]:
     if not isinstance(values, list | tuple):
         msg = f"{context} must be a list"
         raise SerializationError(msg)
     return list(values)
 
 
-def _protobuf_mapping(values, context: str) -> Mapping:
+def _protobuf_mapping(values: Any, context: str) -> Mapping[Any, Any]:
     if not isinstance(values, Mapping):
         msg = f"{context} must be a mapping"
         raise SerializationError(msg)
     return values
 
 
-def _protobuf_rule_modifier_list(values, context: str) -> list:
+def _protobuf_rule_modifier_list(values: Any, context: str) -> list[Any]:
     from yaraast.ast.modifiers import RuleModifier
 
     items = _protobuf_list(values, context)
@@ -565,12 +565,12 @@ def _protobuf_rule_modifier_list(values, context: str) -> list:
     return items
 
 
-def _protobuf_modifier_name(modifier, context: str) -> str:
+def _protobuf_modifier_name(modifier: Any, context: str) -> str:
     if isinstance(modifier, str):
         modifier = _protobuf_required_nonempty_string(modifier, f"{context} name")
         if context in {"Rule modifier", "ExternRule modifier"}:
             modifier = _normalize_rule_modifier_text(modifier, context)
-        return modifier
+        return cast(str, modifier)
     try:
         name = modifier.name
     except (AttributeError, TypeError) as exc:
@@ -582,7 +582,7 @@ def _protobuf_modifier_name(modifier, context: str) -> str:
     return name
 
 
-def _protobuf_modifier_names_from_protobuf(values, context: str) -> list[str]:
+def _protobuf_modifier_names_from_protobuf(values: Any, context: str) -> list[str]:
     return [
         _normalize_rule_modifier_text(
             _protobuf_required_nonempty_string(value, f"{context} name"),
@@ -592,7 +592,7 @@ def _protobuf_modifier_names_from_protobuf(values, context: str) -> list[str]:
     ]
 
 
-def _protobuf_string_modifier_list(values, context: str) -> list:
+def _protobuf_string_modifier_list(values: Any, context: str) -> list[Any]:
     from yaraast.ast.modifiers import (
         StringModifier,
         StringModifierType,
@@ -616,7 +616,7 @@ def _protobuf_string_modifier_list(values, context: str) -> list:
     return items
 
 
-def _protobuf_string_definition_list(values, context: str) -> list:
+def _protobuf_string_definition_list(values: Any, context: str) -> list[Any]:
     from yaraast.ast.strings import StringDefinition
 
     items = _protobuf_list(values, context)
@@ -627,7 +627,7 @@ def _protobuf_string_definition_list(values, context: str) -> list:
     return items
 
 
-def _meta_value_to_python(pb_meta_value):
+def _meta_value_to_python(pb_meta_value: Any) -> Any:
     if pb_meta_value.HasField("string_value"):
         return pb_meta_value.string_value
     if pb_meta_value.HasField("bool_value"):
@@ -666,7 +666,7 @@ def protobuf_to_rule_meta_entry(pb_meta_entry: Any) -> Any:
     )
 
 
-def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
+def convert_extern_rule_to_protobuf(extern_rule: Any, pb_extern_rule: Any) -> None:
     pb_extern_rule.name = _validate_extern_rule_identifier_text(
         _protobuf_required_nonempty_string(
             extern_rule.name,
@@ -690,7 +690,7 @@ def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
     _copy_node_metadata_to_protobuf(extern_rule, pb_extern_rule)
 
 
-def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
+def convert_extern_import_to_protobuf(extern_import: Any, pb_extern_import: Any) -> None:
     pb_extern_import.module_path = _protobuf_required_nonempty_string(
         extern_import.module_path,
         "ExternImport module_path",
@@ -708,7 +708,7 @@ def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
     _copy_node_metadata_to_protobuf(extern_import, pb_extern_import)
 
 
-def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
+def convert_extern_namespace_to_protobuf(namespace: Any, pb_namespace: Any) -> None:
     from yaraast.ast.extern import ExternRule
 
     pb_namespace.name = _validate_namespace_identifier_text(
@@ -726,7 +726,7 @@ def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
         convert_extern_rule_to_protobuf(extern_rule, pb_namespace.extern_rules.add())
 
 
-def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
+def convert_pragma_to_protobuf(pragma: Any, pb_pragma: Any) -> None:
     scope = getattr(pragma, "scope", None)
     pb_pragma.pragma_type = _protobuf_pragma_type(pragma)
     pb_pragma.name = _validate_yara_identifier_text(
@@ -785,7 +785,7 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
     _copy_node_metadata_to_protobuf(pragma, pb_pragma)
 
 
-def convert_in_rule_pragma_to_protobuf(in_rule_pragma, pb_in_rule_pragma) -> None:
+def convert_in_rule_pragma_to_protobuf(in_rule_pragma: Any, pb_in_rule_pragma: Any) -> None:
     convert_pragma_to_protobuf(in_rule_pragma.pragma, pb_in_rule_pragma.pragma)
     pb_in_rule_pragma.position = _protobuf_required_nonempty_string(
         in_rule_pragma.position,
@@ -794,7 +794,7 @@ def convert_in_rule_pragma_to_protobuf(in_rule_pragma, pb_in_rule_pragma) -> Non
     _copy_node_metadata_to_protobuf(in_rule_pragma, pb_in_rule_pragma)
 
 
-def _modifier_value_text(value) -> str:
+def _modifier_value_text(value: Any) -> str:
     if isinstance(value, tuple) and len(value) == 2:
         return f"{value[0]}-{value[1]}"
     return str(value)
@@ -805,7 +805,7 @@ def _raise_invalid_modifier_value() -> None:
     raise SerializationError(msg)
 
 
-def _validate_plain_string_value_for_protobuf(value) -> None:
+def _validate_plain_string_value_for_protobuf(value: Any) -> None:
     if not isinstance(value, str | bytes):
         msg = "PlainString value must be a string or bytes"
         raise SerializationError(msg)
@@ -814,13 +814,13 @@ def _validate_plain_string_value_for_protobuf(value) -> None:
         raise SerializationError(msg)
 
 
-def _validate_plain_string_raw_bytes_for_protobuf(raw_bytes) -> None:
+def _validate_plain_string_raw_bytes_for_protobuf(raw_bytes: Any) -> None:
     if raw_bytes is not None and not isinstance(raw_bytes, bytes):
         msg = "PlainString raw_bytes must be bytes or None"
         raise SerializationError(msg)
 
 
-def _is_int_pair(left, right) -> bool:
+def _is_int_pair(left: Any, right: Any) -> bool:
     return (
         isinstance(left, int)
         and not isinstance(left, bool)
@@ -829,7 +829,7 @@ def _is_int_pair(left, right) -> bool:
     )
 
 
-def _format_unknown_modifier(name: str, value) -> str:
+def _format_unknown_modifier(name: str, value: Any) -> str:
     if value is None:
         return name
     if isinstance(value, tuple) and len(value) == 2:
@@ -839,7 +839,7 @@ def _format_unknown_modifier(name: str, value) -> str:
     return f"{name}({value})"
 
 
-def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
+def _copy_modifier_to_protobuf(mod: Any, pb_mod: Any) -> None:
     pb_mod.name = _protobuf_modifier_name(mod, "String modifier")
     _copy_node_metadata_to_protobuf(mod, pb_mod)
     value = getattr(mod, "value", None)
@@ -875,7 +875,7 @@ def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
         _raise_invalid_modifier_value()
 
 
-def convert_string_to_protobuf(string_def, pb_string) -> None:
+def convert_string_to_protobuf(string_def: Any, pb_string: Any) -> None:
     """Convert a string definition to protobuf."""
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
@@ -946,7 +946,7 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
         raise SerializationError(msg)
 
 
-def convert_hex_token_to_protobuf(token, pb_token) -> None:
+def convert_hex_token_to_protobuf(token: Any, pb_token: Any) -> None:
     """Convert a hex token to protobuf."""
     from yaraast.ast.strings import (
         HexAlternative,
@@ -1021,7 +1021,7 @@ def _hex_byte_like_value_to_protobuf(value: int | str, context: str) -> str:
     raise SerializationError(msg)
 
 
-def _copy_hex_jump_to_protobuf(token, pb_jump) -> None:
+def _copy_hex_jump_to_protobuf(token: Any, pb_jump: Any) -> None:
     min_jump = _hex_jump_bound_to_protobuf(token.min_jump, "min_jump")
     max_jump = _hex_jump_bound_to_protobuf(token.max_jump, "max_jump")
     if min_jump is not None and max_jump is not None and min_jump > max_jump:
@@ -1072,7 +1072,7 @@ def _hex_byte_value_from_protobuf(value: str) -> int | str:
 
 def _hex_int_value_from_protobuf(value: str) -> int | str:
     if _is_negated_nibble_pattern(value):
-        return value
+        return cast(int, value)
     if value.startswith("hex:"):
         raw_value = value.removeprefix("hex:")
         if len(raw_value) == 2 and all(char in _HEX_CHARS for char in raw_value):
@@ -1119,27 +1119,27 @@ def _protobuf_hex_nibble_value(value: int) -> int:
     raise SerializationError(msg)
 
 
-def _protobuf_hex_nibble_ast_value(pb_nibble) -> int | str:
+def _protobuf_hex_nibble_ast_value(pb_nibble: Any) -> int | str:
     if _protobuf_has_field(pb_nibble, "raw_value"):
         raw_value = pb_nibble.raw_value
         if len(raw_value) == 1 and raw_value in _HEX_CHARS:
-            return raw_value
+            return cast(str, raw_value)
         msg = "HexNibble value must be a nibble"
         raise SerializationError(msg)
     return _protobuf_hex_nibble_value(pb_nibble.value)
 
 
-def _protobuf_hex_jump_bound(pb_jump, field: str) -> int | None:
+def _protobuf_hex_jump_bound(pb_jump: Any, field: str) -> int | None:
     if not pb_jump.HasField(field):
         return None
     value = getattr(pb_jump, field)
     if value >= 0:
-        return value
+        return cast(int, value)
     msg = f"HexJump {field} must be a non-negative integer"
     raise SerializationError(msg)
 
 
-def _protobuf_hex_jump_bounds(pb_jump) -> tuple[int | None, int | None]:
+def _protobuf_hex_jump_bounds(pb_jump: Any) -> tuple[int | None, int | None]:
     min_jump = _protobuf_hex_jump_bound(pb_jump, "min_jump")
     max_jump = _protobuf_hex_jump_bound(pb_jump, "max_jump")
     if min_jump is not None and max_jump is not None and min_jump > max_jump:
@@ -1148,7 +1148,7 @@ def _protobuf_hex_jump_bounds(pb_jump) -> tuple[int | None, int | None]:
     return min_jump, max_jump
 
 
-def _coerce_hex_alternative_branch(alternative) -> list:
+def _coerce_hex_alternative_branch(alternative: Any) -> list[Any]:
     from yaraast.ast.strings import HexByte, HexToken
 
     if isinstance(alternative, list):
@@ -1159,7 +1159,7 @@ def _coerce_hex_alternative_branch(alternative) -> list:
 
 
 def _validate_hex_token_sequence_for_protobuf(
-    tokens: list,
+    tokens: list[Any],
     context: str,
     *,
     inside_alternative: bool,
@@ -1192,7 +1192,7 @@ def _validate_hex_token_sequence_for_protobuf(
             raise SerializationError(msg)
 
 
-def _coerce_quantifier_text(value, context: str, *, allow_percentage: bool) -> str:
+def _coerce_quantifier_text(value: Any, context: str, *, allow_percentage: bool) -> str:
     from yaraast.ast.expressions import Expression
 
     if isinstance(value, Expression):
@@ -1227,7 +1227,7 @@ def _coerce_quantifier_text(value, context: str, *, allow_percentage: bool) -> s
     )
 
 
-def _coerce_quantifier_expression(value):
+def _coerce_quantifier_expression(value: Any) -> Any:
     from yaraast.ast.expressions import Expression
 
     if not isinstance(value, Expression):
@@ -1239,7 +1239,7 @@ def _coerce_quantifier_expression(value):
     return value
 
 
-def _copy_string_set_to_protobuf(value, pb_owner, context: str) -> None:
+def _copy_string_set_to_protobuf(value: Any, pb_owner: Any, context: str) -> None:
     from yaraast.ast.expressions import Expression
 
     field_context = f"{context} string_set"
@@ -1277,7 +1277,7 @@ def _copy_string_set_to_protobuf(value, pb_owner, context: str) -> None:
     raise SerializationError(msg)
 
 
-def _copy_string_set_items_to_protobuf(items, pb_owner, context: str) -> None:
+def _copy_string_set_items_to_protobuf(items: Any, pb_owner: Any, context: str) -> None:
     if not items:
         msg = f"{context} must contain values"
         raise SerializationError(msg)
@@ -1302,7 +1302,7 @@ def _copy_string_set_items_to_protobuf(items, pb_owner, context: str) -> None:
     convert_expression_to_protobuf(SetExpression(expression_items), pb_owner.string_set)
 
 
-def _expression_string_set_items(value) -> list[str] | None:
+def _expression_string_set_items(value: Any) -> list[str] | None:
     from yaraast.ast.expressions import ParenthesesExpression, SetExpression
 
     if _node_has_metadata(value):
@@ -1336,11 +1336,11 @@ def _can_compact_string_set_item(item: object, item_text: object) -> bool:
     return isinstance(item, str) or _is_compact_string_set_item_text(item_text)
 
 
-def _string_set_item_has_metadata(item) -> bool:
+def _string_set_item_has_metadata(item: Any) -> bool:
     return not isinstance(item, str) and _node_has_metadata(item)
 
 
-def _expression_string_set_item_text(item) -> str | None:
+def _expression_string_set_item_text(item: Any) -> str | None:
     from yaraast.ast.expressions import StringIdentifier, StringLiteral, StringWildcard
 
     if isinstance(item, StringIdentifier):
@@ -1359,13 +1359,13 @@ def _expression_string_set_item_text(item) -> str | None:
     return None
 
 
-def _string_set_item_text(item) -> str | None:
+def _string_set_item_text(item: Any) -> str | None:
     if isinstance(item, str):
         return _protobuf_required_string(item, "string_set item")
     return _expression_string_set_item_text(item)
 
 
-def _string_set_item_expression(item, context: str):
+def _string_set_item_expression(item: Any, context: str) -> Any:
     from yaraast.ast.expressions import Expression, Identifier, StringIdentifier
 
     if isinstance(item, Expression):
@@ -1376,7 +1376,7 @@ def _string_set_item_expression(item, context: str):
     raise SerializationError(msg)
 
 
-def _restore_quantifier_text(value: str, context: str, *, allow_percentage: bool):
+def _restore_quantifier_text(value: str, context: str, *, allow_percentage: bool) -> Any:
     restored_value = _validate_quantifier_value(
         value,
         context,
@@ -1387,7 +1387,7 @@ def _restore_quantifier_text(value: str, context: str, *, allow_percentage: bool
     return value
 
 
-def _protobuf_string_set_to_ast(pb_owner, context: str):
+def _protobuf_string_set_to_ast(pb_owner: Any, context: str) -> Any:
     field_context = f"{context} string_set"
     if pb_owner.HasField("string_set_text"):
         if not pb_owner.string_set_text.strip():
@@ -1406,14 +1406,14 @@ def _protobuf_string_set_to_ast(pb_owner, context: str):
     return protobuf_to_expression(pb_owner.string_set)
 
 
-def _protobuf_required_expression_from_message(pb_owner, field: str, context: str):
+def _protobuf_required_expression_from_message(pb_owner: Any, field: str, context: str) -> Any:
     if not pb_owner.HasField(field):
         msg = f"{context} {field} is required"
         raise SerializationError(msg)
     return protobuf_to_expression(getattr(pb_owner, field))
 
 
-def convert_expression_to_protobuf(expr, pb_expr) -> None:
+def convert_expression_to_protobuf(expr: Any, pb_expr: Any) -> None:
     """Convert an AST expression to protobuf."""
     from yaraast.ast.conditions import (
         AtExpression,
@@ -1840,7 +1840,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         raise SerializationError(msg)
 
 
-def convert_with_declaration_to_protobuf(declaration, pb_declaration) -> None:
+def convert_with_declaration_to_protobuf(declaration: Any, pb_declaration: Any) -> None:
     pb_declaration.identifier = _validate_local_identifier_text(
         _protobuf_required_nonempty_string(
             declaration.identifier,
@@ -1852,19 +1852,19 @@ def convert_with_declaration_to_protobuf(declaration, pb_declaration) -> None:
     _copy_node_metadata_to_protobuf(declaration, pb_declaration)
 
 
-def convert_dict_item_to_protobuf(item, pb_item) -> None:
+def convert_dict_item_to_protobuf(item: Any, pb_item: Any) -> None:
     convert_expression_to_protobuf(item.key, pb_item.key)
     convert_expression_to_protobuf(item.value, pb_item.value)
     _copy_node_metadata_to_protobuf(item, pb_item)
 
 
-def convert_match_case_to_protobuf(case, pb_case) -> None:
+def convert_match_case_to_protobuf(case: Any, pb_case: Any) -> None:
     convert_expression_to_protobuf(case.pattern, pb_case.pattern)
     convert_expression_to_protobuf(case.result, pb_case.result)
     _copy_node_metadata_to_protobuf(case, pb_case)
 
 
-def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
+def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile) -> Any:
     """Convert a protobuf message back to a basic AST."""
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Import, Include, Rule
@@ -1997,7 +1997,7 @@ def protobuf_to_extern_rule(pb_extern_rule: Any) -> Any:
     from yaraast.ast.modifiers import RuleModifier
     from yaraast.errors import ValidationError
 
-    modifiers = []
+    modifiers: list[Any] = []
     for modifier in _protobuf_modifier_names_from_protobuf(
         pb_extern_rule.modifiers,
         "ExternRule modifier",
@@ -2054,7 +2054,7 @@ def protobuf_to_extern_import(pb_extern_import: Any) -> Any:
     )
 
 
-def protobuf_to_extern_namespace(pb_namespace):
+def protobuf_to_extern_namespace(pb_namespace: Any) -> Any:
     from yaraast.ast.extern import ExternNamespace
 
     return _apply_node_metadata_from_protobuf(
@@ -2073,7 +2073,7 @@ def protobuf_to_extern_namespace(pb_namespace):
     )
 
 
-def _protobuf_pragma_scope(scope_text):
+def _protobuf_pragma_scope(scope_text: Any) -> Any:
     if scope_text == "":
         msg = "Pragma scope must not be empty"
         raise SerializationError(msg)
@@ -2104,6 +2104,7 @@ def protobuf_to_pragma(pb_pragma: Any) -> Any:
     parameters = {
         key: _meta_value_to_python(value) for key, value in sorted(pb_pragma.parameters.items())
     }
+    pragma: Pragma
 
     if pragma_type == PragmaType.INCLUDE_ONCE:
         pragma = IncludeOncePragma()
@@ -2165,7 +2166,7 @@ def protobuf_to_pragma(pb_pragma: Any) -> Any:
     return _apply_node_metadata_from_protobuf(pb_pragma, pragma)
 
 
-def protobuf_to_in_rule_pragma(pb_in_rule_pragma):
+def protobuf_to_in_rule_pragma(pb_in_rule_pragma: Any) -> Any:
     from yaraast.ast.pragmas import InRulePragma
 
     return _apply_node_metadata_from_protobuf(
@@ -2180,7 +2181,7 @@ def protobuf_to_in_rule_pragma(pb_in_rule_pragma):
     )
 
 
-def _protobuf_to_hex_token(pb_token):
+def _protobuf_to_hex_token(pb_token: Any) -> Any:
     from yaraast.ast.strings import (
         HexAlternative,
         HexByte,
@@ -2245,7 +2246,7 @@ def _protobuf_to_hex_token(pb_token):
     raise SerializationError(msg)
 
 
-def _typed_modifier_value(pb_modifier):
+def _typed_modifier_value(pb_modifier: Any) -> Any:
     if pb_modifier.HasField("typed_value"):
         typed_value = pb_modifier.typed_value
         if typed_value.HasField("string_value"):
@@ -2261,11 +2262,11 @@ def _typed_modifier_value(pb_modifier):
     return None
 
 
-def _legacy_modifier_value(name: str, value: str):
+def _legacy_modifier_value(name: str, value: str) -> Any:
     return deserialize_legacy_modifier_value(name, value)
 
 
-def _protobuf_modifier_value(pb_modifier):
+def _protobuf_modifier_value(pb_modifier: Any) -> Any:
     if len(pb_modifier.tuple_value) == 2:
         return (pb_modifier.tuple_value[0], pb_modifier.tuple_value[1])
     if pb_modifier.tuple_value:
@@ -2301,7 +2302,7 @@ def _protobuf_modifiers_to_ast(pb_modifiers: Any) -> list[Any]:
     return modifiers
 
 
-def protobuf_to_string(pb_string) -> Any:
+def protobuf_to_string(pb_string: Any) -> Any:
     """Convert a protobuf string definition back to AST."""
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
@@ -2374,7 +2375,7 @@ def protobuf_to_string(pb_string) -> Any:
     raise SerializationError(msg)
 
 
-def protobuf_to_expression(pb_expr):
+def protobuf_to_expression(pb_expr: Any) -> Any:
     """Convert a protobuf expression back to AST."""
     from yaraast.ast.conditions import (
         AtExpression,
@@ -2421,7 +2422,7 @@ def protobuf_to_expression(pb_expr):
         WithStatement,
     )
 
-    def with_metadata(node):
+    def with_metadata(node: Any) -> Any:
         return _apply_node_metadata_from_protobuf(pb_expr, node)
 
     if pb_expr.HasField("identifier"):
@@ -2939,7 +2940,7 @@ def protobuf_to_expression(pb_expr):
     raise SerializationError(msg)
 
 
-def protobuf_to_with_declaration(pb_declaration):
+def protobuf_to_with_declaration(pb_declaration: Any) -> Any:
     from yaraast.yarax.ast_nodes import WithDeclaration
 
     return _apply_node_metadata_from_protobuf(
@@ -2957,7 +2958,7 @@ def protobuf_to_with_declaration(pb_declaration):
     )
 
 
-def protobuf_to_dict_item(pb_item):
+def protobuf_to_dict_item(pb_item: Any) -> Any:
     from yaraast.yarax.ast_nodes import DictItem
 
     return _apply_node_metadata_from_protobuf(
@@ -2969,7 +2970,7 @@ def protobuf_to_dict_item(pb_item):
     )
 
 
-def protobuf_to_match_case(pb_case):
+def protobuf_to_match_case(pb_case: Any) -> Any:
     from yaraast.yarax.ast_nodes import MatchCase
 
     return _apply_node_metadata_from_protobuf(

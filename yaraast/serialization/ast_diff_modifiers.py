@@ -3,16 +3,22 @@
 from __future__ import annotations
 
 from collections import Counter
+from typing import TYPE_CHECKING
+
+from yaraast.ast.rules import Rule
+
+if TYPE_CHECKING:
+    from yaraast.serialization.ast_diff import DiffNode, DiffResult, DiffType
 
 __all__ = ["emit_modifiers_diff", "modifier_payloads"]
 
 
-def modifier_payloads(old_rule, new_rule) -> tuple[Counter[str], Counter[str]]:
+def modifier_payloads(old_rule: Rule, new_rule: Rule) -> tuple[Counter[str], Counter[str]]:
     """Return comparable modifier payloads."""
     return Counter(str(m) for m in old_rule.modifiers), Counter(str(m) for m in new_rule.modifiers)
 
 
-def _sorted_modifier_values(modifiers) -> list[str]:
+def _sorted_modifier_values(modifiers: Counter[str]) -> list[str]:
     if hasattr(modifiers, "elements"):
         return sorted(modifiers.elements())
     return sorted(modifiers)
@@ -20,11 +26,11 @@ def _sorted_modifier_values(modifiers) -> list[str]:
 
 def emit_modifiers_diff(
     base_path: str,
-    result,
-    diff_node,
-    diff_type,
-    old_mods,
-    new_mods,
+    result: DiffResult,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
+    old_mods: Counter[str],
+    new_mods: Counter[str],
 ) -> None:
     """Record modifiers diff."""
     result.differences.append(

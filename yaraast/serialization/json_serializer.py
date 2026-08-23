@@ -5,13 +5,14 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from yaraast.ast.base import ASTNode, Location
 from yaraast.ast.modifiers import StringModifierType, _validate_xor_modifier_value
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization._serialization_primitives import (
+    _deserialize_object,
     _validate_extern_import_rule_identifiers,
     _validate_extern_rule_identifier_text,
     _validate_location_metadata,
@@ -89,7 +90,6 @@ from yaraast.serialization.json_serialize_visitors import (
 )
 from yaraast.serialization.json_serializer_deserialize import (
     JsonSerializerDeserializeMixin,
-    _deserialize_object,
     _deserialize_required_list_field,
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
@@ -152,13 +152,13 @@ def _require_utf8_json_text(text: str) -> str:
     return text
 
 
-def _serialize_comment_node(serializer, value, context: str) -> dict[str, Any]:
+def _serialize_comment_node(serializer: Any, value: Any, context: str) -> dict[str, Any]:
     from yaraast.ast.comments import Comment, CommentGroup
 
     if not isinstance(value, Comment | CommentGroup):
         msg = f"{context} must be a Comment or CommentGroup node"
         raise SerializationError(msg)
-    return serializer.visit(value)
+    return cast(dict[str, Any], serializer.visit(value))
 
 
 class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]]):
@@ -299,7 +299,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         ]
         _validate_unique_rule_identifiers(rules)
 
-        kwargs: dict = {"imports": imports, "includes": includes, "rules": rules}
+        kwargs: dict[str, Any] = {"imports": imports, "includes": includes, "rules": rules}
         kwargs["extern_rules"] = [
             self._deserialize_extern_rule(rule)
             for rule in _deserialize_required_list_field(ast_data, "extern_rules", "YaraFile")
@@ -321,33 +321,33 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             kwargs["extern_rules"],
             kwargs["namespaces"],
         )
-        return self._apply_node_metadata(YaraFile(**kwargs), ast_data)
+        return cast(YaraFile, self._apply_node_metadata(YaraFile(**kwargs), ast_data))
 
     def _simple_node(self, type_name: str, **fields: Any) -> dict[str, Any]:
         payload = {"type": type_name}
         payload.update(fields)
         return payload
 
-    def visit_yara_file(self, node) -> dict[str, Any]:
+    def visit_yara_file(self, node: Any) -> dict[str, Any]:
         return visit_yara_file(self, node)
 
-    def visit_import(self, node) -> dict[str, Any]:
+    def visit_import(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "Import",
             module=_serialize_required_nonempty_string(node.module, "Import module"),
             alias=_serialize_nullable_nonempty_string(getattr(node, "alias", None), "Import alias"),
         )
 
-    def visit_include(self, node) -> dict[str, Any]:
+    def visit_include(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "Include",
             path=_serialize_required_nonempty_string(node.path, "Include path"),
         )
 
-    def visit_rule(self, node) -> dict[str, Any]:
+    def visit_rule(self, node: Any) -> dict[str, Any]:
         return visit_rule(self, node)
 
-    def visit_tag(self, node) -> dict[str, Any]:
+    def visit_tag(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "Tag",
             name=_validate_yara_identifier_text(
@@ -356,7 +356,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             ),
         )
 
-    def visit_string_definition(self, node) -> dict[str, Any]:
+    def visit_string_definition(self, node: Any) -> dict[str, Any]:
         data = self._simple_node(
             "StringDefinition",
             identifier=_serialize_required_nonempty_string(
@@ -368,16 +368,16 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         _serialize_anonymous_flag(data, getattr(node, "is_anonymous", False), "StringDefinition")
         return data
 
-    def visit_plain_string(self, node) -> dict[str, Any]:
+    def visit_plain_string(self, node: Any) -> dict[str, Any]:
         return visit_plain_string(self, node)
 
-    def visit_hex_string(self, node) -> dict[str, Any]:
+    def visit_hex_string(self, node: Any) -> dict[str, Any]:
         return visit_hex_string(self, node)
 
-    def visit_regex_string(self, node) -> dict[str, Any]:
+    def visit_regex_string(self, node: Any) -> dict[str, Any]:
         return visit_regex_string(self, node)
 
-    def visit_string_modifier(self, node) -> dict[str, Any]:
+    def visit_string_modifier(self, node: Any) -> dict[str, Any]:
         modifier_type = getattr(node, "modifier_type", None)
         value = getattr(node, "value", None)
         serialized_value = _serialize_modifier_value(value)
@@ -398,32 +398,32 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             value=serialized_value,
         )
 
-    def visit_hex_token(self, node) -> dict[str, Any]:
+    def visit_hex_token(self, node: Any) -> dict[str, Any]:
         return self._simple_node("HexToken")
 
-    def visit_hex_byte(self, node) -> dict[str, Any]:
+    def visit_hex_byte(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "HexByte",
             value=_serialize_hex_byte_value(node.value, "HexByte"),
         )
 
-    def visit_hex_negated_byte(self, node) -> dict[str, Any]:
+    def visit_hex_negated_byte(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "HexNegatedByte",
             value=_serialize_hex_negated_value(node.value),
         )
 
-    def visit_hex_wildcard(self, node) -> dict[str, Any]:
+    def visit_hex_wildcard(self, node: Any) -> dict[str, Any]:
         return self._simple_node("HexWildcard")
 
-    def visit_hex_jump(self, node) -> dict[str, Any]:
+    def visit_hex_jump(self, node: Any) -> dict[str, Any]:
         min_jump, max_jump = _serialize_hex_jump_bounds(node.min_jump, node.max_jump)
         return self._simple_node("HexJump", min_jump=min_jump, max_jump=max_jump)
 
-    def visit_hex_alternative(self, node) -> dict[str, Any]:
+    def visit_hex_alternative(self, node: Any) -> dict[str, Any]:
         return visit_hex_alternative(self, node)
 
-    def visit_hex_nibble(self, node) -> dict[str, Any]:
+    def visit_hex_nibble(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "HexNibble",
             high=_serialize_hex_nibble_high(node.high),
@@ -431,16 +431,16 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         )
 
     # Expression visitor methods (simplified)
-    def visit_expression(self, node) -> dict[str, Any]:
+    def visit_expression(self, node: Any) -> dict[str, Any]:
         return self._simple_node("Expression")
 
-    def visit_identifier(self, node) -> dict[str, Any]:
+    def visit_identifier(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "Identifier",
             name=_serialize_required_nonempty_string(node.name, "Identifier name"),
         )
 
-    def visit_string_identifier(self, node) -> dict[str, Any]:
+    def visit_string_identifier(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "StringIdentifier",
             name=_validate_string_reference_text(
@@ -448,7 +448,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             ),
         )
 
-    def visit_string_wildcard(self, node) -> dict[str, Any]:
+    def visit_string_wildcard(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "StringWildcard",
             pattern=_validate_string_reference_text(
@@ -460,7 +460,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             ),
         )
 
-    def visit_string_count(self, node) -> dict[str, Any]:
+    def visit_string_count(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "StringCount",
             string_id=_validate_string_reference_text(
@@ -472,31 +472,31 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             ),
         )
 
-    def visit_string_offset(self, node) -> dict[str, Any]:
+    def visit_string_offset(self, node: Any) -> dict[str, Any]:
         return visit_string_offset(self, node)
 
-    def visit_string_length(self, node) -> dict[str, Any]:
+    def visit_string_length(self, node: Any) -> dict[str, Any]:
         return visit_string_length(self, node)
 
-    def visit_integer_literal(self, node) -> dict[str, Any]:
+    def visit_integer_literal(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "IntegerLiteral",
             value=_serialize_required_int(node.value, "IntegerLiteral value"),
         )
 
-    def visit_double_literal(self, node) -> dict[str, Any]:
+    def visit_double_literal(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "DoubleLiteral",
             value=_serialize_required_number(node.value, "DoubleLiteral value"),
         )
 
-    def visit_string_literal(self, node) -> dict[str, Any]:
+    def visit_string_literal(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "StringLiteral",
             value=_serialize_required_string(node.value, "StringLiteral value"),
         )
 
-    def visit_regex_literal(self, node) -> dict[str, Any]:
+    def visit_regex_literal(self, node: Any) -> dict[str, Any]:
         pattern = _serialize_required_string(node.pattern, "RegexLiteral pattern")
         if not pattern:
             msg = "RegexLiteral pattern must not be empty"
@@ -507,55 +507,55 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             "modifiers": _serialize_required_string(node.modifiers, "RegexLiteral modifiers"),
         }
 
-    def visit_boolean_literal(self, node) -> dict[str, Any]:
+    def visit_boolean_literal(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "BooleanLiteral",
             value=_serialize_required_bool(node.value, "BooleanLiteral value"),
         )
 
-    def visit_binary_expression(self, node) -> dict[str, Any]:
+    def visit_binary_expression(self, node: Any) -> dict[str, Any]:
         return visit_binary_expression(self, node)
 
-    def visit_unary_expression(self, node) -> dict[str, Any]:
+    def visit_unary_expression(self, node: Any) -> dict[str, Any]:
         return visit_unary_expression(self, node)
 
-    def visit_parentheses_expression(self, node) -> dict[str, Any]:
+    def visit_parentheses_expression(self, node: Any) -> dict[str, Any]:
         return visit_parentheses_expression(self, node)
 
-    def visit_set_expression(self, node) -> dict[str, Any]:
+    def visit_set_expression(self, node: Any) -> dict[str, Any]:
         return visit_set_expression(self, node)
 
-    def visit_range_expression(self, node) -> dict[str, Any]:
+    def visit_range_expression(self, node: Any) -> dict[str, Any]:
         return visit_range_expression(self, node)
 
-    def visit_function_call(self, node) -> dict[str, Any]:
+    def visit_function_call(self, node: Any) -> dict[str, Any]:
         return visit_function_call(self, node)
 
-    def visit_array_access(self, node) -> dict[str, Any]:
+    def visit_array_access(self, node: Any) -> dict[str, Any]:
         return visit_array_access(self, node)
 
-    def visit_member_access(self, node) -> dict[str, Any]:
+    def visit_member_access(self, node: Any) -> dict[str, Any]:
         return visit_member_access(self, node)
 
-    def visit_condition(self, node) -> dict[str, Any]:
+    def visit_condition(self, node: Any) -> dict[str, Any]:
         return self._simple_node("Condition")
 
-    def visit_for_expression(self, node) -> dict[str, Any]:
+    def visit_for_expression(self, node: Any) -> dict[str, Any]:
         return visit_for_expression(self, node)
 
-    def visit_for_of_expression(self, node) -> dict[str, Any]:
+    def visit_for_of_expression(self, node: Any) -> dict[str, Any]:
         return visit_for_of_expression(self, node)
 
-    def visit_at_expression(self, node) -> dict[str, Any]:
+    def visit_at_expression(self, node: Any) -> dict[str, Any]:
         return visit_at_expression(self, node)
 
-    def visit_in_expression(self, node) -> dict[str, Any]:
+    def visit_in_expression(self, node: Any) -> dict[str, Any]:
         return visit_in_expression(self, node)
 
-    def visit_of_expression(self, node) -> dict[str, Any]:
+    def visit_of_expression(self, node: Any) -> dict[str, Any]:
         return visit_of_expression(self, node)
 
-    def visit_meta(self, node) -> dict[str, Any]:
+    def visit_meta(self, node: Any) -> dict[str, Any]:
         scope = getattr(node, "scope", None)
         node_type = "MetaEntry" if scope is not None else "Meta"
         value = (
@@ -581,7 +581,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             return _serialize_dynamic_node_metadata(self, node, data)
         return data
 
-    def visit_module_reference(self, node) -> dict[str, Any]:
+    def visit_module_reference(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "ModuleReference",
             module=_validate_yara_identifier_text(
@@ -590,20 +590,20 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             ),
         )
 
-    def visit_dictionary_access(self, node) -> dict[str, Any]:
+    def visit_dictionary_access(self, node: Any) -> dict[str, Any]:
         return visit_dictionary_access(self, node)
 
-    def visit_comment(self, node) -> dict[str, Any]:
+    def visit_comment(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "Comment",
             text=_serialize_required_string(node.text, "Comment text"),
             is_multiline=_serialize_required_bool(node.is_multiline, "Comment is_multiline"),
         )
 
-    def visit_comment_group(self, node) -> dict[str, Any]:
+    def visit_comment_group(self, node: Any) -> dict[str, Any]:
         return visit_comment_group(self, node)
 
-    def visit_defined_expression(self, node) -> dict[str, Any]:
+    def visit_defined_expression(self, node: Any) -> dict[str, Any]:
         return self._simple_node(
             "DefinedExpression",
             expression=_serialize_required_expression(
@@ -613,11 +613,11 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             ),
         )
 
-    def visit_string_operator_expression(self, node) -> dict[str, Any]:
+    def visit_string_operator_expression(self, node: Any) -> dict[str, Any]:
         return visit_string_operator_expression(self, node)
 
     # Add missing abstract methods
-    def visit_extern_import(self, node) -> dict[str, Any]:
+    def visit_extern_import(self, node: Any) -> dict[str, Any]:
         module_path = _serialize_required_nonempty_string(
             node.module_path,
             "ExternImport module_path",
@@ -633,7 +633,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             rules=rules,
         )
 
-    def visit_extern_namespace(self, node) -> dict[str, Any]:
+    def visit_extern_namespace(self, node: Any) -> dict[str, Any]:
         from yaraast.ast.extern import ExternRule
 
         return self._simple_node(
@@ -649,7 +649,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             ),
         )
 
-    def visit_extern_rule(self, node) -> dict[str, Any]:
+    def visit_extern_rule(self, node: Any) -> dict[str, Any]:
         return {
             "type": "ExternRule",
             "name": _validate_extern_rule_identifier_text(
@@ -664,7 +664,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             ),
         }
 
-    def visit_extern_rule_reference(self, node) -> dict[str, Any]:
+    def visit_extern_rule_reference(self, node: Any) -> dict[str, Any]:
         return {
             "type": "ExternRuleReference",
             "rule_name": _serialize_required_nonempty_string(
@@ -677,7 +677,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             ),
         }
 
-    def visit_in_rule_pragma(self, node) -> dict[str, Any]:
+    def visit_in_rule_pragma(self, node: Any) -> dict[str, Any]:
         return {
             "type": "InRulePragma",
             "pragma": self.visit(node.pragma),
@@ -687,7 +687,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             ),
         }
 
-    def visit_pragma(self, node) -> dict[str, Any]:
+    def visit_pragma(self, node: Any) -> dict[str, Any]:
         from yaraast.ast.pragmas import PragmaType
 
         data: dict[str, Any] = {
@@ -739,47 +739,47 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             )
         return data
 
-    def visit_pragma_block(self, node) -> dict[str, Any]:
+    def visit_pragma_block(self, node: Any) -> dict[str, Any]:
         return visit_pragma_block(self, node)
 
-    def visit_with_statement(self, node) -> dict[str, Any]:
+    def visit_with_statement(self, node: Any) -> dict[str, Any]:
         return visit_with_statement(self, node)
 
-    def visit_with_declaration(self, node) -> dict[str, Any]:
+    def visit_with_declaration(self, node: Any) -> dict[str, Any]:
         return visit_with_declaration(self, node)
 
-    def visit_array_comprehension(self, node) -> dict[str, Any]:
+    def visit_array_comprehension(self, node: Any) -> dict[str, Any]:
         return visit_array_comprehension(self, node)
 
-    def visit_dict_comprehension(self, node) -> dict[str, Any]:
+    def visit_dict_comprehension(self, node: Any) -> dict[str, Any]:
         return visit_dict_comprehension(self, node)
 
-    def visit_tuple_expression(self, node) -> dict[str, Any]:
+    def visit_tuple_expression(self, node: Any) -> dict[str, Any]:
         return visit_tuple_expression(self, node)
 
-    def visit_tuple_indexing(self, node) -> dict[str, Any]:
+    def visit_tuple_indexing(self, node: Any) -> dict[str, Any]:
         return visit_tuple_indexing(self, node)
 
-    def visit_list_expression(self, node) -> dict[str, Any]:
+    def visit_list_expression(self, node: Any) -> dict[str, Any]:
         return visit_list_expression(self, node)
 
-    def visit_dict_expression(self, node) -> dict[str, Any]:
+    def visit_dict_expression(self, node: Any) -> dict[str, Any]:
         return visit_dict_expression(self, node)
 
-    def visit_dict_item(self, node) -> dict[str, Any]:
+    def visit_dict_item(self, node: Any) -> dict[str, Any]:
         return visit_dict_item(self, node)
 
-    def visit_slice_expression(self, node) -> dict[str, Any]:
+    def visit_slice_expression(self, node: Any) -> dict[str, Any]:
         return visit_slice_expression(self, node)
 
-    def visit_lambda_expression(self, node) -> dict[str, Any]:
+    def visit_lambda_expression(self, node: Any) -> dict[str, Any]:
         return visit_lambda_expression(self, node)
 
-    def visit_pattern_match(self, node) -> dict[str, Any]:
+    def visit_pattern_match(self, node: Any) -> dict[str, Any]:
         return visit_pattern_match(self, node)
 
-    def visit_match_case(self, node) -> dict[str, Any]:
+    def visit_match_case(self, node: Any) -> dict[str, Any]:
         return visit_match_case(self, node)
 
-    def visit_spread_operator(self, node) -> dict[str, Any]:
+    def visit_spread_operator(self, node: Any) -> dict[str, Any]:
         return visit_spread_operator(self, node)

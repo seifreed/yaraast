@@ -1,5 +1,5 @@
 from collections.abc import Iterable as _Iterable, Mapping as _Mapping
-from typing import ClassVar as _ClassVar
+from typing import Any as _Any, ClassVar as _ClassVar
 
 from google.protobuf import descriptor as _descriptor, message as _message
 from google.protobuf.internal import containers as _containers
@@ -38,15 +38,15 @@ class YaraFile(_message.Message):
     node_metadata: NodeMetadata
     def __init__(
         self,
-        imports: _Iterable[Import | _Mapping] | None = ...,
-        includes: _Iterable[Include | _Mapping] | None = ...,
-        rules: _Iterable[Rule | _Mapping] | None = ...,
-        metadata: Metadata | _Mapping | None = ...,
-        extern_rules: _Iterable[ExternRule | _Mapping] | None = ...,
-        extern_imports: _Iterable[ExternImport | _Mapping] | None = ...,
-        pragmas: _Iterable[Pragma | _Mapping] | None = ...,
-        namespaces: _Iterable[ExternNamespace | _Mapping] | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        imports: _Iterable[Import | _Mapping[str, _Any]] | None = ...,
+        includes: _Iterable[Include | _Mapping[str, _Any]] | None = ...,
+        rules: _Iterable[Rule | _Mapping[str, _Any]] | None = ...,
+        metadata: Metadata | _Mapping[str, _Any] | None = ...,
+        extern_rules: _Iterable[ExternRule | _Mapping[str, _Any]] | None = ...,
+        extern_imports: _Iterable[ExternImport | _Mapping[str, _Any]] | None = ...,
+        pragmas: _Iterable[Pragma | _Mapping[str, _Any]] | None = ...,
+        namespaces: _Iterable[ExternNamespace | _Mapping[str, _Any]] | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class Metadata(_message.Message):
@@ -121,7 +121,7 @@ class AstComment(_message.Message):
         self,
         text: str | None = ...,
         is_multiline: bool | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class AstCommentGroup(_message.Message):
@@ -132,8 +132,8 @@ class AstCommentGroup(_message.Message):
     node_metadata: NodeMetadata
     def __init__(
         self,
-        comments: _Iterable[AstComment | _Mapping] | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        comments: _Iterable[AstComment | _Mapping[str, _Any]] | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class CommentMetadata(_message.Message):
@@ -144,8 +144,8 @@ class CommentMetadata(_message.Message):
     group: AstCommentGroup
     def __init__(
         self,
-        comment: AstComment | _Mapping | None = ...,
-        group: AstCommentGroup | _Mapping | None = ...,
+        comment: AstComment | _Mapping[str, _Any] | None = ...,
+        group: AstCommentGroup | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class NodeMetadata(_message.Message):
@@ -158,9 +158,9 @@ class NodeMetadata(_message.Message):
     trailing_comment: CommentMetadata
     def __init__(
         self,
-        location: SourceLocation | _Mapping | None = ...,
-        leading_comments: _Iterable[CommentMetadata | _Mapping] | None = ...,
-        trailing_comment: CommentMetadata | _Mapping | None = ...,
+        location: SourceLocation | _Mapping[str, _Any] | None = ...,
+        leading_comments: _Iterable[CommentMetadata | _Mapping[str, _Any]] | None = ...,
+        trailing_comment: CommentMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class Import(_message.Message):
@@ -175,7 +175,7 @@ class Import(_message.Message):
         self,
         module: str | None = ...,
         alias: str | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class Include(_message.Message):
@@ -187,7 +187,7 @@ class Include(_message.Message):
     def __init__(
         self,
         path: str | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class Rule(_message.Message):
@@ -211,7 +211,7 @@ class Rule(_message.Message):
         key: str
         value: MetaValue
         def __init__(
-            self, key: str | None = ..., value: MetaValue | _Mapping | None = ...
+            self, key: str | None = ..., value: MetaValue | _Mapping[str, _Any] | None = ...
         ) -> None: ...
 
     class MetaScopesEntry(_message.Message):
@@ -246,14 +246,14 @@ class Rule(_message.Message):
         self,
         name: str | None = ...,
         modifiers: _Iterable[str] | None = ...,
-        tags: _Iterable[Tag | _Mapping] | None = ...,
+        tags: _Iterable[Tag | _Mapping[str, _Any]] | None = ...,
         meta: _Mapping[str, MetaValue] | None = ...,
-        strings: _Iterable[StringDefinition | _Mapping] | None = ...,
-        condition: Expression | _Mapping | None = ...,
+        strings: _Iterable[StringDefinition | _Mapping[str, _Any]] | None = ...,
+        condition: Expression | _Mapping[str, _Any] | None = ...,
         meta_scopes: _Mapping[str, str] | None = ...,
-        pragmas: _Iterable[InRulePragma | _Mapping] | None = ...,
-        meta_entries: _Iterable[RuleMetaEntry | _Mapping] | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        pragmas: _Iterable[InRulePragma | _Mapping[str, _Any]] | None = ...,
+        meta_entries: _Iterable[RuleMetaEntry | _Mapping[str, _Any]] | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class Tag(_message.Message):
@@ -265,7 +265,7 @@ class Tag(_message.Message):
     def __init__(
         self,
         name: str | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class MetaValue(_message.Message):
@@ -301,10 +301,10 @@ class RuleMetaEntry(_message.Message):
     def __init__(
         self,
         key: str | None = ...,
-        value: MetaValue | _Mapping | None = ...,
+        value: MetaValue | _Mapping[str, _Any] | None = ...,
         scope: str | None = ...,
         ast_node: bool | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class ExternRule(_message.Message):
@@ -322,7 +322,7 @@ class ExternRule(_message.Message):
         name: str | None = ...,
         modifiers: _Iterable[str] | None = ...,
         namespace: str | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class ExternImport(_message.Message):
@@ -340,7 +340,7 @@ class ExternImport(_message.Message):
         module_path: str | None = ...,
         alias: str | None = ...,
         rules: _Iterable[str] | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class ExternNamespace(_message.Message):
@@ -354,8 +354,8 @@ class ExternNamespace(_message.Message):
     def __init__(
         self,
         name: str | None = ...,
-        extern_rules: _Iterable[ExternRule | _Mapping] | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        extern_rules: _Iterable[ExternRule | _Mapping[str, _Any]] | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class Pragma(_message.Message):
@@ -378,7 +378,7 @@ class Pragma(_message.Message):
         key: str
         value: MetaValue
         def __init__(
-            self, key: str | None = ..., value: MetaValue | _Mapping | None = ...
+            self, key: str | None = ..., value: MetaValue | _Mapping[str, _Any] | None = ...
         ) -> None: ...
 
     PRAGMA_TYPE_FIELD_NUMBER: _ClassVar[int]
@@ -409,7 +409,7 @@ class Pragma(_message.Message):
         macro_value: str | None = ...,
         condition: str | None = ...,
         parameters: _Mapping[str, MetaValue] | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class InRulePragma(_message.Message):
@@ -422,9 +422,9 @@ class InRulePragma(_message.Message):
     node_metadata: NodeMetadata
     def __init__(
         self,
-        pragma: Pragma | _Mapping | None = ...,
+        pragma: Pragma | _Mapping[str, _Any] | None = ...,
         position: str | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class StringDefinition(_message.Message):
@@ -445,10 +445,10 @@ class StringDefinition(_message.Message):
         self,
         identifier: str | None = ...,
         is_anonymous: bool | None = ...,
-        plain: PlainString | _Mapping | None = ...,
-        hex: HexString | _Mapping | None = ...,
-        regex: RegexString | _Mapping | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        plain: PlainString | _Mapping[str, _Any] | None = ...,
+        hex: HexString | _Mapping[str, _Any] | None = ...,
+        regex: RegexString | _Mapping[str, _Any] | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class PlainString(_message.Message):
@@ -462,7 +462,7 @@ class PlainString(_message.Message):
     def __init__(
         self,
         value: str | None = ...,
-        modifiers: _Iterable[StringModifier | _Mapping] | None = ...,
+        modifiers: _Iterable[StringModifier | _Mapping[str, _Any]] | None = ...,
         raw_value: bytes | None = ...,
     ) -> None: ...
 
@@ -474,8 +474,8 @@ class HexString(_message.Message):
     modifiers: _containers.RepeatedCompositeFieldContainer[StringModifier]
     def __init__(
         self,
-        tokens: _Iterable[HexToken | _Mapping] | None = ...,
-        modifiers: _Iterable[StringModifier | _Mapping] | None = ...,
+        tokens: _Iterable[HexToken | _Mapping[str, _Any]] | None = ...,
+        modifiers: _Iterable[StringModifier | _Mapping[str, _Any]] | None = ...,
     ) -> None: ...
 
 class RegexString(_message.Message):
@@ -487,7 +487,7 @@ class RegexString(_message.Message):
     def __init__(
         self,
         regex: str | None = ...,
-        modifiers: _Iterable[StringModifier | _Mapping] | None = ...,
+        modifiers: _Iterable[StringModifier | _Mapping[str, _Any]] | None = ...,
     ) -> None: ...
 
 class StringModifier(_message.Message):
@@ -506,9 +506,9 @@ class StringModifier(_message.Message):
         self,
         name: str | None = ...,
         value: str | None = ...,
-        typed_value: MetaValue | _Mapping | None = ...,
+        typed_value: MetaValue | _Mapping[str, _Any] | None = ...,
         tuple_value: _Iterable[int] | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class HexToken(_message.Message):
@@ -537,13 +537,13 @@ class HexToken(_message.Message):
     node_metadata: NodeMetadata
     def __init__(
         self,
-        byte: HexByte | _Mapping | None = ...,
-        wildcard: HexWildcard | _Mapping | None = ...,
-        jump: HexJump | _Mapping | None = ...,
-        alternative: HexAlternative | _Mapping | None = ...,
-        nibble: HexNibble | _Mapping | None = ...,
-        negated_byte: HexNegatedByte | _Mapping | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        byte: HexByte | _Mapping[str, _Any] | None = ...,
+        wildcard: HexWildcard | _Mapping[str, _Any] | None = ...,
+        jump: HexJump | _Mapping[str, _Any] | None = ...,
+        alternative: HexAlternative | _Mapping[str, _Any] | None = ...,
+        nibble: HexNibble | _Mapping[str, _Any] | None = ...,
+        negated_byte: HexNegatedByte | _Mapping[str, _Any] | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class HexByte(_message.Message):
@@ -574,13 +574,15 @@ class HexAlternative(_message.Message):
     __slots__ = ("alternatives",)
     ALTERNATIVES_FIELD_NUMBER: _ClassVar[int]
     alternatives: _containers.RepeatedCompositeFieldContainer[HexTokenList]
-    def __init__(self, alternatives: _Iterable[HexTokenList | _Mapping] | None = ...) -> None: ...
+    def __init__(
+        self, alternatives: _Iterable[HexTokenList | _Mapping[str, _Any]] | None = ...
+    ) -> None: ...
 
 class HexTokenList(_message.Message):
     __slots__ = ("tokens",)
     TOKENS_FIELD_NUMBER: _ClassVar[int]
     tokens: _containers.RepeatedCompositeFieldContainer[HexToken]
-    def __init__(self, tokens: _Iterable[HexToken | _Mapping] | None = ...) -> None: ...
+    def __init__(self, tokens: _Iterable[HexToken | _Mapping[str, _Any]] | None = ...) -> None: ...
 
 class HexNibble(_message.Message):
     __slots__ = ("high", "raw_value", "value")
@@ -725,47 +727,47 @@ class Expression(_message.Message):
     node_metadata: NodeMetadata
     def __init__(
         self,
-        identifier: Identifier | _Mapping | None = ...,
-        string_identifier: StringIdentifier | _Mapping | None = ...,
-        string_count: StringCount | _Mapping | None = ...,
-        string_offset: StringOffset | _Mapping | None = ...,
-        string_length: StringLength | _Mapping | None = ...,
-        integer_literal: IntegerLiteral | _Mapping | None = ...,
-        double_literal: DoubleLiteral | _Mapping | None = ...,
-        string_literal: StringLiteral | _Mapping | None = ...,
-        regex_literal: RegexLiteral | _Mapping | None = ...,
-        boolean_literal: BooleanLiteral | _Mapping | None = ...,
-        binary_expression: BinaryExpression | _Mapping | None = ...,
-        unary_expression: UnaryExpression | _Mapping | None = ...,
-        parentheses_expression: ParenthesesExpression | _Mapping | None = ...,
-        set_expression: SetExpression | _Mapping | None = ...,
-        range_expression: RangeExpression | _Mapping | None = ...,
-        function_call: FunctionCall | _Mapping | None = ...,
-        array_access: ArrayAccess | _Mapping | None = ...,
-        member_access: MemberAccess | _Mapping | None = ...,
-        for_expression: ForExpression | _Mapping | None = ...,
-        for_of_expression: ForOfExpression | _Mapping | None = ...,
-        at_expression: AtExpression | _Mapping | None = ...,
-        in_expression: InExpression | _Mapping | None = ...,
-        of_expression: OfExpression | _Mapping | None = ...,
-        defined_expression: DefinedExpression | _Mapping | None = ...,
-        string_operator_expression: StringOperatorExpression | _Mapping | None = ...,
-        string_wildcard: StringWildcard | _Mapping | None = ...,
-        module_reference: ModuleReference | _Mapping | None = ...,
-        dictionary_access: DictionaryAccess | _Mapping | None = ...,
-        extern_rule_reference: ExternRuleReference | _Mapping | None = ...,
-        with_statement: WithStatement | _Mapping | None = ...,
-        array_comprehension: ArrayComprehension | _Mapping | None = ...,
-        dict_comprehension: DictComprehension | _Mapping | None = ...,
-        tuple_expression: TupleExpression | _Mapping | None = ...,
-        tuple_indexing: TupleIndexing | _Mapping | None = ...,
-        list_expression: ListExpression | _Mapping | None = ...,
-        dict_expression: DictExpression | _Mapping | None = ...,
-        slice_expression: SliceExpression | _Mapping | None = ...,
-        lambda_expression: LambdaExpression | _Mapping | None = ...,
-        pattern_match: PatternMatch | _Mapping | None = ...,
-        spread_operator: SpreadOperator | _Mapping | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        identifier: Identifier | _Mapping[str, _Any] | None = ...,
+        string_identifier: StringIdentifier | _Mapping[str, _Any] | None = ...,
+        string_count: StringCount | _Mapping[str, _Any] | None = ...,
+        string_offset: StringOffset | _Mapping[str, _Any] | None = ...,
+        string_length: StringLength | _Mapping[str, _Any] | None = ...,
+        integer_literal: IntegerLiteral | _Mapping[str, _Any] | None = ...,
+        double_literal: DoubleLiteral | _Mapping[str, _Any] | None = ...,
+        string_literal: StringLiteral | _Mapping[str, _Any] | None = ...,
+        regex_literal: RegexLiteral | _Mapping[str, _Any] | None = ...,
+        boolean_literal: BooleanLiteral | _Mapping[str, _Any] | None = ...,
+        binary_expression: BinaryExpression | _Mapping[str, _Any] | None = ...,
+        unary_expression: UnaryExpression | _Mapping[str, _Any] | None = ...,
+        parentheses_expression: ParenthesesExpression | _Mapping[str, _Any] | None = ...,
+        set_expression: SetExpression | _Mapping[str, _Any] | None = ...,
+        range_expression: RangeExpression | _Mapping[str, _Any] | None = ...,
+        function_call: FunctionCall | _Mapping[str, _Any] | None = ...,
+        array_access: ArrayAccess | _Mapping[str, _Any] | None = ...,
+        member_access: MemberAccess | _Mapping[str, _Any] | None = ...,
+        for_expression: ForExpression | _Mapping[str, _Any] | None = ...,
+        for_of_expression: ForOfExpression | _Mapping[str, _Any] | None = ...,
+        at_expression: AtExpression | _Mapping[str, _Any] | None = ...,
+        in_expression: InExpression | _Mapping[str, _Any] | None = ...,
+        of_expression: OfExpression | _Mapping[str, _Any] | None = ...,
+        defined_expression: DefinedExpression | _Mapping[str, _Any] | None = ...,
+        string_operator_expression: StringOperatorExpression | _Mapping[str, _Any] | None = ...,
+        string_wildcard: StringWildcard | _Mapping[str, _Any] | None = ...,
+        module_reference: ModuleReference | _Mapping[str, _Any] | None = ...,
+        dictionary_access: DictionaryAccess | _Mapping[str, _Any] | None = ...,
+        extern_rule_reference: ExternRuleReference | _Mapping[str, _Any] | None = ...,
+        with_statement: WithStatement | _Mapping[str, _Any] | None = ...,
+        array_comprehension: ArrayComprehension | _Mapping[str, _Any] | None = ...,
+        dict_comprehension: DictComprehension | _Mapping[str, _Any] | None = ...,
+        tuple_expression: TupleExpression | _Mapping[str, _Any] | None = ...,
+        tuple_indexing: TupleIndexing | _Mapping[str, _Any] | None = ...,
+        list_expression: ListExpression | _Mapping[str, _Any] | None = ...,
+        dict_expression: DictExpression | _Mapping[str, _Any] | None = ...,
+        slice_expression: SliceExpression | _Mapping[str, _Any] | None = ...,
+        lambda_expression: LambdaExpression | _Mapping[str, _Any] | None = ...,
+        pattern_match: PatternMatch | _Mapping[str, _Any] | None = ...,
+        spread_operator: SpreadOperator | _Mapping[str, _Any] | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class Identifier(_message.Message):
@@ -799,7 +801,7 @@ class StringOffset(_message.Message):
     string_id: str
     index: Expression
     def __init__(
-        self, string_id: str | None = ..., index: Expression | _Mapping | None = ...
+        self, string_id: str | None = ..., index: Expression | _Mapping[str, _Any] | None = ...
     ) -> None: ...
 
 class StringLength(_message.Message):
@@ -809,7 +811,7 @@ class StringLength(_message.Message):
     string_id: str
     index: Expression
     def __init__(
-        self, string_id: str | None = ..., index: Expression | _Mapping | None = ...
+        self, string_id: str | None = ..., index: Expression | _Mapping[str, _Any] | None = ...
     ) -> None: ...
 
 class IntegerLiteral(_message.Message):
@@ -854,9 +856,9 @@ class BinaryExpression(_message.Message):
     right: Expression
     def __init__(
         self,
-        left: Expression | _Mapping | None = ...,
+        left: Expression | _Mapping[str, _Any] | None = ...,
         operator: str | None = ...,
-        right: Expression | _Mapping | None = ...,
+        right: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class UnaryExpression(_message.Message):
@@ -866,20 +868,22 @@ class UnaryExpression(_message.Message):
     operator: str
     operand: Expression
     def __init__(
-        self, operator: str | None = ..., operand: Expression | _Mapping | None = ...
+        self, operator: str | None = ..., operand: Expression | _Mapping[str, _Any] | None = ...
     ) -> None: ...
 
 class ParenthesesExpression(_message.Message):
     __slots__ = ("expression",)
     EXPRESSION_FIELD_NUMBER: _ClassVar[int]
     expression: Expression
-    def __init__(self, expression: Expression | _Mapping | None = ...) -> None: ...
+    def __init__(self, expression: Expression | _Mapping[str, _Any] | None = ...) -> None: ...
 
 class SetExpression(_message.Message):
     __slots__ = ("elements",)
     ELEMENTS_FIELD_NUMBER: _ClassVar[int]
     elements: _containers.RepeatedCompositeFieldContainer[Expression]
-    def __init__(self, elements: _Iterable[Expression | _Mapping] | None = ...) -> None: ...
+    def __init__(
+        self, elements: _Iterable[Expression | _Mapping[str, _Any]] | None = ...
+    ) -> None: ...
 
 class RangeExpression(_message.Message):
     __slots__ = ("high", "low")
@@ -889,8 +893,8 @@ class RangeExpression(_message.Message):
     high: Expression
     def __init__(
         self,
-        low: Expression | _Mapping | None = ...,
-        high: Expression | _Mapping | None = ...,
+        low: Expression | _Mapping[str, _Any] | None = ...,
+        high: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class FunctionCall(_message.Message):
@@ -904,8 +908,8 @@ class FunctionCall(_message.Message):
     def __init__(
         self,
         function: str | None = ...,
-        arguments: _Iterable[Expression | _Mapping] | None = ...,
-        receiver: Expression | _Mapping | None = ...,
+        arguments: _Iterable[Expression | _Mapping[str, _Any]] | None = ...,
+        receiver: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class ArrayAccess(_message.Message):
@@ -916,8 +920,8 @@ class ArrayAccess(_message.Message):
     index: Expression
     def __init__(
         self,
-        array: Expression | _Mapping | None = ...,
-        index: Expression | _Mapping | None = ...,
+        array: Expression | _Mapping[str, _Any] | None = ...,
+        index: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class MemberAccess(_message.Message):
@@ -927,7 +931,7 @@ class MemberAccess(_message.Message):
     object: Expression
     member: str
     def __init__(
-        self, object: Expression | _Mapping | None = ..., member: str | None = ...
+        self, object: Expression | _Mapping[str, _Any] | None = ..., member: str | None = ...
     ) -> None: ...
 
 class ModuleReference(_message.Message):
@@ -946,9 +950,9 @@ class DictionaryAccess(_message.Message):
     key_expr: Expression
     def __init__(
         self,
-        object: Expression | _Mapping | None = ...,
+        object: Expression | _Mapping[str, _Any] | None = ...,
         key: str | None = ...,
-        key_expr: Expression | _Mapping | None = ...,
+        key_expr: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class ExternRuleReference(_message.Message):
@@ -975,9 +979,9 @@ class ForExpression(_message.Message):
         self,
         quantifier: str | None = ...,
         variable: str | None = ...,
-        iterable: Expression | _Mapping | None = ...,
-        body: Expression | _Mapping | None = ...,
-        quantifier_expr: Expression | _Mapping | None = ...,
+        iterable: Expression | _Mapping[str, _Any] | None = ...,
+        body: Expression | _Mapping[str, _Any] | None = ...,
+        quantifier_expr: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class ForOfExpression(_message.Message):
@@ -1004,9 +1008,9 @@ class ForOfExpression(_message.Message):
     def __init__(
         self,
         quantifier: str | None = ...,
-        string_set: Expression | _Mapping | None = ...,
-        condition: Expression | _Mapping | None = ...,
-        quantifier_expr: Expression | _Mapping | None = ...,
+        string_set: Expression | _Mapping[str, _Any] | None = ...,
+        condition: Expression | _Mapping[str, _Any] | None = ...,
+        quantifier_expr: Expression | _Mapping[str, _Any] | None = ...,
         string_set_text: str | None = ...,
         string_set_items: _Iterable[str] | None = ...,
     ) -> None: ...
@@ -1022,8 +1026,8 @@ class AtExpression(_message.Message):
     def __init__(
         self,
         string_id: str | None = ...,
-        offset: Expression | _Mapping | None = ...,
-        subject: Expression | _Mapping | None = ...,
+        offset: Expression | _Mapping[str, _Any] | None = ...,
+        subject: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class InExpression(_message.Message):
@@ -1037,8 +1041,8 @@ class InExpression(_message.Message):
     def __init__(
         self,
         string_id: str | None = ...,
-        range: Expression | _Mapping | None = ...,
-        subject: Expression | _Mapping | None = ...,
+        range: Expression | _Mapping[str, _Any] | None = ...,
+        subject: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class OfExpression(_message.Message):
@@ -1061,8 +1065,8 @@ class OfExpression(_message.Message):
     string_set_items: _containers.RepeatedScalarFieldContainer[str]
     def __init__(
         self,
-        quantifier: Expression | _Mapping | None = ...,
-        string_set: Expression | _Mapping | None = ...,
+        quantifier: Expression | _Mapping[str, _Any] | None = ...,
+        string_set: Expression | _Mapping[str, _Any] | None = ...,
         quantifier_text: str | None = ...,
         string_set_text: str | None = ...,
         string_set_items: _Iterable[str] | None = ...,
@@ -1072,7 +1076,7 @@ class DefinedExpression(_message.Message):
     __slots__ = ("expression",)
     EXPRESSION_FIELD_NUMBER: _ClassVar[int]
     expression: Expression
-    def __init__(self, expression: Expression | _Mapping | None = ...) -> None: ...
+    def __init__(self, expression: Expression | _Mapping[str, _Any] | None = ...) -> None: ...
 
 class StringOperatorExpression(_message.Message):
     __slots__ = ("left", "operator", "right")
@@ -1084,9 +1088,9 @@ class StringOperatorExpression(_message.Message):
     right: Expression
     def __init__(
         self,
-        left: Expression | _Mapping | None = ...,
+        left: Expression | _Mapping[str, _Any] | None = ...,
         operator: str | None = ...,
-        right: Expression | _Mapping | None = ...,
+        right: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class WithStatement(_message.Message):
@@ -1097,8 +1101,8 @@ class WithStatement(_message.Message):
     body: Expression
     def __init__(
         self,
-        declarations: _Iterable[WithDeclaration | _Mapping] | None = ...,
-        body: Expression | _Mapping | None = ...,
+        declarations: _Iterable[WithDeclaration | _Mapping[str, _Any]] | None = ...,
+        body: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class WithDeclaration(_message.Message):
@@ -1112,8 +1116,8 @@ class WithDeclaration(_message.Message):
     def __init__(
         self,
         identifier: str | None = ...,
-        value: Expression | _Mapping | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        value: Expression | _Mapping[str, _Any] | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class ArrayComprehension(_message.Message):
@@ -1128,10 +1132,10 @@ class ArrayComprehension(_message.Message):
     condition: Expression
     def __init__(
         self,
-        expression: Expression | _Mapping | None = ...,
+        expression: Expression | _Mapping[str, _Any] | None = ...,
         variable: str | None = ...,
-        iterable: Expression | _Mapping | None = ...,
-        condition: Expression | _Mapping | None = ...,
+        iterable: Expression | _Mapping[str, _Any] | None = ...,
+        condition: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class DictComprehension(_message.Message):
@@ -1157,19 +1161,21 @@ class DictComprehension(_message.Message):
     condition: Expression
     def __init__(
         self,
-        key_expression: Expression | _Mapping | None = ...,
-        value_expression: Expression | _Mapping | None = ...,
+        key_expression: Expression | _Mapping[str, _Any] | None = ...,
+        value_expression: Expression | _Mapping[str, _Any] | None = ...,
         key_variable: str | None = ...,
         value_variable: str | None = ...,
-        iterable: Expression | _Mapping | None = ...,
-        condition: Expression | _Mapping | None = ...,
+        iterable: Expression | _Mapping[str, _Any] | None = ...,
+        condition: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class TupleExpression(_message.Message):
     __slots__ = ("elements",)
     ELEMENTS_FIELD_NUMBER: _ClassVar[int]
     elements: _containers.RepeatedCompositeFieldContainer[Expression]
-    def __init__(self, elements: _Iterable[Expression | _Mapping] | None = ...) -> None: ...
+    def __init__(
+        self, elements: _Iterable[Expression | _Mapping[str, _Any]] | None = ...
+    ) -> None: ...
 
 class TupleIndexing(_message.Message):
     __slots__ = ("index", "tuple_expr")
@@ -1179,21 +1185,23 @@ class TupleIndexing(_message.Message):
     index: Expression
     def __init__(
         self,
-        tuple_expr: Expression | _Mapping | None = ...,
-        index: Expression | _Mapping | None = ...,
+        tuple_expr: Expression | _Mapping[str, _Any] | None = ...,
+        index: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class ListExpression(_message.Message):
     __slots__ = ("elements",)
     ELEMENTS_FIELD_NUMBER: _ClassVar[int]
     elements: _containers.RepeatedCompositeFieldContainer[Expression]
-    def __init__(self, elements: _Iterable[Expression | _Mapping] | None = ...) -> None: ...
+    def __init__(
+        self, elements: _Iterable[Expression | _Mapping[str, _Any]] | None = ...
+    ) -> None: ...
 
 class DictExpression(_message.Message):
     __slots__ = ("items",)
     ITEMS_FIELD_NUMBER: _ClassVar[int]
     items: _containers.RepeatedCompositeFieldContainer[DictItem]
-    def __init__(self, items: _Iterable[DictItem | _Mapping] | None = ...) -> None: ...
+    def __init__(self, items: _Iterable[DictItem | _Mapping[str, _Any]] | None = ...) -> None: ...
 
 class DictItem(_message.Message):
     __slots__ = ("key", "node_metadata", "value")
@@ -1205,9 +1213,9 @@ class DictItem(_message.Message):
     node_metadata: NodeMetadata
     def __init__(
         self,
-        key: Expression | _Mapping | None = ...,
-        value: Expression | _Mapping | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        key: Expression | _Mapping[str, _Any] | None = ...,
+        value: Expression | _Mapping[str, _Any] | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class SliceExpression(_message.Message):
@@ -1222,10 +1230,10 @@ class SliceExpression(_message.Message):
     step: Expression
     def __init__(
         self,
-        target: Expression | _Mapping | None = ...,
-        start: Expression | _Mapping | None = ...,
-        stop: Expression | _Mapping | None = ...,
-        step: Expression | _Mapping | None = ...,
+        target: Expression | _Mapping[str, _Any] | None = ...,
+        start: Expression | _Mapping[str, _Any] | None = ...,
+        stop: Expression | _Mapping[str, _Any] | None = ...,
+        step: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class LambdaExpression(_message.Message):
@@ -1237,7 +1245,7 @@ class LambdaExpression(_message.Message):
     def __init__(
         self,
         parameters: _Iterable[str] | None = ...,
-        body: Expression | _Mapping | None = ...,
+        body: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class PatternMatch(_message.Message):
@@ -1250,9 +1258,9 @@ class PatternMatch(_message.Message):
     default: Expression
     def __init__(
         self,
-        value: Expression | _Mapping | None = ...,
-        cases: _Iterable[MatchCase | _Mapping] | None = ...,
-        default: Expression | _Mapping | None = ...,
+        value: Expression | _Mapping[str, _Any] | None = ...,
+        cases: _Iterable[MatchCase | _Mapping[str, _Any]] | None = ...,
+        default: Expression | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class MatchCase(_message.Message):
@@ -1265,9 +1273,9 @@ class MatchCase(_message.Message):
     node_metadata: NodeMetadata
     def __init__(
         self,
-        pattern: Expression | _Mapping | None = ...,
-        result: Expression | _Mapping | None = ...,
-        node_metadata: NodeMetadata | _Mapping | None = ...,
+        pattern: Expression | _Mapping[str, _Any] | None = ...,
+        result: Expression | _Mapping[str, _Any] | None = ...,
+        node_metadata: NodeMetadata | _Mapping[str, _Any] | None = ...,
     ) -> None: ...
 
 class SpreadOperator(_message.Message):
@@ -1278,6 +1286,6 @@ class SpreadOperator(_message.Message):
     is_dict: bool
     def __init__(
         self,
-        expression: Expression | _Mapping | None = ...,
+        expression: Expression | _Mapping[str, _Any] | None = ...,
         is_dict: bool | None = ...,
     ) -> None: ...

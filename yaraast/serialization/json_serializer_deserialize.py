@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, cast
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.comments import Comment, CommentGroup
+from yaraast.ast.expressions import Expression
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.serialization._serialization_primitives import (
     _HEX_CHARS,
@@ -70,7 +71,7 @@ def _is_empty_nonempty_field(text: str, context: str, field: str | None = None) 
     return not text or (not text.strip() and label not in _WHITESPACE_SIGNIFICANT_NONEMPTY_FIELDS)
 
 
-def _deserialize_ast_value(self, data, context: str = "AST value"):
+def _deserialize_ast_value(self: Any, data: Any, context: str = "AST value") -> Any:
     if isinstance(data, dict):
         return _deserialize_required_expression_value(self, data, context)
     if isinstance(data, list):
@@ -84,7 +85,7 @@ def _deserialize_ast_value(self, data, context: str = "AST value"):
     return data
 
 
-def _deserialize_optional_expression(self, data, context: str):
+def _deserialize_optional_expression(self: Any, data: Any, context: str) -> Any:
     if data is None:
         return None
     expression = self._deserialize_expression(data)
@@ -95,7 +96,7 @@ def _deserialize_optional_expression(self, data, context: str):
 
 
 def _deserialize_nullable_expression_field(
-    self,
+    self: Any,
     data: dict[str, Any],
     field: str,
     context: str,
@@ -107,13 +108,15 @@ def _deserialize_nullable_expression_field(
     )
 
 
-def _deserialize_required_expression(self, data: dict[str, Any], field: str, context: str) -> Any:
+def _deserialize_required_expression(
+    self: Any, data: dict[str, Any], field: str, context: str
+) -> Any:
     return _deserialize_required_expression_value(
         self, _deserialize_required_field(data, field, context), f"{context} {field}"
     )
 
 
-def _deserialize_required_expression_value(self, value: Any, context: str) -> Any:
+def _deserialize_required_expression_value(self: Any, value: Any, context: str) -> Any:
     expression = self._deserialize_expression(value)
     if expression is not None:
         return expression
@@ -122,7 +125,7 @@ def _deserialize_required_expression_value(self, value: Any, context: str) -> An
 
 
 def _deserialize_required_quantifier(
-    self,
+    self: Any,
     data: dict[str, Any],
     field: str,
     context: str,
@@ -150,7 +153,7 @@ def _deserialize_required_quantifier(
     raise SerializationError(msg)
 
 
-def _deserialize_string_set_item(self, value: Any, context: str) -> Any:
+def _deserialize_string_set_item(self: Any, value: Any, context: str) -> Any:
     if value is None or value == {}:
         msg = f"{context} must contain values"
         raise SerializationError(msg)
@@ -165,7 +168,9 @@ def _deserialize_string_set_item(self, value: Any, context: str) -> Any:
     raise SerializationError(msg)
 
 
-def _deserialize_required_string_set(self, data: dict[str, Any], field: str, context: str) -> Any:
+def _deserialize_required_string_set(
+    self: Any, data: dict[str, Any], field: str, context: str
+) -> Any:
     value = _deserialize_required_field(data, field, context)
     field_context = f"{context} {field}"
     if value is None or value == {}:
@@ -187,7 +192,7 @@ def _deserialize_required_string_set(self, data: dict[str, Any], field: str, con
     raise SerializationError(msg)
 
 
-def _deserialize_dictionary_key(self, data: dict[str, Any]) -> str | ASTNode:
+def _deserialize_dictionary_key(self: Any, data: dict[str, Any]) -> str | Expression:
     if "key" not in data:
         msg = "DictionaryAccess key must be a string or expression"
         raise SerializationError(msg)
@@ -200,12 +205,12 @@ def _deserialize_dictionary_key(self, data: dict[str, Any]) -> str | ASTNode:
     if isinstance(key, dict):
         expression = self._deserialize_expression(key)
         if expression is not None:
-            return expression
+            return cast(Expression, expression)
     msg = "DictionaryAccess key must be a string or expression"
     raise SerializationError(msg)
 
 
-def _deserialize_comment_node(self, data: dict[str, Any]) -> Any:
+def _deserialize_comment_node(self: Any, data: dict[str, Any]) -> Any:
     if not isinstance(data, dict):
         msg = "Comment metadata must be an object"
         raise SerializationError(msg)
@@ -287,7 +292,7 @@ def _deserialize_nonempty_string_list_field(
     return items
 
 
-def _deserialize_pragma_type(data: dict[str, Any]):
+def _deserialize_pragma_type(data: dict[str, Any]) -> Any:
     from yaraast.ast.pragmas import PragmaType
 
     value = _deserialize_nonempty_string_field(data, "pragma_type", "Pragma")
@@ -325,7 +330,7 @@ def _deserialize_pragma_node_type(data: dict[str, Any]) -> None:
     raise SerializationError(msg)
 
 
-def _deserialize_pragma_scope(value: Any, context: str):
+def _deserialize_pragma_scope(value: Any, context: str) -> Any:
     return deserialize_pragma_scope(value, context)
 
 
@@ -411,7 +416,7 @@ def _cast_leading_comment(node: Any) -> Any:
     raise SerializationError(msg)
 
 
-def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
+def _apply_node_metadata(self: Any, node: Any, data: dict[str, Any]) -> Any:
     location = data.get("location")
     if isinstance(location, dict):
         node.location = _deserialize_location(location)
@@ -436,7 +441,7 @@ def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
     return node
 
 
-def _deser_binary_expression(self, data: dict[str, Any]):
+def _deser_binary_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import BinaryExpression
 
     left = _deserialize_required_expression(self, data, "left", "BinaryExpression")
@@ -450,7 +455,7 @@ def _deser_binary_expression(self, data: dict[str, Any]):
     )
 
 
-def _deser_unary_expression(self, data: dict[str, Any]):
+def _deser_unary_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import UnaryExpression
 
     operand = _deserialize_required_expression(self, data, "operand", "UnaryExpression")
@@ -462,14 +467,14 @@ def _deser_unary_expression(self, data: dict[str, Any]):
     )
 
 
-def _deser_parentheses_expression(self, data: dict[str, Any]):
+def _deser_parentheses_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import ParenthesesExpression
 
     expression = _deserialize_required_expression(self, data, "expression", "ParenthesesExpression")
     return ParenthesesExpression(expression=expression)
 
 
-def _deser_set_expression(self, data: dict[str, Any]):
+def _deser_set_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import SetExpression
 
     raw_elements = _deserialize_required_field(data, "elements", "SetExpression")
@@ -486,7 +491,7 @@ def _deser_set_expression(self, data: dict[str, Any]):
     return _validate_set_expression_elements(SetExpression(elements=elements))
 
 
-def _deser_range_expression(self, data: dict[str, Any]):
+def _deser_range_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import RangeExpression
 
     low = _deserialize_required_expression(self, data, "low", "RangeExpression")
@@ -494,7 +499,7 @@ def _deser_range_expression(self, data: dict[str, Any]):
     return _validate_range_expression_bounds(RangeExpression(low=low, high=high))
 
 
-def _deser_function_call(self, data: dict[str, Any]):
+def _deser_function_call(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import FunctionCall
 
     raw_arguments = _deserialize_required_field(data, "arguments", "FunctionCall")
@@ -517,7 +522,7 @@ def _deser_function_call(self, data: dict[str, Any]):
     )
 
 
-def _deser_array_access(self, data: dict[str, Any]):
+def _deser_array_access(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import ArrayAccess
 
     array = _deserialize_required_expression(self, data, "array", "ArrayAccess")
@@ -525,7 +530,7 @@ def _deser_array_access(self, data: dict[str, Any]):
     return ArrayAccess(array=array, index=index)
 
 
-def _deser_member_access(self, data: dict[str, Any]):
+def _deser_member_access(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import MemberAccess
 
     obj = _deserialize_required_expression(self, data, "object", "MemberAccess")
@@ -538,13 +543,13 @@ def _deser_member_access(self, data: dict[str, Any]):
     )
 
 
-def _deser_identifier(self, data: dict[str, Any]):
+def _deser_identifier(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import Identifier
 
     return Identifier(name=_deserialize_nonempty_string_field(data, "name", "Identifier"))
 
 
-def _deser_string_identifier(self, data: dict[str, Any]):
+def _deser_string_identifier(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import StringIdentifier
 
     return StringIdentifier(
@@ -554,7 +559,7 @@ def _deser_string_identifier(self, data: dict[str, Any]):
     )
 
 
-def _deser_string_wildcard(self, data: dict[str, Any]):
+def _deser_string_wildcard(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import StringWildcard
 
     return StringWildcard(
@@ -565,7 +570,7 @@ def _deser_string_wildcard(self, data: dict[str, Any]):
     )
 
 
-def _deser_string_count(self, data: dict[str, Any]):
+def _deser_string_count(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import StringCount
 
     return StringCount(
@@ -576,7 +581,7 @@ def _deser_string_count(self, data: dict[str, Any]):
     )
 
 
-def _deser_string_offset(self, data: dict[str, Any]):
+def _deser_string_offset(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import StringOffset
 
     string_id = _validate_string_reference_text(
@@ -589,7 +594,7 @@ def _deser_string_offset(self, data: dict[str, Any]):
     return StringOffset(string_id=string_id, index=index)
 
 
-def _deser_string_length(self, data: dict[str, Any]):
+def _deser_string_length(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import StringLength
 
     string_id = _validate_string_reference_text(
@@ -602,25 +607,25 @@ def _deser_string_length(self, data: dict[str, Any]):
     return StringLength(string_id=string_id, index=index)
 
 
-def _deser_integer_literal(self, data: dict[str, Any]):
+def _deser_integer_literal(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import IntegerLiteral
 
     return IntegerLiteral(value=_deserialize_integer_literal_value(data))
 
 
-def _deser_double_literal(self, data: dict[str, Any]):
+def _deser_double_literal(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import DoubleLiteral
 
     return DoubleLiteral(value=_deserialize_double_literal_value(data))
 
 
-def _deser_string_literal(self, data: dict[str, Any]):
+def _deser_string_literal(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import StringLiteral
 
     return StringLiteral(value=_deserialize_string_field(data, "value", "StringLiteral"))
 
 
-def _deser_regex_literal(self, data: dict[str, Any]):
+def _deser_regex_literal(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import RegexLiteral
 
     return RegexLiteral(
@@ -629,13 +634,13 @@ def _deser_regex_literal(self, data: dict[str, Any]):
     )
 
 
-def _deser_boolean_literal(self, data: dict[str, Any]):
+def _deser_boolean_literal(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.expressions import BooleanLiteral
 
     return BooleanLiteral(value=_deserialize_boolean_literal_value(data))
 
 
-def _deser_for_expression(self, data: dict[str, Any]):
+def _deser_for_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.conditions import ForExpression
 
     quantifier = _deserialize_required_quantifier(
@@ -659,7 +664,7 @@ def _deser_for_expression(self, data: dict[str, Any]):
     )
 
 
-def _deser_for_of_expression(self, data: dict[str, Any]):
+def _deser_for_of_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.conditions import ForOfExpression
 
     return ForOfExpression(
@@ -677,7 +682,7 @@ def _deser_for_of_expression(self, data: dict[str, Any]):
     )
 
 
-def _deser_at_expression(self, data: dict[str, Any]):
+def _deser_at_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.conditions import AtExpression
 
     raw_subject = data.get("string_id")
@@ -694,7 +699,7 @@ def _deser_at_expression(self, data: dict[str, Any]):
     )
 
 
-def _deser_in_expression(self, data: dict[str, Any]):
+def _deser_in_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.conditions import InExpression
 
     raw_subject = data.get("subject")
@@ -714,7 +719,7 @@ def _deser_in_expression(self, data: dict[str, Any]):
     return InExpression(subject=subject, range=_validate_in_expression_range(range_expression))
 
 
-def _deser_of_expression(self, data: dict[str, Any]):
+def _deser_of_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.conditions import OfExpression
 
     return OfExpression(
@@ -729,7 +734,7 @@ def _deser_of_expression(self, data: dict[str, Any]):
     )
 
 
-def _deser_module_reference(self, data: dict[str, Any]):
+def _deser_module_reference(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.modules import ModuleReference
 
     return ModuleReference(
@@ -740,7 +745,7 @@ def _deser_module_reference(self, data: dict[str, Any]):
     )
 
 
-def _deser_dictionary_access(self, data: dict[str, Any]):
+def _deser_dictionary_access(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.modules import DictionaryAccess
 
     obj = _deserialize_required_expression(self, data, "object", "DictionaryAccess")
@@ -748,7 +753,7 @@ def _deser_dictionary_access(self, data: dict[str, Any]):
     return DictionaryAccess(object=obj, key=key)
 
 
-def _deser_defined_expression(self, data: dict[str, Any]):
+def _deser_defined_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.operators import DefinedExpression
 
     return DefinedExpression(
@@ -761,7 +766,7 @@ def _deser_defined_expression(self, data: dict[str, Any]):
     )
 
 
-def _deser_string_operator_expression(self, data: dict[str, Any]):
+def _deser_string_operator_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.operators import StringOperatorExpression
 
     return StringOperatorExpression(
@@ -783,7 +788,7 @@ def _deser_string_operator_expression(self, data: dict[str, Any]):
     )
 
 
-def _deser_extern_rule_reference(self, data: dict[str, Any]):
+def _deser_extern_rule_reference(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.ast.extern import ExternRuleReference
 
     rule_name = data.get("rule_name", data.get("name"))
@@ -808,7 +813,7 @@ def _deser_extern_rule_reference(self, data: dict[str, Any]):
     )
 
 
-def _deser_with_statement(self, data: dict[str, Any]):
+def _deser_with_statement(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import WithStatement
 
     raw_declarations = _deserialize_required_field(data, "declarations", "WithStatement")
@@ -828,7 +833,7 @@ def _deser_with_statement(self, data: dict[str, Any]):
     )
 
 
-def _deser_with_declaration(self, data: dict[str, Any]):
+def _deser_with_declaration(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import WithDeclaration
 
     return WithDeclaration(
@@ -840,7 +845,7 @@ def _deser_with_declaration(self, data: dict[str, Any]):
     )
 
 
-def _deser_array_comprehension(self, data: dict[str, Any]):
+def _deser_array_comprehension(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import ArrayComprehension
 
     expression = None
@@ -888,7 +893,7 @@ def _deser_array_comprehension(self, data: dict[str, Any]):
     )
 
 
-def _deser_dict_comprehension(self, data: dict[str, Any]):
+def _deser_dict_comprehension(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import DictComprehension
 
     key_expression = None
@@ -961,7 +966,7 @@ def _deser_dict_comprehension(self, data: dict[str, Any]):
     )
 
 
-def _deser_tuple_expression(self, data: dict[str, Any]):
+def _deser_tuple_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import TupleExpression
 
     raw_elements = _deserialize_required_field(data, "elements", "TupleExpression")
@@ -978,7 +983,7 @@ def _deser_tuple_expression(self, data: dict[str, Any]):
     return TupleExpression(elements=elements)
 
 
-def _deser_tuple_indexing(self, data: dict[str, Any]):
+def _deser_tuple_indexing(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import TupleIndexing
 
     return TupleIndexing(
@@ -987,7 +992,7 @@ def _deser_tuple_indexing(self, data: dict[str, Any]):
     )
 
 
-def _deser_list_expression(self, data: dict[str, Any]):
+def _deser_list_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import ListExpression
 
     raw_elements = _deserialize_required_field(data, "elements", "ListExpression")
@@ -1004,7 +1009,7 @@ def _deser_list_expression(self, data: dict[str, Any]):
     return ListExpression(elements=elements)
 
 
-def _deser_dict_expression(self, data: dict[str, Any]):
+def _deser_dict_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import DictExpression
 
     raw_items = _deserialize_required_field(data, "items", "DictExpression")
@@ -1021,7 +1026,7 @@ def _deser_dict_expression(self, data: dict[str, Any]):
     return DictExpression(items=items)
 
 
-def _deser_dict_item(self, data: dict[str, Any]):
+def _deser_dict_item(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import DictItem
 
     return DictItem(
@@ -1030,7 +1035,7 @@ def _deser_dict_item(self, data: dict[str, Any]):
     )
 
 
-def _deser_slice_expression(self, data: dict[str, Any]):
+def _deser_slice_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import SliceExpression
 
     return SliceExpression(
@@ -1041,7 +1046,7 @@ def _deser_slice_expression(self, data: dict[str, Any]):
     )
 
 
-def _deser_lambda_expression(self, data: dict[str, Any]):
+def _deser_lambda_expression(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import LambdaExpression
 
     raw_parameters = _deserialize_required_field(data, "parameters", "LambdaExpression")
@@ -1062,7 +1067,7 @@ def _deser_lambda_expression(self, data: dict[str, Any]):
     )
 
 
-def _deser_pattern_match(self, data: dict[str, Any]):
+def _deser_pattern_match(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import PatternMatch
 
     raw_cases = _deserialize_required_field(data, "cases", "PatternMatch")
@@ -1083,7 +1088,7 @@ def _deser_pattern_match(self, data: dict[str, Any]):
     )
 
 
-def _deser_match_case(self, data: dict[str, Any]):
+def _deser_match_case(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import MatchCase
 
     return MatchCase(
@@ -1092,7 +1097,7 @@ def _deser_match_case(self, data: dict[str, Any]):
     )
 
 
-def _deser_spread_operator(self, data: dict[str, Any]):
+def _deser_spread_operator(self: Any, data: dict[str, Any]) -> Any:
     from yaraast.yarax.ast_nodes import SpreadOperator
 
     expression = _deserialize_required_expression(self, data, "expression", "SpreadOperator")
@@ -1156,10 +1161,10 @@ _EXPR_DESERIALIZERS: dict[str, Any] = {
 class JsonSerializerDeserializeMixin:
     """Mixin with JSON deserialization helpers."""
 
-    def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
+    def _apply_node_metadata(self, node: Any, data: dict[str, Any]) -> Any:
         return _apply_node_metadata(self, node, data)
 
-    def _deserialize_import(self, data: dict[str, Any]):
+    def _deserialize_import(self, data: dict[str, Any]) -> Any:
         from yaraast.ast.rules import Import
 
         return self._apply_node_metadata(
@@ -1170,14 +1175,14 @@ class JsonSerializerDeserializeMixin:
             data,
         )
 
-    def _deserialize_include(self, data: dict[str, Any]):
+    def _deserialize_include(self, data: dict[str, Any]) -> Any:
         from yaraast.ast.rules import Include
 
         return self._apply_node_metadata(
             Include(path=_deserialize_nonempty_string_field(data, "path", "Include")), data
         )
 
-    def _deserialize_rule(self, data: dict[str, Any]):
+    def _deserialize_rule(self, data: dict[str, Any]) -> Any:
         from yaraast.ast.rules import Rule
 
         data = _deserialize_object(data, "Rule")
@@ -1232,7 +1237,7 @@ class JsonSerializerDeserializeMixin:
             data,
         )
 
-    def _deserialize_tag(self, data: dict[str, Any]):
+    def _deserialize_tag(self, data: dict[str, Any]) -> Any:
         from yaraast.ast.rules import Tag
 
         data = _deserialize_object(data, "Tag")
@@ -1250,7 +1255,7 @@ class JsonSerializerDeserializeMixin:
             data,
         )
 
-    def _deserialize_meta(self, data: dict[str, Any]):
+    def _deserialize_meta(self, data: dict[str, Any]) -> Any:
         from yaraast.ast.modifiers import MetaEntry
 
         data = _deserialize_object(data, "Meta")
@@ -1296,7 +1301,7 @@ class JsonSerializerDeserializeMixin:
             data,
         )
 
-    def _deserialize_string(self, data: dict[str, Any]):
+    def _deserialize_string(self, data: dict[str, Any]) -> Any:
         data = _deserialize_object(data, "String")
         string_type = data.get("type")
 
@@ -1392,7 +1397,7 @@ class JsonSerializerDeserializeMixin:
             return f'{name}("{escape_string_source_value(value)}")'
         return f"{name}({value})"
 
-    def _deserialize_modifier(self, data: Any):
+    def _deserialize_modifier(self, data: Any) -> Any:
         from yaraast.ast.modifiers import StringModifier
 
         if isinstance(data, dict):
@@ -1418,7 +1423,7 @@ class JsonSerializerDeserializeMixin:
             return self._apply_node_metadata(modifier, data)
         return modifier
 
-    def _deserialize_hex_token(self, data: dict[str, Any]):
+    def _deserialize_hex_token(self, data: dict[str, Any]) -> Any:
         data = _deserialize_object(data, "Hex token")
         hex_kind = data.get("type")
 
@@ -1487,7 +1492,7 @@ class JsonSerializerDeserializeMixin:
 
     def _validate_hex_token_sequence(
         self,
-        tokens,
+        tokens: list[Any],
         context: str,
         *,
         inside_alternative: bool,
@@ -1513,12 +1518,12 @@ class JsonSerializerDeserializeMixin:
                 msg = "Unbounded HexJump is not allowed inside hex alternatives"
                 raise SerializationError(msg)
 
-    def _coerce_hex_alternative_branch(self, alternative):
+    def _coerce_hex_alternative_branch(self, alternative: Any) -> Any:
         if isinstance(alternative, list):
             return alternative
         return [alternative]
 
-    def _deserialize_extern_import(self, data: dict[str, Any]):
+    def _deserialize_extern_import(self, data: dict[str, Any]) -> Any:
         from yaraast.ast.extern import ExternImport
 
         module_path = data.get("module_path", data.get("module"))
@@ -1554,7 +1559,7 @@ class JsonSerializerDeserializeMixin:
             data,
         )
 
-    def _deserialize_extern_rule(self, data: dict[str, Any]):
+    def _deserialize_extern_rule(self, data: dict[str, Any]) -> Any:
         from yaraast.ast.extern import ExternRule
         from yaraast.ast.rules import Rule
 
@@ -1582,7 +1587,7 @@ class JsonSerializerDeserializeMixin:
             data,
         )
 
-    def _deserialize_extern_namespace(self, data: dict[str, Any]):
+    def _deserialize_extern_namespace(self, data: dict[str, Any]) -> Any:
         from yaraast.ast.extern import ExternNamespace
 
         name = _validate_namespace_identifier_text(
@@ -1604,7 +1609,7 @@ class JsonSerializerDeserializeMixin:
             data,
         )
 
-    def _deserialize_pragma(self, data: dict[str, Any]):
+    def _deserialize_pragma(self, data: dict[str, Any]) -> Any:
         from yaraast.ast.pragmas import (
             ConditionalDirective,
             CustomPragma,
@@ -1627,6 +1632,7 @@ class JsonSerializerDeserializeMixin:
         )
         arguments = _deserialize_required_string_list_field(data, "arguments", "Pragma")
 
+        pragma: Pragma
         if pragma_type == PragmaType.INCLUDE_ONCE:
             pragma = IncludeOncePragma()
         elif pragma_type == PragmaType.DEFINE:
@@ -1679,7 +1685,7 @@ class JsonSerializerDeserializeMixin:
         pragma.scope = scope
         return self._apply_node_metadata(pragma, data)
 
-    def _deserialize_in_rule_pragma(self, data: dict[str, Any]):
+    def _deserialize_in_rule_pragma(self, data: dict[str, Any]) -> Any:
         from yaraast.ast.pragmas import InRulePragma
 
         return self._apply_node_metadata(
@@ -1697,7 +1703,7 @@ class JsonSerializerDeserializeMixin:
             return "before_strings"
         return _deserialize_nonempty_string_field(data, "position", "InRulePragma")
 
-    def _deserialize_expression(self, data: dict[str, Any]):
+    def _deserialize_expression(self, data: dict[str, Any]) -> Any:
         if data is None or data == {}:
             return None
         data = _deserialize_object(data, "Expression")

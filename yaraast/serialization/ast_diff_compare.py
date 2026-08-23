@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.rules import Import, Include, Rule
+from yaraast.ast.strings import StringDefinition
 from yaraast.serialization.ast_diff_condition import condition_hashes, emit_condition_diff
+from yaraast.serialization.ast_diff_hasher import AstHasher
 from yaraast.serialization.ast_diff_meta import emit_meta_diff, meta_payloads
 from yaraast.serialization.ast_diff_modifiers import emit_modifiers_diff, modifier_payloads
 from yaraast.serialization.ast_diff_strings import (
@@ -15,8 +20,17 @@ from yaraast.serialization.ast_diff_strings import (
 )
 from yaraast.serialization.ast_diff_tags import emit_tags_diff, tag_payloads
 
+if TYPE_CHECKING:
+    from yaraast.serialization.ast_diff import DiffNode, DiffResult, DiffType
 
-def compare_imports(old_imports, new_imports, result, diff_node, diff_type) -> None:
+
+def compare_imports(
+    old_imports: Sequence[Import],
+    new_imports: Sequence[Import],
+    result: DiffResult,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
+) -> None:
     """Compare import lists."""
     old_modules = _nodes_by_key(old_imports, _import_key)
     new_modules = _nodes_by_key(new_imports, _import_key)
@@ -74,7 +88,14 @@ def compare_imports(old_imports, new_imports, result, diff_node, diff_type) -> N
                 )
 
 
-def compare_extended_file_fields(old_ast, new_ast, result, hasher, diff_node, diff_type) -> None:
+def compare_extended_file_fields(
+    old_ast: YaraFile,
+    new_ast: YaraFile,
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
+) -> None:
     """Compare extended file-level AST collections."""
     compare_node_collection(
         old_ast.extern_imports,
@@ -123,15 +144,15 @@ def compare_extended_file_fields(old_ast, new_ast, result, hasher, diff_node, di
 
 
 def compare_node_collection(
-    old_nodes,
-    new_nodes,
+    old_nodes: Sequence[Any],
+    new_nodes: Sequence[Any],
     base_path: str,
     node_type: str,
-    key_func,
-    result,
-    hasher,
-    diff_node,
-    diff_type,
+    key_func: Callable[[Any], str],
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
 ) -> None:
     """Compare AST node collections by stable identity and structural hash."""
     old_map = _nodes_by_key(old_nodes, key_func)
@@ -160,6 +181,8 @@ def compare_node_collection(
     for key in sorted(old_map.keys() & new_map.keys()):
         old_bucket = old_map[key]
         new_bucket = new_map[key]
+        old_value: str | list[str]
+        new_value: str | list[str]
         if len(old_bucket) == 1 and len(new_bucket) == 1:
             old_value = hasher.visit(old_bucket[0])
             new_value = hasher.visit(new_bucket[0])
@@ -179,15 +202,15 @@ def compare_node_collection(
 
 
 def compare_pragma_collection(
-    old_pragmas,
-    new_pragmas,
+    old_pragmas: Sequence[Any],
+    new_pragmas: Sequence[Any],
     base_path: str,
     node_type: str,
-    key_func,
-    result,
-    hasher,
-    diff_node,
-    diff_type,
+    key_func: Callable[[Any], str],
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
 ) -> None:
     """Compare pragma collections, including semantically relevant ordering."""
     compare_node_collection(
@@ -213,81 +236,81 @@ def compare_pragma_collection(
     )
 
 
-def _nodes_by_key(nodes, key_func) -> dict[str, list]:
+def _nodes_by_key(nodes: Sequence[Any], key_func: Callable[[Any], str]) -> dict[str, list[Any]]:
     """Group nodes by comparison key without dropping duplicates."""
-    grouped: dict[str, list] = {}
+    grouped: dict[str, list[Any]] = {}
     for node in nodes:
         grouped.setdefault(key_func(node), []).append(node)
     return grouped
 
 
-def _import_key(node) -> str:
+def _import_key(node: Any) -> str:
     return _string_attr_or_empty(node, "module", "Import module")
 
 
-def _import_payload(node) -> dict[str, str | None]:
+def _import_payload(node: Any) -> dict[str, str | None]:
     return {
         "alias": getattr(node, "alias", None),
         "module": _import_key(node),
     }
 
 
-def _import_payloads(imports) -> list[dict[str, str | None]]:
+def _import_payloads(imports: Sequence[Any]) -> list[dict[str, str | None]]:
     return sorted(
         [_import_payload(import_node) for import_node in imports],
         key=lambda item: (item["module"] or "", item["alias"] or ""),
     )
 
 
-def _import_bucket_value(module: str, imports):
+def _import_bucket_value(module: str, imports: Sequence[Any]) -> Any:
     if len(imports) == 1:
         return module
     return _import_payloads(imports)
 
 
-def _include_key(node) -> str:
+def _include_key(node: Any) -> str:
     return _string_attr_or_empty(node, "path", "Include path")
 
 
-def _include_bucket_value(path: str, includes):
+def _include_bucket_value(path: str, includes: Sequence[Any]) -> str | list[str]:
     if len(includes) == 1:
         return path
     return [path] * len(includes)
 
 
-def _include_payloads(path: str, includes) -> list[str]:
+def _include_payloads(path: str, includes: Sequence[Any]) -> list[str]:
     return [path] * len(includes)
 
 
-def _extern_import_key(node) -> str:
+def _extern_import_key(node: Any) -> str:
     if hasattr(node, "module_path"):
         return _string_attr_or_empty(node, "module_path", "ExternImport module path")
     return _string_attr_or_empty(node, "module", "ExternImport module")
 
 
-def _extern_rule_key(node) -> str:
+def _extern_rule_key(node: Any) -> str:
     name = _string_attr_or_empty(node, "name", "ExternRule name")
     namespace = _optional_string_attr(node, "namespace", "ExternRule namespace")
     return f"{namespace}.{name}" if namespace else name
 
 
-def _pragma_key(node) -> str:
+def _pragma_key(node: Any) -> str:
     pragma_type = _pragma_type_value(node)
     name = _string_attr_or_empty(node, "name", "Pragma name")
     macro_name = _string_attr_or_empty(node, "macro_name", "Pragma macro name")
     return f"{pragma_type}:{name}:{macro_name}"
 
 
-def _in_rule_pragma_key(node) -> str:
+def _in_rule_pragma_key(node: Any) -> str:
     position = _string_attr_or_empty(node, "position", "InRulePragma position")
     return f"{position}:{_pragma_key(getattr(node, 'pragma', None))}"
 
 
-def _name_key(node) -> str:
+def _name_key(node: Any) -> str:
     return _string_attr_or_empty(node, "name", "Node name")
 
 
-def _string_attr_or_empty(node, attr: str, field_name: str) -> str:
+def _string_attr_or_empty(node: Any, attr: str, field_name: str) -> str:
     if not hasattr(node, attr):
         return ""
     value = getattr(node, attr)
@@ -297,7 +320,7 @@ def _string_attr_or_empty(node, attr: str, field_name: str) -> str:
     return value
 
 
-def _optional_string_attr(node, attr: str, field_name: str) -> str | None:
+def _optional_string_attr(node: Any, attr: str, field_name: str) -> str | None:
     value = getattr(node, attr, None)
     if value is None:
         return None
@@ -307,7 +330,7 @@ def _optional_string_attr(node, attr: str, field_name: str) -> str | None:
     return value
 
 
-def _pragma_type_value(node) -> str:
+def _pragma_type_value(node: Any) -> str:
     pragma_type = getattr(node, "pragma_type", None)
     if pragma_type is None:
         return ""
@@ -318,7 +341,13 @@ def _pragma_type_value(node) -> str:
     return value
 
 
-def compare_includes(old_includes, new_includes, result, diff_node, diff_type) -> None:
+def compare_includes(
+    old_includes: Sequence[Include],
+    new_includes: Sequence[Include],
+    result: DiffResult,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
+) -> None:
     """Compare include lists."""
     old_paths = _nodes_by_key(old_includes, _include_key)
     new_paths = _nodes_by_key(new_includes, _include_key)
@@ -362,7 +391,14 @@ def compare_includes(old_includes, new_includes, result, diff_node, diff_type) -
             )
 
 
-def compare_rules(old_rules, new_rules, result, hasher, diff_node, diff_type) -> None:
+def compare_rules(
+    old_rules: Sequence[Rule],
+    new_rules: Sequence[Rule],
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
+) -> None:
     """Compare rule lists."""
     old_rule_map = _nodes_by_key(old_rules, _name_key)
     new_rule_map = _nodes_by_key(new_rules, _name_key)
@@ -419,23 +455,23 @@ def compare_rules(old_rules, new_rules, result, hasher, diff_node, diff_type) ->
                 )
 
 
-def _rule_bucket_hashes(rules, hasher) -> list[str]:
+def _rule_bucket_hashes(rules: Sequence[Rule], hasher: AstHasher) -> list[str]:
     return sorted(hasher.visit(rule) for rule in rules)
 
 
-def _rule_bucket_value(name: str, rules, hasher):
+def _rule_bucket_value(name: str, rules: Sequence[Rule], hasher: AstHasher) -> str | list[str]:
     if len(rules) == 1:
         return name
     return _rule_bucket_hashes(rules, hasher)
 
 
-def _rule_added_details(rules) -> dict[str, Any]:
+def _rule_added_details(rules: Sequence[Rule]) -> dict[str, Any]:
     if len(rules) == 1:
         return {"rule_summary": get_rule_summary(rules[0])}
     return {"new_rule_summaries": [get_rule_summary(rule) for rule in rules]}
 
 
-def _rule_removed_details(rules) -> dict[str, Any]:
+def _rule_removed_details(rules: Sequence[Rule]) -> dict[str, Any]:
     if len(rules) == 1:
         return {"rule_summary": get_rule_summary(rules[0])}
     return {"old_rule_summaries": [get_rule_summary(rule) for rule in rules]}
@@ -443,12 +479,12 @@ def _rule_removed_details(rules) -> dict[str, Any]:
 
 def _compare_duplicate_rule_bucket(
     name: str,
-    old_rules,
-    new_rules,
-    result,
-    hasher,
-    diff_node,
-    diff_type,
+    old_rules: Sequence[Rule],
+    new_rules: Sequence[Rule],
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
 ) -> None:
     old_value = _rule_bucket_hashes(old_rules, hasher)
     new_value = _rule_bucket_hashes(new_rules, hasher)
@@ -470,13 +506,13 @@ def _compare_duplicate_rule_bucket(
 
 
 def compare_rule_content(
-    old_rule,
-    new_rule,
+    old_rule: Rule,
+    new_rule: Rule,
     base_path: str,
-    result,
-    hasher,
-    diff_node,
-    diff_type,
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
 ) -> None:
     """Compare content of two rules."""
     compare_rule_modifiers(old_rule, new_rule, base_path, result, diff_node, diff_type)
@@ -499,14 +535,28 @@ def compare_rule_content(
     compare_rule_condition(old_rule, new_rule, base_path, result, hasher, diff_node, diff_type)
 
 
-def compare_rule_meta(old_rule, new_rule, base_path, result, diff_node, diff_type) -> None:
+def compare_rule_meta(
+    old_rule: Rule,
+    new_rule: Rule,
+    base_path: str,
+    result: DiffResult,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
+) -> None:
     """Compare rule meta fields."""
     old_meta, new_meta = meta_payloads(old_rule, new_rule)
     if old_meta != new_meta:
         emit_meta_diff(base_path, result, diff_node, diff_type, old_meta, new_meta)
 
 
-def compare_rule_modifiers(old_rule, new_rule, base_path, result, diff_node, diff_type) -> None:
+def compare_rule_modifiers(
+    old_rule: Rule,
+    new_rule: Rule,
+    base_path: str,
+    result: DiffResult,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
+) -> None:
     """Compare rule modifiers."""
     old_mods, new_mods = modifier_payloads(old_rule, new_rule)
     if old_mods != new_mods:
@@ -514,13 +564,13 @@ def compare_rule_modifiers(old_rule, new_rule, base_path, result, diff_node, dif
 
 
 def compare_rule_pragmas(
-    old_rule,
-    new_rule,
-    base_path,
-    result,
-    hasher,
-    diff_node,
-    diff_type,
+    old_rule: Rule,
+    new_rule: Rule,
+    base_path: str,
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
 ) -> None:
     """Compare rule-level pragmas."""
     compare_node_collection(
@@ -546,13 +596,13 @@ def compare_rule_pragmas(
 
 
 def _emit_in_rule_pragma_order_diff(
-    old_pragmas,
-    new_pragmas,
+    old_pragmas: Sequence[Any],
+    new_pragmas: Sequence[Any],
     path: str,
-    result,
-    hasher,
-    diff_node,
-    diff_type,
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
 ) -> None:
     old_signature = _in_rule_pragma_order_signature(old_pragmas, hasher)
     new_signature = _in_rule_pragma_order_signature(new_pragmas, hasher)
@@ -574,14 +624,14 @@ def _emit_in_rule_pragma_order_diff(
 
 
 def _emit_pragma_order_diff(
-    old_pragmas,
-    new_pragmas,
+    old_pragmas: Sequence[Any],
+    new_pragmas: Sequence[Any],
     path: str,
     node_type: str,
-    result,
-    hasher,
-    diff_node,
-    diff_type,
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
 ) -> None:
     old_signature = _pragma_order_signature(old_pragmas, hasher)
     new_signature = _pragma_order_signature(new_pragmas, hasher)
@@ -602,8 +652,8 @@ def _emit_pragma_order_diff(
     )
 
 
-def _in_rule_pragma_order_signature(pragmas, hasher) -> list[str]:
-    grouped: dict[str, list] = {}
+def _in_rule_pragma_order_signature(pragmas: Sequence[Any], hasher: AstHasher) -> list[str]:
+    grouped: dict[str, list[Any]] = {}
     for pragma in pragmas:
         position = str(getattr(pragma, "position", ""))
         grouped.setdefault(position, []).append(pragma)
@@ -613,7 +663,7 @@ def _in_rule_pragma_order_signature(pragmas, hasher) -> list[str]:
     ]
 
 
-def _pragma_order_signature(pragmas, hasher) -> list[str]:
+def _pragma_order_signature(pragmas: Sequence[Any], hasher: AstHasher) -> list[str]:
     signature: list[str] = []
     unordered_run: list[str] = []
 
@@ -634,13 +684,20 @@ def _pragma_order_signature(pragmas, hasher) -> list[str]:
     return signature
 
 
-def _is_order_insensitive_pragma(node) -> bool:
+def _is_order_insensitive_pragma(node: Any) -> bool:
     pragma = getattr(node, "pragma", node)
     pragma_type = getattr(getattr(pragma, "pragma_type", None), "value", None)
     return pragma_type in {"custom", "include_once"}
 
 
-def compare_rule_tags(old_rule, new_rule, base_path, result, diff_node, diff_type) -> None:
+def compare_rule_tags(
+    old_rule: Rule,
+    new_rule: Rule,
+    base_path: str,
+    result: DiffResult,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
+) -> None:
     """Compare rule tags."""
     old_tags, new_tags = tag_payloads(old_rule, new_rule)
     if old_tags != new_tags:
@@ -648,13 +705,13 @@ def compare_rule_tags(old_rule, new_rule, base_path, result, diff_node, diff_typ
 
 
 def compare_rule_condition(
-    old_rule,
-    new_rule,
+    old_rule: Rule,
+    new_rule: Rule,
     base_path: str,
-    result,
-    hasher,
-    diff_node,
-    diff_type,
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
 ) -> None:
     """Compare rule conditions."""
     old_condition_hash, new_condition_hash = condition_hashes(old_rule, new_rule, hasher)
@@ -670,13 +727,13 @@ def compare_rule_condition(
 
 
 def compare_rule_strings(
-    old_strings,
-    new_strings,
+    old_strings: Sequence[StringDefinition],
+    new_strings: Sequence[StringDefinition],
     base_path: str,
-    result,
-    hasher,
-    diff_node,
-    diff_type,
+    result: DiffResult,
+    hasher: AstHasher,
+    diff_node: type[DiffNode],
+    diff_type: type[DiffType],
 ) -> None:
     """Compare string definitions in rules."""
     old_string_map, new_string_map = string_maps(old_strings, new_strings)
@@ -740,11 +797,11 @@ def compare_rule_strings(
                 )
 
 
-def _string_bucket_hashes(strings, hasher) -> list[str]:
+def _string_bucket_hashes(strings: Sequence[StringDefinition], hasher: AstHasher) -> list[str]:
     return sorted(hasher.visit(string_def) for string_def in strings)
 
 
-def get_rule_summary(rule) -> dict[str, Any]:
+def get_rule_summary(rule: Rule) -> dict[str, Any]:
     """Get a summary of a rule for diff details."""
     return {
         "name": rule.name,
