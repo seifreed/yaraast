@@ -11,6 +11,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from lsprotocol.types import DocumentHighlightKind, Position
 import pytest
 
@@ -305,14 +307,14 @@ def test_document_highlight_invalid_text_type_raises_type_error() -> None:
     """Guard clause: non-string text raises TypeError immediately."""
     provider = DocumentHighlightProvider()
     with pytest.raises(TypeError, match="must be a string"):
-        provider.get_highlights(42, _pos(0, 0))  # type: ignore[arg-type]
+        provider.get_highlights(cast(Any, 42), _pos(0, 0))
 
 
 def test_document_highlight_invalid_position_type_raises_type_error() -> None:
     """Guard clause: non-Position position raises TypeError immediately."""
     provider = DocumentHighlightProvider()
     with pytest.raises(TypeError, match="must be an LSP Position"):
-        provider.get_highlights("rule a { condition: true }", (0, 0))  # type: ignore[arg-type]
+        provider.get_highlights("rule a { condition: true }", cast(Any, (0, 0)))
 
 
 def test_document_highlight_empty_text_returns_empty_list() -> None:

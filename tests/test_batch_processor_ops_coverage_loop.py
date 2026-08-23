@@ -23,7 +23,7 @@ from __future__ import annotations
 from collections import Counter
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -277,7 +277,7 @@ def test_process_dependency_graph_writes_json_and_dot_files(tmp_path: Path) -> N
 # ---------------------------------------------------------------------------
 
 
-class _BytesFspathLike(os.PathLike):  # type: ignore[type-arg]
+class _BytesFspathLike(os.PathLike[bytes]):
     """PathLike whose __fspath__ returns bytes instead of str."""
 
     def __fspath__(self) -> bytes:
@@ -434,7 +434,7 @@ def test_process_large_file_raises_type_error_when_output_dir_is_none(tmp_path: 
             processor,
             file_path,
             operations=[BatchOperation.PARSE],
-            output_dir=None,  # type: ignore[arg-type]
+            output_dir=cast(Any, None),
         )
 
 

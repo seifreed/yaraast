@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import tempfile
+from typing import Any, cast
 
 import pytest
 
@@ -326,7 +327,7 @@ class TestDisplayPatternResultBranches:
         A non-string result_path (e.g. an integer) takes the else-branch at
         line 61 (exists=False) and outputs 'Diagram source:' with the value.
         """
-        mr._display_pattern_result(42)  # type: ignore[arg-type]
+        mr._display_pattern_result(cast(Any, 42))
         captured = capsys.readouterr()
         assert "Diagram source:" in captured.out
         assert "42" in captured.out
@@ -500,7 +501,7 @@ class TestDisplayTextPatternAnalysisBranches:
             modifiers: list[object] = []
 
         rule = Rule(name="unknown_type_rule")
-        rule.strings.append(UnknownStringLike())  # type: ignore[arg-type]
+        rule.strings.append(cast(Any, UnknownStringLike()))
         yara_file = YaraFile(rules=[rule])
 
         gen = StringDiagramGenerator()

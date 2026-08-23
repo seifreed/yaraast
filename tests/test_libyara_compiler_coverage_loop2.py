@@ -30,7 +30,7 @@ compile_file ARE reachable via real production inputs:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -52,7 +52,7 @@ def _valid_rule_file(tmp_path: Path) -> Path:
     return rule_file
 
 
-class _ItemsRaisingDict(dict):  # type: ignore[type-arg]
+class _ItemsRaisingDict(dict[Any, Any]):
     """dict subclass whose items() raises RuntimeError.
 
     Used to trigger the generic except Exception clause in compile_file (lines
@@ -188,7 +188,7 @@ def test_compile_file_non_bool_error_on_warning_hits_type_error_branch(
     rule_file = _valid_rule_file(tmp_path)
 
     # Pass a string where bool is required; yara.compile will raise TypeError.
-    result = compiler.compile_file(rule_file, error_on_warning="yes")  # type: ignore[arg-type]
+    result = compiler.compile_file(rule_file, error_on_warning=cast(Any, "yes"))
 
     assert result.success is False
     assert result.errors

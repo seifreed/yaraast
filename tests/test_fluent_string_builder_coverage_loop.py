@@ -12,6 +12,8 @@ Missing lines before this file (95.04 %):
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
@@ -32,13 +34,13 @@ def test_xor_float_key_raises_type_error() -> None:
     truncated.
     """
     with pytest.raises(TypeError, match="Invalid XOR key value"):
-        FluentStringBuilder("$s4").literal("hello").xor(3.14)  # type: ignore[arg-type]
+        FluentStringBuilder("$s4").literal("hello").xor(cast(Any, 3.14))
 
 
 def test_xor_list_key_raises_type_error() -> None:
     """A list is likewise not a valid XOR key type."""
     with pytest.raises(TypeError, match="Invalid XOR key value"):
-        FluentStringBuilder("$s5").literal("hello").xor([0x01])  # type: ignore[arg-type]
+        FluentStringBuilder("$s5").literal("hello").xor(cast(Any, [0x01]))
 
 
 # ---------------------------------------------------------------------------

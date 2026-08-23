@@ -21,6 +21,8 @@ Missing lines targeted (baseline 39.62% from most-relevant existing tests):
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from lsprotocol.types import Location, TextEdit
 import pytest
 
@@ -446,7 +448,7 @@ def test_rename_rule_edits_validates_rule_name_type() -> None:
     ctx = _doc(_PARSEABLE_RULES)
 
     with pytest.raises(TypeError, match="must be a string"):
-        rename_rule_edits(ctx, 99, "gamma")  # type: ignore[arg-type]
+        rename_rule_edits(ctx, cast(Any, 99), "gamma")
 
 
 # ===========================================================================
@@ -570,7 +572,7 @@ def test_rule_reference_records_validates_symbol_name_type() -> None:
     ctx = _doc(_PARSEABLE_RULES)
 
     with pytest.raises(TypeError, match="must be a string"):
-        rule_reference_records(ctx, 0, include_declaration=True)  # type: ignore[arg-type]
+        rule_reference_records(ctx, cast(Any, 0), include_declaration=True)
 
 
 def test_rule_reference_records_validates_include_declaration_type() -> None:
@@ -578,7 +580,7 @@ def test_rule_reference_records_validates_include_declaration_type() -> None:
     ctx = _doc(_PARSEABLE_RULES)
 
     with pytest.raises(TypeError, match="must be a boolean"):
-        rule_reference_records(ctx, "alpha", include_declaration=1)  # type: ignore[arg-type]
+        rule_reference_records(ctx, "alpha", include_declaration=cast(Any, 1))
 
 
 def test_rule_reference_records_use_role_for_non_definition() -> None:

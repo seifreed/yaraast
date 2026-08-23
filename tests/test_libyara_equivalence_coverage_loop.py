@@ -20,6 +20,7 @@ at a specific call count.
 
 from __future__ import annotations
 
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.libyara.equivalence import EquivalenceResult, EquivalenceTester
 from yaraast.parser import Parser
@@ -44,7 +45,7 @@ class _ReparseFailingParser(Parser):
         super().__init__()
         self._parse_calls: int = 0
 
-    def parse(self, text: str | None = None) -> object:  # type: ignore[override]
+    def parse(self, text: str | None = None) -> YaraFile:
         self._parse_calls += 1
         raise ValueError(f"Controlled re-parse failure (call {self._parse_calls})")
 
@@ -64,11 +65,11 @@ class _RegenFailingCodeGenerator(CodeGenerator):
         super().__init__()
         self._generate_calls: int = 0
 
-    def generate(self, node: object) -> str:
+    def generate(self, node: ASTNode) -> str:
         self._generate_calls += 1
         if self._generate_calls >= 2:
             raise ValueError(f"Controlled re-generation failure (call {self._generate_calls})")
-        return super().generate(node)  # type: ignore[arg-type]
+        return super().generate(node)
 
 
 # ---------------------------------------------------------------------------

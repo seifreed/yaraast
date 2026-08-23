@@ -56,6 +56,7 @@ import site
 import sys
 import tempfile
 from types import ModuleType
+from typing import Any, cast
 
 import pytest
 
@@ -203,7 +204,7 @@ def test_write_text_raises_type_error_for_integer_content(tmp_path: Path) -> Non
     target = tmp_path / "out.txt"
     target.write_text("placeholder", encoding="utf-8")
     with pytest.raises(TypeError, match="content must be a string"):
-        utils.write_text(target, 42)  # type: ignore[arg-type]
+        utils.write_text(target, cast(Any, 42))
 
 
 def test_write_text_raises_type_error_for_none_content(tmp_path: Path) -> None:
@@ -211,7 +212,7 @@ def test_write_text_raises_type_error_for_none_content(tmp_path: Path) -> None:
     target = tmp_path / "out.txt"
     target.write_text("placeholder", encoding="utf-8")
     with pytest.raises(TypeError, match="content must be a string"):
-        utils.write_text(target, None)  # type: ignore[arg-type]
+        utils.write_text(target, cast(Any, None))
 
 
 def test_write_text_raises_type_error_for_bytes_content(tmp_path: Path) -> None:
@@ -219,7 +220,7 @@ def test_write_text_raises_type_error_for_bytes_content(tmp_path: Path) -> None:
     target = tmp_path / "out.txt"
     target.write_text("placeholder", encoding="utf-8")
     with pytest.raises(TypeError, match="content must be a string"):
-        utils.write_text(target, b"bytes content")  # type: ignore[arg-type]
+        utils.write_text(target, cast(Any, b"bytes content"))
 
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import tempfile
-from typing import Any
+from typing import Any, cast
 
 from click.testing import CliRunner
 import pytest
@@ -272,7 +272,7 @@ class TestDisplaySuccessfulGraphResultNonStringPath:
         gen.visit(ast)
 
         # Act — path is an integer, not a str
-        display_successful_graph_result(42, gen)  # type: ignore[arg-type]
+        display_successful_graph_result(cast(Any, 42), gen)
 
         # Assert
         captured = capsys.readouterr()
@@ -290,7 +290,7 @@ class TestDisplaySuccessfulGraphResultNonStringPath:
         gen.visit(ast)
 
         # Act
-        display_successful_graph_result(None, gen)  # type: ignore[arg-type]
+        display_successful_graph_result(cast(Any, None), gen)
 
         # Assert
         captured = capsys.readouterr()
@@ -306,7 +306,7 @@ class TestDisplaySuccessfulGraphResultNonStringPath:
         gen.visit(ast)
 
         # Act
-        display_successful_graph_result(["/some/path.dot"], gen)  # type: ignore[arg-type]
+        display_successful_graph_result(cast(Any, ["/some/path.dot"]), gen)
 
         # Assert
         captured = capsys.readouterr()

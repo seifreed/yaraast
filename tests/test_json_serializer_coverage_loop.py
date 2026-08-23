@@ -14,6 +14,8 @@ Targets the following uncovered lines identified by coverage analysis:
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.extern import ExternImport
@@ -80,14 +82,14 @@ def test_json_serializer_visit_non_ast_node_raises_type_error() -> None:
     """
     serializer = JsonSerializer()
     with pytest.raises(TypeError, match="Visitor node must be an ASTNode"):
-        serializer.visit("plain string, not an ASTNode")  # type: ignore[arg-type]
+        serializer.visit(cast(Any, "plain string, not an ASTNode"))
 
 
 def test_json_serializer_visit_none_raises_type_error() -> None:
     """Line 181: None is not an ASTNode; must propagate TypeError from base."""
     serializer = JsonSerializer()
     with pytest.raises(TypeError, match="Visitor node must be an ASTNode"):
-        serializer.visit(None)  # type: ignore[arg-type]
+        serializer.visit(cast(Any, None))
 
 
 # ---------------------------------------------------------------------------

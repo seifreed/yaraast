@@ -26,7 +26,7 @@ from __future__ import annotations
 import importlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -317,21 +317,21 @@ def test_parse_type_with_integer_returns_any_type() -> None:
     the fallthrough at line 319.
     """
     loader = ModuleLoader()
-    result = loader._parse_type(42)  # type: ignore[arg-type]
+    result = loader._parse_type(cast(Any, 42))
     assert isinstance(result, AnyType)
 
 
 def test_parse_type_with_none_returns_any_type() -> None:
     """None is not str or dict — must fall through to the AnyType return."""
     loader = ModuleLoader()
-    result = loader._parse_type(None)  # type: ignore[arg-type]
+    result = loader._parse_type(cast(Any, None))
     assert isinstance(result, AnyType)
 
 
 def test_parse_type_with_list_returns_any_type() -> None:
     """A list value is also not str or dict — must fall through to AnyType."""
     loader = ModuleLoader()
-    result = loader._parse_type(["int", "string"])  # type: ignore[arg-type]
+    result = loader._parse_type(cast(Any, ["int", "string"]))
     assert isinstance(result, AnyType)
 
 
