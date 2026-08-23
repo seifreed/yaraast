@@ -17,11 +17,16 @@ versioning.
 - Standard MIT licensing and a single package-metadata version source.
 - The LSP now requires the pygls 2 / lsprotocol 2025 API.
 - Static typing now checks all CLI modules and no inline policy suppressions remain.
+- `pyproject.toml` is the only Python dependency manifest; transitive security
+  pins were removed from runtime dependencies.
+- The VS Code extension now declares the VS Code 1.82 API required by its
+  language client and uses an audited npm lockfile.
 
 ### Removed
 
 - Legacy LSP dependency fallbacks, import repair, and obsolete package-root exports.
 - Generated LSP caches and developer-local paths from tracked artifacts.
+- The divergent `requirements.txt` manifest.
 
 ## 1.0.1 - 2026-03-28
 

@@ -35,6 +35,9 @@ jobs:
       - name: MyPy
         run: mypy yaraast/ --ignore-missing-imports
 
+      - name: Audit runtime dependencies
+        run: pip-audit . --progress-spinner off
+
       - name: Run tests
         env:
           PYTHONIOENCODING: utf-8
@@ -80,9 +83,42 @@ jobs:
           name: dist
           path: dist/
 
+  extension:
+    name: Build VS Code extension
+    needs: test
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: vscode-yaraast
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: vscode-yaraast/package-lock.json
+
+      - name: Install and audit locked dependencies
+        run: |
+          npm ci
+          npm audit --audit-level=low
+
+      - name: Package and verify VSIX
+        run: |
+          npx vsce package --out yaraast.vsix
+          python3 scripts/verify_vsix.py yaraast.vsix
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-vsix
+          path: vscode-yaraast/yaraast.vsix
+
   github-release:
     name: Create GitHub Release
-    needs: build
+    needs: [build, extension]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -94,6 +130,12 @@ jobs:
         with:
           name: dist
           path: dist/
+
+      - name: Download extension artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: extension-vsix
+          path: extension/
 
       - name: Generate release notes
         id: notes
@@ -129,7 +171,9 @@ jobs:
           tag_name: ${{ steps.notes.outputs.tag }}
           name: ${{ steps.notes.outputs.tag }}
           body: ${{ steps.notes.outputs.notes }}
-          files: dist/*
+          files: |
+            dist/*
+            extension/*.vsix
           draft: false
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
 

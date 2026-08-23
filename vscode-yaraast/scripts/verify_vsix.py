@@ -39,13 +39,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Validate the packaged VSIX contains the expected extension assets.",
     )
+    parser.add_argument(
+        "vsix", nargs="?", type=Path, help="VSIX path (defaults to the package root)"
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
-    _parse_args(argv)
+    args = _parse_args(argv)
     version = read_version()
-    vsix_path = ROOT / f"yaraast-{version}.vsix"
+    vsix_path = args.vsix or ROOT / f"yaraast-{version}.vsix"
     if not vsix_path.exists():
         print(f"VSIX not found: {vsix_path}", file=sys.stderr)
         return 1

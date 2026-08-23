@@ -19,16 +19,10 @@ classifiers = [
 ]
 
 dependencies = [
-    "click>=8.1.0",
+    "click>=8.4.2",
     "rich>=13.0.0",
     "attrs>=23.0.0",
     "PyYAML>=6.0.0",
-    # Transitive security pins
-    "cryptography>=48.0.0",
-    "idna>=3.18",
-    "Pygments>=2.20.0",
-    "requests>=2.33.0",
-    "urllib3>=2.7.0",
 ]
 
 [project.optional-dependencies]
@@ -54,7 +48,6 @@ dev = [
     "pydocstyle>=6.3.0",
     "pip-audit>=2.10.0",
     "types-PyYAML>=6.0.0",
-    "types-requests>=2.31.0",
 ]
 libyara = [
     "yara-python==4.5.4",

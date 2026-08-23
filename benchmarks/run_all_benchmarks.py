@@ -47,7 +47,7 @@ def check_dependencies() -> bool:
         for dep in missing:
             print(f"  - {dep}")
         print("\nInstall with:")
-        print("  pip install -r requirements.txt")
+        print('  pip install -e ".[performance]"')
         return False
 
     return True

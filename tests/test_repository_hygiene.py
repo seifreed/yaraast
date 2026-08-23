@@ -35,3 +35,8 @@ def test_runtime_cache_directories_are_ignored() -> None:
     patterns = Path(".gitignore").read_text(encoding="utf-8").splitlines()
 
     assert ".yaraast/" in patterns
+    assert "*.vsix" in patterns
+
+
+def test_pyproject_is_the_only_python_dependency_manifest() -> None:
+    assert not Path("requirements.txt").exists()

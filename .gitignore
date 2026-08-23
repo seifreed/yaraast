@@ -154,6 +154,7 @@ cython_debug/
 
 # Node
 node_modules/
+*.vsix
 
 # Temporary files
 *.tmp

@@ -61,8 +61,8 @@
 
 ## VSIX
 
-- artefacto:
-  - [yaraast-0.1.0.vsix](../vscode-yaraast/yaraast-0.1.0.vsix)
+- artefacto reproducible publicado por el workflow de release:
+  - [GitHub Releases](https://github.com/seifreed/yaraast/releases)
 - verificación de instalación limpia:
   - realizada con el binario interno de VS Code:
     - `/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code`

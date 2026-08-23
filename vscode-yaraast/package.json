@@ -23,7 +23,7 @@
     "theme": "dark"
   },
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.82.0"
   },
   "categories": [
     "Programming Languages",
@@ -228,13 +228,14 @@
     "verify:vsix": "python3 scripts/verify_vsix.py"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^18.x",
-    "@types/vscode": "^1.75.0",
+    "@types/vscode": "1.82.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
-    "@vscode/vsce": "^3.9.1",
-    "eslint": "^9.0.0",
-    "typescript": "^5.0.0"
+    "@vscode/vsce": "^3.9.2",
+    "eslint": "^10.9.0",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"
