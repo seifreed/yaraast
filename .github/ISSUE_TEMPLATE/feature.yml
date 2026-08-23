@@ -1,0 +1,25 @@
+name: Feature request
+description: Propose a concrete contract or workflow improvement
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the user workflow or compatibility gap, not only the proposed implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: dialect
+    attributes:
+      label: Dialect
+      options: [YARA, YARA-X, YARA-L, Multiple, Not applicable]
+    validations:
+      required: true

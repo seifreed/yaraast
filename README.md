@@ -220,6 +220,10 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, qua
 4. Push (`git push origin feature/your-change`)
 5. Open a Pull Request
 
+Project policy is documented in [SECURITY.md](SECURITY.md),
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [CHANGELOG.md](CHANGELOG.md), and
+[MIGRATING.md](MIGRATING.md).
+
 ---
 
 ## License

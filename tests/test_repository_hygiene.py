@@ -4,6 +4,24 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "CHANGELOG.md",
+        "CODE_OF_CONDUCT.md",
+        "CONTRIBUTING.md",
+        "MIGRATING.md",
+        "SECURITY.md",
+        ".github/ISSUE_TEMPLATE/bug.yml",
+        ".github/ISSUE_TEMPLATE/feature.yml",
+    ],
+)
+def test_public_governance_file_exists(path: str) -> None:
+    assert Path(path).is_file()
+
 
 def test_documentation_does_not_publish_developer_home_paths() -> None:
     paths = [Path("README.md"), *Path("docs").rglob("*.md"), *Path("docs").rglob("*.json")]

@@ -25,3 +25,20 @@ The required
 installs the exact versions above and rejects acceptance or match drift for the
 vendored corpus. Automatic dialect detection is best effort; callers that need
 a deterministic grammar should pass `dialect=` explicitly.
+
+## Compatibility Policy
+
+- The documented root API, accepted Python versions, serialized schema versions,
+  and stable classic-YARA behavior follow semantic versioning.
+- YARA-X beta and YARA-L experimental behavior may change in a minor release;
+  such changes are called out in the changelog and migration guide.
+- A reference engine upgrade is a compatibility change and must pass its pinned
+  conformance job before this matrix is updated.
+
+## Deprecation Policy
+
+Deprecated stable APIs remain available until the next major release unless a
+security or correctness defect makes that unsafe. Deprecations are announced in
+the changelog with the replacement and planned removal version. The project does
+not add silent aliases or compatibility shims: callers must migrate to the new
+contract before removal.
