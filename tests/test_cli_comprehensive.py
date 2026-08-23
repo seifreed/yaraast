@@ -12,6 +12,8 @@ import subprocess
 import sys
 import tempfile
 
+import yaraast
+
 CLI_TIMEOUT = 30
 
 
@@ -1404,8 +1406,7 @@ class TestCLIErrorHandling:
         )
 
         assert result.returncode == 0
-        # Should show version information
-        assert len(result.stdout) > 0 or len(result.stderr) > 0
+        assert result.stdout.strip() == f"yaraast, version {yaraast.__version__}"
 
 
 class TestCLIRoundtripIntegration:

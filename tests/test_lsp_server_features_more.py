@@ -11,8 +11,8 @@ from typing import Any, cast
 import pytest
 
 from yaraast.lsp import server_features as sf
-from yaraast.lsp.document_types import path_to_uri, uri_to_path
 from yaraast.lsp.server_feature_helpers import get_workspace_folders
+from yaraast.shared.uri import path_to_uri, uri_to_path
 
 
 class _Workspace:

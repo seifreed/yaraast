@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import tempfile
 
+import yaraast
 from yaraast.analysis import RuleAnalyzer
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
@@ -15,10 +16,6 @@ from yaraast.codegen.options import GeneratorOptions
 from yaraast.optimization import RuleOptimizer
 from yaraast.parser import Parser
 from yaraast.types.module_loader import ModuleLoader
-from yaraast.version import (
-    YARA_SYNTAX_VERSION,
-    YARAAST_VERSION,
-)
 from yaraast.yarax import YaraXCompatibilityChecker
 
 
@@ -33,8 +30,7 @@ def demo_version_info() -> None:
     """Demonstrate version information."""
     print_section("Version Information")
 
-    print(f"YARAAST Version: {YARAAST_VERSION}")
-    print(f"YARA Syntax Version: {YARA_SYNTAX_VERSION}")
+    print(f"YARAAST Version: {yaraast.__version__}")
     print("Build metadata: not available in this example environment")
 
 

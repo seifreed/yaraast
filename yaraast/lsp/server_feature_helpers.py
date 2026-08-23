@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, cast
 
 from lsprotocol.types import Diagnostic, SemanticTokens
 
-from yaraast.lsp.document_types import uri_to_path
 from yaraast.lsp.lsp_types import InitializeParams, Range
 from yaraast.lsp.provider_call_helpers import call_range_with_optional_uri, call_with_optional_uri
+from yaraast.shared.uri import uri_to_path
 
 if TYPE_CHECKING:
     from yaraast.lsp.server import YaraLanguageServer

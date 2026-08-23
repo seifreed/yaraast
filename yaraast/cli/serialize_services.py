@@ -11,7 +11,6 @@ from yaraast.codegen import CodeGenerator
 from yaraast.errors import ValidationError
 from yaraast.serialization.ast_diff import AstDiff, AstHasher
 from yaraast.serialization.json_serializer import JsonSerializer
-from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 from yaraast.serialization.serializer_helpers import require_bool_option
 from yaraast.serialization.yaml_serializer import YamlSerializer
 
@@ -34,6 +33,8 @@ def import_ast(input_file: str, fmt: str):
     elif fmt == "yaml":
         serializer = YamlSerializer(include_metadata=True)
     else:
+        from yaraast.serialization.protobuf_serializer import ProtobufSerializer
+
         serializer = ProtobufSerializer(include_metadata=True)
     return serializer.deserialize(input_path=input_file)
 
@@ -54,6 +55,8 @@ def export_with_serializer(
     elif fmt == "yaml":
         serializer = YamlSerializer(include_metadata=not minimal)
     else:
+        from yaraast.serialization.protobuf_serializer import ProtobufSerializer
+
         serializer = ProtobufSerializer(include_metadata=not minimal)
     if fmt == "json":
         return serializer.serialize(ast, output), None

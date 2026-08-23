@@ -5,9 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
 
 from lsprotocol.types import Location, Position, Range, SymbolInformation, SymbolKind
 
@@ -57,43 +55,6 @@ def _validate_range_order(start: Position, end: Position) -> None:
         return
     msg = "SymbolRecord range start must not be after end"
     raise ValueError(msg)
-
-
-def uri_to_path(uri: object) -> Path | None:
-    if not isinstance(uri, str) or not uri.strip():
-        return None
-    if "\x00" in uri:
-        return None
-    if uri.lower().startswith("file:"):
-        parsed = urlparse(uri)
-        if parsed.netloc and parsed.netloc.lower() != "localhost":
-            return None
-        decoded = unquote(parsed.path)
-        if not decoded:
-            return None
-        if not decoded.startswith("/") and not (
-            len(decoded) >= 2 and decoded[0].isalpha() and decoded[1] == ":"
-        ):
-            return None
-        if "\x00" in decoded:
-            return None
-        # On Windows, file:///C:/path yields /C:/path — strip leading slash
-        if len(decoded) >= 3 and decoded[0] == "/" and decoded[2] == ":":
-            decoded = decoded[1:]
-        return Path(decoded)
-    if "://" in uri:
-        return None
-    return None
-
-
-def path_to_uri(path: Path) -> str:
-    if not isinstance(path, Path):
-        msg = "path must be a pathlib.Path"
-        raise TypeError(msg)
-    if "\x00" in str(path):
-        msg = "path must not contain null bytes"
-        raise ValueError(msg)
-    return path.absolute().as_uri()
 
 
 class LanguageMode(Enum):

@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from yaraast.errors import YaraASTError
-from yaraast.lsp.document_types import uri_to_path
 from yaraast.parser.source import parse_yara_source
 from yaraast.resolution.dependency_graph import DependencyGraph, require_rule_lookup_name
 from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
@@ -21,6 +20,7 @@ from yaraast.shared.path_safety import (
     path_is_symlink,
     path_is_within_directory,
 )
+from yaraast.shared.uri import uri_to_path
 
 if TYPE_CHECKING:
     from yaraast.ast.rules import Rule

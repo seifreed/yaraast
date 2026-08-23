@@ -8,13 +8,14 @@ from pathlib import Path
 
 from lsprotocol.types import SymbolInformation
 
-from yaraast.lsp.document_types import YARA_FILE_SUFFIXES, uri_to_path
+from yaraast.lsp.document_types import YARA_FILE_SUFFIXES
 from yaraast.lsp.runtime import DocumentContext, LspRuntime
 from yaraast.shared.path_safety import (
     path_has_symlink_ancestor,
     path_is_symlink,
     path_is_within_directory,
 )
+from yaraast.shared.uri import uri_to_path
 
 logger = logging.getLogger(__name__)
 

@@ -27,8 +27,8 @@ real_import = builtins.__import__
 def import_without_protobuf(name, globals=None, locals=None, fromlist=(), level=0):
     if name.startswith("google.protobuf"):
         raise ModuleNotFoundError(
-            "No module named 'google.protobuf'",
-            name="google.protobuf",
+            "No module named 'google'",
+            name="google",
         )
     return real_import(name, globals, locals, fromlist, level)
 
@@ -40,6 +40,32 @@ serialization = importlib.import_module("yaraast.serialization")
 
 assert serialization.ProtobufSerializer is None
 assert serialization.JsonSerializer.__name__ == "JsonSerializer"
+""",
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_cli_version_works_without_google_protobuf() -> None:
+    result = _run_import_probe(
+        """
+import builtins
+
+real_import = builtins.__import__
+
+def import_without_protobuf(name, globals=None, locals=None, fromlist=(), level=0):
+    if name.startswith("google.protobuf"):
+        raise ModuleNotFoundError("No module named 'google'", name="google")
+    return real_import(name, globals, locals, fromlist, level)
+
+builtins.__import__ = import_without_protobuf
+
+from click.testing import CliRunner
+from yaraast.cli.main import cli
+
+result = CliRunner().invoke(cli, ["--version"])
+assert result.exit_code == 0, result.output
+assert "yaraast, version" in result.output
 """,
     )
 

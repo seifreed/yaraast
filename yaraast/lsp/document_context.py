@@ -51,9 +51,9 @@ from yaraast.lsp.document_types import (
     ResolvedSymbol,
     RuleLinkRecord,
     SymbolRecord,
-    uri_to_path,
 )
 from yaraast.parser._shared import ParserError
+from yaraast.shared.uri import uri_to_path
 from yaraast.unified_parser import UnifiedParser
 
 

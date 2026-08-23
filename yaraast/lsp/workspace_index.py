@@ -13,7 +13,6 @@ from yaraast.lsp.document_types import (
     YARA_FILE_SUFFIXES,
     SymbolRecord,
     require_workspace_symbol_query,
-    uri_to_path,
 )
 from yaraast.lsp.utils import path_exists, path_is_dir, path_is_file
 from yaraast.shared.path_safety import (
@@ -21,6 +20,7 @@ from yaraast.shared.path_safety import (
     path_is_symlink,
     path_is_within_directory,
 )
+from yaraast.shared.uri import uri_to_path
 
 logger = logging.getLogger(__name__)
 

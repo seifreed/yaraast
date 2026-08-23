@@ -57,11 +57,19 @@ jobs:
         run: python -m build
 
       - name: Verify package
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
           WHEEL=$(ls dist/*.whl)
-          pip install "${WHEEL}[lsp,visualization,serialization,performance]"
-          python -c "import yaraast; print(f'yaraast {yaraast.__version__} installed OK')"
-          yaraast --version
+          python -m venv .release-venv
+          .release-venv/bin/pip install "${WHEEL}[lsp,visualization,serialization,performance]"
+          EXPECTED_VERSION=${RELEASE_TAG#v}
+          WHEEL_VERSION=$(.release-venv/bin/python -c "from importlib.metadata import version; print(version('yaraast'))")
+          RUNTIME_VERSION=$(cd "$(mktemp -d)" && "$GITHUB_WORKSPACE/.release-venv/bin/python" -c "import yaraast; print(yaraast.__version__)")
+          test "$EXPECTED_VERSION" = "$WHEEL_VERSION"
+          test "$EXPECTED_VERSION" = "$RUNTIME_VERSION"
+          cd "$(mktemp -d)"
+          "$GITHUB_WORKSPACE/.release-venv/bin/yaraast" --version
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

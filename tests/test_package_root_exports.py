@@ -1,9 +1,15 @@
-"""Regression tests for the empty package root surface."""
+"""Regression tests for the deliberately small package root surface."""
 
 from __future__ import annotations
 
+from importlib.metadata import version
+
 import yaraast
 import yaraast.errors as errors
+
+
+def test_package_root_exports_installed_version() -> None:
+    assert yaraast.__version__ == version("yaraast")
 
 
 def test_package_root_does_not_reexport_internal_helpers() -> None:
@@ -17,7 +23,6 @@ def test_package_root_does_not_reexport_internal_helpers() -> None:
         "YARAAST_VERSION_MINOR",
         "YARAAST_VERSION_PATCH",
         "YARA_SYNTAX_VERSION",
-        "__version__",
         "ASTVisitor",
         "BaseVisitor",
         "CodeGenError",

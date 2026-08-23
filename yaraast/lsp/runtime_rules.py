@@ -15,9 +15,9 @@ from yaraast.lsp.document_types import (
     copy_reference_record,
     copy_resolved_symbol,
     copy_rule_link_record,
-    uri_to_path,
 )
 from yaraast.lsp.utils import path_exists, path_is_file
+from yaraast.shared.uri import uri_to_path
 
 if TYPE_CHECKING:
     from yaraast.lsp.runtime import LspRuntime

@@ -17,8 +17,6 @@ from yaraast.lsp.document_types import (
     RuleLinkRecord,
     RuntimeConfig,
     SymbolRecord,
-    path_to_uri,
-    uri_to_path,
 )
 from yaraast.lsp.runtime_observability import (
     get_latency_metrics as runtime_get_latency_metrics,
@@ -46,6 +44,7 @@ from yaraast.shared.path_safety import (
     path_is_symlink,
     path_is_within_directory,
 )
+from yaraast.shared.uri import path_to_uri, uri_to_path
 
 logger = logging.getLogger(__name__)
 

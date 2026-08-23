@@ -16,9 +16,9 @@ from lsprotocol.types import (
     Range,
 )
 
-from yaraast.lsp.document_types import uri_to_path
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, MODULE_DOCS
 from yaraast.lsp.utf16 import utf8_col_to_utf16
+from yaraast.shared.uri import uri_to_path
 
 
 def parser_error_to_diagnostic(
