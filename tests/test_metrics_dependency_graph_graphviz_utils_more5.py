@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import graphviz
+import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import Identifier
@@ -92,6 +93,7 @@ def test_dependency_utils_remaining_paths() -> None:
     assert graph.get_dependencies("d") == set()
 
 
+@pytest.mark.integration
 def test_render_graph_success_path_with_real_graphviz(tmp_path: Path) -> None:
     dot = graphviz.Digraph(comment="deps")
     dot.node("a")

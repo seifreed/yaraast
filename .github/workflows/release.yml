@@ -26,6 +26,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev,lsp,visualization,serialization,performance]"
 
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install --yes graphviz
+
       - name: Ruff check
         run: ruff check yaraast/
 
@@ -35,8 +38,7 @@ jobs:
       - name: Run tests
         env:
           PYTHONIOENCODING: utf-8
-        run: |
-          python -m pytest tests/ -o "addopts=" --tb=short --ignore=tests/test_metrics_dependency_graph_graphviz_utils_more5.py
+        run: python -m pytest tests/ --tb=short
 
   build:
     name: Build distribution

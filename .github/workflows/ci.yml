@@ -77,7 +77,55 @@ jobs:
           PYTHONIOENCODING: utf-8
           PYTHONUTF8: "1"
         run: |
-          python -m pytest tests/ -o "addopts=" -n auto --tb=short --ignore=tests/test_metrics_dependency_graph_graphviz_utils_more5.py
+          python -m pytest tests/ -o "addopts=" -n auto --tb=short -m "not integration"
+
+  coverage:
+    name: Coverage gate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install --yes graphviz
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,libyara,lsp,visualization,serialization,performance]"
+
+      - name: Enforce configured coverage threshold
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: "1"
+        run: python -m pytest tests/ --tb=short
+
+  integration-visualization:
+    name: Graphviz integration
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install --yes graphviz
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,visualization]"
+
+      - name: Render a real graph
+        run: |
+          python -m pytest tests/test_metrics_dependency_graph_graphviz_utils_more5.py -o "addopts=" -m integration --tb=short
 
   lint:
     name: Lint & Type Check
