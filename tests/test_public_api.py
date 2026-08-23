@@ -44,6 +44,22 @@ def test_format_dispatches_to_dialect_generator(
     assert yaraast.parse(formatted, dialect=dialect).rules
 
 
+@pytest.mark.parametrize(
+    ("dialect", "source"),
+    [
+        ("yara", 'rule classic { strings: $a = "x" condition: $a }'),
+        ("yara-x", "rule modern { condition: with value = 1: value == 1 }"),
+        ("yara-l", 'rule log { events: $e.metadata.event_type = "x" condition: $e }'),
+    ],
+)
+def test_format_canonical_is_idempotent(
+    dialect: Literal["yara", "yara-x", "yara-l"], source: str
+) -> None:
+    formatted = yaraast.format_canonical(source, dialect=dialect)
+
+    assert yaraast.format_canonical(formatted, dialect=dialect) == formatted
+
+
 @pytest.mark.parametrize("function_name", ["parse", "parse_file", "format_canonical"])
 def test_public_api_rejects_unknown_dialect(function_name: str, tmp_path: Path) -> None:
     function = getattr(yaraast, function_name)
