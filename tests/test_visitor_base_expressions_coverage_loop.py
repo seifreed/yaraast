@@ -9,6 +9,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.conditions import (
@@ -847,5 +849,5 @@ def test_visit_match_case_traverses_pattern_and_result() -> None:
 )
 def test_all_noop_visit_methods_return_none(node: object) -> None:
     """Every method that only calls _noop() returns None from the default mixin."""
-    result = BaseVisitor[None]().visit(node)  # type: ignore[arg-type]
+    result = BaseVisitor[None]().visit(cast(Any, node))
     assert result is None

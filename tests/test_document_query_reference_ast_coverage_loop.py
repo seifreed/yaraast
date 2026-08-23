@@ -30,6 +30,8 @@ Missing lines targeted (as of the baseline run):
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from lsprotocol.types import Range, TextEdit
 
 from yaraast.ast.base import Location as AstLocation
@@ -870,7 +872,7 @@ def _ctx_with_ast(fake_ast: _FakeAST) -> DocumentContext:
     etc.) using in-memory objects — no mocking framework is involved.
     """
     ctx = DocumentContext(uri=_URI, text="rule r { condition: true }")
-    ctx._ast = fake_ast  # type: ignore[assignment]
+    cast(Any, ctx)._ast = fake_ast
     return ctx
 
 

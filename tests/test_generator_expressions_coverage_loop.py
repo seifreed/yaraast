@@ -10,6 +10,8 @@ live implementation.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.conditions import ForOfExpression, OfExpression
@@ -259,7 +261,7 @@ def test_render_quantifier_percent_unary_not_allowed_raises() -> None:
 def test_validate_quantifier_text_non_string_raises() -> None:
     """Non-string input to _validate_quantifier_text raises ValueError."""
     with pytest.raises((ValueError, TypeError)):
-        _validate_quantifier_text(42, allow_percentage=False)  # type: ignore[arg-type]
+        _validate_quantifier_text(cast(Any, 42), allow_percentage=False)
 
 
 # ---------------------------------------------------------------------------

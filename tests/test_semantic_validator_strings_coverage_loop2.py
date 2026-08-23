@@ -56,7 +56,7 @@ class _BadModifier:
     name: Any = None
 
 
-class _TwoPassList(list):  # type: ignore[type-arg]
+class _TwoPassList(list[Any]):
     """A list subclass that changes what it yields across successive __iter__ calls.
 
     First iteration: yields a single valid string modifier ('private').

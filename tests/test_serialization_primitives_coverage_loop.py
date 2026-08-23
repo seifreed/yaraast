@@ -12,6 +12,7 @@ during normal serialization and deserialization work.
 from __future__ import annotations
 
 import math
+from typing import Any, cast
 
 import pytest
 
@@ -1070,7 +1071,7 @@ def test_validate_optional_namespace_identifier_text_valid_string() -> None:
 
 def test_validate_optional_namespace_identifier_text_invalid_raises() -> None:
     with pytest.raises(SerializationError):
-        _validate_optional_namespace_identifier_text(123)  # type: ignore[arg-type]
+        _validate_optional_namespace_identifier_text(cast(Any, 123))
 
 
 # ---------------------------------------------------------------------------

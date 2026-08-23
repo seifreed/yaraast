@@ -874,7 +874,7 @@ class TestTransformerSubclassCanOverrideVisit:
             condition=_bool_lit(True),
         )
         rt = RenameTransformer()
-        result: Rule = rt.visit(original)  # type: ignore[assignment]
+        result = cast(Rule, rt.visit(original))
         assert result.name == "prefix_detect_malware"
 
 

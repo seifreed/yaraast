@@ -11,6 +11,8 @@ observable return values or exception state produced by real execution.
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from yaraast.ast.strings import (
@@ -282,7 +284,7 @@ def test_simple_hex_bytes_round_trip() -> None:
     tokens = _parse("DE AD BE EF")
     assert len(tokens) == 4
     assert all(isinstance(t, HexByte) for t in tokens)
-    values = [t.value for t in tokens]  # type: ignore[attr-defined]
+    values = [cast(HexByte, token).value for token in tokens]
     assert values == [0xDE, 0xAD, 0xBE, 0xEF]
 
 

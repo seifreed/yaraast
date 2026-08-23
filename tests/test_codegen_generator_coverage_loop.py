@@ -9,6 +9,8 @@ No mocks, stubs, or test doubles are used.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.comments import Comment, CommentGroup
@@ -757,7 +759,7 @@ def test_format_rule_modifiers_returns_empty_string_when_node_lacks_attribute() 
         tags: list[object] = []
 
     gen = CodeGenerator()
-    result = gen._format_rule_modifiers(MinimalRuleNode())  # type: ignore[arg-type]
+    result = gen._format_rule_modifiers(cast(Any, MinimalRuleNode()))
 
     assert result == ""
 

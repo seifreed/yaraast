@@ -22,8 +22,11 @@ yaraast.ast.expressions.  No mocks, stubs, or artificial scaffolding.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import pytest
 
+from yaraast.ast.base import ASTNode
 from yaraast.ast.expressions import IntegerLiteral
 from yaraast.visitor.defaults import DefaultASTVisitor
 from yaraast.yarax.ast_nodes import (
@@ -360,7 +363,7 @@ class TestYaraXVisitorMethods:
 )
 def test_yarax_visit_method_returns_default_for_every_node_type(
     method_name: str,
-    node_factory: object,
+    node_factory: Callable[[], ASTNode],
 ) -> None:
     """Every YARA-X visit method on DefaultASTVisitor must return the configured default.
 
@@ -371,7 +374,7 @@ def test_yarax_visit_method_returns_default_for_every_node_type(
     # Arrange
     sentinel = object()
     visitor: DefaultASTVisitor[object] = DefaultASTVisitor(sentinel)
-    node = node_factory()  # type: ignore[operator]
+    node = node_factory()
 
     # Act
     result = getattr(visitor, method_name)(node)

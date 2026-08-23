@@ -12,7 +12,7 @@ from collections import OrderedDict
 import datetime
 from pathlib import Path
 from textwrap import dedent
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -203,7 +203,7 @@ def test_analyze_string_no_content_attribute_falls_through_to_209() -> None:
     analyzer = ASTStructuralAnalyzer()
 
     # Act: call with the opaque string — exercises the 204->False->209 branch
-    analyzer._analyze_string(opaque, "fallthrough_rule", "$opaque")  # type: ignore[arg-type]
+    analyzer._analyze_string(cast(Any, opaque), "fallthrough_rule", "$opaque")
 
     # Assert: a signature is still stored (just without content_type metadata)
     assert "fallthrough_rule:$opaque" in analyzer.string_signatures
