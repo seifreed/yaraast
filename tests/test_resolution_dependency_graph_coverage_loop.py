@@ -14,6 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 
@@ -395,7 +396,7 @@ class TestValidateFileAst:
     def test_bad_import_node_raises(self, tmp_path: Path) -> None:
         fake = self._make_fake_file(imports=[object()])
         with pytest.raises(ValidationError, match="imports must contain Import nodes"):
-            DependencyGraph()._validate_file_ast(fake)  # type: ignore[arg-type]
+            DependencyGraph()._validate_file_ast(cast(Any, fake))
 
     def test_import_with_empty_alias_raises(self, tmp_path: Path) -> None:
         yf = YaraFile(imports=[Import(module="pe", alias="")], rules=[])
@@ -405,18 +406,18 @@ class TestValidateFileAst:
     def test_bad_include_node_raises(self) -> None:
         fake = self._make_fake_file(includes=[object()])
         with pytest.raises(ValidationError, match="includes must contain Include nodes"):
-            DependencyGraph()._validate_file_ast(fake)  # type: ignore[arg-type]
+            DependencyGraph()._validate_file_ast(cast(Any, fake))
 
     def test_bad_rule_node_raises(self) -> None:
         fake = self._make_fake_file(rules=[object()])
         with pytest.raises(ValidationError, match="rules must contain Rule nodes"):
-            DependencyGraph()._validate_file_ast(fake)  # type: ignore[arg-type]
+            DependencyGraph()._validate_file_ast(cast(Any, fake))
 
     def test_rule_with_non_tag_object_raises(self) -> None:
-        rule = Rule(name="test_rule", tags=[object()])  # type: ignore[list-item]
+        rule = Rule(name="test_rule", tags=cast(Any, [object()]))
         fake = self._make_fake_file(rules=[rule])
         with pytest.raises(ValidationError, match="rule tags must contain Tag nodes"):
-            DependencyGraph()._validate_file_ast(fake)  # type: ignore[arg-type]
+            DependencyGraph()._validate_file_ast(cast(Any, fake))
 
     def test_rule_with_valid_tag_passes(self, tmp_path: Path) -> None:
         yf = _parse("rule tagged : mytag { condition: true }")

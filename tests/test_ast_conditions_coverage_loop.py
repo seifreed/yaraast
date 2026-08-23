@@ -14,7 +14,7 @@ Missing lines targeted (from --cov-report=term-missing baseline):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -567,7 +567,7 @@ class TestForExpressionValidateStructure:
         r = RangeExpression(low=IntegerLiteral(value=0), high=IntegerLiteral(value=10))
         fe = ForExpression(
             quantifier="all",
-            variable=42,  # type: ignore[arg-type]
+            variable=cast(Any, 42),
             iterable=r,
             body=IntegerLiteral(value=1),
         )
@@ -589,7 +589,7 @@ class TestForExpressionValidateStructure:
         fe = ForExpression(
             quantifier="all",
             variable="i",
-            iterable="not_an_expr",  # type: ignore[arg-type]
+            iterable=cast(Any, "not_an_expr"),
             body=IntegerLiteral(value=1),
         )
         with pytest.raises(TypeError, match="iterable must be an AST expression"):
@@ -601,7 +601,7 @@ class TestForExpressionValidateStructure:
             quantifier="all",
             variable="i",
             iterable=r,
-            body="not_an_expr",  # type: ignore[arg-type]
+            body=cast(Any, "not_an_expr"),
         )
         with pytest.raises(TypeError, match="body must be an AST expression"):
             fe.validate_structure()
@@ -645,7 +645,7 @@ class TestOfExpressionValidateStructure:
         oe.validate_structure()
 
     def test_invalid_string_set_raises(self) -> None:
-        oe = OfExpression(quantifier="all", string_set=None)  # type: ignore[arg-type]
+        oe = OfExpression(quantifier="all", string_set=cast(Any, None))
         with pytest.raises(ValueError, match="is required"):
             oe.validate_structure()
 
@@ -675,7 +675,7 @@ class TestForOfExpressionValidateStructure:
         fo = ForOfExpression(
             quantifier="any",
             string_set="them",
-            condition="not_expr",  # type: ignore[arg-type]
+            condition=cast(Any, "not_expr"),
         )
         with pytest.raises(TypeError, match="condition must be an AST expression"):
             fo.validate_structure()
@@ -689,7 +689,7 @@ class TestAtExpressionValidateStructure:
         ae.validate_structure()
 
     def test_invalid_string_id_type_raises(self) -> None:
-        ae = AtExpression(string_id=42, offset=IntegerLiteral(value=0))  # type: ignore[arg-type]
+        ae = AtExpression(string_id=cast(Any, 42), offset=IntegerLiteral(value=0))
         with pytest.raises(TypeError, match="string_id must be a string or expression"):
             ae.validate_structure()
 

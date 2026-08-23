@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 import stat
 import tempfile
-from typing import Any
+from typing import Any, cast
 
 from lsprotocol.types import FileChangeType, FileEvent
 import pytest
@@ -157,7 +157,7 @@ def test_parse_language_mode_case_insensitive() -> None:
 
 def test_require_document_uri_raises_for_non_string() -> None:
     with pytest.raises(TypeError, match="Document URI must be a string"):
-        _require_document_uri(42)  # type: ignore[arg-type]
+        _require_document_uri(cast(Any, 42))
 
 
 def test_require_document_uri_rejects_null_byte_string() -> None:
@@ -177,17 +177,17 @@ def test_require_document_uri_passes_string_through() -> None:
 
 def test_runtime_rejects_invalid_index() -> None:
     with pytest.raises(TypeError, match="LSP runtime index must be a WorkspaceIndex"):
-        LspRuntime(index=object())  # type: ignore[arg-type]
+        LspRuntime(index=cast(Any, object()))
 
 
 def test_runtime_rejects_invalid_config() -> None:
     with pytest.raises(TypeError, match="LSP runtime config must be a RuntimeConfig"):
-        LspRuntime(config=object())  # type: ignore[arg-type]
+        LspRuntime(config=cast(Any, object()))
 
 
 def test_runtime_rejects_invalid_cache() -> None:
     with pytest.raises(TypeError, match="LSP runtime cache must be a CacheManager"):
-        LspRuntime(cache=object())  # type: ignore[arg-type]
+        LspRuntime(cache=cast(Any, object()))
 
 
 # ---------------------------------------------------------------------------
@@ -861,7 +861,7 @@ def test_update_config_none_is_noop() -> None:
 def test_update_config_non_dict_raises_type_error() -> None:
     runtime = LspRuntime()
     with pytest.raises(TypeError, match="LSP runtime settings must be a dictionary"):
-        runtime.update_config("bad")  # type: ignore[arg-type]
+        runtime.update_config(cast(Any, "bad"))
 
 
 def test_update_config_empty_dict_is_noop() -> None:

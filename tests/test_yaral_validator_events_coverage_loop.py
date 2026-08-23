@@ -22,6 +22,8 @@ _extract_udm_validation_segments.  No mocks, stubs, or test doubles are used.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.yaral.ast_nodes import (
     EventAssignment,
     EventsSection,
@@ -143,7 +145,7 @@ def test_event_assignment_with_none_event_var_skips_define_event_variable() -> N
     # event_var=None is accepted by the dataclass constructor; the validator's
     # hasattr check passes (the attribute exists) but the truthiness check fails.
     assignment = EventAssignment(
-        event_var=None,  # type: ignore[arg-type]
+        event_var=cast(Any, None),
         field_path=UDMFieldPath(parts=["metadata", "event_type"]),
         operator="=",
         value="LOGIN",
@@ -170,7 +172,7 @@ def test_event_assignment_with_none_field_path_skips_udm_validation() -> None:
     validator = _fresh_validator()
     assignment = EventAssignment(
         event_var=EventVariable(name="$e"),
-        field_path=None,  # type: ignore[arg-type]
+        field_path=cast(Any, None),
         operator="=",
         value="LOGIN",
     )
@@ -187,8 +189,8 @@ def test_event_assignment_with_both_none_skips_both_optional_blocks() -> None:
     """Both event_var and field_path None: both optional blocks are skipped entirely."""
     validator = _fresh_validator()
     assignment = EventAssignment(
-        event_var=None,  # type: ignore[arg-type]
-        field_path=None,  # type: ignore[arg-type]
+        event_var=cast(Any, None),
+        field_path=cast(Any, None),
         operator="=",
         value="LOGIN",
     )
@@ -224,7 +226,7 @@ def test_event_assignment_regex_operator_with_pattern_value_no_warning() -> None
         event_var=EventVariable(name="$e"),
         field_path=UDMFieldPath(parts=["metadata", "event_type"]),
         operator="=~",
-        value=_PatternHolder(),  # type: ignore[arg-type]
+        value=cast(Any, _PatternHolder()),
     )
 
     validator.visit_event_assignment(assignment)

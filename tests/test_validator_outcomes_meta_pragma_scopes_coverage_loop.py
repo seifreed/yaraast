@@ -13,6 +13,7 @@ All tests call the real production API.  No mocks or stubs are used.
 from __future__ import annotations
 
 import math
+from typing import Any, cast
 
 import pytest
 
@@ -90,7 +91,7 @@ class TestValidateOutcomeSection:
         section = OutcomeSection(assignments=[])
         # Inject a 'variables' attribute directly onto the node instance to
         # exercise the hasattr branch on line 23.
-        section.variables = ["$extra"]  # type: ignore[attr-defined]
+        cast(Any, section).variables = ["$extra"]
 
         # Act
         v._validate_outcome_section(section)
@@ -105,7 +106,7 @@ class TestValidateOutcomeSection:
         # Arrange
         v = _fresh_validator()
         section = OutcomeSection(assignments=[OutcomeAssignment(variable="severity", expression=5)])
-        section.variables = ["$dynamic"]  # type: ignore[attr-defined]
+        cast(Any, section).variables = ["$dynamic"]
 
         # Act
         v._validate_outcome_section(section)
@@ -289,7 +290,7 @@ class TestRequireMetaValue:
     def test_finite_float_accepted_when_allow_float_true(self) -> None:
         """A finite float is accepted when allow_float=True (lines 20-21)."""
         result = _require_meta_value(3.14, allow_float=True)
-        assert math.isclose(result, 3.14)  # type: ignore[arg-type]
+        assert math.isclose(cast(float, result), 3.14)
 
     def test_infinite_float_rejected_even_when_allow_float_true(self) -> None:
         """An infinite float is rejected even when allow_float=True (line 20
@@ -363,16 +364,16 @@ class TestMetaValidateStructure:
     def test_float_value_rejected_without_scope_attribute(self) -> None:
         """A float value is rejected when the Meta node has no 'scope'
         attribute (allow_float=False path, lines 22-26 via line 46)."""
-        node = Meta(key="weight", value=3.14)  # type: ignore[arg-type]
+        node = Meta(key="weight", value=cast(Any, 3.14))
         with pytest.raises(TypeError, match="string, integer, or boolean"):
             node.validate_structure()
 
     def test_float_value_accepted_when_scope_attribute_present(self) -> None:
         """When the Meta node has a 'scope' attribute, allow_float=True and
         a finite float is accepted (lines 20-21 via line 46)."""
-        node = Meta(key="weight", value=3.14)  # type: ignore[arg-type]
+        node = Meta(key="weight", value=cast(Any, 3.14))
         # Inject a 'scope' attribute so hasattr(self, "scope") is True.
-        node.scope = "public"  # type: ignore[attr-defined]
+        cast(Any, node).scope = "public"
         node.validate_structure()  # must not raise
 
     def test_accept_calls_visitor_visit_meta(self) -> None:

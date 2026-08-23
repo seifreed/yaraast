@@ -46,6 +46,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import tempfile
+from typing import Any, cast
 
 from lsprotocol.types import Position, Range
 
@@ -296,7 +297,7 @@ def test_get_meta_value_entries_branch() -> None:
             self.rules = [_FakeRule()]
 
     doc = DocumentContext(uri=_URI, text="rule x { condition: true }")
-    doc._ast = _FakeAst()  # type: ignore[assignment]
+    cast(Any, doc)._ast = _FakeAst()
 
     result = lookup.get_meta_value(doc, "author")
     assert result == "carol"
@@ -335,7 +336,7 @@ def test_get_meta_value_entries_branch_key_not_found() -> None:
             self.rules = [_FakeRule2()]
 
     doc = DocumentContext(uri=_URI, text="rule x { condition: true }")
-    doc._ast = _FakeAst2()  # type: ignore[assignment]
+    cast(Any, doc)._ast = _FakeAst2()
 
     result = lookup.get_meta_value(doc, "missing")
     assert result is None
@@ -360,7 +361,7 @@ def test_get_meta_value_meta_not_list_and_no_entries_returns_none() -> None:
         rules = [_FakeRuleNoEntries()]
 
     doc = DocumentContext(uri=_URI, text="rule x { condition: true }")
-    doc._ast = _FakeAstNoEntries()  # type: ignore[assignment]
+    cast(Any, doc)._ast = _FakeAstNoEntries()
 
     result = lookup.get_meta_value(doc, "author")
     assert result is None
@@ -478,7 +479,7 @@ def test_get_string_definition_info_unknown_type() -> None:
         rules = [_FakeRuleUnknown()]
 
     doc = DocumentContext(uri=_URI, text="rule x { condition: true }")
-    doc._ast = _FakeAstUnknown()  # type: ignore[assignment]
+    cast(Any, doc)._ast = _FakeAstUnknown()
 
     info = lookup.get_string_definition_info(doc, "$a")
     assert info is not None

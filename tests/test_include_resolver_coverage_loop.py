@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 import stat
 import tempfile
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -110,12 +110,12 @@ class TestInitSearchPathsValidation:
     def test_non_list_search_paths_raises_type_error(self) -> None:
         """Passing a string (not a list) for search_paths raises TypeError."""
         with pytest.raises(TypeError, match="must be a list of strings"):
-            IncludeResolver(search_paths="/tmp")  # type: ignore[arg-type]
+            IncludeResolver(search_paths=cast(Any, "/tmp"))
 
     def test_list_with_non_string_entry_raises_type_error(self) -> None:
         """A list containing a Path object (not a str) raises TypeError."""
         with pytest.raises(TypeError, match="must be a list of strings"):
-            IncludeResolver(search_paths=[Path("/tmp")])  # type: ignore[list-item]
+            IncludeResolver(search_paths=cast(Any, [Path("/tmp")]))
 
     def test_list_with_empty_string_entry_raises_value_error(self) -> None:
         """A list containing an empty string raises ValueError."""
@@ -394,30 +394,30 @@ class TestRequireFilePathValidation:
         """A boolean value as file_path raises TypeError."""
         resolver = IncludeResolver()
         with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
-            resolver.resolve_file(True)  # type: ignore[arg-type]
+            resolver.resolve_file(cast(Any, True))
 
     def test_bytes_file_path_raises_type_error(self) -> None:
         """A bytes value as file_path raises TypeError."""
         resolver = IncludeResolver()
         with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
-            resolver.resolve_file(b"/tmp/x.yar")  # type: ignore[arg-type]
+            resolver.resolve_file(cast(Any, b"/tmp/x.yar"))
 
     def test_integer_file_path_raises_type_error(self) -> None:
         """An integer value as file_path raises TypeError (not str, not PathLike)."""
         resolver = IncludeResolver()
         with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
-            resolver.resolve_file(42)  # type: ignore[arg-type]
+            resolver.resolve_file(cast(Any, 42))
 
     def test_custom_path_like_returning_bytes_raises_type_error(self) -> None:
         """A custom PathLike whose __fspath__ returns bytes triggers the inner TypeError guard."""
 
-        class BytesPath(os.PathLike):  # type: ignore[type-arg]
+        class BytesPath(os.PathLike[bytes]):
             def __fspath__(self) -> bytes:
                 return b"/tmp/x.yar"
 
         resolver = IncludeResolver()
         with pytest.raises(TypeError, match="file_path must be a string or path-like object"):
-            resolver.resolve_file(BytesPath())
+            resolver.resolve_file(cast(Any, BytesPath()))
 
     def test_empty_string_file_path_raises_value_error(self) -> None:
         """An empty string as file_path raises ValueError."""

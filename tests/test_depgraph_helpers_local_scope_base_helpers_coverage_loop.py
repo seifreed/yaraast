@@ -14,8 +14,10 @@ or artificial scaffolding.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import os
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -190,8 +192,8 @@ def test_visitor_helper_protocol_noop_stub_is_callable_as_unbound_function() -> 
     """
     # Act: direct unbound call with a synthetic self placeholder; capture via
     # a generic callable cast so mypy does not constrain the return type.
-    stub: object = VisitorHelperProtocol._noop
-    result = (stub)(None)  # type: ignore[operator]
+    stub = cast(Callable[..., Any], VisitorHelperProtocol._noop)
+    result = stub(None)
 
     # Assert: stub body returns None
     assert result is None
@@ -200,8 +202,8 @@ def test_visitor_helper_protocol_noop_stub_is_callable_as_unbound_function() -> 
 def test_visitor_helper_protocol_visit_all_stub_is_callable_as_unbound_function() -> None:
     """VisitorHelperProtocol._visit_all stub body executes and returns None (17->exit)."""
     # Act: the stub is annotated -> None; cast to object to capture without error
-    stub: object = VisitorHelperProtocol._visit_all
-    result = (stub)(None, [])  # type: ignore[operator]
+    stub = cast(Callable[..., Any], VisitorHelperProtocol._visit_all)
+    result = stub(None, [])
 
     # Assert
     assert result is None
@@ -210,8 +212,8 @@ def test_visitor_helper_protocol_visit_all_stub_is_callable_as_unbound_function(
 def test_visitor_helper_protocol_visit_if_stub_is_callable_as_unbound_function() -> None:
     """VisitorHelperProtocol._visit_if stub body executes and returns None (19->exit)."""
     # Act
-    stub: object = VisitorHelperProtocol._visit_if
-    result = (stub)(None, None)  # type: ignore[operator]
+    stub = cast(Callable[..., Any], VisitorHelperProtocol._visit_if)
+    result = stub(None, None)
 
     # Assert
     assert result is None
@@ -220,8 +222,8 @@ def test_visitor_helper_protocol_visit_if_stub_is_callable_as_unbound_function()
 def test_visitor_helper_protocol_visit_value_stub_is_callable_as_unbound_function() -> None:
     """VisitorHelperProtocol._visit_value stub body executes and returns None (21->exit)."""
     # Act
-    stub: object = VisitorHelperProtocol._visit_value
-    result = (stub)(None, None)  # type: ignore[operator]
+    stub = cast(Callable[..., Any], VisitorHelperProtocol._visit_value)
+    result = stub(None, None)
 
     # Assert
     assert result is None
