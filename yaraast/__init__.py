@@ -2,6 +2,8 @@
 
 from importlib.metadata import version
 
+from yaraast.api import format, parse, parse_file
+
 __version__ = version("yaraast")
 
-__all__ = ["__version__"]
+__all__ = ["__version__", "format", "parse", "parse_file"]

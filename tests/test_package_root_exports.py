@@ -10,6 +10,7 @@ import yaraast.errors as errors
 
 def test_package_root_exports_installed_version() -> None:
     assert yaraast.__version__ == version("yaraast")
+    assert yaraast.__all__ == ["__version__", "format", "parse", "parse_file"]
 
 
 def test_package_root_does_not_reexport_internal_helpers() -> None:

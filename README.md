@@ -59,7 +59,7 @@ pip install yaraast
 ### From Source
 
 ```bash
-git clone https://github.com/mriverolopez/yaraast.git
+git clone https://github.com/seifreed/yaraast.git
 cd yaraast
 python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
@@ -71,7 +71,7 @@ pip install -e .
 ## Quick Start
 
 ```python
-from yaraast.unified_parser import UnifiedParser
+import yaraast
 
 yara_code = """
 rule example {
@@ -82,7 +82,7 @@ rule example {
 }
 """
 
-ast = UnifiedParser.parse_string(yara_code)
+ast = yaraast.parse(yara_code)
 print(ast.rules[0].name)
 ```
 
@@ -130,20 +130,28 @@ yaraast fmt rules.yar --check
 ### Unified Parsing
 
 ```python
-from yaraast.unified_parser import UnifiedParser
-from yaraast.dialects import YaraDialect
+from pathlib import Path
+
+import yaraast
+
+source = "rule example { condition: true }"
 
 # Auto-detect dialect
-ast = UnifiedParser.parse_file("rules.yar")
+ast = yaraast.parse(source)
 
 # Force specific dialect
-ast = UnifiedParser.parse_file("rules.yar", dialect=YaraDialect.YARA)
+ast = yaraast.parse(source, dialect="yara")
+
+# Parse files and format source through the same public API
+Path("rules.yar").write_text(source, encoding="utf-8")
+file_ast = yaraast.parse_file("rules.yar")
+formatted = yaraast.format(source, dialect="yara")
 ```
 
 ### Direct Parser + Visitor
 
 ```python
-from yaraast import Parser
+from yaraast.parser import Parser
 from yaraast.visitor import BaseVisitor
 
 class RuleCollector(BaseVisitor):
@@ -214,7 +222,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE).
 
 **Author**
 - Marc Rivero ([mriverolopez@gmail.com](mailto:mriverolopez@gmail.com))
-- Repository: [github.com/mriverolopez/yaraast](https://github.com/mriverolopez/yaraast)
+- Repository: [github.com/seifreed/yaraast](https://github.com/seifreed/yaraast)
 
 ---
 
