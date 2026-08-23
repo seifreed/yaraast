@@ -59,7 +59,7 @@ class _ByteStringDocument(DocumentContext):
 _FAILING_UNIFIED_PARSER_CALLS = 0
 
 
-def _failing_unified_parser(_text: str, *, dialect: object = None) -> object:
+def _failing_unified_parser(_text: str, **_options: object) -> object:
     def parse() -> NoReturn:
         global _FAILING_UNIFIED_PARSER_CALLS
         _FAILING_UNIFIED_PARSER_CALLS += 1

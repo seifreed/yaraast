@@ -11,6 +11,8 @@ import yaraast.errors as errors
 def test_package_root_exports_installed_version() -> None:
     assert yaraast.__version__ == version("yaraast")
     assert yaraast.__all__ == [
+        "CancellationToken",
+        "ResourceLimits",
         "SourceEdit",
         "__version__",
         "format_canonical",

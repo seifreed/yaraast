@@ -8,6 +8,7 @@ from typing import Literal
 from yaraast.ast.base import YaraFile
 from yaraast.codegen import CodeGenerator
 from yaraast.dialects import YaraDialect
+from yaraast.limits import DEFAULT_RESOURCE_LIMITS, CancellationToken, ResourceLimits
 from yaraast.unified_parser import UnifiedParser
 from yaraast.yaral.ast_nodes import YaraLFile
 from yaraast.yaral.generator import YaraLGenerator
@@ -45,18 +46,32 @@ def parse(
     source: str,
     *,
     dialect: DialectName = "auto",
+    resource_limits: ResourceLimits = DEFAULT_RESOURCE_LIMITS,
+    cancellation_token: CancellationToken | None = None,
 ) -> YaraFile | YaraLFile:
     """Parse YARA-family source text into its dialect-specific AST."""
-    return UnifiedParser(source, _resolve_dialect(dialect)).parse()
+    return UnifiedParser(
+        source,
+        _resolve_dialect(dialect),
+        resource_limits=resource_limits,
+        cancellation_token=cancellation_token,
+    ).parse()
 
 
 def parse_file(
     path: str | Path,
     *,
     dialect: DialectName = "auto",
+    resource_limits: ResourceLimits = DEFAULT_RESOURCE_LIMITS,
+    cancellation_token: CancellationToken | None = None,
 ) -> YaraFile | YaraLFile:
     """Parse a UTF-8 YARA-family source file."""
-    return UnifiedParser.parse_file(path, _resolve_dialect(dialect))
+    return UnifiedParser.parse_file(
+        path,
+        _resolve_dialect(dialect),
+        resource_limits=resource_limits,
+        cancellation_token=cancellation_token,
+    )
 
 
 def generate(
@@ -86,9 +101,16 @@ def format_canonical(
     source: str,
     *,
     dialect: DialectName = "auto",
+    resource_limits: ResourceLimits = DEFAULT_RESOURCE_LIMITS,
+    cancellation_token: CancellationToken | None = None,
 ) -> str:
     """Parse source and return canonical text for its dialect."""
-    parser = UnifiedParser(source, _resolve_dialect(dialect))
+    parser = UnifiedParser(
+        source,
+        _resolve_dialect(dialect),
+        resource_limits=resource_limits,
+        cancellation_token=cancellation_token,
+    )
     document = parser.parse()
     if parser.dialect is YaraDialect.YARA_L:
         return generate(document, dialect="yara-l")

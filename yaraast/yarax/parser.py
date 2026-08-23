@@ -7,6 +7,7 @@ from typing import cast
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.strings import HexToken
 from yaraast.lexer.tokens import Token
+from yaraast.limits import DEFAULT_RESOURCE_LIMITS, CancellationToken, ResourceLimits
 from yaraast.parser._shared import ParserError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.parser import Parser as BaseParser
@@ -27,13 +28,23 @@ class YaraXParser(
 
     _allow_string_identifier_non_logical_binary = True
 
-    def __init__(self, text: str) -> None:
+    def __init__(
+        self,
+        text: str,
+        *,
+        resource_limits: ResourceLimits = DEFAULT_RESOURCE_LIMITS,
+        cancellation_token: CancellationToken | None = None,
+    ) -> None:
         """Initialize YARA-X parser.
 
         Args:
             text: YARA-X source code to parse
         """
-        super().__init__(text)
+        super().__init__(
+            text,
+            resource_limits=resource_limits,
+            cancellation_token=cancellation_token,
+        )
 
     def _parse_hex_string(self, hex_content: str) -> list[HexToken]:
         """Parse YARA-X hex patterns without libyara placement-only restrictions."""

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from yaraast.limits import LSP_RESOURCE_LIMITS
 from yaraast.lsp.safe_handler import lsp_safe_handler
 from yaraast.unified_parser import UnifiedParser
 
@@ -25,4 +26,4 @@ def parse_source(text: str) -> Any:
 
 @lsp_safe_handler
 def _parse_source_safe(text: str) -> Any:
-    return UnifiedParser(text).parse()
+    return UnifiedParser(text, resource_limits=LSP_RESOURCE_LIMITS).parse()

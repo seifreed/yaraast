@@ -5,6 +5,7 @@ import attrs
 from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lexer.tokens import Token, TokenType as BaseTokenType
+from yaraast.limits import ParseBudget
 
 from .lexer_tables import (
     EVENT_VAR_PATTERN,
@@ -30,12 +31,13 @@ class YaraLLexer:
 
     KEYWORDS = LEXER_KEYWORDS
 
-    def __init__(self, text: str) -> None:
+    def __init__(self, text: str, *, budget: ParseBudget | None = None) -> None:
         self.text = text
         self.position = 0
         self.line = 1
         self.column = 1
         self.tokens: list[YaraLToken] = []
+        self.budget = budget
 
     def tokenize(self) -> list[YaraLToken]:
         """Tokenize YARA-L input."""
@@ -53,6 +55,8 @@ class YaraLLexer:
             previous_position = self.position
             token = self._next_token()
             if token:
+                if self.budget is not None:
+                    self.budget.consume_token(token.type, token.value)
                 self.tokens.append(token)
             if self.position == previous_position and not token:
                 msg = f"Unexpected character: {self.text[self.position]}"
@@ -69,6 +73,9 @@ class YaraLLexer:
             length=1,
             yaral_type=YaraLTokenType.EOF,
         )
+        if self.budget is not None:
+            self.budget.consume_token(eof_token.type, eof_token.value)
+            self.budget.checkpoint()
         self.tokens.append(eof_token)
         return list(self.tokens)
 

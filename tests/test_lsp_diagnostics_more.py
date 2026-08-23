@@ -19,7 +19,7 @@ from yaraast.types.semantic_validator_core import ValidationError
 from yaraast.unified_parser import UnifiedParser as RealUnifiedParser
 
 
-def _failing_unified_parser(_text: str, *, dialect: object = None) -> object:
+def _failing_unified_parser(_text: str, **_options: object) -> object:
     def parse() -> NoReturn:
         raise RuntimeError("transient parser failure")
 

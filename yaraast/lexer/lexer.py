@@ -25,6 +25,7 @@ from yaraast.lexer.lexer_readers import (
 from yaraast.lexer.lexer_state import LexerState
 from yaraast.lexer.lexer_tables import KEYWORDS as LEXER_KEYWORDS
 from yaraast.lexer.tokens import Token, TokenType
+from yaraast.limits import ParseBudget
 
 TokenizeResult = TypeVar("TokenizeResult")
 
@@ -39,7 +40,7 @@ class Lexer(Generic[TokenizeResult]):
 
     KEYWORDS = LEXER_KEYWORDS
 
-    def __init__(self, text: str | None = None) -> None:
+    def __init__(self, text: str | None = None, *, budget: ParseBudget | None = None) -> None:
         """Initialize lexer.
 
         Args:
@@ -49,6 +50,7 @@ class Lexer(Generic[TokenizeResult]):
         """
         self.state = LexerState(text if text is not None else "")
         self.tokens: list[Token] = []
+        self.budget = budget
 
     @property
     def text(self) -> str:
@@ -104,9 +106,15 @@ class Lexer(Generic[TokenizeResult]):
 
             token = self._next_token()
             if token:
+                if self.budget is not None:
+                    self.budget.consume_token(token.type, token.value)
                 self.tokens.append(token)
 
-        self.tokens.append(Token(TokenType.EOF, None, self.line, self.column))
+        eof = Token(TokenType.EOF, None, self.line, self.column)
+        if self.budget is not None:
+            self.budget.consume_token(eof.type, eof.value)
+            self.budget.checkpoint()
+        self.tokens.append(eof)
         return cast(TokenizeResult, list(self.tokens))
 
     def _current_char(self) -> str | None:

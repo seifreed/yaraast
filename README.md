@@ -159,7 +159,19 @@ rewritten = yaraast.rewrite_lossless(
     source,
     [yaraast.SourceEdit(offset, offset + 4, "false")],
 )
+
+# Public parsers apply bounded defaults. Override them per operation when needed.
+limits = yaraast.ResourceLimits(max_input_bytes=1024 * 1024, parse_deadline=5.0)
+ast = yaraast.parse(source, resource_limits=limits)
+
+cancel = yaraast.CancellationToken()
+cancel.cancel()
+# yaraast.parse(source, cancellation_token=cancel) raises ParseCancelledError
 ```
+
+`ResourceLimits()` disables all bounds explicitly. CLI parsing uses the public
+defaults; LSP parsing uses tighter input, token, nesting, pattern, and deadline
+limits and never caches a partial result after cancellation or a limit failure.
 
 ### Direct Parser + Visitor
 

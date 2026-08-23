@@ -12,6 +12,8 @@ from pathlib import Path
 import stat
 from typing import TYPE_CHECKING, Any
 
+from yaraast.errors import ResourceLimitError
+from yaraast.limits import DEFAULT_RESOURCE_LIMITS, CancellationToken, ParseBudget, ResourceLimits
 from yaraast.parser.source import parse_yara_source
 from yaraast.shared.path_safety import (
     path_has_symlink_ancestor,
@@ -77,7 +79,13 @@ def _path_is_file(path: Path) -> bool:
 class IncludeResolver:
     """Resolves YARA include statements with caching and cycle detection."""
 
-    def __init__(self, search_paths: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        search_paths: list[str] | None = None,
+        *,
+        resource_limits: ResourceLimits = DEFAULT_RESOURCE_LIMITS,
+        cancellation_token: CancellationToken | None = None,
+    ) -> None:
         """Initialize include resolver.
 
         Args:
@@ -88,6 +96,9 @@ class IncludeResolver:
         self.search_paths = self._init_search_paths(search_paths)
         self.cache: dict[str, ResolvedFile] = {}
         self.resolution_stack: list[Path] = []
+        self.resource_limits = resource_limits
+        self.cancellation_token = cancellation_token
+        self._budget = ParseBudget(resource_limits, cancellation_token)
 
     def _init_search_paths(self, search_paths: list[str] | None) -> list[Path]:
         """Initialize search paths from config and environment."""
@@ -156,8 +167,14 @@ class IncludeResolver:
             RecursionError: If circular include is detected.
 
         """
+        if not self.resolution_stack:
+            self._budget = ParseBudget(self.resource_limits, self.cancellation_token)
         resolved_path = self._find_file(file_path, base_path)
         is_include = base_path is not None
+        self._budget.checkpoint()
+        maximum_depth = self.resource_limits.max_include_depth
+        if maximum_depth is not None and len(self.resolution_stack) > maximum_depth:
+            raise ResourceLimitError(f"max_include_depth exceeded ({maximum_depth})")
         cache_key = str(resolved_path)
         if cache_key in self.cache:
             cached = self.cache[cache_key]
@@ -196,7 +213,11 @@ class IncludeResolver:
     ) -> ResolvedFile:
         """Parse file and recursively resolve its includes."""
         content = _read_yara_text(resolved_path, is_include=is_include)
-        ast = parse_yara_source(content)
+        ast = parse_yara_source(
+            content,
+            resource_limits=self.resource_limits,
+            cancellation_token=self.cancellation_token,
+        )
         checksum = self._calculate_checksum_from_content(content)
 
         resolved = ResolvedFile(

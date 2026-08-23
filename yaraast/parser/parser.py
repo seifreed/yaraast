@@ -12,6 +12,7 @@ from yaraast.ast.extern import ExternImport
 from yaraast.errors import ParseError
 from yaraast.interfaces import ILexer, IToken
 from yaraast.lexer import Lexer, TokenType
+from yaraast.limits import DEFAULT_RESOURCE_LIMITS, CancellationToken, ParseBudget, ResourceLimits
 
 from ._expressions import ExpressionParsingMixin
 from ._rules import RuleParsingMixin
@@ -42,6 +43,8 @@ class Parser(
         text: str | None = None,
         *,
         lexer: ILexer | None = None,
+        resource_limits: ResourceLimits = DEFAULT_RESOURCE_LIMITS,
+        cancellation_token: CancellationToken | None = None,
     ) -> None:
         """Initialize parser.
 
@@ -62,14 +65,22 @@ class Parser(
         self._extern_rule_declarations: set[tuple[str | None, str]] = set()
         self._rule_names: set[str] = set()
         self._contextual_local_identifiers: list[set[str]] = []
+        self._resource_limits = resource_limits
+        self._cancellation_token = cancellation_token
+        self._budget = ParseBudget(resource_limits, cancellation_token)
 
         if text is not None:
-            if self._injected_lexer is not None:
-                self.lexer = self._injected_lexer
-                self.tokens = self.lexer.tokenize(text)
-            else:
-                self.lexer = Lexer(text)
-                self.tokens = self.lexer.tokenize()
+            self._tokenize(text)
+
+    def _tokenize(self, text: str) -> None:
+        self._budget = ParseBudget(self._resource_limits, self._cancellation_token)
+        self._budget.validate_source(text)
+        if self._injected_lexer is not None:
+            self.lexer = self._injected_lexer
+            self.tokens = self.lexer.tokenize(text)
+        else:
+            self.lexer = Lexer(text, budget=self._budget)
+            self.tokens = self.lexer.tokenize()
 
     def parse(self, text: str | None = None) -> YaraFile:
         """Parse YARA file and return AST.
@@ -83,12 +94,7 @@ class Parser(
         """
         # Support better_parser.py API: Parser().parse(text)
         if text is not None:
-            if self._injected_lexer is not None:
-                self.lexer = self._injected_lexer
-                self.tokens = self.lexer.tokenize(text)
-            else:
-                self.lexer = Lexer(text)
-                self.tokens = self.lexer.tokenize()
+            self._tokenize(text)
             self.current = 0
         else:
             self.current = 0
@@ -163,4 +169,5 @@ class Parser(
         )
         if top_level_nodes:
             self._set_node_location_from_nodes(yara_file, top_level_nodes[0], top_level_nodes[-1])
+        self._budget.validate_document(yara_file)
         return yara_file

@@ -13,13 +13,14 @@ import sys
 
 import pytest
 
+from yaraast.limits import ResourceLimits
 from yaraast.parser import Parser
 from yaraast.parser._shared import ParserError, max_expression_depth
 from yaraast.yarax.parser import YaraXParser
 
 
 def _parse(src: str) -> object:
-    return Parser().parse(src)
+    return Parser(resource_limits=ResourceLimits()).parse(src)
 
 
 def test_deeply_nested_parentheses_raise_clean_error() -> None:
@@ -81,7 +82,7 @@ def test_deeper_nesting_allowed_when_recursion_limit_raised() -> None:
 
 
 def test_parser_instance_recovers_depth_after_rejection() -> None:
-    parser = Parser()
+    parser = Parser(resource_limits=ResourceLimits())
     deep = "rule x { condition: " + "(" * 5000 + "true" + ")" * 5000 + " }"
     with pytest.raises(ParserError):
         parser.parse(deep)
@@ -93,4 +94,4 @@ def test_yarax_parser_uses_expression_depth_guard() -> None:
     depth = 2000
     src = "rule x { condition: " + "(" * depth + "true" + ")" * depth + " }"
     with pytest.raises(ParserError, match="expression nesting too deep"):
-        YaraXParser(src).parse()
+        YaraXParser(src, resource_limits=ResourceLimits()).parse()

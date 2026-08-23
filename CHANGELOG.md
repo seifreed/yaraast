@@ -13,6 +13,7 @@ versioning.
 - Python 3.11 through 3.14 support and the `py.typed` marker.
 - Pinned libyara/YARA-X differential conformance and a published dialect matrix.
 - Effective coverage and Graphviz integration gates.
+- Configurable parser resource limits, deadlines, and cooperative cancellation.
 
 ### Changed
 
@@ -23,6 +24,8 @@ versioning.
   pins were removed from runtime dependencies.
 - The VS Code extension now declares the VS Code 1.82 API required by its
   language client and uses an audited npm lockfile.
+- CLI and library parsers now apply bounded defaults; LSP parsing uses a tighter
+  policy and discards partial state after cancellation or limit failures.
 
 ### Removed
 

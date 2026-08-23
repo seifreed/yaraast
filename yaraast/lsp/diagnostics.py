@@ -19,6 +19,7 @@ from lsprotocol.types import (
 
 from yaraast.dialects import YaraDialect
 from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
+from yaraast.limits import LSP_RESOURCE_LIMITS
 from yaraast.lsp.diagnostics_helpers import (
     compiler_error_to_diagnostic,
     error_code,
@@ -130,7 +131,12 @@ class DiagnosticsProvider:
         """Parse text, run semantic validation and optional compilation."""
         try:
             dialect = ctx.dialect() if ctx is not None else None
-            ast = UnifiedParser(text, dialect=dialect).parse()
+            ast = UnifiedParser(
+                text,
+                dialect=dialect,
+                resource_limits=ctx.resource_limits if ctx is not None else LSP_RESOURCE_LIMITS,
+                cancellation_token=ctx.cancellation_token if ctx is not None else None,
+            ).parse()
 
             if dialect in {None, YaraDialect.YARA}:
                 self._collect_validation_diagnostics(ast, text, diagnostics)

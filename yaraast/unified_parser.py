@@ -10,8 +10,9 @@ import stat as stat_module
 
 from yaraast.ast.base import YaraFile
 from yaraast.config import DEFAULT_STREAMING_THRESHOLD_MB as _DEFAULT_STREAMING_THRESHOLD_MB
-from yaraast.dialects import DialectRegistry, YaraDialect, detect_dialect
-from yaraast.errors import YaraASTError
+from yaraast.dialects import YaraDialect, detect_dialect
+from yaraast.errors import ResourceLimitError, YaraASTError
+from yaraast.limits import DEFAULT_RESOURCE_LIMITS, CancellationToken, ParseBudget, ResourceLimits
 from yaraast.parser.parser import Parser as YaraParser
 from yaraast.performance.streaming_parser import StreamingParser
 from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
@@ -98,7 +99,14 @@ class UnifiedParser:
     # To use StreamingParser: Set force_streaming=True explicitly
     DEFAULT_STREAMING_THRESHOLD_MB = _DEFAULT_STREAMING_THRESHOLD_MB
 
-    def __init__(self, text: str, dialect: YaraDialect | None = None) -> None:
+    def __init__(
+        self,
+        text: str,
+        dialect: YaraDialect | None = None,
+        *,
+        resource_limits: ResourceLimits = DEFAULT_RESOURCE_LIMITS,
+        cancellation_token: CancellationToken | None = None,
+    ) -> None:
         """Initialize unified parser.
 
         Args:
@@ -109,9 +117,15 @@ class UnifiedParser:
         if not isinstance(text, str):
             msg = "Parser text must be a string"
             raise TypeError(msg)
+        budget = ParseBudget(resource_limits, cancellation_token)
+        budget.validate_source(text)
+        self._budget = budget
         self.text = text
+        self.resource_limits = resource_limits
+        self.cancellation_token = cancellation_token
         if dialect is None:
             self.dialect = detect_dialect(text)
+            budget.checkpoint()
         elif isinstance(dialect, YaraDialect):
             self.dialect = dialect
         else:
@@ -125,12 +139,30 @@ class UnifiedParser:
             AST representation appropriate for the dialect
 
         """
-        factory = DialectRegistry.get_parser_factory(self.dialect)
-        if factory:
-            result: YaraFile | YaraLFile = factory(self.text)
-            return result
-        # Standard YARA (default fallback)
-        return YaraParser(self.text).parse()
+        if self.dialect is YaraDialect.YARA_L:
+            from yaraast.yaral.parser import YaraLParser
+
+            result: YaraFile | YaraLFile = YaraLParser(
+                self.text,
+                resource_limits=self.resource_limits,
+                cancellation_token=self.cancellation_token,
+            ).parse()
+        elif self.dialect is YaraDialect.YARA_X:
+            from yaraast.yarax.parser import YaraXParser
+
+            result = YaraXParser(
+                self.text,
+                resource_limits=self.resource_limits,
+                cancellation_token=self.cancellation_token,
+            ).parse()
+        else:
+            result = YaraParser(
+                self.text,
+                resource_limits=self.resource_limits,
+                cancellation_token=self.cancellation_token,
+            ).parse()
+        self._budget.checkpoint()
+        return result
 
     def get_dialect(self) -> YaraDialect:
         """Get the detected or specified dialect."""
@@ -238,6 +270,8 @@ class UnifiedParser:
         dialect: YaraDialect | None = None,
         force_streaming: bool = False,
         streaming_threshold_mb: int | None = None,
+        resource_limits: ResourceLimits = DEFAULT_RESOURCE_LIMITS,
+        cancellation_token: CancellationToken | None = None,
     ) -> YaraFile | YaraLFile:
         """Parse a file with automatic dialect detection.
 
@@ -264,6 +298,11 @@ class UnifiedParser:
         if stat_module.S_ISDIR(file_stat.st_mode):
             msg = "YARA file path must not be a directory"
             raise IsADirectoryError(msg)
+        budget = ParseBudget(resource_limits, cancellation_token)
+        maximum = resource_limits.max_input_bytes if resource_limits is not None else None
+        if maximum is not None and file_size > maximum:
+            raise ResourceLimitError(f"max_input_bytes exceeded ({maximum})")
+        budget.checkpoint()
 
         # Use provided threshold or fall back to class default (100 MB)
         if streaming_threshold_mb is None:
@@ -285,13 +324,23 @@ class UnifiedParser:
         use_streaming = force_streaming or (file_size > size_threshold_bytes)
 
         if use_streaming:
-            return cls._parse_file_streaming(file_path_obj, dialect)
+            return cls._parse_file_streaming(
+                file_path_obj,
+                dialect,
+                resource_limits,
+                cancellation_token,
+            )
 
         # Use traditional parser for smaller files (below threshold)
         # This is faster for small files as it avoids streaming overhead
         content = _read_yara_file_text(file_path_obj)
 
-        parser = cls(content, dialect)
+        parser = cls(
+            content,
+            dialect,
+            resource_limits=resource_limits,
+            cancellation_token=cancellation_token,
+        )
         return parser.parse()
 
     @classmethod
@@ -299,6 +348,8 @@ class UnifiedParser:
         cls,
         file_path_obj: Path,
         dialect: YaraDialect | None,
+        resource_limits: ResourceLimits,
+        cancellation_token: CancellationToken | None,
     ) -> YaraFile | YaraLFile:
         """Parse a file using the streaming parser for large YARA files.
 
@@ -312,14 +363,24 @@ class UnifiedParser:
                 # Streaming parser only supports standard YARA;
                 # fall through to traditional parser for other dialects
                 content = _read_yara_file_text(file_path_obj)
-                parser = cls(content, detected)
+                parser = cls(
+                    content,
+                    detected,
+                    resource_limits=resource_limits,
+                    cancellation_token=cancellation_token,
+                )
                 return parser.parse()
 
         # Use StreamingParser for very large standard YARA files
         preamble_ast = cls._extract_preamble_ast_fast(file_path_obj)
 
         def _dialect_factory(text: str, dialect: YaraDialect | None) -> YaraFile | YaraLFile:
-            return cls(text, dialect).parse()
+            return cls(
+                text,
+                dialect,
+                resource_limits=resource_limits,
+                cancellation_token=cancellation_token,
+            ).parse()
 
         streaming_parser = StreamingParser(dialect_parser_factory=_dialect_factory)
         rules = []

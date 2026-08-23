@@ -11,6 +11,14 @@ class ParseError(YaraASTError):
     """Error during YARA rule parsing."""
 
 
+class ResourceLimitError(ParseError):
+    """Parsing stopped because a configured resource limit was exceeded."""
+
+
+class ParseCancelledError(ParseError):
+    """Parsing stopped because its cancellation token was cancelled."""
+
+
 class LexerError(YaraASTError):
     """Error during lexical analysis."""
 

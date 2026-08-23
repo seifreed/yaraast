@@ -10,6 +10,7 @@ from lsprotocol.types import Location, Position, Range, TextEdit
 
 from yaraast.dialects import YaraDialect
 from yaraast.lexer.lexer_errors import LexerError
+from yaraast.limits import LSP_RESOURCE_LIMITS, CancellationToken, ParseBudget, ResourceLimits
 from yaraast.lsp.document_query_lookup import (
     get_dotted_symbol_at_position,
     get_include_info,
@@ -137,6 +138,8 @@ class DocumentContext:
         is_open: bool = False,
         backed_by_file: bool = False,
         language_mode: LanguageMode = LanguageMode.AUTO,
+        resource_limits: ResourceLimits = LSP_RESOURCE_LIMITS,
+        cancellation_token: CancellationToken | None = None,
     ) -> None:
         self.uri = _require_document_string(uri, "Document URI")
         self.text = _require_document_string(text, "Document text")
@@ -152,10 +155,13 @@ class DocumentContext:
         if not isinstance(language_mode, LanguageMode):
             msg = "Document language_mode must be a LanguageMode"
             raise TypeError(msg)
+        ParseBudget(resource_limits, cancellation_token)
         self.version = version
         self.is_open = is_open
         self.backed_by_file = backed_by_file
         self.language_mode = language_mode
+        self.resource_limits = resource_limits
+        self.cancellation_token = cancellation_token
         self._ast: ASTRoot | None = None
         self._parse_error: Exception | None = None
         self._lines: list[str] | None = None
@@ -234,7 +240,12 @@ class DocumentContext:
         try:
             dialect = self.language_mode.to_dialect(self.text)
             self._dialect = dialect
-            self._ast = UnifiedParser(self.text, dialect=dialect).parse()
+            self._ast = UnifiedParser(
+                self.text,
+                dialect=dialect,
+                resource_limits=self.resource_limits,
+                cancellation_token=self.cancellation_token,
+            ).parse()
         except (ParserError, LexerError, Exception) as exc:
             self._parse_error = exc
             self._ast = None
