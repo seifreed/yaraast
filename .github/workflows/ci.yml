@@ -228,6 +228,34 @@ jobs:
         run: |
           python -m fuzz.run_parser_fuzz fuzz/corpus/parser -atheris_runs=10000 -max_len=65536 -timeout=5
 
+  mutation:
+    name: Parser, lexer, and codegen mutation gate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install mutation tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,mutation,serialization]"
+
+      - name: Run mutation gate
+        run: |
+          mutmut run --max-children 4
+          mutmut export-cicd-stats
+          python scripts/check_mutation_results.py mutants/mutmut-cicd-stats.json --minimum-score 75
+
+      - name: Upload mutation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-results
+          path: mutants/mutmut-cicd-stats.json
+
   extension:
     name: VS Code extension
     runs-on: ubuntu-24.04

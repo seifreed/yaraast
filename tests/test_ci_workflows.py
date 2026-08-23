@@ -38,6 +38,11 @@ def test_ci_runs_coverage_and_real_graphviz_without_hidden_test_ignores() -> Non
     assert 'pip install -e ".[fuzz]"' in workflow
     assert "python -m fuzz.run_parser_fuzz fuzz/corpus/parser" in workflow
     assert "-atheris_runs=10000 -max_len=65536 -timeout=5" in workflow
+    assert "mutation:" in workflow
+    assert 'pip install -e ".[dev,mutation,serialization]"' in workflow
+    assert "mutmut run --max-children 4" in workflow
+    assert "mutmut export-cicd-stats" in workflow
+    assert "--minimum-score 75" in workflow
 
 
 def test_ci_audits_and_packages_the_vscode_extension() -> None:

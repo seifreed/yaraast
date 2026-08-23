@@ -59,6 +59,9 @@ conformance = [
 fuzz = [
     "atheris==3.1.0; sys_platform == 'linux'",
 ]
+mutation = [
+    "mutmut==3.7.0",
+]
 performance = [
     "psutil>=5.9.0",
 ]
@@ -222,6 +225,16 @@ module = [
     "yaraast.serialization.roundtrip_pipeline_helpers",
 ]
 ignore_errors = false
+
+[tool.mutmut]
+source_paths = ["yaraast/"]
+only_mutate = [
+    "yaraast/parser/source.py",
+    "yaraast/lexer/string_escape.py",
+    "yaraast/codegen/options.py",
+]
+pytest_add_cli_args = ["-q", "-o", "addopts="]
+pytest_add_cli_args_test_selection = ["tests/test_mutation_contracts.py"]
 
 # Pydocstyle configuration
 [tool.pydocstyle]
