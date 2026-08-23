@@ -8,7 +8,7 @@ and method dispatch — no mocks, stubs, or placeholder assertions.
 """
 
 import math
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -1000,7 +1000,7 @@ def test_integer_literal_bool_value_raises() -> None:
 def test_integer_literal_string_value_raises() -> None:
     """IntegerLiteral whose value is a str raises TypeError (lines 457-459)."""
     with pytest.raises(TypeError, match="Integer literal value must be an integer"):
-        IntegerLiteral("five").validate_structure()  # type: ignore[arg-type]
+        IntegerLiteral(cast(Any, "five")).validate_structure()
 
 
 def test_integer_literal_valid_value_passes() -> None:
@@ -1022,7 +1022,7 @@ def test_double_literal_bool_value_raises() -> None:
 def test_double_literal_string_value_raises() -> None:
     """DoubleLiteral whose value is a str raises TypeError (lines 473-475)."""
     with pytest.raises(TypeError, match="Double literal value must be numeric"):
-        DoubleLiteral("pi").validate_structure()  # type: ignore[arg-type]
+        DoubleLiteral(cast(Any, "pi")).validate_structure()
 
 
 def test_double_literal_inf_raises() -> None:
@@ -1050,7 +1050,7 @@ def test_double_literal_valid_passes() -> None:
 def test_string_literal_non_string_value_raises() -> None:
     """StringLiteral with a non-string value raises TypeError (lines 492-494)."""
     with pytest.raises(TypeError, match="String literal value must be a string"):
-        StringLiteral(42).validate_structure()  # type: ignore[arg-type]
+        StringLiteral(cast(Any, 42)).validate_structure()
 
 
 def test_string_literal_valid_passes() -> None:
@@ -1066,7 +1066,7 @@ def test_string_literal_valid_passes() -> None:
 def test_regex_literal_non_string_pattern_raises() -> None:
     """RegexLiteral with non-string pattern raises TypeError (lines 509-511)."""
     with pytest.raises(TypeError, match="Regex literal pattern must be a string"):
-        RegexLiteral(42).validate_structure()  # type: ignore[arg-type]
+        RegexLiteral(cast(Any, 42)).validate_structure()
 
 
 def test_regex_literal_empty_pattern_raises() -> None:
@@ -1078,7 +1078,7 @@ def test_regex_literal_empty_pattern_raises() -> None:
 def test_regex_literal_non_string_modifiers_raises() -> None:
     """RegexLiteral with non-string modifiers raises TypeError (lines 515-517)."""
     with pytest.raises(TypeError, match="Regex literal modifiers must be a string"):
-        RegexLiteral("foo", 42).validate_structure()  # type: ignore[arg-type]
+        RegexLiteral("foo", cast(Any, 42)).validate_structure()
 
 
 def test_regex_literal_valid_passes() -> None:
@@ -1094,7 +1094,7 @@ def test_regex_literal_valid_passes() -> None:
 def test_boolean_literal_non_bool_raises() -> None:
     """BooleanLiteral with non-bool value raises TypeError (lines 533-535)."""
     with pytest.raises(TypeError, match="Boolean literal value must be a boolean"):
-        BooleanLiteral(1).validate_structure()  # type: ignore[arg-type]
+        BooleanLiteral(cast(Any, 1)).validate_structure()
 
 
 def test_boolean_literal_valid_passes() -> None:
@@ -1206,13 +1206,13 @@ def test_unary_expression_accept() -> None:
 def test_set_expression_non_list_raises() -> None:
     """SetExpression with a non-list elements raises TypeError (lines 631-636)."""
     with pytest.raises(TypeError, match="list or tuple"):
-        SetExpression("bad").validate_structure()  # type: ignore[arg-type]
+        SetExpression(cast(Any, "bad")).validate_structure()
 
 
 def test_set_expression_with_invalid_element_propagates() -> None:
     """SetExpression whose element fails validate_structure propagates the error (line 637-638)."""
     bad = BooleanLiteral(True)
-    bad.value = 99  # type: ignore[assignment]  # corrupt to force TypeError
+    cast(Any, bad).value = 99  # corrupt to force TypeError
     with pytest.raises(TypeError):
         SetExpression([bad]).validate_structure()
 

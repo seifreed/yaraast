@@ -9,6 +9,7 @@ API of AstHasher and its helper functions.  No mocks or stubs are used.
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 
@@ -94,7 +95,7 @@ def test_validate_real_hex_token_non_callable_validate_structure_is_silently_ski
     non-callable value to validate_structure so the branch fires.
     """
     node = HexByte.__new__(HexByte)
-    node.validate_structure = "not_a_function"  # type: ignore[assignment]
+    cast(Any, node).validate_structure = "not_a_function"
     node.value = 0x00
     # Should complete without error — the non-callable branch silently exits
     _validate_real_hex_token(node)
@@ -108,7 +109,7 @@ def test_validate_real_hex_token_non_callable_validate_structure_is_silently_ski
 def test_validate_real_expression_non_callable_validate_structure_is_silently_skipped() -> None:
     """Branch 42->exit: when validate_structure is not callable, it is skipped."""
     node = BooleanLiteral.__new__(BooleanLiteral)
-    node.validate_structure = "not_a_function"  # type: ignore[assignment]
+    cast(Any, node).validate_structure = "not_a_function"
     node.value = True
     _validate_real_expression(node)
 
@@ -135,7 +136,7 @@ def test_visit_yara_file_with_non_yara_file_skips_validate_structure() -> None:
         pragmas=[],
         namespaces=[],
     )
-    result = hasher.visit_yara_file(fake)  # type: ignore[arg-type]
+    result = hasher.visit_yara_file(cast(Any, fake))
     assert result.startswith("YaraFile(")
 
 
@@ -290,7 +291,7 @@ def test_string_set_item_identifier_non_string_name_raises_type_error() -> None:
     runtime check on line 479 fires and raises TypeError at line 481.
     """
     node = Identifier.__new__(Identifier)
-    node.name = 42  # type: ignore[assignment]
+    cast(Any, node).name = 42
     with pytest.raises(TypeError, match="String reference must be a string"):
         AstHasher._string_set_item(node)
 
@@ -331,7 +332,7 @@ def test_string_set_item_identifier_plain_name_returns_none() -> None:
 def test_string_set_item_string_identifier_non_string_name_raises_type_error() -> None:
     """Lines 487-488: StringIdentifier with non-string name raises TypeError."""
     node = StringIdentifier.__new__(StringIdentifier)
-    node.name = 99  # type: ignore[assignment]
+    cast(Any, node).name = 99
     with pytest.raises(TypeError, match="String reference must be a string"):
         AstHasher._string_set_item(node)
 
@@ -350,7 +351,7 @@ def test_string_set_item_string_identifier() -> None:
 def test_string_set_item_string_wildcard_non_string_pattern_raises_type_error() -> None:
     """Lines 492-493: StringWildcard with non-string pattern raises TypeError."""
     node = StringWildcard.__new__(StringWildcard)
-    node.pattern = 77  # type: ignore[assignment]
+    cast(Any, node).pattern = 77
     with pytest.raises(TypeError, match="String reference must be a string"):
         AstHasher._string_set_item(node)
 
@@ -369,7 +370,7 @@ def test_string_set_item_string_wildcard_them_pattern() -> None:
 def test_string_set_item_string_literal_non_string_value_raises_type_error() -> None:
     """Lines 499-500: StringLiteral with non-string value raises TypeError."""
     node = StringLiteral.__new__(StringLiteral)
-    node.value = 55  # type: ignore[assignment]
+    cast(Any, node).value = 55
     with pytest.raises(TypeError, match="String reference must be a string"):
         AstHasher._string_set_item(node)
 

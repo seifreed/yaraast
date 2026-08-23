@@ -12,6 +12,7 @@ instances.  No mocks, stubs, or artificial scaffolding.
 from __future__ import annotations
 
 import io
+from typing import Any, cast
 
 import pytest
 
@@ -597,7 +598,7 @@ def test_write_single_comment_inline_single_line_writes_inline_prefix() -> None:
 
     layout = PlainLayout()
     cap = _MinimalGen()
-    layout.write_single_comment(cap, _FakeComment(), inline=True)  # type: ignore[arg-type]
+    layout.write_single_comment(cast(Any, cap), cast(Any, _FakeComment()), inline=True)
     assert cap.getvalue() == "  // relevant note"
 
 
@@ -614,7 +615,7 @@ def test_write_single_comment_inline_raises_for_multiline_text() -> None:
     layout = PlainLayout()
     cap = _MinimalGen()
     with pytest.raises(ValueError, match="Inline comment text must not contain newlines"):
-        layout.write_single_comment(cap, _MultilineComment(), inline=True)  # type: ignore[arg-type]
+        layout.write_single_comment(cast(Any, cap), cast(Any, _MultilineComment()), inline=True)
 
 
 def test_write_single_comment_non_inline_long_text_uses_block_style() -> None:
@@ -626,7 +627,7 @@ def test_write_single_comment_non_inline_long_text_uses_block_style() -> None:
 
     layout = PlainLayout()
     cap = _MinimalGen()
-    layout.write_single_comment(cap, _FakeComment(), inline=False)  # type: ignore[arg-type]
+    layout.write_single_comment(cast(Any, cap), cast(Any, _FakeComment()), inline=False)
     result = cap.getvalue()
     assert "/*" in result
     assert " * " in result
@@ -641,7 +642,7 @@ def test_write_single_comment_non_inline_multiline_text_uses_block_style() -> No
 
     layout = PlainLayout()
     cap = _MinimalGen()
-    layout.write_single_comment(cap, _FakeComment(), inline=False)  # type: ignore[arg-type]
+    layout.write_single_comment(cast(Any, cap), cast(Any, _FakeComment()), inline=False)
     result = cap.getvalue()
     assert "/*" in result
     assert " * line1" in result
@@ -657,7 +658,7 @@ def test_write_single_comment_non_inline_short_single_line_writes_double_slash()
 
     layout = PlainLayout()
     cap = _MinimalGen()
-    layout.write_single_comment(cap, _FakeComment(), inline=False)  # type: ignore[arg-type]
+    layout.write_single_comment(cast(Any, cap), cast(Any, _FakeComment()), inline=False)
     assert cap.getvalue() == "// short\n"
 
 
@@ -669,7 +670,7 @@ def test_write_single_comment_block_comment_stripped_of_delimiters() -> None:
 
     layout = PlainLayout()
     cap = _MinimalGen()
-    layout.write_single_comment(cap, _FakeComment(), inline=False)  # type: ignore[arg-type]
+    layout.write_single_comment(cast(Any, cap), cast(Any, _FakeComment()), inline=False)
     result = cap.getvalue()
     # The stripped text "block content" is short (< 80 chars, no newline) → // style
     assert result == "// block content\n"
@@ -916,7 +917,7 @@ def test_write_single_comment_block_comment_inline_strips_delimiters_and_writes_
 
     layout = PlainLayout()
     cap = _MinimalGen()
-    layout.write_single_comment(cap, _BlockComment(), inline=True)  # type: ignore[arg-type]
+    layout.write_single_comment(cast(Any, cap), cast(Any, _BlockComment()), inline=True)
     assert cap.getvalue() == "  // inline note"
 
 
@@ -935,7 +936,7 @@ def test_write_single_comment_raw_text_not_prefixed_inline_writes_directly() -> 
 
     layout = PlainLayout()
     cap = _MinimalGen()
-    layout.write_single_comment(cap, _RawComment(), inline=True)  # type: ignore[arg-type]
+    layout.write_single_comment(cast(Any, cap), cast(Any, _RawComment()), inline=True)
     # The raw text is written unchanged because no stripping happened.
     assert cap.getvalue() == "  // plain comment text"
 

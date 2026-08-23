@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from typing import Any, cast
 
 from lsprotocol.types import Position, Range
 import pytest
@@ -95,20 +96,20 @@ def _doc(text: str, uri: str = "file://test.yar") -> DocumentContext:
 def test_require_document_string_raises_for_non_str_uri() -> None:
     """Passing a non-string URI raises TypeError (line 62-63 via constructor)."""
     with pytest.raises(TypeError, match="Document URI must be a string"):
-        DocumentContext(uri=123, text="rule x { condition: true }")  # type: ignore[arg-type]
+        DocumentContext(uri=cast(Any, 123), text="rule x { condition: true }")
 
 
 def test_require_document_string_raises_for_none_text() -> None:
     """Passing None as text raises TypeError (line 62-63 via constructor)."""
     with pytest.raises(TypeError, match="Document text must be a string"):
-        DocumentContext(uri="file://x.yar", text=None)  # type: ignore[arg-type]
+        DocumentContext(uri="file://x.yar", text=cast(Any, None))
 
 
 def test_require_document_string_update_raises_for_non_str_text() -> None:
     """update() propagates TypeError via _require_document_string (line 62-63)."""
     doc = _doc(_SINGLE_RULE)
     with pytest.raises(TypeError, match="Document text must be a string"):
-        doc.update(text=42)  # type: ignore[arg-type]
+        doc.update(text=cast(Any, 42))
 
 
 def test_require_document_string_function_directly() -> None:
@@ -171,7 +172,11 @@ def test_init_version_as_bool_raises_type_error() -> None:
 def test_init_is_open_as_non_bool_raises_type_error() -> None:
     """is_open='yes' raises TypeError (lines 147-148)."""
     with pytest.raises(TypeError, match="Document is_open flag must be a boolean"):
-        DocumentContext(uri="file://x.yar", text="rule x { condition: true }", is_open="yes")  # type: ignore[arg-type]
+        DocumentContext(
+            uri="file://x.yar",
+            text="rule x { condition: true }",
+            is_open=cast(Any, "yes"),
+        )
 
 
 def test_init_backed_by_file_as_int_raises_type_error() -> None:
@@ -180,7 +185,7 @@ def test_init_backed_by_file_as_int_raises_type_error() -> None:
         DocumentContext(
             uri="file://x.yar",
             text="rule x { condition: true }",
-            backed_by_file=1,  # type: ignore[arg-type]
+            backed_by_file=cast(Any, 1),
         )
 
 
@@ -190,7 +195,7 @@ def test_init_language_mode_as_string_raises_type_error() -> None:
         DocumentContext(
             uri="file://x.yar",
             text="rule x { condition: true }",
-            language_mode="yara",  # type: ignore[arg-type]
+            language_mode=cast(Any, "yara"),
         )
 
 
@@ -239,7 +244,7 @@ def test_update_is_open_as_non_bool_raises_type_error() -> None:
     """update(is_open='yes') raises TypeError (lines 202-204)."""
     doc = _doc(_SINGLE_RULE)
     with pytest.raises(TypeError, match="Document is_open flag must be a boolean"):
-        doc.update(text="rule y { condition: true }", is_open="yes")  # type: ignore[arg-type]
+        doc.update(text="rule y { condition: true }", is_open=cast(Any, "yes"))
 
 
 def test_update_with_valid_is_open_bool_updates_flag() -> None:
@@ -258,7 +263,7 @@ def test_set_language_mode_non_enum_raises_type_error() -> None:
     """set_language_mode('yara') raises TypeError (lines 215-216)."""
     doc = _doc(_SINGLE_RULE)
     with pytest.raises(TypeError, match="Document language_mode must be a LanguageMode"):
-        doc.set_language_mode("yara")  # type: ignore[arg-type]
+        doc.set_language_mode(cast(Any, "yara"))
 
 
 def test_set_language_mode_same_value_is_noop() -> None:

@@ -6,6 +6,7 @@ document_query_resolution_ranges LSP modules."""
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from lsprotocol.types import Position, Range
 import pytest
@@ -57,25 +58,30 @@ class TestRenameProviderValidationGuards:
         """Line 97-98: _validate_symbol_request raises TypeError when text is not str."""
         provider = RenameProvider()
         with pytest.raises(TypeError, match="text must be a string"):
-            provider.prepare_rename(123, _pos(0, 0))  # type: ignore[arg-type]
+            provider.prepare_rename(cast(Any, 123), _pos(0, 0))
 
     def test_validate_position_must_be_position_prepare_rename(self) -> None:
         """Line 100-101: _validate_symbol_request raises TypeError when position is not Position."""
         provider = RenameProvider()
         with pytest.raises(TypeError, match="position must be an LSP Position"):
-            provider.prepare_rename("rule a { condition: true }", (0, 0))  # type: ignore[arg-type]
+            provider.prepare_rename("rule a { condition: true }", cast(Any, (0, 0)))
 
     def test_validate_text_must_be_string_rename(self) -> None:
         """Line 97-98: rename also runs _validate_symbol_request on non-str text."""
         provider = RenameProvider()
         with pytest.raises(TypeError, match="text must be a string"):
-            provider.rename(42, _pos(0, 0), "new_name", "file://test.yar")  # type: ignore[arg-type]
+            provider.rename(cast(Any, 42), _pos(0, 0), "new_name", "file://test.yar")
 
     def test_validate_position_must_be_position_rename(self) -> None:
         """Line 100-101: rename raises TypeError when position is wrong type."""
         provider = RenameProvider()
         with pytest.raises(TypeError, match="position must be an LSP Position"):
-            provider.rename("rule a { condition: true }", "bad", "x", "file://x.yar")  # type: ignore[arg-type]
+            provider.rename(
+                "rule a { condition: true }",
+                cast(Any, "bad"),
+                "x",
+                "file://x.yar",
+            )
 
     def test_rename_new_name_must_be_string(self) -> None:
         """Lines 59-60: rename raises TypeError when new_name is not a str."""
@@ -84,7 +90,7 @@ class TestRenameProviderValidationGuards:
             provider.rename(
                 "rule a { condition: true }",
                 _pos(0, 5),
-                99,  # type: ignore[arg-type]
+                cast(Any, 99),
                 "file://test.yar",
             )
 
@@ -331,13 +337,16 @@ class TestSelectionRangeProviderBasic:
         """Lines 29-30: TypeError when text is not str."""
         provider = SelectionRangeProvider()
         with pytest.raises(TypeError, match="text must be a string"):
-            provider.get_selection_ranges(123, [_pos(0, 0)])  # type: ignore[arg-type]
+            provider.get_selection_ranges(cast(Any, 123), [_pos(0, 0)])
 
     def test_raises_type_error_for_non_list_positions(self) -> None:
         """Lines 32-33: TypeError when positions is not a list."""
         provider = SelectionRangeProvider()
         with pytest.raises(TypeError, match="positions must be a list"):
-            provider.get_selection_ranges("rule a { condition: true }", _pos(0, 0))  # type: ignore[arg-type]
+            provider.get_selection_ranges(
+                "rule a { condition: true }",
+                cast(Any, _pos(0, 0)),
+            )
 
     def test_raises_type_error_for_non_position_in_list(self) -> None:
         """Lines 35-37: TypeError when any element in positions is not a Position."""
@@ -345,7 +354,7 @@ class TestSelectionRangeProviderBasic:
         with pytest.raises(TypeError, match="positions must be a list"):
             provider.get_selection_ranges(
                 "rule a { condition: true }",
-                [(0, 5)],  # type: ignore[list-item]
+                cast(Any, [(0, 5)]),
             )
 
     def test_empty_positions_returns_empty_list(self) -> None:
