@@ -26,17 +26,16 @@ def _require_serialization_format(fmt: object) -> str:
     return fmt
 
 
-def import_ast(input_file: str, fmt: str):
+def import_ast(input_file: str, fmt: str) -> YaraFile:
     fmt = _require_serialization_format(fmt)
     if fmt == "json":
-        serializer = JsonSerializer(include_metadata=True)
-    elif fmt == "yaml":
-        serializer = YamlSerializer(include_metadata=True)
-    else:
-        from yaraast.serialization.protobuf_serializer import ProtobufSerializer
+        return JsonSerializer(include_metadata=True).deserialize(input_path=input_file)
+    if fmt == "yaml":
+        return YamlSerializer(include_metadata=True).deserialize(input_path=input_file)
 
-        serializer = ProtobufSerializer(include_metadata=True)
-    return serializer.deserialize(input_path=input_file)
+    from yaraast.serialization.protobuf_serializer import ProtobufSerializer
+
+    return ProtobufSerializer(include_metadata=True).deserialize(input_path=input_file)
 
 
 def generate_yara_from_ast(ast: YaraFile, output: str) -> str:
@@ -47,27 +46,28 @@ def generate_yara_from_ast(ast: YaraFile, output: str) -> str:
 
 def export_with_serializer(
     ast: YaraFile, fmt: object, output: str | None, minimal: object
-) -> tuple[str | None, dict | None]:
+) -> tuple[str | bytes, dict[str, Any] | None]:
     fmt = _require_serialization_format(fmt)
     minimal = require_bool_option(minimal, "minimal")
     if fmt == "json":
-        serializer = JsonSerializer(include_metadata=not minimal)
-    elif fmt == "yaml":
-        serializer = YamlSerializer(include_metadata=not minimal)
-    else:
-        from yaraast.serialization.protobuf_serializer import ProtobufSerializer
-
-        serializer = ProtobufSerializer(include_metadata=not minimal)
-    if fmt == "json":
-        return serializer.serialize(ast, output), None
+        result = JsonSerializer(include_metadata=not minimal).serialize(ast, output)
+        return result, None
     if fmt == "yaml":
-        if minimal:
-            return serializer.serialize_minimal(ast, output), None
-        return serializer.serialize(ast, output), None
+        yaml_serializer = YamlSerializer(include_metadata=not minimal)
+        result = (
+            yaml_serializer.serialize_minimal(ast, output)
+            if minimal
+            else yaml_serializer.serialize(ast, output)
+        )
+        return result, None
+
+    from yaraast.serialization.protobuf_serializer import ProtobufSerializer
+
+    protobuf_serializer = ProtobufSerializer(include_metadata=not minimal)
     if output and output.endswith(".txt"):
-        return serializer.serialize_text(ast, output), None
-    result = serializer.serialize(ast, output)
-    return result, serializer.get_serialization_stats(ast)
+        return protobuf_serializer.serialize_text(ast, output), None
+    binary_result = protobuf_serializer.serialize(ast, output)
+    return binary_result, protobuf_serializer.get_serialization_stats(ast)
 
 
 def compare_yara_files(old_file: str | Path, new_file: str | Path) -> tuple[AstDiff, Any]:

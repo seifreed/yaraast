@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.errors import ParseError
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
@@ -19,7 +21,7 @@ class OptimizationAnalysis:
     critical_issues: int
 
 
-def parse_yara_with_tolerance(content: str):
+def parse_yara_with_tolerance(content: str) -> tuple[YaraFile, list[Any], list[Any]]:
     dialect = detect_dialect(content)
     if dialect == YaraDialect.YARA_L:
         msg = "YARA-L input is not supported by optimize; use YARA-L tooling instead"
@@ -30,7 +32,7 @@ def parse_yara_with_tolerance(content: str):
     return result.ast, [], result.errors
 
 
-def analyze_performance(ast) -> OptimizationAnalysis:
+def analyze_performance(ast: YaraFile) -> OptimizationAnalysis:
     total_issues = 0
     critical = 0
     for rule in ast.rules:
@@ -40,13 +42,13 @@ def analyze_performance(ast) -> OptimizationAnalysis:
     return OptimizationAnalysis(total_issues=total_issues, critical_issues=critical)
 
 
-def optimize_ast(ast):
+def optimize_ast(ast: YaraFile) -> tuple[YaraFile, list[str]]:
     optimizer = PerformanceOptimizer()
     optimized_ast = optimizer.optimize(ast)
     return optimized_ast, ["Performance optimizations applied"]
 
 
-def generate_code(ast) -> str:
+def generate_code(ast: YaraFile) -> str:
     generator = YaraXGenerator()
     return generator.generate(ast)
 

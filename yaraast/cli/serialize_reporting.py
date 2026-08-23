@@ -41,15 +41,16 @@ def _has_output_path(output: object, name: str = "output") -> bool:
 
 def display_export_result(
     console: Console,
-    result: str | None,
+    result: str | bytes | None,
     fmt: str,
     output: str | None,
     pretty: bool,
-    stats: dict | None,
+    stats: dict[str, Any] | None,
 ) -> None:
     has_output = _has_output_path(output)
     if pretty and result and not has_output:
-        syntax = Syntax(result, fmt, theme="monokai", line_numbers=True)
+        rendered = result.hex() if isinstance(result, bytes) else result
+        syntax = Syntax(rendered, fmt, theme="monokai", line_numbers=True)
         console.print(syntax)
     if stats:
         from yaraast.cli.serialize_display_services import _display_protobuf_stats
@@ -84,7 +85,7 @@ def _require_diff_output_format(fmt: object) -> str:
     return fmt
 
 
-def write_diff_output(output_path: str, fmt: object, diff_data: dict) -> None:
+def write_diff_output(output_path: str, fmt: object, diff_data: dict[str, Any]) -> None:
     fmt = _require_diff_output_format(fmt)
     if fmt == "json":
         write_text(output_path, format_json(diff_data, ensure_ascii=False))
@@ -109,7 +110,7 @@ def display_diff_saved(console: Console, output_path: str, patch: bool) -> None:
         console.print(f"✅ Diff saved to: {escape(output_path)}")
 
 
-def display_validation_result(console: Console, panel) -> None:
+def display_validation_result(console: Console, panel: Any) -> None:
     console.print(panel)
 
 

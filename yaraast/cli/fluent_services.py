@@ -10,6 +10,7 @@ from yaraast.ast.rules import Rule
 from yaraast.builder.ast_transformer import transform_rule
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.builder.fluent_file_builder import yara_file
+from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
 from yaraast.builder.fluent_rule_presets import (
     malware_rule,
     packed_rule,
@@ -216,7 +217,7 @@ def create_transformation_rules() -> list[Rule]:
     return rules
 
 
-def _make_document_rule(rule_name: str):
+def _make_document_rule(rule_name: str) -> FluentRuleBuilder:
     """Create a document detection template rule."""
     return (
         rule(rule_name)
@@ -228,7 +229,7 @@ def _make_document_rule(rule_name: str):
     )
 
 
-def _make_network_rule(rule_name: str):
+def _make_network_rule(rule_name: str) -> FluentRuleBuilder:
     """Create a network detection template rule."""
     return (
         rule(rule_name).tagged("network").ip_pattern().url_pattern().email_pattern().matches_any()
@@ -244,11 +245,10 @@ _TEMPLATE_FACTORIES = {
 }
 
 
-def create_template_rule(rule_name: str, rule_type: str, author: str, tags: list[str]):
+def create_template_rule(rule_name: str, rule_type: str, author: str, tags: list[str]) -> Rule:
     """Create a template rule based on type.
 
-    Accepts both RuleTemplate enum values and plain strings for backward
-    compatibility.
+    Accepts RuleTemplate values and plain strings.
     """
     try:
         template = RuleTemplate(rule_type)

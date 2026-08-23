@@ -16,6 +16,21 @@ class _Ast:
     imports: list[object] = []
 
 
+def test_display_pretty_protobuf_renders_binary_as_hex() -> None:
+    console = Console(record=True, width=120)
+
+    sr.display_export_result(
+        console,
+        b"\x01\xab",
+        "protobuf",
+        output=None,
+        pretty=True,
+        stats=None,
+    )
+
+    assert "01ab" in console.export_text()
+
+
 def test_display_export_import_and_diff_messages(tmp_path: Path) -> None:
     console = Console(record=True, width=120)
 
