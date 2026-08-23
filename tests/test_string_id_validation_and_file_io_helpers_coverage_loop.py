@@ -144,21 +144,14 @@ def test_validate_new_string_definitions_normalises_identifiers_before_comparing
 
 
 class _IsDir0SErrPath(Path):
-    """Path subclass whose is_dir() always raises OSError.
+    """Path subclass whose stat() always raises OSError."""
 
-    exists() returns True so that _path_exists_and_is_dir proceeds to
-    call _path_is_dir, which then hits the except branch.
-    """
-
-    def exists(self, *, follow_symlinks: bool = True) -> bool:
-        return True
-
-    def is_dir(self, *, follow_symlinks: bool = True) -> bool:
-        raise OSError("injected is_dir failure")
+    def stat(self, *, follow_symlinks: bool = True) -> Any:
+        raise OSError("injected stat failure")
 
 
 def test_path_is_dir_oserror_re_raised_as_value_error(tmp_path: Path) -> None:
-    """_path_is_dir wraps OSError from Path.is_dir() into ValueError."""
+    """_path_is_dir wraps OSError from Path.stat() into ValueError."""
     bad_path = _IsDir0SErrPath(tmp_path / "_injected_isdir_test")
     with pytest.raises(ValueError, match="path could not be accessed"):
         _path_is_dir(bad_path)

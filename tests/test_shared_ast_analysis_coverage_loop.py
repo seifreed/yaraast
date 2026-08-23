@@ -31,7 +31,7 @@ from yaraast.shared.ast_analysis import (
 
 
 class _DirRaisingPath(Path):
-    """A real Path subclass whose is_dir() raises OSError (e.g. on a special
+    """A real Path subclass whose stat() raises OSError (e.g. on a special
     filesystem node where the stat call fails with EACCES or EIO).  The
     constructor argument is only used as the string representation."""
 
@@ -40,11 +40,8 @@ class _DirRaisingPath(Path):
     def __new__(cls, *args: Any, **kwargs: Any) -> _DirRaisingPath:
         return super().__new__(cls, *args, **kwargs)
 
-    def is_dir(self) -> bool:
-        raise OSError("simulated is_dir failure")
-
-    def exists(self) -> bool:
-        return True
+    def stat(self, *, follow_symlinks: bool = True) -> Any:
+        raise OSError("simulated stat failure")
 
 
 class _BytesPathLike:
@@ -65,8 +62,8 @@ class _BytesPathLike:
 
 
 def test_path_is_dir_oserror_raises_value_error() -> None:
-    """_path_is_dir must convert OSError from path.is_dir() into ValueError."""
-    # Arrange: a Path subclass that raises OSError on is_dir() — models
+    """_path_is_dir must convert OSError from path.stat() into ValueError."""
+    # Arrange: a Path subclass that raises OSError on stat() — models
     # unreadable mount points or broken symlinks on certain filesystems.
     bad = _DirRaisingPath("/some/inaccessible/path")
 
