@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
-from typing import Any, NoReturn
+from typing import Any, NoReturn, cast
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import read_text
 from yaraast.parser.source import parse_yara_source
 from yaraast.types.semantic_validator import SemanticValidator
@@ -15,11 +16,11 @@ from yaraast.types.semantic_validator_core import ValidationError, ValidationRes
 class DialectAwareParser:
     """Parser adapter for semantic validation across supported YARA dialects."""
 
-    def parse(self, content: str) -> Any:
+    def parse(self, content: str) -> YaraFile:
         return parse_yara_source(content)
 
 
-def _process_file(file_path: Path, parser: Any, validator: Any) -> Any:
+def _process_file(file_path: Path, parser: Any, validator: Any) -> ValidationResult:
     """Process a single file and return results."""
     content = read_text(file_path)
 
@@ -30,7 +31,7 @@ def _process_file(file_path: Path, parser: Any, validator: Any) -> Any:
         ast.location.file = str(file_path)
 
     # Validate semantics
-    result = validator.validate(ast)
+    result = cast(ValidationResult, validator.validate(ast))
 
     # Add file path to all errors and warnings
     _add_file_to_issues(result.errors, file_path)
@@ -39,7 +40,7 @@ def _process_file(file_path: Path, parser: Any, validator: Any) -> Any:
     return result
 
 
-def _add_file_to_issues(issues, file_path: Path) -> None:
+def _add_file_to_issues(issues: list[ValidationError], file_path: Path) -> None:
     """Add file path to all issues."""
     from yaraast.ast.base import Location
 

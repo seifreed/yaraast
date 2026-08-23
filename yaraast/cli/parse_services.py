@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any
 
 from yaraast.dialects import YaraDialect
 from yaraast.errors import YaraASTError
@@ -16,9 +17,9 @@ def parse_content_by_dialect(
     dialect: object,
     show_status: bool,
     status_cb: Callable[[str], None] | None = None,
-) -> tuple:
-    lexer_errors = []
-    parser_errors = []
+) -> tuple[object, list[Any], list[Any]]:
+    lexer_errors: list[Any] = []
+    parser_errors: list[Any] = []
 
     dialect = _require_dialect(dialect)
     if dialect == "auto":
@@ -50,7 +51,7 @@ def _parse_auto_detect_dialect(
     content: str,
     show_status: bool,
     status_cb: Callable[[str], None] | None,
-) -> tuple:
+) -> tuple[object, list[Any], list[Any]]:
     unified_parser = UnifiedParser(content)
     detected_dialect = unified_parser.get_dialect()
     if show_status and status_cb:
@@ -77,7 +78,7 @@ def _parse_yara_l_dialect(content: str, status_cb: Callable[[str], None] | None)
     return parser.parse()
 
 
-def _parse_with_error_tolerant_parser(content: str) -> tuple:
+def _parse_with_error_tolerant_parser(content: str) -> tuple[object, list[Any], list[Any]]:
     from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
     from yaraast.parser.parser import Parser
 

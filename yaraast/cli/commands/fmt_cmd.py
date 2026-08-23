@@ -80,7 +80,7 @@ def fmt(
         raise click.Abort from e
 
 
-def _handle_format_check(formatter, input_path: Path) -> None:
+def _handle_format_check(formatter: ASTFormatter, input_path: Path) -> None:
     """Handle format checking mode."""
     needs_format, issues = check_format(formatter, input_path)
     display_format_check(console, input_path, needs_format, issues)
@@ -88,7 +88,7 @@ def _handle_format_check(formatter, input_path: Path) -> None:
         raise SystemExit(1) from None
 
 
-def _show_format_diff(formatter, input_path: Path, style: str) -> None:
+def _show_format_diff(formatter: ASTFormatter, input_path: Path, style: str) -> None:
     """Show formatting diff."""
     original, success, formatted = format_for_diff(formatter, input_path, style)
     if not success:
@@ -97,7 +97,12 @@ def _show_format_diff(formatter, input_path: Path, style: str) -> None:
     display_format_diff(console, input_path, original, formatted)
 
 
-def _format_file(formatter, input_path: Path, output_path: Path, style: str) -> None:
+def _format_file(
+    formatter: ASTFormatter,
+    input_path: Path,
+    output_path: Path,
+    style: str,
+) -> None:
     """Format file and save result."""
     success, result = format_file(formatter, input_path, output_path, style)
     if not success:

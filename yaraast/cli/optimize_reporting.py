@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from rich.console import Console
 from rich.markup import escape
 
@@ -34,11 +36,11 @@ def display_improvement(console: Console, improvement: float) -> None:
     )
 
 
-def display_write_start(console: Console, output_file) -> None:
+def display_write_start(console: Console, output_file: str | Path) -> None:
     console.print(f"\n[cyan]Writing optimized rules to {escape(str(output_file))}...[/cyan]")
 
 
-def display_write_success(console: Console, output_file) -> None:
+def display_write_success(console: Console, output_file: str | Path) -> None:
     console.print(
         f"[green]✅ Optimized YARA file written to {escape(str(output_file))}[/green]",
     )

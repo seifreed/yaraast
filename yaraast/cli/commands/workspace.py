@@ -43,7 +43,14 @@ def workspace() -> None:
     help="Output format",
 )
 @click.option("--parallel/--sequential", default=True, help="Analyze files in parallel")
-def analyze(directory, pattern, recursive, output, format, parallel) -> None:
+def analyze(
+    directory: str,
+    pattern: str | None,
+    recursive: bool,
+    output: str | None,
+    format: str,
+    parallel: bool,
+) -> None:
     """Analyze all YARA files in a directory."""
     output = _validate_output_path(output)
     click.echo(f"Analyzing directory: {directory}")
@@ -70,7 +77,7 @@ def analyze(directory, pattern, recursive, output, format, parallel) -> None:
     help="Additional include search paths",
 )
 @click.option("--show-tree/--no-tree", default=True, help="Show include tree")
-def resolve(file, search_path, show_tree) -> None:
+def resolve(file: str, search_path: tuple[str, ...], show_tree: bool) -> None:
     """Resolve all includes for a YARA file."""
     from yaraast.resolution import IncludeResolver
 
@@ -117,7 +124,7 @@ def resolve(file, search_path, show_tree) -> None:
     default="dot",
     help="Output format",
 )
-def graph(directory, output, format) -> None:
+def graph(directory: str, output: str | None, format: str) -> None:
     """Generate dependency graph for YARA files."""
     output = _validate_output_path(output)
     click.echo(f"Building dependency graph for: {directory}")

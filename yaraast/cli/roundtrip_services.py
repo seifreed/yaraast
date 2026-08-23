@@ -115,7 +115,7 @@ def pretty_print_file(
 def pipeline_serialize_file(
     input_file: Path,
     pipeline_info: str | None,
-) -> tuple[Any, str, dict | None]:
+) -> tuple[Any, str, dict[str, Any] | None]:
     yara_source = read_text(input_file)
     ast = parse_yara_source(yara_source)
     pipeline_data = _parse_pipeline_info(pipeline_info)

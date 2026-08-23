@@ -28,9 +28,8 @@ from yaraast.cli.serialize_services import (
     export_with_serializer,
     generate_yara_from_ast,
     import_ast as import_ast_service,
-    parse_yara_file,
 )
-from yaraast.cli.utils import _validate_output_path
+from yaraast.cli.utils import _validate_output_path, parse_yara_file
 
 console = Console()
 
