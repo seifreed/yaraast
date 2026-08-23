@@ -56,7 +56,7 @@ class StringDiagramLabelsMixin:
 
     def _create_short_label(self, pattern_info: dict[str, Any]) -> str:
         """Create short label for similarity diagram."""
-        return pattern_info["identifier"]
+        return str(pattern_info["identifier"])
 
     def _create_hex_token_label(self, token_analysis: dict[str, Any]) -> str:
         """Create detailed hex token label."""

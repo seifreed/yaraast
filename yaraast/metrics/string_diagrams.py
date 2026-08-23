@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.metrics._visitor_base import MetricsVisitorBase
 
 from .string_diagrams_analysis import StringDiagramAnalysisMixin
@@ -29,7 +30,7 @@ class StringDiagramGenerator(
 
     def generate_pattern_flow_diagram(
         self,
-        ast,
+        ast: YaraFile,
         output_path: str | None = None,
         format: str = "svg",
     ) -> str:
@@ -39,7 +40,7 @@ class StringDiagramGenerator(
 
     def generate_pattern_complexity_diagram(
         self,
-        ast,
+        ast: YaraFile,
         output_path: str | None = None,
         format: str = "svg",
     ) -> str:
@@ -51,7 +52,7 @@ class StringDiagramGenerator(
 
     def generate_pattern_similarity_diagram(
         self,
-        ast,
+        ast: YaraFile,
         output_path: str | None = None,
         format: str = "svg",
     ) -> str:
@@ -63,7 +64,7 @@ class StringDiagramGenerator(
 
     def generate_hex_pattern_diagram(
         self,
-        ast,
+        ast: YaraFile,
         output_path: str | None = None,
         format: str = "svg",
     ) -> str:

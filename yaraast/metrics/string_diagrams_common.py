@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+from typing import Any
+
 
 def plain_value_text(value: str | bytes) -> str:
     """Return a readable text representation for plain string values."""
@@ -28,7 +31,7 @@ def plain_printable_ratio(value: str | bytes) -> float:
     return printable_count / len(value)
 
 
-def modifier_names(modifiers) -> list[str]:
+def modifier_names(modifiers: Iterable[Any]) -> list[str]:
     """Return modifier names preserving compatibility with string/object inputs."""
     names: list[str] = []
     for mod in modifiers:
@@ -39,7 +42,7 @@ def modifier_names(modifiers) -> list[str]:
     return names
 
 
-def format_hex_token_for_diagram(token) -> str:
+def format_hex_token_for_diagram(token: Any) -> str:
     """Format one hex token for string diagram output."""
     from yaraast.ast.strings import (
         HexAlternative,
@@ -85,7 +88,7 @@ def _format_hex_nibble_value(value: int | str) -> str:
     return value.upper()
 
 
-def _format_hex_jump(token) -> str:
+def _format_hex_jump(token: Any) -> str:
     if token.min_jump is None and token.max_jump is None:
         return "[-]"
     if token.min_jump is None:
@@ -99,7 +102,7 @@ def _format_hex_jump(token) -> str:
     return f"[{token.min_jump}-{token.max_jump}]"
 
 
-def _format_hex_alternative_branch(branch) -> str:
+def _format_hex_alternative_branch(branch: Any) -> str:
     if isinstance(branch, list | tuple):
         return " ".join(format_hex_token_for_diagram(token) for token in branch)
     return _format_hex_value(branch)

@@ -54,7 +54,7 @@ class HtmlTreeNodesExtraMixin:
             return None
         return self._simple_node(label, node_class, children=[self.visit(child)])
 
-    def visit_binary_expression(self, node) -> dict[str, Any]:
+    def visit_binary_expression(self, node: Any) -> dict[str, Any]:
         """Visit binary expression node."""
         children = [
             self.visit(node.left),
@@ -75,7 +75,7 @@ class HtmlTreeNodesExtraMixin:
             "children": children,
         }
 
-    def visit_string_identifier(self, node) -> dict[str, Any]:
+    def visit_string_identifier(self, node: Any) -> dict[str, Any]:
         """Visit string identifier node."""
         return {
             "id": self._get_node_id(),
@@ -84,7 +84,7 @@ class HtmlTreeNodesExtraMixin:
             "value": node.name,
         }
 
-    def visit_hex_wildcard(self, node) -> dict[str, Any]:
+    def visit_hex_wildcard(self, node: Any) -> dict[str, Any]:
         """Visit hex wildcard node."""
         return {
             "id": self._get_node_id(),
@@ -93,18 +93,18 @@ class HtmlTreeNodesExtraMixin:
             "value": "??",
         }
 
-    def visit_string_wildcard(self, node) -> dict[str, Any]:
+    def visit_string_wildcard(self, node: Any) -> dict[str, Any]:
         """Visit StringWildcard node."""
         return {"type": "StringWildcard", "pattern": node.pattern}
 
-    def visit_condition(self, node) -> dict[str, Any]:
+    def visit_condition(self, node: Any) -> dict[str, Any]:
         return {
             "id": self._get_node_id(),
             "label": "Condition",
             "node_class": "condition",
         }
 
-    def visit_with_statement(self, node) -> dict[str, Any]:
+    def visit_with_statement(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         self._append_section(
             children,
@@ -119,7 +119,7 @@ class HtmlTreeNodesExtraMixin:
             value=f"{len(node.declarations)} declaration(s)",
         ) | {"children": children}
 
-    def visit_with_declaration(self, node) -> dict[str, Any]:
+    def visit_with_declaration(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         self._append_section(
             children,
@@ -129,7 +129,7 @@ class HtmlTreeNodesExtraMixin:
             "children": children
         }
 
-    def visit_array_comprehension(self, node) -> dict[str, Any]:
+    def visit_array_comprehension(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         self._append_section(
             children,
@@ -147,7 +147,7 @@ class HtmlTreeNodesExtraMixin:
             "children": children
         }
 
-    def visit_dict_comprehension(self, node) -> dict[str, Any]:
+    def visit_dict_comprehension(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         for label, node_class, child in (
             ("Key Expression", "comprehension-key", node.key_expression),
@@ -163,14 +163,14 @@ class HtmlTreeNodesExtraMixin:
             "children": children
         }
 
-    def visit_tuple_expression(self, node) -> dict[str, Any]:
+    def visit_tuple_expression(self, node: Any) -> dict[str, Any]:
         children = self._child_nodes(node.elements)
         return self._simple_expression_node(
             "Tuple Expression",
             value=f"{len(node.elements)} element(s)",
         ) | {"children": children}
 
-    def visit_tuple_indexing(self, node) -> dict[str, Any]:
+    def visit_tuple_indexing(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         self._append_section(
             children,
@@ -182,21 +182,21 @@ class HtmlTreeNodesExtraMixin:
         )
         return self._simple_expression_node("Tuple Indexing") | {"children": children}
 
-    def visit_list_expression(self, node) -> dict[str, Any]:
+    def visit_list_expression(self, node: Any) -> dict[str, Any]:
         children = self._child_nodes(node.elements)
         return self._simple_expression_node(
             "List Expression",
             value=f"{len(node.elements)} element(s)",
         ) | {"children": children}
 
-    def visit_dict_expression(self, node) -> dict[str, Any]:
+    def visit_dict_expression(self, node: Any) -> dict[str, Any]:
         children = self._child_nodes(node.items)
         return self._simple_expression_node(
             "Dict Expression",
             value=f"{len(node.items)} item(s)",
         ) | {"children": children}
 
-    def visit_dict_item(self, node) -> dict[str, Any]:
+    def visit_dict_item(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         self._append_section(children, self._single_child_section("Key", "dict-key", node.key))
         self._append_section(
@@ -205,7 +205,7 @@ class HtmlTreeNodesExtraMixin:
         )
         return self._simple_expression_node("Dict Item") | {"children": children}
 
-    def visit_slice_expression(self, node) -> dict[str, Any]:
+    def visit_slice_expression(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         for label, node_class, child in (
             ("Target", "slice-target", node.target),
@@ -216,7 +216,7 @@ class HtmlTreeNodesExtraMixin:
             self._append_section(children, self._single_child_section(label, node_class, child))
         return self._simple_expression_node("Slice Expression") | {"children": children}
 
-    def visit_lambda_expression(self, node) -> dict[str, Any]:
+    def visit_lambda_expression(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         self._append_section(
             children,
@@ -227,7 +227,7 @@ class HtmlTreeNodesExtraMixin:
             value=", ".join(node.parameters),
         ) | {"children": children}
 
-    def visit_pattern_match(self, node) -> dict[str, Any]:
+    def visit_pattern_match(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         self._append_section(
             children,
@@ -243,7 +243,7 @@ class HtmlTreeNodesExtraMixin:
         )
         return self._simple_expression_node("Pattern Match") | {"children": children}
 
-    def visit_match_case(self, node) -> dict[str, Any]:
+    def visit_match_case(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         self._append_section(
             children,
@@ -255,7 +255,7 @@ class HtmlTreeNodesExtraMixin:
         )
         return self._simple_expression_node("Match Case") | {"children": children}
 
-    def visit_spread_operator(self, node) -> dict[str, Any]:
+    def visit_spread_operator(self, node: Any) -> dict[str, Any]:
         children: list[dict[str, Any]] = []
         self._append_section(
             children,

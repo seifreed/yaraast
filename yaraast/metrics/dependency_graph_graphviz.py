@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Iterator
+from contextlib import contextmanager
+from typing import Any
 
 import graphviz
+
+from yaraast.metrics.dependency_graph_render import module_label, strings_summary_label
 
 
 def create_graph(comment: str, rankdir: str, *, engine: str | None = None) -> graphviz.Digraph:
@@ -29,17 +33,23 @@ def apply_rule_node_style(dot: graphviz.Digraph) -> None:
     _set_node_attrs(dot, shape="ellipse", fillcolor="lightblue")
 
 
-def set_cluster_style(cluster, label: str, fillcolor: str) -> None:
+def set_cluster_style(cluster: graphviz.Digraph, label: str, fillcolor: str) -> None:
     """Set common cluster attributes."""
     cluster.attr(label=label, style="filled", fillcolor=fillcolor)
 
 
-def set_node_style(cluster, shape: str, fillcolor: str) -> None:
+def set_node_style(cluster: graphviz.Digraph, shape: str, fillcolor: str) -> None:
     """Set node styling for a cluster."""
     _set_node_attrs(cluster, shape=shape, fillcolor=fillcolor)
 
 
-def _set_node_attrs(target, *, shape: str, fillcolor: str, style: str | None = None) -> None:
+def _set_node_attrs(
+    target: graphviz.Digraph,
+    *,
+    shape: str,
+    fillcolor: str,
+    style: str | None = None,
+) -> None:
     """Apply node attributes to a graphviz graph or subgraph."""
     attrs = {"shape": shape, "fillcolor": fillcolor}
     if style:
@@ -67,9 +77,9 @@ def add_include_cluster(dot: graphviz.Digraph, includes: Iterable[str]) -> None:
 
 def add_rules_cluster(
     dot: graphviz.Digraph,
-    rules: dict[str, dict],
-    label_fn,
-    color_fn,
+    rules: dict[str, dict[str, Any]],
+    label_fn: Callable[[str, dict[str, Any]], str],
+    color_fn: Callable[[dict[str, Any]], str],
 ) -> None:
     """Add rule nodes cluster."""
     if not rules:
@@ -80,9 +90,9 @@ def add_rules_cluster(
 
 def add_rule_graph_nodes(
     dot: graphviz.Digraph,
-    rules: dict[str, dict],
-    label_fn,
-    color_fn,
+    rules: dict[str, dict[str, Any]],
+    label_fn: Callable[[str, dict[str, Any]], str],
+    color_fn: Callable[[dict[str, Any]], str],
 ) -> None:
     """Add rule nodes for rule-only graphs."""
     for rule_name, rule_info in sorted(rules.items()):
@@ -176,7 +186,7 @@ def add_edge(
 
 
 def add_node(
-    target,
+    target: graphviz.Digraph,
     node_id: str,
     label: str,
     *,
@@ -197,10 +207,10 @@ def add_node(
 
 def add_complexity_nodes(
     dot: graphviz.Digraph,
-    rules: dict[str, dict],
+    rules: dict[str, dict[str, Any]],
     complexity_metrics: dict[str, int],
-    label_fn,
-    color_fn,
+    label_fn: Callable[[str, int, dict[str, Any]], str],
+    color_fn: Callable[[int], str],
 ) -> None:
     """Add nodes for complexity graph."""
     for rule_name, rule_info in sorted(rules.items()):
@@ -223,13 +233,8 @@ def add_complexity_legend(dot: graphviz.Digraph) -> None:
         add_node(legend, "high", "High (>10)", fillcolor="lightcoral", shape="box")
 
 
-from contextlib import contextmanager
-
-from yaraast.metrics.dependency_graph_render import module_label, strings_summary_label
-
-
 @contextmanager
-def _legend_cluster(dot: graphviz.Digraph, label: str):
+def _legend_cluster(dot: graphviz.Digraph, label: str) -> Iterator[graphviz.Digraph]:
     """Context manager for a legend cluster with default styling."""
     with dot.subgraph(name="cluster_legend") as legend:
         set_cluster_style(legend, label, "white")
@@ -244,7 +249,7 @@ def _cluster(
     fillcolor: str,
     node_shape: str,
     node_fill: str,
-):
+) -> Iterator[graphviz.Digraph]:
     """Context manager for a styled cluster."""
     with dot.subgraph(name=name) as cluster:
         set_cluster_style(cluster, label, fillcolor)
@@ -252,7 +257,12 @@ def _cluster(
         yield cluster
 
 
-def add_cluster_nodes(cluster, rules: dict[str, dict], label_fn, color_fn) -> None:
+def add_cluster_nodes(
+    cluster: graphviz.Digraph,
+    rules: dict[str, dict[str, Any]],
+    label_fn: Callable[[str, dict[str, Any]], str],
+    color_fn: Callable[[dict[str, Any]], str],
+) -> None:
     """Add labeled nodes with fillcolor to a cluster."""
     for rule_name, rule_info in sorted(rules.items()):
         cluster.node(
@@ -263,7 +273,7 @@ def add_cluster_nodes(cluster, rules: dict[str, dict], label_fn, color_fn) -> No
 
 
 def add_prefixed_nodes(
-    cluster,
+    cluster: graphviz.Digraph,
     prefix: str,
     items: Iterable[str],
     *,

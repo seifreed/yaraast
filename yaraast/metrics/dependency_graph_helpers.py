@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from os import PathLike, fspath
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.rules import Rule
 from yaraast.metrics.graphviz_errors import is_graphviz_error
 from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
+
+if TYPE_CHECKING:
+    import graphviz
 
 
 def _path_access_error(path: Path) -> ValueError:
@@ -36,7 +40,7 @@ def _path_exists_and_is_dir(path: Path) -> bool:
     return _path_exists(path) and _path_is_dir(path)
 
 
-def reset_graph_state(generator) -> None:
+def reset_graph_state(generator: Any) -> None:
     generator.dependencies.clear()
     generator.imports.clear()
     generator.includes.clear()
@@ -87,7 +91,11 @@ def require_output_path(output_path: object, name: str = "output_path") -> Path:
     return path
 
 
-def render_graph(dot, output_path: str | PathLike[str] | None, format: str) -> str:
+def render_graph(
+    dot: graphviz.Digraph,
+    output_path: str | PathLike[str] | None,
+    format: str,
+) -> str:
     format = require_graph_format(format)
     if output_path is not None:
         output_path_obj = require_output_path(output_path)
@@ -106,10 +114,10 @@ def render_graph(dot, output_path: str | PathLike[str] | None, format: str) -> s
             Path(fallback_path).write_text(dot.source, encoding="utf-8")
             return fallback_path
         return f"{output_file}.{format}"
-    return dot.source
+    return str(dot.source)
 
 
-def rule_info(rule) -> dict[str, Any]:
+def rule_info(rule: Rule) -> dict[str, Any]:
     return {
         "modifiers": rule.modifiers,
         "tags": [tag.name for tag in rule.tags],

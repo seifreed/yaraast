@@ -207,11 +207,13 @@ class DependencyGraphGenerator(MetricsVisitorBase):
             return (rule_name,)
         return tuple(rule_keys)
 
-    def _module_name_for_object(self, value) -> str | None:
-        if hasattr(value, "module"):
-            return value.module
-        if hasattr(value, "name"):
-            return value.name
+    def _module_name_for_object(self, value: Any) -> str | None:
+        module = getattr(value, "module", None)
+        if isinstance(module, str):
+            return module
+        name = getattr(value, "name", None)
+        if isinstance(name, str):
+            return name
         return None
 
     def _add_module_reference(self, module_name: str) -> None:
@@ -235,7 +237,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         if self._local_scopes:
             self._local_scopes[-1].update(local_name_variants(name, allow_string_identifier=True))
 
-    def visit_with_statement(self, node) -> None:
+    def visit_with_statement(self, node: Any) -> None:
         self._push_local_scope()
         try:
             for declaration in node.declarations:
@@ -244,11 +246,11 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         finally:
             self._pop_local_scope()
 
-    def visit_with_declaration(self, node) -> None:
+    def visit_with_declaration(self, node: Any) -> None:
         self._visit_ast_value(node.value)
         self._define_local(node.identifier)
 
-    def visit_array_comprehension(self, node) -> None:
+    def visit_array_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.iterable)
         self._push_local_scope(node.variable)
         try:
@@ -257,7 +259,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         finally:
             self._pop_local_scope()
 
-    def visit_dict_comprehension(self, node) -> None:
+    def visit_dict_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.iterable)
         names = [node.key_variable]
         if node.value_variable:
@@ -270,14 +272,14 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         finally:
             self._pop_local_scope()
 
-    def visit_lambda_expression(self, node) -> None:
+    def visit_lambda_expression(self, node: Any) -> None:
         self._push_local_scope(*node.parameters)
         try:
             self._visit_ast_value(node.body)
         finally:
             self._pop_local_scope()
 
-    def visit_member_access(self, node) -> None:
+    def visit_member_access(self, node: Any) -> None:
         """Track module usage in member access."""
         module_name = self._module_name_for_object(node.object)
         rule_key = self._active_rule_key()
@@ -287,7 +289,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         if not isinstance(node.object, Identifier):
             self.visit(node.object)
 
-    def visit_function_call(self, node) -> None:
+    def visit_function_call(self, node: Any) -> None:
         """Track module function calls."""
         function_name = self._required_string(node.function, "Function name")
         module_name = function_name.split(".", 1)[0] if "." in function_name else None
@@ -299,29 +301,29 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         for arg in self._required_ast_sequence(node.arguments, "Function arguments"):
             self.visit(arg)
 
-    def visit_binary_expression(self, node) -> None:
+    def visit_binary_expression(self, node: Any) -> None:
         self.visit(node.left)
         self.visit(node.right)
 
-    def visit_unary_expression(self, node) -> None:
+    def visit_unary_expression(self, node: Any) -> None:
         self.visit(node.operand)
 
-    def visit_parentheses_expression(self, node) -> None:
+    def visit_parentheses_expression(self, node: Any) -> None:
         self.visit(node.expression)
 
-    def visit_set_expression(self, node) -> None:
+    def visit_set_expression(self, node: Any) -> None:
         for elem in node.elements:
             self.visit(elem)
 
-    def visit_range_expression(self, node) -> None:
+    def visit_range_expression(self, node: Any) -> None:
         self.visit(node.low)
         self.visit(node.high)
 
-    def visit_array_access(self, node) -> None:
+    def visit_array_access(self, node: Any) -> None:
         self.visit(node.array)
         self.visit(node.index)
 
-    def visit_for_expression(self, node) -> None:
+    def visit_for_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self.visit(node.iterable)
         self._push_local_scope(node.variable)
@@ -330,28 +332,28 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         finally:
             self._pop_local_scope()
 
-    def visit_for_of_expression(self, node) -> None:
+    def visit_for_of_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         if node.condition is None:
             self._visit_rule_set_value(node.string_set)
             return
         self.visit(node.condition)
 
-    def visit_at_expression(self, node) -> None:
+    def visit_at_expression(self, node: Any) -> None:
         self.visit(self._required_ast_node(node.offset, "'at' offset"))
 
-    def visit_in_expression(self, node) -> None:
+    def visit_in_expression(self, node: Any) -> None:
         self._visit_ast_value(node.subject)
         self.visit(self._required_ast_node(node.range, "'in' range"))
 
-    def visit_of_expression(self, node) -> None:
+    def visit_of_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_rule_set_value(node.string_set)
 
-    def visit_module_reference(self, node) -> None:
+    def visit_module_reference(self, node: Any) -> None:
         self._add_module_reference(node.module)
 
-    def visit_identifier(self, node) -> None:
+    def visit_identifier(self, node: Any) -> None:
         rule_key = self._active_rule_key()
         if (
             rule_key
@@ -393,7 +395,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         if value in self._rule_names and value != self._current_rule:
             self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(value))
 
-    def _visit_rule_set_value(self, value) -> None:
+    def _visit_rule_set_value(self, value: Any) -> None:
         if isinstance(value, str):
             return
         if isinstance(value, list | tuple | set | frozenset):
@@ -433,18 +435,18 @@ class DependencyGraphGenerator(MetricsVisitorBase):
             )
         )
 
-    def visit_dictionary_access(self, node) -> None:
+    def visit_dictionary_access(self, node: Any) -> None:
         self.visit(node.object)
         self._visit_ast_value(node.key)
 
-    def visit_defined_expression(self, node) -> None:
+    def visit_defined_expression(self, node: Any) -> None:
         self.visit(node.expression)
 
-    def visit_string_operator_expression(self, node) -> None:
+    def visit_string_operator_expression(self, node: Any) -> None:
         self.visit(node.left)
         self.visit(node.right)
 
-    def _visit_ast_value(self, value) -> None:
+    def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
         elif isinstance(value, list | tuple | set | frozenset):

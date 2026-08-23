@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import Any
 
 import graphviz
 
+from yaraast.ast.base import YaraFile
 from yaraast.metrics.dependency_graph_helpers import render_graph
 
 
@@ -44,7 +46,10 @@ def pattern_sort_key(pattern_id: str) -> tuple[str, int, str]:
 
 
 def generate_pattern_flow_diagram(
-    generator, ast, output_path: str | None = None, format: str = "svg"
+    generator: Any,
+    ast: YaraFile,
+    output_path: str | None = None,
+    format: str = "svg",
 ) -> str:
     """Generate string pattern flow diagram."""
     generator._analyze_patterns(ast)
@@ -82,7 +87,10 @@ def generate_pattern_flow_diagram(
 
 
 def generate_pattern_complexity_diagram(
-    generator, ast, output_path: str | None = None, format: str = "svg"
+    generator: Any,
+    ast: YaraFile,
+    output_path: str | None = None,
+    format: str = "svg",
 ) -> str:
     """Generate pattern complexity visualization."""
     generator._analyze_patterns(ast)
@@ -117,7 +125,10 @@ def generate_pattern_complexity_diagram(
 
 
 def generate_pattern_similarity_diagram(
-    generator, ast, output_path: str | None = None, format: str = "svg"
+    generator: Any,
+    ast: YaraFile,
+    output_path: str | None = None,
+    format: str = "svg",
 ) -> str:
     """Generate pattern similarity clustering diagram."""
     generator._analyze_patterns(ast)
@@ -172,7 +183,10 @@ def generate_pattern_similarity_diagram(
 
 
 def generate_hex_pattern_diagram(
-    generator, ast, output_path: str | None = None, format: str = "svg"
+    generator: Any,
+    ast: YaraFile,
+    output_path: str | None = None,
+    format: str = "svg",
 ) -> str:
     """Generate detailed hex pattern analysis diagram."""
     generator._analyze_patterns(ast)
@@ -187,7 +201,7 @@ def generate_hex_pattern_diagram(
         )
         if output_path is not None:
             return render_graph(dot, output_path, format)
-        return dot.source
+        return str(dot.source)
 
     for pattern_id, pattern_info in hex_patterns.items():
         tokens = pattern_info.get("token_analysis", {})
@@ -217,10 +231,10 @@ def generate_hex_pattern_diagram(
 
     if output_path is not None:
         return render_graph(dot, output_path, format)
-    return dot.source
+    return str(dot.source)
 
 
-def add_pattern_relationships(generator, dot: graphviz.Digraph) -> None:
+def add_pattern_relationships(generator: Any, dot: graphviz.Digraph) -> None:
     """Add relationships between patterns."""
     rule_patterns = defaultdict(list)
     for pattern_id, pattern_info in generator.string_patterns.items():

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.ast.expressions import (
     Identifier,
     ParenthesesExpression,
@@ -31,41 +33,41 @@ class DependencyFinder(MetricsVisitorBase):
         ):
             self.dependencies.add(node.name)
 
-    def visit_binary_expression(self, node) -> None:
+    def visit_binary_expression(self, node: Any) -> None:
         self.visit(node.left)
         self.visit(node.right)
 
-    def visit_unary_expression(self, node) -> None:
+    def visit_unary_expression(self, node: Any) -> None:
         self.visit(node.operand)
 
-    def visit_parentheses_expression(self, node) -> None:
+    def visit_parentheses_expression(self, node: Any) -> None:
         self.visit(node.expression)
 
-    def visit_set_expression(self, node) -> None:
+    def visit_set_expression(self, node: Any) -> None:
         for elem in node.elements:
             self.visit(elem)
 
-    def visit_range_expression(self, node) -> None:
+    def visit_range_expression(self, node: Any) -> None:
         self.visit(node.low)
         self.visit(node.high)
 
-    def visit_function_call(self, node) -> None:
+    def visit_function_call(self, node: Any) -> None:
         self._required_string(node.function, "Function name")
         self._visit_ast_value(getattr(node, "receiver", None))
         for arg in self._required_ast_sequence(node.arguments, "Function arguments"):
             self.visit(arg)
 
-    def visit_array_access(self, node) -> None:
+    def visit_array_access(self, node: Any) -> None:
         self.visit(node.array)
         self.visit(node.index)
 
-    def visit_member_access(self, node) -> None:
+    def visit_member_access(self, node: Any) -> None:
         from yaraast.ast.expressions import Identifier
 
         if not isinstance(node.object, Identifier):
             self.visit(node.object)
 
-    def visit_for_expression(self, node) -> None:
+    def visit_for_expression(self, node: Any) -> None:
         if hasattr(node.quantifier, "accept"):
             self.visit(node.quantifier)
         self.visit(node.iterable)
@@ -75,7 +77,7 @@ class DependencyFinder(MetricsVisitorBase):
         finally:
             self._pop_local_scope()
 
-    def visit_for_of_expression(self, node) -> None:
+    def visit_for_of_expression(self, node: Any) -> None:
         if hasattr(node.quantifier, "accept"):
             self.visit(node.quantifier)
         if node.condition is None:
@@ -83,32 +85,32 @@ class DependencyFinder(MetricsVisitorBase):
             return
         self.visit(node.condition)
 
-    def visit_at_expression(self, node) -> None:
+    def visit_at_expression(self, node: Any) -> None:
         self.visit(self._required_ast_node(node.offset, "'at' offset"))
 
-    def visit_in_expression(self, node) -> None:
+    def visit_in_expression(self, node: Any) -> None:
         if hasattr(node.subject, "accept"):
             self.visit(node.subject)
         self.visit(self._required_ast_node(node.range, "'in' range"))
 
-    def visit_of_expression(self, node) -> None:
+    def visit_of_expression(self, node: Any) -> None:
         if hasattr(node.quantifier, "accept"):
             self.visit(node.quantifier)
         self._visit_rule_set_value(node.string_set)
 
-    def visit_dictionary_access(self, node) -> None:
+    def visit_dictionary_access(self, node: Any) -> None:
         self.visit(node.object)
         if hasattr(node.key, "accept"):
             self.visit(node.key)
 
-    def visit_defined_expression(self, node) -> None:
+    def visit_defined_expression(self, node: Any) -> None:
         self.visit(node.expression)
 
-    def visit_string_operator_expression(self, node) -> None:
+    def visit_string_operator_expression(self, node: Any) -> None:
         self.visit(node.left)
         self.visit(node.right)
 
-    def visit_string_wildcard(self, node) -> None:
+    def visit_string_wildcard(self, node: Any) -> None:
         if not isinstance(node.pattern, str):
             raise TypeError("String wildcard pattern must be a string")
         pattern = node.pattern
@@ -136,7 +138,7 @@ class DependencyFinder(MetricsVisitorBase):
         if value in self.all_rules and value != self.current_rule:
             self.dependencies.add(value)
 
-    def _visit_rule_set_value(self, value) -> None:
+    def _visit_rule_set_value(self, value: Any) -> None:
         if isinstance(value, str):
             return
         if isinstance(value, list | tuple | set | frozenset):
@@ -160,7 +162,7 @@ class DependencyFinder(MetricsVisitorBase):
             return
         self._visit_ast_value(value)
 
-    def visit_with_statement(self, node) -> None:
+    def visit_with_statement(self, node: Any) -> None:
         self._push_local_scope()
         try:
             for declaration in node.declarations:
@@ -169,11 +171,11 @@ class DependencyFinder(MetricsVisitorBase):
         finally:
             self._pop_local_scope()
 
-    def visit_with_declaration(self, node) -> None:
+    def visit_with_declaration(self, node: Any) -> None:
         self._visit_ast_value(node.value)
         self._define_local(node.identifier)
 
-    def visit_array_comprehension(self, node) -> None:
+    def visit_array_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.iterable)
         self._push_local_scope(node.variable)
         try:
@@ -182,7 +184,7 @@ class DependencyFinder(MetricsVisitorBase):
         finally:
             self._pop_local_scope()
 
-    def visit_dict_comprehension(self, node) -> None:
+    def visit_dict_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.iterable)
         names = [node.key_variable]
         if node.value_variable:
@@ -195,7 +197,7 @@ class DependencyFinder(MetricsVisitorBase):
         finally:
             self._pop_local_scope()
 
-    def visit_lambda_expression(self, node) -> None:
+    def visit_lambda_expression(self, node: Any) -> None:
         self._push_local_scope(*node.parameters)
         try:
             self._visit_ast_value(node.body)
@@ -218,7 +220,7 @@ class DependencyFinder(MetricsVisitorBase):
         if self.local_scopes:
             self.local_scopes[-1].update(local_name_variants(name, allow_string_identifier=True))
 
-    def _visit_ast_value(self, value) -> None:
+    def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
         elif isinstance(value, list | tuple | set | frozenset):

@@ -17,7 +17,7 @@ def _run_import_probe(source: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_metrics_import_degrades_without_graphviz_package() -> None:
+def test_graph_workflows_require_the_graphviz_package() -> None:
     result = _run_import_probe(
         """
 import builtins
@@ -34,11 +34,15 @@ builtins.__import__ = import_without_graphviz
 import importlib
 
 metrics = importlib.import_module("yaraast.metrics")
-workflows = importlib.import_module("yaraast.metrics.workflows")
-
 assert not hasattr(metrics, "DependencyGraphGenerator")
-assert workflows.DependencyGraphGenerator is None
 assert metrics.ComplexityAnalyzer().__class__.__name__ == "ComplexityAnalyzer"
+
+try:
+    importlib.import_module("yaraast.metrics.workflows")
+except ModuleNotFoundError as exc:
+    assert exc.name == "graphviz"
+else:
+    raise AssertionError("graph workflows imported without graphviz")
 """,
     )
 

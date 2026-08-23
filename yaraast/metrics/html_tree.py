@@ -80,7 +80,7 @@ class HtmlTreeGenerator(
             "children": children,
         }
 
-    def visit_import(self, node) -> dict[str, Any]:
+    def visit_import(self, node: Any) -> dict[str, Any]:
         """Visit import node."""
         label = f'Import: "{node.module}"'
         if hasattr(node, "alias") and node.alias:
@@ -93,7 +93,7 @@ class HtmlTreeGenerator(
             "value": node.module,
         }
 
-    def visit_include(self, node) -> dict[str, Any]:
+    def visit_include(self, node: Any) -> dict[str, Any]:
         """Visit include node."""
         return {
             "id": self._get_node_id(),

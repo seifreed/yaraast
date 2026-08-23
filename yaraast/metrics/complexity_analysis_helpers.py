@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 import re
+from typing import Any
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.conditions import ForExpression, ForOfExpression
-from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import HexString, HexToken, PlainString, RegexString
 from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension, PatternMatch
 
 
-def analyze_rule(analyzer, rule) -> None:
+def analyze_rule(analyzer: Any, rule: Rule) -> None:
     analyzer._current_rule = rule
     analyzer._current_rule_key = analyzer._metric_key_for_rule(rule)
     if any(str(m) == "private" for m in rule.modifiers):
@@ -40,7 +43,7 @@ def analyze_rule(analyzer, rule) -> None:
     analyzer._current_rule_key = None
 
 
-def analyze_strings(analyzer, rule) -> None:
+def analyze_strings(analyzer: Any, rule: Rule) -> None:
     rule_key = analyzer._active_rule_key()
     for string_def in rule.strings:
         analyzer.metrics.total_strings += 1
@@ -61,7 +64,7 @@ def analyze_strings(analyzer, rule) -> None:
             analyze_regex_complexity(analyzer, string_def.regex)
 
 
-def analyze_hex_tokens(analyzer, tokens: list) -> None:
+def analyze_hex_tokens(analyzer: Any, tokens: list[HexToken]) -> None:
     from yaraast.ast.strings import HexAlternative, HexJump, HexWildcard
 
     for token in tokens:
@@ -73,12 +76,12 @@ def analyze_hex_tokens(analyzer, tokens: list) -> None:
             analyzer.metrics.hex_alternatives += 1
 
 
-def analyze_regex_complexity(analyzer, regex: str) -> None:
+def analyze_regex_complexity(analyzer: Any, regex: str) -> None:
     analyzer.metrics.regex_groups += len(re.findall(r"\([^?]", regex))
     analyzer.metrics.regex_quantifiers += len(re.findall(r"[*+?{]", regex))
 
 
-def calculate_cyclomatic_complexity(analyzer) -> int:
+def calculate_cyclomatic_complexity(analyzer: Any) -> int:
     rule = analyzer._current_rule
     if rule is not None and rule.condition is not None:
         return _calculate_cyclomatic_complexity(rule.condition)
@@ -101,7 +104,7 @@ def _calculate_cyclomatic_complexity(expr: ASTNode) -> int:
     return complexity
 
 
-def _iter_cyclomatic_children(expr: ASTNode):
+def _iter_cyclomatic_children(expr: ASTNode) -> Iterator[Any]:
     child_attrs = (
         "left",
         "right",
@@ -141,7 +144,7 @@ def _iter_cyclomatic_children(expr: ASTNode):
                     yield item
 
 
-def calculate_derived_metrics(analyzer) -> None:
+def calculate_derived_metrics(analyzer: Any) -> None:
     if analyzer._condition_depths:
         analyzer.metrics.avg_condition_depth = sum(analyzer._condition_depths) / len(
             analyzer._condition_depths

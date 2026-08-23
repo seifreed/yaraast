@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import html as html_mod
 from typing import Any
 
@@ -58,10 +59,12 @@ class HtmlTreeRenderMixin:
             render_node=self._create_render_macro(default_collapsed),
         )
 
-    def _create_render_macro(self, default_collapsed: bool = False):
+    def _create_render_macro(
+        self, default_collapsed: bool = False
+    ) -> Callable[[dict[str, Any], int], str]:
         """Create render macro function for Jinja2."""
 
-        def render_node(node, depth):
+        def render_node(node: dict[str, Any], depth: int) -> str:
             node_class = _esc(node["node_class"])
             node_id = _esc(node.get("id", ""))
             out = f'<div class="tree-node {node_class}">'
@@ -103,7 +106,7 @@ class HtmlTreeRenderMixin:
         """Calculate tree statistics with keys matching the HTML template."""
         stats = {"total_nodes": 0, "rule_count": 0, "import_count": 0, "string_count": 0}
 
-        def count_nodes(node) -> None:
+        def count_nodes(node: dict[str, Any]) -> None:
             stats["total_nodes"] += 1
             node_class = node.get("node_class", "")
 

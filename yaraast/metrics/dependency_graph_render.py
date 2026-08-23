@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 
 def _escape_dot(text: str) -> str:
     """Escape text for safe use in DOT graph labels."""
     return text.replace("\\", "\\\\").replace('"', '\\"').replace("<", "\\<").replace(">", "\\>")
 
 
-def rule_node_color(rule_info: dict) -> str:
+def rule_node_color(rule_info: dict[str, Any]) -> str:
     """Choose rule node color based on string usage."""
     return "lightgreen" if rule_info.get("string_count", 0) > 0 else "lightcoral"
 
 
-def rule_cluster_label(rule_name: str, rule_info: dict) -> str:
+def rule_cluster_label(rule_name: str, rule_info: dict[str, Any]) -> str:
     """Build a label for rule nodes in the full graph."""
     label = _escape_dot(rule_name)
     modifiers = rule_info.get("modifiers")
@@ -25,7 +27,7 @@ def rule_cluster_label(rule_name: str, rule_info: dict) -> str:
     return label
 
 
-def rule_graph_label(rule_name: str, rule_info: dict) -> str:
+def rule_graph_label(rule_name: str, rule_info: dict[str, Any]) -> str:
     """Build a label for rule nodes in the rule-only graph."""
     label = f"{_escape_dot(rule_name)}\\n"
     tags = rule_info.get("tags")
@@ -54,7 +56,7 @@ def complexity_node_color(complexity: int) -> str:
     return "lightcoral"
 
 
-def complexity_node_label(rule_name: str, complexity: int, rule_info: dict) -> str:
+def complexity_node_label(rule_name: str, complexity: int, rule_info: dict[str, Any]) -> str:
     """Build label for complexity graph nodes."""
     return (
         f"{_escape_dot(rule_name)}\\nComplexity: {complexity}\\n"

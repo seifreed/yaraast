@@ -83,7 +83,7 @@ class StringDiagramAnalysisMixin:
 
                 self.string_patterns[pid] = pattern_info
 
-    def _analyze_hex_tokens(self, tokens: list) -> dict[str, Any]:
+    def _analyze_hex_tokens(self, tokens: list[Any]) -> dict[str, Any]:
         """Analyze hex string tokens."""
         from yaraast.ast.strings import (
             HexAlternative,

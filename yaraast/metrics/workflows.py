@@ -11,18 +11,12 @@ from yaraast.ast.base import YaraFile
 from yaraast.metrics.capabilities import get_capability
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.complexity_model import ComplexityMetrics
+from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 from yaraast.metrics.dependency_graph_helpers import require_output_path
 from yaraast.metrics.graphviz_errors import is_graphviz_error
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.shared.path_safety import path_has_symlink_ancestor, path_is_symlink
-
-try:
-    from yaraast.metrics.dependency_graph import DependencyGraphGenerator
-except ModuleNotFoundError as exc:
-    if exc.name != "graphviz":
-        raise
-    DependencyGraphGenerator = None
 
 __all__ = [
     "DependencyGraphGenerator",

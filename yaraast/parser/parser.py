@@ -38,6 +38,8 @@ class Parser(
     and adheres to the Dependency Inversion Principle.
     """
 
+    current: int
+
     def __init__(
         self,
         text: str | None = None,

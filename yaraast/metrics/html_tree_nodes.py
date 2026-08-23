@@ -70,7 +70,7 @@ class HtmlTreeNodesMixin:
         if section:
             children.append(section)
 
-    def _meta_section(self, meta) -> dict[str, Any] | None:
+    def _meta_section(self, meta: Any) -> dict[str, Any] | None:
         if not meta:
             return None
         items = ((getattr(m, "key", ""), getattr(m, "value", "")) for m in meta)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from fnmatch import fnmatchcase
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import require_string, require_yara_file
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
@@ -143,7 +143,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._visit_ast_value(node.quantifier)
         self._visit_string_set_value(node.string_set)
 
-    def _visit_ast_value(self, value) -> None:
+    def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
         elif isinstance(value, list | tuple | set | frozenset):
@@ -228,7 +228,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
         self._mark_string_usage(normalized)
 
-    def _visit_string_set_value(self, string_set) -> None:
+    def _visit_string_set_value(self, string_set: Any) -> None:
         if isinstance(string_set, str):
             self._mark_string_set_text(string_set)
             return
@@ -264,73 +264,73 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             return
         self._visit_ast_value(string_set)
 
-    def visit_string_identifier(self, node) -> None:
+    def visit_string_identifier(self, node: Any) -> None:
         """Track string usage."""
         self._mark_condition_string_usage(node.name)
 
-    def visit_string_wildcard(self, node) -> None:
+    def visit_string_wildcard(self, node: Any) -> None:
         self._mark_string_set_text(node.pattern)
 
-    def visit_string_count(self, node) -> None:
+    def visit_string_count(self, node: Any) -> None:
         self._mark_condition_string_usage(node.string_id)
 
-    def visit_string_offset(self, node) -> None:
-        self._mark_condition_string_usage(node.string_id)
-        self._visit_ast_value(getattr(node, "index", None))
-
-    def visit_string_length(self, node) -> None:
+    def visit_string_offset(self, node: Any) -> None:
         self._mark_condition_string_usage(node.string_id)
         self._visit_ast_value(getattr(node, "index", None))
 
-    def visit_parentheses_expression(self, node) -> None:
+    def visit_string_length(self, node: Any) -> None:
+        self._mark_condition_string_usage(node.string_id)
+        self._visit_ast_value(getattr(node, "index", None))
+
+    def visit_parentheses_expression(self, node: Any) -> None:
         self.visit(node.expression)
 
-    def visit_set_expression(self, node) -> None:
+    def visit_set_expression(self, node: Any) -> None:
         for elem in node.elements:
             self.visit(elem)
 
-    def visit_range_expression(self, node) -> None:
+    def visit_range_expression(self, node: Any) -> None:
         self.visit(node.low)
         self.visit(node.high)
 
-    def visit_function_call(self, node) -> None:
+    def visit_function_call(self, node: Any) -> None:
         self._visit_ast_value(getattr(node, "receiver", None))
         for arg in self._required_ast_sequence(node.arguments, "Function arguments"):
             self.visit(arg)
 
-    def visit_array_access(self, node) -> None:
+    def visit_array_access(self, node: Any) -> None:
         self.visit(node.array)
         self.visit(node.index)
 
-    def visit_member_access(self, node) -> None:
+    def visit_member_access(self, node: Any) -> None:
         self.visit(node.object)
 
-    def visit_at_expression(self, node) -> None:
+    def visit_at_expression(self, node: Any) -> None:
         if isinstance(node.string_id, str):
             self._mark_condition_string_usage(node.string_id)
         else:
             self._visit_ast_value(node.string_id)
         self.visit(self._required_ast_node(node.offset, "'at' offset"))
 
-    def visit_in_expression(self, node) -> None:
+    def visit_in_expression(self, node: Any) -> None:
         if isinstance(node.subject, str):
             self._mark_condition_string_usage(node.subject)
         else:
             self._visit_ast_value(node.subject)
         self.visit(self._required_ast_node(node.range, "'in' range"))
 
-    def visit_dictionary_access(self, node) -> None:
+    def visit_dictionary_access(self, node: Any) -> None:
         self.visit(node.object)
         self._visit_ast_value(node.key)
 
-    def visit_defined_expression(self, node) -> None:
+    def visit_defined_expression(self, node: Any) -> None:
         self.visit(node.expression)
 
-    def visit_string_operator_expression(self, node) -> None:
+    def visit_string_operator_expression(self, node: Any) -> None:
         self.visit(node.left)
         self.visit(node.right)
 
-    def visit_with_statement(self, node) -> None:
+    def visit_with_statement(self, node: Any) -> None:
         self._current_depth += 1
         self._condition_depths.append(self._current_depth)
         self._push_local_scope()
@@ -342,11 +342,11 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             self._pop_local_scope()
             self._current_depth -= 1
 
-    def visit_with_declaration(self, node) -> None:
+    def visit_with_declaration(self, node: Any) -> None:
         self._visit_ast_value(node.value)
         self._define_local(node.identifier, node.value)
 
-    def visit_array_comprehension(self, node) -> None:
+    def visit_array_comprehension(self, node: Any) -> None:
         self._current_depth += 1
         self._condition_depths.append(self._current_depth)
         self._visit_ast_value(node.iterable)
@@ -358,7 +358,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             self._pop_local_scope()
             self._current_depth -= 1
 
-    def visit_dict_comprehension(self, node) -> None:
+    def visit_dict_comprehension(self, node: Any) -> None:
         self._current_depth += 1
         self._condition_depths.append(self._current_depth)
         self._visit_ast_value(node.iterable)
@@ -374,37 +374,37 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             self._pop_local_scope()
             self._current_depth -= 1
 
-    def visit_tuple_expression(self, node) -> None:
+    def visit_tuple_expression(self, node: Any) -> None:
         self._visit_ast_value(node.elements)
 
-    def visit_tuple_indexing(self, node) -> None:
+    def visit_tuple_indexing(self, node: Any) -> None:
         self._visit_ast_value(node.tuple_expr)
         self._visit_ast_value(node.index)
 
-    def visit_list_expression(self, node) -> None:
+    def visit_list_expression(self, node: Any) -> None:
         self._visit_ast_value(node.elements)
 
-    def visit_dict_expression(self, node) -> None:
+    def visit_dict_expression(self, node: Any) -> None:
         self._visit_ast_value(node.items)
 
-    def visit_dict_item(self, node) -> None:
+    def visit_dict_item(self, node: Any) -> None:
         self._visit_ast_value(node.key)
         self._visit_ast_value(node.value)
 
-    def visit_slice_expression(self, node) -> None:
+    def visit_slice_expression(self, node: Any) -> None:
         self._visit_ast_value(node.target)
         self._visit_ast_value(node.start)
         self._visit_ast_value(node.stop)
         self._visit_ast_value(node.step)
 
-    def visit_lambda_expression(self, node) -> None:
+    def visit_lambda_expression(self, node: Any) -> None:
         self._push_local_scope(*node.parameters)
         try:
             self._visit_ast_value(node.body)
         finally:
             self._pop_local_scope()
 
-    def visit_pattern_match(self, node) -> None:
+    def visit_pattern_match(self, node: Any) -> None:
         self._current_depth += 1
         self._condition_depths.append(self._current_depth)
         self._visit_ast_value(node.value)
@@ -412,11 +412,11 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._visit_ast_value(node.default)
         self._current_depth -= 1
 
-    def visit_match_case(self, node) -> None:
+    def visit_match_case(self, node: Any) -> None:
         self._visit_ast_value(node.pattern)
         self._visit_ast_value(node.result)
 
-    def visit_spread_operator(self, node) -> None:
+    def visit_spread_operator(self, node: Any) -> None:
         self._visit_ast_value(node.expression)
 
     def _is_local(self, name: str) -> bool:
