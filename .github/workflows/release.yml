@@ -9,8 +9,67 @@ permissions:
   contents: read
 
 jobs:
+  release-guard:
+    name: Verify release provenance
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      checks: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag provenance and signature
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          git fetch origin main --tags
+          test "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$RELEASE_SHA"
+          git merge-base --is-ancestor "$RELEASE_SHA" origin/main
+          git verify-tag "$RELEASE_TAG"
+          python - <<'PY'
+          import os
+          import tomllib
+
+          with open("pyproject.toml", "rb") as handle:
+              version = tomllib.load(handle)["project"]["version"]
+          expected = os.environ["RELEASE_TAG"][1:]
+          if version != expected:
+              raise SystemExit(f"tag {expected!r} does not match project version {version!r}")
+          PY
+
+      - name: Verify required checks for tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          gh api "repos/$REPOSITORY/branches/main/protection/required_status_checks/contexts" \
+            --paginate > /tmp/required-contexts.json
+          gh api "repos/$REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" \
+            --paginate --slurp > /tmp/check-runs.json
+          python - <<'PY'
+          import json
+
+          with open("/tmp/required-contexts.json", encoding="utf-8") as handle:
+              required = set(json.load(handle))
+          with open("/tmp/check-runs.json", encoding="utf-8") as handle:
+              pages = json.load(handle)
+          runs = [run for page in pages for run in page["check_runs"]]
+          successful = {run["name"] for run in runs if run["conclusion"] == "success"}
+          missing = sorted(required - successful)
+          if missing:
+              raise SystemExit(f"tagged commit is missing successful required checks: {missing}")
+          PY
+
   test:
     name: Test before release
+    needs: release-guard
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6

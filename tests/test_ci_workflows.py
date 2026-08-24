@@ -94,6 +94,13 @@ def test_release_runs_the_full_configured_test_gate() -> None:
     workflow = _workflow("release.yml")
 
     _assert_required_quality_gates(workflow)
+    assert "release-guard:" in workflow
+    assert "git merge-base --is-ancestor \"$RELEASE_SHA\" origin/main" in workflow
+    assert 'git verify-tag "$RELEASE_TAG"' in workflow
+    assert "required_status_checks/contexts" in workflow
+    assert "check-runs?per_page=100" in workflow
+    assert 'run["conclusion"] == "success"' in workflow
+    assert "needs: release-guard" in workflow
     assert "sudo apt-get install --yes graphviz" in workflow
     assert "python -m pytest tests/ --tb=short" in workflow
     assert "--ignore=" not in workflow
