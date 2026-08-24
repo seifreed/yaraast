@@ -231,8 +231,10 @@ ignore_errors = false
 source_paths = ["yaraast/"]
 only_mutate = [
     "yaraast/parser/source.py",
+    "yaraast/parser/parser.py",
     "yaraast/lexer/string_escape.py",
     "yaraast/codegen/options.py",
+    "yaraast/codegen/generator.py",
 ]
 pytest_add_cli_args = ["-q", "-o", "addopts="]
 pytest_add_cli_args_test_selection = ["tests/test_mutation_contracts.py"]

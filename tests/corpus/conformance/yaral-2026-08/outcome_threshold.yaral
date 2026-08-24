@@ -1,0 +1,14 @@
+rule OutcomeThresholdRule {
+  events:
+    $e.metadata.event_type = "FILE_CREATION"
+    $e.principal.hostname = $host
+
+  match:
+    $host over 30m
+
+  outcome:
+    $risk_score = 5
+
+  condition:
+    $e and $risk_score >= 5
+}

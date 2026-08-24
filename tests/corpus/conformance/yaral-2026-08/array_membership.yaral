@@ -1,0 +1,12 @@
+rule ArrayMembershipRule {
+  events:
+    $e.metadata.event_type = "PROCESS_LAUNCH"
+    $e.principal.hostname = $host
+    $e.target.process.command_line = $command
+
+  match:
+    $host over 15m
+
+  condition:
+    $e
+}

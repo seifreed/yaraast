@@ -1,0 +1,10 @@
+rule InvalidMatchUnit {
+  events:
+    $e.metadata.event_type = "USER_LOGIN"
+
+  match:
+    $e over 5parsecs
+
+  condition:
+    $e
+}

@@ -18,11 +18,14 @@ def test_parser_runtime_gate_reports_all_operations_and_thresholds() -> None:
 
     assert report["ok"] is True
     assert report["input"]["rules"] == 10
+    assert report["samples"] == 3
     assert set(report["operations"]) == {"parsing", "codegen", "roundtrip"}
     for operation in report["operations"].values():
         assert operation["ok"] is True
         assert operation["max_seconds"] > 0
         assert operation["rules_per_second"] > 0
+        assert operation["median_seconds"] > 0
+        assert operation["p95_seconds"] >= operation["median_seconds"]
 
 
 def test_parser_runtime_gate_fails_when_an_operation_exceeds_its_limit() -> None:
@@ -34,3 +37,10 @@ def test_parser_runtime_gate_fails_when_an_operation_exceeds_its_limit() -> None
 
     assert report["ok"] is False
     assert report["operations"]["parsing"]["ok"] is False
+
+
+def test_parser_runtime_gate_rejects_empty_sample_sets() -> None:
+    import pytest
+
+    with pytest.raises(ValueError, match="samples must be positive"):
+        MODULE.run_regression_suite(rule_count=10, iterations=1, samples=0)

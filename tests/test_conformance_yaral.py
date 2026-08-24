@@ -19,6 +19,8 @@ INVALID_CORPUS_FILES = sorted(INVALID_CORPUS_DIR.glob("*.yaral"))
 def test_yaral_snapshot_corpus_is_non_empty() -> None:
     assert CORPUS_FILES
     assert INVALID_CORPUS_FILES
+    assert len(CORPUS_FILES) >= 9
+    assert len(INVALID_CORPUS_FILES) >= 3
 
 
 @pytest.mark.parametrize("rule_file", CORPUS_FILES, ids=lambda path: path.stem)

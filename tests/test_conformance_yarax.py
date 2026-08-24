@@ -20,6 +20,7 @@ def _data_for(rule_file: Path) -> bytes | None:
 
 def test_yarax_conformance_corpus_is_non_empty() -> None:
     assert CORPUS_FILES
+    assert len(CORPUS_FILES) >= 6
 
 
 @pytest.mark.skipif(

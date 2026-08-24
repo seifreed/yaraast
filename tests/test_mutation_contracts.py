@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import pytest
 
+from yaraast.codegen import CodeGenerator
 from yaraast.codegen.options import GeneratorOptions
 from yaraast.codegen.pretty_printer import PrettyPrintOptions
 from yaraast.errors import ParseError
 from yaraast.lexer.string_escape import EscapeResult, StringEscapeHandler
+from yaraast.parser import Parser
 from yaraast.parser.source import parse_source, parse_yara_source, parse_yara_source_with_comments
 from yaraast.yaral.ast_nodes import YaraLFile
 
@@ -74,3 +76,13 @@ def test_generator_options_select_layout_behavior() -> None:
         preserve_comments=False,
         blank_line_between_sections=False,
     )
+
+
+def test_parser_and_generator_contract_covers_round_trip() -> None:
+    source = 'rule mutation_contract { strings: $a = "x" condition: $a }'
+    document = Parser(source).parse()
+    generated = CodeGenerator().generate(document)
+
+    assert document.rules[0].name == "mutation_contract"
+    assert '$a = "x"' in generated
+    assert Parser(generated).parse().rules[0].name == "mutation_contract"

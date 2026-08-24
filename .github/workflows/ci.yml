@@ -215,7 +215,7 @@ jobs:
 
       - name: Gate parser, generator, and LSP runtime
         run: |
-          python scripts/benchmark_parser_runtime.py benchmark-results/parser.json
+          python scripts/benchmark_parser_runtime.py benchmark-results/parser.json --samples 5
           python scripts/benchmark_lsp_runtime.py benchmark-results/lsp.json
 
       - name: Upload benchmark reports
