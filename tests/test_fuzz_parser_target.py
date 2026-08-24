@@ -42,6 +42,12 @@ def test_roundtrip_target_reports_generator_failures(monkeypatch: pytest.MonkeyP
         roundtrip_target.test_one_input(source)
 
 
+def test_roundtrip_target_skips_semantically_invalid_ast() -> None:
+    from fuzz.roundtrip_target import test_one_input
+
+    test_one_input(b'rule basic { strings: $text = "example" condition: $tex8 }')
+
+
 def test_roundtrip_fuzz_seed_corpus_is_parseable() -> None:
     from fuzz.roundtrip_target import test_one_input
 
