@@ -77,7 +77,7 @@ def parse_file(
 def generate(
     document: YaraFile | YaraLFile,
     *,
-    dialect: OutputDialectName = "yara",
+    dialect: OutputDialectName,
 ) -> str:
     """Generate new source from an AST using an explicit output dialect."""
     resolved = _resolve_dialect(dialect)

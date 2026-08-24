@@ -13,7 +13,7 @@ SOURCE = "rule example { condition: true }"
 def test_parse_generate_and_format_public_api(tmp_path: Path) -> None:
     document = yaraast.parse(SOURCE)
     assert document.rules[0].name == "example"
-    assert yaraast.parse(yaraast.generate(document)).rules[0].name == "example"
+    assert yaraast.parse(yaraast.generate(document, dialect="yara")).rules[0].name == "example"
     assert yaraast.parse(yaraast.format_canonical(SOURCE)).rules[0].name == "example"
 
     rule_path = tmp_path / "example.yar"
@@ -58,6 +58,31 @@ def test_format_canonical_is_idempotent(
     formatted = yaraast.format_canonical(source, dialect=dialect)
 
     assert yaraast.format_canonical(formatted, dialect=dialect) == formatted
+
+
+@pytest.mark.parametrize(
+    ("dialect", "source"),
+    [
+        ("yara", "rule classic { condition: true }"),
+        ("yara-x", "rule modern { condition: with value = 1: value == 1 }"),
+        ("yara-l", 'rule log { events: $e.metadata.event_type = "x" condition: $e }'),
+    ],
+)
+def test_parse_generate_public_contract_for_each_dialect(
+    dialect: Literal["yara", "yara-x", "yara-l"], source: str
+) -> None:
+    document = yaraast.parse(source, dialect=dialect)
+    generated = yaraast.generate(document, dialect=dialect)
+    reparsed = yaraast.parse(generated, dialect=dialect)
+
+    assert reparsed.rules
+
+
+def test_generate_requires_an_explicit_dialect() -> None:
+    document = yaraast.parse(SOURCE)
+
+    with pytest.raises(TypeError):
+        getattr(yaraast, "generate")(document)
 
 
 @pytest.mark.parametrize("function_name", ["parse", "parse_file", "format_canonical"])
