@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 import pytest
 
@@ -82,7 +83,8 @@ def test_generate_requires_an_explicit_dialect() -> None:
     document = yaraast.parse(SOURCE)
 
     with pytest.raises(TypeError):
-        getattr(yaraast, "generate")(document)
+        generate_without_dialect = cast(Callable[..., str], yaraast.generate)
+        generate_without_dialect(document)
 
 
 @pytest.mark.parametrize("function_name", ["parse", "parse_file", "format_canonical"])

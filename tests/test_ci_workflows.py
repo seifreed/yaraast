@@ -95,7 +95,7 @@ def test_release_runs_the_full_configured_test_gate() -> None:
 
     _assert_required_quality_gates(workflow)
     assert "release-guard:" in workflow
-    assert "git merge-base --is-ancestor \"$RELEASE_SHA\" origin/main" in workflow
+    assert 'git merge-base --is-ancestor "$RELEASE_SHA" origin/main' in workflow
     assert 'git verify-tag "$RELEASE_TAG"' in workflow
     assert "check-runs?per_page=100" in workflow
     assert 'run["conclusion"] == "success"' in workflow
@@ -117,7 +117,7 @@ def test_release_runs_the_full_configured_test_gate() -> None:
     assert '"yaraast/serialization/yara_ast.proto"' in workflow
     assert '"yaraast/serialization/yara_ast_pb2.pyi"' in workflow
     assert "import tarfile" in workflow
-    assert 'from importlib.resources import files' in workflow
+    assert "from importlib.resources import files" in workflow
     assert 'ModuleLoader().get_module("vt")' in workflow
     assert "draft: true" in workflow
     assert "needs: github-release" in workflow

@@ -55,12 +55,8 @@ def test_runtime_and_development_extras_are_separate() -> None:
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     optional = pyproject["project"]["optional-dependencies"]
 
-    assert optional["all"] == [
-        "yaraast[libyara,lsp,performance,visualization,serialization]"
-    ]
-    assert optional["dev-all"] == [
-        "yaraast[all,dev,conformance,mutation,fuzz,quality]"
-    ]
+    assert optional["all"] == ["yaraast[libyara,lsp,performance,visualization,serialization]"]
+    assert optional["dev-all"] == ["yaraast[all,dev,conformance,mutation,fuzz,quality]"]
     assert "dev" not in optional["all"][0]
 
 
