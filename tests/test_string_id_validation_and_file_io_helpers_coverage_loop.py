@@ -143,16 +143,16 @@ def test_validate_new_string_definitions_normalises_identifiers_before_comparing
 # ---------------------------------------------------------------------------
 
 
-class _IsDir0SErrPath(Path):
-    """Path subclass whose stat() always raises OSError."""
+class _IsDir0SErrPath:
+    """Path-like test double whose stat() always raises OSError."""
 
     def stat(self, *, follow_symlinks: bool = True) -> Any:
         raise OSError("injected stat failure")
 
 
-def test_path_is_dir_oserror_re_raised_as_value_error(tmp_path: Path) -> None:
+def test_path_is_dir_oserror_re_raised_as_value_error() -> None:
     """_path_is_dir wraps OSError from Path.stat() into ValueError."""
-    bad_path = _IsDir0SErrPath(tmp_path / "_injected_isdir_test")
+    bad_path = cast(Path, _IsDir0SErrPath())
     with pytest.raises(ValueError, match="path could not be accessed"):
         _path_is_dir(bad_path)
 

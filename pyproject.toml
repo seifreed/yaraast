@@ -44,6 +44,7 @@ dev = [
     "flake8-simplify>=0.20.0",
     "ruff>=0.1.0",
     "mypy>=1.8.0",
+    "types-protobuf>=7.34.1",
     "bandit>=1.7.0",
     "pydocstyle>=6.3.0",
     "pip-audit>=2.10.0",

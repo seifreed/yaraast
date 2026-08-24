@@ -464,7 +464,7 @@ def _protobuf_required_int(value: Any, context: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         msg = f"{context} must be an integer"
         raise SerializationError(msg)
-    return cast(int, value)
+    return value
 
 
 def _protobuf_int32_value(value: Any, context: str) -> int:

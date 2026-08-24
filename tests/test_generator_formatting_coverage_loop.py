@@ -617,9 +617,9 @@ def test_contextual_local_identifiers_pushes_and_restores_locals() -> None:
     local_set = frozenset({"x", "y"})
 
     with contextual_local_identifiers(gen, local_set):
-        assert gen._contextual_local_identifiers == (local_set,)
+        assert list(gen._contextual_local_identifiers) == [local_set]
 
-    assert gen._contextual_local_identifiers == ()
+    assert not gen._contextual_local_identifiers
 
 
 def test_contextual_local_identifiers_is_nestable() -> None:
@@ -633,12 +633,12 @@ def test_contextual_local_identifiers_is_nestable() -> None:
     inner = frozenset({"b"})
 
     with contextual_local_identifiers(gen, outer):
-        assert gen._contextual_local_identifiers == (outer,)
+        assert list(gen._contextual_local_identifiers) == [outer]
         with contextual_local_identifiers(gen, inner):
-            assert gen._contextual_local_identifiers == (outer, inner)
-        assert gen._contextual_local_identifiers == (outer,)
+            assert list(gen._contextual_local_identifiers) == [outer, inner]
+        assert list(gen._contextual_local_identifiers) == [outer]
 
-    assert gen._contextual_local_identifiers == ()
+    assert not gen._contextual_local_identifiers
 
 
 # ---------------------------------------------------------------------------

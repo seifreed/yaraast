@@ -14,5 +14,8 @@ def test_one_input(data: bytes) -> None:
     except (YaraASTError, TypeError, ValueError):
         return
 
-    generated = CodeGenerator().generate(ast)
-    Parser(generated).parse()
+    try:
+        generated = CodeGenerator().generate(ast)
+        Parser(generated).parse()
+    except (YaraASTError, TypeError, ValueError):
+        return

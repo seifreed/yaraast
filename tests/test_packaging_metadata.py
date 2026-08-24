@@ -36,6 +36,12 @@ def test_conformance_engines_are_reproducibly_pinned() -> None:
     ]
 
 
+def test_mypy_has_protobuf_stubs_for_generated_messages() -> None:
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+
+    assert "types-protobuf>=7.34.1" in pyproject["project"]["optional-dependencies"]["dev"]
+
+
 def test_release_version_has_a_dated_changelog_entry() -> None:
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     project_version = pyproject["project"]["version"]

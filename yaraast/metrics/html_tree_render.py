@@ -23,7 +23,7 @@ class HtmlTreeRenderMixin:
         """Render HTML template with shared settings."""
         from jinja2 import Template
 
-        return Template(template_text).render(**context)
+        return str(Template(template_text).render(**context))
 
     def _render_html_template(
         self,

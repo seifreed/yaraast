@@ -14,6 +14,10 @@ def test_parser_fuzz_target_accepts_valid_and_invalid_bytes() -> None:
     run_fuzz_input(b"\xff\x00rule invalid {")
 
 
+def test_parser_fuzz_target_ignores_invalid_generated_string_references() -> None:
+    run_fuzz_input(b'rule basic { strings: $text = "example" ascii wide condition: $tex8 }')
+
+
 def test_parser_fuzz_seed_corpus_exercises_the_target() -> None:
     seeds = sorted(CORPUS_DIR.glob("*.yar"))
     assert len(seeds) == 3

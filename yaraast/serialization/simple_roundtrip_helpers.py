@@ -621,7 +621,7 @@ def _serialize_required_int(value: Any, context: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         msg = f"{context} must be an integer"
         raise SerializationError(msg)
-    return cast(int, value)
+    return value
 
 
 def _serialize_nullable_int(value: Any, context: str) -> int | None:
@@ -637,7 +637,7 @@ def _serialize_required_number(value: Any, context: str) -> int | float:
     if isinstance(value, float) and not math.isfinite(value):
         msg = f"{context} must be finite"
         raise SerializationError(msg)
-    return cast(int | float, value)
+    return value
 
 
 def _serialize_required_bool(value: Any, context: str) -> bool:
