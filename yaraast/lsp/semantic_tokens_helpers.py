@@ -93,7 +93,9 @@ def token_source_length(token: Token) -> int:
 
 
 def _is_empty_range(range_: Range) -> bool:
-    return range_.start.line == range_.end.line and range_.start.character == range_.end.character
+    return bool(
+        range_.start.line == range_.end.line and range_.start.character == range_.end.character
+    )
 
 
 def _token_overlaps_range(token_line: int, token_start: int, token_end: int, range_: Range) -> bool:
@@ -108,7 +110,7 @@ def _token_overlaps_range(token_line: int, token_start: int, token_end: int, ran
         return False
     if token_line == range_.start.line and token_end <= range_.start.character:
         return False
-    return not (token_line == range_.end.line and token_start >= range_.end.character)
+    return bool(not (token_line == range_.end.line and token_start >= range_.end.character))
 
 
 def encode_tokens(

@@ -179,4 +179,4 @@ def _position_to_location_column(position: Position, source_text: str | None) ->
         lines = source_text.split("\n")
         if 0 <= position.line < len(lines):
             return utf16_col_to_utf8(lines[position.line], position.character) + 1
-    return position.character + 1
+    return int(position.character) + 1

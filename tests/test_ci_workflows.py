@@ -13,6 +13,10 @@ def _assert_required_quality_gates(workflow: str) -> None:
     assert "run: ruff check ." in workflow
     assert "run: black --check ." in workflow
     assert "run: mypy ." in workflow
+    assert (
+        "mypy --strict --follow-imports=skip yaraast/limits.py yaraast/shared/path_safety.py"
+        in workflow
+    )
     assert "run: bandit -r yaraast" in workflow
     assert "--ignore-missing-imports" not in workflow
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from fuzz.parser_target import test_one_input as run_fuzz_input
 
 CORPUS_DIR = Path(__file__).resolve().parents[1] / "fuzz" / "corpus" / "parser"
@@ -26,7 +28,7 @@ def test_parser_fuzz_seed_corpus_exercises_the_target() -> None:
         run_fuzz_input(seed.read_bytes())
 
 
-def test_roundtrip_target_reports_generator_failures(monkeypatch: object) -> None:
+def test_roundtrip_target_reports_generator_failures(monkeypatch: pytest.MonkeyPatch) -> None:
     from fuzz import roundtrip_target
 
     class BrokenGenerator:
@@ -35,8 +37,6 @@ def test_roundtrip_target_reports_generator_failures(monkeypatch: object) -> Non
 
     monkeypatch.setattr(roundtrip_target, "CodeGenerator", BrokenGenerator)
     source = b'rule valid { strings: $a = "x" condition: $a }'
-
-    import pytest
 
     with pytest.raises(RuntimeError, match="generator regression"):
         roundtrip_target.test_one_input(source)

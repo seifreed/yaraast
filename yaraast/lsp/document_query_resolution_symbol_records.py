@@ -55,9 +55,9 @@ def prefer_symbol_resolution(
 
 
 def range_span_size(range_obj: Range) -> int:
-    return ((range_obj.end.line - range_obj.start.line) * 10_000) + max(
-        1,
-        range_obj.end.character - range_obj.start.character,
+    return int(
+        ((range_obj.end.line - range_obj.start.line) * 10_000)
+        + max(1, range_obj.end.character - range_obj.start.character)
     )
 
 

@@ -219,6 +219,11 @@ strict = true
 ignore_errors = false
 
 [[tool.mypy.overrides]]
+module = ["yaraast.limits", "yaraast.shared.path_safety"]
+strict = true
+ignore_errors = false
+
+[[tool.mypy.overrides]]
 module = [
     "yaraast.serialization._serialization_primitives",
     "yaraast.serialization.ast_diff_meta",

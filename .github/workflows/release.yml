@@ -37,6 +37,9 @@ jobs:
       - name: MyPy
         run: mypy .
 
+      - name: Strict typing targets
+        run: mypy --strict --follow-imports=skip yaraast/limits.py yaraast/shared/path_safety.py
+
       - name: Bandit
         run: bandit -r yaraast
 
@@ -153,6 +156,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Download build artifacts
         uses: actions/download-artifact@v7
