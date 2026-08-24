@@ -47,17 +47,28 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_SHA: ${{ github.sha }}
-          REPOSITORY: ${{ github.repository }}
         run: |
-          gh api "repos/$REPOSITORY/branches/main/protection/required_status_checks/contexts" \
-            --paginate > /tmp/required-contexts.json
-          gh api "repos/$REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" \
+          gh api "repos/${GITHUB_REPOSITORY}/commits/$RELEASE_SHA/check-runs?per_page=100" \
             --paginate --slurp > /tmp/check-runs.json
           python - <<'PY'
           import json
 
-          with open("/tmp/required-contexts.json", encoding="utf-8") as handle:
-              required = set(json.load(handle))
+          required = {
+              "Test (ubuntu-24.04, Python 3.11)",
+              "Test (ubuntu-24.04, Python 3.14)",
+              "Test (ubuntu-24.04-arm, Python 3.13)",
+              "Test (macos-15, Python 3.13)",
+              "Test (macos-15-intel, Python 3.13)",
+              "Test (windows-2022, Python 3.13)",
+              "Coverage gate",
+              "Lint & Type Check",
+              "Graphviz integration",
+              "Differential conformance gate",
+              "Performance regression gates",
+              "Atheris parser fuzzing",
+              "Parser, lexer, and codegen mutation gate",
+              "VS Code extension",
+          }
           with open("/tmp/check-runs.json", encoding="utf-8") as handle:
               pages = json.load(handle)
           runs = [run for page in pages for run in page["check_runs"]]
