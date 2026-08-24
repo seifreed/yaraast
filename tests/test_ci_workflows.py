@@ -62,7 +62,10 @@ def test_ci_runs_coverage_and_real_graphviz_without_hidden_test_ignores() -> Non
     assert "fuzz:" in workflow
     assert 'pip install -e ".[fuzz]"' in workflow
     assert "python -m fuzz.run_parser_fuzz fuzz/corpus/parser" in workflow
+    assert "python -m fuzz.run_roundtrip_fuzz fuzz/corpus/parser" in workflow
     assert "-atheris_runs=10000 -max_len=65536 -timeout=5" in workflow
+    assert "macos-15-intel" in workflow
+    assert 'EXPECTED_ARCH: ${{ matrix.arch }}' in workflow
     assert "mutation:" in workflow
     assert 'pip install -e ".[dev,mutation,serialization]"' in workflow
     assert "mutmut run --max-children 4" in workflow
@@ -90,3 +93,10 @@ def test_release_runs_the_full_configured_test_gate() -> None:
     assert "pip-audit . --progress-spinner off" in workflow
     assert "name: extension-vsix" in workflow
     assert "extension/*.vsix" in workflow
+    assert "permissions:\n  contents: read" in workflow
+    assert 'pip install -e ".[dev,conformance,lsp,visualization,serialization,performance]"' in workflow
+    assert "python -m twine check dist/*" in workflow
+    assert '.sdist-venv/bin/pip check' in workflow
+    assert 'draft: true' in workflow
+    assert 'needs: github-release' in workflow
+    assert 'finalize-release:' in workflow

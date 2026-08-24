@@ -36,11 +36,11 @@ jobs:
             python-version: "3.13"
             arch: arm64
           # macOS ARM64 (Apple Silicon)
-          - os: macos-14
+          - os: macos-15
             python-version: "3.13"
             arch: arm64
           # macOS x64 (Intel)
-          - os: macos-15
+          - os: macos-15-intel
             python-version: "3.13"
             arch: x64
           # Windows x64
@@ -55,6 +55,22 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Verify macOS architecture
+        if: startsWith(matrix.os, 'macos')
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          python - <<'PY'
+          import os
+          import platform
+
+          expected = {"arm64": "arm64", "x64": "x86_64"}[os.environ["EXPECTED_ARCH"]]
+          actual = platform.machine().lower()
+          if actual != expected:
+              raise SystemExit(f"expected {expected}, runner reported {actual}")
+          print(f"verified macOS architecture: {actual}")
+          PY
 
       - name: Cache pip dependencies
         uses: actions/cache@v5
@@ -224,9 +240,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[fuzz]"
 
-      - name: Fuzz parser, generator, and reparse path
+      - name: Fuzz parser acceptance
         run: |
           python -m fuzz.run_parser_fuzz fuzz/corpus/parser -atheris_runs=10000 -max_len=65536 -timeout=5
+
+      - name: Fuzz accepted-input round trips
+        run: |
+          python -m fuzz.run_roundtrip_fuzz fuzz/corpus/parser -atheris_runs=10000 -max_len=65536 -timeout=5
 
   mutation:
     name: Parser, lexer, and codegen mutation gate

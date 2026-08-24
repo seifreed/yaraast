@@ -6,8 +6,7 @@ on:
       - "v*"
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
   test:
@@ -24,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,lsp,visualization,serialization,performance]"
+          pip install -e ".[dev,conformance,lsp,visualization,serialization,performance]"
 
       - name: Install Graphviz
         run: sudo apt-get update && sudo apt-get install --yes graphviz
@@ -62,26 +61,50 @@ jobs:
           python-version: "3.13"
 
       - name: Install build tools
-        run: python -m pip install --upgrade pip build
+        run: python -m pip install --upgrade pip build twine
 
       - name: Build sdist and wheel
         run: python -m build
 
-      - name: Verify package
+      - name: Verify distribution metadata
+        run: python -m twine check dist/*
+
+      - name: Verify wheel and sdist in clean environments
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           WHEEL=$(ls dist/*.whl)
+          SDIST=$(ls dist/*.tar.gz)
           python -m venv .release-venv
           .release-venv/bin/pip install "${WHEEL}[lsp,visualization,serialization,performance]"
+          python -m venv .sdist-venv
+          .sdist-venv/bin/pip install "$SDIST"
+          .release-venv/bin/pip check
+          .sdist-venv/bin/pip check
           EXPECTED_VERSION=${RELEASE_TAG#v}
           WHEEL_VERSION=$(.release-venv/bin/python -c "from importlib.metadata import version; print(version('yaraast'))")
+          SDIST_VERSION=$(.sdist-venv/bin/python -c "from importlib.metadata import version; print(version('yaraast'))")
           RUNTIME_VERSION=$(cd "$(mktemp -d)" && "$GITHUB_WORKSPACE/.release-venv/bin/python" -c "import yaraast; print(yaraast.__version__)")
           test "$EXPECTED_VERSION" = "$WHEEL_VERSION"
+          test "$EXPECTED_VERSION" = "$SDIST_VERSION"
           test "$EXPECTED_VERSION" = "$RUNTIME_VERSION"
           cd "$(mktemp -d)"
           "$GITHUB_WORKSPACE/.release-venv/bin/yaraast" --version
           "$GITHUB_WORKSPACE/.release-venv/bin/python" "$GITHUB_WORKSPACE/scripts/check_readme_examples.py"
+          WHEEL_PATH="$GITHUB_WORKSPACE/$WHEEL" .release-venv/bin/python - <<'PY'
+          import os
+          import zipfile
+
+          wheel = os.environ["WHEEL_PATH"]
+          with zipfile.ZipFile(wheel) as archive:
+              names = set(archive.namelist())
+          required = {"yaraast/__init__.py", "yaraast/py.typed"}
+          missing = required - names
+          if missing:
+              raise SystemExit(f"wheel missing package data: {sorted(missing)}")
+          if any(name.startswith(("/", "\\")) for name in names):
+              raise SystemExit("wheel contains an absolute path")
+          PY
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
@@ -151,9 +174,9 @@ jobs:
           # Get commits since last tag
           PREV_TAG=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || echo "")
           if [ -n "$PREV_TAG" ]; then
-            CHANGES=$(git log --pretty=format:"- %s" "$PREV_TAG..$TAG" -- yaraast/ tests/)
+            CHANGES=$(git log --pretty=format:"- %s" "$PREV_TAG..$TAG" -- . ':!.planning')
           else
-            CHANGES=$(git log --pretty=format:"- %s" -20 -- yaraast/ tests/)
+            CHANGES=$(git log --pretty=format:"- %s" -20 -- . ':!.planning')
           fi
           {
             echo "notes<<RELEASE_EOF"
@@ -180,12 +203,12 @@ jobs:
           files: |
             dist/*
             extension/*.vsix
-          draft: false
+          draft: true
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
 
   publish-pypi:
     name: Publish to PyPI
-    needs: build
+    needs: github-release
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -201,3 +224,17 @@ jobs:
 
       - name: Publish to PyPI (OIDC trusted publishing)
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  finalize-release:
+    name: Publish GitHub Release
+    needs: publish-pypi
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Publish the validated draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${GITHUB_REF_NAME}" --draft=false
