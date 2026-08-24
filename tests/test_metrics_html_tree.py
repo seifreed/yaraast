@@ -59,6 +59,18 @@ def test_html_tree_generation_accepts_yarax_nodes() -> None:
     assert "Pattern Match" in html
 
 
+def test_html_tree_escapes_user_controlled_title() -> None:
+    ast = Parser().parse("rule tree { condition: true }")
+
+    rendered = HtmlTreeGenerator().generate_html(
+        ast,
+        title='</title><script>alert("x")</script>',
+    )
+
+    assert '</title><script>alert("x")</script>' not in rendered
+    assert "&lt;/title&gt;&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;" in rendered
+
+
 def test_html_tree_rejects_empty_output_path() -> None:
     ast = Parser().parse("rule tree { condition: true }")
 

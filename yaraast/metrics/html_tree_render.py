@@ -38,7 +38,7 @@ class HtmlTreeRenderMixin:
 
         return self._render_template(
             template_text,
-            title=title,
+            title=_esc(title),
             tree_data=tree_data,
             stats=stats,
             render_node=self._create_render_macro(default_collapsed),
@@ -54,7 +54,7 @@ class HtmlTreeRenderMixin:
         template_text = INTERACTIVE_HTML_TREE_TEMPLATE
         return self._render_template(
             template_text,
-            title=title,
+            title=_esc(title),
             tree_data=tree_data,
             render_node=self._create_render_macro(default_collapsed),
         )
