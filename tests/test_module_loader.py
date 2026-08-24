@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import tempfile
 
+import pytest
+
 from yaraast.types.module_loader import ModuleLoader
 from yaraast.types.type_system import ArrayType, IntegerType
 
@@ -134,18 +136,17 @@ def test_complex_types() -> None:
         del os.environ["YARAAST_MODULE_SPEC_PATH"]
 
 
-def test_example_custom_module() -> None:
-    """Test loading the example custom module."""
-    # Load from default modules directory
+def test_example_custom_module_is_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Example module specifications are loaded only from an explicit path."""
+    default_loader = ModuleLoader()
+    assert default_loader.get_module("custom") is None
+
+    example_path = Path(__file__).parent.parent / "examples" / "module-specs"
+    monkeypatch.setenv("YARAAST_MODULE_SPEC_PATH", str(example_path))
     loader = ModuleLoader()
 
-    # The example_custom.json should be loaded if it exists
-    modules_dir = Path(__file__).parent.parent / "yaraast" / "types" / "modules"
-    if modules_dir.exists() and (modules_dir / "example_custom.json").exists():
-        assert "custom" in loader.modules
-
-        custom = loader.get_module("custom")
-        assert custom is not None
-        assert "api_version" in custom.attributes
-        assert "hash" in custom.functions
-        assert "MAX_BUFFER_SIZE" in custom.constants
+    custom = loader.get_module("custom")
+    assert custom is not None
+    assert "api_version" in custom.attributes
+    assert "hash" in custom.functions
+    assert "MAX_BUFFER_SIZE" in custom.constants
