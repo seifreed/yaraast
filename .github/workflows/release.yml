@@ -94,19 +94,49 @@ jobs:
           cd "$(mktemp -d)"
           "$GITHUB_WORKSPACE/.release-venv/bin/yaraast" --version
           "$GITHUB_WORKSPACE/.release-venv/bin/python" "$GITHUB_WORKSPACE/scripts/check_readme_examples.py"
-          WHEEL_PATH="$GITHUB_WORKSPACE/$WHEEL" .release-venv/bin/python - <<'PY'
+          WHEEL_PATH="$GITHUB_WORKSPACE/$WHEEL" SDIST_PATH="$GITHUB_WORKSPACE/$SDIST" .release-venv/bin/python - <<'PY'
           import os
+          import tarfile
           import zipfile
 
           wheel = os.environ["WHEEL_PATH"]
           with zipfile.ZipFile(wheel) as archive:
               names = set(archive.namelist())
-          required = {"yaraast/__init__.py", "yaraast/py.typed"}
+          required = {
+              "yaraast/__init__.py",
+              "yaraast/py.typed",
+              "yaraast/types/modules/vt.json",
+              "yaraast/serialization/yara_ast.proto",
+              "yaraast/serialization/yara_ast_pb2.pyi",
+          }
           missing = required - names
           if missing:
               raise SystemExit(f"wheel missing package data: {sorted(missing)}")
           if any(name.startswith(("/", "\\")) for name in names):
               raise SystemExit("wheel contains an absolute path")
+
+          sdist = os.environ["SDIST_PATH"]
+          with tarfile.open(sdist, "r:gz") as archive:
+              sdist_names = {name.split("/", 1)[-1] for name in archive.getnames()}
+          missing = required - sdist_names
+          if missing:
+              raise SystemExit(f"sdist missing package data: {sorted(missing)}")
+          PY
+          .release-venv/bin/python - <<'PY'
+          from importlib.resources import files
+          from yaraast.types.module_loader import ModuleLoader
+
+          package_root = files("yaraast")
+          for relative in (
+              "py.typed",
+              "types/modules/vt.json",
+              "serialization/yara_ast.proto",
+              "serialization/yara_ast_pb2.pyi",
+          ):
+              if not package_root.joinpath(relative).is_file():
+                  raise SystemExit(f"installed wheel missing package data: {relative}")
+          if ModuleLoader().get_module("vt") is None:
+              raise SystemExit("installed wheel failed to load the vt module")
           PY
 
       - name: Upload build artifacts

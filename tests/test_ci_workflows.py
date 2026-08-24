@@ -107,6 +107,12 @@ def test_release_runs_the_full_configured_test_gate() -> None:
     )
     assert "python -m twine check dist/*" in workflow
     assert ".sdist-venv/bin/pip check" in workflow
+    assert '"yaraast/types/modules/vt.json"' in workflow
+    assert '"yaraast/serialization/yara_ast.proto"' in workflow
+    assert '"yaraast/serialization/yara_ast_pb2.pyi"' in workflow
+    assert "import tarfile" in workflow
+    assert 'from importlib.resources import files' in workflow
+    assert 'ModuleLoader().get_module("vt")' in workflow
     assert "draft: true" in workflow
     assert "needs: github-release" in workflow
     assert "finalize-release:" in workflow

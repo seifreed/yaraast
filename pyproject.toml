@@ -91,6 +91,14 @@ build-backend = "setuptools.build_meta"
 where = ["."]
 include = ["yaraast*"]
 
+[tool.setuptools.package-data]
+yaraast = [
+    "py.typed",
+    "types/modules/*.json",
+    "serialization/*.proto",
+    "serialization/*.pyi",
+]
+
 
 # Black configuration
 [tool.black]
