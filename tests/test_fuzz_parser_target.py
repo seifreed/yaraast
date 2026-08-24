@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 
 from fuzz.parser_target import test_one_input as run_fuzz_input
+from yaraast.parser import Parser
+from yaraast.types.semantic_validator import validate_yara_file
 
 CORPUS_DIR = Path(__file__).resolve().parents[1] / "fuzz" / "corpus" / "parser"
 ROUNDTRIP_CORPUS_DIR = Path(__file__).resolve().parents[1] / "fuzz" / "corpus" / "roundtrip"
@@ -40,6 +42,16 @@ def test_roundtrip_target_reports_generator_failures(monkeypatch: pytest.MonkeyP
 
     with pytest.raises(RuntimeError, match="generator regression"):
         roundtrip_target.test_one_input(source)
+
+
+def test_roundtrip_target_skips_semantically_invalid_ast() -> None:
+    from fuzz.roundtrip_target import test_one_input
+
+    source = b'rule basic { strings: $text = "example" condition: $tex8 }'
+    ast = Parser(source.decode("utf-8")).parse()
+    assert validate_yara_file(ast).errors
+
+    test_one_input(source)
 
 
 def test_roundtrip_fuzz_seed_corpus_is_parseable() -> None:

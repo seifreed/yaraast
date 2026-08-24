@@ -249,7 +249,7 @@ jobs:
 
       - name: Fuzz accepted-input round trips
         run: |
-          python -m fuzz.run_roundtrip_fuzz fuzz/corpus/parser -atheris_runs=10000 -max_len=65536 -timeout=5
+          python -m fuzz.run_roundtrip_fuzz fuzz/corpus/roundtrip -atheris_runs=10000 -max_len=65536 -timeout=5
 
   mutation:
     name: Parser, lexer, and codegen mutation gate

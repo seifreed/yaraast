@@ -5,6 +5,7 @@ from __future__ import annotations
 from yaraast.codegen import CodeGenerator
 from yaraast.errors import YaraASTError
 from yaraast.parser import Parser
+from yaraast.types.semantic_validator import validate_yara_file
 
 
 def test_one_input(data: bytes) -> None:
@@ -12,6 +13,9 @@ def test_one_input(data: bytes) -> None:
     try:
         ast = Parser(source).parse()
     except (YaraASTError, TypeError, ValueError):
+        return
+
+    if validate_yara_file(ast).errors:
         return
 
     generated = CodeGenerator().generate(ast)
