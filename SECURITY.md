@@ -4,7 +4,7 @@
 
 | Version | Supported |
 | --- | --- |
-| `main` / upcoming 2.0 | Yes |
+| 2.0.x | Yes |
 | 1.x | No |
 
 ## Reporting

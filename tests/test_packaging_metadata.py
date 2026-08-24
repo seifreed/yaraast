@@ -47,5 +47,32 @@ def test_release_version_has_a_dated_changelog_entry() -> None:
     project_version = pyproject["project"]["version"]
     changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
 
-    assert project_version == "2.0.1"
-    assert f"## {project_version} - 2026-08-23" in changelog
+    assert project_version == "2.0.1rc1"
+    assert f"## {project_version} - 2026-08-24" in changelog
+
+
+def test_runtime_and_development_extras_are_separate() -> None:
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    optional = pyproject["project"]["optional-dependencies"]
+
+    assert optional["all"] == [
+        "yaraast[libyara,lsp,performance,visualization,serialization]"
+    ]
+    assert optional["dev-all"] == [
+        "yaraast[all,dev,conformance,mutation,fuzz,quality]"
+    ]
+    assert "dev" not in optional["all"][0]
+
+
+def test_project_metadata_declares_beta_status_and_official_urls() -> None:
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    project = pyproject["project"]
+
+    assert "Development Status :: 4 - Beta" in project["classifiers"]
+    assert project["urls"] == {
+        "Homepage": "https://github.com/seifreed/yaraast",
+        "Repository": "https://github.com/seifreed/yaraast",
+        "Issues": "https://github.com/seifreed/yaraast/issues",
+        "Changelog": "https://github.com/seifreed/yaraast/blob/main/CHANGELOG.md",
+        "Documentation": "https://github.com/seifreed/yaraast/tree/main/docs",
+    }

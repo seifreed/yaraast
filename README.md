@@ -212,8 +212,11 @@ pip install yaraast[performance]
 # Visualization support
 pip install yaraast[visualization]
 
-# Everything
+# Runtime support bundle
 pip install yaraast[all]
+
+# Runtime and development tooling
+pip install yaraast[dev-all]
 ```
 
 ## Runtime Docs

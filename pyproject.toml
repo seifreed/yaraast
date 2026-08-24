@@ -1,13 +1,13 @@
 [project]
 name = "yaraast"
-version = "2.0.1"
+version = "2.0.1rc1"
 description = "A Python library for parsing and manipulating YARA rules using Abstract Syntax Trees"
 authors = [{name = "Marc Rivero", email = "mriverolopez@gmail.com"}]
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -24,6 +24,13 @@ dependencies = [
     "attrs>=23.0.0",
     "PyYAML>=6.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/seifreed/yaraast"
+Repository = "https://github.com/seifreed/yaraast"
+Issues = "https://github.com/seifreed/yaraast/issues"
+Changelog = "https://github.com/seifreed/yaraast/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/seifreed/yaraast/tree/main/docs"
 
 [project.optional-dependencies]
 lsp = [
@@ -77,7 +84,10 @@ quality = [
     "qlty>=0.1.0",
 ]
 all = [
-    "yaraast[dev,libyara,lsp,performance,visualization,serialization,quality]",
+    "yaraast[libyara,lsp,performance,visualization,serialization]",
+]
+dev-all = [
+    "yaraast[all,dev,conformance,mutation,fuzz,quality]",
 ]
 
 [project.scripts]
