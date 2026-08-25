@@ -1,0 +1,24 @@
+name: Set up locked Python environment
+description: Install the project and selected extras from uv.lock
+inputs:
+  extras:
+    description: Space-separated uv extra arguments
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      shell: bash
+      run: python -m pip install --upgrade "uv==0.9.22"
+    - name: Sync locked environment
+      shell: bash
+      run: uv sync --locked ${{ inputs.extras }}
+    - name: Add Unix virtualenv to PATH
+      if: runner.os != 'Windows'
+      shell: bash
+      run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+    - name: Add Windows virtualenv to PATH
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        "$env:GITHUB_WORKSPACE\\.venv\\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append

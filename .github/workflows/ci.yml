@@ -84,9 +84,9 @@ jobs:
             ${{ runner.os }}-${{ matrix.arch }}-pip-
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,lsp,visualization,serialization,performance]"
+        uses: ./.github/actions/setup-uv
+        with:
+          extras: --extra dev --extra lsp --extra visualization --extra serialization --extra performance
 
       - name: Run tests
         env:
@@ -110,9 +110,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes graphviz
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,libyara,lsp,visualization,serialization,performance]"
+        uses: ./.github/actions/setup-uv
+        with:
+          extras: --extra dev --extra libyara --extra lsp --extra visualization --extra serialization --extra performance
 
       - name: Enforce configured coverage threshold
         env:
@@ -135,9 +135,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes graphviz
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,visualization]"
+        uses: ./.github/actions/setup-uv
+        with:
+          extras: --extra dev --extra visualization
 
       - name: Render a real graph
         run: |
@@ -155,9 +155,9 @@ jobs:
           python-version: "3.13"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,lsp,visualization,serialization,performance]"
+        uses: ./.github/actions/setup-uv
+        with:
+          extras: --extra dev --extra lsp --extra visualization --extra serialization --extra performance
 
       - name: Ruff check
         run: ruff check .
@@ -189,9 +189,9 @@ jobs:
           python-version: "3.13"
 
       - name: Install dependencies with both reference engines
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,conformance]"
+        uses: ./.github/actions/setup-uv
+        with:
+          extras: --extra dev --extra conformance
 
       - name: Run conformance gates (YARA + YARA-X + YARA-L)
         env:
@@ -212,9 +212,9 @@ jobs:
           python-version: "3.13"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,lsp,performance]"
+        uses: ./.github/actions/setup-uv
+        with:
+          extras: --extra dev --extra lsp --extra performance
 
       - name: Gate parser, generator, and LSP runtime
         run: |
@@ -239,9 +239,9 @@ jobs:
           python-version: "3.13"
 
       - name: Install fuzzer
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[fuzz]"
+        uses: ./.github/actions/setup-uv
+        with:
+          extras: --extra fuzz
 
       - name: Fuzz parser acceptance
         run: |
@@ -263,9 +263,9 @@ jobs:
           python-version: "3.13"
 
       - name: Install mutation tooling
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,mutation,serialization]"
+        uses: ./.github/actions/setup-uv
+        with:
+          extras: --extra dev --extra mutation --extra serialization
 
       - name: Run mutation gate
         run: |
