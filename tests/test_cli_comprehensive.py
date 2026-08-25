@@ -1355,7 +1355,7 @@ class TestCLIErrorHandling:
     def test_nonexistent_file(self) -> None:
         """Test handling of nonexistent file."""
         result = subprocess.run(
-            ["python", "-m", "yaraast.cli.main", "parse", "/nonexistent/file.yar"],
+            [sys.executable, "-m", "yaraast.cli.main", "parse", "/nonexistent/file.yar"],
             capture_output=True,
             text=True,
             check=False,
@@ -1369,7 +1369,7 @@ class TestCLIErrorHandling:
     def test_invalid_command(self) -> None:
         """Test handling of invalid command."""
         result = subprocess.run(
-            ["python", "-m", "yaraast.cli.main", "invalid_command"],
+            [sys.executable, "-m", "yaraast.cli.main", "invalid_command"],
             capture_output=True,
             text=True,
             check=False,
@@ -1383,7 +1383,7 @@ class TestCLIErrorHandling:
     def test_help_command(self) -> None:
         """Test help command."""
         result = subprocess.run(
-            ["python", "-m", "yaraast.cli.main", "--help"],
+            [sys.executable, "-m", "yaraast.cli.main", "--help"],
             capture_output=True,
             text=True,
             check=False,
@@ -1397,7 +1397,7 @@ class TestCLIErrorHandling:
     def test_version_command(self) -> None:
         """Test version command."""
         result = subprocess.run(
-            ["python", "-m", "yaraast.cli.main", "--version"],
+            [sys.executable, "-m", "yaraast.cli.main", "--version"],
             capture_output=True,
             text=True,
             check=False,
