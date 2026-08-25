@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
@@ -108,9 +106,11 @@ class ExpressionPostfixMixin(ExpressionMixinBase):
 
     def _dotted_expression_name(self, expr: Expression) -> str | None:
         if isinstance(expr, Identifier):
-            return cast(str, expr.name)
+            identifier_name: str = expr.name
+            return identifier_name
         if isinstance(expr, ModuleReference):
-            return cast(str, expr.module)
+            module_name: str = expr.module
+            return module_name
         if isinstance(expr, MemberAccess):
             prefix = self._dotted_expression_name(expr.object)
             if prefix is not None:

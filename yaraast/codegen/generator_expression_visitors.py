@@ -132,7 +132,8 @@ def _is_definitely_boolean_expression(value: Any) -> bool:
     if isinstance(value, InExpression):
         return not isinstance(value.subject, StringCount)
     if isinstance(value, UnaryExpression):
-        return cast(bool, value.operator == "not")
+        is_not_operator: bool = value.operator == "not"
+        return is_not_operator
     if isinstance(value, BinaryExpression):
         return value.operator in (
             _COMPARISON_BINARY_OPERATORS | _STRING_BINARY_OPERATORS | {"and", "or"}

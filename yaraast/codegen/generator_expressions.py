@@ -345,13 +345,15 @@ def _render_quantifier(
         # reject them, so emit those directly. Other identifiers still go through
         # validation, which rejects non-count keywords such as true.
         if quantifier.name in {"filesize", "entrypoint"}:
-            return cast(str, quantifier.name)
+            identifier_name: str = quantifier.name
+            return identifier_name
         return _validate_quantifier_text(
             quantifier.name, allow_percentage=allow_percentage, context=context
         )
     # Any remaining quantifier is a primary expression libyara accepts as a
     # count (e.g. uint8(0), pe.number_of_sections); render it directly.
-    return cast(str, gen.visit(quantifier))
+    rendered_quantifier: str = gen.visit(quantifier)
+    return rendered_quantifier
 
 
 def _validate_quantifier_text(

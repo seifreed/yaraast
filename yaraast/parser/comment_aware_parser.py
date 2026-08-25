@@ -322,7 +322,8 @@ class CommentAwareParser(Parser):
         """Return the line where the condition expression ends."""
         location = condition.location
         if location is not None and location.end_line is not None:
-            return cast(int, location.end_line)
+            end_line: int = location.end_line
+            return end_line
         return fallback
 
     def _expect_rbrace_with_recovery(self) -> None:
