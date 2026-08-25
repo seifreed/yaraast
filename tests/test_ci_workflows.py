@@ -96,6 +96,14 @@ def test_ci_audits_and_packages_the_vscode_extension() -> None:
     assert "python3 scripts/verify_vsix.py /tmp/yaraast.vsix" in workflow
 
 
+def test_locked_environment_uses_the_windows_virtualenv_path() -> None:
+    action = Path(".github/actions/setup-uv/action.yml").read_text(encoding="utf-8")
+
+    assert '$venv_bin = Join-Path $env:GITHUB_WORKSPACE ".venv\\Scripts"' in action
+    assert "$venv_bin | Out-File -FilePath $env:GITHUB_PATH" in action
+    assert '"$env:GITHUB_WORKSPACE\\\\.venv\\\\Scripts"' not in action
+
+
 def test_release_runs_the_full_configured_test_gate() -> None:
     workflow = _workflow("release.yml")
 
