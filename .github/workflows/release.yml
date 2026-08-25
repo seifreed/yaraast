@@ -31,6 +31,8 @@ jobs:
           git fetch origin main --tags
           test "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$RELEASE_SHA"
           git merge-base --is-ancestor "$RELEASE_SHA" origin/main
+          gpg --batch --import .github/release-signing-key.asc
+          test "$(gpg --batch --with-colons --list-keys | awk -F: '$1 == \"fpr\" { print $10; exit }')" = "96F84462629EAEB5C79EE345BD4420606460365C"
           git verify-tag "$RELEASE_TAG"
           python - <<'PY'
           import os
