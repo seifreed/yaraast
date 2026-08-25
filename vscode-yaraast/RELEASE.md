@@ -2,6 +2,14 @@
 
 This checklist keeps VSIX publication reproducible.
 
+## Independent versioning
+
+The extension version is the `version` field in `package.json` and is
+independent from the Python package version. Create an extension release with
+the tag `extension-vX.Y.Z`; the release workflow verifies that the tag matches
+`package.json` and publishes only the VSIX. Python releases continue to use
+`vX.Y.Z` tags.
+
 ## Local package validation
 
 1. Install extension dependencies:

@@ -1,0 +1,58 @@
+name: VS Code extension release
+
+on:
+  push:
+    tags:
+      - "extension-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Package and publish VSIX
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: vscode-yaraast
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: vscode-yaraast/package-lock.json
+
+      - name: Install and audit locked dependencies
+        run: |
+          npm ci
+          npm audit --audit-level=low
+
+      - name: Verify independent extension version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          expected="${GITHUB_REF_NAME#extension-v}"
+          actual=$(node -p "require('./package.json').version")
+          test "$expected" = "$actual"
+
+      - name: Package and verify VSIX
+        run: |
+          npx vsce package --out yaraast.vsix
+          python3 scripts/verify_vsix.py yaraast.vsix
+
+      - name: Publish extension release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" yaraast.vsix \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag
