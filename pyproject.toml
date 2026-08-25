@@ -73,6 +73,9 @@ mutation = [
 performance = [
     "psutil>=5.9.0",
 ]
+docs = [
+    "mkdocs==1.6.1",
+]
 visualization = [
     "graphviz>=0.20.0",
     "jinja2>=3.0.0",

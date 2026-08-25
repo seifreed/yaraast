@@ -1,0 +1,50 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "MIGRATING.md"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "MIGRATING.md"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build MkDocs site
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install locked documentation environment
+        uses: ./.github/actions/setup-uv
+        with:
+          extras: --extra docs
+
+      - name: Build documentation
+        run: mkdocs build --strict --site-dir site
+
+      - name: Upload documentation site
+        uses: actions/upload-artifact@v6
+        with:
+          name: documentation-site
+          path: site/

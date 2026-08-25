@@ -1,0 +1,18 @@
+site_name: yaraast
+site_description: Parse, analyze, and transform YARA-family rules with Python
+site_url: https://seifreed.github.io/yaraast/
+repo_url: https://github.com/seifreed/yaraast
+strict: true
+exclude_docs: |
+  adr/**
+  benchmarks/**
+  final-lsp-status.md
+  lsp-parity-report.md
+  lsp-runtime.md
+  static-analysis-baseline.md
+theme:
+  name: readthedocs
+nav:
+  - Home: index.md
+  - API: api.md
+  - Compatibility: compatibility.md
