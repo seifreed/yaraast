@@ -88,7 +88,18 @@ jobs:
         with:
           extras: --extra dev --extra lsp --extra visualization --extra serialization --extra performance
 
-      - name: Run tests
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: "1"
+        run: |
+          $env:PATH = "$env:GITHUB_WORKSPACE\.venv\Scripts;$env:PATH"
+          python -m pytest tests/ -o "addopts=" -n auto --tb=short -m "not integration"
+
+      - name: Run tests (Unix)
+        if: runner.os != 'Windows'
         env:
           PYTHONIOENCODING: utf-8
           PYTHONUTF8: "1"

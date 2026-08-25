@@ -56,6 +56,9 @@ def test_ci_runs_coverage_and_real_graphviz_without_hidden_test_ignores() -> Non
     ) in workflow
     assert "coverage:" in workflow
     assert "python -m pytest tests/ --tb=short" in workflow
+    assert "- name: Run tests (Windows)" in workflow
+    assert '$env:PATH = "$env:GITHUB_WORKSPACE\\.venv\\Scripts;$env:PATH"' in workflow
+    assert "- name: Run tests (Unix)" in workflow
     assert "integration-visualization:" in workflow
     assert "sudo apt-get install --yes graphviz" in workflow
     assert "-m integration" in workflow
