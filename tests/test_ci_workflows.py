@@ -67,14 +67,15 @@ def test_ci_runs_coverage_and_real_graphviz_without_hidden_test_ignores() -> Non
     assert "python scripts/benchmark_lsp_runtime.py benchmark-results/lsp.json" in workflow
     assert "name: benchmark-results" in workflow
     assert "fuzz:" in workflow
-    assert 'pip install -e ".[fuzz]"' in workflow
+    assert "uses: ./.github/actions/setup-uv" in workflow
+    assert "extras: --extra fuzz" in workflow
     assert "python -m fuzz.run_parser_fuzz fuzz/corpus/parser" in workflow
     assert "python -m fuzz.run_roundtrip_fuzz fuzz/corpus/roundtrip" in workflow
     assert "-atheris_runs=10000 -max_len=65536 -timeout=5" in workflow
     assert "macos-15-intel" in workflow
     assert "EXPECTED_ARCH: ${{ matrix.arch }}" in workflow
     assert "mutation:" in workflow
-    assert 'pip install -e ".[dev,mutation,serialization]"' in workflow
+    assert "extras: --extra dev --extra mutation --extra serialization" in workflow
     assert "mutmut run --max-children 4" in workflow
     assert "mutmut export-cicd-stats" in workflow
     assert "--minimum-score 75" in workflow
@@ -110,10 +111,11 @@ def test_release_runs_the_full_configured_test_gate() -> None:
     assert "name: extension-vsix" in workflow
     assert "extension/*.vsix" in workflow
     assert "permissions:\n  contents: read" in workflow
+    assert "uses: ./.github/actions/setup-uv" in workflow
     assert (
-        'pip install -e ".[dev,conformance,lsp,visualization,serialization,performance]"'
-        in workflow
-    )
+        "extras: --extra dev --extra conformance --extra lsp --extra visualization "
+        "--extra serialization --extra performance"
+    ) in workflow
     assert "python -m twine check dist/*" in workflow
     assert ".sdist-venv/bin/pip check" in workflow
     assert '"yaraast/types/modules/vt.json"' in workflow
