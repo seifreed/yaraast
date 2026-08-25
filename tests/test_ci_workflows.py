@@ -97,6 +97,7 @@ def test_release_runs_the_full_configured_test_gate() -> None:
     assert "release-guard:" in workflow
     assert 'git merge-base --is-ancestor "$RELEASE_SHA" origin/main' in workflow
     assert "gpg --batch --import .github/release-signing-key.asc" in workflow
+    assert "awk -F: '$1 == \"fpr\" { print $10; exit }'" in workflow
     assert "96F84462629EAEB5C79EE345BD4420606460365C" in workflow
     assert 'git verify-tag "$RELEASE_TAG"' in workflow
     assert "check-runs?per_page=100" in workflow
