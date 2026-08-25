@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from yaraast.ast.base import ASTNode, Location
 from yaraast.interfaces import IToken
@@ -30,7 +30,7 @@ class TokenStreamMixin:
         """Check if current token is of given type."""
         if self._is_at_end():
             return False
-        return self._peek().type == token_type
+        return cast(bool, cast(TokenType, self._peek().type) == token_type)
 
     def _check_any(self, *types: TokenType) -> bool:
         """Check if current token matches any of the given types."""
@@ -44,7 +44,7 @@ class TokenStreamMixin:
 
     def _is_at_end(self) -> bool:
         """Check if we're at end of tokens."""
-        return self._peek().type == TokenType.EOF
+        return cast(bool, cast(TokenType, self._peek().type) == TokenType.EOF)
 
     def _peek(self) -> IToken:
         """Return current token without advancing."""

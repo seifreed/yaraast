@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 import sys
+from typing import cast
 
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.errors import YaraASTError
@@ -173,7 +174,7 @@ def _parse_xor_modifier_key(value: object) -> int | None:
     if isinstance(value, str):
         parsed_value = parse_xor_key_text(value)
         if parsed_value is not None and 0 <= parsed_value <= _MAX_XOR_KEY:
-            return parsed_value
+            return cast(int, parsed_value)
     return None
 
 

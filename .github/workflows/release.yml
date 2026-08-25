@@ -112,6 +112,12 @@ jobs:
       - name: Strict typing targets
         run: mypy --strict --follow-imports=skip yaraast/limits.py yaraast/shared/path_safety.py yaraast/api.py
 
+      - name: Strict parser typing
+        run: mypy --strict --follow-imports=skip yaraast/errors.py yaraast/parser/*.py
+
+      - name: Strict codegen typing
+        run: mypy --strict --follow-imports=skip yaraast/errors.py yaraast/visitor/visitor.py yaraast/codegen/*.py
+
       - name: Bandit
         run: bandit -r yaraast
 

@@ -49,6 +49,11 @@ def test_ci_runs_coverage_and_real_graphviz_without_hidden_test_ignores() -> Non
     workflow = _workflow("ci.yml")
 
     _assert_required_quality_gates(workflow)
+    assert "mypy --strict --follow-imports=skip yaraast/errors.py yaraast/parser/*.py" in workflow
+    assert (
+        "mypy --strict --follow-imports=skip yaraast/errors.py "
+        "yaraast/visitor/visitor.py yaraast/codegen/*.py"
+    ) in workflow
     assert "coverage:" in workflow
     assert "python -m pytest tests/ --tb=short" in workflow
     assert "integration-visualization:" in workflow
@@ -95,6 +100,11 @@ def test_release_runs_the_full_configured_test_gate() -> None:
     workflow = _workflow("release.yml")
 
     _assert_required_quality_gates(workflow)
+    assert "mypy --strict --follow-imports=skip yaraast/errors.py yaraast/parser/*.py" in workflow
+    assert (
+        "mypy --strict --follow-imports=skip yaraast/errors.py "
+        "yaraast/visitor/visitor.py yaraast/codegen/*.py"
+    ) in workflow
     assert "release-guard:" in workflow
     assert 'git merge-base --is-ancestor "$RELEASE_SHA" origin/main' in workflow
     assert "gpg --batch --import .github/release-signing-key.asc" in workflow

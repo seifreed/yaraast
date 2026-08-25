@@ -345,7 +345,7 @@ def _render_quantifier(
         # reject them, so emit those directly. Other identifiers still go through
         # validation, which rejects non-count keywords such as true.
         if quantifier.name in {"filesize", "entrypoint"}:
-            return quantifier.name
+            return cast(str, quantifier.name)
         return _validate_quantifier_text(
             quantifier.name, allow_percentage=allow_percentage, context=context
         )

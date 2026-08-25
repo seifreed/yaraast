@@ -7,7 +7,7 @@ from dataclasses import fields
 from decimal import Decimal
 import math
 import re
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
@@ -193,7 +193,7 @@ def escape_regex_delimiter(pattern: str) -> str:
         msg = "Regex pattern must not contain NUL bytes for libyara output"
         raise ValueError(msg)
     validate_regex_pattern(pattern)
-    return _escape_regex_delimiter(pattern.replace("\r", "\\r"))
+    return cast(str, _escape_regex_delimiter(pattern.replace("\r", "\\r")))
 
 
 def output_string_identifier(string_def: Any) -> str:
@@ -1065,7 +1065,7 @@ def _regex_modifier_name(modifier: object) -> str:
     if isinstance(modifier, str):
         return modifier
     if isinstance(modifier, StringModifier):
-        return modifier.name
+        return cast(str, modifier.name)
     msg = "String modifiers must contain strings or StringModifier nodes for libyara output"
     raise TypeError(msg)
 

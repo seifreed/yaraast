@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import cast
 
 from yaraast.ast.conditions import (
     AtExpression,
@@ -447,7 +448,7 @@ class ExpressionBinaryMixin(ExpressionMixinBase):
     def _static_integer_value(self, expr: Expression) -> int | None:
         expr = self._unwrap_parenthesized_expression(expr)
         if isinstance(expr, IntegerLiteral):
-            return expr.value
+            return cast(int, expr.value)
         if isinstance(expr, UnaryExpression):
             value = self._static_integer_value(expr.operand)
             if value is None:
