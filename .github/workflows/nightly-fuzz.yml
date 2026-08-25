@@ -1,0 +1,49 @@
+name: Nightly fuzzing
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Prolonged Atheris fuzzing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install locked fuzzing environment
+        uses: ./.github/actions/setup-uv
+        with:
+          extras: --extra fuzz
+
+      - name: Run prolonged fuzz targets
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p fuzz-artifacts
+          python -m fuzz.run_parser_fuzz fuzz/corpus/parser \
+            -atheris_runs=500000 -max_len=65536 -timeout=30 \
+            2>&1 | tee fuzz-artifacts/parser.log
+          python -m fuzz.run_roundtrip_fuzz fuzz/corpus/roundtrip \
+            -atheris_runs=500000 -max_len=65536 -timeout=30 \
+            2>&1 | tee fuzz-artifacts/roundtrip.log
+
+      - name: Upload fuzz logs and corpus
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: nightly-fuzz-${{ github.run_id }}
+          path: |
+            fuzz-artifacts/
+            fuzz/corpus/
+          if-no-files-found: warn
