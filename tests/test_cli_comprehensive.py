@@ -93,7 +93,7 @@ class TestCLIParseCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -136,7 +136,7 @@ class TestCLIParseCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -183,7 +183,7 @@ class TestCLIParseCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -234,7 +234,7 @@ class TestCLIParseCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -308,7 +308,7 @@ class TestCLIParseCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -353,7 +353,7 @@ class TestCLIFormatCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "format",
@@ -413,7 +413,7 @@ class TestCLIFormatCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "format",
@@ -604,7 +604,7 @@ class TestCLIFmtCommand:
             try:
                 result = subprocess.run(
                     [
-                        "python",
+                        sys.executable,
                         "-m",
                         "yaraast.cli.main",
                         "fmt",
@@ -792,7 +792,7 @@ class TestCLIDiffCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "diff",
@@ -835,7 +835,7 @@ class TestCLIDiffCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "diff",
@@ -883,7 +883,7 @@ class TestCLIBenchCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "bench",
@@ -926,7 +926,7 @@ class TestCLIBenchCommand:
             try:
                 result = subprocess.run(
                     [
-                        "python",
+                        sys.executable,
                         "-m",
                         "yaraast.cli.main",
                         "bench",
@@ -975,7 +975,7 @@ class TestCLIBenchCommand:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "bench",
@@ -1030,7 +1030,7 @@ class TestCLIAnalyzeCommands:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "analyze",
@@ -1076,7 +1076,7 @@ class TestCLIAnalyzeCommands:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "analyze",
@@ -1118,7 +1118,7 @@ class TestCLIAnalyzeCommands:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "analyze",
@@ -1164,7 +1164,7 @@ class TestCLIAnalyzeCommands:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "analyze",
@@ -1209,7 +1209,7 @@ class TestCLIAnalyzeCommands:
         try:
             subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "analyze",
@@ -1266,7 +1266,7 @@ class TestCLISerializeCommands:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "serialize",
@@ -1321,7 +1321,7 @@ class TestCLISerializeCommands:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "serialize",
@@ -1442,7 +1442,7 @@ class TestCLIRoundtripIntegration:
             # Format the file
             result1 = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "format",
@@ -1461,7 +1461,7 @@ class TestCLIRoundtripIntegration:
             # Parse formatted file
             result2 = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -1506,7 +1506,7 @@ class TestCLIRoundtripIntegration:
             # Parse twice
             result1 = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -1523,7 +1523,7 @@ class TestCLIRoundtripIntegration:
 
             result2 = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -1576,7 +1576,7 @@ class TestCLIComplexRules:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -1620,7 +1620,7 @@ class TestCLIComplexRules:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -1665,7 +1665,7 @@ class TestCLIComplexRules:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -1710,7 +1710,7 @@ class TestCLIComplexRules:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
@@ -1752,7 +1752,7 @@ class TestCLIComplexRules:
         try:
             result = subprocess.run(
                 [
-                    "python",
+                    sys.executable,
                     "-m",
                     "yaraast.cli.main",
                     "parse",
