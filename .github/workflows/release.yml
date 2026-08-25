@@ -144,6 +144,14 @@ jobs:
       - name: Verify distribution metadata
         run: python -m twine check dist/*
 
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: dist/sbom.spdx.json
+          upload-artifact: false
+
       - name: Verify wheel and sdist in clean environments
         env:
           RELEASE_TAG: ${{ github.ref_name }}
@@ -256,6 +264,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -272,6 +282,13 @@ jobs:
         with:
           name: extension-vsix
           path: extension/
+
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/*
+            extension/*.vsix
 
       - name: Generate release notes
         id: notes
