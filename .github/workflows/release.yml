@@ -110,7 +110,7 @@ jobs:
         run: mypy .
 
       - name: Strict typing targets
-        run: mypy --strict --follow-imports=skip yaraast/limits.py yaraast/shared/path_safety.py
+        run: mypy --strict --follow-imports=skip yaraast/limits.py yaraast/shared/path_safety.py yaraast/api.py
 
       - name: Bandit
         run: bandit -r yaraast

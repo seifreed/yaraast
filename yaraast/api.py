@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.codegen import CodeGenerator
@@ -118,13 +118,13 @@ def generate(
         if not isinstance(ast, YaraLFile):
             msg = "YARA-L generation requires a YaraLFile"
             raise TypeError(msg)
-        return YaraLGenerator().generate(ast)
+        return cast(str, YaraLGenerator().generate(ast))
     if not isinstance(ast, YaraFile):
         msg = "YARA and YARA-X generation requires a YaraFile"
         raise TypeError(msg)
     if resolved is YaraDialect.YARA_X:
-        return YaraXGenerator().generate(ast)
-    return CodeGenerator().generate(ast)
+        return cast(str, YaraXGenerator().generate(ast))
+    return cast(str, CodeGenerator().generate(ast))
 
 
 def format_canonical(

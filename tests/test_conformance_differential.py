@@ -55,6 +55,7 @@ def test_corpus_round_trip_is_conformant(rule_file: Path) -> None:
 def test_corpus_is_non_empty_and_accepted_by_every_engine() -> None:
     assert CORPUS_FILES, "conformance corpus must not be empty"
     assert len(CORPUS_FILES) >= 15
+    assert sum(path.name.startswith("real_world_") for path in CORPUS_FILES) >= 4
 
     engines = available_engines()
     if not engines:
