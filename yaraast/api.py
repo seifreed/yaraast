@@ -23,6 +23,11 @@ _DIALECTS: dict[str, YaraDialect | None] = {
 
 DialectName = Literal["auto", "yara", "yara-x", "yara-l"]
 OutputDialectName = Literal["yara", "yara-x", "yara-l"]
+_OUTPUT_DIALECT_NAMES: dict[YaraDialect, OutputDialectName] = {
+    YaraDialect.YARA: "yara",
+    YaraDialect.YARA_X: "yara-x",
+    YaraDialect.YARA_L: "yara-l",
+}
 
 
 @dataclass(frozen=True)
@@ -32,6 +37,15 @@ class SourceEdit:
     start: int
     end: int
     replacement: str
+
+
+@dataclass(frozen=True)
+class ParsedDocument:
+    """Parsed AST together with the dialect used to produce it."""
+
+    ast: YaraFile | YaraLFile
+    dialect: OutputDialectName
+    source_name: str | None = None
 
 
 def _resolve_dialect(dialect: str) -> YaraDialect | None:
@@ -48,14 +62,18 @@ def parse(
     dialect: DialectName = "auto",
     resource_limits: ResourceLimits = DEFAULT_RESOURCE_LIMITS,
     cancellation_token: CancellationToken | None = None,
-) -> YaraFile | YaraLFile:
+) -> ParsedDocument:
     """Parse YARA-family source text into its dialect-specific AST."""
-    return UnifiedParser(
+    parser = UnifiedParser(
         source,
         _resolve_dialect(dialect),
         resource_limits=resource_limits,
         cancellation_token=cancellation_token,
-    ).parse()
+    )
+    return ParsedDocument(
+        ast=parser.parse(),
+        dialect=_OUTPUT_DIALECT_NAMES[parser.dialect],
+    )
 
 
 def parse_file(
@@ -64,37 +82,49 @@ def parse_file(
     dialect: DialectName = "auto",
     resource_limits: ResourceLimits = DEFAULT_RESOURCE_LIMITS,
     cancellation_token: CancellationToken | None = None,
-) -> YaraFile | YaraLFile:
+) -> ParsedDocument:
     """Parse a UTF-8 YARA-family source file."""
-    return UnifiedParser.parse_file(
+    path_obj = Path(path)
+    resolved = _resolve_dialect(dialect)
+    document = UnifiedParser.parse_file(
         path,
-        _resolve_dialect(dialect),
+        resolved,
         resource_limits=resource_limits,
         cancellation_token=cancellation_token,
+    )
+    actual_dialect = resolved or UnifiedParser.detect_file_dialect(path_obj)
+    return ParsedDocument(
+        ast=document,
+        dialect=_OUTPUT_DIALECT_NAMES[actual_dialect],
+        source_name=str(path),
     )
 
 
 def generate(
-    document: YaraFile | YaraLFile,
+    document: ParsedDocument,
     *,
-    dialect: OutputDialectName,
+    dialect: OutputDialectName | None = None,
 ) -> str:
-    """Generate new source from an AST using an explicit output dialect."""
-    resolved = _resolve_dialect(dialect)
+    """Generate source using the document dialect or an explicit override."""
+    if not isinstance(document, ParsedDocument):
+        msg = "document must be a ParsedDocument returned by parse or parse_file"
+        raise TypeError(msg)
+    resolved = _resolve_dialect(dialect or document.dialect)
     if resolved is None:
         msg = "generation dialect must be one of: yara, yara-x, yara-l"
         raise ValueError(msg)
+    ast = document.ast
     if resolved is YaraDialect.YARA_L:
-        if not isinstance(document, YaraLFile):
+        if not isinstance(ast, YaraLFile):
             msg = "YARA-L generation requires a YaraLFile"
             raise TypeError(msg)
-        return YaraLGenerator().generate(document)
-    if not isinstance(document, YaraFile):
+        return YaraLGenerator().generate(ast)
+    if not isinstance(ast, YaraFile):
         msg = "YARA and YARA-X generation requires a YaraFile"
         raise TypeError(msg)
     if resolved is YaraDialect.YARA_X:
-        return YaraXGenerator().generate(document)
-    return CodeGenerator().generate(document)
+        return YaraXGenerator().generate(ast)
+    return CodeGenerator().generate(ast)
 
 
 def format_canonical(
@@ -105,18 +135,13 @@ def format_canonical(
     cancellation_token: CancellationToken | None = None,
 ) -> str:
     """Parse source and return canonical text for its dialect."""
-    parser = UnifiedParser(
+    document = parse(
         source,
-        _resolve_dialect(dialect),
+        dialect=dialect,
         resource_limits=resource_limits,
         cancellation_token=cancellation_token,
     )
-    document = parser.parse()
-    if parser.dialect is YaraDialect.YARA_L:
-        return generate(document, dialect="yara-l")
-    if parser.dialect is YaraDialect.YARA_X:
-        return generate(document, dialect="yara-x")
-    return generate(document, dialect="yara")
+    return generate(document)
 
 
 def rewrite_lossless(source: str, edits: Sequence[SourceEdit]) -> str:

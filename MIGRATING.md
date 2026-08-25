@@ -7,8 +7,10 @@ clean environment and use the documented public API:
 import yaraast
 
 document = yaraast.parse("rule example { condition: true }")
+assert document.dialect == "yara"
+ast = document.ast
 document = yaraast.parse_file("rules.yar", dialect="auto")
-formatted = yaraast.format_canonical("rule example { condition: true }")
+formatted = yaraast.generate(document)
 ```
 
 ## Required Changes

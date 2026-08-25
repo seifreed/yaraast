@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from pathlib import Path
 from typing import Literal, cast
 
@@ -13,13 +12,17 @@ SOURCE = "rule example { condition: true }"
 
 def test_parse_generate_and_format_public_api(tmp_path: Path) -> None:
     document = yaraast.parse(SOURCE)
-    assert document.rules[0].name == "example"
-    assert yaraast.parse(yaraast.generate(document, dialect="yara")).rules[0].name == "example"
-    assert yaraast.parse(yaraast.format_canonical(SOURCE)).rules[0].name == "example"
+    assert isinstance(document, yaraast.ParsedDocument)
+    assert document.dialect == "yara"
+    assert document.ast.rules[0].name == "example"
+    assert yaraast.parse(yaraast.generate(document)).ast.rules[0].name == "example"
+    assert yaraast.parse(yaraast.format_canonical(SOURCE)).ast.rules[0].name == "example"
 
     rule_path = tmp_path / "example.yar"
     rule_path.write_text(SOURCE, encoding="utf-8")
-    assert yaraast.parse_file(rule_path).rules[0].name == "example"
+    parsed_file = yaraast.parse_file(rule_path)
+    assert parsed_file.source_name == str(rule_path)
+    assert parsed_file.ast.rules[0].name == "example"
 
 
 @pytest.mark.parametrize(
@@ -42,7 +45,7 @@ def test_format_dispatches_to_dialect_generator(
 ) -> None:
     formatted = yaraast.format_canonical(source, dialect=dialect)
     assert expected in formatted
-    assert yaraast.parse(formatted, dialect=dialect).rules
+    assert yaraast.parse(formatted, dialect=dialect).ast.rules
 
 
 @pytest.mark.parametrize(
@@ -76,15 +79,19 @@ def test_parse_generate_public_contract_for_each_dialect(
     generated = yaraast.generate(document, dialect=dialect)
     reparsed = yaraast.parse(generated, dialect=dialect)
 
-    assert reparsed.rules
+    assert reparsed.ast.rules
 
 
-def test_generate_requires_an_explicit_dialect() -> None:
+def test_generate_uses_the_parsed_document_dialect() -> None:
+    document = yaraast.parse(SOURCE)
+    assert yaraast.generate(document).startswith("rule example")
+
+
+def test_generate_rejects_raw_ast_without_persistent_dialect() -> None:
     document = yaraast.parse(SOURCE)
 
-    with pytest.raises(TypeError):
-        generate_without_dialect = cast(Callable[..., str], yaraast.generate)
-        generate_without_dialect(document)
+    with pytest.raises(TypeError, match="ParsedDocument"):
+        yaraast.generate(cast(yaraast.ParsedDocument, document.ast))
 
 
 @pytest.mark.parametrize("function_name", ["parse", "parse_file", "format_canonical"])

@@ -87,8 +87,8 @@ rule example {
 }
 """
 
-ast = yaraast.parse(yara_code)
-print(ast.rules[0].name)
+document = yaraast.parse(yara_code)
+print(document.ast.rules[0].name)
 ```
 
 ---
@@ -142,15 +142,15 @@ import yaraast
 source = "rule example { condition: true }"
 
 # Auto-detect dialect
-ast = yaraast.parse(source)
+document = yaraast.parse(source)
 
 # Force specific dialect
-ast = yaraast.parse(source, dialect="yara")
+document = yaraast.parse(source, dialect="yara")
 
 # Parse files, generate new source, and format canonically
 Path("rules.yar").write_text(source, encoding="utf-8")
-file_ast = yaraast.parse_file("rules.yar")
-generated = yaraast.generate(file_ast, dialect="yara")
+file_document = yaraast.parse_file("rules.yar")
+generated = yaraast.generate(file_document)
 formatted = yaraast.format_canonical(source, dialect="yara")
 
 # Preserve every byte outside an explicit UTF-8 byte edit
@@ -162,7 +162,7 @@ rewritten = yaraast.rewrite_lossless(
 
 # Public parsers apply bounded defaults. Override them per operation when needed.
 limits = yaraast.ResourceLimits(max_input_bytes=1024 * 1024, parse_deadline=5.0)
-ast = yaraast.parse(source, resource_limits=limits)
+document = yaraast.parse(source, resource_limits=limits)
 
 cancel = yaraast.CancellationToken()
 cancel.cancel()

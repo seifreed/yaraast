@@ -2,13 +2,22 @@
 
 from importlib.metadata import version
 
-from yaraast.api import SourceEdit, format_canonical, generate, parse, parse_file, rewrite_lossless
+from yaraast.api import (
+    ParsedDocument,
+    SourceEdit,
+    format_canonical,
+    generate,
+    parse,
+    parse_file,
+    rewrite_lossless,
+)
 from yaraast.limits import CancellationToken, ResourceLimits
 
 __version__ = version("yaraast")
 
 __all__ = [
     "CancellationToken",
+    "ParsedDocument",
     "ResourceLimits",
     "SourceEdit",
     "__version__",

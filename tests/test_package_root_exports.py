@@ -12,6 +12,7 @@ def test_package_root_exports_installed_version() -> None:
     assert yaraast.__version__ == version("yaraast")
     assert yaraast.__all__ == [
         "CancellationToken",
+        "ParsedDocument",
         "ResourceLimits",
         "SourceEdit",
         "__version__",
