@@ -123,6 +123,8 @@ def test_release_runs_the_full_configured_test_gate() -> None:
     assert "from importlib.resources import files" in workflow
     assert 'ModuleLoader().get_module("vt")' in workflow
     assert '"$GITHUB_WORKSPACE/.release-venv/bin/python" - <<' in workflow
-    assert "draft: true" in workflow
+    assert 'gh "${ARGS[@]}" dist/* extension/*.vsix' in workflow
+    assert "softprops/action-gh-release" not in workflow
+    assert "--draft" in workflow
     assert "needs: github-release" in workflow
     assert "finalize-release:" in workflow

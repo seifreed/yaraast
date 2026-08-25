@@ -286,7 +286,6 @@ jobs:
             CHANGES=$(git log --pretty=format:"- %s" -20 -- . ':!.planning')
           fi
           {
-            echo "notes<<RELEASE_EOF"
             echo "## What's Changed"
             echo ""
             echo "$CHANGES"
@@ -298,20 +297,24 @@ jobs:
             echo '```'
             echo ""
             echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG:-initial}...$TAG"
-            echo "RELEASE_EOF"
-          } >> "$GITHUB_OUTPUT"
+          } > release-notes.md
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.notes.outputs.tag }}
-          name: ${{ steps.notes.outputs.tag }}
-          body: ${{ steps.notes.outputs.notes }}
-          files: |
-            dist/*
-            extension/*.vsix
-          draft: true
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=${{ steps.notes.outputs.tag }}
+          ARGS=(
+            release create "$TAG"
+            --repo "$GITHUB_REPOSITORY"
+            --title "$TAG"
+            --notes-file release-notes.md
+            --draft
+          )
+          if [[ "$TAG" == *alpha* || "$TAG" == *beta* || "$TAG" == *rc* ]]; then
+            ARGS+=(--prerelease)
+          fi
+          gh "${ARGS[@]}" dist/* extension/*.vsix
 
   publish-pypi:
     name: Publish to PyPI
