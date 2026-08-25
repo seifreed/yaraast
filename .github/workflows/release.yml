@@ -166,7 +166,7 @@ jobs:
           cd "$(mktemp -d)"
           "$GITHUB_WORKSPACE/.release-venv/bin/yaraast" --version
           "$GITHUB_WORKSPACE/.release-venv/bin/python" "$GITHUB_WORKSPACE/scripts/check_readme_examples.py"
-          WHEEL_PATH="$GITHUB_WORKSPACE/$WHEEL" SDIST_PATH="$GITHUB_WORKSPACE/$SDIST" .release-venv/bin/python - <<'PY'
+          WHEEL_PATH="$GITHUB_WORKSPACE/$WHEEL" SDIST_PATH="$GITHUB_WORKSPACE/$SDIST" "$GITHUB_WORKSPACE/.release-venv/bin/python" - <<'PY'
           import os
           import tarfile
           import zipfile
@@ -194,7 +194,7 @@ jobs:
           if missing:
               raise SystemExit(f"sdist missing package data: {sorted(missing)}")
           PY
-          .release-venv/bin/python - <<'PY'
+          "$GITHUB_WORKSPACE/.release-venv/bin/python" - <<'PY'
           from importlib.resources import files
           from yaraast.types.module_loader import ModuleLoader
 
