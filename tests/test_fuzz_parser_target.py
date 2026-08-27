@@ -58,11 +58,12 @@ def test_roundtrip_target_skips_semantically_invalid_ast() -> None:
 def test_roundtrip_target_skips_structurally_invalid_pragma() -> None:
     from fuzz.roundtrip_target import test_one_input
 
-    crash_seed = base64.b64decode(
-        "ICNzdHJpbmcgICAgIDRyZWdleCA9IFwvW2EAAAAAAAAAAAAAAAAAAAAteyAyRC96"
+    crash_seeds = (
+        "ICNzdHJpbmcgICAgIDRyZWdleCA9IFwvW2EAAAAAAAAAAAAAAAAAAAAteyAyRC96",
+        "I3Iijd+T35Oamt8hczp0ciFsZSBiInUwcnM=",
     )
-
-    test_one_input(crash_seed)
+    for encoded in crash_seeds:
+        test_one_input(base64.b64decode(encoded))
 
 
 def test_roundtrip_fuzz_seed_corpus_is_parseable() -> None:

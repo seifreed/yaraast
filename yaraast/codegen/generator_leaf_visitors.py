@@ -426,7 +426,7 @@ def _validate_pragma_token(value: Any, field_name: str) -> str:
     if not value:
         msg = f"{field_name} must not be empty for libyara output"
         raise ValueError(msg)
-    if '"' in value or any(ord(char) < 0x20 or ord(char) == 0x7F for char in value):
+    if '"' in value or any(ord(char) < 0x20 or ord(char) > 0x7E for char in value):
         msg = f"{field_name} must not contain quotes or control characters for libyara output"
         raise ValueError(msg)
     return value

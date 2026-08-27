@@ -38,7 +38,7 @@ def _validate_pragma_arguments(arguments: list[str], *, allow_trailing_empty: bo
 
 
 def _validate_pragma_token(value: str, field_name: str) -> None:
-    if '"' in value or any(ord(char) < 0x20 or ord(char) == 0x7F for char in value):
+    if '"' in value or any(ord(char) < 0x20 or ord(char) > 0x7E for char in value):
         msg = f"{field_name} must not contain quotes or control characters"
         raise ValueError(msg)
 
