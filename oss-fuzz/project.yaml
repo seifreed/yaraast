@@ -1,0 +1,12 @@
+homepage: "https://github.com/seifreed/yaraast"
+language: python3
+primary_contact: "mriverolopez@gmail.com"
+main_repo: "https://github.com/seifreed/yaraast.git"
+auto_ccs:
+  - "mriverolopez@gmail.com"
+fuzzing_engines:
+  - libfuzzer
+sanitizers:
+  - address
+  - undefined
+file_github_issue: true

@@ -16,4 +16,5 @@ nav:
   - Home: index.md
   - API: api.md
   - Compatibility: compatibility.md
+  - OSS-Fuzz: oss-fuzz.md
   - Roadmap: roadmap.md
