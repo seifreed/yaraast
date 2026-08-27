@@ -5,6 +5,33 @@ versioning.
 
 ## Unreleased
 
+## 2.1.0 - 2026-08-27
+
+### Added
+
+- Persistent `ParsedDocument` values that retain the source dialect and name.
+- Locked cross-platform CI environments, nightly prolonged fuzzing, and expanded
+  differential conformance, mutation, performance, and typing gates.
+- MkDocs API documentation, release SBOMs, provenance attestations, and a
+  documented conditional-test skip registry.
+- Installed wheel and sdist smoke tests covering package data, the `vt` module,
+  and the CLI across supported CI platforms.
+
+### Changed
+
+- The public `generate` API now accepts `ParsedDocument` and uses its dialect by
+  default; callers can provide an explicit output dialect override.
+- VS Code extension releases are versioned and published independently.
+- Release provenance now requires signed tags, successful required checks, and
+  protected `v*` tags.
+
+### Fixed
+
+- Pragma validation and generation now reject unsafe tokens and preserve values
+  that could otherwise be interpreted as regexes or comments.
+- Windows CI uses the locked environment and the active interpreter for CLI
+  subprocess tests.
+
 ## 2.0.1rc1 - 2026-08-24
 
 ### Added

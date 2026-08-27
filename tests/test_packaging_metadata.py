@@ -47,8 +47,8 @@ def test_release_version_has_a_dated_changelog_entry() -> None:
     project_version = pyproject["project"]["version"]
     changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
 
-    assert project_version == "2.0.1rc1"
-    assert f"## {project_version} - 2026-08-24" in changelog
+    assert project_version == "2.1.0"
+    assert f"## {project_version} - 2026-08-27" in changelog
 
 
 def test_runtime_and_development_extras_are_separate() -> None:

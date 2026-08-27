@@ -3055,7 +3055,7 @@ wheels = [
 
 [[package]]
 name = "yaraast"
-version = "2.0.1rc1"
+version = "2.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "attrs" },
