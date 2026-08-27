@@ -106,6 +106,16 @@ jobs:
         run: |
           python -m pytest tests/ -o "addopts=" -n auto --tb=short -m "not integration"
 
+      - name: Install distribution build tool
+        if: matrix.python-version == '3.13'
+        run: python -m pip install --upgrade build
+
+      - name: Build and smoke-test installed distributions
+        if: matrix.python-version == '3.13'
+        run: |
+          python -m build --outdir package-dist
+          python scripts/check_installed_distributions.py package-dist
+
   coverage:
     name: Coverage gate
     runs-on: ubuntu-24.04

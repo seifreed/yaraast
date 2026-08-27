@@ -82,6 +82,9 @@ def test_ci_runs_coverage_and_real_graphviz_without_hidden_test_ignores() -> Non
     assert "-atheris_runs=10000 -max_len=65536 -timeout=5" in workflow
     assert "macos-15-intel" in workflow
     assert "EXPECTED_ARCH: ${{ matrix.arch }}" in workflow
+    assert "Install distribution build tool" in workflow
+    assert "python scripts/check_installed_distributions.py package-dist" in workflow
+    assert "python-version == '3.13'" in workflow
     assert "mutation:" in workflow
     assert "extras: --extra dev --extra mutation --extra serialization" in workflow
     assert "mutmut run --max-children 4" in workflow
