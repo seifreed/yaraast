@@ -1,0 +1,61 @@
+version = 1
+
+[[fixture]]
+file = "real_world_loader_hex.yar"
+source = "https://github.com/Yara-Rules/rules"
+kind = "windows-loader"
+
+[[fixture]]
+file = "real_world_powershell_dropper.yar"
+source = "https://github.com/Yara-Rules/rules"
+kind = "powershell"
+
+[[fixture]]
+file = "real_world_ransomware_note.yar"
+source = "https://github.com/Yara-Rules/rules"
+kind = "ransomware"
+
+[[fixture]]
+file = "real_world_webshell.yar"
+source = "https://github.com/Yara-Rules/rules"
+kind = "webshell"
+
+[[fixture]]
+file = "real_world_powershell_encoded.yar"
+source = "https://yara.readthedocs.io/en/stable/writingrules.html"
+kind = "powershell"
+
+[[fixture]]
+file = "real_world_rundll32_script.yar"
+source = "https://github.com/Yara-Rules/rules"
+kind = "windows-loader"
+
+[[fixture]]
+file = "real_world_elf_persistence.yar"
+source = "https://github.com/Yara-Rules/rules"
+kind = "elf"
+
+[[fixture]]
+file = "real_world_office_macro.yar"
+source = "https://github.com/Yara-Rules/rules"
+kind = "office"
+
+[[fixture]]
+file = "real_world_dns_tunnel.yar"
+source = "https://yara.readthedocs.io/en/stable/writingrules.html"
+kind = "dns"
+
+[[fixture]]
+file = "real_world_pdf_javascript.yar"
+source = "https://github.com/Yara-Rules/rules"
+kind = "pdf"
+
+[[fixture]]
+file = "real_world_lnk_dropper.yar"
+source = "https://github.com/Yara-Rules/rules"
+kind = "windows-lnk"
+
+[[fixture]]
+file = "real_world_php_webshell.yar"
+source = "https://github.com/Yara-Rules/rules"
+kind = "webshell"

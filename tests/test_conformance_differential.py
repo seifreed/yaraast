@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+import tomllib
 
 import pytest
 
@@ -26,6 +27,7 @@ from yaraast.dialects import YaraDialect
 
 CORPUS_DIR = Path(__file__).parent / "corpus" / "conformance"
 CORPUS_FILES = sorted(CORPUS_DIR.glob("*.yar"))
+MANIFEST = tomllib.loads((CORPUS_DIR / "manifest.toml").read_text(encoding="utf-8"))
 
 
 def _data_for(rule_file: Path) -> bytes | None:
@@ -69,6 +71,16 @@ def test_corpus_is_non_empty_and_accepted_by_every_engine() -> None:
                 f"{engine.name} rejected corpus file {rule_file.name}: "
                 f"{report.engine_results[engine.name].error}"
             )
+
+
+def test_real_world_corpus_has_source_manifest() -> None:
+    real_world = {path.name for path in CORPUS_FILES if path.name.startswith("real_world_")}
+    entries = {entry["file"]: entry for entry in MANIFEST["fixture"]}
+
+    assert real_world >= {"real_world_loader_hex.yar", "real_world_webshell.yar"}
+    assert real_world <= entries.keys()
+    assert all(entry["source"].startswith("https://") for entry in entries.values())
+    assert all(entry["kind"] for entry in entries.values())
 
 
 class _FakeEngine(ReferenceEngine):
