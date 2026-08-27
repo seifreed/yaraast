@@ -19,3 +19,6 @@ dialect.
 
 See the [public API](api.md) and [compatibility matrix](compatibility.md) for
 the supported contracts and reference engines.
+
+For installation, CLI workflows, resource limits, and a runnable example, see
+[Getting Started](getting-started.md).
