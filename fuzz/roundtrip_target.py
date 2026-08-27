@@ -15,6 +15,11 @@ def test_one_input(data: bytes) -> None:
     except (YaraASTError, TypeError, ValueError):
         return
 
+    try:
+        ast.validate_structure()
+    except (TypeError, ValueError):
+        return
+
     if validate_yara_file(ast).errors:
         return
 

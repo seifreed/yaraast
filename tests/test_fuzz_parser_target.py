@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from pathlib import Path
 
 import pytest
@@ -52,6 +53,16 @@ def test_roundtrip_target_skips_semantically_invalid_ast() -> None:
     assert validate_yara_file(ast).errors
 
     test_one_input(source)
+
+
+def test_roundtrip_target_skips_structurally_invalid_pragma() -> None:
+    from fuzz.roundtrip_target import test_one_input
+
+    crash_seed = base64.b64decode(
+        "ICNzdHJpbmcgICAgIDRyZWdleCA9IFwvW2EAAAAAAAAAAAAAAAAAAAAteyAyRC96"
+    )
+
+    test_one_input(crash_seed)
 
 
 def test_roundtrip_fuzz_seed_corpus_is_parseable() -> None:

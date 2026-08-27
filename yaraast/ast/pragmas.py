@@ -34,6 +34,13 @@ def _validate_pragma_arguments(arguments: list[str], *, allow_trailing_empty: bo
         if argument == "":
             msg = "Pragma argument must not be empty"
             raise ValueError(msg)
+        _validate_pragma_token(argument, "Pragma argument")
+
+
+def _validate_pragma_token(value: str, field_name: str) -> None:
+    if '"' in value or any(ord(char) < 0x20 or ord(char) == 0x7F for char in value):
+        msg = f"{field_name} must not contain quotes or control characters"
+        raise ValueError(msg)
 
 
 def _require_scope(scope: PragmaScope) -> PragmaScope:
@@ -206,6 +213,7 @@ class DefineDirective(Pragma):
             if self.macro_value == "":
                 msg = "Pragma value must not be empty"
                 raise ValueError(msg)
+            _validate_pragma_token(self.macro_value, "Pragma value")
 
     def __str__(self) -> str:
         macro_name = _require_nonempty_string(self.macro_name, "Pragma macro_name")
