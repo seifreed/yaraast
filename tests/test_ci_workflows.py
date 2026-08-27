@@ -148,6 +148,9 @@ def test_release_runs_the_full_configured_test_gate() -> None:
     assert "import tarfile" in workflow
     assert "from importlib.resources import files" in workflow
     assert 'ModuleLoader().get_module("vt")' in workflow
+    assert "Select PyPI distributions" in workflow
+    assert "cp dist/*.whl dist/*.tar.gz pypi-dist/" in workflow
+    assert "packages-dir: pypi-dist" in workflow
     assert '"$GITHUB_WORKSPACE/.release-venv/bin/python" - <<' in workflow
     assert 'gh "${ARGS[@]}" dist/* extension/*.vsix' in workflow
     assert "softprops/action-gh-release" not in workflow

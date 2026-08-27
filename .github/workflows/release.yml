@@ -355,8 +355,15 @@ jobs:
           name: dist
           path: dist/
 
+      - name: Select PyPI distributions
+        run: |
+          mkdir pypi-dist
+          cp dist/*.whl dist/*.tar.gz pypi-dist/
+
       - name: Publish to PyPI (OIDC trusted publishing)
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: pypi-dist
 
   finalize-release:
     name: Publish GitHub Release
