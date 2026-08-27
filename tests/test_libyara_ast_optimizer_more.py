@@ -11,7 +11,7 @@ from yaraast.parser import Parser
 
 @pytest.mark.skipif(
     not COMPILER_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_ast_optimizer_removes_unused_strings_and_simplifies() -> None:
     code = """

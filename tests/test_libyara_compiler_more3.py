@@ -10,7 +10,7 @@ from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_handles_read_failures(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
@@ -25,7 +25,7 @@ def test_libyara_compiler_handles_read_failures(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_handles_type_error_and_null_byte_source_paths() -> None:
     compiler = LibyaraCompiler()
@@ -43,7 +43,7 @@ def test_libyara_compiler_handles_type_error_and_null_byte_source_paths() -> Non
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 @pytest.mark.parametrize("filepath", ["", "   ", "\t"])
 def test_libyara_compiler_compile_file_rejects_empty_filepath(filepath: str) -> None:
@@ -55,7 +55,7 @@ def test_libyara_compiler_compile_file_rejects_empty_filepath(filepath: str) -> 
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 @pytest.mark.parametrize("filepath", [None, False, 123, object(), b"rule.yar"])
 def test_libyara_compiler_compile_file_rejects_invalid_filepath_types(filepath: Any) -> None:
@@ -67,7 +67,7 @@ def test_libyara_compiler_compile_file_rejects_invalid_filepath_types(filepath: 
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_compile_file_rejects_inaccessible_filepath() -> None:
     result = LibyaraCompiler().compile_file("a" * 5000)
@@ -79,7 +79,7 @@ def test_libyara_compiler_compile_file_rejects_inaccessible_filepath() -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_compile_file_rejects_invalid_utf8(tmp_path: Path) -> None:
     rule_path = tmp_path / "invalid.yar"

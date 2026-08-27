@@ -23,14 +23,14 @@ def test_lsp_server_handlers_basic() -> None:
         import lsprotocol.types as lsp
     except Exception as exc:
         pytest.skip(
-            f"pygls/lsprotocol not available: {exc}; https://github.com/seifreed/yaraast/issues/24"
+            f"pygls/lsprotocol not available: {exc}; docs/test-skips.yml"
         )
 
     try:
         from yaraast.lsp.server import YaraLanguageServer
     except ImportError as exc:
         pytest.skip(
-            f"real lsprotocol not available: {exc}; https://github.com/seifreed/yaraast/issues/24"
+            f"real lsprotocol not available: {exc}; docs/test-skips.yml"
         )
 
     ls = YaraLanguageServer("yaraast", "1.0")

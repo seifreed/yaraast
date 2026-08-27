@@ -30,7 +30,7 @@ def test_lsp_reports_missing_dependency() -> None:
         return
 
     pytest.skip(
-        "LSP dependencies available; skipping to avoid starting server.; https://github.com/seifreed/yaraast/issues/24"
+        "LSP dependencies available; skipping to avoid starting server.; docs/test-skips.yml"
     )
 
 

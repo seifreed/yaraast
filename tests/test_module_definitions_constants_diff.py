@@ -130,7 +130,7 @@ def test_undefined_module_access_is_still_rejected(module: str, access: str) -> 
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 @pytest.mark.parametrize(("module", "access"), ACCEPTED_ACCESSES)
 def test_accepted_access_matches_libyara(module: str, access: str) -> None:

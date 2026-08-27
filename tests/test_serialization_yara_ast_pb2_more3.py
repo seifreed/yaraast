@@ -7,7 +7,7 @@ import pytest
 
 def test_yara_ast_pb2_message_roundtrip() -> None:
     pb2 = pytest.importorskip(
-        "yaraast.serialization.yara_ast_pb2", reason="https://github.com/seifreed/yaraast/issues/24"
+        "yaraast.serialization.yara_ast_pb2", reason="docs/test-skips.yml"
     )
 
     file_msg = pb2.YaraFile()
@@ -43,7 +43,7 @@ def test_yara_ast_pb2_message_roundtrip() -> None:
 
 def test_expression_oneof_variants() -> None:
     pb2 = pytest.importorskip(
-        "yaraast.serialization.yara_ast_pb2", reason="https://github.com/seifreed/yaraast/issues/24"
+        "yaraast.serialization.yara_ast_pb2", reason="docs/test-skips.yml"
     )
 
     expr = pb2.Expression()

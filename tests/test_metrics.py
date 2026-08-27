@@ -174,7 +174,7 @@ class TestComplexityAnalyzer:
 
 @pytest.mark.skipif(
     DependencyGraphGenerator is None,
-    reason="graphviz package is not installed; https://github.com/seifreed/yaraast/issues/24",
+    reason="graphviz package is not installed; docs/test-skips.yml",
 )
 class TestDependencyGraphGenerator:
     """Test dependency graph generation."""

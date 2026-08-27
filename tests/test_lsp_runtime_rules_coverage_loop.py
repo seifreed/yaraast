@@ -636,7 +636,7 @@ def test_find_rule_reference_records_in_document_cross_file(tmp_path: Path) -> N
 
 @pytest.mark.skipif(
     _is_root_process(),
-    reason="root bypasses file permission checks; https://github.com/seifreed/yaraast/issues/24",
+    reason="root bypasses file permission checks; docs/test-skips.yml",
 )
 def test_find_rule_reference_records_in_document_unreadable_file_returns_empty(
     tmp_path: Path,
@@ -666,7 +666,7 @@ def test_find_rule_reference_records_in_document_unreadable_file_returns_empty(
 
 @pytest.mark.skipif(
     _is_root_process(),
-    reason="root bypasses file permission checks; https://github.com/seifreed/yaraast/issues/24",
+    reason="root bypasses file permission checks; docs/test-skips.yml",
 )
 def test_get_rule_link_records_for_document_unreadable_file_returns_empty(
     tmp_path: Path,

@@ -14,7 +14,7 @@ from yaraast.libyara import YARA_AVAILABLE
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_validate_roundtrip(tmp_path: Path) -> None:
     rule_text = """

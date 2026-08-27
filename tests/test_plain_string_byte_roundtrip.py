@@ -21,7 +21,7 @@ from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 
-yara = pytest.importorskip("yara", reason="https://github.com/seifreed/yaraast/issues/24")
+yara = pytest.importorskip("yara", reason="docs/test-skips.yml")
 
 _CASES = [
     (r'rule t { strings: $a = "\xe9" condition: $a }', b"\xe9"),

@@ -38,7 +38,7 @@ from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
 
 if not YARA_AVAILABLE:
     pytest.skip(
-        "yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+        "yara-python not available; docs/test-skips.yml",
         allow_module_level=True,
     )
 

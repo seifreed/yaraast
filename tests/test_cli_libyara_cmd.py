@@ -34,7 +34,7 @@ def test_libyara_optimize_command(tmp_path: Path) -> None:
     if not YARA_AVAILABLE:
         import pytest
 
-        pytest.skip("yara-python is not installed; https://github.com/seifreed/yaraast/issues/24")
+        pytest.skip("yara-python is not installed; docs/test-skips.yml")
 
     rule_path = _write_rule(tmp_path)
     runner = CliRunner()

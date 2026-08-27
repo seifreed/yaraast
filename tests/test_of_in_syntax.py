@@ -2,7 +2,7 @@
 
 import pytest
 
-yara = pytest.importorskip("yara", reason="https://github.com/seifreed/yaraast/issues/24")
+yara = pytest.importorskip("yara", reason="docs/test-skips.yml")
 
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (

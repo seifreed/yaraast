@@ -20,7 +20,7 @@ from yaraast.parser.source import parse_yara_source
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compilers_reject_non_mapping_externals() -> None:
     with pytest.raises(TypeError, match="libyara externals must be a dictionary"):
@@ -87,7 +87,7 @@ def test_libyara_includes_reject_non_string_content(includes: dict[str, object])
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compile_source_reports_invalid_include_mapping() -> None:
     result = LibyaraCompiler().compile_source(
@@ -101,7 +101,7 @@ def test_libyara_compile_source_reports_invalid_include_mapping() -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 @pytest.mark.parametrize("error_on_warning", [None, 1, "yes", object()])
 def test_libyara_compilers_reject_invalid_error_on_warning_values(
@@ -127,7 +127,7 @@ def test_libyara_compilers_reject_invalid_error_on_warning_values(
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_compile_file_success_and_save(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
@@ -156,7 +156,7 @@ rule ok {
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_compile_file_resolves_relative_includes(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
@@ -190,7 +190,7 @@ rule main_rule {
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_compile_source_uses_include_mapping() -> None:
     compiler = LibyaraCompiler()
@@ -217,7 +217,7 @@ rule main_rule {
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_compile_file_uses_include_mapping(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
@@ -249,7 +249,7 @@ rule main_rule {
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_compile_ast_codegen_failure_and_syntax_error() -> None:
     compiler = LibyaraCompiler()
@@ -267,7 +267,7 @@ def test_libyara_compiler_compile_ast_codegen_failure_and_syntax_error() -> None
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_compile_ast_success() -> None:
     compiler = LibyaraCompiler()
@@ -281,7 +281,7 @@ def test_libyara_compiler_compile_ast_success() -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_compiler_rejects_yarax_ast_before_codegen() -> None:
     compiler = LibyaraCompiler()

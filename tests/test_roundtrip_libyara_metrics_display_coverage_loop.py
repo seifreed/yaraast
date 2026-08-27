@@ -79,7 +79,7 @@ class TestLibyaraScanFailureBranch:
 
     @pytest.mark.skipif(
         not YARA_AVAILABLE,
-        reason="yara-python not installed; https://github.com/seifreed/yaraast/issues/24",
+        reason="yara-python not installed; docs/test-skips.yml",
     )
     def test_scan_failure_calls_display_scan_failure_and_aborts(self, tmp_path: Path) -> None:
         """

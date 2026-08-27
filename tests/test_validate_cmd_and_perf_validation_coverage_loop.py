@@ -126,7 +126,7 @@ class TestRoundtripReadTestDataError:
 
     @pytest.mark.skipif(
         not YARA_AVAILABLE,
-        reason="yara-python is required for the roundtrip command; https://github.com/seifreed/yaraast/issues/24",
+        reason="yara-python is required for the roundtrip command; docs/test-skips.yml",
     )
     def test_roundtrip_callback_catches_validation_error_from_read_test_data(
         self,
@@ -145,7 +145,7 @@ class TestRoundtripReadTestDataError:
         """
         if _is_root_process():
             pytest.skip(
-                "Running as root: permission bits have no effect; https://github.com/seifreed/yaraast/issues/24"
+                "Running as root: permission bits have no effect; docs/test-skips.yml"
             )
 
         rule_file = tmp_path / "rule.yar"
@@ -183,7 +183,7 @@ class TestRoundtripReadTestDataError:
         """
         if _is_root_process():
             pytest.skip(
-                "Running as root: permission bits have no effect; https://github.com/seifreed/yaraast/issues/24"
+                "Running as root: permission bits have no effect; docs/test-skips.yml"
             )
 
         data_file = tmp_path / "unreadable.bin"
@@ -224,7 +224,7 @@ class TestPathIsDirOSError:
         """
         if _is_root_process():
             pytest.skip(
-                "Running as root: permission bits have no effect; https://github.com/seifreed/yaraast/issues/24"
+                "Running as root: permission bits have no effect; docs/test-skips.yml"
             )
 
         locked_dir = tmp_path / "locked"

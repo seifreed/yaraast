@@ -274,7 +274,7 @@ _CORPUS_STRUCTURE = Path(__file__).parent / "corpus" / "conformance" / "structur
 
 @pytest.mark.skipif(
     not _CORPUS_STRUCTURE.exists(),
-    reason="corpus/conformance/structure.yar not present; https://github.com/seifreed/yaraast/issues/24",
+    reason="corpus/conformance/structure.yar not present; docs/test-skips.yml",
 )
 def test_parse_yara_file_returns_yara_file_instance() -> None:
     """Lines 174-176: parse_yara_file reads + parses real YARA source from disk.
@@ -290,7 +290,7 @@ def test_parse_yara_file_returns_yara_file_instance() -> None:
 
 @pytest.mark.skipif(
     not _CORPUS_STRUCTURE.exists(),
-    reason="corpus/conformance/structure.yar not present; https://github.com/seifreed/yaraast/issues/24",
+    reason="corpus/conformance/structure.yar not present; docs/test-skips.yml",
 )
 def test_parse_yara_file_produces_non_empty_rule_list() -> None:
     """Lines 174-176: the parsed corpus file contains at least one rule."""

@@ -115,7 +115,7 @@ def test_roundtrip_test_returns_equivalence_result_for_valid_rule(tmp_path: Path
     producing an EquivalenceResult with equivalent=True.
     """
     if not YARA_AVAILABLE:
-        pytest.skip("yara-python is not installed; https://github.com/seifreed/yaraast/issues/24")
+        pytest.skip("yara-python is not installed; docs/test-skips.yml")
 
     rule_path = tmp_path / "simple.yar"
     rule_path.write_text("rule simple { condition: true }", encoding="utf-8")
@@ -134,7 +134,7 @@ def test_roundtrip_test_with_test_data_returns_result(tmp_path: Path) -> None:
     path in EquivalenceTester.
     """
     if not YARA_AVAILABLE:
-        pytest.skip("yara-python is not installed; https://github.com/seifreed/yaraast/issues/24")
+        pytest.skip("yara-python is not installed; docs/test-skips.yml")
 
     rule_path = tmp_path / "strings.yar"
     rule_path.write_text(
@@ -156,7 +156,7 @@ def test_roundtrip_test_returns_failed_result_for_unparseable_file(tmp_path: Pat
     roundtrip_test is a total function over invalid inputs.
     """
     if not YARA_AVAILABLE:
-        pytest.skip("yara-python is not installed; https://github.com/seifreed/yaraast/issues/24")
+        pytest.skip("yara-python is not installed; docs/test-skips.yml")
 
     bad_path = tmp_path / "broken.yar"
     bad_path.write_text("this is not valid yara @#$%", encoding="utf-8")

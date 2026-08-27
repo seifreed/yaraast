@@ -9,7 +9,7 @@ import pytest
 
 def test_hex_token_alternatives_and_nibble() -> None:
     pb2 = pytest.importorskip(
-        "yaraast.serialization.yara_ast_pb2", reason="https://github.com/seifreed/yaraast/issues/24"
+        "yaraast.serialization.yara_ast_pb2", reason="docs/test-skips.yml"
     )
 
     token = pb2.HexToken()
@@ -26,7 +26,7 @@ def test_hex_token_alternatives_and_nibble() -> None:
 
 def test_meta_value_oneof_switch() -> None:
     pb2 = pytest.importorskip(
-        "yaraast.serialization.yara_ast_pb2", reason="https://github.com/seifreed/yaraast/issues/24"
+        "yaraast.serialization.yara_ast_pb2", reason="docs/test-skips.yml"
     )
 
     meta = pb2.MetaValue()
@@ -39,7 +39,7 @@ def test_meta_value_oneof_switch() -> None:
 
 def test_string_definition_oneof() -> None:
     pb2 = pytest.importorskip(
-        "yaraast.serialization.yara_ast_pb2", reason="https://github.com/seifreed/yaraast/issues/24"
+        "yaraast.serialization.yara_ast_pb2", reason="docs/test-skips.yml"
     )
 
     string_def = pb2.StringDefinition()
@@ -50,7 +50,7 @@ def test_string_definition_oneof() -> None:
 
 def test_string_definition_anonymous_field_is_in_runtime_and_stub() -> None:
     pb2 = pytest.importorskip(
-        "yaraast.serialization.yara_ast_pb2", reason="https://github.com/seifreed/yaraast/issues/24"
+        "yaraast.serialization.yara_ast_pb2", reason="docs/test-skips.yml"
     )
 
     string_def = pb2.StringDefinition(identifier="$anon_1", is_anonymous=True)

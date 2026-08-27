@@ -1,0 +1,23 @@
+version: 1
+
+skips:
+  - id: posix-permission-semantics
+    tests: tests/conftest.py::WINDOWS_POSIX_ONLY_TESTS
+    platforms: [windows]
+    reason: POSIX permission errors cannot be reproduced reliably on Windows runners.
+    required_job: Test (windows-2022, Python 3.13)
+    review_after: 2026-11-27
+
+  - id: optional-dependencies
+    tests: tests/**/*.py (skip reasons mentioning unavailable optional packages)
+    platforms: [all]
+    reason: Optional integrations are exercised when their dependency is installed.
+    required_job: CI optional-integration and conformance jobs
+    review_after: 2026-11-27
+
+  - id: unavailable-fixtures-or-host-semantics
+    tests: tests/**/*.py (skip reasons mentioning unavailable fixtures or host behavior)
+    platforms: [all]
+    reason: The test requires a fixture or operating-system behavior unavailable in the runner.
+    required_job: CI test matrix
+    review_after: 2026-11-27

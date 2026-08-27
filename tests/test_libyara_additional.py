@@ -22,7 +22,7 @@ if YARA_AVAILABLE:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_compile_source_with_null_byte() -> None:
     compiler = LibyaraCompiler()
@@ -35,7 +35,7 @@ def test_compile_source_with_null_byte() -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_compile_file_and_save_rules() -> None:
     rule_text = "rule test { condition: true }"
@@ -60,7 +60,7 @@ def test_compile_file_and_save_rules() -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_direct_compiler_debug_mode_source() -> None:
     parser = Parser()
@@ -75,7 +75,7 @@ def test_direct_compiler_debug_mode_source() -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_scanner_missing_file() -> None:
     rule_text = "rule test { condition: true }"
@@ -115,7 +115,7 @@ def test_ast_optimizer_fold_constants() -> None:
 
 
 @pytest.mark.skipif(
-    YARA_AVAILABLE, reason="yara-python available; https://github.com/seifreed/yaraast/issues/24"
+    YARA_AVAILABLE, reason="yara-python available; docs/test-skips.yml"
 )
 def test_libyara_unavailable_raises() -> None:
     from yaraast.libyara.compiler import LibyaraCompiler

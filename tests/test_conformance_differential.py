@@ -35,7 +35,7 @@ def _data_for(rule_file: Path) -> bytes | None:
 
 @pytest.mark.skipif(
     not available_engines(),
-    reason="no reference YARA engine installed; https://github.com/seifreed/yaraast/issues/24",
+    reason="no reference YARA engine installed; docs/test-skips.yml",
 )
 @pytest.mark.parametrize("rule_file", CORPUS_FILES, ids=lambda p: p.stem)
 def test_corpus_round_trip_is_conformant(rule_file: Path) -> None:
@@ -60,7 +60,7 @@ def test_corpus_is_non_empty_and_accepted_by_every_engine() -> None:
     engines = available_engines()
     if not engines:
         pytest.skip(
-            "no reference YARA engine installed; https://github.com/seifreed/yaraast/issues/24"
+            "no reference YARA engine installed; docs/test-skips.yml"
         )
 
     checker = DifferentialChecker(engines)
@@ -179,7 +179,7 @@ def test_available_engines_returns_reference_engine_instances() -> None:
 
 @pytest.mark.skipif(
     not LibyaraEngine().available,
-    reason="yara-python not installed; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not installed; docs/test-skips.yml",
 )
 def test_libyara_engine_accept_reject_and_match() -> None:
     engine = LibyaraEngine()
@@ -190,7 +190,7 @@ def test_libyara_engine_accept_reject_and_match() -> None:
 
 @pytest.mark.skipif(
     not YaraXEngine().available,
-    reason="yara-x not installed; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-x not installed; docs/test-skips.yml",
 )
 def test_yarax_engine_accept_reject_and_match() -> None:
     engine = YaraXEngine()

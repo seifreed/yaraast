@@ -17,7 +17,7 @@ from yaraast.parser import Parser
 
 @pytest.mark.skipif(
     not DIRECT_YARA,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_direct_ast_compiler_invalid_ast_hits_error_result() -> None:
     compiler = DirectASTCompiler()
@@ -31,7 +31,7 @@ def test_direct_ast_compiler_invalid_ast_hits_error_result() -> None:
 
 @pytest.mark.skipif(
     not DIRECT_YARA,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_optimized_matcher_stats_zero_branch() -> None:
     compiler = LibyaraCompiler()
@@ -47,7 +47,7 @@ def test_optimized_matcher_stats_zero_branch() -> None:
 
 @pytest.mark.skipif(
     not SCANNER_YARA,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_scanner_real_error_paths(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
@@ -69,7 +69,7 @@ def test_libyara_scanner_real_error_paths(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not SCANNER_YARA,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_scanner_process_yara_error_path() -> None:
     compiler = LibyaraCompiler()

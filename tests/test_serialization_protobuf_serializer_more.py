@@ -1287,7 +1287,7 @@ def test_protobuf_serializer_without_metadata() -> None:
 
 def test_protobuf_expression_conversion_paths() -> None:
     pytest.importorskip(
-        "yaraast.serialization.yara_ast_pb2", reason="https://github.com/seifreed/yaraast/issues/24"
+        "yaraast.serialization.yara_ast_pb2", reason="docs/test-skips.yml"
     )
     from yaraast.serialization import yara_ast_pb2
 

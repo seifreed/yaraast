@@ -77,7 +77,10 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
         return
 
     marker = pytest.mark.skip(
-        reason="POSIX-only path permission semantics; https://github.com/seifreed/yaraast/issues/24"
+        reason=(
+            "POSIX-only path permission semantics; see docs/test-skips.yml "
+            "(posix-permission-semantics)"
+        )
     )
     for item in items:
         name = item.originalname or item.name

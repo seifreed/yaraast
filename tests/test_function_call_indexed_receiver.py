@@ -25,7 +25,7 @@ from yaraast.serialization.ast_diff_hasher import AstHasher
 from yaraast.types.semantic_validator import SemanticValidator
 from yaraast.yarax.ast_nodes import ListExpression, TupleIndexing
 
-yara = pytest.importorskip("yara", reason="https://github.com/seifreed/yaraast/issues/24")
+yara = pytest.importorskip("yara", reason="docs/test-skips.yml")
 
 _VALID_ON = 'import "pe"\nrule r { condition: pe.signatures[0].valid_on(pe.timestamp) }'
 

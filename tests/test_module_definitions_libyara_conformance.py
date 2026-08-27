@@ -39,7 +39,7 @@ from yaraast.types._registry_primitives import (
 )
 from yaraast.types.module_definitions import _MODULE_SPECS, load_builtin_modules
 
-yara = pytest.importorskip("yara", reason="https://github.com/seifreed/yaraast/issues/24")
+yara = pytest.importorskip("yara", reason="docs/test-skips.yml")
 
 # Modules absent from stock open-source libyara: cannot be probed with the oracle.
 _NO_ORACLE = frozenset({"vt", "cuckoo"})

@@ -43,7 +43,7 @@ def test_validate_group_resolve_command_empty_args() -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python is not installed; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python is not installed; docs/test-skips.yml",
 )
 def test_validate_roundtrip_handles_test_data_read_error(tmp_path: Path) -> None:
     runner = CliRunner()

@@ -72,7 +72,7 @@ def test_ast_optimizer_rule_removes_unused_strings() -> None:
 
 @pytest.mark.skipif(
     not COMPILER_AVAILABLE or not SCANNER_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_scanner_file_process_and_error_paths(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
@@ -116,7 +116,7 @@ def test_libyara_scanner_file_process_and_error_paths(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not COMPILER_AVAILABLE or not SCANNER_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 @pytest.mark.parametrize("filepath", [None, False, 123, object(), b"sample.bin"])
 def test_libyara_scanner_scan_file_rejects_invalid_filepath_types(filepath: Any) -> None:
@@ -137,7 +137,7 @@ def test_libyara_scanner_scan_file_rejects_invalid_filepath_types(filepath: Any)
 
 @pytest.mark.skipif(
     not COMPILER_AVAILABLE or not SCANNER_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_libyara_scanner_timeout_paths(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
@@ -159,7 +159,7 @@ def test_libyara_scanner_timeout_paths(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
     source = """
@@ -237,7 +237,7 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 @pytest.mark.parametrize(
     ("kwargs", "message"),
@@ -271,7 +271,7 @@ def test_optimized_matcher_rejects_invalid_scan_options(
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_direct_compiler_rejects_yarax_ast_before_codegen() -> None:
     compiler = DirectASTCompiler(enable_optimization=False, debug_mode=True)
@@ -290,7 +290,7 @@ def test_direct_compiler_rejects_yarax_ast_before_codegen() -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_direct_matcher_hints_for_complex_rule() -> None:
     many_strings = "\n".join(f'$s{i} = "a"' for i in range(21))

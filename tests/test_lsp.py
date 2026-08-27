@@ -300,7 +300,7 @@ PYGLS_AVAILABLE = util.find_spec("pygls") is not None
 
 
 @pytest.mark.skipif(
-    not PYGLS_AVAILABLE, reason="pygls not installed; https://github.com/seifreed/yaraast/issues/24"
+    not PYGLS_AVAILABLE, reason="pygls not installed; docs/test-skips.yml"
 )
 def test_language_server_creation() -> None:
     """Test that language server can be created."""

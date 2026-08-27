@@ -163,7 +163,7 @@ def test_parse_rule_preserves_duplicate_meta_entries() -> None:
 @pytest.mark.parametrize("keyword", ["as", "include"])
 def test_parse_and_codegen_allow_contextual_identifier_keywords(keyword: str) -> None:
     source = f"rule {keyword} : {keyword} {{ meta: {keyword} = 1 condition: true }}"
-    yara = pytest.importorskip("yara", reason="https://github.com/seifreed/yaraast/issues/24")
+    yara = pytest.importorskip("yara", reason="docs/test-skips.yml")
     yara.compile(source=source)
 
     for parser_factory in (Parser, CommentAwareParser):

@@ -63,7 +63,7 @@ class TestCompileSourceWithFileContext:
 
     @pytest.mark.skipif(
         not YARA_AVAILABLE,
-        reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+        reason="yara-python not available; docs/test-skips.yml",
     )
     def test_happy_path_compiles_rule_and_cleans_up(self, tmp_path: Path) -> None:
         """Arrange: valid source and real writable directory.
@@ -85,7 +85,7 @@ class TestCompileSourceWithFileContext:
 
     @pytest.mark.skipif(
         not YARA_AVAILABLE,
-        reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+        reason="yara-python not available; docs/test-skips.yml",
     )
     def test_happy_path_returns_directcompilationresult(self, tmp_path: Path) -> None:
         """The return value must be a DirectCompilationResult with warnings."""
@@ -101,7 +101,7 @@ class TestCompileSourceWithFileContext:
 
     @pytest.mark.skipif(
         not YARA_AVAILABLE,
-        reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+        reason="yara-python not available; docs/test-skips.yml",
     )
     def test_accepts_pathlike_source_path(self, tmp_path: Path) -> None:
         """Accepts a pathlib.Path object (PathLike) as source_path."""
@@ -224,7 +224,7 @@ class TestCompileSourceWithFileContext:
 
     @pytest.mark.skipif(
         not YARA_AVAILABLE,
-        reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+        reason="yara-python not available; docs/test-skips.yml",
     )
     def test_compile_failure_reported_not_raised(self, tmp_path: Path) -> None:
         """Invalid YARA source yields a failed DirectCompilationResult, not an exception."""
@@ -238,7 +238,7 @@ class TestCompileSourceWithFileContext:
 
     @pytest.mark.skipif(
         not YARA_AVAILABLE,
-        reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+        reason="yara-python not available; docs/test-skips.yml",
     )
     def test_cleanup_occurs_even_when_compile_fails(self, tmp_path: Path) -> None:
         """The finally block removes the temp file even when compilation fails."""
@@ -252,7 +252,7 @@ class TestCompileSourceWithFileContext:
 
     @pytest.mark.skipif(
         not YARA_AVAILABLE,
-        reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+        reason="yara-python not available; docs/test-skips.yml",
     )
     def test_externals_passed_through(self, tmp_path: Path) -> None:
         """External variables provided to compile_source_with_file_context are forwarded."""

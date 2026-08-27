@@ -25,7 +25,7 @@ def test_yarax_conformance_corpus_is_non_empty() -> None:
 
 @pytest.mark.skipif(
     not YaraXEngine().available,
-    reason="yara-x not installed; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-x not installed; docs/test-skips.yml",
 )
 @pytest.mark.parametrize("rule_file", CORPUS_FILES, ids=lambda path: path.stem)
 def test_yarax_corpus_round_trip_matches_reference(rule_file: Path) -> None:

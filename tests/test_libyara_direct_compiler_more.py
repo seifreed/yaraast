@@ -13,7 +13,7 @@ from yaraast.parser import Parser
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_direct_compiler_and_matcher(tmp_path: Path) -> None:
     code = """
@@ -44,7 +44,7 @@ def test_direct_compiler_and_matcher(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_direct_compiler_compile_ast_uses_include_mapping() -> None:
     ast = Parser().parse("""
@@ -72,7 +72,7 @@ rule main_rule {
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_direct_compiler_compile_ast_uses_include_mapping_with_source_path(
     tmp_path: Path,
@@ -103,7 +103,7 @@ rule main_rule {
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_direct_compiler_compile_ast_rejects_invalid_source_path() -> None:
     ast = Parser().parse("rule main_rule { condition: true }")
@@ -127,7 +127,7 @@ def test_direct_compiler_compile_ast_rejects_invalid_source_path() -> None:
 
 @pytest.mark.skipif(
     not YARA_AVAILABLE,
-    reason="yara-python not available; https://github.com/seifreed/yaraast/issues/24",
+    reason="yara-python not available; docs/test-skips.yml",
 )
 def test_direct_compiler_compile_ast_rejects_symlink_ancestor_source_path(
     tmp_path: Path,
