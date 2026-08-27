@@ -414,9 +414,16 @@ def _format_pragma_arguments(arguments: Any) -> str:
         raise TypeError(msg)
     if not arguments:
         return ""
-    return " " + " ".join(
-        _validate_pragma_token(argument, "Pragma argument") for argument in arguments
-    )
+    return " " + " ".join(_format_pragma_argument(argument) for argument in arguments)
+
+
+def _format_pragma_argument(value: Any) -> str:
+    argument = _validate_pragma_token(value, "Pragma argument")
+    if any(character in argument for character in ("/", "\\")) or any(
+        character.isspace() for character in argument
+    ):
+        return f'"{escape_string_literal(argument)}"'
+    return argument
 
 
 def _validate_pragma_token(value: Any, field_name: str) -> str:
