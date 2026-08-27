@@ -144,9 +144,7 @@ def test_diagnostics_compiler_path_reached_when_no_validation_errors() -> None:
     from yaraast.libyara.compiler import YARA_AVAILABLE
 
     if not YARA_AVAILABLE:
-        pytest.skip(
-            "libyara (yara-python) is not installed; docs/test-skips.yml"
-        )
+        pytest.skip("libyara (yara-python) is not installed; docs/test-skips.yml")
 
     provider = DiagnosticsProvider()
     assert provider.compiler is not None

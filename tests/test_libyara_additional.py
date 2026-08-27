@@ -114,9 +114,7 @@ def test_ast_optimizer_fold_constants() -> None:
     assert isinstance(not_folded, BinaryExpression)
 
 
-@pytest.mark.skipif(
-    YARA_AVAILABLE, reason="yara-python available; docs/test-skips.yml"
-)
+@pytest.mark.skipif(YARA_AVAILABLE, reason="yara-python available; docs/test-skips.yml")
 def test_libyara_unavailable_raises() -> None:
     from yaraast.libyara.compiler import LibyaraCompiler
     from yaraast.libyara.direct_compiler import DirectASTCompiler

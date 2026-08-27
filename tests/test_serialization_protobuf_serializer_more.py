@@ -1286,9 +1286,7 @@ def test_protobuf_serializer_without_metadata() -> None:
 
 
 def test_protobuf_expression_conversion_paths() -> None:
-    pytest.importorskip(
-        "yaraast.serialization.yara_ast_pb2", reason="docs/test-skips.yml"
-    )
+    pytest.importorskip("yaraast.serialization.yara_ast_pb2", reason="docs/test-skips.yml")
     from yaraast.serialization import yara_ast_pb2
 
     expr_cases: list[tuple[Expression, Callable[[Any], bool]]] = [

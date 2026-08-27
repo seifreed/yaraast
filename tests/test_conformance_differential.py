@@ -59,9 +59,7 @@ def test_corpus_is_non_empty_and_accepted_by_every_engine() -> None:
 
     engines = available_engines()
     if not engines:
-        pytest.skip(
-            "no reference YARA engine installed; docs/test-skips.yml"
-        )
+        pytest.skip("no reference YARA engine installed; docs/test-skips.yml")
 
     checker = DifferentialChecker(engines)
     for rule_file in CORPUS_FILES:

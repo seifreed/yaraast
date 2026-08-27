@@ -144,9 +144,7 @@ class TestRoundtripReadTestDataError:
         running as root.
         """
         if _is_root_process():
-            pytest.skip(
-                "Running as root: permission bits have no effect; docs/test-skips.yml"
-            )
+            pytest.skip("Running as root: permission bits have no effect; docs/test-skips.yml")
 
         rule_file = tmp_path / "rule.yar"
         _write_valid_yara(rule_file)
@@ -182,9 +180,7 @@ class TestRoundtripReadTestDataError:
         validates the contract relied on by the CLI layer.
         """
         if _is_root_process():
-            pytest.skip(
-                "Running as root: permission bits have no effect; docs/test-skips.yml"
-            )
+            pytest.skip("Running as root: permission bits have no effect; docs/test-skips.yml")
 
         data_file = tmp_path / "unreadable.bin"
         data_file.write_bytes(b"\xde\xad\xbe\xef")
@@ -223,9 +219,7 @@ class TestPathIsDirOSError:
         OSError from stat() is caught and re-raised as ValueError.
         """
         if _is_root_process():
-            pytest.skip(
-                "Running as root: permission bits have no effect; docs/test-skips.yml"
-            )
+            pytest.skip("Running as root: permission bits have no effect; docs/test-skips.yml")
 
         locked_dir = tmp_path / "locked"
         locked_dir.mkdir()
