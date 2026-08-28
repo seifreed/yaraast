@@ -20,6 +20,7 @@ def test_package_root_exports_installed_version() -> None:
         "Project",
         "ProjectConfig",
         "RefactorResult",
+        "RefactorSession",
         "ResourceLimits",
         "Severity",
         "SourceEdit",

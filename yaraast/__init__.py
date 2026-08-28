@@ -17,7 +17,7 @@ from yaraast.limits import CancellationToken, ResourceLimits
 from yaraast.plugins import DiagnosticProvider, PluginInfo
 from yaraast.project import Project
 from yaraast.project_config import ProjectConfig, Suppression
-from yaraast.refactor import RefactorResult
+from yaraast.refactor import RefactorResult, RefactorSession
 from yaraast.targets import TargetProfile
 
 __version__ = version("yaraast")
@@ -32,6 +32,7 @@ __all__ = [
     "Project",
     "ProjectConfig",
     "RefactorResult",
+    "RefactorSession",
     "ResourceLimits",
     "Severity",
     "SourceEdit",

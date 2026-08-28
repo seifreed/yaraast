@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from yaraast.check import check_path
 from yaraast.diagnostics import DiagnosticResult
@@ -16,6 +17,9 @@ from yaraast.rule_testing import (
     run_manifests,
     select_changed_manifests,
 )
+
+if TYPE_CHECKING:
+    from yaraast.refactor import RefactorSession
 
 
 @dataclass(frozen=True)
@@ -83,3 +87,9 @@ class Project:
             item for item in (LibyaraEngine(), YaraXEngine()) if item.name in selected
         )
         return run_manifests(manifests, sources, engines=references)
+
+    def edit(self) -> RefactorSession:
+        """Return a lossless refactor session for this project."""
+        from yaraast.refactor import RefactorSession
+
+        return RefactorSession(self.root)

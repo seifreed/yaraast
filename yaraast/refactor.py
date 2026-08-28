@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 import difflib
 import os
 from pathlib import Path
@@ -46,6 +47,70 @@ class RefactorResult:
                 tofile=path,
             )
         )
+
+
+@dataclass
+class RefactorSession:
+    """Collect validated source refactors for a local project."""
+
+    root: Path
+    _results: dict[Path, RefactorResult] = field(default_factory=dict, init=False)
+
+    def rename_rule(
+        self, old_name: str, new_name: str, *, update_references: bool = True
+    ) -> RefactorSession:
+        """Rename a rule across all source files in the project."""
+        del update_references
+        for path in self._source_files():
+            self._store(path, rename_rule(path.read_text(encoding="utf-8"), old_name, new_name))
+        return self
+
+    def rename_string(self, rule: str, old_name: str, new_name: str) -> RefactorSession:
+        """Rename a string in the source file containing ``rule``."""
+        for path in self._source_files():
+            source = path.read_text(encoding="utf-8")
+            if re.search(rf"\brule\s+{re.escape(rule)}\b", source):
+                self._store(path, rename_string(source, old_name, new_name))
+                return self
+        raise ValueError(f"rule not found: {rule}")
+
+    def remove_unused_strings(self) -> RefactorSession:
+        """Remove unused strings in every source file."""
+        return self._apply(remove_unused_strings)
+
+    def normalize_metadata(self) -> RefactorSession:
+        """Normalize metadata in every source file."""
+        return self._apply(normalize_metadata)
+
+    def sort_imports(self) -> RefactorSession:
+        """Sort imports in every source file."""
+        return self._apply(sort_imports)
+
+    def preview(self) -> tuple[tuple[Path, RefactorResult], ...]:
+        """Return deterministic pending changes without writing them."""
+        return tuple(sorted(self._results.items(), key=lambda item: item[0].as_posix()))
+
+    def apply(self) -> None:
+        """Write pending changes after confirming sources are unchanged."""
+        for path, result in self.preview():
+            if path.read_text(encoding="utf-8") != result.original:
+                raise ValueError(f"source changed after preview: {path}")
+        for path, result in self.preview():
+            write_refactor(path, result)
+
+    def _apply(self, transform: Callable[[str], RefactorResult]) -> RefactorSession:
+        for path in self._source_files():
+            source = path.read_text(encoding="utf-8")
+            result = transform(source)
+            self._store(path, result)
+        return self
+
+    def _source_files(self) -> tuple[Path, ...]:
+        return tuple(sorted((*self.root.rglob("*.yar"), *self.root.rglob("*.yara"))))
+
+    def _store(self, path: Path, result: RefactorResult) -> None:
+        if result.changed:
+            self._results[path] = result
 
 
 def rename_rule(source: str, old_name: str, new_name: str) -> RefactorResult:

@@ -35,3 +35,18 @@ positive:
         "positive": 1,
         "negative": 0,
     }
+
+
+def test_project_edit_previews_and_applies_lossless_changes(tmp_path: Path) -> None:
+    rules = tmp_path / "rules"
+    rules.mkdir()
+    path = rules / "sample.yar"
+    path.write_text("// keep\nrule old_name { condition: true }\n", encoding="utf-8")
+
+    session = Project.load(tmp_path).edit().rename_rule("old_name", "new_name")
+
+    preview = session.preview()
+    assert preview[0][0] == path
+    assert "// keep" in preview[0][1].updated
+    session.apply()
+    assert "rule new_name" in path.read_text(encoding="utf-8")
