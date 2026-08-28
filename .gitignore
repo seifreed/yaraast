@@ -169,6 +169,7 @@ node_modules/
 *.yara
 !examples/**/*.yar
 !tests/**/*.yar
+!yaraast-example-project/**/*.yar
 
 # Security - Never commit secrets
 *.key

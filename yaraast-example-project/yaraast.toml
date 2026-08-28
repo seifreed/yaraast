@@ -1,0 +1,9 @@
+schema-version = 1
+dialect = "yara"
+include = ["rules/**/*.yar"]
+
+[policy]
+forbid-unused-strings = true
+
+[quality-gate]
+fail-on = "error"

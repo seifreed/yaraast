@@ -1,0 +1,11 @@
+schema: yaraast-test/v1
+rule_id: example_hello
+engines:
+  - yara-x
+positive:
+  - path: positives/hello.bin
+    expected:
+      - example_hello
+negative:
+  - path: negatives/empty.bin
+    expected: []
