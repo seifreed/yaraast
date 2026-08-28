@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from yaraast.refactor import (
+    migrate_source,
     normalize_metadata,
     remove_unused_strings,
     rename_rule,
@@ -63,3 +64,10 @@ def test_sort_imports_and_normalize_metadata() -> None:
 
     assert metadata.updated.index('import "hash"') < metadata.updated.index('import "pe"')
     assert metadata.updated.index('  a = "first"') < metadata.updated.index('  z = "last"')
+
+
+def test_migrate_source_reparses_target_dialect() -> None:
+    result = migrate_source("rule sample { condition: true }\n", "yara", "yara-x")
+
+    assert result.changed
+    assert "rule sample" in result.updated

@@ -11,7 +11,14 @@ import tempfile
 from typing import cast
 
 from yaraast.analysis.best_practices import BestPracticesAnalyzer
-from yaraast.api import SourceEdit, rewrite_lossless
+from yaraast.api import (
+    DialectName,
+    OutputDialectName,
+    SourceEdit,
+    generate,
+    parse,
+    rewrite_lossless,
+)
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser.source import parse_yara_source
@@ -140,6 +147,14 @@ def sort_imports(source: str) -> RefactorResult:
             if lines[index][1] != replacement:
                 edits.append(_line_edit(source, lines[index][0], lines[index][1], replacement))
     return _result_from_edits(source, edits)
+
+
+def migrate_source(source: str, from_dialect: str, to_dialect: str) -> RefactorResult:
+    """Convert valid YARA-family source between supported output dialects."""
+    document = parse(source, dialect=cast(DialectName, from_dialect))
+    updated = generate(document, dialect=cast(OutputDialectName, to_dialect))
+    parse(updated, dialect=cast(DialectName, to_dialect))
+    return RefactorResult(source, updated, ())
 
 
 def write_refactor(path: str | Path, result: RefactorResult) -> None:

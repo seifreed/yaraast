@@ -15,6 +15,7 @@ from yaraast.cli.commands.fmt_cmd import fmt
 from yaraast.cli.commands.format_cmd import format_yara, validate_syntax
 from yaraast.cli.commands.libyara_cmd import libyara
 from yaraast.cli.commands.metrics import metrics
+from yaraast.cli.commands.migrate import migrate
 from yaraast.cli.commands.optimize import optimize
 from yaraast.cli.commands.parse_cmd import parse
 from yaraast.cli.commands.performance import performance
@@ -46,6 +47,7 @@ CLI_COMMANDS = (
     semantic,
     performance,
     performance_check,
+    migrate,
     refactor,
     bench,
     diff,
