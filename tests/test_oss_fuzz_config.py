@@ -23,4 +23,14 @@ def test_oss_fuzz_candidate_is_self_consistent() -> None:
 def test_oss_fuzz_build_script_has_valid_shell_syntax() -> None:
     bash = shutil.which("bash")
     assert bash is not None
-    subprocess.run([bash, "-n", "oss-fuzz/build.sh"], cwd=ROOT, check=True)
+    result = subprocess.run(
+        [bash, "-n", "oss-fuzz/build.sh"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    output = f"{result.stdout}\n{result.stderr}".lower()
+    if "no installed distributions" in output:
+        pytest.skip("bash is unavailable on this host; docs/test-skips.yml")
+    result.check_returncode()
