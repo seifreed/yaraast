@@ -10,6 +10,7 @@ import subprocess
 
 from yaraast.analysis.best_practices import BestPracticesAnalyzer, Suggestion
 from yaraast.ast.base import Location, YaraFile
+from yaraast.ast.strings import RegexString
 from yaraast.baseline import Baseline
 from yaraast.check_cache import CheckCache
 from yaraast.conformance.engines import ReferenceEngine
@@ -54,7 +55,9 @@ def check_path(
 ) -> DiagnosticResult:
     """Check configured rule files and return unified diagnostics."""
     candidate = Path(path)
-    effective_config = config or ProjectConfig.load(candidate if candidate.is_dir() else candidate.parent, profile)
+    effective_config = config or ProjectConfig.load(
+        candidate if candidate.is_dir() else candidate.parent, profile
+    )
     files = discover_rule_files(candidate, effective_config)
     if changed_from is not None:
         files = affected_files(files, _changed_files(effective_config.root, changed_from))
@@ -194,7 +197,7 @@ def _check_file(
 
     diagnostics = _semantic_diagnostics(ast, source_path, config)
     diagnostics.extend(_practice_diagnostics(ast, source_path, config))
-    diagnostics.extend(_policy_diagnostics(ast, source_path, config))
+    diagnostics.extend(_policy_diagnostics(ast, source, source_path, config))
     diagnostics.extend(
         _target_diagnostics(
             ast,
@@ -264,7 +267,10 @@ def _target_capability_diagnostics(
                 target=target.name,
             )
         )
-    if target.maximum_ruleset_bytes is not None and len(source.encode("utf-8")) > target.maximum_ruleset_bytes:
+    if (
+        target.maximum_ruleset_bytes is not None
+        and len(source.encode("utf-8")) > target.maximum_ruleset_bytes
+    ):
         diagnostics.append(
             _new_diagnostic(
                 "YARA402",
@@ -352,14 +358,20 @@ def _practice_diagnostics(
     analyzer = BestPracticesAnalyzer()
     report = analyzer.analyze(ast)
     locations = {rule.name: rule.location for rule in ast.rules}
-    return [
+    diagnostics = [
         _suggestion_diagnostic(item, source_path, locations.get(item.rule_name), config)
         for item in report.suggestions
     ]
+    if not config.policy.forbid_unused_strings:
+        diagnostics = [item for item in diagnostics if item.diagnostic_id != "YARA103"]
+    if not config.policy.forbid_duplicate_rule_names:
+        diagnostics = [item for item in diagnostics if item.diagnostic_id != "YARA202"]
+    return diagnostics
 
 
 def _policy_diagnostics(
     ast: YaraFile,
+    source: str,
     source_path: str,
     config: ProjectConfig,
 ) -> list[Diagnostic]:
@@ -367,7 +379,26 @@ def _policy_diagnostics(
     policy = config.policy
     for rule in ast.rules:
         location = rule.location
-        if policy.max_strings_per_rule is not None and len(rule.strings) > policy.max_strings_per_rule:
+        if (
+            policy.max_rule_bytes is not None
+            and len(source.encode("utf-8")) > policy.max_rule_bytes
+        ):
+            diagnostics.append(
+                _new_diagnostic(
+                    "YARA204",
+                    Severity.ERROR,
+                    "policy",
+                    f"Rule source exceeds {policy.max_rule_bytes} bytes",
+                    source_path,
+                    location,
+                    rule_name=rule.name,
+                    config=config,
+                )
+            )
+        if (
+            policy.max_strings_per_rule is not None
+            and len(rule.strings) > policy.max_strings_per_rule
+        ):
             diagnostics.append(
                 _new_diagnostic(
                     "YARA204",
@@ -380,7 +411,93 @@ def _policy_diagnostics(
                     config=config,
                 )
             )
+        for key in config.metadata.required:
+            if rule.get_meta_value(key) is None:
+                diagnostics.append(
+                    _new_diagnostic(
+                        "YARA201",
+                        Severity.ERROR,
+                        "policy",
+                        f"Rule '{rule.name}' is missing required metadata '{key}'",
+                        source_path,
+                        location,
+                        rule_name=rule.name,
+                        config=config,
+                    )
+                )
+        status = rule.get_meta_value("status")
+        if config.metadata.allowed_status and status not in config.metadata.allowed_status:
+            diagnostics.append(
+                _new_diagnostic(
+                    "YARA201",
+                    Severity.ERROR,
+                    "policy",
+                    f"Rule '{rule.name}' has disallowed status {status!r}",
+                    source_path,
+                    location,
+                    rule_name=rule.name,
+                    config=config,
+                )
+            )
+        if policy.max_regex_length is not None:
+            for string in rule.strings:
+                if isinstance(string, RegexString) and len(string.regex) > policy.max_regex_length:
+                    diagnostics.append(
+                        _new_diagnostic(
+                            "YARA301",
+                            Severity.WARNING,
+                            "policy",
+                            f"Regex '{string.identifier}' exceeds {policy.max_regex_length} characters",
+                            source_path,
+                            location,
+                            rule_name=rule.name,
+                            config=config,
+                        )
+                    )
+        if policy.require_tests_for_production and status == "production":
+            positive, negative = _test_coverage(config.root, rule.name)
+            if not positive:
+                diagnostics.append(
+                    _new_diagnostic(
+                        "YARA501",
+                        Severity.ERROR,
+                        "testing",
+                        f"Production rule '{rule.name}' has no positive test",
+                        source_path,
+                        location,
+                        rule_name=rule.name,
+                        config=config,
+                    )
+                )
+            if not negative:
+                diagnostics.append(
+                    _new_diagnostic(
+                        "YARA502",
+                        Severity.ERROR,
+                        "testing",
+                        f"Production rule '{rule.name}' has no negative test",
+                        source_path,
+                        location,
+                        rule_name=rule.name,
+                        config=config,
+                    )
+                )
     return diagnostics
+
+
+def _test_coverage(root: Path, rule_name: str) -> tuple[bool, bool]:
+    from yaraast.rule_testing import RuleTestManifest, discover_manifests
+
+    positive = negative = False
+    for path in discover_manifests(root):
+        try:
+            manifest = RuleTestManifest.load(path)
+        except ValueError:
+            continue
+        if manifest.rule_id == rule_name:
+            positive = positive or bool(manifest.positive)
+            negative = negative or bool(manifest.negative)
+    return positive, negative
 
 
 def _validation_diagnostic(

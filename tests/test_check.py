@@ -42,7 +42,9 @@ def test_check_cli_emits_json_and_honors_fail_on(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    result = CliRunner().invoke(cli, ["check", str(tmp_path), "--format", "json", "--fail-on", "warning"])
+    result = CliRunner().invoke(
+        cli, ["check", str(tmp_path), "--format", "json", "--fail-on", "warning"]
+    )
 
     assert result.exit_code == 1
     payload = json.loads(result.output)
@@ -52,5 +54,31 @@ def test_check_cli_emits_json_and_honors_fail_on(tmp_path: Path) -> None:
 def test_check_passes_default_gate_for_warnings() -> None:
     from yaraast.diagnostics import Diagnostic, DiagnosticResult
 
-    result = DiagnosticResult((Diagnostic("YARA103", Severity.WARNING, "policy", "warning", "a.yar", 1, 1, 1, 1),))
+    result = DiagnosticResult(
+        (Diagnostic("YARA103", Severity.WARNING, "policy", "warning", "a.yar", 1, 1, 1, 1),)
+    )
     assert check_passes(result, ProjectConfig(Path(".")))
+
+
+def test_check_applies_metadata_limits_and_production_test_policy(tmp_path: Path) -> None:
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules/sample.yar").write_text(
+        'rule sample { meta: status = "production" strings: $r = /abcdef/ condition: $r }\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "yaraast.toml").write_text(
+        """
+[metadata]
+required = ["id", "status"]
+allowed-status = ["production"]
+[policy]
+max-regex-length = 3
+require-tests-for-production = true
+""",
+        encoding="utf-8",
+    )
+
+    result = check_path(tmp_path)
+    diagnostic_ids = {item.diagnostic_id for item in result.diagnostics}
+
+    assert {"YARA201", "YARA301", "YARA501", "YARA502"} <= diagnostic_ids
