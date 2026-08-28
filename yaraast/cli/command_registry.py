@@ -19,6 +19,7 @@ from yaraast.cli.commands.optimize import optimize
 from yaraast.cli.commands.parse_cmd import parse
 from yaraast.cli.commands.performance import performance
 from yaraast.cli.commands.performance_check import performance_check
+from yaraast.cli.commands.plugins import plugins
 from yaraast.cli.commands.refactor import refactor
 from yaraast.cli.commands.roundtrip import roundtrip
 from yaraast.cli.commands.semantic import semantic
@@ -34,6 +35,7 @@ CLI_COMMANDS = (
     cache,
     check,
     test,
+    plugins,
     parse,
     (format_yara, "format"),
     fmt,

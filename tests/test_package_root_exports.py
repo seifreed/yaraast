@@ -13,8 +13,10 @@ def test_package_root_exports_installed_version() -> None:
     assert yaraast.__all__ == [
         "CancellationToken",
         "Diagnostic",
+        "DiagnosticProvider",
         "DiagnosticResult",
         "ParsedDocument",
+        "PluginInfo",
         "Project",
         "ProjectConfig",
         "RefactorResult",

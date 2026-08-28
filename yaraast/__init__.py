@@ -14,6 +14,7 @@ from yaraast.api import (
 )
 from yaraast.diagnostics import Diagnostic, DiagnosticResult, Severity, SourceFix
 from yaraast.limits import CancellationToken, ResourceLimits
+from yaraast.plugins import DiagnosticProvider, PluginInfo
 from yaraast.project import Project
 from yaraast.project_config import ProjectConfig, Suppression
 from yaraast.refactor import RefactorResult
@@ -24,8 +25,10 @@ __version__ = version("yaraast")
 __all__ = [
     "CancellationToken",
     "Diagnostic",
+    "DiagnosticProvider",
     "DiagnosticResult",
     "ParsedDocument",
+    "PluginInfo",
     "Project",
     "ProjectConfig",
     "RefactorResult",
