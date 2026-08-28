@@ -4,13 +4,20 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from yaraast.refactor import rename_rule, rename_string, write_refactor
+from yaraast.refactor import (
+    normalize_metadata,
+    remove_unused_strings,
+    rename_rule,
+    rename_string,
+    sort_imports,
+    write_refactor,
+)
 
 
 def test_rename_rule_preserves_comments_and_string_literals() -> None:
     source = (
-        '// old_rule\nrule old_rule { condition: true }\n'
-        'rule consumer { condition: old_rule }\n'
+        "// old_rule\nrule old_rule { condition: true }\n"
+        "rule consumer { condition: old_rule }\n"
         'rule literal { strings: $a = "old_rule" condition: $a }\n'
     )
 
@@ -31,3 +38,28 @@ def test_rename_string_reparses_and_writes_atomically(tmp_path: Path) -> None:
 
     assert "$payload" in path.read_text(encoding="utf-8")
     assert "$a" not in path.read_text(encoding="utf-8")
+
+
+def test_remove_unused_strings_preserves_other_source() -> None:
+    source = (
+        'rule sample {\n strings:\n  $used = "used"\n  $unused = "unused"\n'
+        " condition: $used\n}\n"
+    )
+
+    result = remove_unused_strings(source)
+
+    assert "$unused" not in result.updated
+    assert "$used" in result.updated
+
+
+def test_sort_imports_and_normalize_metadata() -> None:
+    source = (
+        'import "pe"\nimport "hash"\nrule sample {\n meta:\n  z = "last"\n'
+        '  a = "first"\n condition: true\n}\n'
+    )
+
+    imports = sort_imports(source)
+    metadata = normalize_metadata(imports.updated)
+
+    assert metadata.updated.index('import "hash"') < metadata.updated.index('import "pe"')
+    assert metadata.updated.index('  a = "first"') < metadata.updated.index('  z = "last"')
