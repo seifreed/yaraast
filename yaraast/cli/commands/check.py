@@ -26,6 +26,8 @@ from yaraast.reporters import REPORTERS
 )
 @click.option("--output", "output_path", type=click.Path(path_type=Path), help="Report file")
 @click.option("--baseline", "baseline_path", type=click.Path(exists=True, path_type=Path))
+@click.option("--target", "target_names", multiple=True, help="Compatibility target")
+@click.option("--no-compile", is_flag=True, help="Skip target engine compilation")
 @click.option(
     "--fail-on",
     type=click.Choice([severity.value for severity in Severity]),
@@ -37,6 +39,8 @@ def check(
     output_format: str,
     output_path: Path | None,
     baseline_path: Path | None,
+    target_names: tuple[str, ...],
+    no_compile: bool,
     fail_on: str | None,
 ) -> None:
     """Parse and validate a rule file or repository."""
@@ -48,7 +52,16 @@ def check(
             config,
             quality_gate=replace(config.quality_gate, fail_on=Severity(fail_on)),
         )
-    result = apply_baseline(check_path(path, config, profile=profile), baseline_path)
+    result = apply_baseline(
+        check_path(
+            path,
+            config,
+            profile=profile,
+            targets=target_names or None,
+            compile_targets=not no_compile,
+        ),
+        baseline_path,
+    )
     rendered = REPORTERS[output_format]().render(result)
     if output_path is None:
         click.echo(rendered, nl=False)

@@ -9,9 +9,11 @@ import re
 from yaraast.analysis.best_practices import BestPracticesAnalyzer, Suggestion
 from yaraast.ast.base import Location, YaraFile
 from yaraast.baseline import Baseline
+from yaraast.conformance.engines import ReferenceEngine
 from yaraast.diagnostics import Diagnostic, DiagnosticResult, Severity
 from yaraast.parser.source import parse_yara_source
 from yaraast.project_config import ProjectConfig
+from yaraast.targets import TargetProfile, get_target_profile
 from yaraast.types.semantic_validator import SemanticValidator
 from yaraast.types.semantic_validator_core import ValidationError
 
@@ -42,6 +44,8 @@ def check_path(
     config: ProjectConfig | None = None,
     *,
     profile: str = "default",
+    targets: tuple[str, ...] | None = None,
+    compile_targets: bool = True,
 ) -> DiagnosticResult:
     """Check configured rule files and return unified diagnostics."""
     candidate = Path(path)
@@ -50,7 +54,15 @@ def check_path(
     diagnostics: list[Diagnostic] = []
     for file_path in files:
         source_path = _display_path(file_path, effective_config.root)
-        diagnostics.extend(_check_file(file_path, source_path, effective_config))
+        diagnostics.extend(
+            _check_file(
+                file_path,
+                source_path,
+                effective_config,
+                targets=targets,
+                compile_targets=compile_targets,
+            )
+        )
     result = DiagnosticResult(tuple(diagnostics))
     return apply_suppressions(result, effective_config)
 
@@ -91,7 +103,14 @@ def apply_suppressions(result: DiagnosticResult, config: ProjectConfig) -> Diagn
     )
 
 
-def _check_file(path: Path, source_path: str, config: ProjectConfig) -> list[Diagnostic]:
+def _check_file(
+    path: Path,
+    source_path: str,
+    config: ProjectConfig,
+    *,
+    targets: tuple[str, ...] | None,
+    compile_targets: bool,
+) -> list[Diagnostic]:
     try:
         source = path.read_text(encoding="utf-8")
         ast = parse_yara_source(source)
@@ -101,7 +120,141 @@ def _check_file(path: Path, source_path: str, config: ProjectConfig) -> list[Dia
     diagnostics = _semantic_diagnostics(ast, source_path, config)
     diagnostics.extend(_practice_diagnostics(ast, source_path, config))
     diagnostics.extend(_policy_diagnostics(ast, source_path, config))
+    diagnostics.extend(
+        _target_diagnostics(
+            ast,
+            source,
+            source_path,
+            config,
+            targets if targets is not None else config.targets,
+            compile_targets,
+        )
+    )
     return diagnostics
+
+
+def _target_diagnostics(
+    ast: YaraFile,
+    source: str,
+    source_path: str,
+    config: ProjectConfig,
+    target_names: tuple[str, ...],
+    compile_targets: bool,
+) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    for target_name in target_names:
+        try:
+            target = get_target_profile(target_name)
+        except ValueError as exc:
+            diagnostics.append(_processing_diagnostic(source_path, str(exc), "YARA402"))
+            continue
+        diagnostics.extend(_target_capability_diagnostics(ast, source, source_path, config, target))
+        if compile_targets and target.engine_version is not None:
+            diagnostics.append(_compile_diagnostic(source, source_path, config, target))
+    return diagnostics
+
+
+def _target_capability_diagnostics(
+    ast: YaraFile,
+    source: str,
+    source_path: str,
+    config: ProjectConfig,
+    target: TargetProfile,
+) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    for imported in ast.imports:
+        if imported.module not in target.allowed_modules:
+            diagnostics.append(
+                _new_diagnostic(
+                    "YARA401",
+                    Severity.ERROR,
+                    "target",
+                    f"Module '{imported.module}' is not available for target '{target.name}'",
+                    source_path,
+                    imported.location,
+                    config=config,
+                    target=target.name,
+                )
+            )
+    if ast.includes and not target.supports_includes:
+        diagnostics.append(
+            _new_diagnostic(
+                "YARA401",
+                Severity.ERROR,
+                "target",
+                f"Includes are not supported by target '{target.name}'",
+                source_path,
+                ast.includes[0].location,
+                config=config,
+                target=target.name,
+            )
+        )
+    if target.maximum_ruleset_bytes is not None and len(source.encode("utf-8")) > target.maximum_ruleset_bytes:
+        diagnostics.append(
+            _new_diagnostic(
+                "YARA402",
+                Severity.ERROR,
+                "target",
+                f"Ruleset exceeds target '{target.name}' size limit",
+                source_path,
+                ast.location,
+                config=config,
+                target=target.name,
+            )
+        )
+    return diagnostics
+
+
+def _compile_diagnostic(
+    source: str,
+    source_path: str,
+    config: ProjectConfig,
+    target: TargetProfile,
+) -> Diagnostic:
+    engine = _engine_for_target(target)
+    if engine is None or not engine.available:
+        return _new_diagnostic(
+            "YARA402",
+            Severity.ERROR,
+            "target",
+            f"Engine for target '{target.name}' is not installed",
+            source_path,
+            None,
+            config=config,
+            target=target.name,
+        )
+    result = engine.evaluate(source)
+    if result.accepted:
+        return _new_diagnostic(
+            "YARA000",
+            Severity.NOTE,
+            "target",
+            f"Compiled successfully for target '{target.name}'",
+            source_path,
+            None,
+            config=config,
+            target=target.name,
+        )
+    return _new_diagnostic(
+        "YARA402",
+        Severity.ERROR,
+        "target",
+        f"Target '{target.name}' rejected the rule: {result.error or 'unknown compiler error'}",
+        source_path,
+        None,
+        config=config,
+        target=target.name,
+    )
+
+
+def _engine_for_target(target: TargetProfile) -> ReferenceEngine | None:
+    from yaraast.conformance.engines import LibyaraEngine, YaraXEngine
+
+    if target.name == "yara-4.5.8":
+        return LibyaraEngine()
+    if target.name == "yara-x-1.20.0":
+        return YaraXEngine()
+    return None
 
 
 def _semantic_diagnostics(
@@ -203,6 +356,7 @@ def _new_diagnostic(
     *,
     rule_name: str | None = None,
     suggestion: str | None = None,
+    target: str | None = None,
     config: ProjectConfig,
 ) -> Diagnostic:
     start_line = location.line if location else 1
@@ -221,12 +375,17 @@ def _new_diagnostic(
         end_column,
         rule_name=rule_name,
         dialect=config.dialect,
+        target=target,
         suggestion=suggestion,
     )
 
 
-def _processing_diagnostic(source_path: str, message: str) -> Diagnostic:
-    return Diagnostic("YARA001", Severity.ERROR, "syntax", message, source_path, 1, 1, 1, 1)
+def _processing_diagnostic(
+    source_path: str,
+    message: str,
+    diagnostic_id: str = "YARA001",
+) -> Diagnostic:
+    return Diagnostic(diagnostic_id, Severity.ERROR, "syntax", message, source_path, 1, 1, 1, 1)
 
 
 def _validation_id(message: str) -> str:
@@ -274,4 +433,3 @@ def _severity_rank(severity: Severity) -> int:
         Severity.INFO: 2,
         Severity.NOTE: 3,
     }[severity]
-

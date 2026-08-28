@@ -21,6 +21,7 @@ def test_package_root_exports_installed_version() -> None:
         "SourceEdit",
         "SourceFix",
         "Suppression",
+        "TargetProfile",
         "__version__",
         "format_canonical",
         "generate",
