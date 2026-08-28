@@ -6,6 +6,7 @@ import click
 
 from yaraast.cli.commands.analyze import analyze
 from yaraast.cli.commands.bench_cmd import bench
+from yaraast.cli.commands.check import check
 from yaraast.cli.commands.diff_cmd import diff
 from yaraast.cli.commands.fluent import fluent
 from yaraast.cli.commands.fmt_cmd import fmt
@@ -25,6 +26,7 @@ from yaraast.cli.commands.yaral import yaral
 from yaraast.cli.commands.yarax import yarax
 
 CLI_COMMANDS = (
+    check,
     parse,
     (format_yara, "format"),
     fmt,
