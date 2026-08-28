@@ -7,7 +7,12 @@ from pathlib import Path
 import pytest
 
 from yaraast.conformance.engines import EngineResult, ReferenceEngine, YaraXEngine
-from yaraast.rule_testing import RuleTestManifest, discover_manifests, run_manifests
+from yaraast.rule_testing import (
+    RuleTestManifest,
+    discover_manifests,
+    run_manifests,
+    select_changed_manifests,
+)
 
 
 class _SlowEngine(ReferenceEngine):
@@ -113,3 +118,40 @@ budgets:
 
     assert len(result.failed) == 1
     assert result.failed[0].error == "compile exceeded 1 ms"
+
+
+def test_changed_from_selects_manifest_for_changed_rule(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_path = tmp_path / "tests" / "sample" / "test.yml"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(
+        "schema: yaraast-test/v1\nrule_id: sample\npositive: []\n", encoding="utf-8"
+    )
+    manifest = RuleTestManifest.load(manifest_path)
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "sample.yar").write_text(
+        "rule sample { condition: true }\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        "yaraast.rule_testing._changed_paths", lambda root, revision: {"rules/sample.yar"}
+    )
+
+    assert select_changed_manifests((manifest,), tmp_path, "origin/main") == (manifest,)
+
+
+def test_changed_from_selects_manifest_for_changed_fixture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_path = tmp_path / "tests" / "sample" / "test.yml"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(
+        "schema: yaraast-test/v1\nrule_id: sample\npositive: []\n", encoding="utf-8"
+    )
+    manifest = RuleTestManifest.load(manifest_path)
+    monkeypatch.setattr(
+        "yaraast.rule_testing._changed_paths",
+        lambda root, revision: {"tests/sample/positives/a.bin"},
+    )
+
+    assert select_changed_manifests((manifest,), tmp_path, "origin/main") == (manifest,)

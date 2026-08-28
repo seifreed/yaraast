@@ -14,6 +14,7 @@ from yaraast.rule_testing import (
     discover_manifests,
     discover_rule_sources,
     run_manifests,
+    select_changed_manifests,
 )
 
 
@@ -47,7 +48,11 @@ class Project:
         compile_targets: bool = True,
     ) -> DiagnosticResult:
         """Run the repository check workflow."""
-        config = self.config if profile == self.config.profile else ProjectConfig.load(self.root, profile)
+        config = (
+            self.config
+            if profile == self.config.profile
+            else ProjectConfig.load(self.root, profile)
+        )
         return check_path(
             self.root,
             config,
@@ -62,11 +67,14 @@ class Project:
         engines: tuple[str, ...] | None = None,
         tests_path: str | Path | None = None,
         rules_path: str | Path | None = None,
+        changed_from: str | None = None,
     ) -> RuleTestResult:
         """Run local fixture manifests against configured rule sources."""
         manifest_root = Path(tests_path) if tests_path is not None else self.root
         rule_root = Path(rules_path) if rules_path is not None else self.root
         manifests = tuple(RuleTestManifest.load(item) for item in discover_manifests(manifest_root))
+        if changed_from is not None:
+            manifests = select_changed_manifests(manifests, self.root, changed_from)
         sources = discover_rule_sources(rule_root)
         selected = engines or ("libyara", "yara-x")
         from yaraast.conformance.engines import LibyaraEngine, YaraXEngine

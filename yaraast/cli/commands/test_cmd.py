@@ -15,6 +15,7 @@ from yaraast.rule_testing import (
     discover_manifests,
     discover_rule_sources,
     run_manifests,
+    select_changed_manifests,
 )
 
 
@@ -31,6 +32,7 @@ from yaraast.rule_testing import (
 )
 @click.option("--output", "output_path", type=click.Path(path_type=Path))
 @click.option("--coverage", is_flag=True, help="Include rule coverage in text output")
+@click.option("--changed-from", help="Only test changed rules and their manifests")
 def test(
     path: Path,
     rules_path: Path | None,
@@ -38,10 +40,14 @@ def test(
     output_format: str,
     output_path: Path | None,
     coverage: bool,
+    changed_from: str | None,
 ) -> None:
     """Run local positive and negative rule fixtures."""
     manifests = tuple(RuleTestManifest.load(item) for item in discover_manifests(path))
-    source_root = rules_path or path
+    project_root = path if path.is_dir() else path.parent
+    if changed_from is not None:
+        manifests = select_changed_manifests(manifests, project_root, changed_from)
+    source_root = rules_path or project_root
     sources = discover_rule_sources(source_root)
     selected_engines = engine_names or ("libyara", "yara-x")
     from yaraast.conformance.engines import LibyaraEngine, YaraXEngine
@@ -77,6 +83,7 @@ def test(
     if result.failed:
         raise click.exceptions.Exit(1)
 
+
 def _junit_output(result: RuleTestResult) -> str:
     suite = ElementTree.Element(
         "testsuite",
@@ -96,6 +103,8 @@ def _junit_output(result: RuleTestResult) -> str:
         if fixture.skipped:
             ElementTree.SubElement(case, "skipped")
         elif not fixture.passed:
-            failure = ElementTree.SubElement(case, "failure", {"message": fixture.error or "mismatch"})
+            failure = ElementTree.SubElement(
+                case, "failure", {"message": fixture.error or "mismatch"}
+            )
             failure.text = fixture.error or "fixture did not match expected rules"
     return ElementTree.tostring(suite, encoding="unicode") + "\n"

@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+import re
+import subprocess
 import sys
 import time
 from typing import Any
@@ -155,8 +157,6 @@ def discover_rule_sources(root: str | Path) -> dict[str, str]:
         if candidate.is_file()
         else tuple(candidate.rglob("*.yar")) + tuple(candidate.rglob("*.yara"))
     )
-    import re
-
     pattern = re.compile(r"\brule\s+(?:private\s+|global\s+)*([A-Za-z_][A-Za-z0-9_]*)")
     sources: dict[str, str] = {}
     for path in sorted(set(files)):
@@ -164,6 +164,57 @@ def discover_rule_sources(root: str | Path) -> dict[str, str]:
         for match in pattern.finditer(source):
             sources[match.group(1)] = source
     return sources
+
+
+def select_changed_manifests(
+    manifests: Iterable[RuleTestManifest],
+    root: str | Path,
+    revision: str,
+) -> tuple[RuleTestManifest, ...]:
+    """Select manifests changed directly or linked to changed rule sources."""
+    project_root = Path(root).resolve()
+    changed = _changed_paths(project_root, revision)
+    changed_rule_ids: set[str] = set()
+    rule_pattern = re.compile(r"\brule\s+(?:private\s+|global\s+)*([A-Za-z_][A-Za-z0-9_]*)")
+    for relative in changed:
+        changed_path = project_root / relative
+        if changed_path.suffix not in {".yar", ".yara"}:
+            continue
+        try:
+            changed_rule_ids.update(rule_pattern.findall(changed_path.read_text(encoding="utf-8")))
+        except (OSError, UnicodeDecodeError):
+            continue
+
+    selected = []
+    for manifest in manifests:
+        relative = _relative_path(manifest.path, project_root)
+        parent = _relative_path(manifest.path.parent, project_root)
+        manifest_changed = relative in changed or any(
+            item.startswith(f"{parent}/") for item in changed
+        )
+        if manifest_changed or manifest.rule_id in changed_rule_ids:
+            selected.append(manifest)
+    return tuple(selected)
+
+
+def _changed_paths(root: Path, revision: str) -> set[str]:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "diff", "--name-only", revision, "--"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError(f"could not determine changed files from {revision!r}") from exc
+    return {line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip()}
+
+
+def _relative_path(path: Path, root: Path) -> str:
+    try:
+        return path.resolve().relative_to(root).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def run_manifests(
