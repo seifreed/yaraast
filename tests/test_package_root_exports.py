@@ -17,6 +17,7 @@ def test_package_root_exports_installed_version() -> None:
         "ParsedDocument",
         "Project",
         "ProjectConfig",
+        "RefactorResult",
         "ResourceLimits",
         "Severity",
         "SourceEdit",
