@@ -6,7 +6,6 @@ from collections.abc import Iterable
 import json
 from pathlib import Path
 from typing import Any
-from xml.etree import ElementTree
 
 from yaraast.diagnostics import Diagnostic, DiagnosticResult, Severity
 
@@ -79,27 +78,38 @@ class JunitReporter(Reporter):
     """Render diagnostics as a JUnit test suite."""
 
     def render(self, result: DiagnosticResult) -> str:
-        suite = ElementTree.Element(
-            "testsuite",
-            {
-                "name": "yaraast",
-                "tests": str(len(result.diagnostics)),
-                "failures": str(len(result.errors)),
-            },
-        )
+        parts = [
+            "<testsuite",
+            f' name="{_xml_escape("yaraast", attribute=True)}"',
+            f' tests="{len(result.diagnostics)}"',
+            f' failures="{len(result.errors)}">',
+        ]
         for diagnostic in result.diagnostics:
-            case = ElementTree.SubElement(
-                suite,
-                "testcase",
-                {"classname": diagnostic.source_path, "name": diagnostic.diagnostic_id},
+            parts.extend(
+                (
+                    "<testcase",
+                    f' classname="{_xml_escape(diagnostic.source_path, attribute=True)}"',
+                    f' name="{_xml_escape(diagnostic.diagnostic_id, attribute=True)}">',
+                )
             )
             if diagnostic.severity is Severity.ERROR:
-                failure = ElementTree.SubElement(case, "failure", {"message": diagnostic.message})
-                failure.text = diagnostic.message
+                message = _xml_escape(diagnostic.message, attribute=True)
+                parts.append(
+                    f'<failure message="{message}">{_xml_escape(diagnostic.message)}</failure>'
+                )
             elif diagnostic.severity is Severity.WARNING:
-                warning = ElementTree.SubElement(case, "system-out")
-                warning.text = diagnostic.message
-        return ElementTree.tostring(suite, encoding="unicode") + "\n"
+                parts.append(f"<system-out>{_xml_escape(diagnostic.message)}</system-out>")
+            parts.append("</testcase>")
+        parts.append("</testsuite>\n")
+        return "".join(parts)
+
+
+def _xml_escape(value: str, *, attribute: bool = False) -> str:
+    """Escape text for generated JUnit XML."""
+    escaped = value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    if attribute:
+        escaped = escaped.replace('"', "&quot;").replace("'", "&apos;")
+    return escaped
 
 
 REPORTERS: dict[str, type[Reporter]] = {

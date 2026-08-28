@@ -134,9 +134,7 @@ class ProjectConfig:
                 max_strings_per_rule=_optional_int(
                     policy.get("max-strings-per-rule"), "max-strings-per-rule"
                 ),
-                max_regex_length=_optional_int(
-                    policy.get("max-regex-length"), "max-regex-length"
-                ),
+                max_regex_length=_optional_int(policy.get("max-regex-length"), "max-regex-length"),
                 max_hex_wildcard_ratio=_optional_float(
                     policy.get("max-hex-wildcard-ratio"), "max-hex-wildcard-ratio"
                 ),
@@ -158,7 +156,9 @@ class ProjectConfig:
                 max_warnings=_optional_int(gate.get("max-warnings"), "quality-gate.max-warnings"),
                 fail_on=_severity_value(gate.get("fail-on", "error"), "quality-gate.fail-on"),
             ),
-            suppressions=tuple(_suppression(item, index) for index, item in enumerate(suppressions)),
+            suppressions=tuple(
+                _suppression(item, index) for index, item in enumerate(suppressions)
+            ),
             profile=profile,
         )
 

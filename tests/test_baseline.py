@@ -16,7 +16,9 @@ from yaraast.project_config import ProjectConfig, Suppression
 
 
 def _diagnostic() -> Diagnostic:
-    return Diagnostic("YARA103", Severity.WARNING, "policy", "unused", "rules/a.yar", 1, 1, 1, 2, rule_name="a")
+    return Diagnostic(
+        "YARA103", Severity.WARNING, "policy", "unused", "rules/a.yar", 1, 1, 1, 2, rule_name="a"
+    )
 
 
 def test_baseline_round_trip_filters_known_fingerprints(tmp_path: Path) -> None:

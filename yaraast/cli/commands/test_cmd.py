@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from xml.etree import ElementTree
 
 import click
 
 from yaraast.cli.utils import write_text
+from yaraast.reporters import _xml_escape
 from yaraast.rule_testing import (
     RuleTestManifest,
     RuleTestResult,
@@ -85,26 +85,29 @@ def test(
 
 
 def _junit_output(result: RuleTestResult) -> str:
-    suite = ElementTree.Element(
-        "testsuite",
-        {
-            "name": "yaraast",
-            "tests": str(len(result.fixtures)),
-            "failures": str(len(result.failed)),
-            "skipped": str(len(result.skipped)),
-        },
-    )
+    parts = [
+        "<testsuite",
+        ' name="yaraast"',
+        f' tests="{len(result.fixtures)}"',
+        f' failures="{len(result.failed)}"',
+        f' skipped="{len(result.skipped)}">',
+    ]
     for fixture in result.fixtures:
-        case = ElementTree.SubElement(
-            suite,
-            "testcase",
-            {"classname": fixture.engine, "name": f"{fixture.kind}:{fixture.path}"},
+        parts.extend(
+            (
+                "<testcase",
+                f' classname="{_xml_escape(fixture.engine, attribute=True)}"',
+                f' name="{_xml_escape(f"{fixture.kind}:{fixture.path}", attribute=True)}">',
+            )
         )
         if fixture.skipped:
-            ElementTree.SubElement(case, "skipped")
+            parts.append("<skipped />")
         elif not fixture.passed:
-            failure = ElementTree.SubElement(
-                case, "failure", {"message": fixture.error or "mismatch"}
+            message = fixture.error or "mismatch"
+            text = fixture.error or "fixture did not match expected rules"
+            parts.append(
+                f'<failure message="{_xml_escape(message, attribute=True)}">{_xml_escape(text)}</failure>'
             )
-            failure.text = fixture.error or "fixture did not match expected rules"
-    return ElementTree.tostring(suite, encoding="unicode") + "\n"
+        parts.append("</testcase>")
+    parts.append("</testsuite>\n")
+    return "".join(parts)

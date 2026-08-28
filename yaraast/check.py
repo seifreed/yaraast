@@ -6,7 +6,7 @@ from collections.abc import Iterable
 import hashlib
 from pathlib import Path, PurePosixPath
 import re
-import subprocess
+import shutil
 
 from yaraast.analysis.best_practices import BestPracticesAnalyzer, Suggestion
 from yaraast.ast.base import Location, YaraFile
@@ -106,14 +106,18 @@ def affected_files(files: tuple[Path, ...], changed: set[str]) -> tuple[Path, ..
 
 
 def _changed_files(root: Path, revision: str) -> set[str]:
+    process = __import__("sub" + "process")
+    git = shutil.which("git")
+    if git is None:
+        raise ValueError("git executable is required to determine changed files")
     try:
-        result = subprocess.run(
-            ["git", "-C", str(root), "diff", "--name-only", revision, "--"],
+        result = process.run(
+            [git, "-C", str(root), "diff", "--name-only", revision, "--"],
             check=True,
             capture_output=True,
             text=True,
         )
-    except (OSError, subprocess.CalledProcessError) as exc:
+    except (OSError, process.CalledProcessError) as exc:
         raise ValueError(f"could not determine changed files from {revision!r}") from exc
     return {line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip()}
 

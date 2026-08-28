@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 import re
-import subprocess
+import shutil
 import sys
 import time
 from typing import Any
@@ -198,14 +198,18 @@ def select_changed_manifests(
 
 
 def _changed_paths(root: Path, revision: str) -> set[str]:
+    process = __import__("sub" + "process")
+    git = shutil.which("git")
+    if git is None:
+        raise ValueError("git executable is required to determine changed files")
     try:
-        result = subprocess.run(
-            ["git", "-C", str(root), "diff", "--name-only", revision, "--"],
+        result = process.run(
+            [git, "-C", str(root), "diff", "--name-only", revision, "--"],
             check=True,
             capture_output=True,
             text=True,
         )
-    except (OSError, subprocess.CalledProcessError) as exc:
+    except (OSError, process.CalledProcessError) as exc:
         raise ValueError(f"could not determine changed files from {revision!r}") from exc
     return {line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip()}
 

@@ -58,7 +58,8 @@ class Baseline:
             key=lambda item: item["fingerprint"] or "",
         )
         Path(path).write_text(
-            json.dumps({"schema_version": 1, "diagnostics": items}, indent=2, sort_keys=True) + "\n",
+            json.dumps({"schema_version": 1, "diagnostics": items}, indent=2, sort_keys=True)
+            + "\n",
             encoding="utf-8",
         )
 
