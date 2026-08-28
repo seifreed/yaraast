@@ -20,6 +20,9 @@ targets = ["yara-4.5.8"]
 
 [policy]
 max-strings-per-rule = 100
+max-ruleset-bytes = 1000
+forbid-includes = true
+require-negative-tests = true
 forbid-unused-strings = true
 
 [severity]
@@ -40,6 +43,9 @@ fail-on = "warning"
     assert config.include == ("rules/**/*.yar",)
     assert config.targets == ("yara-4.5.8",)
     assert config.policy.forbid_unused_strings
+    assert config.policy.max_ruleset_bytes == 1000
+    assert config.policy.forbid_includes
+    assert config.policy.require_negative_tests
     assert config.severity["YARA103"] is Severity.WARNING
     assert config.quality_gate.fail_on is Severity.WARNING
 

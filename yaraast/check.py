@@ -22,6 +22,9 @@ from yaraast.types.semantic_validator import SemanticValidator
 from yaraast.types.semantic_validator_core import ValidationError
 
 _RULE_NAME_RE = re.compile(r"rule '([^']+)'")
+_LOCAL_SUPPRESSION_RE = re.compile(
+    r"^\s*//\s*yaraast:\s*ignore\s+(YARA\d+)\s+--\s*\S.*$", re.MULTILINE
+)
 
 
 def discover_rule_files(path: str | Path, config: ProjectConfig) -> tuple[Path, ...]:
@@ -65,7 +68,11 @@ def check_path(
     diagnostics: list[Diagnostic] = []
     for file_path in files:
         source_path = _display_path(file_path, effective_config.root)
-        source = file_path.read_bytes()
+        try:
+            source = file_path.read_bytes()
+        except OSError as exc:
+            diagnostics.append(_processing_diagnostic(source_path, str(exc)))
+            continue
         cache_key = _cache_key(source, effective_config, targets, compile_targets)
         cached = cache.get(source_path, cache_key) if cache else None
         if cached is None:
@@ -82,7 +89,7 @@ def check_path(
             )
             if cache:
                 cache.put(source_path, cache_key, cached)
-        diagnostics.extend(cached.diagnostics)
+        diagnostics.extend(_apply_local_suppressions(cached, source))
     if cache:
         cache.save()
     result = DiagnosticResult(tuple(diagnostics))
@@ -183,6 +190,16 @@ def apply_suppressions(result: DiagnosticResult, config: ProjectConfig) -> Diagn
             )
         )
     )
+
+
+def _apply_local_suppressions(result: DiagnosticResult, source: bytes) -> tuple[Diagnostic, ...]:
+    """Apply only local comments with an explicit reason."""
+    try:
+        text = source.decode("utf-8")
+    except UnicodeDecodeError:
+        return result.diagnostics
+    ignored = {match.group(1) for match in _LOCAL_SUPPRESSION_RE.finditer(text)}
+    return tuple(item for item in result.diagnostics if item.diagnostic_id not in ignored)
 
 
 def _check_file(
@@ -381,8 +398,36 @@ def _policy_diagnostics(
 ) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     policy = config.policy
+    if policy.forbid_includes and ast.includes:
+        diagnostics.append(
+            _new_diagnostic(
+                "YARA401",
+                Severity.ERROR,
+                "policy",
+                "Includes are forbidden by the active policy",
+                source_path,
+                ast.includes[0].location,
+                config=config,
+            )
+        )
     for rule in ast.rules:
         location = rule.location
+        if (
+            policy.max_ruleset_bytes is not None
+            and len(source.encode("utf-8")) > policy.max_ruleset_bytes
+        ):
+            diagnostics.append(
+                _new_diagnostic(
+                    "YARA204",
+                    Severity.ERROR,
+                    "policy",
+                    f"Ruleset exceeds {policy.max_ruleset_bytes} bytes",
+                    source_path,
+                    location,
+                    rule_name=rule.name,
+                    config=config,
+                )
+            )
         if (
             policy.max_rule_bytes is not None
             and len(source.encode("utf-8")) > policy.max_rule_bytes
@@ -458,9 +503,11 @@ def _policy_diagnostics(
                             config=config,
                         )
                     )
-        if policy.require_tests_for_production and status == "production":
+        if (
+            policy.require_tests_for_production or policy.require_negative_tests
+        ) and status == "production":
             positive, negative = _test_coverage(config.root, rule.name)
-            if not positive:
+            if policy.require_tests_for_production and not positive:
                 diagnostics.append(
                     _new_diagnostic(
                         "YARA501",
@@ -473,7 +520,9 @@ def _policy_diagnostics(
                         config=config,
                     )
                 )
-            if not negative:
+            if (
+                policy.require_tests_for_production or policy.require_negative_tests
+            ) and not negative:
                 diagnostics.append(
                     _new_diagnostic(
                         "YARA502",

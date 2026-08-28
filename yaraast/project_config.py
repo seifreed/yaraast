@@ -31,9 +31,12 @@ class RulePolicy:
     max_strings_per_rule: int | None = None
     max_regex_length: int | None = None
     max_hex_wildcard_ratio: float | None = None
+    max_ruleset_bytes: int | None = None
+    forbid_includes: bool = False
     forbid_unused_strings: bool = False
     forbid_duplicate_rule_names: bool = False
     require_tests_for_production: bool = False
+    require_negative_tests: bool = False
 
 
 @dataclass(frozen=True)
@@ -138,6 +141,14 @@ class ProjectConfig:
                 max_hex_wildcard_ratio=_optional_float(
                     policy.get("max-hex-wildcard-ratio"), "max-hex-wildcard-ratio"
                 ),
+                max_ruleset_bytes=_optional_int(
+                    data.get("max-ruleset-bytes", policy.get("max-ruleset-bytes")),
+                    "max-ruleset-bytes",
+                ),
+                forbid_includes=_bool_value(
+                    data.get("forbid-includes", policy.get("forbid-includes", False)),
+                    "forbid-includes",
+                ),
                 forbid_unused_strings=_bool_value(
                     policy.get("forbid-unused-strings", False), "forbid-unused-strings"
                 ),
@@ -148,6 +159,10 @@ class ProjectConfig:
                 require_tests_for_production=_bool_value(
                     policy.get("require-tests-for-production", False),
                     "require-tests-for-production",
+                ),
+                require_negative_tests=_bool_value(
+                    data.get("require-negative-tests", policy.get("require-negative-tests", False)),
+                    "require-negative-tests",
                 ),
             ),
             severity=severity,

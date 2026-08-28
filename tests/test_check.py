@@ -82,3 +82,18 @@ require-tests-for-production = true
     diagnostic_ids = {item.diagnostic_id for item in result.diagnostics}
 
     assert {"YARA201", "YARA301", "YARA501", "YARA502"} <= diagnostic_ids
+
+
+def test_check_applies_local_suppression_only_when_reason_is_present(tmp_path: Path) -> None:
+    (tmp_path / "sample.yar").write_text(
+        "// yaraast: ignore YARA103 -- intentionally unused fixture string\n"
+        'rule sample { strings: $unused = "hello" condition: true }\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "yaraast.toml").write_text(
+        "[policy]\nforbid-unused-strings = true\n", encoding="utf-8"
+    )
+
+    result = check_path(tmp_path)
+
+    assert not any(item.diagnostic_id == "YARA103" for item in result.diagnostics)
