@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 import hashlib
@@ -103,6 +104,31 @@ class Diagnostic:
             "suggestion": self.suggestion,
             "fix": self.fix.to_dict() if self.fix else None,
         }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> Diagnostic:
+        """Restore a diagnostic from the version-one wire representation."""
+        fix_data = data.get("fix")
+        fix = SourceFix(**fix_data) if isinstance(fix_data, Mapping) else None
+        return cls(
+            data["diagnostic_id"],
+            Severity(data["severity"]),
+            data["category"],
+            data["message"],
+            data["source_path"],
+            data["start_line"],
+            data["start_column"],
+            data["end_line"],
+            data["end_column"],
+            rule_name=data.get("rule_name"),
+            rule_id=data.get("rule_id"),
+            dialect=data.get("dialect", "yara"),
+            target=data.get("target"),
+            fingerprint=data.get("fingerprint", ""),
+            help_uri=data.get("help_uri"),
+            suggestion=data.get("suggestion"),
+            fix=fix,
+        )
 
 
 @dataclass(frozen=True)

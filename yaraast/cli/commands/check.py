@@ -28,6 +28,8 @@ from yaraast.reporters import REPORTERS
 @click.option("--baseline", "baseline_path", type=click.Path(exists=True, path_type=Path))
 @click.option("--target", "target_names", multiple=True, help="Compatibility target")
 @click.option("--no-compile", is_flag=True, help="Skip target engine compilation")
+@click.option("--changed-from", help="Only check changed files and their dependents")
+@click.option("--no-cache", is_flag=True, help="Do not read or write the check cache")
 @click.option(
     "--fail-on",
     type=click.Choice([severity.value for severity in Severity]),
@@ -41,6 +43,8 @@ def check(
     baseline_path: Path | None,
     target_names: tuple[str, ...],
     no_compile: bool,
+    changed_from: str | None,
+    no_cache: bool,
     fail_on: str | None,
 ) -> None:
     """Parse and validate a rule file or repository."""
@@ -59,6 +63,8 @@ def check(
             profile=profile,
             targets=target_names or None,
             compile_targets=not no_compile,
+            changed_from=changed_from,
+            use_cache=not no_cache,
         ),
         baseline_path,
     )

@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+import hashlib
 from pathlib import Path, PurePosixPath
 import re
+import subprocess
 
 from yaraast.analysis.best_practices import BestPracticesAnalyzer, Suggestion
 from yaraast.ast.base import Location, YaraFile
 from yaraast.baseline import Baseline
+from yaraast.check_cache import CheckCache
 from yaraast.conformance.engines import ReferenceEngine
 from yaraast.diagnostics import Diagnostic, DiagnosticResult, Severity
 from yaraast.parser.source import parse_yara_source
@@ -46,25 +49,97 @@ def check_path(
     profile: str = "default",
     targets: tuple[str, ...] | None = None,
     compile_targets: bool = True,
+    changed_from: str | None = None,
+    use_cache: bool = True,
 ) -> DiagnosticResult:
     """Check configured rule files and return unified diagnostics."""
     candidate = Path(path)
     effective_config = config or ProjectConfig.load(candidate if candidate.is_dir() else candidate.parent, profile)
     files = discover_rule_files(candidate, effective_config)
+    if changed_from is not None:
+        files = affected_files(files, _changed_files(effective_config.root, changed_from))
+    cache = CheckCache(effective_config.root) if use_cache else None
     diagnostics: list[Diagnostic] = []
     for file_path in files:
         source_path = _display_path(file_path, effective_config.root)
-        diagnostics.extend(
-            _check_file(
-                file_path,
-                source_path,
-                effective_config,
-                targets=targets,
-                compile_targets=compile_targets,
+        source = file_path.read_bytes()
+        cache_key = _cache_key(source, effective_config, targets, compile_targets)
+        cached = cache.get(source_path, cache_key) if cache else None
+        if cached is None:
+            cached = DiagnosticResult(
+                tuple(
+                    _check_file(
+                        file_path,
+                        source_path,
+                        effective_config,
+                        targets=targets,
+                        compile_targets=compile_targets,
+                    )
+                )
             )
-        )
+            if cache:
+                cache.put(source_path, cache_key, cached)
+        diagnostics.extend(cached.diagnostics)
+    if cache:
+        cache.save()
     result = DiagnosticResult(tuple(diagnostics))
     return apply_suppressions(result, effective_config)
+
+
+def affected_files(files: tuple[Path, ...], changed: set[str]) -> tuple[Path, ...]:
+    """Include changed files and files that transitively include them."""
+    file_set = set(files)
+    selected = {path for path in files if _path_matches(path, changed)}
+    changed_paths = set(selected)
+    while True:
+        additions = {
+            path
+            for path in file_set - changed_paths
+            if any(_included_path(path, include) in changed_paths for include in _includes(path))
+        }
+        if not additions:
+            return tuple(sorted(changed_paths))
+        changed_paths.update(additions)
+
+
+def _changed_files(root: Path, revision: str) -> set[str]:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "diff", "--name-only", revision, "--"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError(f"could not determine changed files from {revision!r}") from exc
+    return {line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip()}
+
+
+def _path_matches(path: Path, changed: set[str]) -> bool:
+    value = path.as_posix()
+    return any(value == item or value.endswith(f"/{item}") for item in changed)
+
+
+def _includes(path: Path) -> tuple[str, ...]:
+    try:
+        source = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ()
+    return tuple(match.group(1) for match in re.finditer(r'\binclude\s+"([^"]+)"', source))
+
+
+def _included_path(path: Path, include: str) -> Path:
+    return (path.parent / include).resolve()
+
+
+def _cache_key(
+    source: bytes,
+    config: ProjectConfig,
+    targets: tuple[str, ...] | None,
+    compile_targets: bool,
+) -> str:
+    value = repr((config, targets, compile_targets)).encode("utf-8")
+    return hashlib.sha256(source + value).hexdigest()
 
 
 def check_passes(result: DiagnosticResult, config: ProjectConfig) -> bool:
