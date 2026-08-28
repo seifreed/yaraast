@@ -14,6 +14,7 @@ from yaraast.api import (
 )
 from yaraast.diagnostics import Diagnostic, DiagnosticResult, Severity, SourceFix
 from yaraast.limits import CancellationToken, ResourceLimits
+from yaraast.project import Project
 from yaraast.project_config import ProjectConfig, Suppression
 from yaraast.targets import TargetProfile
 
@@ -24,6 +25,7 @@ __all__ = [
     "Diagnostic",
     "DiagnosticResult",
     "ParsedDocument",
+    "Project",
     "ProjectConfig",
     "ResourceLimits",
     "Severity",

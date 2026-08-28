@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import re
 from xml.etree import ElementTree
 
 import click
@@ -14,6 +13,7 @@ from yaraast.rule_testing import (
     RuleTestManifest,
     RuleTestResult,
     discover_manifests,
+    discover_rule_sources,
     run_manifests,
 )
 
@@ -42,7 +42,7 @@ def test(
     """Run local positive and negative rule fixtures."""
     manifests = tuple(RuleTestManifest.load(item) for item in discover_manifests(path))
     source_root = rules_path or path
-    sources = _find_rule_sources(source_root)
+    sources = discover_rule_sources(source_root)
     selected_engines = engine_names or ("libyara", "yara-x")
     from yaraast.conformance.engines import LibyaraEngine, YaraXEngine
 
@@ -76,18 +76,6 @@ def test(
         write_text(output_path, rendered)
     if result.failed:
         raise click.exceptions.Exit(1)
-
-
-def _find_rule_sources(root: Path) -> dict[str, str]:
-    files = (root,) if root.is_file() else tuple(root.rglob("*.yar")) + tuple(root.rglob("*.yara"))
-    sources = {}
-    pattern = re.compile(r"\brule\s+(?:private\s+|global\s+)*([A-Za-z_][A-Za-z0-9_]*)")
-    for path in sorted(set(files)):
-        source = path.read_text(encoding="utf-8")
-        for match in pattern.finditer(source):
-            sources[match.group(1)] = source
-    return sources
-
 
 def _junit_output(result: RuleTestResult) -> str:
     suite = ElementTree.Element(

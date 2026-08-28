@@ -148,6 +148,25 @@ def discover_manifests(path: str | Path) -> tuple[Path, ...]:
     return tuple(sorted(candidate.rglob("test.yml")))
 
 
+def discover_rule_sources(root: str | Path) -> dict[str, str]:
+    """Index rule source by rule identifier below a project root."""
+    candidate = Path(root)
+    files = (
+        (candidate,)
+        if candidate.is_file()
+        else tuple(candidate.rglob("*.yar")) + tuple(candidate.rglob("*.yara"))
+    )
+    import re
+
+    pattern = re.compile(r"\brule\s+(?:private\s+|global\s+)*([A-Za-z_][A-Za-z0-9_]*)")
+    sources: dict[str, str] = {}
+    for path in sorted(set(files)):
+        source = path.read_text(encoding="utf-8")
+        for match in pattern.finditer(source):
+            sources[match.group(1)] = source
+    return sources
+
+
 def run_manifests(
     manifests: Iterable[RuleTestManifest],
     rule_sources: dict[str, str],
