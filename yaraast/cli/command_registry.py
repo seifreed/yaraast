@@ -21,6 +21,7 @@ from yaraast.cli.commands.performance_check import performance_check
 from yaraast.cli.commands.roundtrip import roundtrip
 from yaraast.cli.commands.semantic import semantic
 from yaraast.cli.commands.serialize import serialize
+from yaraast.cli.commands.test_cmd import test
 from yaraast.cli.commands.validate import validate
 from yaraast.cli.commands.workspace import workspace
 from yaraast.cli.commands.yaral import yaral
@@ -29,6 +30,7 @@ from yaraast.cli.commands.yarax import yarax
 CLI_COMMANDS = (
     baseline,
     check,
+    test,
     parse,
     (format_yara, "format"),
     fmt,
