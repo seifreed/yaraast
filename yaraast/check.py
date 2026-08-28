@@ -8,6 +8,7 @@ import re
 
 from yaraast.analysis.best_practices import BestPracticesAnalyzer, Suggestion
 from yaraast.ast.base import Location, YaraFile
+from yaraast.baseline import Baseline
 from yaraast.diagnostics import Diagnostic, DiagnosticResult, Severity
 from yaraast.parser.source import parse_yara_source
 from yaraast.project_config import ProjectConfig
@@ -50,7 +51,8 @@ def check_path(
     for file_path in files:
         source_path = _display_path(file_path, effective_config.root)
         diagnostics.extend(_check_file(file_path, source_path, effective_config))
-    return DiagnosticResult(tuple(diagnostics))
+    result = DiagnosticResult(tuple(diagnostics))
+    return apply_suppressions(result, effective_config)
 
 
 def check_passes(result: DiagnosticResult, config: ProjectConfig) -> bool:
@@ -64,6 +66,29 @@ def check_passes(result: DiagnosticResult, config: ProjectConfig) -> bool:
         gate.fail_on
     ]
     return not any(_severity_rank(item.severity) <= threshold for item in result.diagnostics)
+
+
+def apply_baseline(result: DiagnosticResult, path: str | Path | None) -> DiagnosticResult:
+    """Filter a result through an optional baseline file."""
+    return result if path is None else Baseline.load(path).filter(result)
+
+
+def apply_suppressions(result: DiagnosticResult, config: ProjectConfig) -> DiagnosticResult:
+    """Filter active project suppressions from a diagnostic result."""
+    active = tuple(item for item in config.suppressions if item.active())
+    if not active:
+        return result
+    return DiagnosticResult(
+        tuple(
+            diagnostic
+            for diagnostic in result.diagnostics
+            if not any(
+                item.diagnostic == diagnostic.diagnostic_id
+                and (item.rule is None or item.rule == diagnostic.rule_name)
+                for item in active
+            )
+        )
+    )
 
 
 def _check_file(path: Path, source_path: str, config: ProjectConfig) -> list[Diagnostic]:
@@ -249,3 +274,4 @@ def _severity_rank(severity: Severity) -> int:
         Severity.INFO: 2,
         Severity.NOTE: 3,
     }[severity]
+

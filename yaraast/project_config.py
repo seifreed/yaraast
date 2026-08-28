@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 import tomllib
 from typing import Any
@@ -45,6 +46,20 @@ class QualityGate:
 
 
 @dataclass(frozen=True)
+class Suppression:
+    """Auditable diagnostic suppression from project configuration."""
+
+    diagnostic: str
+    reason: str
+    rule: str | None = None
+    expires: date | None = None
+
+    def active(self, today: date | None = None) -> bool:
+        """Return whether this suppression has not expired."""
+        return self.expires is None or self.expires >= (today or date.today())
+
+
+@dataclass(frozen=True)
 class ProjectConfig:
     """Validated project configuration for local and CI checks."""
 
@@ -58,6 +73,7 @@ class ProjectConfig:
     policy: RulePolicy = field(default_factory=RulePolicy)
     severity: Mapping[str, Severity] = field(default_factory=dict)
     quality_gate: QualityGate = field(default_factory=QualityGate)
+    suppressions: tuple[Suppression, ...] = ()
     profile: str = "default"
 
     @classmethod
@@ -93,6 +109,9 @@ class ProjectConfig:
         policy = _table(data.get("policy", {}), "policy")
         severity_data = _table(data.get("severity", {}), "severity")
         gate = _table(data.get("quality-gate", {}), "quality-gate")
+        suppressions = data.get("suppressions", ())
+        if not isinstance(suppressions, list | tuple):
+            raise ValueError("suppressions must be an array of tables")
         severity = {
             _string_value(key, "diagnostic id"): _severity_value(value, key)
             for key, value in severity_data.items()
@@ -139,6 +158,7 @@ class ProjectConfig:
                 max_warnings=_optional_int(gate.get("max-warnings"), "quality-gate.max-warnings"),
                 fail_on=_severity_value(gate.get("fail-on", "error"), "quality-gate.fail-on"),
             ),
+            suppressions=tuple(_suppression(item, index) for index, item in enumerate(suppressions)),
             profile=profile,
         )
 
@@ -259,3 +279,22 @@ def _severity_value(value: object, field_name: str) -> Severity:
     except (TypeError, ValueError) as exc:
         choices = ", ".join(item.value for item in Severity)
         raise ValueError(f"{field_name} must be one of: {choices}") from exc
+
+
+def _suppression(value: object, index: int) -> Suppression:
+    field_name = f"suppressions[{index}]"
+    table = _table(value, field_name)
+    diagnostic = _string_value(table.get("diagnostic"), f"{field_name}.diagnostic")
+    reason = _string_value(table.get("reason"), f"{field_name}.reason")
+    rule = table.get("rule")
+    if rule is not None:
+        rule = _string_value(rule, f"{field_name}.rule")
+    expires_value = table.get("expires")
+    expires: date | None = None
+    if expires_value is not None:
+        expires_text = _string_value(expires_value, f"{field_name}.expires")
+        try:
+            expires = date.fromisoformat(expires_text)
+        except ValueError as exc:
+            raise ValueError(f"{field_name}.expires must be an ISO date") from exc
+    return Suppression(diagnostic, reason, rule, expires)

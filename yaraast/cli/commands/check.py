@@ -6,7 +6,7 @@ from pathlib import Path
 
 import click
 
-from yaraast.check import check_passes, check_path
+from yaraast.check import apply_baseline, check_passes, check_path
 from yaraast.cli.utils import write_text
 from yaraast.diagnostics import Severity
 from yaraast.project_config import ProjectConfig
@@ -25,6 +25,7 @@ from yaraast.reporters import REPORTERS
     help="Diagnostic output format",
 )
 @click.option("--output", "output_path", type=click.Path(path_type=Path), help="Report file")
+@click.option("--baseline", "baseline_path", type=click.Path(exists=True, path_type=Path))
 @click.option(
     "--fail-on",
     type=click.Choice([severity.value for severity in Severity]),
@@ -35,6 +36,7 @@ def check(
     profile: str,
     output_format: str,
     output_path: Path | None,
+    baseline_path: Path | None,
     fail_on: str | None,
 ) -> None:
     """Parse and validate a rule file or repository."""
@@ -46,7 +48,7 @@ def check(
             config,
             quality_gate=replace(config.quality_gate, fail_on=Severity(fail_on)),
         )
-    result = check_path(path, config, profile=profile)
+    result = apply_baseline(check_path(path, config, profile=profile), baseline_path)
     rendered = REPORTERS[output_format]().render(result)
     if output_path is None:
         click.echo(rendered, nl=False)

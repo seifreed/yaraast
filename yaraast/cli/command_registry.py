@@ -5,6 +5,7 @@ from __future__ import annotations
 import click
 
 from yaraast.cli.commands.analyze import analyze
+from yaraast.cli.commands.baseline import baseline
 from yaraast.cli.commands.bench_cmd import bench
 from yaraast.cli.commands.check import check
 from yaraast.cli.commands.diff_cmd import diff
@@ -26,6 +27,7 @@ from yaraast.cli.commands.yaral import yaral
 from yaraast.cli.commands.yarax import yarax
 
 CLI_COMMANDS = (
+    baseline,
     check,
     parse,
     (format_yara, "format"),

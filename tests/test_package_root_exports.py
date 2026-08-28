@@ -20,6 +20,7 @@ def test_package_root_exports_installed_version() -> None:
         "Severity",
         "SourceEdit",
         "SourceFix",
+        "Suppression",
         "__version__",
         "format_canonical",
         "generate",

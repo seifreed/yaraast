@@ -14,7 +14,7 @@ from yaraast.api import (
 )
 from yaraast.diagnostics import Diagnostic, DiagnosticResult, Severity, SourceFix
 from yaraast.limits import CancellationToken, ResourceLimits
-from yaraast.project_config import ProjectConfig
+from yaraast.project_config import ProjectConfig, Suppression
 
 __version__ = version("yaraast")
 
@@ -28,6 +28,7 @@ __all__ = [
     "Severity",
     "SourceEdit",
     "SourceFix",
+    "Suppression",
     "__version__",
     "format_canonical",
     "generate",
