@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+import sys
 import time
 from typing import Any
 
@@ -65,9 +66,7 @@ class RuleTestManifest:
             budgets=TestBudgets(
                 _optional_nonnegative_int(budgets.get("max_compile_ms"), "max_compile_ms"),
                 _optional_nonnegative_int(budgets.get("max_scan_ms"), "max_scan_ms"),
-                _optional_nonnegative_int(
-                    budgets.get("max_peak_memory_mb"), "max_peak_memory_mb"
-                ),
+                _optional_nonnegative_int(budgets.get("max_peak_memory_mb"), "max_peak_memory_mb"),
             ),
         )
 
@@ -197,15 +196,14 @@ def _run_cases(
     source: str,
 ) -> list[FixtureResult]:
     results: list[FixtureResult] = []
+    compile_error = _compile_budget_error(engine, manifest, source)
     for kind, cases in (("positive", manifest.positive), ("negative", manifest.negative)):
         for case in cases:
             fixture = manifest.path.parent / case.path
             try:
                 data = fixture.read_bytes()
             except OSError as exc:
-                results.append(
-                    FixtureResult(engine.name, kind, case.path, False, error=str(exc))
-                )
+                results.append(FixtureResult(engine.name, kind, case.path, False, error=str(exc)))
                 continue
             started = time.perf_counter()
             outcome = engine.evaluate(source, data)
@@ -213,7 +211,13 @@ def _run_cases(
             actual = tuple(sorted(outcome.matches or ()))
             passed = outcome.accepted and actual == tuple(sorted(case.expected))
             error = outcome.error
-            if manifest.budgets.max_scan_ms is not None and elapsed_ms > manifest.budgets.max_scan_ms:
+            if compile_error is not None:
+                passed = False
+                error = compile_error
+            if (
+                manifest.budgets.max_scan_ms is not None
+                and elapsed_ms > manifest.budgets.max_scan_ms
+            ):
                 passed = False
                 error = f"scan exceeded {manifest.budgets.max_scan_ms} ms"
             results.append(
@@ -228,7 +232,56 @@ def _run_cases(
                     error=error,
                 )
             )
+    if compile_error is not None and not results:
+        results.append(
+            FixtureResult(
+                engine.name,
+                "compile",
+                manifest.rule_id,
+                False,
+                error=compile_error,
+            )
+        )
     return results
+
+
+def _compile_budget_error(
+    engine: ReferenceEngine,
+    manifest: RuleTestManifest,
+    source: str,
+) -> str | None:
+    """Compile once when the manifest requests compile or memory accounting."""
+    budgets = manifest.budgets
+    if budgets.max_compile_ms is None and budgets.max_peak_memory_mb is None:
+        return None
+
+    before_memory = _peak_memory_mb()
+    started = time.perf_counter()
+    outcome = engine.evaluate(source)
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    if not outcome.accepted:
+        return outcome.error or "compile failed"
+    if budgets.max_compile_ms is not None and elapsed_ms > budgets.max_compile_ms:
+        return f"compile exceeded {budgets.max_compile_ms} ms"
+    if budgets.max_peak_memory_mb is not None:
+        after_memory = _peak_memory_mb()
+        if (
+            before_memory is not None
+            and after_memory is not None
+            and after_memory - before_memory > budgets.max_peak_memory_mb
+        ):
+            return f"compile exceeded {budgets.max_peak_memory_mb} MB peak memory"
+    return None
+
+
+def _peak_memory_mb() -> float | None:
+    """Return process peak RSS in MB when the platform exposes it."""
+    try:
+        import resource
+    except ImportError:
+        return None
+    value = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return value / (1024 * 1024) if sys.platform == "darwin" else value / 1024
 
 
 def _cases(value: object, field_name: str) -> tuple[FixtureCase, ...]:
@@ -239,13 +292,17 @@ def _cases(value: object, field_name: str) -> tuple[FixtureCase, ...]:
         if not isinstance(item, dict):
             raise ValueError(f"{field_name}[{index}] must be a mapping")
         expected = _string_tuple(item.get("expected", ()), f"{field_name}[{index}].expected")
-        cases.append(FixtureCase(_string(item.get("path"), f"{field_name}[{index}].path"), expected))
+        cases.append(
+            FixtureCase(_string(item.get("path"), f"{field_name}[{index}].path"), expected)
+        )
     return tuple(cases)
 
 
 def _missing_rule_results(manifest: RuleTestManifest) -> list[FixtureResult]:
     return [
-        FixtureResult("rules", kind, case.path, False, error=f"rule source not found: {manifest.rule_id}")
+        FixtureResult(
+            "rules", kind, case.path, False, error=f"rule source not found: {manifest.rule_id}"
+        )
         for kind, cases in (("positive", manifest.positive), ("negative", manifest.negative))
         for case in cases
     ]

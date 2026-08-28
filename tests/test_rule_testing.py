@@ -6,8 +6,19 @@ from pathlib import Path
 
 import pytest
 
-from yaraast.conformance.engines import YaraXEngine
+from yaraast.conformance.engines import EngineResult, ReferenceEngine, YaraXEngine
 from yaraast.rule_testing import RuleTestManifest, discover_manifests, run_manifests
+
+
+class _SlowEngine(ReferenceEngine):
+    name = "slow"
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    def evaluate(self, source: str, data: bytes | None = None) -> EngineResult:
+        return EngineResult(accepted=True, matches=frozenset())
 
 
 def test_manifest_loads_schema_and_fixture_cases(tmp_path: Path) -> None:
@@ -76,3 +87,29 @@ def test_manifest_rejects_wrong_schema(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="schema"):
         RuleTestManifest.load(path)
+
+
+def test_manifest_enforces_compile_budget(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    manifest_path = tmp_path / "test.yml"
+    manifest_path.write_text(
+        """
+schema: yaraast-test/v1
+rule_id: sample
+engines: [slow]
+positive: []
+budgets:
+  max_compile_ms: 1
+""",
+        encoding="utf-8",
+    )
+    ticks = iter((0.0, 0.01))
+    monkeypatch.setattr("yaraast.rule_testing.time.perf_counter", lambda: next(ticks))
+
+    result = run_manifests(
+        (RuleTestManifest.load(manifest_path),),
+        {"sample": "rule sample { condition: true }"},
+        engines=(_SlowEngine(),),
+    )
+
+    assert len(result.failed) == 1
+    assert result.failed[0].error == "compile exceeded 1 ms"
