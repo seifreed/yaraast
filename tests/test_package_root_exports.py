@@ -15,6 +15,7 @@ def test_package_root_exports_installed_version() -> None:
         "Diagnostic",
         "DiagnosticResult",
         "ParsedDocument",
+        "ProjectConfig",
         "ResourceLimits",
         "Severity",
         "SourceEdit",

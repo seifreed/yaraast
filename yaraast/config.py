@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yaraast.project_config import ProjectConfig
+
 # Parser configuration
 DEFAULT_STREAMING_THRESHOLD_MB = 100
 
@@ -11,3 +13,11 @@ JSON_DEFAULT_INDENT = 2
 
 # LSP configuration
 DEFAULT_DIAGNOSTICS_DEBOUNCE_MS = 75
+
+__all__ = [
+    "DEFAULT_DIAGNOSTICS_DEBOUNCE_MS",
+    "DEFAULT_STREAMING_THRESHOLD_MB",
+    "JSON_DEFAULT_INDENT",
+    "YAML_DEFAULT_WIDTH",
+    "ProjectConfig",
+]
