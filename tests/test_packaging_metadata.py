@@ -32,7 +32,7 @@ def test_conformance_engines_are_reproducibly_pinned() -> None:
     assert optional_dependencies["libyara"] == ["yara-python==4.5.4"]
     assert optional_dependencies["conformance"] == [
         "yara-python==4.5.4",
-        "yara-x==1.19.0",
+        "yara-x==1.20.0",
     ]
 
 
@@ -42,13 +42,13 @@ def test_mypy_has_protobuf_stubs_for_generated_messages() -> None:
     assert "types-protobuf>=7.34.1" in pyproject["project"]["optional-dependencies"]["dev"]
 
 
-def test_release_version_has_a_dated_changelog_entry() -> None:
+def test_project_version_is_next_development_release() -> None:
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     project_version = pyproject["project"]["version"]
     changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
 
-    assert project_version == "2.1.0"
-    assert f"## {project_version} - 2026-08-27" in changelog
+    assert project_version == "2.2.0.dev0"
+    assert "## Unreleased" in changelog
 
 
 def test_runtime_and_development_extras_are_separate() -> None:

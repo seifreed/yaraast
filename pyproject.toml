@@ -1,6 +1,6 @@
 [project]
 name = "yaraast"
-version = "2.1.0"
+version = "2.2.0.dev0"
 description = "A Python library for parsing and manipulating YARA rules using Abstract Syntax Trees"
 authors = [{name = "Marc Rivero", email = "mriverolopez@gmail.com"}]
 readme = "README.md"
@@ -62,7 +62,7 @@ libyara = [
 ]
 conformance = [
     "yara-python==4.5.4",
-    "yara-x==1.19.0",
+    "yara-x==1.20.0",
 ]
 fuzz = [
     "atheris==3.1.0; sys_platform == 'linux'",
