@@ -56,7 +56,8 @@ def test_lsp_missing_dependency_abort_preserves_original_cause(
     result = CliRunner().invoke(lsp, [], standalone_mode=False)
 
     assert result.exit_code != 0
-    assert "Missing dependency" in result.output
+    assert result.stdout == ""
+    assert "Missing dependency" in result.stderr
     _assert_abort_preserves_cause(result, sentinel)
 
 
@@ -73,5 +74,6 @@ def test_lsp_start_error_abort_preserves_original_cause(
     result = CliRunner().invoke(lsp, [], standalone_mode=False)
 
     assert result.exit_code != 0
-    assert "lsp sentinel" in result.output
+    assert result.stdout == ""
+    assert "lsp sentinel" in result.stderr
     _assert_abort_preserves_cause(result, sentinel)

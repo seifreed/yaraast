@@ -8,6 +8,7 @@ from datetime import datetime
 import json
 from pathlib import Path
 import tempfile
+from time import perf_counter
 from typing import Any
 
 from lsprotocol.types import Position
@@ -17,6 +18,7 @@ from yaraast.lsp.document_links import DocumentLinksProvider
 from yaraast.lsp.hover import HoverProvider
 from yaraast.lsp.references import ReferencesProvider
 from yaraast.lsp.runtime import LspRuntime, path_to_uri
+from yaraast.lsp.server import YaraLanguageServer
 from yaraast.lsp.symbols import SymbolsProvider
 
 
@@ -119,6 +121,31 @@ def run_single_document_benchmark(rule_count: int, max_avg_ms: float) -> dict[st
     }
 
 
+def run_request_context_benchmark(
+    iterations: int = 1000, max_avg_ms: float = 0.5
+) -> dict[str, object]:
+    server = YaraLanguageServer("benchmark", "1")
+
+    def handler(_params: object) -> None:
+        return None
+
+    registered_handler = server.feature("yaraast/benchmark")(handler)
+    request_token = server.protocol._ctx_msg_id.set("benchmark-request")
+    try:
+        started = perf_counter()
+        for _ in range(iterations):
+            registered_handler(None)
+        avg_ms = (perf_counter() - started) * 1000 / iterations
+    finally:
+        server.protocol._ctx_msg_id.reset(request_token)
+    return {
+        "iterations": iterations,
+        "avg_ms": avg_ms,
+        "threshold_ms": max_avg_ms,
+        "ok": avg_ms <= max_avg_ms,
+    }
+
+
 def run_regression_suite(
     single_document_max_avg_ms: float = 500.0,
     medium_max_avg_ms: float = 500.0,
@@ -130,11 +157,13 @@ def run_regression_suite(
     )
     medium = run_benchmark(file_count=25, max_avg_ms=medium_max_avg_ms)
     large = run_benchmark(file_count=100, max_avg_ms=large_max_avg_ms)
+    request_context = run_request_context_benchmark()
     return {
         "single_document": single_document,
         "medium": medium,
         "large": large,
-        "ok": single_document["ok"] and medium["ok"] and large["ok"],
+        "request_context": request_context,
+        "ok": single_document["ok"] and medium["ok"] and large["ok"] and request_context["ok"],
     }
 
 
@@ -148,7 +177,7 @@ def render_summary(payload: dict[str, object]) -> str:
         "| scenario | ok | threshold | failures |",
         "| --- | --- | --- | --- |",
     ]
-    for name in ("single_document", "medium", "large"):
+    for name in ("single_document", "medium", "large", "request_context"):
         report = _as_dict(payload.get(name, {}))
         threshold = report.get("threshold_ms", "n/a")
         failures = _as_dict(report.get("failures", {}))
@@ -165,7 +194,7 @@ def render_history_index(history_dir: Path) -> str:
     ]
     for json_path in sorted(history_dir.glob("lsp-runtime-*.json")):
         payload = json.loads(json_path.read_text(encoding="utf-8"))
-        for name in ("single_document", "medium", "large"):
+        for name in ("single_document", "medium", "large", "request_context"):
             report = _as_dict(_as_dict(payload).get(name, {}))
             failures = _as_dict(report.get("failures", {}))
             rows.append(

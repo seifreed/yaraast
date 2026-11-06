@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Iterator
+from contextlib import contextmanager
+from functools import wraps
 import inspect
 from typing import TYPE_CHECKING, Any, cast
 
@@ -11,8 +14,11 @@ asyncio.iscoroutinefunction = cast(Any, inspect.iscoroutinefunction)
 
 from pygls.lsp.server import LanguageServer
 
+from yaraast.logging_config import install_pygls_log_filter, log_context
 from yaraast.lsp.server_factory import configure_providers, create_runtime
 from yaraast.lsp.server_features import register_initialize, register_server_features
+
+install_pygls_log_filter()
 
 if TYPE_CHECKING:
     from yaraast.lsp.code_actions import CodeActionsProvider
@@ -32,6 +38,16 @@ if TYPE_CHECKING:
     from yaraast.lsp.signature_help import SignatureHelpProvider
     from yaraast.lsp.symbols import SymbolsProvider
     from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
+
+
+@contextmanager
+def _request_log_context(server: YaraLanguageServer, operation: str) -> Iterator[None]:
+    fields = {"operation": operation}
+    request_id = server.protocol.msg_id
+    if request_id is not None:
+        fields["request_id"] = str(request_id)
+    with log_context(**fields):
+        yield
 
 
 class YaraLanguageServer(LanguageServer):
@@ -54,6 +70,28 @@ class YaraLanguageServer(LanguageServer):
     folding_ranges_provider: FoldingRangesProvider
     document_links_provider: DocumentLinksProvider
     workspace_symbols_provider: WorkspaceSymbolsProvider
+
+    def feature(self, feature_name: str, options: Any | None = None) -> Any:
+        register_handler = super().feature(feature_name, options)
+
+        def register(handler: Any) -> Any:
+            if inspect.iscoroutinefunction(handler):
+
+                @wraps(handler)
+                async def contextual_handler(*args: Any, **kwargs: Any) -> Any:
+                    with _request_log_context(self, feature_name):
+                        return await handler(*args, **kwargs)
+
+            else:
+
+                @wraps(handler)
+                def contextual_handler(*args: Any, **kwargs: Any) -> Any:
+                    with _request_log_context(self, feature_name):
+                        return handler(*args, **kwargs)
+
+            return register_handler(contextual_handler)
+
+        return register
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

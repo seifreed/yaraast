@@ -43,7 +43,7 @@ def workspace_symbol_records(runtime: LspRuntime, query: object = "") -> list[Sy
         try:
             doc_symbols = doc.symbols()
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
             continue
         for record in doc_symbols:
             if record.kind in hidden_kinds:
@@ -74,7 +74,7 @@ def _uncached_workspace_symbol_records(runtime: LspRuntime, query: str) -> list[
         try:
             doc_symbols = doc.symbols()
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
             continue
         for record in doc_symbols:
             if record.kind in hidden_kinds:

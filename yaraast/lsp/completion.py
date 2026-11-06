@@ -174,7 +174,7 @@ class CompletionProvider:
                             )
                         )
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
         return items
 
     def _get_meta_completions(self) -> list[CompletionItem]:

@@ -46,7 +46,7 @@ def _changed_document_text(ls: Any, uri: str, changes: Any) -> str:
         if isinstance(source, str):
             return source
     except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+        logger.debug("Operation failed in %s", __name__)
     return _latest_change_text(changes) or ""
 
 

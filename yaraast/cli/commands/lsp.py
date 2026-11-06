@@ -35,7 +35,7 @@ def lsp(tcp: int | None, host: str) -> None:
         yaraast lsp --stdio           # Start with stdio (default)
         yaraast lsp --tcp 5007        # Start on TCP port 5007
     """
-    console = Console()
+    console = Console(stderr=True)
     try:
         from yaraast.cli.lsp_services import start_lsp_server
         from yaraast.lsp.server import create_server

@@ -139,7 +139,7 @@ class WorkspaceSymbolsProvider:
                 symbols.extend(file_symbols)
 
             except Exception:
-                logger.debug("Operation failed in %s", __name__, exc_info=True)
+                logger.debug("Operation failed in %s", __name__)
                 # Skip files that fail to parse
                 continue
 
@@ -193,7 +193,7 @@ class WorkspaceSymbolsProvider:
             self.symbol_cache[cache_key] = (mtime, list(symbols))
 
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
             return []
 
         return list(symbols)

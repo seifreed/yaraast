@@ -53,7 +53,7 @@ class SymbolsProvider:
             symbol_build_succeeded = True
 
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
             # If parsing fails, return empty symbols
             symbols = []
 

@@ -43,12 +43,33 @@ def test_check_cli_emits_json_and_honors_fail_on(tmp_path: Path) -> None:
     )
 
     result = CliRunner().invoke(
-        cli, ["check", str(tmp_path), "--format", "json", "--fail-on", "warning"]
+        cli,
+        [
+            "--log-level",
+            "INFO",
+            "--log-format",
+            "json",
+            "check",
+            str(tmp_path),
+            "--format",
+            "json",
+            "--fail-on",
+            "warning",
+        ],
     )
 
     assert result.exit_code == 1
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert payload["diagnostics"][0]["diagnostic_id"] == "YARA103"
+    events = [json.loads(line) for line in result.stderr.splitlines()]
+    assert [event["event_name"] for event in events] == [
+        "cli.command.started",
+        "cli.command.exited",
+    ]
+    assert events[-1]["operation"] == "check"
+    assert events[-1]["outcome"] == "error"
+    assert events[-1]["error_type"] == "Exit"
+    assert events[-1]["error_code"] == 1
 
 
 def test_check_passes_default_gate_for_warnings() -> None:

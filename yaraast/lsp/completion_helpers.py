@@ -337,7 +337,7 @@ def build_condition_completions(text: str, keywords: list[str]) -> list[Completi
             raise ParseError("Failed to parse")
         items.extend(_string_identifier_completions(ast))
     except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+        logger.debug("Operation failed in %s", __name__)
         items.extend(_text_condition_completions(text))
 
     if ast is not None:
@@ -480,7 +480,7 @@ def _extract_loop_variables(node: Any) -> list[str]:
             for child in children_method():
                 variables.extend(_extract_loop_variables(child))
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
     return variables
 
 

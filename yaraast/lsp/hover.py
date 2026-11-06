@@ -319,7 +319,7 @@ class HoverProvider:
                 return render_string_identifier_hover(base_identifier, string_info, word_range)
 
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
 
         return render_string_identifier_hover(base_identifier, None, word_range)
 

@@ -22,3 +22,6 @@ the supported contracts and reference engines.
 
 For installation, CLI workflows, resource limits, and a runnable example, see
 [Getting Started](getting-started.md).
+
+For log configuration, event fields, redaction rules, and LSP diagnostics, see
+[Logging and observability](observability.md).

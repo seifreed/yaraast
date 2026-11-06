@@ -13,6 +13,7 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 run_benchmark = MODULE.run_benchmark
 run_single_document_benchmark = MODULE.run_single_document_benchmark
+run_request_context_benchmark = MODULE.run_request_context_benchmark
 run_regression_suite = MODULE.run_regression_suite
 
 
@@ -32,12 +33,21 @@ def test_lsp_runtime_single_document_benchmark_report_has_thresholds() -> None:
     assert "cache_stats" in status
 
 
+def test_lsp_request_context_benchmark_has_latency_threshold() -> None:
+    report = run_request_context_benchmark(iterations=1000, max_avg_ms=0.5)
+
+    assert report["ok"] is True
+    assert report["iterations"] == 1000
+    assert report["avg_ms"] <= report["threshold_ms"]
+
+
 def test_lsp_runtime_regression_suite_reports_named_scenarios() -> None:
     report = run_regression_suite()
     assert report["ok"] is True
     assert "single_document" in report
     assert "medium" in report
     assert "large" in report
+    assert "request_context" in report
 
 
 def test_lsp_runtime_benchmark_script_can_write_results(tmp_path: Path) -> None:
@@ -56,6 +66,7 @@ def test_lsp_runtime_benchmark_script_can_write_results(tmp_path: Path) -> None:
     assert '"single_document"' in text
     assert '"medium"' in text
     assert '"large"' in text
+    assert '"request_context"' in text
     assert output.with_suffix(".md").exists()
 
 

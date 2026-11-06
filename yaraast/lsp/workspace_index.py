@@ -176,7 +176,7 @@ class WorkspaceIndex:
             try:
                 payload = json.loads(cache_path.read_text(encoding="utf-8"))
             except Exception:
-                logger.debug("Operation failed in %s", __name__, exc_info=True)
+                logger.debug("Operation failed in %s", __name__)
                 continue
             if not isinstance(payload, dict):
                 continue
@@ -204,7 +204,7 @@ class WorkspaceIndex:
             try:
                 record = SymbolRecord.from_dict(symbol)
             except Exception:
-                logger.debug("Operation failed in %s", __name__, exc_info=True)
+                logger.debug("Operation failed in %s", __name__)
                 continue
             if record.uri == uri:
                 records.append(record)
@@ -229,7 +229,7 @@ class WorkspaceIndex:
                     encoding="utf-8",
                 )
             except OSError:
-                logger.debug("Operation failed in %s", __name__, exc_info=True)
+                logger.debug("Operation failed in %s", __name__)
 
     def update_document(self, document: DocumentContext) -> None:
         if not isinstance(document, DocumentContext):
@@ -312,5 +312,5 @@ class WorkspaceIndex:
                             seen_resolved.add(resolved_path)
                             files.append(path if path_has_symlink_ancestor(path) else resolved_path)
                 except OSError:
-                    logger.debug("Operation failed in %s", __name__, exc_info=True)
+                    logger.debug("Operation failed in %s", __name__)
         return sorted(files)

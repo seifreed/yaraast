@@ -58,7 +58,7 @@ class FoldingRangesProvider:
             return ranges
 
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
             # Fallback to regex-based folding
             return self._fallback_folding_ranges(text)
 

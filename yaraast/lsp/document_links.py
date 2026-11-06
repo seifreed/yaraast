@@ -78,7 +78,7 @@ class DocumentLinksProvider:
                 try:
                     symbol_records = doc.symbols()
                 except Exception:
-                    logger.debug("Operation failed in %s", __name__, exc_info=True)
+                    logger.debug("Operation failed in %s", __name__)
                     symbol_records = []
                 links.extend(self._create_runtime_symbol_links(doc, symbol_records, document_uri))
                 links.extend(self._create_rule_reference_links(document_uri))
@@ -93,7 +93,7 @@ class DocumentLinksProvider:
             self._append_fallback_links(links, text, document_uri)
 
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
             # Fallback to regex-based link detection
             links.extend(self._fallback_links(text, document_uri))
 

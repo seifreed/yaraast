@@ -127,7 +127,7 @@ class SemanticTokensProvider:
             tokenization_succeeded = True
 
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
             # If tokenization fails, return empty tokens
 
         result = SemanticTokens(data=tokens_data)
@@ -170,7 +170,7 @@ class SemanticTokensProvider:
             tokenization_succeeded = True
 
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
 
         result = SemanticTokens(data=tokens_data)
         if ctx is not None and cache_key is not None and tokenization_succeeded:

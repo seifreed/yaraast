@@ -268,7 +268,7 @@ class LspRuntime:
         try:
             self.index.update_document(ctx)
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
         self._dirty_documents.discard(uri)
         self.cache.bump_generation()
 
@@ -368,7 +368,7 @@ class LspRuntime:
         try:
             text = path.read_text(encoding="utf-8")
         except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
+            logger.debug("Operation failed in %s", __name__)
             return None
         ctx = DocumentContext(
             uri,
@@ -503,7 +503,7 @@ class LspRuntime:
             try:
                 text = path.read_text(encoding="utf-8")
             except Exception:
-                logger.debug("Operation failed in %s", __name__, exc_info=True)
+                logger.debug("Operation failed in %s", __name__)
                 self.documents.pop(uri, None)
                 continue
             if self.config.cache_workspace:
