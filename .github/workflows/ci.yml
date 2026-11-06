@@ -325,15 +325,16 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Audit dependencies
-        run: npm audit --audit-level=low
+      - name: Lint extension
+        run: npm run lint
 
-      - name: Lint and compile
-        run: |
-          npm run lint
-          npm run compile
+      - name: Test extension observability
+        run: npm test
 
       - name: Package and verify VSIX
         run: |
           npx vsce package --out /tmp/yaraast.vsix
           python3 scripts/verify_vsix.py /tmp/yaraast.vsix
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=low

@@ -7,8 +7,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const child_process_1 = require("child_process");
+const perf_hooks_1 = require("perf_hooks");
 const vscode_1 = require("vscode");
 const node_1 = require("vscode-languageclient/node");
+const logging_1 = require("./logging");
 let client;
 let extensionContextRef;
 let outputChannel;
@@ -17,13 +19,31 @@ const INDENT_SIZE_KEY = 'indent_size';
 const BRACE_STYLE_KEY = 'brace_style';
 const SORT_META_KEY = 'sort_meta';
 const SORT_STRINGS_KEY = 'sort_strings';
+async function observeOperation(operation, action) {
+    const startedAt = perf_hooks_1.performance.now();
+    try {
+        return await action();
+    }
+    catch (error) {
+        (0, logging_1.appendLog)(outputChannel, 'error', 'extension.operation.failed', operation, 'Extension operation failed', {
+            outcome: 'failure',
+            durationMs: perf_hooks_1.performance.now() - startedAt,
+            errorType: (0, logging_1.getErrorType)(error)
+        });
+        throw error;
+    }
+}
+function observeBackgroundOperation(operation, action) {
+    void observeOperation(operation, action).catch(() => undefined);
+}
 function activate(context) {
     extensionContextRef = context;
     outputChannel = vscode_1.window.createOutputChannel('YARAAST Language Server');
     traceChannel = vscode_1.window.createOutputChannel('YARAAST LSP Trace');
     context.subscriptions.push(outputChannel, traceChannel);
+    (0, logging_1.appendLog)(outputChannel, 'info', 'extension.activated', 'extension.activate', 'VS Code extension activated');
     context.subscriptions.push(vscode_1.commands.registerCommand('yaraast.restartServer', async () => {
-        await restartServer();
+        await observeOperation('server.restart', restartServer);
     }), vscode_1.commands.registerCommand('yaraast.showOutputChannel', () => {
         outputChannel?.show(true);
     }), vscode_1.commands.registerCommand('yaraast.showServerInfo', () => {
@@ -36,46 +56,54 @@ function activate(context) {
             `cacheWorkspace: ${runtime.cacheWorkspace}`,
             `formatting: ${JSON.stringify(runtime.codeFormatting)}`
         ].join('\n');
-        outputChannel?.appendLine('[info] current server configuration');
+        outputChannel?.appendLine('current server configuration');
         outputChannel?.appendLine(message);
         outputChannel?.show(true);
         void vscode_1.window.showInformationMessage('YARAAST server configuration written to Output Channel');
     }), vscode_1.commands.registerCommand('yaraast.selectDialectMode', async () => {
-        await selectDialectMode();
+        await observeOperation('settings.select_dialect', selectDialectMode);
     }), vscode_1.commands.registerCommand('yaraast.toggleServer', async () => {
-        await toggleServer();
+        await observeOperation('server.toggle', toggleServer);
     }), vscode_1.commands.registerCommand('yaraast.diagnoseServer', async () => {
-        await diagnoseServerEnvironment();
+        await observeOperation('server.diagnose_environment', diagnoseServerEnvironment);
     }), vscode_1.commands.registerCommand('yaraast.openSettings', async () => {
-        await vscode_1.commands.executeCommand('workbench.action.openSettings', '@ext:seifreed.yaraast');
+        await observeOperation('settings.open', async () => vscode_1.commands.executeCommand('workbench.action.openSettings', '@ext:seifreed.yaraast'));
     }), vscode_1.commands.registerCommand('yaraast.showServerStatus', async () => {
-        await showServerStatus();
+        await observeOperation('server.show_status', showServerStatus);
     }), vscode_1.commands.registerCommand('yaraast.copyServerStatus', async () => {
-        await copyServerStatus();
+        await observeOperation('server.copy_status', copyServerStatus);
     }), vscode_1.commands.registerCommand('yaraast.showRuntimeMetrics', async () => {
-        await showRuntimeMetrics();
+        await observeOperation('runtime.show_metrics', showRuntimeMetrics);
     }), vscode_1.commands.registerCommand('yaraast.openRuntimeDashboard', async () => {
-        await openRuntimeDashboard();
+        await observeOperation('runtime.open_dashboard', openRuntimeDashboard);
     }), vscode_1.commands.registerCommand('yaraast.previewRefactors', async () => {
-        await previewRefactors();
+        await observeOperation('refactor.preview', previewRefactors);
     }), vscode_1.workspace.onDidChangeConfiguration(async (event) => {
-        await handleConfigurationChange(event);
+        observeBackgroundOperation('configuration.changed', () => handleConfigurationChange(event));
     }));
-    void startLanguageServer();
+    observeBackgroundOperation('lsp.start', startLanguageServer);
 }
 function deactivate() {
-    return stopLanguageServer();
+    return observeOperation('extension.deactivate', async () => {
+        await stopLanguageServer();
+        (0, logging_1.appendLog)(outputChannel, 'info', 'extension.deactivated', 'extension.deactivate', 'VS Code extension deactivated');
+    });
 }
 async function startLanguageServer() {
+    const startedAt = perf_hooks_1.performance.now();
     const config = getExtensionConfig();
     if (!config.enabled) {
-        outputChannel?.appendLine('[info] language server disabled by configuration');
+        (0, logging_1.appendLog)(outputChannel, 'info', 'lsp.server.disabled', 'lsp.start', 'Language server disabled by configuration');
         return;
     }
     const environmentError = checkServerEnvironment(config.pythonPath, config.serverModule);
     if (environmentError) {
-        outputChannel?.appendLine(`[error] ${environmentError}`);
-        void showEnvironmentFailure(environmentError);
+        (0, logging_1.appendLog)(outputChannel, 'error', 'lsp.environment.invalid', 'lsp.start', 'Language server environment is invalid', {
+            outcome: 'failure',
+            durationMs: perf_hooks_1.performance.now() - startedAt,
+            errorCode: 'YARAAST_LSP_ENVIRONMENT_INVALID'
+        });
+        observeBackgroundOperation('server.show_environment_failure', () => showEnvironmentFailure(environmentError));
         return;
     }
     const runtimeSettings = buildRuntimeSettings();
@@ -102,12 +130,14 @@ async function startLanguageServer() {
     client = new node_1.LanguageClient('yaraast', 'YARAAST Language Server', serverOptions, clientOptions);
     try {
         await client.start();
-        outputChannel?.appendLine('[info] language server started successfully');
+        (0, logging_1.appendLog)(outputChannel, 'info', 'lsp.server.started', 'lsp.start', 'Language server started', {
+            outcome: 'success',
+            durationMs: perf_hooks_1.performance.now() - startedAt
+        });
         await pushRuntimeSettings();
     }
     catch (error) {
-        outputChannel?.appendLine(`[error] failed to start language server: ${String(error)}`);
-        void vscode_1.window.showErrorMessage(`Failed to start YARAAST Language Server: ${error}\n\n` +
+        void vscode_1.window.showErrorMessage('Failed to start YARAAST Language Server. See the Output Channel for a redacted diagnostic event.\n\n' +
             `Make sure yaraast is installed with LSP support:\n` +
             `pip install 'yaraast[lsp]'`);
         throw error;
@@ -117,16 +147,21 @@ async function stopLanguageServer() {
     if (!client) {
         return;
     }
+    const startedAt = perf_hooks_1.performance.now();
     const current = client;
     client = undefined;
     await current.stop();
+    (0, logging_1.appendLog)(outputChannel, 'info', 'lsp.server.stopped', 'lsp.stop', 'Language server stopped', {
+        outcome: 'success',
+        durationMs: perf_hooks_1.performance.now() - startedAt
+    });
 }
 async function restartServer() {
     if (!extensionContextRef) {
         void vscode_1.window.showErrorMessage('Extension context is not available yet');
         return;
     }
-    outputChannel?.appendLine('[info] restarting language server');
+    (0, logging_1.appendLog)(outputChannel, 'info', 'lsp.server.restart_requested', 'server.restart', 'Language server restart requested');
     await stopLanguageServer();
     await startLanguageServer();
     void vscode_1.window.showInformationMessage('YARAAST Language Server restarted');
@@ -145,14 +180,18 @@ async function selectDialectMode() {
         return;
     }
     await vscode_1.workspace.getConfiguration().update('yaraast.lsp.dialectMode', selected.value, true);
-    outputChannel?.appendLine(`[info] dialect mode set to ${selected.value}`);
+    (0, logging_1.appendLog)(outputChannel, 'info', 'settings.dialect_mode.changed', 'settings.select_dialect', 'Dialect mode changed', {
+        outcome: 'success'
+    });
     void vscode_1.window.showInformationMessage(`YARAAST dialect mode set to ${selected.label}`);
 }
 async function toggleServer() {
     const config = vscode_1.workspace.getConfiguration();
     const current = config.get('yaraast.lsp.enabled', true);
     await config.update('yaraast.lsp.enabled', !current, true);
-    outputChannel?.appendLine(`[info] language server ${!current ? 'enabled' : 'disabled'}`);
+    (0, logging_1.appendLog)(outputChannel, 'info', 'lsp.server.toggled', 'server.toggle', 'Language server setting changed', {
+        outcome: 'success'
+    });
     void vscode_1.window.showInformationMessage(`YARAAST language server ${!current ? 'enabled' : 'disabled'}`);
 }
 async function showServerStatus() {
@@ -171,10 +210,13 @@ async function showServerStatus() {
         'runtime_status:',
         indentStatus(formatRuntimeStatus(remoteStatus))
     ].join('\n');
-    outputChannel?.appendLine('[info] server status');
+    (0, logging_1.appendLog)(outputChannel, 'info', 'lsp.server.status_requested', 'server.show_status', 'Language server status requested');
     outputChannel?.appendLine(status);
     if (environmentError) {
-        outputChannel?.appendLine(`[error] ${environmentError}`);
+        (0, logging_1.appendLog)(outputChannel, 'warn', 'lsp.environment.invalid', 'server.show_status', 'Language server environment is invalid', {
+            outcome: 'failure',
+            errorCode: 'YARAAST_LSP_ENVIRONMENT_INVALID'
+        });
     }
     outputChannel?.show(true);
     if (remoteStatus) {
@@ -214,7 +256,7 @@ async function showRuntimeMetrics() {
         const metric = latency[key];
         return `${key}: avg=${metric.avg_ms?.toFixed?.(2) ?? metric.avg_ms}ms max=${metric.max_ms?.toFixed?.(2) ?? metric.max_ms}ms count=${metric.count ?? 0}`;
     });
-    outputChannel?.appendLine('[info] runtime metrics');
+    (0, logging_1.appendLog)(outputChannel, 'info', 'lsp.runtime.metrics_requested', 'runtime.show_metrics', 'Runtime metrics requested');
     outputChannel?.appendLine(lines.join('\n'));
     outputChannel?.show(true);
     await openRuntimeDashboard(remoteStatus);
@@ -398,7 +440,11 @@ async function fetchRuntimeStatus() {
     try {
         return await client.sendRequest('yaraast/status');
     }
-    catch {
+    catch (error) {
+        (0, logging_1.appendLog)(outputChannel, 'warn', 'lsp.runtime.status_request_failed', 'runtime.fetch_status', 'Runtime status request failed', {
+            outcome: 'failure',
+            errorType: (0, logging_1.getErrorType)(error)
+        });
         return null;
     }
 }
@@ -426,8 +472,10 @@ async function pushRuntimeSettings() {
         return;
     }
     const settings = buildRuntimeSettings();
-    outputChannel?.appendLine(`[info] updating runtime settings: ${JSON.stringify(settings)}`);
     await client.sendNotification('workspace/didChangeConfiguration', { settings });
+    (0, logging_1.appendLog)(outputChannel, 'info', 'lsp.runtime.settings_updated', 'settings.update_runtime', 'Runtime settings updated', {
+        outcome: 'success'
+    });
 }
 function getExtensionConfig() {
     const config = vscode_1.workspace.getConfiguration();
@@ -477,7 +525,7 @@ function buildEnvironmentReport() {
 }
 async function diagnoseServerEnvironment() {
     const report = buildEnvironmentReport();
-    outputChannel?.appendLine('[info] environment diagnostics');
+    (0, logging_1.appendLog)(outputChannel, 'info', 'lsp.environment.diagnostics_requested', 'server.diagnose_environment', 'Environment diagnostics requested');
     outputChannel?.appendLine(report);
     outputChannel?.show(true);
     await vscode_1.env.clipboard.writeText(report);

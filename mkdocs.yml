@@ -16,6 +16,7 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - API: api.md
+  - Observability: observability.md
   - Compatibility: compatibility.md
   - OSS-Fuzz: oss-fuzz.md
   - Roadmap: roadmap.md

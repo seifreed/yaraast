@@ -222,6 +222,7 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
+    "test": "npm run compile && node --test tests/logging.test.cjs",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
     "package": "vsce package",
@@ -233,7 +234,7 @@
     "@types/vscode": "1.82.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
-    "@vscode/vsce": "^3.9.2",
+    "@vscode/vsce": "^4.1.0",
     "eslint": "^10.9.0",
     "typescript": "^5.9.3"
   },
@@ -241,6 +242,18 @@
     "vscode-languageclient": "^9.0.1"
   },
   "overrides": {
-    "brace-expansion": "^2.0.2"
+    "brace-expansion": "^2.1.7",
+    "@eslint/config-array": {
+      "minimatch": "^11.0.1"
+    },
+    "eslint": {
+      "minimatch": "^11.0.1"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.1"
+    },
+    "@vscode/vsce": {
+      "minimatch": "^11.0.1"
+    }
   }
 }
