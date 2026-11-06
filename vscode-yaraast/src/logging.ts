@@ -1,6 +1,6 @@
-import type { OutputChannel } from 'vscode';
+import type { LogOutputChannel } from 'vscode';
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
 export type LogFields = {
     outcome?: 'success' | 'failure';
@@ -40,7 +40,7 @@ export function getErrorType(error: unknown): string {
 }
 
 export function appendLog(
-    channel: Pick<OutputChannel, 'appendLine'> | undefined,
+    channel: Pick<LogOutputChannel, LogLevel> | undefined,
     level: LogLevel,
     eventName: string,
     operation: string,
@@ -75,7 +75,7 @@ export function appendLog(
     }
 
     try {
-        channel.appendLine(JSON.stringify(event));
+        channel[level](JSON.stringify(event));
     } catch {
         // Logging is best-effort and must not interrupt the extension.
     }

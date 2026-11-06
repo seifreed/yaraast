@@ -94,8 +94,8 @@ protocol messages.
 
 ## VS Code extension
 
-`vscode-yaraast/src/logging.ts` is the extension's logging boundary. It writes one-line JSON events
-to VS Code's `YARAAST Language Server` Output Channel, using normalized fields for `timestamp`,
+`vscode-yaraast/src/logging.ts` is the extension's logging boundary. It writes JSON event payloads
+to VS Code's native `YARAAST Language Server` `LogOutputChannel`, using normalized fields for `timestamp`,
 `level`, `message`, `service`, `component`, `event_name`, `operation`, `outcome`, `duration_ms`,
 `error_type`, and `error_code`. It uses the host-provided channel rather than opening files or
 requiring a remote collector. If the channel throws, the event is dropped so diagnostics cannot
@@ -109,18 +109,23 @@ assignments, authorization/cookie headers, bearer values, and private keys; cont
 removed and text values over 8 KiB are replaced. The extension's event volume is low, so synchronous
 Output Channel writes are sufficient; no background buffer or separate file rotation is warranted.
 
-The extension uses `debug`, `info`, `warn`, and `error` in JSON events. The LSP trace remains a
-separate VS Code `YARAAST LSP Trace` channel controlled by `yaraast.lsp.trace.server`, whose default
-is `off`. `messages` and especially `verbose` trace protocol payloads and can include open document
-text. Keep trace off during normal use and review trace output before sharing it. The Python request
-logger uses pygls's existing JSON-RPC request IDs; the extension does not invent IDs or attempt
-cross-process trace propagation for this local stdio child process.
+The helper supports VS Code's `trace`, `debug`, `info`, `warn`, and `error` levels, and the channel's
+configured log level filters events at the destination. Automatic lifecycle events use `info`,
+`warn`, or `error`; no per-document trace events are emitted. The channel follows the editor's log
+level; users can change it with `Developer: Set Log Level`. The LSP trace remains a separate VS
+Code `YARAAST LSP Trace`
+channel controlled by `yaraast.lsp.trace.server`, whose default is `off`. `messages` and especially
+`verbose` trace protocol payloads and can include open document text. Keep trace off during normal
+use and review trace output before sharing it. The Python request logger uses pygls's existing
+JSON-RPC request IDs; the extension does not invent IDs or attempt cross-process trace propagation
+for this local stdio child process.
 
 The explicit `YARAAST: Show Server Configuration`, `Show Server Status`, and `Diagnose Server
-Environment` commands write human-readable reports, not automatic structured events. Those reports
-can contain local interpreter or workspace paths; the environment report is copied only when the
-user explicitly requests diagnostics. To inspect normal events, run the `YARAAST: Show Output
-Channel` command and select `YARAAST Language Server` in VS Code's Output panel.
+Environment` commands write human-readable reports to the separate `YARAAST Diagnostics` channel,
+not to the structured log. Those reports can contain local interpreter or workspace paths; the
+environment report is copied only when the user explicitly requests diagnostics. To inspect normal
+events, run `YARAAST: Show Output Channel` and select `YARAAST Language Server` in VS Code's Output
+panel.
 
 An event generated through the extension logger has this shape:
 

@@ -53,7 +53,7 @@ function appendLog(channel, level, eventName, operation, message, fields = {}) {
         event.error_code = safeText(fields.errorCode);
     }
     try {
-        channel.appendLine(JSON.stringify(event));
+        channel[level](JSON.stringify(event));
     }
     catch {
         // Logging is best-effort and must not interrupt the extension.

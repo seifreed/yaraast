@@ -10,6 +10,7 @@ import {
     ConfigurationChangeEvent,
     env,
     ExtensionContext,
+    LogOutputChannel,
     OutputChannel,
     QuickPickItem,
     Uri,
@@ -27,8 +28,9 @@ import { appendLog, getErrorType } from './logging';
 
 let client: LanguageClient | undefined;
 let extensionContextRef: ExtensionContext | undefined;
-let outputChannel: OutputChannel | undefined;
+let outputChannel: LogOutputChannel | undefined;
 let traceChannel: OutputChannel | undefined;
+let diagnosticsChannel: OutputChannel | undefined;
 
 const INDENT_SIZE_KEY = 'indent_size';
 const BRACE_STYLE_KEY = 'brace_style';
@@ -66,10 +68,11 @@ function observeBackgroundOperation(operation: string, action: () => Promise<unk
 
 export function activate(context: ExtensionContext): void {
     extensionContextRef = context;
-    outputChannel = window.createOutputChannel('YARAAST Language Server');
+    outputChannel = window.createOutputChannel('YARAAST Language Server', { log: true });
     traceChannel = window.createOutputChannel('YARAAST LSP Trace');
+    diagnosticsChannel = window.createOutputChannel('YARAAST Diagnostics');
 
-    context.subscriptions.push(outputChannel, traceChannel);
+    context.subscriptions.push(outputChannel, traceChannel, diagnosticsChannel);
     appendLog(outputChannel, 'info', 'extension.activated', 'extension.activate', 'VS Code extension activated');
 
     context.subscriptions.push(
@@ -79,7 +82,7 @@ export function activate(context: ExtensionContext): void {
         commands.registerCommand('yaraast.showOutputChannel', () => {
             outputChannel?.show(true);
         }),
-        commands.registerCommand('yaraast.showServerInfo', () => {
+        commands.registerCommand('yaraast.showServerInfo', () => observeOperation('server.show_info', () => {
             const config = getExtensionConfig();
             const runtime = buildRuntimeSettings();
             const message = [
@@ -89,11 +92,12 @@ export function activate(context: ExtensionContext): void {
                 `cacheWorkspace: ${runtime.cacheWorkspace}`,
                 `formatting: ${JSON.stringify(runtime.codeFormatting)}`
             ].join('\n');
-            outputChannel?.appendLine('current server configuration');
-            outputChannel?.appendLine(message);
-            outputChannel?.show(true);
-            void window.showInformationMessage('YARAAST server configuration written to Output Channel');
-        }),
+            appendLog(outputChannel, 'info', 'lsp.server.configuration_requested', 'server.show_info', 'Language server configuration requested');
+            diagnosticsChannel?.appendLine('current server configuration');
+            diagnosticsChannel?.appendLine(message);
+            diagnosticsChannel?.show(true);
+            void window.showInformationMessage('YARAAST server configuration written to Diagnostics channel');
+        })),
         commands.registerCommand('yaraast.selectDialectMode', async () => {
             await observeOperation('settings.select_dialect', selectDialectMode);
         }),
@@ -278,19 +282,19 @@ async function showServerStatus(): Promise<void> {
         indentStatus(formatRuntimeStatus(remoteStatus))
     ].join('\n');
     appendLog(outputChannel, 'info', 'lsp.server.status_requested', 'server.show_status', 'Language server status requested');
-    outputChannel?.appendLine(status);
+    diagnosticsChannel?.appendLine(status);
     if (environmentError) {
         appendLog(outputChannel, 'warn', 'lsp.environment.invalid', 'server.show_status', 'Language server environment is invalid', {
             outcome: 'failure',
             errorCode: 'YARAAST_LSP_ENVIRONMENT_INVALID'
         });
     }
-    outputChannel?.show(true);
+    diagnosticsChannel?.show(true);
     if (remoteStatus) {
         await openRuntimeDashboard(remoteStatus);
         return;
     }
-    void window.showInformationMessage('YARAAST server status written to Output Channel');
+    void window.showInformationMessage('YARAAST server status written to Diagnostics channel');
 }
 
 async function copyServerStatus(): Promise<void> {
@@ -326,8 +330,8 @@ async function showRuntimeMetrics(): Promise<void> {
         return `${key}: avg=${metric.avg_ms?.toFixed?.(2) ?? metric.avg_ms}ms max=${metric.max_ms?.toFixed?.(2) ?? metric.max_ms}ms count=${metric.count ?? 0}`;
     });
     appendLog(outputChannel, 'info', 'lsp.runtime.metrics_requested', 'runtime.show_metrics', 'Runtime metrics requested');
-    outputChannel?.appendLine(lines.join('\n'));
-    outputChannel?.show(true);
+    diagnosticsChannel?.appendLine(lines.join('\n'));
+    diagnosticsChannel?.show(true);
     await openRuntimeDashboard(remoteStatus);
 }
 
@@ -646,8 +650,8 @@ function buildEnvironmentReport(): string {
 async function diagnoseServerEnvironment(): Promise<void> {
     const report = buildEnvironmentReport();
     appendLog(outputChannel, 'info', 'lsp.environment.diagnostics_requested', 'server.diagnose_environment', 'Environment diagnostics requested');
-    outputChannel?.appendLine(report);
-    outputChannel?.show(true);
+    diagnosticsChannel?.appendLine(report);
+    diagnosticsChannel?.show(true);
     await env.clipboard.writeText(report);
     void window.showInformationMessage('YARAAST environment report copied to clipboard');
 }

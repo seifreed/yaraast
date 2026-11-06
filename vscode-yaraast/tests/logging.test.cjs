@@ -3,14 +3,21 @@ const { test } = require('node:test');
 
 const { appendLog, getErrorType } = require('../out/logging.js');
 
-function captureChannel() {
+function captureChannel(minimumLevel = 'trace') {
     const lines = [];
-    return {
+    const channel = {
         lines,
         appendLine(line) {
             lines.push(line);
         }
     };
+    const rank = { trace: 0, debug: 1, info: 2, warn: 3, error: 4 };
+    for (const level of Object.keys(rank)) {
+        channel[level] = (line) => {
+            if (rank[level] >= rank[minimumLevel]) lines.push(line);
+        };
+    }
+    return channel;
 }
 
 test('writes normalized UTC JSON events with only supported fields', () => {
@@ -55,7 +62,7 @@ test('redacts credentials and control characters before writing one line', () =>
 });
 
 test('does not throw if the output channel fails', () => {
-    const channel = { appendLine() { throw new Error('destination failed'); } };
+    const channel = { info() { throw new Error('destination failed'); } };
     assert.doesNotThrow(() => appendLog(channel, 'info', 'extension.started', 'extension.activate', 'Extension activated'));
 });
 
@@ -92,6 +99,15 @@ test('keeps concurrent events distinct and valid', async () => {
     assert.equal(new Set(events.map((event) => event.operation)).size, 64);
 });
 
+test('respects the configured VS Code log level', () => {
+    const channel = captureChannel('info');
+    appendLog(channel, 'debug', 'extension.debug', 'extension.test', 'Hidden below the configured threshold');
+    appendLog(channel, 'info', 'extension.info', 'extension.test', 'Visible at the configured threshold');
+
+    assert.equal(channel.lines.length, 1);
+    assert.equal(JSON.parse(channel.lines[0]).event_name, 'extension.info');
+});
+
 test('records extension lifecycle and command failures without leaking error messages', async () => {
     const Module = require('node:module');
     const originalLoad = Module._load;
@@ -122,9 +138,9 @@ test('records extension lifecycle and command failures without leaking error mes
             }
         },
         window: {
-            createOutputChannel() {
+            createOutputChannel(name, options) {
                 const channel = captureChannel();
-                channels.push(channel);
+                channels.push({ name, options, channel });
                 return { ...channel, show() {}, dispose() {} };
             },
             showInformationMessage: async () => undefined,
@@ -152,9 +168,15 @@ test('records extension lifecycle and command failures without leaking error mes
         extension.activate({ subscriptions: [] });
         await new Promise((resolve) => setImmediate(resolve));
         await assert.rejects(commands.get('yaraast.openSettings')(), /token=private-value/);
+        await commands.get('yaraast.showServerInfo')();
         await extension.deactivate();
 
-        const events = channels.flatMap((channel) => channel.lines.map((line) => JSON.parse(line)));
+        const logChannel = channels.find((channel) => channel.name === 'YARAAST Language Server');
+        const diagnosticsChannel = channels.find((channel) => channel.name === 'YARAAST Diagnostics');
+        assert.deepEqual(logChannel.options, { log: true });
+        assert.ok(diagnosticsChannel.channel.lines.some((line) => line.includes('python: python')));
+        assert.equal(logChannel.channel.lines.some((line) => line.includes('python:')), false);
+        const events = logChannel.channel.lines.map((line) => JSON.parse(line));
         assert.ok(events.some((event) => event.event_name === 'extension.activated'));
         assert.ok(events.some((event) => event.event_name === 'lsp.server.disabled'));
         assert.ok(events.some((event) => event.event_name === 'extension.operation.failed' && event.error_type === 'Error'));
