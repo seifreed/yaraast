@@ -5,6 +5,28 @@ versioning.
 
 ## Unreleased
 
+## 2.2.0 - 2026-11-07
+
+### Added
+
+- A project API and configuration schema for repository checks, policy controls,
+  diagnostic baselines, incremental caching, and local YARA rule tests.
+- Lossless rule refactors, cleanup operations, compatibility target profiles,
+  and a YARA-to-YARA-X migration command.
+- A local plugin SDK, executable example project, getting-started guide, and
+  expanded real-world conformance corpus.
+- Structured, privacy-aware logging and LSP observability across the CLI,
+  language server, and VS Code extension.
+
+### Changed
+
+- Rule tests can be selected from changed revisions and run under explicit
+  performance budgets.
+- Diagnostic reporters and refactor sessions are available through the
+  high-level project workflow.
+- OSS-Fuzz integration and Windows shell checks handle unavailable tools
+  explicitly.
+
 ## 2.1.0 - 2026-08-27
 
 ### Added
