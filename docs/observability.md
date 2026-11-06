@@ -91,7 +91,9 @@ protocol messages.
 
 The LSP regression runner also measures 1,000 registered feature calls with request context enabled;
 the average must remain below 0.5 ms. It runs alongside the existing 200-rule, 25-file, and 100-file
-runtime scenarios with their latency thresholds.
+runtime scenarios with their latency thresholds. The CLI integration test starts the stdio server,
+sends `initialize`, `shutdown`, and `exit`, checks that JSON-RPC stays on stdout, and checks that
+command lifecycle events go to stderr.
 
 ## Adding events
 
@@ -102,10 +104,10 @@ full exception messages. Let exceptions propagate after logging at the boundary 
 operation, so the same failure is not recorded at every layer. Prefer existing bounded LSP latency
 metrics for repeated timing data instead of emitting one event per hot-path parser operation.
 
-Run the focused logging tests with
-`pytest tests/test_logging_config.py tests/test_lsp_server_more.py tests/test_cli_lsp_command.py`.
-The repository's full quality gates are `ruff check .`, `mypy .`, `black --check .`, and
-`bandit -r yaraast`.
+Run focused logging tests with
+`pytest --no-cov tests/test_logging_config.py tests/test_lsp_server_more.py tests/test_cli_lsp_command.py`;
+the global coverage threshold applies to the full suite, so run `pytest` afterwards. The repository's
+other quality gates are `ruff check .`, `mypy .`, `black --check .`, and `bandit -r yaraast`.
 
 ## Final audit
 
