@@ -47,8 +47,8 @@ def test_project_version_matches_release_metadata() -> None:
     project_version = pyproject["project"]["version"]
     changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
 
-    assert project_version == "2.3.0"
-    assert "## 2.3.0 - 2026-11-08" in changelog
+    assert project_version == "2.3.1"
+    assert "## 2.3.1 - 2026-11-08" in changelog
     assert "## Unreleased" in changelog
 
 

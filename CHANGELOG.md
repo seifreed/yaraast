@@ -5,6 +5,13 @@ versioning.
 
 ## Unreleased
 
+## 2.3.1 - 2026-11-08
+
+### Fixed
+
+- Log recoverable LSP fallbacks with operation and error context while keeping
+  exception payloads and absolute paths out of diagnostics.
+
 ## 2.3.0 - 2026-11-08
 
 ### Added
