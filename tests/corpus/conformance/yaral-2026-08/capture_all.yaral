@@ -1,0 +1,11 @@
+rule CaptureAllPaths {
+  events:
+    $e.metadata.event_type = "PROCESS_LAUNCH"
+    $e.target.process.command_line != ""
+
+  outcome:
+    $paths = re.capture_all($e.target.process.command_line, "\\.conf")
+
+  condition:
+    $e
+}

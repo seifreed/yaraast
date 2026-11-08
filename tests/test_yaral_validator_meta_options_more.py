@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from yaraast.yaral.ast_nodes import (
     CIDRExpression,
     EventVariable,
@@ -51,6 +53,43 @@ def test_validator_meta_section_valid_and_visit_helpers() -> None:
 
     assert validator.warnings == []
     assert validator.errors == []
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [[], ["command_line"], ["command_line", "regex", "extra"]],
+)
+def test_validator_re_capture_all_requires_two_arguments(arguments: list[object]) -> None:
+    validator = YaraLValidator()
+    validator.visit_yaral_function_call(
+        FunctionCall(function="re.capture_all", arguments=arguments)
+    )
+
+    assert len(validator.errors) == 1
+    assert "expects exactly 2 arguments" in validator.errors[0].message
+
+
+def test_validator_re_capture_all_rejects_numeric_arguments() -> None:
+    validator = YaraLValidator()
+    validator.visit_yaral_function_call(
+        FunctionCall(function="re.capture_all", arguments=["command_line", 42])
+    )
+
+    assert len(validator.errors) == 1
+    assert "arguments must be strings" in validator.errors[0].message
+
+
+def test_validator_visits_nested_re_capture_all_calls() -> None:
+    validator = YaraLValidator()
+    validator.visit_yaral_function_call(
+        FunctionCall(
+            function="strings.concat",
+            arguments=[FunctionCall(function="re.capture_all", arguments=["command_line"])],
+        )
+    )
+
+    assert len(validator.errors) == 1
+    assert "expects exactly 2 arguments" in validator.errors[0].message
 
 
 def test_validator_options_section_unknown_and_valid_options() -> None:

@@ -55,4 +55,21 @@ class MetaValidationMixin(ValidatorMixinBase):
         return
 
     def visit_yaral_function_call(self, node: Any) -> None:
-        return
+        if node.function == "re.capture_all":
+            if len(node.arguments) != 2:
+                self._add_error(
+                    "function",
+                    f"re.capture_all() expects exactly 2 arguments, got {len(node.arguments)}",
+                    "Use re.capture_all(string_to_search, regex_pattern)",
+                )
+            elif any(isinstance(argument, (bool, int, float)) for argument in node.arguments):
+                self._add_error(
+                    "function",
+                    "re.capture_all() arguments must be strings",
+                    "Pass string fields, literals, or string-returning functions",
+                )
+
+        # shortcut: validate arity and obvious literal types only, upgrade when YARA-L type inference is available.
+        for argument in node.arguments:
+            if hasattr(argument, "accept"):
+                self.visit(argument)
