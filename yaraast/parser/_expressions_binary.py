@@ -453,6 +453,8 @@ class ExpressionBinaryMixin(ExpressionMixinBase):
             value = self._static_integer_value(expr.operand)
             if value is None:
                 return None
+            if value > _INT64_MAX:
+                return None
             if expr.operator == "-":
                 return -value
             if expr.operator == "~":
@@ -476,6 +478,8 @@ class ExpressionBinaryMixin(ExpressionMixinBase):
                     return 0
             left = self._static_integer_value(expr.left)
             if left is None or right is None:
+                return None
+            if left > _INT64_MAX or right > _INT64_MAX:
                 return None
             if expr.operator == "+":
                 return _normalize_int64(left + right)

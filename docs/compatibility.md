@@ -22,6 +22,11 @@ binding. YARA-L follows the dated public
 [YARA-L 2.0 examples](https://cloud.google.com/chronicle/docs/yara-l/yara-l-2-0-examples)
 rather than a locally installable reference compiler.
 
+YARA-X accepts positive integer literals through `2^64 - 1`; the classic YARA
+parser remains limited to signed 64-bit literals. Protobuf serialization stores
+larger values in the additive `unsigned_value` field while retaining the
+existing signed `value` field for older serialized ASTs.
+
 The required
 [differential conformance job](https://github.com/seifreed/yaraast/actions/workflows/ci.yml)
 installs the exact versions above and rejects acceptance or match drift for the

@@ -55,6 +55,8 @@ from ._registry import (
     YaraType,
 )
 
+_INT64_MAX = (1 << 63) - 1
+
 _BOOLEAN_IDENTIFIER_KEYWORDS = frozenset(("false", "true"))
 
 
@@ -312,6 +314,8 @@ def _constant_integer_value(node: Any) -> int | None:
         value = _constant_integer_value(node.operand)
         if value is None:
             return None
+        if value > _INT64_MAX:
+            return None
         if node.operator == "-":
             return -value
         if node.operator == "~":
@@ -323,6 +327,8 @@ def _constant_integer_value(node: Any) -> int | None:
     left = _constant_integer_value(node.left)
     right = _constant_integer_value(node.right)
     if left is None or right is None:
+        return None
+    if left > _INT64_MAX or right > _INT64_MAX:
         return None
 
     if node.operator == "+":
@@ -1112,6 +1118,8 @@ def _static_integer_value(value: Any) -> int | None:
         operand = _static_integer_value(value.operand)
         if operand is None:
             return None
+        if operand > _INT64_MAX:
+            return None
         if value.operator == "-":
             return -operand
         if value.operator == "~":
@@ -1135,6 +1143,8 @@ def _static_integer_value(value: Any) -> int | None:
                 return 0
         left = _static_integer_value(value.left)
         if left is None or right is None:
+            return None
+        if left > _INT64_MAX or right > _INT64_MAX:
             return None
         if value.operator == "+":
             return normalize_int64(left + right)

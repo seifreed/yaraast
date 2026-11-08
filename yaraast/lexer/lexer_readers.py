@@ -11,6 +11,7 @@ from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lexer.tokens import Token, TokenType
 
 INT64_MAX = (1 << 63) - 1
+UINT64_MAX = (1 << 64) - 1
 
 
 def read_string(lexer: LexerLike) -> Token:
@@ -193,9 +194,16 @@ def read_regex(lexer: LexerLike) -> Token:
     )
 
 
-def _integer_token(value: int, line: int, column: int, length: int = 1) -> Token:
-    if value > INT64_MAX:
-        msg = f"Integer literal exceeds int64 maximum: {value}"
+def _integer_token(
+    value: int,
+    line: int,
+    column: int,
+    length: int = 1,
+    max_value: int = INT64_MAX,
+) -> Token:
+    if value > max_value:
+        limit_name = "int64" if max_value == INT64_MAX else "uint64"
+        msg = f"Integer literal exceeds {limit_name} maximum: {value}"
         raise LexerError(msg, line, column)
     return Token(TokenType.INTEGER, value, line, column, length)
 
@@ -224,7 +232,13 @@ def _validate_float_digit_separators(
         raise LexerError(msg, line, column)
 
 
-def _read_size_suffix(lexer: LexerLike, value: str, line: int, column: int) -> Token | None:
+def _read_size_suffix(
+    lexer: LexerLike,
+    value: str,
+    line: int,
+    column: int,
+    max_value: int,
+) -> Token | None:
     suffix = lexer._current_char()
     if suffix is None or suffix not in "KkMm":
         return None
@@ -236,12 +250,19 @@ def _read_size_suffix(lexer: LexerLike, value: str, line: int, column: int) -> T
     if char is not None and (char.isalnum() or char == "_"):
         raise LexerError("Invalid size suffix", line, column)
     multiplier = 1024 if suffix == "K" else 1024 * 1024
-    return _integer_token(int(value) * multiplier, line, column, lexer.column - column)
+    return _integer_token(
+        int(value) * multiplier,
+        line,
+        column,
+        lexer.column - column,
+        max_value,
+    )
 
 
 def read_number(lexer: LexerLike) -> Token:
     start_line = lexer.line
     start_column = lexer.column
+    max_value = getattr(lexer, "max_integer_value", INT64_MAX)
     value = ""
     next_char = lexer._peek_char()
     # Hexadecimal: 0x1A, 0xFF_FF
@@ -266,7 +287,9 @@ def read_number(lexer: LexerLike) -> Token:
         if char is not None and char.isalnum():
             msg = "Invalid hexadecimal integer literal"
             raise LexerError(msg, start_line, start_column)
-        return _integer_token(int(value, 16), start_line, start_column, lexer.column - start_column)
+        return _integer_token(
+            int(value, 16), start_line, start_column, lexer.column - start_column, max_value
+        )
     # Octal: 0o77, 0o123
     if lexer._current_char() == "0" and next_char == "O":
         msg = "Invalid octal integer literal"
@@ -289,7 +312,9 @@ def read_number(lexer: LexerLike) -> Token:
         if char is not None and char.isalnum():
             msg = "Invalid octal integer literal"
             raise LexerError(msg, start_line, start_column)
-        return _integer_token(int(value, 8), start_line, start_column, lexer.column - start_column)
+        return _integer_token(
+            int(value, 8), start_line, start_column, lexer.column - start_column, max_value
+        )
     # Decimal (with underscore separators): 1_000_000
     raw_digits = ""
     char = lexer._current_char()
@@ -322,10 +347,12 @@ def read_number(lexer: LexerLike) -> Token:
             lexer.column - start_column,
         )
     # KB/MB suffixes
-    suffix_token = _read_size_suffix(lexer, value, start_line, start_column)
+    suffix_token = _read_size_suffix(lexer, value, start_line, start_column, max_value)
     if suffix_token is not None:
         return suffix_token
-    return _integer_token(int(value), start_line, start_column, lexer.column - start_column)
+    return _integer_token(
+        int(value), start_line, start_column, lexer.column - start_column, max_value
+    )
 
 
 def read_identifier(lexer: LexerLike) -> Token:

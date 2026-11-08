@@ -34,7 +34,7 @@ from yaraast.codegen.generator_helpers import (
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.conditions import OfExpression
-    from yaraast.ast.expressions import Expression
+    from yaraast.ast.expressions import Expression, IntegerLiteral
     from yaraast.ast.modifiers import StringModifier
     from yaraast.ast.rules import Import, Rule
     from yaraast.ast.strings import HexString, PlainString
@@ -58,6 +58,9 @@ if TYPE_CHECKING:
 
 class YaraXGenerator(BaseGenerator):
     """Code generator for YARA-X with support for new syntax features."""
+
+    def visit_integer_literal(self, node: IntegerLiteral) -> str:
+        return format_integer_literal(node.value, allow_unsigned=True)
 
     def visit_yara_file(self, node: YaraFile) -> str:
         first = True
@@ -129,7 +132,7 @@ class YaraXGenerator(BaseGenerator):
         if isinstance(value, bool):
             return "true" if value else "false"
         if isinstance(value, int):
-            return format_integer_literal(value)
+            return format_integer_literal(value, allow_unsigned=True)
         if isinstance(value, float) and math.isfinite(value):
             return str(value)
         msg = f"Invalid YARA-X meta value type '{type(value).__name__}'"

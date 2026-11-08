@@ -48,6 +48,7 @@ _PROTOBUF_INT32_MIN = -(2**31)
 _PROTOBUF_INT32_MAX = 2**31 - 1
 _PROTOBUF_INT64_MIN = -(2**63)
 _PROTOBUF_INT64_MAX = 2**63 - 1
+_PROTOBUF_UINT64_MAX = 2**64 - 1
 
 
 def _finite_double_value(value: Any, context: str) -> float:
@@ -480,6 +481,14 @@ def _protobuf_int64_value(value: Any, context: str) -> int:
     if _PROTOBUF_INT64_MIN <= int_value <= _PROTOBUF_INT64_MAX:
         return int_value
     msg = f"{context} must fit in protobuf int64"
+    raise SerializationError(msg)
+
+
+def _protobuf_uint64_value(value: Any, context: str) -> int:
+    int_value = _protobuf_required_int(value, context)
+    if 0 <= int_value <= _PROTOBUF_UINT64_MAX:
+        return int_value
+    msg = f"{context} must fit in protobuf uint64"
     raise SerializationError(msg)
 
 
@@ -1517,10 +1526,17 @@ def convert_expression_to_protobuf(expr: Any, pb_expr: Any) -> None:
                 pb_expr.string_length.index,
             )
     elif isinstance(expr, IntegerLiteral):
-        pb_expr.integer_literal.value = _protobuf_int64_value(
-            expr.value,
-            "IntegerLiteral value",
-        )
+        value = _protobuf_required_int(expr.value, "IntegerLiteral value")
+        if value <= _PROTOBUF_INT64_MAX:
+            pb_expr.integer_literal.value = _protobuf_int64_value(
+                value,
+                "IntegerLiteral value",
+            )
+        else:
+            pb_expr.integer_literal.unsigned_value = _protobuf_uint64_value(
+                value,
+                "IntegerLiteral value",
+            )
     elif isinstance(expr, DoubleLiteral):
         pb_expr.double_literal.value = _finite_double_value(expr.value, "DoubleLiteral")
     elif isinstance(expr, StringLiteral):
@@ -2510,7 +2526,13 @@ def protobuf_to_expression(pb_expr: Any) -> Any:
             ),
         )
     if pb_expr.HasField("integer_literal"):
-        return with_metadata(IntegerLiteral(value=pb_expr.integer_literal.value))
+        integer_literal = pb_expr.integer_literal
+        value = (
+            integer_literal.unsigned_value
+            if integer_literal.HasField("unsigned_value")
+            else integer_literal.value
+        )
+        return with_metadata(IntegerLiteral(value=value))
     if pb_expr.HasField("double_literal"):
         return with_metadata(
             DoubleLiteral(value=_finite_double_value(pb_expr.double_literal.value, "DoubleLiteral"))

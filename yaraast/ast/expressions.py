@@ -214,6 +214,8 @@ def _constant_range_integer_value(value: Any) -> int | None:
         operand = _constant_range_integer_value(value.operand)
         if operand is None:
             return None
+        if operand > _INT64_MAX:
+            return None
         if value.operator == "-":
             return _normalize_range_int64(-operand)
         if value.operator == "~":
@@ -227,6 +229,8 @@ def _constant_range_integer_value(value: Any) -> int | None:
     left = _constant_range_integer_value(value.left)
     right = _constant_range_integer_value(value.right)
     if left is None or right is None:
+        return None
+    if left > _INT64_MAX or right > _INT64_MAX:
         return None
     if value.operator == "+":
         return _normalize_range_int64(left + right)

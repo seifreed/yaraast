@@ -6,6 +6,7 @@ from typing import cast
 
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.strings import HexToken
+from yaraast.lexer.lexer_readers import UINT64_MAX
 from yaraast.lexer.tokens import Token
 from yaraast.limits import DEFAULT_RESOURCE_LIMITS, CancellationToken, ResourceLimits
 from yaraast.parser._shared import ParserError
@@ -27,6 +28,7 @@ class YaraXParser(
     """Enhanced parser for YARA-X with support for new syntax features."""
 
     _allow_string_identifier_non_logical_binary = True
+    _max_integer_value = UINT64_MAX
 
     def __init__(
         self,

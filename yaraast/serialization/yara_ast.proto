@@ -303,6 +303,7 @@ message StringLength {
 
 message IntegerLiteral {
     int64 value = 1;
+    optional uint64 unsigned_value = 2;
 }
 
 message DoubleLiteral {

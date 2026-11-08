@@ -10,6 +10,7 @@ from typing import Generic, TypeVar, cast
 from yaraast.lexer.lexer_dispatch import read_next_token
 from yaraast.lexer.lexer_helpers import skip_whitespace_and_comments
 from yaraast.lexer.lexer_readers import (
+    INT64_MAX,
     is_hex_string_context,
     is_regex_context,
     read_hex_string,
@@ -40,7 +41,13 @@ class Lexer(Generic[TokenizeResult]):
 
     KEYWORDS = LEXER_KEYWORDS
 
-    def __init__(self, text: str | None = None, *, budget: ParseBudget | None = None) -> None:
+    def __init__(
+        self,
+        text: str | None = None,
+        *,
+        budget: ParseBudget | None = None,
+        max_integer_value: int = INT64_MAX,
+    ) -> None:
         """Initialize lexer.
 
         Args:
@@ -51,6 +58,7 @@ class Lexer(Generic[TokenizeResult]):
         self.state = LexerState(text if text is not None else "")
         self.tokens: list[Token] = []
         self.budget = budget
+        self.max_integer_value = max_integer_value
 
     @property
     def text(self) -> str:

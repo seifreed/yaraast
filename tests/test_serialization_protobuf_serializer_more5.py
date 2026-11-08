@@ -2399,7 +2399,7 @@ def test_protobuf_serializer_accepts_dotted_function_call_names() -> None:
         (StringLength("$bad-name"), "Invalid string reference"),
         (IntegerLiteral(cast(Any, True)), "IntegerLiteral value must be an integer"),
         (IntegerLiteral(cast(Any, "1")), "IntegerLiteral value must be an integer"),
-        (IntegerLiteral(2**63), "IntegerLiteral value must fit in protobuf int64"),
+        (IntegerLiteral(2**64), "IntegerLiteral value must fit in protobuf uint64"),
         (IntegerLiteral(-(2**63) - 1), "IntegerLiteral value must fit in protobuf int64"),
         (StringLiteral(cast(Any, True)), "StringLiteral value must be a string"),
         (RegexLiteral(cast(Any, 123)), "RegexLiteral pattern must be a string"),

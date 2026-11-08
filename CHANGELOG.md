@@ -5,6 +5,11 @@ versioning.
 
 ## Unreleased
 
+### Added
+
+- YARA-X parsing and generation for unsigned 64-bit integer literals, with
+  lossless Protobuf round trips.
+
 ### Changed
 
 - Updated YARA-X differential conformance to 1.23.0 and documented current

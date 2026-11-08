@@ -89,6 +89,7 @@ _YARA_INTEGER_TEXT_RE = re.compile(r"^-?(?:0x[0-9A-Fa-f]+|0o[0-7]+|[0-9]+(?:KB|M
 _STRING_PLACEHOLDER_REFERENCES = frozenset({"", "$"})
 _YARA_INTEGER_MIN = -(2**63)
 _YARA_INTEGER_MAX = 2**63 - 1
+_YARA_UINT64_MAX = 2**64 - 1
 _YARA_INTEGER_MIN_EXPRESSION = "(-9223372036854775807 - 1)"
 
 
@@ -521,7 +522,7 @@ def _validate_supported_string_definition(string_def: object) -> None:
     raise TypeError(msg)
 
 
-def format_integer_literal(value: object) -> str:
+def format_integer_literal(value: object, *, allow_unsigned: bool = False) -> str:
     """Format integer literals with common hex values preserved."""
     if isinstance(value, bool):
         msg = "Integer literal value must be an integer"
@@ -532,7 +533,7 @@ def format_integer_literal(value: object) -> str:
             msg = "Integer literal value must be an integer"
             raise TypeError(msg)
         numeric_value = _integer_literal_numeric_value(value)
-        _validate_integer_literal_range(numeric_value)
+        _validate_integer_literal_range(numeric_value, allow_unsigned=allow_unsigned)
         if numeric_value == _YARA_INTEGER_MIN:
             return _YARA_INTEGER_MIN_EXPRESSION
         if isinstance(int_value, str):
@@ -543,7 +544,7 @@ def format_integer_literal(value: object) -> str:
         msg = "Integer literal value must be an integer"
         raise TypeError(msg)
 
-    _validate_integer_literal_range(int_value)
+    _validate_integer_literal_range(int_value, allow_unsigned=allow_unsigned)
     if int_value == _YARA_INTEGER_MIN:
         return _YARA_INTEGER_MIN_EXPRESSION
 
@@ -626,8 +627,9 @@ def _normalize_integer_literal_text(value: str) -> str:
     return f"{sign}{text}"
 
 
-def _validate_integer_literal_range(value: int) -> None:
-    if _YARA_INTEGER_MIN <= value <= _YARA_INTEGER_MAX:
+def _validate_integer_literal_range(value: int, *, allow_unsigned: bool = False) -> None:
+    max_value = _YARA_UINT64_MAX if allow_unsigned else _YARA_INTEGER_MAX
+    if _YARA_INTEGER_MIN <= value <= max_value:
         return
     msg = "Integer literal value is outside libyara range"
     raise ValueError(msg)

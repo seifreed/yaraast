@@ -14,6 +14,7 @@ from yaraast.ast.rules import Import, Include, Rule
 from yaraast.errors import ParseError
 from yaraast.interfaces import ILexer, IToken
 from yaraast.lexer import Lexer, Token, TokenType
+from yaraast.lexer.lexer_readers import INT64_MAX
 from yaraast.limits import DEFAULT_RESOURCE_LIMITS, CancellationToken, ParseBudget, ResourceLimits
 
 from ._expressions import ExpressionParsingMixin
@@ -39,6 +40,7 @@ class Parser(
     """
 
     current: int
+    _max_integer_value = INT64_MAX
 
     def __init__(
         self,
@@ -81,7 +83,11 @@ class Parser(
             self.lexer = self._injected_lexer
             self.tokens = self.lexer.tokenize(text)
         else:
-            self.lexer = Lexer[list[Token]](text, budget=self._budget)
+            self.lexer = Lexer[list[Token]](
+                text,
+                budget=self._budget,
+                max_integer_value=self._max_integer_value,
+            )
             self.tokens = self.lexer.tokenize()
 
     def parse(self, text: str | None = None) -> YaraFile:
