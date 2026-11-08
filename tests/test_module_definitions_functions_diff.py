@@ -81,6 +81,12 @@ REJECTED_CALLS: list[tuple[str, str]] = [
     ("time", "time.now(1) > 0"),
 ]
 
+# This function is present in the current upstream metadata, beyond the CI
+# libyara 4.5.4 baseline.
+LATEST_UPSTREAM_CALLS: list[tuple[str, str]] = [
+    ("pe", "pe.offset_to_rva(0) == 0"),
+]
+
 
 def _function_errors(module: str, condition: str) -> list[str]:
     source = f'import "{module}"\nrule t {{ condition: {condition} }}'
@@ -96,6 +102,11 @@ def test_module_function_call_is_accepted(module: str, condition: str) -> None:
 @pytest.mark.parametrize(("module", "condition"), REJECTED_CALLS)
 def test_invalid_module_function_call_is_rejected(module: str, condition: str) -> None:
     assert _function_errors(module, condition) != []
+
+
+@pytest.mark.parametrize(("module", "condition"), LATEST_UPSTREAM_CALLS)
+def test_latest_upstream_module_function_call_is_accepted(module: str, condition: str) -> None:
+    assert _function_errors(module, condition) == []
 
 
 @pytest.mark.skipif(

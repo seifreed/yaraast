@@ -7,15 +7,17 @@ from a dialect is implemented.
 | Dialect | Reference exercised by CI | Parse | Generate | Format | Lossless | Validate | LSP |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | YARA | yara-python/libyara 4.5.4 | Stable | Stable | Stable | Partial | libyara | Stable |
-| YARA-X | yara-x 1.20.0 | Beta | Beta | Beta | No | YARA-X | Beta |
+| YARA-X | yara-x 1.23.0 | Beta | Beta | Beta | No | YARA-X | Beta |
 | YARA-L | Google documentation snapshot 2026-08 | Experimental | Experimental | Experimental | No | Public corpus | Experimental |
 
-The current upstream classic YARA release is
-[4.5.8](https://github.com/VirusTotal/yara/releases/tag/v4.5.8). Its syntax is
-the parser target, but the latest published `yara-python` binding is 4.5.4, so
-the differential CI gate cannot honestly claim a 4.5.8 libyara run yet.
-YARA-X is fixed to the official
-[1.20.0](https://github.com/VirusTotal/yara-x/releases/tag/v1.20.0) Python
+The latest upstream classic YARA release is
+[4.6.0](https://github.com/VirusTotal/yara/releases/tag/v4.6.0). Upstream
+`yara-python` is at
+[4.5.5](https://github.com/VirusTotal/yara-python/releases/tag/v4.5.5), while
+the latest package published on PyPI and exercised by CI remains
+[4.5.4](https://pypi.org/project/yara-python/). The differential gate therefore
+tests libyara 4.5.4 and does not claim a 4.6.0 run. YARA-X CI uses the official
+[1.23.0](https://github.com/VirusTotal/yara-x/releases/tag/v1.23.0) Python
 binding. YARA-L follows the dated public
 [YARA-L 2.0 examples](https://cloud.google.com/chronicle/docs/yara-l/yara-l-2-0-examples)
 rather than a locally installable reference compiler.

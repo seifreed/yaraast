@@ -1,4 +1,4 @@
-"""YARA-X 1.20 differential conformance corpus."""
+"""YARA-X 1.23 differential conformance corpus."""
 
 from __future__ import annotations
 

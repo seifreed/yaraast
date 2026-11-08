@@ -108,6 +108,23 @@ REJECTED_ACCESSES: list[tuple[str, str]] = [
     ("dotnet", "dotnet.not_a_field"),
 ]
 
+# Added by upstream YARA 4.6.0; the CI libyara binding remains at 4.5.4.
+LATEST_UPSTREAM_ACCESSES: list[tuple[str, str]] = [
+    ("elf", f"elf.{name}")
+    for name in (
+        "EM_PARISC",
+        "EM_SPARC32PLUS",
+        "EM_S390",
+        "EM_MCORE",
+        "EM_RCE",
+        "EM_SH",
+        "EM_SPARCV9",
+        "EM_ARC_COMPACT",
+        "EM_BPF",
+        "EM_LOONGARCH",
+    )
+]
+
 
 def _attribute_errors(module: str, access: str) -> list[str]:
     source = f'import "{module}"\nrule t {{ condition: ({access}) == ({access}) }}'
@@ -126,6 +143,11 @@ def test_common_module_access_is_accepted(module: str, access: str) -> None:
 @pytest.mark.parametrize(("module", "access"), REJECTED_ACCESSES)
 def test_undefined_module_access_is_still_rejected(module: str, access: str) -> None:
     assert _attribute_errors(module, access) != []
+
+
+@pytest.mark.parametrize(("module", "access"), LATEST_UPSTREAM_ACCESSES)
+def test_latest_upstream_module_access_is_accepted(module: str, access: str) -> None:
+    assert _attribute_errors(module, access) == []
 
 
 @pytest.mark.skipif(

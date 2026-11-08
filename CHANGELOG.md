@@ -5,6 +5,11 @@ versioning.
 
 ## Unreleased
 
+### Changed
+
+- Updated YARA-X differential conformance to 1.23.0 and documented current
+  upstream engine releases separately from the versions exercised by CI.
+
 ## 2.2.0 - 2026-11-07
 
 ### Added
