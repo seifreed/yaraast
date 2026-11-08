@@ -5,11 +5,15 @@ versioning.
 
 ## Unreleased
 
+## 2.3.0 - 2026-11-08
+
 ### Added
 
 - YARA-X 1.22+ unsigned 64-bit literals and integer readers, with lossless
   Protobuf round trips.
 - YARA-L `re.capture_all` outcome conformance and basic signature validation.
+- Current ELF machine constants, including the `EM_MCORE`/`EM_RCE` alias, and
+  `pe.offset_to_rva` module metadata.
 
 ### Changed
 
