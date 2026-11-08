@@ -52,7 +52,8 @@ configuration. The configured format redacts common credential assignments and b
 redacts complete authorization and cookie headers, removes control characters, and leaves exception
 messages and source lines out of stack traces. Event fields are allow-listed so arbitrary `extra`
 values are not serialized. Messages and traces are capped at 8 KiB; oversized values are replaced
-with a fixed marker. Stack traces retain frame locations and exception type without document text.
+with a fixed marker. Stack traces retain frame basenames, line numbers, and function names without
+absolute paths, exception messages, or document text.
 
 When the LSP server is imported, pygls logger records are filtered before host handlers or Python's
 fallback stderr handler can see them. Its INFO and DEBUG records are dropped because pygls includes
@@ -60,6 +61,11 @@ protocol payloads at those levels. WARNING and ERROR records retain the module, 
 ID when pygls provides it, and error type but replace messages and exception details with a fixed
 event. Calling `configure_logging`
 routes those events through the same stderr destination and format as YARA AST logs.
+
+Recoverable LSP feature fallbacks emit `lsp.operation.fallback` at DEBUG with a stable operation,
+`outcome=fallback`, exception type, and safe stack frames. Parse failures caused by an incomplete
+editor buffer remain DEBUG because they are expected during editing; unexpected handler failures
+are ERROR events at the safe-handler boundary.
 
 The built-in destination is stderr. A service manager or shell redirection can collect stderr;
 retention and rotation belong to that destination because this library does not open log files. For
@@ -72,8 +78,8 @@ An actual `parse` run emits lifecycle events like these (the second line include
 duration):
 
 ```json
-{"timestamp":"2026-11-06T21:44:39.383Z","level":"info","message":"CLI command started","service":"yaraast","component":"yaraast.cli.main","operation":"parse","event_name":"cli.command.started"}
-{"timestamp":"2026-11-06T21:44:39.392Z","level":"info","message":"CLI command completed","service":"yaraast","component":"yaraast.cli.main","operation":"parse","event_name":"cli.command.completed","outcome":"success","duration_ms":8.79275007173419}
+{"timestamp":"2026-11-08T07:08:17.102Z","level":"info","message":"CLI command started","service":"yaraast","component":"yaraast.cli.main","operation":"parse","event_name":"cli.command.started"}
+{"timestamp":"2026-11-08T07:08:17.111Z","level":"info","message":"CLI command completed","service":"yaraast","component":"yaraast.cli.main","operation":"parse","event_name":"cli.command.completed","outcome":"success","duration_ms":9.210749994963408}
 ```
 
 The stdlib has no TRACE level; DEBUG is the most detailed supported level. FATAL is the stdlib alias
@@ -161,8 +167,8 @@ and `npx vsce package --out /tmp/yaraast.vsix` followed by
 | Dimension | Initial | Final | Evidence |
 | --- | ---: | ---: | --- |
 | Architecture and decoupling | 2 | 10 | Stdlib boundary leaves host logging untouched; VS Code helper accepts its output channel as a destination. |
-| Functional coverage | 3 | 10 | CLI, LSP feature/fallback, extension lifecycle, command failures, and runtime status are instrumented. |
-| Event quality | 2 | 10 | Events include stable operation names, outcomes, durations where useful, and safe error types. |
+| Functional coverage | 3 | 10 | CLI, named LSP feature/fallback paths, extension lifecycle, command failures, and runtime status are instrumented. |
+| Event quality | 2 | 10 | Events include stable operation names, outcomes, durations where useful, and safe error types and frames. |
 | Structure and consistency | 1 | 10 | Python and extension emit UTC JSON with normalized fields and allow-listed context. |
 | Context and correlation | 1 | 10 | `ContextVar` covers threads/async tasks; pygls request IDs are reused; no IDs are fabricated. |
 | Security and privacy | 3 | 10 | Redaction, control removal, size caps, payload filtering, generic UI errors, and trace-off default. |

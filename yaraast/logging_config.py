@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 import json
 import logging
 import os
+from pathlib import Path
 import re
 import sys
 from time import gmtime
@@ -104,8 +105,24 @@ def safe_traceback_frames(trace: TracebackType | None) -> str:
     if trace is None:
         return ""
     return "".join(
-        f'  File "{frame.filename}", line {frame.lineno}, in {frame.name}\n'
+        f'  File "{Path(frame.filename).name}", line {frame.lineno}, in {frame.name}\n'
         for frame in traceback.extract_tb(trace)
+    )
+
+
+def log_lsp_fallback(logger: logging.Logger, operation: str, error: Exception) -> None:
+    """Record a safe DEBUG event when an LSP feature returns a fallback result."""
+    if not logger.isEnabledFor(logging.DEBUG):
+        return
+    logger.debug(
+        "LSP operation used fallback",
+        extra={
+            "event_name": "lsp.operation.fallback",
+            "operation": operation,
+            "outcome": "fallback",
+            "error_type": type(error).__name__,
+            "stack_trace": safe_traceback_frames(error.__traceback__),
+        },
     )
 
 

@@ -12,6 +12,7 @@ from lsprotocol.types import (
     Position,
 )
 
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.completion_helpers import (
     BUILTIN_FUNCTIONS,
     KEYWORDS,
@@ -173,8 +174,8 @@ class CompletionProvider:
                                 insert_text=rule_name,
                             )
                         )
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "completion.workspace_rules", exc)
         return items
 
     def _get_meta_completions(self) -> list[CompletionItem]:

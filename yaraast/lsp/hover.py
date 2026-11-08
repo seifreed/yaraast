@@ -8,6 +8,7 @@ from typing import Any
 
 from lsprotocol.types import Hover, MarkupContent, MarkupKind, Position, Range
 
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.hover_renderers import (
     include_hover as render_include_hover,
@@ -318,8 +319,8 @@ class HoverProvider:
             if string_info is not None:
                 return render_string_identifier_hover(base_identifier, string_info, word_range)
 
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "hover.string", exc)
 
         return render_string_identifier_hover(base_identifier, None, word_range)
 

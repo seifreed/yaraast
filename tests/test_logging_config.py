@@ -14,7 +14,7 @@ from click.testing import CliRunner
 import pytest
 
 from yaraast.cli.main import cli
-from yaraast.logging_config import configure_logging, log_context
+from yaraast.logging_config import configure_logging, log_context, log_lsp_fallback
 from yaraast.lsp.safe_handler import lsp_safe_handler
 
 
@@ -167,6 +167,27 @@ def test_error_event_keeps_type_and_redacts_traceback(
     assert event["error_type"] == "RuntimeError"
     assert "stack_trace" in event
     assert "private-key" not in event["stack_trace"]
+    assert "/" not in event["stack_trace"]
+    assert "\\" not in event["stack_trace"]
+
+
+def test_lsp_fallback_event_identifies_operation_without_exception_payload(
+    log_sink: tuple[logging.Logger, StringIO],
+) -> None:
+    logger, stream = log_sink
+    try:
+        raise RuntimeError("rule source contains password=private-value")
+    except RuntimeError as exc:
+        log_lsp_fallback(logger, "semantic_tokens.full", exc)
+
+    event = json.loads(stream.getvalue())
+
+    assert event["event_name"] == "lsp.operation.fallback"
+    assert event["operation"] == "semantic_tokens.full"
+    assert event["outcome"] == "fallback"
+    assert event["error_type"] == "RuntimeError"
+    assert event["stack_trace"]
+    assert "private-value" not in stream.getvalue()
 
 
 def test_pygls_protocol_events_do_not_log_request_bodies(

@@ -8,6 +8,7 @@ from typing import Any
 
 from lsprotocol.types import LogMessageParams, MessageType, PublishDiagnosticsParams
 
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.lsp_types import (
     TEXT_DOCUMENT_DID_CHANGE,
     TEXT_DOCUMENT_DID_CLOSE,
@@ -45,8 +46,8 @@ def _changed_document_text(ls: Any, uri: str, changes: Any) -> str:
         source = ls.workspace.get_text_document(uri).source
         if isinstance(source, str):
             return source
-    except Exception:
-        logger.debug("Operation failed in %s", __name__)
+    except Exception as exc:
+        log_lsp_fallback(logger, "document.text", exc)
     return _latest_change_text(changes) or ""
 
 

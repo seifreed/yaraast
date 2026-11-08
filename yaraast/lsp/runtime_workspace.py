@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from lsprotocol.types import SymbolInformation
 
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.document_types import SymbolRecord, require_workspace_symbol_query
 
 logger = logging.getLogger(__name__)
@@ -42,8 +43,8 @@ def workspace_symbol_records(runtime: LspRuntime, query: object = "") -> list[Sy
     for doc in runtime.documents.values():
         try:
             doc_symbols = doc.symbols()
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "runtime.workspace_symbols", exc)
             continue
         for record in doc_symbols:
             if record.kind in hidden_kinds:
@@ -73,8 +74,8 @@ def _uncached_workspace_symbol_records(runtime: LspRuntime, query: str) -> list[
     for doc in runtime.iter_workspace_documents():
         try:
             doc_symbols = doc.symbols()
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "runtime.workspace_references", exc)
             continue
         for record in doc_symbols:
             if record.kind in hidden_kinds:

@@ -8,6 +8,7 @@ from typing import Any
 from lsprotocol.types import FoldingRange, FoldingRangeKind
 
 from yaraast.ast.rules import Rule
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.parsing import parse_for_lsp
 from yaraast.lsp.structure import (
     _starts_regex_literal,
@@ -57,8 +58,8 @@ class FoldingRangesProvider:
 
             return ranges
 
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "folding_ranges.compute", exc)
             # Fallback to regex-based folding
             return self._fallback_folding_ranges(text)
 

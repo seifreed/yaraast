@@ -10,6 +10,7 @@ from lsprotocol.types import CompletionItem, CompletionItemKind, InsertTextForma
 
 from yaraast.ast.conditions import ForExpression
 from yaraast.errors import ParseError
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.document_context import DocumentContext
 from yaraast.lsp.document_query_reference_text import mask_non_code_segments
 from yaraast.lsp.language_services import parse_source
@@ -336,8 +337,8 @@ def build_condition_completions(text: str, keywords: list[str]) -> list[Completi
         if ast is None:
             raise ParseError("Failed to parse")
         items.extend(_string_identifier_completions(ast))
-    except Exception:
-        logger.debug("Operation failed in %s", __name__)
+    except Exception as exc:
+        log_lsp_fallback(logger, "completion.string_identifiers", exc)
         items.extend(_text_condition_completions(text))
 
     if ast is not None:
@@ -479,8 +480,8 @@ def _extract_loop_variables(node: Any) -> list[str]:
         try:
             for child in children_method():
                 variables.extend(_extract_loop_variables(child))
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "completion.loop_variables", exc)
     return variables
 
 

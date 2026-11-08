@@ -276,15 +276,22 @@ class TestWorkspaceRuleCompletionsExceptionHandler:
         with caplog.at_level(logging.DEBUG, logger="yaraast.lsp.completion"):
             provider.get_completions(text, _pos(2, 4), uri)
 
-        # Assert: the exception is logged at DEBUG level with exc_info.
-        # Log call: logger.debug("Operation failed in %s", __name__, exc_info=True)
-        # getMessage() interpolates to "Operation failed in yaraast.lsp.completion".
+        # Assert: the recoverable fallback logs a structured DEBUG event without
+        # exposing the exception payload.
         completion_debug = [
             r
             for r in caplog.records
-            if r.levelno == logging.DEBUG and r.name == "yaraast.lsp.completion"
+            if r.levelno == logging.DEBUG
+            and r.name == "yaraast.lsp.completion"
+            and getattr(r, "event_name", None) == "lsp.operation.fallback"
         ]
-        assert any("Operation failed" in r.getMessage() for r in completion_debug)
+        assert len(completion_debug) == 1
+        event = completion_debug[0]
+        assert getattr(event, "operation", None) == "completion.workspace_rules"
+        assert getattr(event, "outcome", None) == "fallback"
+        assert getattr(event, "error_type", None) == "RuntimeError"
+        assert getattr(event, "stack_trace", None)
+        assert event.exc_info is None
 
     def test_workspace_completions_with_exception_do_not_raise(self, tmp_path: Path) -> None:
         # Integration variant: even with a broken workspace iterator, get_completions

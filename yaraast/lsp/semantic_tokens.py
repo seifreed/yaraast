@@ -9,6 +9,7 @@ from lsprotocol.types import Range, SemanticTokens, SemanticTokensLegend
 
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.tokens import Token, TokenType
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.runtime import LspRuntime, get_optional_document_context
 from yaraast.lsp.semantic_tokens_helpers import (
     encode_tokens,
@@ -126,8 +127,8 @@ class SemanticTokensProvider:
             tokens_data = encode_tokens(tokens, self._map_token_type, TOKEN_TYPES, text)
             tokenization_succeeded = True
 
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "semantic_tokens.full", exc)
             # If tokenization fails, return empty tokens
 
         result = SemanticTokens(data=tokens_data)
@@ -169,8 +170,8 @@ class SemanticTokensProvider:
             )
             tokenization_succeeded = True
 
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "semantic_tokens.range", exc)
 
         result = SemanticTokens(data=tokens_data)
         if ctx is not None and cache_key is not None and tokenization_succeeded:

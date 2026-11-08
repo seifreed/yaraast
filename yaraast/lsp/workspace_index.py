@@ -8,6 +8,7 @@ from pathlib import Path
 
 from lsprotocol.types import SymbolInformation
 
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.document_context import DocumentContext
 from yaraast.lsp.document_types import (
     YARA_FILE_SUFFIXES,
@@ -175,8 +176,8 @@ class WorkspaceIndex:
                 continue
             try:
                 payload = json.loads(cache_path.read_text(encoding="utf-8"))
-            except Exception:
-                logger.debug("Operation failed in %s", __name__)
+            except Exception as exc:
+                log_lsp_fallback(logger, "workspace_index.load_cache", exc)
                 continue
             if not isinstance(payload, dict):
                 continue
@@ -203,8 +204,8 @@ class WorkspaceIndex:
                 continue
             try:
                 record = SymbolRecord.from_dict(symbol)
-            except Exception:
-                logger.debug("Operation failed in %s", __name__)
+            except Exception as exc:
+                log_lsp_fallback(logger, "workspace_index.decode_symbol", exc)
                 continue
             if record.uri == uri:
                 records.append(record)
@@ -228,8 +229,8 @@ class WorkspaceIndex:
                     json.dumps(payload, indent=2, sort_keys=True),
                     encoding="utf-8",
                 )
-            except OSError:
-                logger.debug("Operation failed in %s", __name__)
+            except OSError as exc:
+                log_lsp_fallback(logger, "workspace_index.write_cache", exc)
 
     def update_document(self, document: DocumentContext) -> None:
         if not isinstance(document, DocumentContext):
@@ -311,6 +312,6 @@ class WorkspaceIndex:
                         ):
                             seen_resolved.add(resolved_path)
                             files.append(path if path_has_symlink_ancestor(path) else resolved_path)
-                except OSError:
-                    logger.debug("Operation failed in %s", __name__)
+                except OSError as exc:
+                    log_lsp_fallback(logger, "workspace_index.scan_paths", exc)
         return sorted(files)

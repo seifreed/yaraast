@@ -9,6 +9,7 @@ from typing import Any
 
 from lsprotocol.types import Location, Position, SymbolInformation, TextEdit
 
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.document_context import DocumentContext
 from yaraast.lsp.document_types import (
     LanguageMode,
@@ -267,8 +268,8 @@ class LspRuntime:
             return
         try:
             self.index.update_document(ctx)
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "runtime.index_document", exc)
         self._dirty_documents.discard(uri)
         self.cache.bump_generation()
 
@@ -367,8 +368,8 @@ class LspRuntime:
             return None
         try:
             text = path.read_text(encoding="utf-8")
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "runtime.read_document", exc)
             return None
         ctx = DocumentContext(
             uri,
@@ -502,8 +503,8 @@ class LspRuntime:
                 continue
             try:
                 text = path.read_text(encoding="utf-8")
-            except Exception:
-                logger.debug("Operation failed in %s", __name__)
+            except Exception as exc:
+                log_lsp_fallback(logger, "runtime.rebuild_workspace_index", exc)
                 self.documents.pop(uri, None)
                 continue
             if self.config.cache_workspace:

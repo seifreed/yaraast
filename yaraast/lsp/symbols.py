@@ -7,6 +7,7 @@ import time
 
 from lsprotocol.types import DocumentSymbol
 
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.runtime import LspRuntime, get_document_context
 from yaraast.lsp.symbol_tree_builder import (
     build_document_symbols,
@@ -52,8 +53,8 @@ class SymbolsProvider:
             symbols = build_document_symbols(doc, lines)
             symbol_build_succeeded = True
 
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "document_symbols.build", exc)
             # If parsing fails, return empty symbols
             symbols = []
 

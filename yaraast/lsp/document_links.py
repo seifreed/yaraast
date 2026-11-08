@@ -9,6 +9,7 @@ from typing import Any
 
 from lsprotocol.types import DocumentLink, Position, Range
 
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.document_query_common import whole_word_positions
 import yaraast.lsp.document_query_reference_text as reference_text
 import yaraast.lsp.document_query_resolution_text as resolution_text
@@ -77,8 +78,8 @@ class DocumentLinksProvider:
                 )
                 try:
                     symbol_records = doc.symbols()
-                except Exception:
-                    logger.debug("Operation failed in %s", __name__)
+                except Exception as exc:
+                    log_lsp_fallback(logger, "document_links.symbols", exc)
                     symbol_records = []
                 links.extend(self._create_runtime_symbol_links(doc, symbol_records, document_uri))
                 links.extend(self._create_rule_reference_links(document_uri))
@@ -92,8 +93,8 @@ class DocumentLinksProvider:
             self._append_text_rule_links(links, text, document_uri)
             self._append_fallback_links(links, text, document_uri)
 
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "document_links.resolve", exc)
             # Fallback to regex-based link detection
             links.extend(self._fallback_links(text, document_uri))
 

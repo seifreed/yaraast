@@ -8,6 +8,7 @@ from pathlib import Path
 
 from lsprotocol.types import SymbolInformation
 
+from yaraast.logging_config import log_lsp_fallback
 from yaraast.lsp.document_types import YARA_FILE_SUFFIXES
 from yaraast.lsp.runtime import DocumentContext, LspRuntime
 from yaraast.shared.path_safety import (
@@ -138,8 +139,8 @@ class WorkspaceSymbolsProvider:
 
                 symbols.extend(file_symbols)
 
-            except Exception:
-                logger.debug("Operation failed in %s", __name__)
+            except Exception as exc:
+                log_lsp_fallback(logger, "workspace_symbols.read_document", exc)
                 # Skip files that fail to parse
                 continue
 
@@ -192,8 +193,8 @@ class WorkspaceSymbolsProvider:
             # Cache results
             self.symbol_cache[cache_key] = (mtime, list(symbols))
 
-        except Exception:
-            logger.debug("Operation failed in %s", __name__)
+        except Exception as exc:
+            log_lsp_fallback(logger, "workspace_symbols.resolve", exc)
             return []
 
         return list(symbols)
