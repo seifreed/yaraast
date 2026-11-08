@@ -22,6 +22,11 @@ binding. YARA-L follows the dated public
 [YARA-L 2.0 examples](https://cloud.google.com/chronicle/docs/yara-l/yara-l-2-0-examples)
 rather than a locally installable reference compiler.
 
+The module catalog includes the newer ELF machine constants from YARA 4.6.0
+and YARA-X's `pe.offset_to_rva`; targeted metadata checks and a YARA-X 1.23
+fixture cover these additions. They are intentionally outside the libyara
+4.5.4 oracle set.
+
 The YARA-L conformance corpus covers `re.capture_all` in rule `outcome`
 assignments and passes its `ARRAY_STRINGS` result to `arrays.length`. Local
 validation checks its two-argument signature and rejects obvious numeric or

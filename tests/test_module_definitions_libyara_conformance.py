@@ -44,6 +44,26 @@ yara = pytest.importorskip("yara", reason="docs/test-skips.yml")
 # Modules absent from stock open-source libyara: cannot be probed with the oracle.
 _NO_ORACLE = frozenset({"vt", "cuckoo"})
 
+# These members are newer than the pinned libyara 4.5.4 oracle and are tested
+# separately against the latest upstream metadata and YARA-X conformance corpus.
+_UPSTREAM_ONLY_ATTRIBUTES = {
+    "elf": frozenset(
+        {
+            "EM_PARISC",
+            "EM_SPARC32PLUS",
+            "EM_S390",
+            "EM_MCORE",
+            "EM_RCE",
+            "EM_SH",
+            "EM_SPARCV9",
+            "EM_ARC_COMPACT",
+            "EM_BPF",
+            "EM_LOONGARCH",
+        }
+    )
+}
+_UPSTREAM_ONLY_FUNCTIONS = {"pe": frozenset({"offset_to_rva"})}
+
 # Canonical function surface transcribed from libyara 4.5.4 module C sources
 # (libyara/modules/<name>/<name>.c, ``declare_function`` declarations). Value is
 # the libyara return-type code: "i"=int, "s"=string, "f"=float. Function
@@ -163,6 +183,8 @@ def _declared_attr_leaves() -> list[tuple[str, str, str]]:
         if module in _NO_ORACLE:
             continue
         for name, type_obj in definition.attributes.items():
+            if name in _UPSTREAM_ONLY_ATTRIBUTES.get(module, frozenset()):
+                continue
             for expr, code in _leaf_paths(type_obj, f"{module}.{name}"):
                 cases.append((module, expr, code))
     return cases
@@ -202,6 +224,8 @@ def test_declared_functions_match_libyara_surface(module: str) -> None:
     """Function names and return types match the libyara 4.5.4 surface exactly."""
     canonical = _CANONICAL_FUNCS[module]
     ours = _our_func_codes(module)
+    for name in _UPSTREAM_ONLY_FUNCTIONS.get(module, frozenset()):
+        ours.pop(name, None)
 
     assert set(ours) == set(canonical), (
         f"{module} function surface drift: "
@@ -255,7 +279,9 @@ def test_required_attribute_is_declared(module: str, attr: str) -> None:
 def test_no_module_overdeclares_a_function() -> None:
     """Every declared function exists in the canonical libyara surface."""
     for module in sorted(set(_MODULE_SPECS) - {"vt"}):
-        declared = set(load_builtin_modules()[module].functions)
+        declared = set(load_builtin_modules()[module].functions) - _UPSTREAM_ONLY_FUNCTIONS.get(
+            module, frozenset()
+        )
         canonical = set(_CANONICAL_FUNCS.get(module, {}))
         extra = declared - canonical
         assert not extra, f"{module} declares non-libyara functions: {sorted(extra)}"
@@ -273,6 +299,8 @@ def _declared_consts() -> list[tuple[str, str, str]]:
         if module in _NO_ORACLE:
             continue
         for name, type_code in spec.get("consts", {}).items():
+            if name in _UPSTREAM_ONLY_ATTRIBUTES.get(module, frozenset()):
+                continue
             cases.append((module, name, type_code))
     return cases
 
