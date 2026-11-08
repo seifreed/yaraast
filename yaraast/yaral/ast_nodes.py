@@ -906,6 +906,11 @@ YARAL_BUILTIN_FUNCTIONS: dict[str, dict[str, str]] = {
         "returns": "string",
         "doc": "Capture regex group from field",
     },
+    "re.capture_all": {
+        "args": "field, pattern",
+        "returns": "array<string>",
+        "doc": "Capture all regex matches from field",
+    },
     # Timestamp functions (Gap 3)
     "timestamp.get_date": {
         "args": "timestamp, timezone",

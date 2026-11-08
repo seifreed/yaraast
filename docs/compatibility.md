@@ -27,13 +27,13 @@ and YARA-X's `pe.offset_to_rva`; targeted metadata checks and a YARA-X 1.23
 fixture cover these additions. They are intentionally outside the libyara
 4.5.4 oracle set.
 
-The YARA-L conformance corpus covers `re.capture_all` in rule `outcome`
-assignments and passes its `ARRAY_STRINGS` result to `arrays.length`. Local
-validation checks its two-argument signature and rejects obvious numeric or
-boolean literals; Google remains authoritative for field types, capture-group
-limits, return types, and regular-expression semantics. This support covers
-rule-file syntax only, not the separate multi-stage query syntax used by Search
-or Dashboards. See the [YARA-L function reference](https://docs.cloud.google.com/chronicle/docs/yara-l/functions).
+The YARA-L built-in catalog declares `re.capture_all` as returning
+`ARRAY_STRINGS`; the conformance fixture assigns that result and passes it to
+`arrays.length`. Local validation checks arity and rejects obvious numeric or
+boolean literals. It does not infer arbitrary expression types; Google remains
+authoritative for field types, capture-group limits, and regex semantics. This
+support covers rule-file syntax only, not the separate multi-stage query syntax
+used by Search or Dashboards. See the [YARA-L function reference](https://docs.cloud.google.com/chronicle/docs/yara-l/functions).
 
 YARA-X accepts positive integer literals through `2^64 - 1` and the
 `int64`/`uint64` little- and big-endian integer readers. The classic YARA parser

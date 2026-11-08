@@ -255,6 +255,14 @@ def test_yaral_builtin_function_metadata_covers_supported_aggregations() -> None
         assert metadata["doc"]
 
 
+def test_yaral_capture_all_metadata_declares_string_array_return() -> None:
+    assert YARAL_BUILTIN_FUNCTIONS["re.capture_all"] == {
+        "args": "field, pattern",
+        "returns": "array<string>",
+        "doc": "Capture all regex matches from field",
+    }
+
+
 def test_yaral_file_rejects_invalid_rule_inputs_without_partial_update() -> None:
     yf = YaraLFile()
     yf.add_rule(YaraLRule(name="r1"))
