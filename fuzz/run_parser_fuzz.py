@@ -6,7 +6,7 @@ import sys
 
 import atheris
 
-with atheris.instrument_imports():
+with atheris.instrument_imports(exclude=["signal"]):
     from fuzz.parser_target import test_one_input
 
 
