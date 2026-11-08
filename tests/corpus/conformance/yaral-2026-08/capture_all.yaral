@@ -5,6 +5,7 @@ rule CaptureAllPaths {
 
   outcome:
     $paths = re.capture_all($e.target.process.command_line, "\\.conf")
+    $path_count = arrays.length($paths)
 
   condition:
     $e

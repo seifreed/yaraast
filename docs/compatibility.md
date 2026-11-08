@@ -23,16 +23,18 @@ binding. YARA-L follows the dated public
 rather than a locally installable reference compiler.
 
 The YARA-L conformance corpus covers `re.capture_all` in rule `outcome`
-assignments. Local validation checks its two-argument signature and rejects
-obvious numeric or boolean literals; Google remains authoritative for field
-types, capture-group limits, and regular-expression semantics. This support
-covers rule-file syntax only, not the separate multi-stage query syntax used by
-Search or Dashboards. See the [YARA-L function reference](https://docs.cloud.google.com/chronicle/docs/yara-l/functions).
+assignments and passes its `ARRAY_STRINGS` result to `arrays.length`. Local
+validation checks its two-argument signature and rejects obvious numeric or
+boolean literals; Google remains authoritative for field types, capture-group
+limits, return types, and regular-expression semantics. This support covers
+rule-file syntax only, not the separate multi-stage query syntax used by Search
+or Dashboards. See the [YARA-L function reference](https://docs.cloud.google.com/chronicle/docs/yara-l/functions).
 
-YARA-X accepts positive integer literals through `2^64 - 1`; the classic YARA
-parser remains limited to signed 64-bit literals. Protobuf serialization stores
-larger values in the additive `unsigned_value` field while retaining the
-existing signed `value` field for older serialized ASTs.
+YARA-X accepts positive integer literals through `2^64 - 1` and the
+`int64`/`uint64` little- and big-endian integer readers. The classic YARA parser
+remains limited to signed 64-bit literals. Protobuf serialization stores larger
+values in the additive `unsigned_value` field while retaining the existing
+signed `value` field for older serialized ASTs.
 
 The required
 [differential conformance job](https://github.com/seifreed/yaraast/actions/workflows/ci.yml)

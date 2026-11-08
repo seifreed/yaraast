@@ -7,8 +7,8 @@ versioning.
 
 ### Added
 
-- YARA-X parsing and generation for unsigned 64-bit integer literals, with
-  lossless Protobuf round trips.
+- YARA-X 1.22+ unsigned 64-bit literals and integer readers, with lossless
+  Protobuf round trips.
 - YARA-L `re.capture_all` outcome conformance and basic signature validation.
 
 ### Changed
