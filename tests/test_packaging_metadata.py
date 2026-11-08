@@ -32,7 +32,7 @@ def test_conformance_engines_are_reproducibly_pinned() -> None:
     assert optional_dependencies["libyara"] == ["yara-python==4.5.4"]
     assert optional_dependencies["conformance"] == [
         "yara-python==4.5.4",
-        "yara-x==1.20.0",
+        "yara-x==1.23.0",
     ]
 
 

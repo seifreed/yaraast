@@ -815,14 +815,12 @@ class StringLength(_message.Message):
     ) -> None: ...
 
 class IntegerLiteral(_message.Message):
-    __slots__ = ("value", "unsigned_value")
+    __slots__ = ("unsigned_value", "value")
     VALUE_FIELD_NUMBER: _ClassVar[int]
     UNSIGNED_VALUE_FIELD_NUMBER: _ClassVar[int]
     value: int
     unsigned_value: int
-    def __init__(
-        self, value: int | None = ..., unsigned_value: int | None = ...
-    ) -> None: ...
+    def __init__(self, value: int | None = ..., unsigned_value: int | None = ...) -> None: ...
 
 class DoubleLiteral(_message.Message):
     __slots__ = ("value",)
